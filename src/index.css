@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* CSS Variables for theming */
+/* CSS Variables for theming (shadcn/ui compatible) */
 :root {
   /* Background colors */
   --background: 240 10% 4%;
@@ -11,6 +11,10 @@
   /* Card colors */
   --card: 240 10% 7%;
   --card-foreground: 0 0% 98%;
+
+  /* Popover */
+  --popover: 240 10% 7%;
+  --popover-foreground: 0 0% 98%;
 
   /* Primary (neon cyan) */
   --primary: 185 100% 47%;
@@ -32,9 +36,11 @@
   --warning: 38 92% 50%;
   --warning-foreground: 240 10% 4%;
 
-  /* Danger (red) */
+  /* Danger / Destructive (red) */
   --danger: 0 84% 60%;
   --danger-foreground: 0 0% 98%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 98%;
 
   /* Muted */
   --muted: 240 10% 15%;
@@ -48,6 +54,13 @@
   /* Radius */
   --radius: 0.5rem;
 
+  /* Glow colors */
+  --glow-primary: 185 100% 47%;
+  --glow-success: 152 100% 50%;
+  --glow-accent: 270 91% 65%;
+  --glow-warning: 38 92% 50%;
+  --glow-danger: 0 84% 60%;
+
   /* Typography */
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
     'Helvetica Neue', Arial, sans-serif;
@@ -60,6 +73,12 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Dark mode is the default and only theme */
+.dark {
+  --background: 240 10% 4%;
+  --foreground: 0 0% 98%;
 }
 
 @layer base {
@@ -90,6 +109,20 @@
   .page {
     @apply animate-fade-in;
   }
+
+  /* Glass effect - frosted glass */
+  .glass {
+    @apply bg-card/80 backdrop-blur-md border border-border/50;
+  }
+
+  /* Glass effect variants */
+  .glass-subtle {
+    @apply bg-card/50 backdrop-blur-sm border border-border/30;
+  }
+
+  .glass-strong {
+    @apply bg-card/90 backdrop-blur-lg border border-border/70;
+  }
 }
 
 @layer utilities {
@@ -111,6 +144,128 @@
     to {
       opacity: 1;
       transform: translateY(0);
+    }
+  }
+
+  /* Glow utilities - small */
+  .glow-sm {
+    box-shadow: 0 0 8px 0 hsl(var(--glow-primary) / 0.3);
+  }
+
+  .glow-sm-success {
+    box-shadow: 0 0 8px 0 hsl(var(--glow-success) / 0.3);
+  }
+
+  .glow-sm-accent {
+    box-shadow: 0 0 8px 0 hsl(var(--glow-accent) / 0.3);
+  }
+
+  .glow-sm-warning {
+    box-shadow: 0 0 8px 0 hsl(var(--glow-warning) / 0.3);
+  }
+
+  .glow-sm-danger {
+    box-shadow: 0 0 8px 0 hsl(var(--glow-danger) / 0.3);
+  }
+
+  /* Glow utilities - medium */
+  .glow-md {
+    box-shadow: 0 0 16px 0 hsl(var(--glow-primary) / 0.4);
+  }
+
+  .glow-md-success {
+    box-shadow: 0 0 16px 0 hsl(var(--glow-success) / 0.4);
+  }
+
+  .glow-md-accent {
+    box-shadow: 0 0 16px 0 hsl(var(--glow-accent) / 0.4);
+  }
+
+  .glow-md-warning {
+    box-shadow: 0 0 16px 0 hsl(var(--glow-warning) / 0.4);
+  }
+
+  .glow-md-danger {
+    box-shadow: 0 0 16px 0 hsl(var(--glow-danger) / 0.4);
+  }
+
+  /* Glow utilities - large */
+  .glow-lg {
+    box-shadow: 0 0 24px 4px hsl(var(--glow-primary) / 0.5);
+  }
+
+  .glow-lg-success {
+    box-shadow: 0 0 24px 4px hsl(var(--glow-success) / 0.5);
+  }
+
+  .glow-lg-accent {
+    box-shadow: 0 0 24px 4px hsl(var(--glow-accent) / 0.5);
+  }
+
+  .glow-lg-warning {
+    box-shadow: 0 0 24px 4px hsl(var(--glow-warning) / 0.5);
+  }
+
+  .glow-lg-danger {
+    box-shadow: 0 0 24px 4px hsl(var(--glow-danger) / 0.5);
+  }
+
+  /* Neon text glow for primary */
+  .text-glow-primary {
+    text-shadow: 0 0 8px hsl(var(--glow-primary) / 0.6);
+  }
+
+  /* Neon text glow for success (Stealth Mode) */
+  .text-glow-success {
+    text-shadow: 0 0 8px hsl(var(--glow-success) / 0.6);
+  }
+
+  /* Animated pulse glow */
+  .animate-pulse-glow {
+    animation: pulseGlow 2s ease-in-out infinite;
+  }
+
+  @keyframes pulseGlow {
+    0%, 100% {
+      box-shadow: 0 0 8px 0 hsl(var(--glow-primary) / 0.3);
+    }
+    50% {
+      box-shadow: 0 0 20px 4px hsl(var(--glow-primary) / 0.5);
+    }
+  }
+
+  /* Success variant pulse glow */
+  .animate-pulse-glow-success {
+    animation: pulseGlowSuccess 2s ease-in-out infinite;
+  }
+
+  @keyframes pulseGlowSuccess {
+    0%, 100% {
+      box-shadow: 0 0 8px 0 hsl(var(--glow-success) / 0.3);
+    }
+    50% {
+      box-shadow: 0 0 20px 4px hsl(var(--glow-success) / 0.5);
+    }
+  }
+
+  /* Shimmer effect for loading states */
+  .animate-shimmer {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--muted)) 0%,
+      hsl(var(--muted-foreground) / 0.1) 50%,
+      hsl(var(--muted)) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
     }
   }
 }
