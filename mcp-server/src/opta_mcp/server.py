@@ -68,6 +68,29 @@ async def list_tools() -> list[Tool]:
                 "required": [],
             },
         ),
+        Tool(
+            name="terminate_process",
+            description="Terminate a process by PID. Uses graceful termination first, then force kill if needed.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "pid": {
+                        "type": "integer",
+                        "description": "Process ID to terminate",
+                    },
+                },
+                "required": ["pid"],
+            },
+        ),
+        Tool(
+            name="stealth_mode",
+            description="Execute Stealth Mode - terminate all safe-to-kill processes to free up system resources. Only kills processes categorized as 'safe-to-kill', never system or user processes.",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+        ),
     ]
 
 
@@ -90,6 +113,14 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
         result = telemetry.get_system_snapshot()
     elif name == "get_processes":
         result = processes.get_process_list()
+    elif name == "terminate_process":
+        pid = arguments.get("pid")
+        if pid is None:
+            result = {"error": "Missing required parameter: pid"}
+        else:
+            result = processes.terminate_process(pid)
+    elif name == "stealth_mode":
+        result = processes.stealth_mode()
     else:
         result = {"error": f"Unknown tool: {name}"}
 
