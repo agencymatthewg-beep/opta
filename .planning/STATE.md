@@ -40,6 +40,9 @@ Progress: ███░░░░░░░ 10% (3/29 plans)
 | Phase | Decision | Rationale |
 |-------|----------|-----------|
 | 01-01 | Changed identifier from com.opta.app to com.opta.optimizer | Avoids macOS .app bundle extension conflict |
+| 01-02 | CSS variables over CSS-in-JS | Keeps foundation simple, enables easy theme switching |
+| 01-02 | State-based routing with useState | Sufficient for MVP with 3 pages, can add router later |
+| 01-02 | Neon green accent (#00ff88) | Gaming aesthetic inspired by Discord/GeForce Experience |
 | 01-03 | Used official tauri-apps/tauri-action for CI | Well-maintained, consistent cross-platform builds |
 | 01-03 | macOS minimum version 10.13 | Balances compatibility with modern features |
 | 01-03 | Release profile: LTO + stripping enabled | Smaller, faster production binaries |
