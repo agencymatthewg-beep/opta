@@ -1,3 +1,4 @@
+mod processes;
 mod telemetry;
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
@@ -13,7 +14,8 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .invoke_handler(tauri::generate_handler![
             greet,
-            telemetry::get_system_telemetry
+            telemetry::get_system_telemetry,
+            processes::get_processes
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
