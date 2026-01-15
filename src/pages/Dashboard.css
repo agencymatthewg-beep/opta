@@ -22,7 +22,12 @@
   grid-template-columns: repeat(2, 1fr);
   gap: 16px;
   margin-top: 24px;
-  margin-bottom: 32px;
+  margin-bottom: 24px;
+}
+
+/* Process Section */
+.process-section {
+  margin-bottom: 24px;
 }
 
 @media (max-width: 640px) {

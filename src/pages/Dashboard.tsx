@@ -4,6 +4,7 @@ import CpuMeter from '../components/CpuMeter';
 import MemoryMeter from '../components/MemoryMeter';
 import GpuMeter from '../components/GpuMeter';
 import DiskMeter from '../components/DiskMeter';
+import ProcessList from '../components/ProcessList';
 import './Dashboard.css';
 
 function Dashboard() {
@@ -100,6 +101,11 @@ function Dashboard() {
             />
           )}
         </TelemetryCard>
+      </div>
+
+      {/* Process List Section */}
+      <div className="process-section">
+        <ProcessList />
       </div>
 
       <div className="card-grid">
