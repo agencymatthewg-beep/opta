@@ -1,4 +1,5 @@
 mod conflicts;
+mod llm;
 mod processes;
 mod telemetry;
 
@@ -19,7 +20,9 @@ pub fn run() {
             processes::get_processes,
             processes::terminate_process,
             processes::stealth_mode,
-            conflicts::detect_conflicts
+            conflicts::detect_conflicts,
+            llm::llm_status,
+            llm::llm_chat
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
