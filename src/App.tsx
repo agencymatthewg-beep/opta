@@ -3,7 +3,6 @@ import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import Optimize from './pages/Optimize';
 import Settings from './pages/Settings';
-import './App.css';
 
 function App() {
   const [activePage, setActivePage] = useState('dashboard');
@@ -22,9 +21,11 @@ function App() {
   };
 
   return (
-    <Layout activePage={activePage} onNavigate={setActivePage}>
-      {renderPage()}
-    </Layout>
+    <div className="dark">
+      <Layout activePage={activePage} onNavigate={setActivePage}>
+        {renderPage()}
+      </Layout>
+    </div>
   );
 }
 

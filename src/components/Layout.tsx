@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import Sidebar from './Sidebar';
-import './Layout.css';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface LayoutProps {
   activePage: string;
@@ -10,11 +10,13 @@ interface LayoutProps {
 
 function Layout({ activePage, onNavigate, children }: LayoutProps) {
   return (
-    <div className="layout">
+    <div className="flex min-h-screen bg-background">
       <Sidebar activePage={activePage} onNavigate={onNavigate} />
-      <main className="main-content">
-        {children}
-      </main>
+      <ScrollArea className="flex-1 h-screen">
+        <main className="p-8 max-w-7xl">
+          {children}
+        </main>
+      </ScrollArea>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import './GpuMeter.css';
+import { cn } from '@/lib/utils';
 
 interface GpuMeterProps {
   available: boolean;
@@ -10,9 +10,11 @@ interface GpuMeterProps {
 function GpuMeter({ available, name, percent = 0, temperature }: GpuMeterProps) {
   if (!available) {
     return (
-      <div className="gpu-meter gpu-unavailable">
-        <div className="gpu-unavailable-icon">--</div>
-        <span className="gpu-unavailable-text">No GPU detected</span>
+      <div className="flex flex-col items-center justify-center gap-2 py-4">
+        <div className="w-28 h-28 rounded-full border-2 border-dashed border-muted/30 flex items-center justify-center">
+          <span className="text-2xl text-muted-foreground/50">--</span>
+        </div>
+        <span className="text-xs text-muted-foreground">No GPU detected</span>
       </div>
     );
   }
@@ -23,38 +25,54 @@ function GpuMeter({ available, name, percent = 0, temperature }: GpuMeterProps) 
   const offset = circumference - (percent / 100) * circumference;
 
   // Determine color based on usage level
-  const getColor = (value: number) => {
-    if (value >= 85) return '#ff4444'; // danger red
-    if (value >= 60) return '#ffaa00'; // warning yellow
-    return '#00ff88'; // accent green
+  const getColorClass = (value: number) => {
+    if (value >= 85) return 'text-[hsl(var(--danger))]';
+    if (value >= 60) return 'text-[hsl(var(--warning))]';
+    return 'text-[hsl(var(--success))]';
   };
 
-  const color = getColor(percent);
-  const isHighUsage = percent >= 90;
+  const getStrokeColor = (value: number) => {
+    if (value >= 85) return 'hsl(var(--danger))';
+    if (value >= 60) return 'hsl(var(--warning))';
+    return 'hsl(var(--success))';
+  };
+
+  const getGlowStyle = (value: number) => {
+    const opacity = Math.min(0.4, (value / 100) * 0.5);
+    if (value >= 85) return `0 0 20px hsl(var(--danger) / ${opacity})`;
+    if (value >= 60) return `0 0 20px hsl(var(--warning) / ${opacity})`;
+    return `0 0 20px hsl(var(--success) / ${opacity})`;
+  };
 
   // Temperature color
-  const getTempColor = (temp: number) => {
-    if (temp >= 80) return '#ff4444';
-    if (temp >= 65) return '#ffaa00';
-    return '#00ff88';
+  const getTempColorClass = (temp: number) => {
+    if (temp >= 80) return 'text-[hsl(var(--danger))] border-[hsl(var(--danger)/0.3)]';
+    if (temp >= 65) return 'text-[hsl(var(--warning))] border-[hsl(var(--warning)/0.3)]';
+    return 'text-[hsl(var(--success))] border-[hsl(var(--success)/0.3)]';
   };
 
+  const colorClass = getColorClass(percent);
+  const strokeColor = getStrokeColor(percent);
+  const isHighUsage = percent >= 90;
+
   return (
-    <div className="gpu-meter">
-      <div className={`gpu-ring-container ${isHighUsage ? 'pulse' : ''}`}>
-        <svg className="gpu-ring" viewBox="0 0 120 120">
+    <div className="flex flex-col items-center gap-2">
+      <div className={cn(
+        "relative w-28 h-28",
+        isHighUsage && "animate-pulse"
+      )}>
+        <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120">
           {/* Background circle */}
           <circle
-            className="gpu-ring-bg"
             cx="60"
             cy="60"
             r={radius}
             fill="none"
             strokeWidth="8"
+            className="stroke-muted/30"
           />
           {/* Progress circle */}
           <circle
-            className="gpu-ring-progress"
             cx="60"
             cy="60"
             r={radius}
@@ -62,26 +80,32 @@ function GpuMeter({ available, name, percent = 0, temperature }: GpuMeterProps) 
             strokeWidth="8"
             strokeDasharray={circumference}
             strokeDashoffset={offset}
-            style={{ stroke: color }}
+            strokeLinecap="round"
+            style={{
+              stroke: strokeColor,
+              filter: getGlowStyle(percent),
+              transition: 'stroke-dashoffset 0.3s ease, stroke 0.3s ease'
+            }}
           />
         </svg>
-        <div className="gpu-ring-text">
-          <span className="gpu-percent" style={{ color }}>{Math.round(percent)}%</span>
-          <span className="gpu-label">GPU</span>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className={cn("text-2xl font-bold", colorClass)}>
+            {Math.round(percent)}%
+          </span>
+          <span className="text-xs text-muted-foreground font-medium">GPU</span>
         </div>
         {temperature !== undefined && (
-          <div
-            className="gpu-temp-badge"
-            style={{
-              color: getTempColor(temperature),
-              borderColor: getTempColor(temperature) + '40'
-            }}
-          >
+          <div className={cn(
+            "absolute -bottom-1 left-1/2 -translate-x-1/2",
+            "px-2 py-0.5 rounded-full text-[10px] font-medium",
+            "border bg-card/80 backdrop-blur-sm",
+            getTempColorClass(temperature)
+          )}>
             {temperature}°C
           </div>
         )}
       </div>
-      <div className="gpu-name">
+      <div className="text-xs text-muted-foreground text-center truncate max-w-[120px]" title={name}>
         <span>{name || 'Unknown GPU'}</span>
       </div>
     </div>
