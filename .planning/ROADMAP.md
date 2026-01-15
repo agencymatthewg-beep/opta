@@ -19,6 +19,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Foundation** - Tauri app scaffold, project structure, basic UI shell
 - [x] **Phase 2: Hardware Telemetry** - CPU/GPU/RAM monitoring via Python MCP server
 - [x] **Phase 3: Process Management** - Process listing, "Stealth Mode" background process killer
+- [ ] **Phase 3.1: Design System** - INSERTED: shadcn/ui integration, restyle all components for futuristic aesthetic
 - [ ] **Phase 4: Conflict Detection** - Detect competing optimization tools, warn users
 - [ ] **Phase 5: Local LLM Integration** - Llama 3 8B setup for routine queries
 - [ ] **Phase 6: Cloud LLM Integration** - Claude API for complex reasoning, hybrid routing
@@ -62,6 +63,17 @@ Plans:
 Plans:
 - [x] 03-01: Process listing and categorization
 - [x] 03-02: Stealth Mode implementation with safe process termination
+
+### Phase 3.1: Design System (INSERTED)
+**Goal**: Integrate shadcn/ui component library and restyle all existing components for a futuristic, powerful, simple aesthetic
+**Depends on**: Phase 3
+**Research**: Unlikely (shadcn/ui well-documented)
+**Plans**: TBD
+
+Plans:
+- [ ] 03.1-01: Install and configure shadcn/ui with Tailwind
+- [ ] 03.1-02: Restyle navigation and layout components
+- [ ] 03.1-03: Restyle telemetry and process components
 
 ### Phase 4: Conflict Detection
 **Goal**: Detect competing optimization tools and warn users about conflicts
@@ -148,13 +160,14 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10
+Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 → 8 → 9 → 10
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 3/3 | Complete | 2026-01-15 |
 | 2. Hardware Telemetry | 3/3 | Complete | 2026-01-15 |
 | 3. Process Management | 2/2 | Complete | 2026-01-15 |
+| 3.1 Design System | 0/3 | Not started | - |
 | 4. Conflict Detection | 0/2 | Not started | - |
 | 5. Local LLM Integration | 0/3 | Not started | - |
 | 6. Cloud LLM Integration | 0/3 | Not started | - |
