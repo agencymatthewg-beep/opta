@@ -1,0 +1,369 @@
+/* StealthMode Component Styles */
+/* Gaming aesthetic with neon accents */
+
+/* Main Button */
+.stealth-mode-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 24px 32px;
+  background: linear-gradient(135deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.05) 100%);
+  border: 2px solid var(--accent);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.stealth-mode-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(0, 255, 136, 0.2),
+    transparent
+  );
+  transition: left 0.5s ease;
+}
+
+.stealth-mode-button:hover::before {
+  left: 100%;
+}
+
+.stealth-mode-button:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 0 30px rgba(0, 255, 136, 0.3),
+    0 0 60px rgba(0, 255, 136, 0.1);
+  border-color: var(--accent);
+  background: linear-gradient(135deg, rgba(0, 255, 136, 0.15) 0%, rgba(0, 255, 136, 0.08) 100%);
+}
+
+.stealth-mode-button:active {
+  transform: translateY(0);
+}
+
+.stealth-mode-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.stealth-icon {
+  color: var(--accent);
+  margin-bottom: 8px;
+  filter: drop-shadow(0 0 8px var(--accent-glow));
+}
+
+.stealth-icon svg {
+  width: 32px;
+  height: 32px;
+}
+
+.stealth-text {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 2px;
+  text-shadow: 0 0 10px var(--accent-glow);
+}
+
+.stealth-subtext {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+/* Modal Overlay */
+.stealth-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Modal Container */
+.stealth-modal {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 32px;
+  min-width: 400px;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow-y: auto;
+  animation: slideIn 0.3s ease;
+  box-shadow:
+    0 0 40px rgba(0, 255, 136, 0.1),
+    0 20px 40px rgba(0, 0, 0, 0.4);
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 12px 0;
+  text-align: center;
+}
+
+.modal-description {
+  font-size: 14px;
+  color: var(--text-secondary);
+  text-align: center;
+  margin: 0 0 24px 0;
+}
+
+/* Process Preview */
+.process-preview {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 24px;
+}
+
+.preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.memory-estimate {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.preview-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.preview-list li {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+
+.preview-list li:last-child {
+  border-bottom: none;
+}
+
+.preview-list .process-name {
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 70%;
+}
+
+.preview-list .process-mem {
+  color: var(--text-secondary);
+}
+
+.preview-list .more-count {
+  color: var(--text-secondary);
+  font-style: italic;
+  justify-content: center;
+}
+
+.no-processes {
+  text-align: center;
+  color: var(--accent);
+  padding: 24px;
+  font-size: 14px;
+}
+
+/* Modal Actions */
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.btn-cancel,
+.btn-close {
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 500;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-cancel:hover,
+.btn-close:hover {
+  border-color: var(--text-secondary);
+  color: var(--text-primary);
+}
+
+.btn-activate {
+  padding: 12px 32px;
+  font-size: 14px;
+  font-weight: 600;
+  background: var(--accent);
+  border: none;
+  border-radius: 8px;
+  color: var(--bg-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-activate:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px var(--accent-glow);
+}
+
+/* Loading State */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px;
+}
+
+.loading-state p {
+  margin-top: 16px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Results State */
+.results-content {
+  margin-bottom: 24px;
+}
+
+.results-stats {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  margin-bottom: 24px;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stat-value {
+  font-size: 36px;
+  font-weight: 700;
+}
+
+.stat-success {
+  color: var(--accent);
+  text-shadow: 0 0 10px var(--accent-glow);
+}
+
+.stat-failed {
+  color: #ff4444;
+}
+
+.stat-memory {
+  color: #4da6ff;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.terminated-list {
+  background: var(--bg-primary);
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+
+.terminated-list .list-header {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 0 0 8px 0;
+}
+
+.terminated-list ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.terminated-list li {
+  font-size: 13px;
+  color: var(--text-primary);
+  padding: 4px 0;
+}
+
+.terminated-list .more-count {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.error-message {
+  color: #ff4444;
+  text-align: center;
+  padding: 24px;
+  font-size: 14px;
+}
+
+.auto-dismiss {
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: 16px;
+  opacity: 0.7;
+}

@@ -4,6 +4,7 @@ import CpuMeter from '../components/CpuMeter';
 import MemoryMeter from '../components/MemoryMeter';
 import GpuMeter from '../components/GpuMeter';
 import DiskMeter from '../components/DiskMeter';
+import StealthMode from '../components/StealthMode';
 import ProcessList from '../components/ProcessList';
 import './Dashboard.css';
 
@@ -101,6 +102,11 @@ function Dashboard() {
             />
           )}
         </TelemetryCard>
+      </div>
+
+      {/* Stealth Mode Section */}
+      <div className="stealth-section">
+        <StealthMode />
       </div>
 
       {/* Process List Section */}

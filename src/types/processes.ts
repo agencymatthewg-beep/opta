@@ -32,3 +32,31 @@ export interface ProcessInfo {
   /** Username running the process (may be null) */
   username: string | null;
 }
+
+/**
+ * Result of terminating a single process.
+ */
+export interface TerminateResult {
+  /** Whether termination was successful */
+  success: boolean;
+  /** Process ID */
+  pid: number;
+  /** Process name (if available) */
+  name?: string;
+  /** Error message (if failed) */
+  error?: string;
+  /** Memory freed in MB (estimated) */
+  memory_mb?: number;
+}
+
+/**
+ * Result of Stealth Mode execution.
+ */
+export interface StealthModeResult {
+  /** Successfully terminated processes */
+  terminated: TerminateResult[];
+  /** Failed termination attempts */
+  failed: TerminateResult[];
+  /** Estimated memory freed in MB */
+  freed_memory_mb: number;
+}
