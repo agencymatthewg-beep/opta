@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useTelemetry } from '../hooks/useTelemetry';
 import TelemetryCard from '../components/TelemetryCard';
 import CpuMeter from '../components/CpuMeter';
@@ -7,8 +8,50 @@ import DiskMeter from '../components/DiskMeter';
 import StealthMode from '../components/StealthMode';
 import ProcessList from '../components/ProcessList';
 import ConflictWarning from '../components/ConflictWarning';
+import ChatInterface from '../components/ChatInterface';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
+
+/** Storage key for chat panel open state */
+const CHAT_OPEN_KEY = 'opta-chat-open';
+
+/**
+ * Chat toggle button with AI icon.
+ */
+function ChatToggleButton({ isOpen, onClick }: { isOpen: boolean; onClick: () => void }) {
+  return (
+    <Button
+      onClick={onClick}
+      size="icon"
+      variant={isOpen ? 'default' : 'outline'}
+      className={cn(
+        'fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg',
+        'transition-all duration-300',
+        isOpen ? 'glow-md rotate-0' : 'hover:glow-sm',
+        !isOpen && 'animate-pulse-slow'
+      )}
+      title={isOpen ? 'Close AI Assistant' : 'Open AI Assistant'}
+    >
+      {isOpen ? (
+        // Close icon
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      ) : (
+        // AI sparkles icon
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z"
+          />
+        </svg>
+      )}
+      <span className="sr-only">{isOpen ? 'Close AI Assistant' : 'Open AI Assistant'}</span>
+    </Button>
+  );
+}
 
 interface DashboardProps {
   /** Callback to navigate to another page (used for "View Details" link) */
@@ -17,6 +60,19 @@ interface DashboardProps {
 
 function Dashboard({ onNavigate }: DashboardProps) {
   const { telemetry, loading, error, lastUpdated, refetch } = useTelemetry(2000);
+
+  // Chat panel open state with localStorage persistence
+  const [isChatOpen, setIsChatOpen] = useState(() => {
+    const saved = localStorage.getItem(CHAT_OPEN_KEY);
+    return saved === 'true';
+  });
+
+  // Persist chat open state
+  useEffect(() => {
+    localStorage.setItem(CHAT_OPEN_KEY, isChatOpen.toString());
+  }, [isChatOpen]);
+
+  const toggleChat = () => setIsChatOpen((prev) => !prev);
 
   // Calculate time since last update
   const getTimeSinceUpdate = () => {
@@ -162,6 +218,29 @@ function Dashboard({ onNavigate }: DashboardProps) {
           </CardContent>
         </Card>
       </div>
+
+      {/* AI Chat Toggle Button */}
+      <ChatToggleButton isOpen={isChatOpen} onClick={toggleChat} />
+
+      {/* AI Chat Drawer - slides in from right */}
+      <div
+        className={cn(
+          'fixed top-0 right-0 h-full w-[380px] z-40',
+          'transform transition-transform duration-300 ease-in-out',
+          'bg-background/95 backdrop-blur-md border-l border-border/50 shadow-xl',
+          isChatOpen ? 'translate-x-0' : 'translate-x-full'
+        )}
+      >
+        <ChatInterface className="h-full border-0 rounded-none bg-transparent" />
+      </div>
+
+      {/* Backdrop overlay when chat is open */}
+      {isChatOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/20 backdrop-blur-sm transition-opacity duration-300"
+          onClick={toggleChat}
+        />
+      )}
     </div>
   );
 }
