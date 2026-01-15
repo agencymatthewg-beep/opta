@@ -91,6 +91,15 @@ async def list_tools() -> list[Tool]:
                 "required": [],
             },
         ),
+        Tool(
+            name="detect_conflicts",
+            description="Detect competitor optimization tools (GeForce Experience, Razer Cortex, MSI Afterburner, OMEN Hub, etc.) that may conflict with Opta's optimizations.",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+        ),
     ]
 
 
@@ -100,6 +109,7 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
     # Import modules here to avoid circular imports
     from opta_mcp import telemetry
     from opta_mcp import processes
+    from opta_mcp import conflicts
 
     if name == "get_cpu":
         result = telemetry.get_cpu_info()
@@ -121,6 +131,8 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
             result = processes.terminate_process(pid)
     elif name == "stealth_mode":
         result = processes.stealth_mode()
+    elif name == "detect_conflicts":
+        result = conflicts.get_conflict_summary()
     else:
         result = {"error": f"Unknown tool: {name}"}
 
