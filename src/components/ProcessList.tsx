@@ -8,7 +8,19 @@
 import { useState } from 'react';
 import { useProcesses } from '../hooks/useProcesses';
 import type { ProcessInfo, ProcessCategory } from '../types/processes';
-import './ProcessList.css';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table';
+import { cn } from '@/lib/utils';
 
 interface ProcessRowProps {
   process: ProcessInfo;
@@ -20,10 +32,16 @@ interface ProcessRowProps {
  * Badge component for process category.
  */
 function CategoryBadge({ category }: { category: ProcessCategory }) {
+  const variantMap: Record<ProcessCategory, 'secondary' | 'default' | 'warning'> = {
+    system: 'secondary',
+    user: 'default',
+    'safe-to-kill': 'warning',
+  };
+
   return (
-    <span className={`category-badge category-${category}`}>
+    <Badge variant={variantMap[category]} className="text-[10px] uppercase tracking-wide">
       {category}
-    </span>
+    </Badge>
   );
 }
 
@@ -32,20 +50,33 @@ function CategoryBadge({ category }: { category: ProcessCategory }) {
  */
 function ProcessRow({ process, isSelected, onSelect }: ProcessRowProps) {
   return (
-    <tr
-      className={`process-row ${isSelected ? 'selected' : ''}`}
+    <TableRow
+      className={cn(
+        "cursor-pointer transition-colors",
+        isSelected && "bg-primary/10 hover:bg-primary/15"
+      )}
       onClick={() => onSelect(process.pid)}
+      data-state={isSelected ? 'selected' : undefined}
     >
-      <td className="process-name" title={process.name}>
+      <TableCell
+        className="font-medium text-foreground max-w-[200px] truncate"
+        title={process.name}
+      >
         {process.name}
-      </td>
-      <td className="process-cpu">{process.cpu_percent.toFixed(1)}%</td>
-      <td className="process-memory">{process.memory_percent.toFixed(1)}%</td>
-      <td className="process-category">
+      </TableCell>
+      <TableCell className="text-right font-mono text-xs text-muted-foreground">
+        {process.cpu_percent.toFixed(1)}%
+      </TableCell>
+      <TableCell className="text-right font-mono text-xs text-muted-foreground">
+        {process.memory_percent.toFixed(1)}%
+      </TableCell>
+      <TableCell className="text-center">
         <CategoryBadge category={process.category} />
-      </td>
-      <td className="process-pid">{process.pid}</td>
-    </tr>
+      </TableCell>
+      <TableCell className="text-right font-mono text-xs text-muted-foreground/70">
+        {process.pid}
+      </TableCell>
+    </TableRow>
   );
 }
 
@@ -54,19 +85,22 @@ function ProcessRow({ process, isSelected, onSelect }: ProcessRowProps) {
  */
 function ProcessListSkeleton() {
   return (
-    <div className="process-list-container">
-      <div className="process-list-skeleton">
+    <Card className="bg-card/80 border-border/50 backdrop-blur-sm">
+      <CardHeader className="pb-2">
+        <div className="h-5 w-40 rounded animate-shimmer" />
+      </CardHeader>
+      <CardContent className="space-y-2">
         {[1, 2, 3, 4, 5].map((i) => (
-          <div key={i} className="skeleton-row">
-            <div className="skeleton-cell skeleton-name" />
-            <div className="skeleton-cell skeleton-stat" />
-            <div className="skeleton-cell skeleton-stat" />
-            <div className="skeleton-cell skeleton-badge" />
-            <div className="skeleton-cell skeleton-pid" />
+          <div key={i} className="flex gap-3 py-2 border-b border-border/20 last:border-0">
+            <div className="flex-[2] h-4 rounded animate-shimmer" />
+            <div className="w-12 h-4 rounded animate-shimmer" />
+            <div className="w-12 h-4 rounded animate-shimmer" />
+            <div className="w-16 h-4 rounded animate-shimmer" />
+            <div className="w-12 h-4 rounded animate-shimmer" />
           </div>
         ))}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -87,52 +121,70 @@ function ProcessList() {
 
   if (error) {
     return (
-      <div className="process-list-container">
-        <div className="process-list-error">
-          <span className="error-icon">!</span>
-          <p>{error}</p>
-          <button onClick={refresh} className="retry-btn">
+      <Card className="bg-card/80 border-border/50 backdrop-blur-sm">
+        <CardContent className="flex flex-col items-center justify-center py-12 gap-4">
+          <div className="w-12 h-12 flex items-center justify-center text-xl font-bold text-danger bg-danger/10 border-2 border-danger rounded-full">
+            !
+          </div>
+          <p className="text-sm text-muted-foreground text-center">{error}</p>
+          <Button onClick={refresh} size="sm" className="glow-sm">
             Retry
-          </button>
-        </div>
-      </div>
+          </Button>
+        </CardContent>
+      </Card>
     );
   }
 
   const processCount = processes?.length ?? 0;
 
   return (
-    <div className="process-list-container">
-      <div className="process-list-header">
-        <h3 className="process-list-title">
+    <Card className={cn(
+      "bg-card/80 border-border/50 backdrop-blur-sm",
+      "transition-all duration-300",
+      "hover:border-primary/30 hover:glow-sm"
+    )}>
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide">
           Running Processes
-          <span className="process-count">({processCount})</span>
-        </h3>
-      </div>
-      <div className="process-list-table-wrapper">
-        <table className="process-list-table">
-          <thead>
-            <tr>
-              <th className="th-name">Name</th>
-              <th className="th-cpu">CPU%</th>
-              <th className="th-memory">Memory%</th>
-              <th className="th-category">Category</th>
-              <th className="th-pid">PID</th>
-            </tr>
-          </thead>
-          <tbody>
-            {processes?.map((process) => (
-              <ProcessRow
-                key={process.pid}
-                process={process}
-                isSelected={selectedPid === process.pid}
-                onSelect={handleSelect}
-              />
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
+          <span className="text-xs font-normal text-muted-foreground">({processCount})</span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="pt-0">
+        <ScrollArea className="h-[400px] rounded-lg bg-background/50">
+          <Table>
+            <TableHeader className="sticky top-0 z-10 bg-primary/5 backdrop-blur-sm">
+              <TableRow className="hover:bg-transparent border-b border-border">
+                <TableHead className="w-[40%] text-primary text-xs uppercase tracking-wide font-semibold">
+                  Name
+                </TableHead>
+                <TableHead className="w-[12%] text-right text-primary text-xs uppercase tracking-wide font-semibold">
+                  CPU%
+                </TableHead>
+                <TableHead className="w-[12%] text-right text-primary text-xs uppercase tracking-wide font-semibold">
+                  Mem%
+                </TableHead>
+                <TableHead className="w-[20%] text-center text-primary text-xs uppercase tracking-wide font-semibold">
+                  Category
+                </TableHead>
+                <TableHead className="w-[16%] text-right text-primary text-xs uppercase tracking-wide font-semibold">
+                  PID
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {processes?.map((process) => (
+                <ProcessRow
+                  key={process.pid}
+                  process={process}
+                  isSelected={selectedPid === process.pid}
+                  onSelect={handleSelect}
+                />
+              ))}
+            </TableBody>
+          </Table>
+        </ScrollArea>
+      </CardContent>
+    </Card>
   );
 }
 
