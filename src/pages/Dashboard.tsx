@@ -6,10 +6,16 @@ import GpuMeter from '../components/GpuMeter';
 import DiskMeter from '../components/DiskMeter';
 import StealthMode from '../components/StealthMode';
 import ProcessList from '../components/ProcessList';
+import ConflictWarning from '../components/ConflictWarning';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 
-function Dashboard() {
+interface DashboardProps {
+  /** Callback to navigate to another page (used for "View Details" link) */
+  onNavigate?: (page: string) => void;
+}
+
+function Dashboard({ onNavigate }: DashboardProps) {
   const { telemetry, loading, error, lastUpdated, refetch } = useTelemetry(2000);
 
   // Calculate time since last update
@@ -59,6 +65,9 @@ function Dashboard() {
 
   return (
     <div className="page max-w-6xl">
+      {/* Conflict Warning Banner - shows at top when conflicts detected */}
+      <ConflictWarning onViewDetails={onNavigate ? () => onNavigate('settings') : undefined} />
+
       {/* Header */}
       <div className="flex items-baseline justify-between mb-2">
         <h1 className="page-title text-glow-primary">Dashboard</h1>

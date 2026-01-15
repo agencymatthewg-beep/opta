@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useConflicts } from '../hooks/useConflicts';
 
 interface SidebarProps {
   activePage: string;
@@ -38,6 +39,10 @@ const navItems = [
 ];
 
 function Sidebar({ activePage, onNavigate }: SidebarProps) {
+  const { summary } = useConflicts();
+  const hasConflicts = summary && summary.total_count > 0;
+  const highSeverityConflicts = summary && summary.high_count > 0;
+
   return (
     <aside className="w-64 min-w-64 h-screen bg-card border-r border-border flex flex-col">
       {/* Logo */}
@@ -54,7 +59,7 @@ function Sidebar({ activePage, onNavigate }: SidebarProps) {
             key={item.id}
             variant="ghost"
             className={cn(
-              'w-full justify-start gap-3 h-11 px-4 text-muted-foreground font-medium',
+              'w-full justify-start gap-3 h-11 px-4 text-muted-foreground font-medium relative',
               'hover:bg-muted/50 hover:text-foreground',
               activePage === item.id && [
                 'bg-primary/10 text-primary border-l-2 border-primary rounded-l-none',
@@ -70,6 +75,16 @@ function Sidebar({ activePage, onNavigate }: SidebarProps) {
               {item.icon}
             </span>
             <span>{item.label}</span>
+            {/* Conflict indicator on Settings */}
+            {item.id === 'settings' && hasConflicts && (
+              <span
+                className={cn(
+                  'absolute right-3 w-2 h-2 rounded-full',
+                  highSeverityConflicts ? 'bg-danger animate-pulse' : 'bg-warning'
+                )}
+                title={`${summary?.total_count} conflict${summary?.total_count !== 1 ? 's' : ''} detected`}
+              />
+            )}
           </Button>
         ))}
       </nav>

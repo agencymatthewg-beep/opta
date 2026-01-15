@@ -10,13 +10,13 @@ function App() {
   const renderPage = () => {
     switch (activePage) {
       case 'dashboard':
-        return <Dashboard />;
+        return <Dashboard onNavigate={setActivePage} />;
       case 'optimize':
         return <Optimize />;
       case 'settings':
         return <Settings />;
       default:
-        return <Dashboard />;
+        return <Dashboard onNavigate={setActivePage} />;
     }
   };
 
