@@ -1,4 +1,4 @@
-"""MCP server for Opta hardware telemetry."""
+"""MCP server for Opta hardware telemetry and process management."""
 
 import asyncio
 import json
@@ -59,14 +59,24 @@ async def list_tools() -> list[Tool]:
                 "required": [],
             },
         ),
+        Tool(
+            name="get_processes",
+            description="Get list of running processes with CPU/memory usage and categorization (system, user, safe-to-kill)",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+        ),
     ]
 
 
 @server.call_tool()
 async def call_tool(name: str, arguments: dict) -> list[TextContent]:
-    """Handle tool calls for telemetry data."""
-    # Import telemetry module here to avoid circular imports
+    """Handle tool calls for telemetry and process data."""
+    # Import modules here to avoid circular imports
     from opta_mcp import telemetry
+    from opta_mcp import processes
 
     if name == "get_cpu":
         result = telemetry.get_cpu_info()
@@ -78,6 +88,8 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
         result = telemetry.get_gpu_info()
     elif name == "get_system_snapshot":
         result = telemetry.get_system_snapshot()
+    elif name == "get_processes":
+        result = processes.get_process_list()
     else:
         result = {"error": f"Unknown tool: {name}"}
 
