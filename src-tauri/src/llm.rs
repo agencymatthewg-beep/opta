@@ -44,6 +44,30 @@ pub struct ChatResponse {
     pub error: Option<String>,
 }
 
+/// Response from smart chat with routing info.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SmartChatResponse {
+    /// Generated response content (None if error)
+    pub content: Option<String>,
+    /// Which backend generated the response ("local" or "cloud")
+    pub backend: String,
+    /// Model that generated the response
+    pub model: String,
+    /// Whether generation completed successfully
+    pub done: bool,
+    /// Error message if generation failed
+    pub error: Option<String>,
+    /// Token usage (only for cloud responses)
+    pub usage: Option<TokenUsage>,
+}
+
+/// Token usage info for cloud responses.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TokenUsage {
+    pub input_tokens: u32,
+    pub output_tokens: u32,
+}
+
 /// Python script to check Ollama status.
 const LLM_STATUS_SCRIPT: &str = r#"
 import json
@@ -57,6 +81,30 @@ except Exception as e:
     print(json.dumps({
         "running": False,
         "models": [],
+        "error": str(e)
+    }))
+    sys.exit(0)
+"#;
+
+/// Python script template for smart chat with routing.
+/// Uses %MESSAGE%, %PREFER%, and %MODEL% as placeholders.
+const SMART_CHAT_SCRIPT_TEMPLATE: &str = r#"
+import json
+import sys
+
+try:
+    from opta_mcp.router import smart_chat
+    message = %MESSAGE%
+    prefer = "%PREFER%"
+    model = %MODEL%
+    result = smart_chat(message, prefer, model)
+    print(json.dumps(result))
+except Exception as e:
+    print(json.dumps({
+        "content": None,
+        "backend": "local",
+        "model": "unknown",
+        "done": False,
         "error": str(e)
     }))
     sys.exit(0)
@@ -171,6 +219,68 @@ pub async fn llm_chat(
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     let result: ChatResponse = serde_json::from_str(&stdout)
+        .map_err(|e| format!("JSON parse error: {} (raw: {})", e, stdout))?;
+
+    Ok(result)
+}
+
+/// Smart chat with automatic routing between local and cloud backends.
+///
+/// Routes queries to the most appropriate backend based on complexity:
+/// - Simple queries go to local Ollama (free, private)
+/// - Complex queries go to Claude (better reasoning)
+/// - User can override with `prefer` parameter
+///
+/// # Arguments
+///
+/// * `message` - The user's message
+/// * `prefer` - Routing preference: "auto", "local", or "cloud"
+/// * `model` - Optional model override for local backend
+///
+/// # Returns
+///
+/// A `SmartChatResponse` with content, backend used, and model info.
+///
+/// # Errors
+///
+/// Returns an error string if Python execution fails or JSON parsing fails.
+#[command]
+pub async fn smart_chat(
+    message: String,
+    prefer: Option<String>,
+    model: Option<String>,
+) -> Result<SmartChatResponse, String> {
+    let prefer_value = prefer.unwrap_or_else(|| "auto".to_string());
+
+    // Serialize message to JSON for Python
+    let message_json = serde_json::to_string(&message)
+        .map_err(|e| format!("Failed to serialize message: {}", e))?;
+
+    // Handle model as None or the actual value for Python
+    let model_str = match &model {
+        Some(m) => format!("\"{}\"", m),
+        None => "None".to_string(),
+    };
+
+    // Build the script with message, prefer, and model
+    let script = SMART_CHAT_SCRIPT_TEMPLATE
+        .replace("%MESSAGE%", &message_json)
+        .replace("%PREFER%", &prefer_value)
+        .replace("%MODEL%", &model_str);
+
+    let output = Command::new(python_cmd())
+        .arg("-c")
+        .arg(&script)
+        .output()
+        .map_err(|e| format!("Failed to spawn Python: {}", e))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("Python error: {}", stderr));
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let result: SmartChatResponse = serde_json::from_str(&stdout)
         .map_err(|e| format!("JSON parse error: {} (raw: {})", e, stdout))?;
 
     Ok(result)

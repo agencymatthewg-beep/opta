@@ -176,6 +176,78 @@ async def list_tools() -> list[Tool]:
                 "required": [],
             },
         ),
+        Tool(
+            name="claude_status",
+            description="Check if Claude API is configured and available for cloud AI queries",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+        ),
+        Tool(
+            name="claude_chat",
+            description="Send a chat message to Claude API for complex reasoning and optimization advice",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "messages": {
+                        "type": "array",
+                        "description": "Array of message objects with role and content",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "role": {
+                                    "type": "string",
+                                    "enum": ["user", "assistant"],
+                                },
+                                "content": {
+                                    "type": "string",
+                                },
+                            },
+                            "required": ["role", "content"],
+                        },
+                    },
+                    "system_prompt": {
+                        "type": "string",
+                        "description": "Optional system prompt to guide Claude's behavior",
+                    },
+                },
+                "required": ["messages"],
+            },
+        ),
+        Tool(
+            name="smart_chat",
+            description="Smart chat with automatic routing between local Ollama and cloud Claude. Uses query complexity to choose the best backend - free local for simple queries, Claude for complex reasoning.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "message": {
+                        "type": "string",
+                        "description": "User message or question about PC optimization",
+                    },
+                    "prefer": {
+                        "type": "string",
+                        "enum": ["auto", "local", "cloud"],
+                        "description": "Routing preference: auto (default) uses classifier, local forces Ollama, cloud forces Claude",
+                    },
+                    "model": {
+                        "type": "string",
+                        "description": "Model override for local backend (default: llama3:8b)",
+                    },
+                },
+                "required": ["message"],
+            },
+        ),
+        Tool(
+            name="routing_stats",
+            description="Get routing statistics showing how many queries went to each backend (local vs cloud)",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+        ),
     ]
 
 
@@ -225,6 +297,23 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
     elif name == "llm_quick_prompts":
         from opta_mcp.prompts import get_quick_prompts
         result = get_quick_prompts()
+    elif name == "claude_status":
+        from opta_mcp import claude
+        result = claude.check_claude_status()
+    elif name == "claude_chat":
+        from opta_mcp import claude
+        messages = arguments.get("messages", [])
+        system_prompt = arguments.get("system_prompt")
+        result = claude.chat_completion(messages, system_prompt)
+    elif name == "smart_chat":
+        from opta_mcp import router
+        message = arguments.get("message", "")
+        prefer = arguments.get("prefer", "auto")
+        model = arguments.get("model")
+        result = router.smart_chat(message, prefer, model)
+    elif name == "routing_stats":
+        from opta_mcp import router
+        result = router.get_routing_stats()
     else:
         result = {"error": f"Unknown tool: {name}"}
 

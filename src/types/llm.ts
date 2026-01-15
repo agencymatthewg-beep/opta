@@ -40,3 +40,41 @@ export interface ChatResponse {
   /** Error message if generation failed */
   error?: string;
 }
+
+/**
+ * Routing preference for hybrid LLM routing.
+ */
+export type RoutingPreference = "auto" | "local" | "cloud";
+
+/**
+ * Response from smart chat with routing info.
+ */
+export interface SmartChatResponse {
+  /** Generated response content (null if error occurred) */
+  content: string | null;
+  /** Which backend generated the response */
+  backend: "local" | "cloud";
+  /** Model that generated the response */
+  model: string;
+  /** Whether generation completed successfully */
+  done: boolean;
+  /** Error message if generation failed */
+  error?: string;
+  /** Token usage (only for cloud responses) */
+  usage?: {
+    input_tokens: number;
+    output_tokens: number;
+  };
+}
+
+/**
+ * Result returned from sendMessage with backend info.
+ */
+export interface ChatResult {
+  /** The response content */
+  content: string;
+  /** Which backend generated the response */
+  backend: "local" | "cloud";
+  /** Model that generated the response */
+  model: string;
+}

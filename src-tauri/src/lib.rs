@@ -1,3 +1,4 @@
+mod claude;
 mod conflicts;
 mod llm;
 mod processes;
@@ -22,7 +23,10 @@ pub fn run() {
             processes::stealth_mode,
             conflicts::detect_conflicts,
             llm::llm_status,
-            llm::llm_chat
+            llm::llm_chat,
+            llm::smart_chat,
+            claude::claude_status,
+            claude::claude_chat
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
