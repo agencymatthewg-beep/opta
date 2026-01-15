@@ -83,7 +83,7 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 04-01: Competitor tool detection engine
+- [x] 04-01: Competitor tool detection engine
 - [ ] 04-02: Conflict warning UI and recommendations
 
 ### Phase 5: Local LLM Integration
@@ -168,7 +168,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 �
 | 2. Hardware Telemetry | 3/3 | Complete | 2026-01-15 |
 | 3. Process Management | 2/2 | Complete | 2026-01-15 |
 | 3.1 Design System | 3/3 | Complete | 2026-01-15 |
-| 4. Conflict Detection | 0/2 | Not started | - |
+| 4. Conflict Detection | 1/2 | In progress | - |
 | 5. Local LLM Integration | 0/3 | Not started | - |
 | 6. Cloud LLM Integration | 0/3 | Not started | - |
 | 7. Game Detection & Profiles | 0/3 | Not started | - |
