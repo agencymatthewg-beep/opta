@@ -1,4 +1,4 @@
-import './MemoryMeter.css';
+import { cn } from '@/lib/utils';
 
 interface MemoryMeterProps {
   usedGb: number;
@@ -8,34 +8,53 @@ interface MemoryMeterProps {
 
 function MemoryMeter({ usedGb, totalGb, percent }: MemoryMeterProps) {
   // Determine color based on usage level
-  const getColor = (value: number) => {
-    if (value >= 85) return '#ff4444'; // danger red
-    if (value >= 60) return '#ffaa00'; // warning yellow
-    return '#00ff88'; // accent green
+  const getColorClass = (value: number) => {
+    if (value >= 85) return 'text-[hsl(var(--danger))]';
+    if (value >= 60) return 'text-[hsl(var(--warning))]';
+    return 'text-[hsl(var(--success))]';
   };
 
-  const color = getColor(percent);
+  const getBarColor = (value: number) => {
+    if (value >= 85) return 'hsl(var(--danger))';
+    if (value >= 60) return 'hsl(var(--warning))';
+    return 'hsl(var(--success))';
+  };
+
+  const getGlowStyle = (value: number) => {
+    const color = getBarColor(value);
+    return `0 0 10px ${color.replace(')', ' / 0.4)')}`;
+  };
+
+  const colorClass = getColorClass(percent);
+  const barColor = getBarColor(percent);
   const isHighUsage = percent >= 90;
 
   return (
-    <div className="memory-meter">
-      <div className="memory-display">
-        <span className="memory-value" style={{ color }}>{Math.round(percent)}%</span>
-        <span className="memory-label">RAM</span>
+    <div className="flex flex-col gap-3 w-full">
+      <div className="flex items-center justify-between">
+        <div className="flex items-baseline gap-2">
+          <span className={cn("text-2xl font-bold", colorClass)}>
+            {Math.round(percent)}%
+          </span>
+          <span className="text-xs text-muted-foreground font-medium">RAM</span>
+        </div>
       </div>
 
-      <div className={`memory-bar-container ${isHighUsage ? 'pulse' : ''}`}>
+      <div className={cn(
+        "relative h-3 w-full rounded-full bg-muted/30 overflow-hidden",
+        isHighUsage && "animate-pulse"
+      )}>
         <div
-          className="memory-bar-fill"
+          className="absolute inset-y-0 left-0 rounded-full transition-all duration-300"
           style={{
             width: `${percent}%`,
-            background: `linear-gradient(90deg, #00ff88 0%, ${color} 100%)`,
-            boxShadow: `0 0 10px ${color}40`
+            background: `linear-gradient(90deg, hsl(var(--success)) 0%, ${barColor} 100%)`,
+            boxShadow: getGlowStyle(percent)
           }}
         />
       </div>
 
-      <div className="memory-info">
+      <div className="text-xs text-muted-foreground text-center">
         <span>{usedGb.toFixed(1)} / {totalGb.toFixed(1)} GB</span>
       </div>
     </div>

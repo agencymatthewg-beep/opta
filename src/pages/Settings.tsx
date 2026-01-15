@@ -1,66 +1,93 @@
-import './Settings.css';
+import { Card, CardContent } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
 
 function Settings() {
   return (
-    <div className="page settings-page">
-      <h1 className="page-title">Settings</h1>
+    <div className="page max-w-2xl">
+      <h1 className="page-title text-glow-primary">Settings</h1>
 
-      <div className="settings-sections">
-        <section className="settings-section">
-          <h2 className="section-title">AI Configuration</h2>
-          <div className="setting-card">
-            <div className="setting-row">
-              <div className="setting-info">
-                <span className="setting-label">AI Mode</span>
-                <span className="setting-description">Choose between local or cloud AI processing</span>
-              </div>
-              <div className="setting-control">
-                <select className="setting-select" disabled>
+      <div className="flex flex-col gap-8 mt-6">
+        {/* AI Configuration Section */}
+        <section className="space-y-3">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+            AI Configuration
+          </h2>
+          <Card>
+            <CardContent className="p-5">
+              <div className="flex justify-between items-center gap-4">
+                <div className="flex flex-col gap-1">
+                  <span className="text-sm font-medium text-foreground">AI Mode</span>
+                  <span className="text-xs text-muted-foreground">
+                    Choose between local or cloud AI processing
+                  </span>
+                </div>
+                <select
+                  className="px-4 py-2 text-sm bg-secondary text-foreground border border-border rounded-lg cursor-not-allowed opacity-50"
+                  disabled
+                >
                   <option>Local (Llama 3)</option>
                   <option>Cloud (Claude)</option>
                   <option>Hybrid (Auto)</option>
                 </select>
               </div>
-            </div>
-            <p className="coming-soon">AI configuration coming in Phase 5-6...</p>
-          </div>
+              <Separator className="my-4" />
+              <p className="text-xs text-muted-foreground italic">
+                AI configuration coming in Phase 5-6...
+              </p>
+            </CardContent>
+          </Card>
         </section>
 
-        <section className="settings-section">
-          <h2 className="section-title">Appearance</h2>
-          <div className="setting-card">
-            <div className="setting-row">
-              <div className="setting-info">
-                <span className="setting-label">Theme</span>
-                <span className="setting-description">Customize the app appearance</span>
-              </div>
-              <div className="setting-control">
-                <select className="setting-select" disabled>
+        {/* Appearance Section */}
+        <section className="space-y-3">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+            Appearance
+          </h2>
+          <Card>
+            <CardContent className="p-5">
+              <div className="flex justify-between items-center gap-4">
+                <div className="flex flex-col gap-1">
+                  <span className="text-sm font-medium text-foreground">Theme</span>
+                  <span className="text-xs text-muted-foreground">
+                    Customize the app appearance
+                  </span>
+                </div>
+                <select
+                  className="px-4 py-2 text-sm bg-secondary text-foreground border border-border rounded-lg cursor-not-allowed opacity-50"
+                  disabled
+                >
                   <option>Dark (Default)</option>
                   <option>Light</option>
                   <option>System</option>
                 </select>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </section>
 
-        <section className="settings-section">
-          <h2 className="section-title">About</h2>
-          <div className="setting-card about-card">
-            <div className="about-row">
-              <span className="about-label">Version</span>
-              <span className="about-value">0.1.0</span>
-            </div>
-            <div className="about-row">
-              <span className="about-label">Build</span>
-              <span className="about-value">Foundation</span>
-            </div>
-            <div className="about-row">
-              <span className="about-label">Platform</span>
-              <span className="about-value">Tauri v2</span>
-            </div>
-          </div>
+        {/* About Section */}
+        <section className="space-y-3">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+            About
+          </h2>
+          <Card>
+            <CardContent className="p-5 space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Version</span>
+                <span className="text-sm font-medium text-foreground">0.1.0</span>
+              </div>
+              <Separator />
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Build</span>
+                <span className="text-sm font-medium text-foreground">Foundation</span>
+              </div>
+              <Separator />
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Platform</span>
+                <span className="text-sm font-medium text-foreground">Tauri v2</span>
+              </div>
+            </CardContent>
+          </Card>
         </section>
       </div>
     </div>

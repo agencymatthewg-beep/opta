@@ -6,7 +6,8 @@ import GpuMeter from '../components/GpuMeter';
 import DiskMeter from '../components/DiskMeter';
 import StealthMode from '../components/StealthMode';
 import ProcessList from '../components/ProcessList';
-import './Dashboard.css';
+import { Button } from '@/components/ui/button';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 
 function Dashboard() {
   const { telemetry, loading, error, lastUpdated, refetch } = useTelemetry(2000);
@@ -21,14 +22,18 @@ function Dashboard() {
 
   if (loading && !telemetry) {
     return (
-      <div className="page dashboard-page">
-        <h1 className="page-title">Dashboard</h1>
-        <div className="telemetry-grid">
+      <div className="page max-w-6xl">
+        <h1 className="page-title text-glow-primary">Dashboard</h1>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="skeleton-card">
-              <div className="skeleton-header" />
-              <div className="skeleton-content" />
-            </div>
+            <Card key={i} className="overflow-hidden">
+              <CardHeader className="pb-2">
+                <div className="h-5 w-24 rounded animate-shimmer" />
+              </CardHeader>
+              <CardContent>
+                <div className="h-32 rounded animate-shimmer" />
+              </CardContent>
+            </Card>
           ))}
         </div>
       </div>
@@ -37,32 +42,36 @@ function Dashboard() {
 
   if (error) {
     return (
-      <div className="page dashboard-page">
-        <h1 className="page-title">Dashboard</h1>
-        <div className="error-container">
-          <div className="error-icon">!</div>
-          <p className="error-message">{error}</p>
-          <button className="retry-button" onClick={refetch}>
+      <div className="page max-w-6xl">
+        <h1 className="page-title text-glow-primary">Dashboard</h1>
+        <Card className="mt-6 flex flex-col items-center justify-center min-h-[300px] p-12">
+          <div className="w-16 h-16 flex items-center justify-center text-3xl font-bold text-danger bg-danger/10 border-2 border-danger rounded-full mb-6">
+            !
+          </div>
+          <p className="text-muted-foreground text-center mb-6">{error}</p>
+          <Button onClick={refetch} className="glow-sm">
             Retry
-          </button>
-        </div>
+          </Button>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="page dashboard-page">
-      <div className="dashboard-header">
-        <h1 className="page-title">Dashboard</h1>
+    <div className="page max-w-6xl">
+      {/* Header */}
+      <div className="flex items-baseline justify-between mb-2">
+        <h1 className="page-title text-glow-primary">Dashboard</h1>
         {lastUpdated && (
-          <span className="last-updated">
+          <span className="text-xs text-muted-foreground/80">
             Last updated: {getTimeSinceUpdate()}
           </span>
         )}
       </div>
 
-      <div className="telemetry-grid">
-        <TelemetryCard title="CPU" icon="🖥️">
+      {/* Telemetry Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 mb-6">
+        <TelemetryCard title="CPU" icon="cpu">
           {telemetry && (
             <CpuMeter
               percent={telemetry.cpu.percent ?? 0}
@@ -72,7 +81,7 @@ function Dashboard() {
           )}
         </TelemetryCard>
 
-        <TelemetryCard title="Memory" icon="🧠">
+        <TelemetryCard title="Memory" icon="memory">
           {telemetry && (
             <MemoryMeter
               usedGb={telemetry.memory.used_gb ?? 0}
@@ -82,7 +91,7 @@ function Dashboard() {
           )}
         </TelemetryCard>
 
-        <TelemetryCard title="GPU" icon="🎮">
+        <TelemetryCard title="GPU" icon="gpu">
           {telemetry && (
             <GpuMeter
               available={telemetry.gpu.available}
@@ -93,7 +102,7 @@ function Dashboard() {
           )}
         </TelemetryCard>
 
-        <TelemetryCard title="Disk" icon="💾">
+        <TelemetryCard title="Disk" icon="disk">
           {telemetry && (
             <DiskMeter
               usedGb={telemetry.disk.used_gb ?? 0}
@@ -105,39 +114,44 @@ function Dashboard() {
       </div>
 
       {/* Stealth Mode Section */}
-      <div className="stealth-section">
+      <div className="mb-6">
         <StealthMode />
       </div>
 
       {/* Process List Section */}
-      <div className="process-section">
+      <div className="mb-6">
         <ProcessList />
       </div>
 
-      <div className="card-grid">
-        <div className="card">
-          <div className="card-header">
-            <span className="card-icon">📈</span>
-            <h2 className="card-title">Optimization Score</h2>
-          </div>
-          <div className="card-content">
-            <div className="score-display">
-              <span className="score-value">--</span>
-              <span className="score-label">/ 100</span>
+      {/* Additional Cards Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="transition-all hover:border-primary/30 hover:glow-sm">
+          <CardHeader className="flex flex-row items-center gap-3 pb-2">
+            <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+            </svg>
+            <CardTitle className="text-base">Optimization Score</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-baseline gap-1 mb-3">
+              <span className="text-5xl font-bold text-primary text-glow-primary">--</span>
+              <span className="text-lg text-muted-foreground">/ 100</span>
             </div>
-            <p className="placeholder-text">Score calculation coming soon...</p>
-          </div>
-        </div>
+            <p className="text-sm text-muted-foreground">Score calculation coming soon...</p>
+          </CardContent>
+        </Card>
 
-        <div className="card">
-          <div className="card-header">
-            <span className="card-icon">✨</span>
-            <h2 className="card-title">Active Optimizations</h2>
-          </div>
-          <div className="card-content">
-            <p className="placeholder-text">No optimizations applied yet.</p>
-          </div>
-        </div>
+        <Card className="transition-all hover:border-primary/30 hover:glow-sm">
+          <CardHeader className="flex flex-row items-center gap-3 pb-2">
+            <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+            </svg>
+            <CardTitle className="text-base">Active Optimizations</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">No optimizations applied yet.</p>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
