@@ -18,7 +18,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation** - Tauri app scaffold, project structure, basic UI shell
 - [x] **Phase 2: Hardware Telemetry** - CPU/GPU/RAM monitoring via Python MCP server
-- [ ] **Phase 3: Process Management** (1/2) - Process listing, "Stealth Mode" background process killer
+- [x] **Phase 3: Process Management** - Process listing, "Stealth Mode" background process killer
 - [ ] **Phase 4: Conflict Detection** - Detect competing optimization tools, warn users
 - [ ] **Phase 5: Local LLM Integration** - Llama 3 8B setup for routine queries
 - [ ] **Phase 6: Cloud LLM Integration** - Claude API for complex reasoning, hybrid routing
@@ -61,7 +61,7 @@ Plans:
 
 Plans:
 - [x] 03-01: Process listing and categorization
-- [ ] 03-02: Stealth Mode implementation with safe process termination
+- [x] 03-02: Stealth Mode implementation with safe process termination
 
 ### Phase 4: Conflict Detection
 **Goal**: Detect competing optimization tools and warn users about conflicts
@@ -154,7 +154,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 |-------|----------------|--------|-----------|
 | 1. Foundation | 3/3 | Complete | 2026-01-15 |
 | 2. Hardware Telemetry | 3/3 | Complete | 2026-01-15 |
-| 3. Process Management | 1/2 | In progress | - |
+| 3. Process Management | 2/2 | Complete | 2026-01-15 |
 | 4. Conflict Detection | 0/2 | Not started | - |
 | 5. Local LLM Integration | 0/3 | Not started | - |
 | 6. Cloud LLM Integration | 0/3 | Not started | - |
