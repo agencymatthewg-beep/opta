@@ -26,6 +26,33 @@ pub struct ProcessInfo {
     pub username: Option<String>,
 }
 
+/// Result of terminating a single process.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TerminateResult {
+    /// Whether termination was successful
+    pub success: bool,
+    /// Process ID
+    pub pid: u32,
+    /// Process name (if available)
+    pub name: Option<String>,
+    /// Error message (if failed)
+    pub error: Option<String>,
+    /// Memory freed in MB (estimated)
+    #[serde(default)]
+    pub memory_mb: Option<f32>,
+}
+
+/// Result of Stealth Mode execution.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StealthModeResult {
+    /// Successfully terminated processes
+    pub terminated: Vec<TerminateResult>,
+    /// Failed termination attempts
+    pub failed: Vec<TerminateResult>,
+    /// Estimated memory freed in MB
+    pub freed_memory_mb: f32,
+}
+
 /// Python script to get process list.
 ///
 /// This inline script invokes the processes module from the installed
@@ -91,6 +118,110 @@ pub async fn get_processes() -> Result<Vec<ProcessInfo>, String> {
         .map_err(|e| format!("JSON parse error: {} (raw: {})", e, stdout))?;
 
     Ok(processes)
+}
+
+/// Python script to terminate a process by PID.
+const TERMINATE_PYTHON_SCRIPT: &str = r#"
+import json
+import sys
+
+try:
+    from opta_mcp.processes import terminate_process
+    pid = int(sys.argv[1])
+    result = terminate_process(pid)
+    print(json.dumps(result))
+except Exception as e:
+    print(json.dumps({"success": False, "pid": 0, "error": str(e)}))
+    sys.exit(0)
+"#;
+
+/// Terminate a process by PID.
+///
+/// Invokes Python terminate_process function which uses graceful
+/// termination first, then force kill if needed.
+///
+/// # Arguments
+///
+/// * `pid` - Process ID to terminate
+///
+/// # Returns
+///
+/// A `TerminateResult` indicating success or failure.
+#[command]
+pub async fn terminate_process(pid: u32) -> Result<TerminateResult, String> {
+    let python_cmd = if cfg!(target_os = "windows") {
+        "python"
+    } else {
+        "python3"
+    };
+
+    let output = Command::new(python_cmd)
+        .arg("-c")
+        .arg(TERMINATE_PYTHON_SCRIPT)
+        .arg(pid.to_string())
+        .output()
+        .map_err(|e| format!("Failed to spawn Python: {}", e))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("Python error: {}", stderr));
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+
+    let result: TerminateResult = serde_json::from_str(&stdout)
+        .map_err(|e| format!("JSON parse error: {} (raw: {})", e, stdout))?;
+
+    Ok(result)
+}
+
+/// Python script to execute Stealth Mode.
+const STEALTH_MODE_PYTHON_SCRIPT: &str = r#"
+import json
+import sys
+
+try:
+    from opta_mcp.processes import stealth_mode
+    result = stealth_mode()
+    print(json.dumps(result))
+except Exception as e:
+    print(json.dumps({"terminated": [], "failed": [], "freed_memory_mb": 0, "error": str(e)}))
+    sys.exit(0)
+"#;
+
+/// Execute Stealth Mode - terminate all safe-to-kill processes.
+///
+/// Invokes Python stealth_mode function which only terminates
+/// processes categorized as "safe-to-kill", never system or user processes.
+///
+/// # Returns
+///
+/// A `StealthModeResult` with terminated/failed lists and freed memory.
+#[command]
+pub async fn stealth_mode() -> Result<StealthModeResult, String> {
+    let python_cmd = if cfg!(target_os = "windows") {
+        "python"
+    } else {
+        "python3"
+    };
+
+    let output = Command::new(python_cmd)
+        .arg("-c")
+        .arg(STEALTH_MODE_PYTHON_SCRIPT)
+        .output()
+        .map_err(|e| format!("Failed to spawn Python: {}", e))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("Python error: {}", stderr));
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+
+    let result: StealthModeResult = serde_json::from_str(&stdout)
+        .map_err(|e| format!("JSON parse error: {} (raw: {})", e, stdout))?;
+
+    Ok(result)
 }
 
 #[cfg(test)]

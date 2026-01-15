@@ -15,7 +15,9 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             greet,
             telemetry::get_system_telemetry,
-            processes::get_processes
+            processes::get_processes,
+            processes::terminate_process,
+            processes::stealth_mode
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
