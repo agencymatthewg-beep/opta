@@ -94,7 +94,7 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 05-01: Local LLM runtime setup (llama.cpp/ollama)
+- [x] 05-01: Local LLM runtime setup (llama.cpp/ollama)
 - [ ] 05-02: Chat interface with streaming responses
 - [ ] 05-03: Optimization-focused prompt templates
 
@@ -169,7 +169,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 �
 | 3. Process Management | 2/2 | Complete | 2026-01-15 |
 | 3.1 Design System | 3/3 | Complete | 2026-01-15 |
 | 4. Conflict Detection | 2/2 | Complete | 2026-01-15 |
-| 5. Local LLM Integration | 0/3 | Not started | - |
+| 5. Local LLM Integration | 1/3 | In progress | - |
 | 6. Cloud LLM Integration | 0/3 | Not started | - |
 | 7. Game Detection & Profiles | 0/3 | Not started | - |
 | 8. Optimization Engine | 0/4 | Not started | - |

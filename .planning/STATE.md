@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-15)
 
 **Core value:** One tool to replace them all — eliminates chaos of multiple conflicting optimizers, detects conflicts, explains optimizations, delivers measurable gains.
-**Current focus:** Phase 4 — Conflict Detection (Complete)
+**Current focus:** Phase 5 — Local LLM Integration (In Progress)
 
 ## Current Position
 
-Phase: 4 of 10 (Conflict Detection)
-Plan: 2 of 2 in current phase
-Status: Phase complete
-Last activity: 2026-01-15 — Completed 04-02-PLAN.md
+Phase: 5 of 10 (Local LLM Integration)
+Plan: 1 of 3 in current phase
+Status: In progress
+Last activity: 2026-01-15 — Completed 05-01-PLAN.md
 
-Progress: ████████░░ 45% (13/29 plans)
+Progress: ████████░░ 48% (14/29 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 12
-- Average duration: 15 min
-- Total execution time: 3.1 hours
+- Total plans completed: 14
+- Average duration: 14 min
+- Total execution time: 3.2 hours
 
 **By Phase:**
 
@@ -32,10 +32,11 @@ Progress: ████████░░ 45% (13/29 plans)
 | 3. Process Management | 2/2 | 11 min | 5.5 min |
 | 3.1 Design System | 3/3 | 55 min | 18 min |
 | 4. Conflict Detection | 2/2 | 17 min | 8.5 min |
+| 5. Local LLM Integration | 1/3 | 3 min | 3 min |
 
 **Recent Trend:**
-- Last 5 plans: 18, 6, 14, 3 min
-- Trend: Consistent execution pace
+- Last 5 plans: 6, 14, 3, 3 min
+- Trend: Fast execution with established patterns
 
 ## Accumulated Context
 
@@ -84,6 +85,10 @@ Progress: ████████░░ 45% (13/29 plans)
 | 04-02 | Per-session dismissible banner | Non-intrusive but doesn't hide permanently |
 | 04-02 | Acknowledged state for ConflictCards | Users can mark as "seen" without hiding |
 | 04-02 | Small dot indicator on Settings nav | Subtle attention without being aggressive |
+| 05-01 | Ollama over llama.cpp | Simpler setup, built-in model management, good Python SDK |
+| 05-01 | Non-streaming first | Keep 05-01 focused, add streaming in 05-02 |
+| 05-01 | Status check on mount only | LLM service checks are expensive, no continuous polling |
+| 05-01 | Default model llama3:8b | Good balance of quality and speed for 8GB+ RAM systems |
 
 ### Deferred Issues
 
@@ -100,5 +105,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-15
-Stopped at: Completed 04-02-PLAN.md (Phase 4 complete)
+Stopped at: Completed 05-01-PLAN.md
 Resume file: None
