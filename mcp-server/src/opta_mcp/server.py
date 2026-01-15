@@ -100,6 +100,55 @@ async def list_tools() -> list[Tool]:
                 "required": [],
             },
         ),
+        Tool(
+            name="llm_status",
+            description="Check if Ollama LLM service is running and list available models",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+        ),
+        Tool(
+            name="llm_chat",
+            description="Send a chat message to local LLM (Ollama) for optimization advice",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "messages": {
+                        "type": "array",
+                        "description": "Array of message objects with role and content",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "role": {
+                                    "type": "string",
+                                    "enum": ["system", "user", "assistant"],
+                                },
+                                "content": {
+                                    "type": "string",
+                                },
+                            },
+                            "required": ["role", "content"],
+                        },
+                    },
+                    "model": {
+                        "type": "string",
+                        "description": "Model to use (default: llama3:8b)",
+                    },
+                },
+                "required": ["messages"],
+            },
+        ),
+        Tool(
+            name="llm_models",
+            description="List available LLM models installed in Ollama",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+        ),
     ]
 
 
@@ -110,6 +159,7 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
     from opta_mcp import telemetry
     from opta_mcp import processes
     from opta_mcp import conflicts
+    from opta_mcp import llm
 
     if name == "get_cpu":
         result = telemetry.get_cpu_info()
@@ -133,6 +183,14 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
         result = processes.stealth_mode()
     elif name == "detect_conflicts":
         result = conflicts.get_conflict_summary()
+    elif name == "llm_status":
+        result = llm.check_ollama_status()
+    elif name == "llm_chat":
+        messages = arguments.get("messages", [])
+        model = arguments.get("model", "llama3:8b")
+        result = llm.chat_completion(messages, model)
+    elif name == "llm_models":
+        result = llm.get_available_models()
     else:
         result = {"error": f"Unknown tool: {name}"}
 
