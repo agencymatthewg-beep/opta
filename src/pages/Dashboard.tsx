@@ -63,9 +63,9 @@ function Dashboard() {
         <TelemetryCard title="CPU" icon="🖥️">
           {telemetry && (
             <CpuMeter
-              percent={telemetry.cpu.percent}
-              cores={telemetry.cpu.cores}
-              threads={telemetry.cpu.threads}
+              percent={telemetry.cpu.percent ?? 0}
+              cores={telemetry.cpu.cores ?? 0}
+              threads={telemetry.cpu.threads ?? 0}
             />
           )}
         </TelemetryCard>
@@ -73,9 +73,9 @@ function Dashboard() {
         <TelemetryCard title="Memory" icon="🧠">
           {telemetry && (
             <MemoryMeter
-              usedGb={telemetry.memory.used_gb}
-              totalGb={telemetry.memory.total_gb}
-              percent={telemetry.memory.percent}
+              usedGb={telemetry.memory.used_gb ?? 0}
+              totalGb={telemetry.memory.total_gb ?? 0}
+              percent={telemetry.memory.percent ?? 0}
             />
           )}
         </TelemetryCard>
@@ -84,9 +84,9 @@ function Dashboard() {
           {telemetry && (
             <GpuMeter
               available={telemetry.gpu.available}
-              name={telemetry.gpu.name}
-              percent={telemetry.gpu.load_percent}
-              temperature={telemetry.gpu.temperature_c}
+              name={telemetry.gpu.name ?? undefined}
+              percent={telemetry.gpu.utilization_percent ?? undefined}
+              temperature={telemetry.gpu.temperature_c ?? undefined}
             />
           )}
         </TelemetryCard>
@@ -94,9 +94,9 @@ function Dashboard() {
         <TelemetryCard title="Disk" icon="💾">
           {telemetry && (
             <DiskMeter
-              usedGb={telemetry.disk.used_gb}
-              totalGb={telemetry.disk.total_gb}
-              percent={telemetry.disk.percent}
+              usedGb={telemetry.disk.used_gb ?? 0}
+              totalGb={telemetry.disk.total_gb ?? 0}
+              percent={telemetry.disk.percent ?? 0}
             />
           )}
         </TelemetryCard>

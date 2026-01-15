@@ -1,143 +1,116 @@
-import { useState, useEffect, useCallback } from 'react';
+/**
+ * React hook for hardware telemetry.
+ *
+ * Provides polling-based access to system telemetry data via Tauri commands.
+ * Handles loading states, errors, and automatic refresh.
+ */
 
-// Type definitions matching the MCP server types from Plan 02-01
-export interface CpuInfo {
-  percent: number;
-  cores: number;
-  threads: number;
-  frequency_mhz?: number;
-  per_core?: number[];
-}
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { invoke } from '@tauri-apps/api/core';
+import type { SystemSnapshot } from '../types/telemetry';
 
-export interface MemoryInfo {
-  total_gb: number;
-  used_gb: number;
-  available_gb: number;
-  percent: number;
-}
-
-export interface DiskInfo {
-  total_gb: number;
-  used_gb: number;
-  free_gb: number;
-  percent: number;
-}
-
-export interface GpuInfo {
-  available: boolean;
-  name?: string;
-  load_percent?: number;
-  memory_used_mb?: number;
-  memory_total_mb?: number;
-  temperature_c?: number;
-}
-
-export interface SystemSnapshot {
-  cpu: CpuInfo;
-  memory: MemoryInfo;
-  disk: DiskInfo;
-  gpu: GpuInfo;
-  timestamp: string;
-}
-
-interface TelemetryState {
+/**
+ * Return type for useTelemetry hook.
+ */
+export interface UseTelemetryResult {
+  /** Current telemetry data, null if not yet loaded */
   telemetry: SystemSnapshot | null;
-  loading: boolean;
+  /** Error message if telemetry fetch failed */
   error: string | null;
+  /** Whether initial load is in progress */
+  loading: boolean;
+  /** Last successful update timestamp */
   lastUpdated: Date | null;
+  /** Manually refresh telemetry data */
+  refetch: () => Promise<void>;
+  /** Whether a refresh is currently in progress */
+  refreshing: boolean;
 }
 
-// Mock data generator - simulates realistic system telemetry
-// TODO: Replace with real MCP server calls when Plan 02-02 is complete
-function generateMockTelemetry(): SystemSnapshot {
-  // Add some realistic variance to simulate changing values
-  const baseLoad = 30 + Math.random() * 40; // 30-70% base load
-  const cpuJitter = (Math.random() - 0.5) * 10;
-  const memJitter = (Math.random() - 0.5) * 5;
+/**
+ * Hook to fetch and poll hardware telemetry data.
+ *
+ * @param pollingIntervalMs - Polling interval in milliseconds (default: 2000ms)
+ * @returns Telemetry data, loading state, error, and refresh function
+ *
+ * @example
+ * ```tsx
+ * const { telemetry, loading, error } = useTelemetry();
+ *
+ * if (loading) return <Spinner />;
+ * if (error) return <Error message={error} />;
+ *
+ * return (
+ *   <div>
+ *     <span>CPU: {telemetry.cpu.percent}%</span>
+ *     <span>RAM: {telemetry.memory.percent}%</span>
+ *   </div>
+ * );
+ * ```
+ */
+export function useTelemetry(pollingIntervalMs: number = 2000): UseTelemetryResult {
+  const [telemetry, setTelemetry] = useState<SystemSnapshot | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
-  return {
-    cpu: {
-      percent: Math.min(100, Math.max(0, baseLoad + cpuJitter)),
-      cores: 8,
-      threads: 16,
-      frequency_mhz: 3200,
-      per_core: Array.from({ length: 8 }, () =>
-        Math.min(100, Math.max(0, baseLoad + (Math.random() - 0.5) * 20))
-      ),
-    },
-    memory: {
-      total_gb: 32,
-      used_gb: 18.5 + memJitter,
-      available_gb: 13.5 - memJitter,
-      percent: Math.min(100, Math.max(0, 58 + memJitter * 2)),
-    },
-    disk: {
-      total_gb: 500,
-      used_gb: 287,
-      free_gb: 213,
-      percent: 57.4,
-    },
-    gpu: {
-      available: true,
-      name: 'NVIDIA GeForce RTX 3080',
-      load_percent: Math.min(100, Math.max(0, baseLoad * 0.8 + (Math.random() - 0.5) * 15)),
-      memory_used_mb: 4200,
-      memory_total_mb: 10240,
-      temperature_c: 55 + Math.floor(Math.random() * 15),
-    },
-    timestamp: new Date().toISOString(),
-  };
-}
-
-export function useTelemetry(pollingIntervalMs: number = 2000): TelemetryState & {
-  refetch: () => void;
-} {
-  const [state, setState] = useState<TelemetryState>({
-    telemetry: null,
-    loading: true,
-    error: null,
-    lastUpdated: null,
-  });
+  // Track if component is mounted to avoid state updates after unmount
+  const mountedRef = useRef(true);
 
   const fetchTelemetry = useCallback(async () => {
     try {
-      // TODO: Replace with actual MCP server call when Plan 02-02 is complete
-      // const response = await invoke('get_system_snapshot');
+      setRefreshing(true);
+      const data = await invoke<SystemSnapshot>('get_system_telemetry');
 
-      // For now, use mock data with a small artificial delay
-      await new Promise(resolve => setTimeout(resolve, 100));
-      const data = generateMockTelemetry();
-
-      setState({
-        telemetry: data,
-        loading: false,
-        error: null,
-        lastUpdated: new Date(),
-      });
-    } catch (err) {
-      setState(prev => ({
-        ...prev,
-        loading: false,
-        error: err instanceof Error ? err.message : 'Failed to fetch telemetry',
-      }));
+      if (mountedRef.current) {
+        setTelemetry(data);
+        setError(null);
+        setLastUpdated(new Date());
+      }
+    } catch (e) {
+      if (mountedRef.current) {
+        const errorMessage = e instanceof Error ? e.message : String(e);
+        setError(errorMessage);
+        console.error('Telemetry fetch error:', errorMessage);
+      }
+    } finally {
+      if (mountedRef.current) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
   }, []);
 
-  // Initial fetch
+  // Initial fetch and polling
   useEffect(() => {
+    mountedRef.current = true;
+
+    // Initial fetch
     fetchTelemetry();
-  }, [fetchTelemetry]);
 
-  // Set up polling
-  useEffect(() => {
-    if (pollingIntervalMs <= 0) return;
+    // Set up polling interval if positive
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+    if (pollingIntervalMs > 0) {
+      intervalId = setInterval(fetchTelemetry, pollingIntervalMs);
+    }
 
-    const intervalId = setInterval(fetchTelemetry, pollingIntervalMs);
-    return () => clearInterval(intervalId);
-  }, [pollingIntervalMs, fetchTelemetry]);
+    return () => {
+      mountedRef.current = false;
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [fetchTelemetry, pollingIntervalMs]);
 
   return {
-    ...state,
+    telemetry,
+    error,
+    loading,
+    lastUpdated,
     refetch: fetchTelemetry,
+    refreshing,
   };
 }
+
+export default useTelemetry;
