@@ -36,7 +36,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: TBD
 
 Plans:
-- [ ] 01-01: Tauri project initialization and toolchain setup
+- [x] 01-01: Tauri project initialization and toolchain setup
 - [ ] 01-02: Basic UI shell with navigation structure
 - [ ] 01-03: Cross-platform build configuration
 
@@ -152,7 +152,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/3 | Not started | - |
+| 1. Foundation | 1/3 | In progress | - |
 | 2. Hardware Telemetry | 0/3 | Not started | - |
 | 3. Process Management | 0/2 | Not started | - |
 | 4. Conflict Detection | 0/2 | Not started | - |
