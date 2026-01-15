@@ -7,7 +7,7 @@ Functions handle Ollama not running gracefully - returning clear errors
 without crashing.
 """
 
-from typing import Any
+from typing import Any, Optional
 
 try:
     import ollama
@@ -159,3 +159,69 @@ def chat_completion(
             "done": False,
             "error": error_msg
         }
+
+
+def chat_with_context(
+    user_message: str,
+    include_system_info: bool = True,
+    model: str = "llama3:8b"
+) -> dict[str, Any]:
+    """Send a chat message with automatic system prompt and telemetry context.
+
+    This is a higher-level API that automatically includes the optimization
+    system prompt and optionally the user's current system state.
+
+    Args:
+        user_message: The user's question or message.
+        include_system_info: Whether to include current telemetry data (default: True).
+        model: Model to use (default: llama3:8b).
+
+    Returns:
+        dict with same keys as chat_completion:
+            - content (str | None): Response content if successful
+            - model (str): Model used
+            - done (bool): Whether generation completed
+            - error (str | None): Error message if failed
+    """
+    from opta_mcp.prompts import SYSTEM_PROMPT, get_system_context
+    from opta_mcp.telemetry import get_system_snapshot
+
+    messages: list[dict[str, str]] = [
+        {"role": "system", "content": SYSTEM_PROMPT}
+    ]
+
+    if include_system_info:
+        snapshot = get_system_snapshot()
+        context = get_system_context(snapshot)
+        if context:
+            messages.append({
+                "role": "system",
+                "content": f"Current system state:\n{context}"
+            })
+
+    messages.append({"role": "user", "content": user_message})
+
+    return chat_completion(messages, model)
+
+
+def chat_optimized(
+    user_message: str,
+    model: str = "llama3:8b"
+) -> dict[str, Any]:
+    """Simplified chat interface for MCP tool.
+
+    Wraps chat_with_context for use as an MCP tool. Always includes
+    system prompt and telemetry context.
+
+    Args:
+        user_message: The user's question or message.
+        model: Model to use (default: llama3:8b).
+
+    Returns:
+        dict with chat response and quick prompts metadata:
+            - content (str | None): Response content if successful
+            - model (str): Model used
+            - done (bool): Whether generation completed
+            - error (str | None): Error message if failed
+    """
+    return chat_with_context(user_message, include_system_info=True, model=model)

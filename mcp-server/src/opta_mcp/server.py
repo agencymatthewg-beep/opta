@@ -149,6 +149,33 @@ async def list_tools() -> list[Tool]:
                 "required": [],
             },
         ),
+        Tool(
+            name="llm_chat_optimized",
+            description="Send a chat message to local LLM with automatic system prompt and telemetry context. Simpler API - just send your message.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "message": {
+                        "type": "string",
+                        "description": "User message or question about PC optimization",
+                    },
+                    "model": {
+                        "type": "string",
+                        "description": "Model to use (default: llama3:8b)",
+                    },
+                },
+                "required": ["message"],
+            },
+        ),
+        Tool(
+            name="llm_quick_prompts",
+            description="Get available quick prompt templates for common optimization questions",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+        ),
     ]
 
 
@@ -191,6 +218,13 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
         result = llm.chat_completion(messages, model)
     elif name == "llm_models":
         result = llm.get_available_models()
+    elif name == "llm_chat_optimized":
+        message = arguments.get("message", "")
+        model = arguments.get("model", "llama3:8b")
+        result = llm.chat_optimized(message, model)
+    elif name == "llm_quick_prompts":
+        from opta_mcp.prompts import get_quick_prompts
+        result = get_quick_prompts()
     else:
         result = {"error": f"Unknown tool: {name}"}
 
