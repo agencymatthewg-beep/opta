@@ -11,28 +11,28 @@ See: .planning/PROJECT.md (updated 2026-01-15)
 
 Phase: 2 of 10 (Hardware Telemetry)
 Plan: 3 of 3 in current phase
-Status: In progress (awaiting Plan 02-02)
-Last activity: 2026-01-15 — Completed 02-03-PLAN.md
+Status: Phase complete
+Last activity: 2026-01-15 — Completed 02-02-PLAN.md
 
-Progress: █████░░░░░ 17% (5/29 plans)
+Progress: ██████░░░░ 21% (6/29 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 5
-- Average duration: 13 min
-- Total execution time: 1.12 hours
+- Total plans completed: 6
+- Average duration: 18 min
+- Total execution time: 1.85 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1. Foundation | 3/3 | 51 min | 17 min |
-| 2. Hardware Telemetry | 2/3 | 16 min | 8 min |
+| 2. Hardware Telemetry | 3/3 | 60 min | 20 min |
 
 **Recent Trend:**
-- Last 5 plans: 18, 21, 13, 3 min
-- Trend: accelerating
+- Last 5 plans: 21, 13, 3, 44 min
+- Trend: variable (02-02 had longer build time)
 
 ## Accumulated Context
 
@@ -53,6 +53,8 @@ Progress: █████░░░░░ 17% (5/29 plans)
 | 02-03 | Mock data until 02-02 completes | Allows UI development to proceed independently |
 | 02-03 | SVG rings for CPU/GPU meters | Better animation control than CSS-only |
 | 02-03 | Color thresholds 60/85% | Standard warning/danger thresholds |
+| 02-02 | Subprocess per-request for Python | Simpler than persistent MCP for MVP, can optimize in Phase 10 |
+| 02-02 | Nullable telemetry fields | Graceful handling when hardware detection fails |
 
 ### Deferred Issues
 
@@ -69,5 +71,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-15
-Stopped at: Completed 02-03-PLAN.md
+Stopped at: Completed 02-02-PLAN.md (Phase 2 complete)
 Resume file: None
