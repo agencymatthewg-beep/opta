@@ -9,6 +9,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useLlm } from '../hooks/useLlm';
 import ChatMessage from './ChatMessage';
 import ChatInput from './ChatInput';
+import QuickActions from './QuickActions';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -91,16 +92,23 @@ function NotConnectedState({ onRetry }: { onRetry: () => void }) {
 /**
  * Welcome message component shown when chat is empty.
  */
-function WelcomeMessage() {
+function WelcomeMessage({
+  onQuickAction,
+  disabled,
+}: {
+  onQuickAction: (prompt: string, label: string) => void;
+  disabled: boolean;
+}) {
   return (
     <div className="flex flex-col items-center justify-center h-full p-6 text-center">
       <div className="w-16 h-16 flex items-center justify-center text-primary bg-primary/10 border-2 border-primary/30 rounded-full mb-4">
         <AssistantIcon />
       </div>
       <h3 className="text-lg font-semibold text-foreground mb-2">AI Assistant</h3>
-      <p className="text-sm text-muted-foreground max-w-[280px]">
+      <p className="text-sm text-muted-foreground max-w-[280px] mb-6">
         Ask me about improving your PC's performance, managing resources, or optimizing settings.
       </p>
+      <QuickActions onAction={onQuickAction} disabled={disabled} className="max-w-xl" />
     </div>
   );
 }
@@ -186,6 +194,13 @@ function ChatInterface({ className }: ChatInterfaceProps) {
     }
   }, [generateId, sendMessage]);
 
+  /**
+   * Handle quick action button click - sends the preset prompt.
+   */
+  const handleQuickAction = useCallback((prompt: string, _label: string) => {
+    handleSend(prompt);
+  }, [handleSend]);
+
   // Show loading state while checking initial status
   if (loading) {
     return (
@@ -233,7 +248,10 @@ function ChatInterface({ className }: ChatInterfaceProps) {
           <ScrollArea className="flex-1">
             <div ref={scrollRef} className="p-4 min-h-full">
               {messages.length === 0 ? (
-                <WelcomeMessage />
+                <WelcomeMessage
+                  onQuickAction={handleQuickAction}
+                  disabled={chatLoading || isTyping}
+                />
               ) : (
                 <>
                   {messages.map((msg) => (
