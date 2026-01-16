@@ -7,6 +7,7 @@ import { useClaude } from '../hooks/useClaude';
 import { useUserProfile } from '../hooks/useUserProfile';
 import { useInvestigationMode } from '../components/InvestigationMode';
 import { useExpertise } from '../components/ExpertiseContext';
+import { useCommunicationStyle } from '../components/CommunicationStyleContext';
 import ConflictCard from '../components/ConflictCard';
 import PlatformIndicator from '../components/PlatformIndicator';
 import { ProfileViewer } from '../components/ProfileViewer';
@@ -28,6 +29,9 @@ import {
   Eye,
   Brain,
   RotateCcw,
+  BookOpen,
+  Zap,
+  MessageSquare,
 } from 'lucide-react';
 import type { ExpertiseLevel } from '@/types/expertise';
 
@@ -37,6 +41,7 @@ function Settings() {
   const { profile, loading: profileLoading, updateProfile, deleteProfile } = useUserProfile();
   const { isInvestigationMode, setInvestigationMode } = useInvestigationMode();
   const { level: expertiseLevel, confidence: expertiseConfidence, isManualOverride, setManualLevel, recordSignal } = useExpertise();
+  const { style: communicationStyle, setStyle: setCommunicationStyle } = useCommunicationStyle();
   const [acknowledgedIds, setAcknowledgedIds] = useState<Set<string>>(new Set());
   const [showPrivacyIndicators, setShowPrivacyIndicators] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -360,6 +365,60 @@ function Settings() {
               Reset to auto-detect
             </Button>
           )}
+        </motion.section>
+
+        {/* Communication Style Section */}
+        <motion.section
+          className="space-y-4"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.27 }}
+        >
+          <div className="flex items-center gap-2">
+            <MessageSquare className="w-5 h-5 text-primary" strokeWidth={1.75} />
+            <h2 className="text-lg font-semibold">Communication Style</h2>
+          </div>
+          <p className="text-sm text-muted-foreground/70">
+            Choose how much detail Opta includes in explanations.
+          </p>
+
+          <div className="grid grid-cols-2 gap-4">
+            <motion.button
+              onClick={() => setCommunicationStyle('informative')}
+              className={cn(
+                'glass-subtle rounded-xl p-4 text-left border transition-all',
+                communicationStyle === 'informative'
+                  ? 'ring-2 ring-primary border-primary/30'
+                  : 'border-border/30 hover:border-border/50'
+              )}
+              whileHover={{ y: -2 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <BookOpen className="w-5 h-5 mb-2 text-primary" strokeWidth={1.75} />
+              <p className="font-medium text-sm">Informative & Educational</p>
+              <p className="text-xs text-muted-foreground/70 mt-1">
+                Explains the "why" behind optimizations
+              </p>
+            </motion.button>
+
+            <motion.button
+              onClick={() => setCommunicationStyle('concise')}
+              className={cn(
+                'glass-subtle rounded-xl p-4 text-left border transition-all',
+                communicationStyle === 'concise'
+                  ? 'ring-2 ring-primary border-primary/30'
+                  : 'border-border/30 hover:border-border/50'
+              )}
+              whileHover={{ y: -2 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <Zap className="w-5 h-5 mb-2 text-primary" strokeWidth={1.75} />
+              <p className="font-medium text-sm">Concise & Efficient</p>
+              <p className="text-xs text-muted-foreground/70 mt-1">
+                Just the facts, minimal explanation
+              </p>
+            </motion.button>
+          </div>
         </motion.section>
 
         {/* Privacy Section */}
