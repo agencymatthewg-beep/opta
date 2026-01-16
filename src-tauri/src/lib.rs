@@ -56,6 +56,10 @@ pub fn run() {
             scoring::get_leaderboard,
             scoring::get_score_history,
             scoring::get_global_stats,
+            // V2 Enhanced Scoring
+            scoring::calculate_enhanced_score,
+            scoring::calculate_opta_score,
+            scoring::get_hardware_tier,
             profile::load_user_profile,
             profile::update_user_profile,
             profile::delete_user_profile

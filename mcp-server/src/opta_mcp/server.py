@@ -628,6 +628,43 @@ async def list_tools() -> list[Tool]:
                 "required": ["game_id", "game_name"],
             },
         ),
+        # V2 Enhanced Scoring Tools
+        Tool(
+            name="calculate_enhanced_score",
+            description="Calculate comprehensive game score with three dimensions (Performance, Experience, Competitive) and wow factors for viral sharing",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "game_id": {
+                        "type": "string",
+                        "description": "Game ID to calculate enhanced score for",
+                    },
+                    "game_name": {
+                        "type": "string",
+                        "description": "Optional game display name",
+                    },
+                },
+                "required": ["game_id"],
+            },
+        ),
+        Tool(
+            name="calculate_opta_score",
+            description="Calculate user's overall Opta Score across all optimized games - the main shareable metric",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+        ),
+        Tool(
+            name="get_hardware_tier",
+            description="Detect and return current hardware tier (budget/midrange/highend/enthusiast) with signature and price range",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+        ),
     ]
 
 
@@ -862,6 +899,20 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
         game_id = arguments.get("game_id", "")
         game_name = arguments.get("game_name", "Unknown")
         result = patterns.get_recommendations_for_game(game_id, game_name)
+    # V2 Enhanced Scoring Handlers
+    elif name == "calculate_enhanced_score":
+        from opta_mcp import scoring
+        game_id = arguments.get("game_id", "")
+        game_name = arguments.get("game_name", "Unknown")
+        score = scoring.calculate_enhanced_score(game_id, game_name)
+        result = score or {"error": "No optimization history found for this game"}
+    elif name == "calculate_opta_score":
+        from opta_mcp import scoring
+        score = scoring.calculate_opta_score()
+        result = score or {"error": "No optimized games found"}
+    elif name == "get_hardware_tier":
+        from opta_mcp import scoring
+        result = scoring.get_hardware_tier()
     else:
         result = {"error": f"Unknown tool: {name}"}
 
