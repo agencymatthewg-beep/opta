@@ -2,6 +2,15 @@
 
 **One tool to rule them all.** Opta is an AI-powered PC optimization orchestrator that replaces the chaos of multiple conflicting optimizers with a single, intelligent system.
 
+## What's New in v1.1
+
+- **Pinpoint Mode**: Focus on a single optimization goal with wizard-style guidance
+- **Communication Styles**: Get explanations your way - informative or concise
+- **Learning Transparency**: See exactly what Opta knows about your preferences
+- **Smart Rollback**: Undo optimizations with one click, auto-detect performance drops
+- **Opta Text Zone**: Always know what's happening with color-coded status updates
+- **macOS Polish**: Native window controls, enhanced vibrancy, smoother animations
+
 ## Why Opta?
 
 Most gamers run 3-5 optimization tools (GeForce Experience, Razer Cortex, MSI Afterburner, etc.) that conflict with each other, create confusion, and often do more harm than good. Opta:
