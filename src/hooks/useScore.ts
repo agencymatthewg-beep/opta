@@ -5,7 +5,8 @@ import type {
   EnhancedGameScore,
   ScoreHistoryEntry,
   GlobalStats,
-  HardwareTier
+  HardwareTier,
+  LeaderboardEntry
 } from '@/types/scoring';
 
 interface UseScoreReturn {
@@ -14,12 +15,16 @@ interface UseScoreReturn {
   loading: boolean;
   error: string | null;
 
+  // Leaderboard data
+  leaderboard: LeaderboardEntry[];
+
   // Actions
   refreshScore: () => Promise<void>;
   getGameScore: (gameId: string) => Promise<EnhancedGameScore | null>;
   getScoreHistory: (gameId: string) => Promise<ScoreHistoryEntry[]>;
   getGlobalStats: () => Promise<GlobalStats>;
   getHardwareTier: () => Promise<HardwareTier>;
+  getLeaderboard: () => Promise<LeaderboardEntry[]>;
 
   // For animations
   isAnimating: boolean;
@@ -31,13 +36,25 @@ export function useScore(): UseScoreReturn {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
 
   const refreshScore = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const result = await invoke<OptaScore>('calculate_opta_score');
-      setOptaScore(result);
+      const [scoreResult, leaderboardResult] = await Promise.all([
+        invoke<OptaScore>('calculate_opta_score').catch(() => null),
+        invoke<LeaderboardEntry[]>('get_leaderboard').catch(() => [])
+      ]);
+      if (scoreResult) {
+        setOptaScore(scoreResult);
+      }
+      // Add ranks to leaderboard entries
+      const rankedLeaderboard = leaderboardResult.map((entry, index) => ({
+        ...entry,
+        rank: index + 1
+      }));
+      setLeaderboard(rankedLeaderboard);
     } catch (e) {
       console.error('Failed to load Opta Score:', e);
       setError(e instanceof Error ? e.message : 'Failed to load score');
@@ -86,6 +103,15 @@ export function useScore(): UseScoreReturn {
     }
   }, []);
 
+  const getLeaderboard = useCallback(async () => {
+    try {
+      const result = await invoke<LeaderboardEntry[]>('get_leaderboard');
+      return result.map((entry, index) => ({ ...entry, rank: index + 1 }));
+    } catch {
+      return [];
+    }
+  }, []);
+
   useEffect(() => {
     refreshScore();
   }, [refreshScore]);
@@ -94,11 +120,13 @@ export function useScore(): UseScoreReturn {
     optaScore,
     loading,
     error,
+    leaderboard,
     refreshScore,
     getGameScore,
     getScoreHistory,
     getGlobalStats,
     getHardwareTier,
+    getLeaderboard,
     isAnimating,
     setIsAnimating
   };

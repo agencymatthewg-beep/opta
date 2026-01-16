@@ -3,15 +3,23 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { OptaScoreCard } from '@/components/OptaScoreCard';
 import { ScoreTimeline } from '@/components/ScoreTimeline';
+import { Leaderboard } from '@/components/Leaderboard';
+import { MilestoneBadges } from '@/components/MilestoneBadges';
 import { useScore } from '@/hooks/useScore';
+import type { FilterMode } from '@/components/HardwareTierFilter';
 import { Award, RefreshCw, Play } from 'lucide-react';
 
 /**
  * Score page - Full score breakdown with timeline and sharing.
  */
 export function Score() {
-  const { optaScore, loading, error, refreshScore } = useScore();
+  const { optaScore, leaderboard, loading, error, refreshScore } = useScore();
   const [playTimelapse, setPlayTimelapse] = useState(false);
+
+  const handleFilterChange = (filter: FilterMode) => {
+    // TODO: Implement filtering by tier - for v1 just logs
+    console.log('Filter changed to:', filter);
+  };
 
   const handleShare = async () => {
     // TODO: Implement share functionality (clipboard, social)
@@ -96,7 +104,7 @@ export function Score() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
-        className="grid grid-cols-3 gap-4"
+        className="grid grid-cols-3 gap-4 mb-6"
       >
         <StatCard
           label="Games Optimized"
@@ -110,6 +118,26 @@ export function Score() {
           label="Hardware Tier"
           value={optaScore.hardwareTier.tier}
         />
+      </motion.div>
+
+      {/* Leaderboard and Milestones - two column layout */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+        className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+      >
+        {/* Leaderboard */}
+        <Leaderboard
+          entries={leaderboard}
+          userRank={leaderboard.findIndex(e => e.score === optaScore.overall) + 1 || undefined}
+          userScore={optaScore.overall}
+          hardwareTier={optaScore.hardwareTier}
+          onFilterChange={handleFilterChange}
+        />
+
+        {/* Milestones */}
+        <MilestoneBadges />
       </motion.div>
     </div>
   );

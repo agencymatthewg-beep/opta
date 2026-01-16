@@ -1,3 +1,4 @@
+mod badges;
 mod benchmark;
 mod claude;
 mod conflicts;
@@ -62,7 +63,10 @@ pub fn run() {
             scoring::get_hardware_tier,
             profile::load_user_profile,
             profile::update_user_profile,
-            profile::delete_user_profile
+            profile::delete_user_profile,
+            // Badges
+            badges::check_badges,
+            badges::mark_badge_seen
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
