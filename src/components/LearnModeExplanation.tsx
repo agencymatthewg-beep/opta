@@ -15,6 +15,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Info, Lightbulb, HelpCircle, ChevronRight, ChevronDown } from 'lucide-react';
 import { useLearnMode } from './LearnModeContext';
 import { useExpertise } from './ExpertiseContext';
+import { useCommunicationStyle } from './CommunicationStyleContext';
 import { useExpertiseTracking } from '@/hooks/useExpertise';
 import { cn } from '@/lib/utils';
 
@@ -34,6 +35,8 @@ interface LearnModeExplanationProps {
   title: string;
   /** Main description text (or expertise-level content object) */
   description: string | ExpertiseLevelContent;
+  /** Short description for concise mode (optional, falls back to truncating description) */
+  shortDescription?: string;
   /** Optional technical details (expandable for simple/standard, always shown for power) */
   details?: string;
   /** Type of explanation (affects styling) */
@@ -44,27 +47,38 @@ interface LearnModeExplanationProps {
 
 /**
  * Main explanation component - shows a styled card when Learn Mode is active.
- * Adapts content complexity to user expertise level.
+ * Adapts content complexity to user expertise level and communication style.
  */
 export function LearnModeExplanation({
   title,
   description,
+  shortDescription,
   details,
   type = 'info',
   className,
 }: LearnModeExplanationProps) {
   const { isLearnMode } = useLearnMode();
   const { level } = useExpertise();
+  const { isVerbose } = useCommunicationStyle();
   const { trackTechnicalExpand } = useExpertiseTracking();
   const [expanded, setExpanded] = useState(false);
+  const [showMore, setShowMore] = useState(false);
 
   if (!isLearnMode) return null;
 
   // Get the appropriate description based on expertise level
-  const descriptionText =
+  const fullDescriptionText =
     typeof description === 'string'
       ? description
       : description[level] || description.standard;
+
+  // In concise mode, use short description or show truncated version with "Learn more"
+  const displayDescription = isVerbose
+    ? fullDescriptionText
+    : (shortDescription || fullDescriptionText);
+
+  // Show "Learn more" button if in concise mode and we have more content
+  const hasMoreContent = !isVerbose && !shortDescription && fullDescriptionText.length > 100;
 
   // Power users always see technical details expanded
   const showTechnicalDetails = level === 'power';
@@ -103,7 +117,21 @@ export function LearnModeExplanation({
           <Icon className="w-4 h-4 mt-0.5 flex-shrink-0" strokeWidth={1.75} />
           <div className="flex-1 min-w-0">
             <div className="font-medium text-sm">{title}</div>
-            <div className="text-sm opacity-80 leading-relaxed">{descriptionText}</div>
+            <div className="text-sm opacity-80 leading-relaxed">
+              {hasMoreContent && !showMore
+                ? displayDescription.slice(0, 100) + '...'
+                : displayDescription}
+            </div>
+
+            {/* "Learn more" button for concise mode when content is truncated */}
+            {hasMoreContent && !showMore && (
+              <button
+                onClick={() => setShowMore(true)}
+                className="mt-1 text-xs cursor-pointer text-primary hover:underline"
+              >
+                Learn more...
+              </button>
+            )}
 
             {/* Technical details - expandable for simple/standard, always visible for power */}
             {showTechnicalDetails && details && (
@@ -116,7 +144,8 @@ export function LearnModeExplanation({
               </motion.p>
             )}
 
-            {hasExpandableDetails && !expanded && (
+            {/* Only show technical details expansion when in verbose mode or user expanded */}
+            {hasExpandableDetails && isVerbose && !expanded && (
               <button
                 onClick={handleExpandDetails}
                 className="mt-2 text-xs cursor-pointer flex items-center gap-1 opacity-70 hover:opacity-100 transition-opacity"
@@ -153,18 +182,24 @@ interface LearnModeHintProps {
   children: React.ReactNode;
   /** The hint text to show on hover (or expertise-level content) */
   hint: string | ExpertiseLevelContent;
+  /** Short hint for concise mode (optional) */
+  shortHint?: string;
 }
 
 /**
  * Compact inline hint - shows tooltip-style hint on hover when Learn Mode is active.
- * Adapts hint content to user expertise level.
+ * Adapts hint content to user expertise level and communication style.
  */
-export function LearnModeHint({ children, hint }: LearnModeHintProps) {
+export function LearnModeHint({ children, hint, shortHint }: LearnModeHintProps) {
   const { isLearnMode } = useLearnMode();
   const { level } = useExpertise();
+  const { isVerbose } = useCommunicationStyle();
 
   // Get the appropriate hint based on expertise level
-  const hintText = typeof hint === 'string' ? hint : hint[level] || hint.standard;
+  const fullHintText = typeof hint === 'string' ? hint : hint[level] || hint.standard;
+
+  // In concise mode, use short hint if provided
+  const hintText = isVerbose ? fullHintText : (shortHint || fullHintText);
 
   return (
     <span className="relative group inline-flex items-center">
