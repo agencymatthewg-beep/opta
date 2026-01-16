@@ -1,7 +1,13 @@
+mod benchmark;
 mod claude;
 mod conflicts;
+mod games;
 mod llm;
+mod optimizer;
+pub mod platform;
 mod processes;
+mod profile;
+mod scoring;
 mod telemetry;
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
@@ -12,6 +18,9 @@ fn greet(name: &str) -> String {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Initialize platform-specific features at startup
+    let _platform_context = platform::initialize();
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_shell::init())
@@ -22,11 +31,30 @@ pub fn run() {
             processes::terminate_process,
             processes::stealth_mode,
             conflicts::detect_conflicts,
+            games::detect_games,
+            games::get_game_info,
+            games::get_game_optimization,
             llm::llm_status,
             llm::llm_chat,
             llm::smart_chat,
             claude::claude_status,
-            claude::claude_chat
+            claude::claude_chat,
+            platform::get_platform_context,
+            optimizer::apply_optimization,
+            optimizer::revert_optimization,
+            optimizer::get_optimization_history,
+            benchmark::start_benchmark,
+            benchmark::capture_benchmark_sample,
+            benchmark::end_benchmark,
+            benchmark::get_benchmark_results,
+            scoring::calculate_score,
+            scoring::get_score,
+            scoring::get_leaderboard,
+            scoring::get_score_history,
+            scoring::get_global_stats,
+            profile::load_user_profile,
+            profile::update_user_profile,
+            profile::delete_user_profile
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
