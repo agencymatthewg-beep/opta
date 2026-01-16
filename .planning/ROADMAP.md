@@ -37,7 +37,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 11: Foundation & Stability** - Critical bug fixes, error boundaries, design system compliance
 - [ ] **Phase 12: UX Flow Polish** - Navigation fixes, loading states, session flow improvements
 - [x] **Phase 13: Core Features** - Opta Text Zone, Communication Style, Preference Presets, Pinpoint Mode
-- [ ] **Phase 14: Educational Enhancement** - Expertise-adaptive explanations, learning visibility, rollback
+- [x] **Phase 14: Educational Enhancement** - Expertise-adaptive explanations, learning visibility, rollback
 - [ ] **Phase 15: Performance & Launch** - Performance optimization, macOS polish, launch preparation
 - [ ] **Phase 16: Windows Platform** - Windows-specific testing, installer, conflict tools (v2.0)
 - [ ] **Phase 17: Social Features** - Friend system, score sharing, comparisons (v2.0)
@@ -230,7 +230,7 @@ Plans:
 Plans:
 - [x] 14-01: Expertise-adaptive explanations
 - [x] 14-02: Learning visibility (callouts, summaries)
-- [ ] 14-03: Smart error recovery (rollback)
+- [x] 14-03: Smart error recovery (rollback)
 
 #### Phase 15: Performance & Launch
 **Goal**: Optimize performance, test thoroughly, prepare release
@@ -293,7 +293,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 �
 | 11. Foundation & Stability | v1.1 | 3/3 | Complete | 2026-01-16 |
 | 12. UX Flow Polish | v1.1 | 3/3 | Complete | 2026-01-16 |
 | 13. Core Features | v1.1 | 4/4 | Complete | 2026-01-16 |
-| 14. Educational Enhancement | v1.1 | 2/3 | In progress | - |
+| 14. Educational Enhancement | v1.1 | 3/3 | Complete | 2026-01-16 |
 | 15. Performance & Launch | v1.1 | 0/3 | Not started | - |
 | 16. Windows Platform | v2.0 | 0/? | Not started | - |
 | 17. Social Features | v2.0 | 0/? | Not started | - |

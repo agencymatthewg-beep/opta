@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-15)
 ## Current Position
 
 Phase: 14 of 18 (Educational Enhancement)
-Plan: 2 of 3 in current phase
-Status: Plan complete
-Last activity: 2026-01-16 — Completed 14-02-PLAN.md (Learning Visibility)
+Plan: 3 of 3 in current phase
+Status: Phase complete
+Last activity: 2026-01-16 — Completed 14-03-PLAN.md (Smart Error Recovery)
 
-Progress: ███████▒░░░░░░░░░░░░ 75% (12/16 plans in v1.1)
+Progress: █████████░░░░░░░░░░░ 81% (13/16 plans in v1.1)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 48
+- Total plans completed: 49
 - Average duration: 9 min
-- Total execution time: 6.88 hours
+- Total execution time: 6.93 hours
 
 **By Phase:**
 
@@ -42,10 +42,10 @@ Progress: ███████▒░░░░░░░░░░░░ 75% (12/1
 | 11. Foundation & Stability | 3/3 | 21 min | 7 min |
 | 12. UX Flow Polish | 3/3 | 18 min | 6 min |
 | 13. Core Features | 4/4 | 15 min | 4 min |
-| 14. Educational Enhancement | 2/3 | 9 min | 5 min |
+| 14. Educational Enhancement | 3/3 | 12 min | 4 min |
 
 **Recent Trend:**
-- Last 5 plans: 4, 3, 4, 4, 5 min
+- Last 5 plans: 3, 4, 4, 5, 3 min
 - Trend: Consistent fast execution
 
 ## Accumulated Context
@@ -200,6 +200,11 @@ Progress: ███████▒░░░░░░░░░░░░ 75% (12/1
 | 14-02 | Native HTML range slider | No Slider component exists, styled with glass classes |
 | 14-02 | localStorage for preference persistence | Fast, simple persistence without backend changes |
 | 14-02 | Show all preferences in list | Full visibility (enabled and disabled) for user transparency |
+| 14-03 | localStorage for rollback states (max 10) | Simple persistence, no backend needed, bounded size |
+| 14-03 | 60-second countdown for quick rollback | Enough time to notice issues, not so long as to clutter UI |
+| 14-03 | Estimated FPS from GPU utilization | Proxy for actual FPS until game integration available |
+| 14-03 | 20% FPS drop threshold | Standard threshold for noticeable degradation |
+| 14-03 | Feedback stored locally | Privacy-first approach, available for future ML |
 
 ### Deferred Issues
 
@@ -223,6 +228,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-16
-Stopped at: Completed 14-02-PLAN.md (Learning Visibility)
+Stopped at: Completed 14-03-PLAN.md (Smart Error Recovery)
 Resume file: None
-Next action: Execute 14-03-PLAN.md (Smart Error Recovery)
+Next action: Plan Phase 15 (Performance & Launch)
