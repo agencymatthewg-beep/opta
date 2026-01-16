@@ -113,6 +113,7 @@ function LaunchConfirmationModal({
     runStealthMode: initialConfig?.runStealthMode ?? true,
     trackSession: initialConfig?.trackSession ?? false,
   });
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
   // Get launcher display name
   const launcherName =
@@ -125,15 +126,30 @@ function LaunchConfirmationModal({
       : game.launcher;
 
   const handleClose = () => {
-    if (!loading) {
-      // Reset to saved preferences
-      setConfig({
-        applyOptimizations: initialConfig?.applyOptimizations ?? (pendingOptimizations > 0),
-        runStealthMode: initialConfig?.runStealthMode ?? true,
-        trackSession: initialConfig?.trackSession ?? false,
-      });
-      onClose();
+    // If loading, show cancel confirmation
+    if (loading) {
+      setShowCancelConfirm(true);
+      return;
     }
+    // Reset to saved preferences
+    setConfig({
+      applyOptimizations: initialConfig?.applyOptimizations ?? (pendingOptimizations > 0),
+      runStealthMode: initialConfig?.runStealthMode ?? true,
+      trackSession: initialConfig?.trackSession ?? false,
+    });
+    setShowCancelConfirm(false);
+    onClose();
+  };
+
+  const handleConfirmCancel = () => {
+    // Force close even during loading
+    setConfig({
+      applyOptimizations: initialConfig?.applyOptimizations ?? (pendingOptimizations > 0),
+      runStealthMode: initialConfig?.runStealthMode ?? true,
+      trackSession: initialConfig?.trackSession ?? false,
+    });
+    setShowCancelConfirm(false);
+    onClose();
   };
 
   const handleLaunch = () => {
@@ -302,6 +318,51 @@ function LaunchConfirmationModal({
                           </Button>
                         </motion.div>
                       )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Cancel confirmation during loading */}
+              <AnimatePresence>
+                {showCancelConfirm && (
+                  <motion.div
+                    className="px-6 pb-4"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                  >
+                    <div
+                      className={cn(
+                        'p-3 rounded-xl flex items-center justify-between gap-3',
+                        'bg-warning/10 border border-warning/30'
+                      )}
+                    >
+                      <p className="text-sm text-warning">
+                        Are you sure? This will stop the launch.
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setShowCancelConfirm(false)}
+                            className="h-7 px-2 text-xs"
+                          >
+                            No, continue
+                          </Button>
+                        </motion.div>
+                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleConfirmCancel}
+                            className="h-7 px-2 text-xs text-warning hover:text-warning hover:bg-warning/10"
+                          >
+                            Yes, cancel
+                          </Button>
+                        </motion.div>
+                      </div>
                     </div>
                   </motion.div>
                 )}
