@@ -53,25 +53,26 @@ function formatSize(bytes: number | null): string {
 
 /**
  * Launcher display configuration.
+ * Uses semantic CSS variables per DESIGN_SYSTEM.md.
  */
 const LAUNCHER_DISPLAY = {
   steam: {
     name: 'Steam',
-    color: 'text-blue-400',
-    bgColor: 'bg-blue-500/15',
-    borderColor: 'border-blue-500/30',
+    color: 'text-primary',
+    bgColor: 'bg-primary/15',
+    borderColor: 'border-primary/30',
   },
   epic: {
     name: 'Epic Games',
-    color: 'text-slate-300',
-    bgColor: 'bg-slate-400/15',
-    borderColor: 'border-slate-400/30',
+    color: 'text-muted-foreground',
+    bgColor: 'bg-muted/15',
+    borderColor: 'border-border',
   },
   gog: {
     name: 'GOG Galaxy',
-    color: 'text-purple-400',
-    bgColor: 'bg-purple-500/15',
-    borderColor: 'border-purple-500/30',
+    color: 'text-accent',
+    bgColor: 'bg-accent/15',
+    borderColor: 'border-accent/30',
   },
 } as const;
 
