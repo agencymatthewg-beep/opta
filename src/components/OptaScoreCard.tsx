@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ScoreDimensions } from './ScoreDimensions';
 import { WowFactorsDisplay } from './WowFactorsDisplay';
 import { LearnModeExplanation } from './LearnModeExplanation';
@@ -99,21 +100,31 @@ export function OptaScoreCard({
       {/* Actions */}
       {showActions && (
         <div className="flex gap-2 p-4 border-t border-border/20">
-          <Button
-            variant="outline"
-            className="flex-1 gap-2 glass-subtle rounded-xl border-border/30"
-            onClick={onShare}
-          >
-            <Share2 className="w-4 h-4" strokeWidth={1.75} />
-            Share
-          </Button>
-          <Button
-            className="flex-1 gap-2 rounded-xl bg-gradient-to-r from-primary to-accent"
-            onClick={onExport}
-          >
-            <Download className="w-4 h-4" strokeWidth={1.75} />
-            Export Card
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                disabled
+                className="flex-1 gap-2 glass-subtle rounded-xl border-border/30"
+              >
+                <Share2 className="w-4 h-4" strokeWidth={1.75} />
+                Share
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Coming in v1.2</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                disabled
+                className="flex-1 gap-2 rounded-xl"
+              >
+                <Download className="w-4 h-4" strokeWidth={1.75} />
+                Export Card
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Coming in v1.2</TooltipContent>
+          </Tooltip>
         </div>
       )}
 
