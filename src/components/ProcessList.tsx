@@ -1,15 +1,17 @@
 /**
- * ProcessList component for displaying running processes.
+ * ProcessList - The Obsidian Process Monitor
  *
  * Shows a scrollable table of processes with resource usage and categorization.
- * Supports click-to-select for future Stealth Mode integration.
+ * Uses obsidian glass material with 0%→50% energy transitions.
+ *
+ * @see DESIGN_SYSTEM.md - Part 4: The Obsidian Glass Material System
  */
 
 import { useState, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useProcesses } from '../hooks/useProcesses';
 import type { ProcessInfo, ProcessCategory } from '../types/processes';
-import { Button } from '@/components/ui/button';
+import { MotionButton } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Table,
@@ -22,6 +24,10 @@ import {
 import { cn } from '@/lib/utils';
 import { Activity, AlertCircle, RefreshCw, Shield, User, Skull } from 'lucide-react';
 import { LearnModeExplanation } from './LearnModeExplanation';
+import { OptaRingLoader } from './OptaRing';
+
+// Easing curve for smooth energy transitions
+const smoothOut: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
 interface ProcessRowProps {
   process: ProcessInfo;
@@ -31,7 +37,7 @@ interface ProcessRowProps {
 }
 
 /**
- * Badge component for process category.
+ * Badge component for process category - Obsidian styled.
  * Memoized to prevent re-renders when category unchanged.
  */
 const CategoryBadge = memo(function CategoryBadge({ category }: { category: ProcessCategory }) {
@@ -39,17 +45,17 @@ const CategoryBadge = memo(function CategoryBadge({ category }: { category: Proc
     system: {
       icon: <Shield className="w-2.5 h-2.5" strokeWidth={2} />,
       label: 'System',
-      className: 'bg-muted/50 text-muted-foreground border-border/30',
+      className: 'bg-white/[0.03] text-muted-foreground border-white/[0.08]',
     },
     user: {
       icon: <User className="w-2.5 h-2.5" strokeWidth={2} />,
       label: 'User',
-      className: 'bg-primary/10 text-primary border-primary/20',
+      className: 'bg-primary/10 text-primary border-primary/25 shadow-[0_0_8px_-2px_rgba(168,85,247,0.3)]',
     },
     'safe-to-kill': {
       icon: <Skull className="w-2.5 h-2.5" strokeWidth={2} />,
       label: 'Safe',
-      className: 'bg-warning/10 text-warning border-warning/20',
+      className: 'bg-warning/10 text-warning border-warning/25',
     },
   };
 
@@ -70,7 +76,7 @@ const CategoryBadge = memo(function CategoryBadge({ category }: { category: Proc
 });
 
 /**
- * Single process row component.
+ * Single process row component with obsidian hover states.
  * Memoized to prevent re-renders for unchanged rows in the list.
  */
 const ProcessRow = memo(function ProcessRow({ process, isSelected, onSelect, index }: ProcessRowProps) {
@@ -79,13 +85,13 @@ const ProcessRow = memo(function ProcessRow({ process, isSelected, onSelect, ind
 
   return (
     <motion.tr
-      initial={{ opacity: 0, x: -10 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: index * 0.02, duration: 0.2 }}
+      initial={{ opacity: 0, x: -10, filter: 'brightness(0.7)' }}
+      animate={{ opacity: 1, x: 0, filter: 'brightness(1)' }}
+      transition={{ delay: index * 0.02, duration: 0.25, ease: smoothOut }}
       className={cn(
         'cursor-pointer transition-all duration-200',
-        'hover:bg-white/5',
-        isSelected && 'bg-primary/10 hover:bg-primary/15'
+        'hover:bg-primary/[0.03]',
+        isSelected && 'bg-primary/10 hover:bg-primary/15 shadow-[inset_0_0_15px_rgba(168,85,247,0.08)]'
       )}
       onClick={() => onSelect(process.pid)}
       data-state={isSelected ? 'selected' : undefined}
@@ -105,7 +111,7 @@ const ProcessRow = memo(function ProcessRow({ process, isSelected, onSelect, ind
       <TableCell className="text-center">
         <CategoryBadge category={process.category} />
       </TableCell>
-      <TableCell className="text-right font-mono text-xs text-muted-foreground/60 tabular-nums">
+      <TableCell className="text-right font-mono text-xs text-muted-foreground/50 tabular-nums">
         {process.pid}
       </TableCell>
     </motion.tr>
@@ -113,41 +119,30 @@ const ProcessRow = memo(function ProcessRow({ process, isSelected, onSelect, ind
 });
 
 /**
- * Loading skeleton for process list.
+ * Loading skeleton for process list - uses OptaRing.
  */
 function ProcessListSkeleton() {
   return (
     <motion.div
-      className="glass rounded-xl overflow-hidden"
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
+      className={cn(
+        'relative overflow-hidden rounded-xl',
+        'bg-[#05030a]/80 backdrop-blur-xl',
+        'border border-white/[0.06]'
+      )}
+      initial={{ opacity: 0, y: 12, filter: 'brightness(0.5)' }}
+      animate={{ opacity: 1, y: 0, filter: 'brightness(1)' }}
+      transition={{ duration: 0.5, ease: smoothOut }}
     >
-      <div className="px-5 py-4 border-b border-border/20">
-        <div className="h-5 w-40 rounded animate-shimmer" />
-      </div>
-      <div className="p-5 space-y-3">
-        {[1, 2, 3, 4, 5].map((i) => (
-          <motion.div
-            key={i}
-            className="flex gap-3 py-2"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: i * 0.05 }}
-          >
-            <div className="flex-[2] h-4 rounded animate-shimmer" />
-            <div className="w-12 h-4 rounded animate-shimmer" />
-            <div className="w-12 h-4 rounded animate-shimmer" />
-            <div className="w-16 h-4 rounded animate-shimmer" />
-            <div className="w-12 h-4 rounded animate-shimmer" />
-          </motion.div>
-        ))}
+      <div className="flex flex-col items-center justify-center py-16 gap-4">
+        <OptaRingLoader size="md" />
+        <p className="text-sm text-muted-foreground/60">Loading processes...</p>
       </div>
     </motion.div>
   );
 }
 
 /**
- * ProcessList component showing running processes with resource usage.
+ * ProcessList component showing running processes with obsidian styling.
  */
 function ProcessList() {
   const { processes, loading, error, refresh } = useProcesses(3000);
@@ -164,16 +159,21 @@ function ProcessList() {
   if (error) {
     return (
       <motion.div
-        className="glass rounded-xl overflow-hidden"
+        className={cn(
+          'relative overflow-hidden rounded-xl',
+          'bg-[#05030a]/80 backdrop-blur-xl',
+          'border border-white/[0.06]'
+        )}
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
+        transition={{ ease: smoothOut }}
       >
         <div className="flex flex-col items-center justify-center py-12 px-6 gap-4">
           <motion.div
             className={cn(
               'w-14 h-14 flex items-center justify-center rounded-full',
               'bg-danger/10 border-2 border-danger/30',
-              'shadow-[0_0_20px_-4px_hsl(var(--danger)/0.4)]'
+              'shadow-[0_0_25px_-4px_rgba(239,68,68,0.5)]'
             )}
             animate={{ scale: [1, 1.05, 1] }}
             transition={{ duration: 2, repeat: Infinity }}
@@ -181,20 +181,15 @@ function ProcessList() {
             <AlertCircle className="w-6 h-6 text-danger" strokeWidth={1.75} />
           </motion.div>
           <p className="text-sm text-muted-foreground/70 text-center max-w-[250px]">{error}</p>
-          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-            <Button
-              onClick={refresh}
-              size="sm"
-              className={cn(
-                'gap-2 rounded-xl px-5',
-                'bg-gradient-to-r from-primary to-accent',
-                'shadow-[0_0_16px_-4px_hsl(var(--glow-primary)/0.5)]'
-              )}
-            >
-              <RefreshCw className="w-4 h-4" strokeWidth={2} />
-              Retry
-            </Button>
-          </motion.div>
+          <MotionButton
+            onClick={refresh}
+            size="sm"
+            variant="energy"
+            className="gap-2"
+          >
+            <RefreshCw className="w-4 h-4" strokeWidth={2} />
+            Retry
+          </MotionButton>
         </div>
       </motion.div>
     );
@@ -205,23 +200,45 @@ function ProcessList() {
   return (
     <motion.div
       className={cn(
-        'glass rounded-xl overflow-hidden group',
-        'transition-all duration-300'
+        'relative overflow-hidden rounded-xl group',
+        // Obsidian glass material
+        'bg-[#05030a]/80 backdrop-blur-xl',
+        'border border-white/[0.06]',
+        // Inner specular highlight
+        'before:absolute before:inset-x-0 before:top-0 before:h-px before:z-10',
+        'before:bg-gradient-to-r before:from-transparent before:via-white/10 before:to-transparent',
+        'before:rounded-t-xl'
       )}
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0, y: 12, filter: 'brightness(0.5)' }}
+      animate={{ opacity: 1, y: 0, filter: 'brightness(1)' }}
+      transition={{ duration: 0.5, ease: smoothOut }}
       whileHover={{ y: -2 }}
     >
+      {/* Hover glow overlay */}
+      <motion.div
+        className="absolute inset-0 pointer-events-none rounded-xl opacity-0 group-hover:opacity-100"
+        style={{
+          boxShadow: 'inset 0 0 0 1px rgba(168, 85, 247, 0.15), 0 0 20px -5px rgba(168, 85, 247, 0.2)',
+        }}
+        transition={{ duration: 0.3 }}
+      />
+
       {/* Header */}
-      <div className="px-5 py-4 border-b border-border/20">
+      <div className="relative px-5 py-4 border-b border-white/[0.05]">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-primary/10 group-hover:bg-primary/15 transition-colors">
-            <Activity className="w-4 h-4 text-primary" strokeWidth={1.75} />
-          </div>
-          <h3 className="text-sm font-semibold uppercase tracking-wide">
+          <motion.div
+            className="p-2 rounded-lg bg-primary/10 group-hover:bg-primary/15 transition-all duration-300"
+            whileHover={{ boxShadow: '0 0 15px -3px rgba(168, 85, 247, 0.5)' }}
+          >
+            <Activity
+              className="w-4 h-4 text-primary group-hover:drop-shadow-[0_0_8px_rgba(168,85,247,0.6)] transition-all duration-300"
+              strokeWidth={1.75}
+            />
+          </motion.div>
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-foreground">
             Running Processes
           </h3>
-          <span className="text-xs text-muted-foreground/60 font-medium">
+          <span className="text-xs text-muted-foreground/50 font-medium">
             ({processCount})
           </span>
         </div>
@@ -236,24 +253,24 @@ function ProcessList() {
       </div>
 
       {/* Table */}
-      <div className="p-3">
+      <div className="relative p-3">
         <ScrollArea className="h-[360px] rounded-lg">
           <Table>
             <TableHeader className="sticky top-0 z-10">
-              <TableRow className="hover:bg-transparent border-b border-border/20 bg-background/50 backdrop-blur-sm">
-                <TableHead className="w-[40%] text-primary/80 text-[10px] uppercase tracking-widest font-semibold">
+              <TableRow className="hover:bg-transparent border-b border-white/[0.05] bg-[#05030a]/90 backdrop-blur-sm">
+                <TableHead className="w-[40%] text-primary/70 text-[10px] uppercase tracking-widest font-semibold">
                   Name
                 </TableHead>
-                <TableHead className="w-[12%] text-right text-primary/80 text-[10px] uppercase tracking-widest font-semibold">
+                <TableHead className="w-[12%] text-right text-primary/70 text-[10px] uppercase tracking-widest font-semibold">
                   CPU
                 </TableHead>
-                <TableHead className="w-[12%] text-right text-primary/80 text-[10px] uppercase tracking-widest font-semibold">
+                <TableHead className="w-[12%] text-right text-primary/70 text-[10px] uppercase tracking-widest font-semibold">
                   Mem
                 </TableHead>
-                <TableHead className="w-[20%] text-center text-primary/80 text-[10px] uppercase tracking-widest font-semibold">
+                <TableHead className="w-[20%] text-center text-primary/70 text-[10px] uppercase tracking-widest font-semibold">
                   Type
                 </TableHead>
-                <TableHead className="w-[16%] text-right text-primary/80 text-[10px] uppercase tracking-widest font-semibold">
+                <TableHead className="w-[16%] text-right text-primary/70 text-[10px] uppercase tracking-widest font-semibold">
                   PID
                 </TableHead>
               </TableRow>

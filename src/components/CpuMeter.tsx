@@ -1,5 +1,17 @@
+/**
+ * CpuMeter - The Obsidian CPU Monitor
+ *
+ * Circular CPU usage meter with obsidian styling and energy-based glow.
+ * Color transitions from success → warning → danger based on usage.
+ *
+ * @see DESIGN_SYSTEM.md - Part 4: The Obsidian Glass Material System
+ */
+
 import { motion, useSpring, useTransform } from 'framer-motion';
 import { cn } from '@/lib/utils';
+
+// Easing curve for smooth energy transitions
+const smoothOut: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
 interface CpuMeterProps {
   percent: number;
@@ -39,9 +51,9 @@ function CpuMeter({ percent, cores, threads }: CpuMeterProps) {
   };
 
   const getGlowClass = (value: number) => {
-    if (value >= 85) return 'drop-shadow-[0_0_12px_hsl(var(--danger)/0.6)]';
-    if (value >= 60) return 'drop-shadow-[0_0_12px_hsl(var(--warning)/0.6)]';
-    return 'drop-shadow-[0_0_12px_hsl(var(--success)/0.6)]';
+    if (value >= 85) return 'drop-shadow-[0_0_15px_rgba(239,68,68,0.6)]';
+    if (value >= 60) return 'drop-shadow-[0_0_15px_rgba(234,179,8,0.6)]';
+    return 'drop-shadow-[0_0_15px_rgba(34,197,94,0.5)]';
   };
 
   const colorClass = getColorClass(percent);
@@ -50,32 +62,52 @@ function CpuMeter({ percent, cores, threads }: CpuMeterProps) {
   const isHighUsage = percent >= 90;
 
   return (
-    <div
+    <motion.div
       className="flex flex-col items-center gap-3"
       role="meter"
       aria-valuenow={Math.round(percent)}
       aria-valuemin={0}
       aria-valuemax={100}
       aria-label={`CPU usage: ${Math.round(percent)} percent`}
+      // Ignition animation
+      initial={{
+        opacity: 0,
+        scale: 0.9,
+        filter: 'brightness(0.5) blur(4px)',
+      }}
+      animate={{
+        opacity: 1,
+        scale: 1,
+        filter: 'brightness(1) blur(0px)',
+      }}
+      transition={{ duration: 0.6, ease: smoothOut }}
     >
       {/* Meter ring */}
       <div className={cn(
         "relative w-32 h-32",
         isHighUsage && "animate-pulse"
       )}>
+        {/* Ambient glow behind ring */}
+        <div
+          className="absolute inset-0 rounded-full"
+          style={{
+            background: `radial-gradient(circle, ${strokeColor}15 0%, transparent 70%)`,
+          }}
+        />
+
         <svg
-          className="w-full h-full -rotate-90"
+          className="w-full h-full -rotate-90 relative z-10"
           viewBox="0 0 120 120"
           aria-hidden="true"
         >
-          {/* Background circle */}
+          {/* Background circle - obsidian glass ring */}
           <circle
             cx="60"
             cy="60"
             r={radius}
             fill="none"
             strokeWidth="8"
-            className="stroke-muted/20"
+            className="stroke-white/[0.06]"
           />
           {/* Gradient definition */}
           <defs>
@@ -99,44 +131,54 @@ function CpuMeter({ percent, cores, threads }: CpuMeterProps) {
           />
         </svg>
 
-        {/* Center content */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
+        {/* Center content - obsidian glass background */}
+        <div className={cn(
+          "absolute inset-4 flex flex-col items-center justify-center rounded-full",
+          "bg-[#05030a]/60 backdrop-blur-lg",
+          "border border-white/[0.06]"
+        )}>
           <motion.span
             className={cn("text-3xl font-bold tabular-nums", colorClass)}
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: 0.2 }}
+            transition={{ delay: 0.2, ease: smoothOut }}
           >
             {Math.round(percent)}
             <span className="text-lg">%</span>
           </motion.span>
-          <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide mt-0.5">
+          <span className="text-[10px] text-muted-foreground/60 font-medium uppercase tracking-wider mt-0.5">
             CPU
           </span>
         </div>
       </div>
 
-      {/* Stats */}
+      {/* Stats - obsidian styled */}
       <motion.div
         className="flex items-center gap-4 text-xs"
-        initial={{ opacity: 0, y: 4 }}
+        initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
+        transition={{ delay: 0.3, ease: smoothOut }}
       >
         <div className="flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-primary/50" />
-          <span className="text-muted-foreground">
+          <span className={cn(
+            "w-1.5 h-1.5 rounded-full bg-primary/60",
+            "shadow-[0_0_6px_rgba(168,85,247,0.4)]"
+          )} />
+          <span className="text-muted-foreground/70">
             <span className="font-medium text-foreground/80">{cores}</span> cores
           </span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-accent/50" />
-          <span className="text-muted-foreground">
+          <span className={cn(
+            "w-1.5 h-1.5 rounded-full bg-accent/60",
+            "shadow-[0_0_6px_rgba(147,51,234,0.4)]"
+          )} />
+          <span className="text-muted-foreground/70">
             <span className="font-medium text-foreground/80">{threads}</span> threads
           </span>
         </div>
       </motion.div>
-    </div>
+    </motion.div>
   );
 }
 

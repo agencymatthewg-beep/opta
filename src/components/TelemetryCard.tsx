@@ -4,6 +4,18 @@ import { cn } from '@/lib/utils';
 import { Cpu, MemoryStick, MonitorSpeaker, HardDrive, LucideIcon } from 'lucide-react';
 import { LearnModeExplanation } from './LearnModeExplanation';
 
+/**
+ * TelemetryCard - The Obsidian Metric Display
+ *
+ * Displays hardware telemetry with obsidian glass styling.
+ * Features 0%→50% energy transitions on hover/active states.
+ *
+ * @see DESIGN_SYSTEM.md - Part 4: The Obsidian Glass Material System
+ */
+
+// Easing curve for smooth energy transitions
+const smoothOut: [number, number, number, number] = [0.22, 1, 0.36, 1];
+
 // Icon components for telemetry cards
 const icons: Record<string, LucideIcon> = {
   cpu: Cpu,
@@ -40,50 +52,123 @@ interface TelemetryCardProps {
   children: ReactNode;
   className?: string;
   delay?: number;
+  /** Energy state for the card */
+  energyState?: 'dormant' | 'active';
 }
 
 /**
- * TelemetryCard - Displays a telemetry metric with icon and educational content.
+ * TelemetryCard - Displays a telemetry metric with obsidian glass styling.
  * Memoized to prevent re-renders when props haven't changed.
  */
-const TelemetryCard = memo(function TelemetryCard({ title, icon, children, className, delay = 0 }: TelemetryCardProps) {
+const TelemetryCard = memo(function TelemetryCard({
+  title,
+  icon,
+  children,
+  className,
+  delay = 0,
+  energyState = 'dormant',
+}: TelemetryCardProps) {
   const Icon = icons[icon];
   const explanation = telemetryExplanations[icon];
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{
-        duration: 0.4,
-        delay,
-        ease: [0, 0, 0.2, 1] as const,
+      // Ignition animation - emerges from darkness
+      initial={{
+        opacity: 0,
+        y: 12,
+        filter: 'brightness(0.5) blur(2px)',
       }}
-      whileHover={{ y: -2 }}
+      animate={{
+        opacity: 1,
+        y: 0,
+        filter: 'brightness(1) blur(0px)',
+      }}
+      transition={{
+        duration: 0.5,
+        delay,
+        ease: smoothOut,
+      }}
+      // Hover: 0% → 50% energy transition
+      whileHover={{
+        y: -3,
+        transition: { duration: 0.3, ease: smoothOut },
+      }}
       className={cn(
-        "glass rounded-xl overflow-hidden group",
-        "transition-shadow duration-300",
-        "hover:shadow-[0_0_0_1px_hsl(var(--glow-primary)/0.2),0_8px_32px_-8px_hsl(var(--glow-primary)/0.2)]",
+        'relative overflow-hidden rounded-xl group',
+        // Obsidian glass material
+        'bg-[#05030a]/80 backdrop-blur-xl',
+        'border border-white/[0.06]',
+        // Inner specular highlight
+        'before:absolute before:inset-x-0 before:top-0 before:h-px',
+        'before:bg-gradient-to-r before:from-transparent before:via-white/10 before:to-transparent',
+        'before:rounded-t-xl',
+        // Energy state styling
+        energyState === 'active' && [
+          'border-primary/30',
+          'shadow-[inset_0_0_20px_rgba(168,85,247,0.1),0_0_20px_-5px_rgba(168,85,247,0.3)]',
+        ],
         className
       )}
     >
+      {/* Hover glow overlay */}
+      <motion.div
+        className="absolute inset-0 pointer-events-none rounded-xl opacity-0 group-hover:opacity-100"
+        style={{
+          background: 'radial-gradient(ellipse at 50% 0%, rgba(168, 85, 247, 0.08) 0%, transparent 70%)',
+        }}
+        transition={{ duration: 0.3 }}
+      />
+
+      {/* Border glow on hover */}
+      <motion.div
+        className="absolute inset-0 pointer-events-none rounded-xl opacity-0 group-hover:opacity-100"
+        style={{
+          boxShadow: 'inset 0 0 0 1px rgba(168, 85, 247, 0.2), 0 0 20px -5px rgba(168, 85, 247, 0.25)',
+        }}
+        transition={{ duration: 0.3 }}
+      />
+
       {/* Header */}
-      <div className="px-5 py-4 border-b border-border/30">
+      <div className="relative px-5 py-4 border-b border-white/[0.05]">
         <div className="flex items-center gap-2.5">
-          <div className="p-1.5 rounded-lg bg-primary/10 group-hover:bg-primary/15 transition-colors">
+          {/* Icon container with energy glow */}
+          <motion.div
+            className={cn(
+              'p-1.5 rounded-lg transition-all duration-300',
+              'bg-primary/10 group-hover:bg-primary/20',
+              energyState === 'active' && 'bg-primary/25'
+            )}
+            whileHover={{
+              boxShadow: '0 0 15px -3px rgba(168, 85, 247, 0.5)',
+            }}
+          >
             <Icon
-              className="w-4 h-4 text-primary group-hover:drop-shadow-[0_0_6px_hsl(var(--glow-primary)/0.5)] transition-all"
+              className={cn(
+                'w-4 h-4 transition-all duration-300',
+                'text-primary',
+                'group-hover:drop-shadow-[0_0_8px_rgba(168,85,247,0.6)]',
+                energyState === 'active' && 'drop-shadow-[0_0_8px_rgba(168,85,247,0.6)]'
+              )}
               strokeWidth={1.75}
             />
-          </div>
-          <span className="text-sm font-medium text-muted-foreground group-hover:text-foreground/80 transition-colors">
+          </motion.div>
+
+          {/* Title with moonlight gradient on hover */}
+          <span
+            className={cn(
+              'text-sm font-medium transition-colors duration-300',
+              'text-muted-foreground group-hover:text-foreground',
+              energyState === 'active' && 'text-foreground'
+            )}
+          >
             {title}
           </span>
         </div>
       </div>
 
       {/* Content */}
-      <div className="px-5 py-4">
+      <div className="relative px-5 py-4">
         {children}
 
         {/* Learn Mode Explanation */}

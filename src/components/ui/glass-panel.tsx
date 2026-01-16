@@ -4,41 +4,58 @@ import { motion, type HTMLMotionProps } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 /**
- * GlassPanel - Frosted glass surface component
+ * ObsidianPanel - The Living Artifact Surface
  *
- * The core visual element of Opta's glassmorphism design system.
- * Provides consistent frosted glass effects with hover states and glow.
+ * Dark obsidian glass that awakens with energy on interaction.
+ * Implements the 0% → 50% state transition system.
+ *
+ * States:
+ * - Dormant (0%): Dark glass, subtle inner glow, high gloss reflections
+ * - Active (50%): Purple energy emanates from within, casts ambient glow
+ *
+ * @see DESIGN_SYSTEM.md - Part 4: The Obsidian Glass Material System
  */
 
-const glassPanelVariants = cva(
+// Easing curve for smooth energy transitions
+const smoothOut: [number, number, number, number] = [0.22, 1, 0.36, 1];
+
+const obsidianPanelVariants = cva(
   [
+    // Base obsidian glass material
     "relative",
     "rounded-xl",
-    "transition-all duration-300",
-    "backdrop-blur-[var(--glass-blur)]",
-    "border border-[hsl(var(--glass-border)/var(--glass-border-opacity))]",
+    "bg-[#05030a]/80",
+    "backdrop-blur-xl",
+    "border border-white/[0.05]",
+    // Inner specular highlight (top edge reflection)
+    "before:absolute before:inset-x-0 before:top-0 before:h-px",
+    "before:bg-gradient-to-r before:from-transparent before:via-white/10 before:to-transparent",
+    "before:rounded-t-xl",
+    // Transition for energy awakening
+    "transition-all duration-500 ease-out",
   ].join(" "),
   {
     variants: {
       variant: {
-        default: [
-          "bg-[hsl(var(--glass-bg)/var(--glass-opacity))]",
-        ].join(" "),
+        default: "",
         subtle: [
-          "bg-[hsl(var(--glass-bg)/0.35)]",
-          "backdrop-blur-[12px]",
-          "border-[hsl(var(--glass-border)/0.15)]",
+          "bg-[#05030a]/50",
+          "backdrop-blur-lg",
+          "border-white/[0.03]",
           "rounded-lg",
+          "before:via-white/5",
         ].join(" "),
         strong: [
-          "bg-[hsl(var(--glass-bg)/0.7)]",
-          "backdrop-blur-[24px]",
-          "border-[hsl(var(--glass-border)/0.35)]",
+          "bg-[#05030a]/95",
+          "backdrop-blur-2xl",
+          "border-white/10",
+          "before:via-white/15",
         ].join(" "),
-        solid: [
-          "bg-card",
-          "backdrop-blur-none",
-          "border-border",
+        elevated: [
+          "bg-[#08051a]/90",
+          "backdrop-blur-2xl",
+          "border-primary/10",
+          "shadow-[0_8px_32px_-8px_rgba(168,85,247,0.15)]",
         ].join(" "),
       },
       interactive: {
@@ -47,9 +64,10 @@ const glassPanelVariants = cva(
       },
       glow: {
         none: "",
-        default: "shadow-glow-sm",
-        hover: "",
-        always: "shadow-glow",
+        subtle: "shadow-[0_0_15px_-3px_rgba(168,85,247,0.15)]",
+        default: "shadow-[0_0_20px_-5px_rgba(168,85,247,0.25)]",
+        strong: "shadow-[0_0_30px_-5px_rgba(168,85,247,0.4)]",
+        pulse: "",
       },
     },
     defaultVariants: {
@@ -60,17 +78,19 @@ const glassPanelVariants = cva(
   }
 );
 
-export interface GlassPanelProps
+export interface ObsidianPanelProps
   extends Omit<HTMLMotionProps<"div">, "children">,
-    VariantProps<typeof glassPanelVariants> {
+    VariantProps<typeof obsidianPanelVariants> {
   children?: React.ReactNode;
-  /** Whether the panel should animate on mount */
+  /** Whether the panel should animate on mount (ignition effect) */
   animate?: boolean;
-  /** Custom animation delay */
+  /** Custom animation delay for staggered entrances */
   animationDelay?: number;
+  /** Energy state - controls the 0%→50% glow intensity */
+  energyState?: "dormant" | "active" | "pulse";
 }
 
-const GlassPanel = React.forwardRef<HTMLDivElement, GlassPanelProps>(
+const ObsidianPanel = React.forwardRef<HTMLDivElement, ObsidianPanelProps>(
   (
     {
       className,
@@ -79,64 +99,129 @@ const GlassPanel = React.forwardRef<HTMLDivElement, GlassPanelProps>(
       glow,
       animate = true,
       animationDelay = 0,
+      energyState = "dormant",
       children,
       ...props
     },
     ref
   ) => {
     const baseClassName = cn(
-      glassPanelVariants({ variant, interactive, glow }),
+      obsidianPanelVariants({ variant, interactive, glow }),
       className
     );
 
-    // Interactive hover animation
-    const interactiveProps = interactive
+    // Interactive hover variants - triggers 0% → 50% on hover
+    const interactiveVariants = interactive
       ? {
+          initial: {
+            borderColor: "rgba(255, 255, 255, 0.05)",
+            boxShadow: "inset 0 1px 0 0 rgba(255, 255, 255, 0.05)",
+          },
           whileHover: {
             y: -2,
-            boxShadow: "0 0 0 1px hsl(var(--glow-primary) / 0.2), 0 8px 32px -8px hsl(var(--glow-primary) / 0.25)",
+            borderColor: "rgba(168, 85, 247, 0.4)",
+            boxShadow: `
+              inset 0 0 20px rgba(168, 85, 247, 0.08),
+              0 0 0 1px rgba(168, 85, 247, 0.2),
+              0 8px 32px -8px rgba(168, 85, 247, 0.25)
+            `,
+            transition: { duration: 0.5, ease: smoothOut },
           },
-          whileTap: { y: 0 },
-          transition: { duration: 0.25, ease: [0.4, 0, 0.2, 1] as const },
+          whileTap: {
+            y: 0,
+            scale: 0.995,
+            transition: { duration: 0.1 },
+          },
         }
       : {};
 
-    // Mount animation
-    const animationProps = animate
+    // Energy state animations
+    const energyVariants = {
+      dormant: {
+        boxShadow: "inset 0 1px 0 0 rgba(255, 255, 255, 0.05)",
+      },
+      active: {
+        boxShadow: `
+          inset 0 0 30px rgba(168, 85, 247, 0.12),
+          0 0 25px rgba(168, 85, 247, 0.35)
+        `,
+        borderColor: "rgba(168, 85, 247, 0.5)",
+      },
+      pulse: {
+        boxShadow: [
+          "inset 0 0 15px rgba(168, 85, 247, 0.05), 0 0 10px rgba(168, 85, 247, 0.15)",
+          "inset 0 0 30px rgba(168, 85, 247, 0.15), 0 0 30px rgba(168, 85, 247, 0.4)",
+          "inset 0 0 15px rgba(168, 85, 247, 0.05), 0 0 10px rgba(168, 85, 247, 0.15)",
+        ],
+        transition: {
+          duration: 2,
+          repeat: Infinity,
+          ease: "easeInOut" as const,
+        },
+      },
+    };
+
+    // Mount animation - ignition effect (emerges from darkness)
+    const mountAnimation = animate
       ? {
-          initial: { opacity: 0, y: 8 },
-          animate: { opacity: 1, y: 0 },
+          initial: {
+            opacity: 0,
+            y: 8,
+            scale: 0.98,
+            filter: "brightness(0.6) blur(2px)",
+          },
+          animate: {
+            opacity: 1,
+            y: 0,
+            scale: 1,
+            filter: "brightness(1) blur(0px)",
+            ...energyVariants[energyState],
+          },
           transition: {
-            duration: 0.4,
+            duration: 0.6,
             delay: animationDelay,
-            ease: [0, 0, 0.2, 1] as const,
+            ease: smoothOut,
           },
         }
-      : {};
+      : {
+          animate: energyVariants[energyState],
+        };
 
     return (
       <motion.div
         ref={ref}
         className={baseClassName}
-        {...animationProps}
-        {...interactiveProps}
+        {...mountAnimation}
+        {...interactiveVariants}
         {...props}
       >
+        {/* Inner glow layer for active state */}
+        {energyState === "active" && (
+          <motion.div
+            className="absolute inset-0 rounded-xl pointer-events-none"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            style={{
+              background:
+                "radial-gradient(ellipse at 50% 0%, rgba(168, 85, 247, 0.08) 0%, transparent 70%)",
+            }}
+          />
+        )}
         {children}
       </motion.div>
     );
   }
 );
 
-GlassPanel.displayName = "GlassPanel";
+ObsidianPanel.displayName = "ObsidianPanel";
 
 // ============================================
 // SUB-COMPONENTS
 // ============================================
 
-interface GlassPanelHeaderProps extends React.HTMLAttributes<HTMLDivElement> {}
+interface ObsidianPanelHeaderProps extends React.HTMLAttributes<HTMLDivElement> {}
 
-const GlassPanelHeader = React.forwardRef<HTMLDivElement, GlassPanelHeaderProps>(
+const ObsidianPanelHeader = React.forwardRef<HTMLDivElement, ObsidianPanelHeaderProps>(
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
@@ -145,30 +230,31 @@ const GlassPanelHeader = React.forwardRef<HTMLDivElement, GlassPanelHeaderProps>
     />
   )
 );
-GlassPanelHeader.displayName = "GlassPanelHeader";
+ObsidianPanelHeader.displayName = "ObsidianPanelHeader";
 
-interface GlassPanelTitleProps extends React.HTMLAttributes<HTMLHeadingElement> {}
+interface ObsidianPanelTitleProps extends React.HTMLAttributes<HTMLHeadingElement> {}
 
-const GlassPanelTitle = React.forwardRef<HTMLHeadingElement, GlassPanelTitleProps>(
+const ObsidianPanelTitle = React.forwardRef<HTMLHeadingElement, ObsidianPanelTitleProps>(
   ({ className, ...props }, ref) => (
     <h3
       ref={ref}
       className={cn(
         "text-lg font-semibold leading-none tracking-tight",
+        "bg-gradient-to-br from-white via-white to-primary/50 bg-clip-text text-transparent",
         className
       )}
       {...props}
     />
   )
 );
-GlassPanelTitle.displayName = "GlassPanelTitle";
+ObsidianPanelTitle.displayName = "ObsidianPanelTitle";
 
-interface GlassPanelDescriptionProps
+interface ObsidianPanelDescriptionProps
   extends React.HTMLAttributes<HTMLParagraphElement> {}
 
-const GlassPanelDescription = React.forwardRef<
+const ObsidianPanelDescription = React.forwardRef<
   HTMLParagraphElement,
-  GlassPanelDescriptionProps
+  ObsidianPanelDescriptionProps
 >(({ className, ...props }, ref) => (
   <p
     ref={ref}
@@ -176,20 +262,20 @@ const GlassPanelDescription = React.forwardRef<
     {...props}
   />
 ));
-GlassPanelDescription.displayName = "GlassPanelDescription";
+ObsidianPanelDescription.displayName = "ObsidianPanelDescription";
 
-interface GlassPanelContentProps extends React.HTMLAttributes<HTMLDivElement> {}
+interface ObsidianPanelContentProps extends React.HTMLAttributes<HTMLDivElement> {}
 
-const GlassPanelContent = React.forwardRef<HTMLDivElement, GlassPanelContentProps>(
+const ObsidianPanelContent = React.forwardRef<HTMLDivElement, ObsidianPanelContentProps>(
   ({ className, ...props }, ref) => (
     <div ref={ref} className={cn("p-6 pt-0", className)} {...props} />
   )
 );
-GlassPanelContent.displayName = "GlassPanelContent";
+ObsidianPanelContent.displayName = "ObsidianPanelContent";
 
-interface GlassPanelFooterProps extends React.HTMLAttributes<HTMLDivElement> {}
+interface ObsidianPanelFooterProps extends React.HTMLAttributes<HTMLDivElement> {}
 
-const GlassPanelFooter = React.forwardRef<HTMLDivElement, GlassPanelFooterProps>(
+const ObsidianPanelFooter = React.forwardRef<HTMLDivElement, ObsidianPanelFooterProps>(
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
@@ -198,9 +284,33 @@ const GlassPanelFooter = React.forwardRef<HTMLDivElement, GlassPanelFooterProps>
     />
   )
 );
-GlassPanelFooter.displayName = "GlassPanelFooter";
+ObsidianPanelFooter.displayName = "ObsidianPanelFooter";
+
+// ============================================
+// LEGACY ALIASES (for backward compatibility)
+// ============================================
+
+/** @deprecated Use ObsidianPanel instead */
+const GlassPanel = ObsidianPanel;
+/** @deprecated Use ObsidianPanelHeader instead */
+const GlassPanelHeader = ObsidianPanelHeader;
+/** @deprecated Use ObsidianPanelTitle instead */
+const GlassPanelTitle = ObsidianPanelTitle;
+/** @deprecated Use ObsidianPanelDescription instead */
+const GlassPanelDescription = ObsidianPanelDescription;
+/** @deprecated Use ObsidianPanelContent instead */
+const GlassPanelContent = ObsidianPanelContent;
+/** @deprecated Use ObsidianPanelFooter instead */
+const GlassPanelFooter = ObsidianPanelFooter;
 
 export {
+  ObsidianPanel,
+  ObsidianPanelHeader,
+  ObsidianPanelTitle,
+  ObsidianPanelDescription,
+  ObsidianPanelContent,
+  ObsidianPanelFooter,
+  // Legacy exports
   GlassPanel,
   GlassPanelHeader,
   GlassPanelTitle,

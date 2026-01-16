@@ -1,36 +1,55 @@
 import { Variants, Transition, domAnimation, domMax } from "framer-motion";
 
 /**
+ * Animation Library - The Obsidian Standard
+ *
+ * Provides consistent, reusable animation patterns across the app.
+ * Designed for the Living Artifact aesthetic with obsidian glass
+ * and 0% → 50% energy transitions.
+ *
+ * @see DESIGN_SYSTEM.md - Part 6: Animation Standards
+ */
+
+/**
  * Re-export LazyMotion feature sets for tree-shaking optimization.
- *
- * - domAnimation: Basic animations (transform, opacity) - smaller bundle
- * - domMax: Full feature set including layout animations - larger bundle
- *
- * Usage: Wrap app with <LazyMotion features={domAnimation}>
  */
 export { domAnimation, domMax };
 
-/**
- * Animation variants library for Opta
- *
- * Provides consistent, reusable animation patterns across the app.
- * Designed for the immersive glassmorphism aesthetic with smooth,
- * Apple Music-inspired transitions.
- */
+// =============================================================================
+// EASING CURVES - The Obsidian Standard
+// =============================================================================
 
-// ============================================
+/** Smooth deceleration - default for most UI */
+export const smoothOut = [0.22, 1, 0.36, 1] as const;
+
+/** Heavy/weighty feel - for ring movements */
+export const heavy = [0.16, 1, 0.3, 1] as const;
+
+/** Snappy response - for hover states */
+export const snappy = [0.34, 1.56, 0.64, 1] as const;
+
+/** Cinematic entrance - for page transitions */
+export const cinematic = [0.77, 0, 0.175, 1] as const;
+
+/** Circle out - standard deceleration */
+export const circOut = [0, 0.55, 0.45, 1] as const;
+
+// =============================================================================
 // TRANSITION PRESETS
-// ============================================
+// =============================================================================
 
 export const transitions = {
   /** Quick, snappy transition */
-  fast: { duration: 0.15, ease: [0.4, 0, 0.2, 1] as const } as Transition,
+  fast: { duration: 0.15, ease: smoothOut } as Transition,
 
   /** Standard smooth transition */
-  smooth: { duration: 0.25, ease: [0.4, 0, 0.2, 1] as const } as Transition,
+  smooth: { duration: 0.25, ease: smoothOut } as Transition,
 
   /** Slower, more deliberate transition */
-  slow: { duration: 0.4, ease: [0.4, 0, 0.2, 1] as const } as Transition,
+  slow: { duration: 0.4, ease: smoothOut } as Transition,
+
+  /** Ignition transition */
+  ignition: { duration: 0.8, ease: smoothOut } as Transition,
 
   /** Bouncy spring effect */
   spring: { type: "spring", stiffness: 400, damping: 30 } as Transition,
@@ -40,39 +59,236 @@ export const transitions = {
 
   /** Very soft spring for page transitions */
   springPage: { type: "spring", stiffness: 100, damping: 20 } as Transition,
+
+  /** Heavy spring for ring movements */
+  springHeavy: { type: "spring", stiffness: 150, damping: 20 } as Transition,
 } as const;
 
-// ============================================
+// =============================================================================
+// IGNITION ANIMATIONS - The Obsidian Standard
+// Elements wake up from darkness, not just fade in
+// =============================================================================
+
+/**
+ * Standard ignition - elements emerge from the void
+ */
+export const ignition: Variants = {
+  hidden: {
+    opacity: 0,
+    scale: 0.95,
+    filter: "brightness(0.5) blur(4px)",
+  },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    filter: "brightness(1) blur(0px)",
+    transition: transitions.ignition,
+  },
+};
+
+/**
+ * Quick ignition - faster version for smaller elements
+ */
+export const ignitionQuick: Variants = {
+  hidden: {
+    opacity: 0,
+    scale: 0.97,
+    filter: "brightness(0.6) blur(2px)",
+  },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    filter: "brightness(1) blur(0px)",
+    transition: transitions.smooth,
+  },
+};
+
+/**
+ * Hero ignition - dramatic version for large elements
+ */
+export const ignitionHero: Variants = {
+  hidden: {
+    opacity: 0,
+    scale: 0.9,
+    y: 20,
+    filter: "brightness(0) blur(10px)",
+  },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    y: 0,
+    filter: "brightness(1) blur(0px)",
+    transition: { duration: 1.2, ease: cinematic },
+  },
+};
+
+// =============================================================================
+// GLOW ANIMATIONS - The 0% → 50% Energy System
+// =============================================================================
+
+/**
+ * Glow pulse - rhythmic glow for loading/processing
+ */
+export const glowPulse: Variants = {
+  dormant: {
+    filter: "drop-shadow(0 0 10px rgba(168, 85, 247, 0.2))",
+  },
+  active: {
+    filter: [
+      "drop-shadow(0 0 10px rgba(168, 85, 247, 0.2))",
+      "drop-shadow(0 0 40px rgba(168, 85, 247, 0.6))",
+      "drop-shadow(0 0 10px rgba(168, 85, 247, 0.2))",
+    ],
+    transition: {
+      duration: 2,
+      repeat: Infinity,
+      ease: "easeInOut",
+    },
+  },
+};
+
+/**
+ * Glow ignite - 0% → 50% transition for obsidian panels
+ */
+export const glowIgnite: Variants = {
+  dormant: {
+    boxShadow: "0 0 0 0 rgba(168, 85, 247, 0), inset 0 0 0 0 rgba(168, 85, 247, 0)",
+  },
+  active: {
+    boxShadow: "0 0 25px rgba(168, 85, 247, 0.4), inset 0 0 20px rgba(168, 85, 247, 0.1)",
+    transition: transitions.slow,
+  },
+};
+
+/**
+ * Border glow - for interactive obsidian panels
+ */
+export const borderGlow: Variants = {
+  dormant: {
+    borderColor: "rgba(255, 255, 255, 0.05)",
+  },
+  active: {
+    borderColor: "rgba(168, 85, 247, 0.4)",
+    transition: transitions.smooth,
+  },
+};
+
+// =============================================================================
+// RING STATE ANIMATIONS - For the Opta Ring protagonist
+// =============================================================================
+
+/**
+ * Ring overlay opacity (50% state visibility)
+ */
+export const ringOverlay: Variants = {
+  dormant: {
+    opacity: 0,
+    transition: { duration: 0.6, ease: smoothOut },
+  },
+  active: {
+    opacity: 1,
+    transition: { duration: 0.6, ease: smoothOut },
+  },
+  processing: {
+    opacity: [0.3, 0.9, 0.3],
+    transition: { duration: 1.5, repeat: Infinity, ease: "easeInOut" },
+  },
+};
+
+/**
+ * Ring glow states
+ */
+export const ringGlow: Variants = {
+  dormant: {
+    filter: "drop-shadow(0 0 10px rgba(168, 85, 247, 0.15))",
+    transition: { duration: 0.6, ease: smoothOut },
+  },
+  active: {
+    filter: "drop-shadow(0 0 40px rgba(168, 85, 247, 0.6))",
+    transition: { duration: 0.6, ease: smoothOut },
+  },
+  processing: {
+    filter: [
+      "drop-shadow(0 0 15px rgba(168, 85, 247, 0.3))",
+      "drop-shadow(0 0 50px rgba(168, 85, 247, 0.7))",
+      "drop-shadow(0 0 15px rgba(168, 85, 247, 0.3))",
+    ],
+    transition: { duration: 1.5, repeat: Infinity, ease: "easeInOut" },
+  },
+};
+
+/**
+ * Ring breathing (gentle pulse when dormant)
+ */
+export const ringBreathe: Variants = {
+  breathe: {
+    filter: [
+      "drop-shadow(0 0 10px rgba(168, 85, 247, 0.15)) brightness(0.9)",
+      "drop-shadow(0 0 25px rgba(168, 85, 247, 0.35)) brightness(1)",
+      "drop-shadow(0 0 10px rgba(168, 85, 247, 0.15)) brightness(0.9)",
+    ],
+    transition: { duration: 3, repeat: Infinity, ease: "easeInOut" },
+  },
+};
+
+// =============================================================================
+// FOG ANIMATIONS - For the atmospheric fog layer
+// =============================================================================
+
+/**
+ * Fog drift - slow movement for idle state
+ */
+export const fogDrift: Variants = {
+  drift: {
+    x: [0, 20, -10, 0],
+    y: [0, -10, 15, 0],
+    transition: { duration: 30, repeat: Infinity, ease: "easeInOut" },
+  },
+};
+
+/**
+ * Fog intensity variants
+ */
+export const fogIntensity: Variants = {
+  idle: { opacity: 0.15, transition: transitions.slow },
+  active: { opacity: 0.35, transition: transitions.slow },
+  storm: { opacity: 0.55, transition: transitions.slow },
+};
+
+// =============================================================================
 // PAGE TRANSITIONS
-// ============================================
+// =============================================================================
 
 export const pageVariants: Variants = {
   initial: {
     opacity: 0,
     y: 12,
+    filter: "brightness(0.8)",
   },
   animate: {
     opacity: 1,
     y: 0,
+    filter: "brightness(1)",
     transition: {
-      duration: 0.4,
-      ease: [0, 0, 0.2, 1],
+      duration: 0.5,
+      ease: smoothOut,
       staggerChildren: 0.08,
     },
   },
   exit: {
     opacity: 0,
     y: -8,
+    filter: "brightness(0.9)",
     transition: {
       duration: 0.25,
-      ease: [0.4, 0, 1, 1],
+      ease: smoothOut,
     },
   },
 };
 
-// ============================================
+// =============================================================================
 // FADE VARIANTS
-// ============================================
+// =============================================================================
 
 export const fadeVariants: Variants = {
   initial: { opacity: 0 },
@@ -120,9 +336,9 @@ export const fadeInDownVariants: Variants = {
   },
 };
 
-// ============================================
+// =============================================================================
 // SCALE VARIANTS
-// ============================================
+// =============================================================================
 
 export const scaleVariants: Variants = {
   initial: {
@@ -158,9 +374,9 @@ export const popVariants: Variants = {
   },
 };
 
-// ============================================
+// =============================================================================
 // SLIDE VARIANTS
-// ============================================
+// =============================================================================
 
 export const slideInRightVariants: Variants = {
   initial: {
@@ -213,15 +429,15 @@ export const slideInBottomVariants: Variants = {
   },
 };
 
-// ============================================
+// =============================================================================
 // STAGGER CHILDREN
-// ============================================
+// =============================================================================
 
 export const staggerContainerVariants: Variants = {
   initial: {},
   animate: {
     transition: {
-      staggerChildren: 0.06,
+      staggerChildren: 0.05,
       delayChildren: 0.1,
     },
   },
@@ -237,10 +453,12 @@ export const staggerItemVariants: Variants = {
   initial: {
     opacity: 0,
     y: 8,
+    filter: "brightness(0.7)",
   },
   animate: {
     opacity: 1,
     y: 0,
+    filter: "brightness(1)",
     transition: transitions.smooth,
   },
   exit: {
@@ -264,9 +482,9 @@ export const staggerFadeVariants: Variants = {
   },
 };
 
-// ============================================
-// INTERACTIVE VARIANTS
-// ============================================
+// =============================================================================
+// INTERACTIVE VARIANTS - Obsidian Hover Effects
+// =============================================================================
 
 export const buttonVariants: Variants = {
   initial: { scale: 1 },
@@ -286,8 +504,8 @@ export const cardHoverVariants: Variants = {
     boxShadow: "0 0 0 0 transparent",
   },
   hover: {
-    y: -4,
-    boxShadow: "0 8px 32px -8px hsl(270 80% 60% / 0.25)",
+    y: -2,
+    boxShadow: "0 0 0 1px rgba(168, 85, 247, 0.2), 0 8px 32px -8px rgba(168, 85, 247, 0.25)",
     transition: transitions.smooth,
   },
 };
@@ -297,14 +515,27 @@ export const glowHoverVariants: Variants = {
     boxShadow: "0 0 0 0 transparent",
   },
   hover: {
-    boxShadow: "0 0 24px -4px hsl(270 80% 60% / 0.4)",
+    boxShadow: "0 0 24px -4px rgba(168, 85, 247, 0.4)",
     transition: transitions.smooth,
   },
 };
 
-// ============================================
+/** Obsidian panel hover - triggers 0% → 50% glow */
+export const obsidianHoverVariants: Variants = {
+  initial: {
+    borderColor: "rgba(255, 255, 255, 0.05)",
+    boxShadow: "inset 0 1px 0 0 rgba(255, 255, 255, 0.05)",
+  },
+  hover: {
+    borderColor: "rgba(168, 85, 247, 0.4)",
+    boxShadow: "inset 0 0 20px rgba(168, 85, 247, 0.1), 0 0 15px rgba(168, 85, 247, 0.3)",
+    transition: { duration: 0.5, ease: smoothOut },
+  },
+};
+
+// =============================================================================
 // DRAWER/PANEL VARIANTS
-// ============================================
+// =============================================================================
 
 export const drawerVariants: Variants = {
   initial: {
@@ -335,9 +566,9 @@ export const overlayVariants: Variants = {
   },
 };
 
-// ============================================
+// =============================================================================
 // EXPAND/COLLAPSE VARIANTS
-// ============================================
+// =============================================================================
 
 export const expandVariants: Variants = {
   initial: {
@@ -362,9 +593,9 @@ export const expandVariants: Variants = {
   },
 };
 
-// ============================================
+// =============================================================================
 // METER/PROGRESS VARIANTS
-// ============================================
+// =============================================================================
 
 export const meterVariants: Variants = {
   initial: {
@@ -375,7 +606,7 @@ export const meterVariants: Variants = {
     pathLength: value,
     opacity: 1,
     transition: {
-      pathLength: { duration: 1, ease: [0.4, 0, 0.2, 1] },
+      pathLength: { duration: 1, ease: smoothOut },
       opacity: { duration: 0.3 },
     },
   }),
@@ -385,13 +616,13 @@ export const counterVariants = {
   from: { value: 0 },
   to: (value: number) => ({
     value,
-    transition: { duration: 0.8, ease: [0.4, 0, 0.2, 1] },
+    transition: { duration: 0.8, ease: smoothOut },
   }),
 };
 
-// ============================================
+// =============================================================================
 // NOTIFICATION/TOAST VARIANTS
-// ============================================
+// =============================================================================
 
 export const toastVariants: Variants = {
   initial: {
@@ -413,27 +644,9 @@ export const toastVariants: Variants = {
   },
 };
 
-// ============================================
-// HELPER FUNCTIONS
-// ============================================
-
-/**
- * Creates stagger delay for child elements
- */
-export function getStaggerDelay(index: number, base = 0.06): number {
-  return index * base;
-}
-
-/**
- * Creates a custom transition with delay
- */
-export function withDelay(transition: Transition, delay: number): Transition {
-  return { ...transition, delay };
-}
-
-// ============================================
+// =============================================================================
 // MICRO-INTERACTION VARIANTS
-// ============================================
+// =============================================================================
 
 /** Subtle scale for button hover */
 export const microHoverVariants: Variants = {
@@ -473,13 +686,64 @@ export const checkDrawVariants: Variants = {
   },
 };
 
-// ============================================
+// =============================================================================
+// HELPER FUNCTIONS
+// =============================================================================
+
+/**
+ * Creates stagger delay for child elements
+ */
+export function getStaggerDelay(index: number, base = 0.05): number {
+  return index * base;
+}
+
+/**
+ * Creates a custom transition with delay
+ */
+export function withDelay(transition: Transition, delay: number): Transition {
+  return { ...transition, delay };
+}
+
+/**
+ * Create ignition variant with custom delay
+ */
+export function createIgnitionVariant(delay: number): Variants {
+  return {
+    hidden: ignition.hidden,
+    visible: {
+      ...ignition.visible,
+      transition: {
+        ...transitions.ignition,
+        delay,
+      },
+    },
+  };
+}
+
+/**
+ * Create stagger container with custom timing
+ */
+export function createStaggerContainer(
+  staggerChildren = 0.05,
+  delayChildren = 0.1
+): Variants {
+  return {
+    initial: {},
+    animate: {
+      transition: {
+        staggerChildren,
+        delayChildren,
+      },
+    },
+  };
+}
+
+// =============================================================================
 // REDUCED MOTION SUPPORT
-// ============================================
+// =============================================================================
 
 /**
  * Check if user prefers reduced motion
- * Should be called inside useEffect or useMemo for SSR safety
  */
 export function prefersReducedMotion(): boolean {
   if (typeof window === "undefined") return false;
@@ -488,7 +752,6 @@ export function prefersReducedMotion(): boolean {
 
 /**
  * Get transition based on reduced motion preference
- * Returns instant transition if reduced motion is preferred
  */
 export function getReducedMotionTransition(
   transition: Transition,
@@ -502,7 +765,6 @@ export function getReducedMotionTransition(
 
 /**
  * Fade-only variant for reduced motion scenarios
- * Removes position/scale transforms
  */
 export const reducedMotionVariants: Variants = {
   initial: { opacity: 0 },

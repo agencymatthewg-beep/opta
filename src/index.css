@@ -1,69 +1,69 @@
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* CSS Variables for theming (shadcn/ui compatible) */
+/* ==========================================================================
+   CSS Variables - The Obsidian Standard
+   ========================================================================== */
+
 :root {
-  /* Background colors */
-  --background: 240 10% 4%;
-  --foreground: 0 0% 98%;
+  /* The Void (Backgrounds) */
+  --background: 270 50% 3%;       /* Deep void black with purple hint */
+  --foreground: 270 10% 98%;      /* Stark white for contrast */
 
-  /* Card colors */
-  --card: 240 10% 7%;
-  --card-foreground: 0 0% 98%;
+  /* Obsidian Surfaces (Cards/Panels) */
+  --card: 270 30% 5%;             /* Slightly lighter, glossy */
+  --card-foreground: 270 10% 90%;
+  --popover: 270 30% 5%;
+  --popover-foreground: 270 10% 90%;
 
-  /* Popover */
-  --popover: 240 10% 7%;
-  --popover-foreground: 0 0% 98%;
+  /* The Energy (Primary Brand) - Matches "50% Opta" Glow */
+  --primary: 265 90% 65%;         /* Electric Violet - The Core Glow */
+  --primary-foreground: 0 0% 100%;
+  --secondary: 265 50% 20%;       /* Dormant Violet - The 0% State */
+  --secondary-foreground: 270 10% 90%;
 
-  /* Primary (neon cyan) */
-  --primary: 185 100% 47%;
-  --primary-foreground: 240 10% 4%;
-
-  /* Secondary */
-  --secondary: 240 10% 12%;
-  --secondary-foreground: 0 0% 98%;
-
-  /* Accent (electric purple) */
-  --accent: 270 91% 65%;
-  --accent-foreground: 0 0% 98%;
-
-  /* Success (neon green - Stealth Mode) */
-  --success: 152 100% 50%;
-  --success-foreground: 240 10% 4%;
-
-  /* Warning (amber) */
-  --warning: 38 92% 50%;
-  --warning-foreground: 240 10% 4%;
-
-  /* Danger / Destructive (red) */
-  --danger: 0 84% 60%;
-  --danger-foreground: 0 0% 98%;
-  --destructive: 0 84% 60%;
-  --destructive-foreground: 0 0% 98%;
+  /* Functional States */
+  --success: 160 70% 45%;         /* Green for positive */
+  --success-foreground: 0 0% 100%;
+  --warning: 45 90% 55%;          /* Amber for caution */
+  --warning-foreground: 270 50% 3%;
+  --danger: 0 75% 55%;            /* Red for errors */
+  --danger-foreground: 0 0% 100%;
+  --destructive: 0 75% 55%;
+  --destructive-foreground: 0 0% 100%;
 
   /* Muted */
-  --muted: 240 10% 15%;
-  --muted-foreground: 240 5% 65%;
+  --muted: 270 20% 10%;
+  --muted-foreground: 270 10% 50%;
+  --accent: 265 80% 60%;
+  --accent-foreground: 0 0% 100%;
 
-  /* Border */
-  --border: 240 10% 15%;
-  --input: 240 10% 15%;
-  --ring: 185 100% 47%;
+  /* Borders */
+  --border: 270 30% 15%;
+  --input: 270 30% 15%;
+  --ring: 265 90% 65%;
 
   /* Radius */
-  --radius: 0.5rem;
+  --radius: 0.75rem;
 
-  /* Glow colors */
-  --glow-primary: 185 100% 47%;
-  --glow-success: 152 100% 50%;
-  --glow-accent: 270 91% 65%;
-  --glow-warning: 38 92% 50%;
-  --glow-danger: 0 84% 60%;
+  /* Glow Radiance */
+  --glow-strong: 0 0 30px -5px rgba(168, 85, 247, 0.6);
+  --glow-subtle: 0 0 15px -3px rgba(168, 85, 247, 0.2);
+  --glow-intense: 0 0 40px -10px rgba(168, 85, 247, 0.5);
+  --glow-beam: 0 0 80px -20px rgba(168, 85, 247, 0.3);
 
-  /* Typography */
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-    'Helvetica Neue', Arial, sans-serif;
+  /* Glass System Variables */
+  --glass-bg: 270 30% 5%;
+  --glass-opacity: 0.5;
+  --glass-blur: 20px;
+  --glass-border: 270 10% 98%;
+  --glass-border-opacity: 0.08;
+
+  /* Typography - Sora */
+  font-family: 'Sora', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: 16px;
   line-height: 1.5;
   font-weight: 400;
@@ -77,9 +77,13 @@
 
 /* Dark mode is the default and only theme */
 .dark {
-  --background: 240 10% 4%;
-  --foreground: 0 0% 98%;
+  --background: 270 50% 3%;
+  --foreground: 270 10% 98%;
 }
+
+/* ==========================================================================
+   Base Layer
+   ========================================================================== */
 
 @layer base {
   * {
@@ -92,12 +96,27 @@
 
   body {
     @apply min-h-screen bg-background text-foreground;
+    background-color: hsl(var(--background));
   }
 
   #root {
     @apply min-h-screen;
   }
+
+  /* Headings - Sora with tighter tracking */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Sora', sans-serif;
+    letter-spacing: -0.01em;
+  }
+
+  h1 { @apply text-4xl font-bold tracking-tight; letter-spacing: -0.02em; }
+  h2 { @apply text-2xl font-semibold; }
+  h3 { @apply text-lg font-semibold; }
 }
+
+/* ==========================================================================
+   Component Layer - The Obsidian Glass Material System
+   ========================================================================== */
 
 @layer components {
   /* Page title styles */
@@ -105,25 +124,118 @@
     @apply text-2xl font-semibold text-foreground mb-2;
   }
 
-  /* Common page container with fade animation */
+  /* Common page container with ignition animation */
   .page {
-    @apply animate-fade-in;
+    @apply animate-ignition;
   }
 
-  /* Glass effect - frosted glass */
+  /* ----------------------------------------
+     OBSIDIAN GLASS SYSTEM
+     The core visual language of Opta
+     ---------------------------------------- */
+
+  /* Base Surface - The "0% State" */
+  .obsidian {
+    @apply bg-[#05030a]/80 backdrop-blur-xl border border-white/5 shadow-xl rounded-xl;
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+  }
+
+  /* Interactive Surface - Triggers 0% to 50% on hover */
+  .obsidian-interactive {
+    @apply transition-all duration-500 ease-out cursor-pointer;
+  }
+
+  .obsidian-interactive:hover {
+    @apply border-primary/40 bg-[#0a0514]/90;
+    box-shadow:
+      inset 0 0 20px rgba(168, 85, 247, 0.1),
+      0 0 15px rgba(168, 85, 247, 0.3);
+  }
+
+  /* Active/Selected State - Sustained 50% */
+  .obsidian-active {
+    @apply border-primary/50 bg-[#0a0514]/95;
+    box-shadow:
+      inset 0 0 30px rgba(168, 85, 247, 0.15),
+      0 0 25px rgba(168, 85, 247, 0.4);
+  }
+
+  /* Subtle variant for nested elements */
+  .obsidian-subtle {
+    @apply bg-[#05030a]/50 backdrop-blur-lg border border-white/[0.03] rounded-lg;
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.02);
+  }
+
+  /* Strong variant for modals/overlays */
+  .obsidian-strong {
+    @apply bg-[#05030a]/95 backdrop-blur-2xl border border-white/10 rounded-xl;
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+  }
+
+  /* ----------------------------------------
+     LEGACY GLASS ALIASES (for compatibility)
+     Mapped to obsidian equivalents
+     ---------------------------------------- */
+
   .glass {
-    @apply bg-card/80 backdrop-blur-md border border-border/50;
+    @apply obsidian;
   }
 
-  /* Glass effect variants */
   .glass-subtle {
-    @apply bg-card/50 backdrop-blur-sm border border-border/30;
+    @apply obsidian-subtle;
   }
 
   .glass-strong {
-    @apply bg-card/90 backdrop-blur-lg border border-border/70;
+    @apply obsidian-strong;
+  }
+
+  /* ----------------------------------------
+     BUTTON ENERGY SYSTEM
+     ---------------------------------------- */
+
+  /* Primary Action - "The Core" */
+  .btn-energy {
+    @apply relative overflow-hidden rounded-xl bg-primary text-white font-semibold;
+    @apply transition-all duration-300;
+    box-shadow: 0 0 20px -5px hsl(var(--primary));
+  }
+
+  .btn-energy:hover {
+    box-shadow: 0 0 40px -10px hsl(var(--primary));
+    transform: scale(1.02);
+  }
+
+  .btn-energy:active {
+    transform: scale(0.98);
+  }
+
+  /* Secondary/Ghost variant */
+  .btn-obsidian {
+    @apply relative rounded-xl bg-transparent border border-white/10 text-foreground font-medium;
+    @apply transition-all duration-300;
+  }
+
+  .btn-obsidian:hover {
+    @apply border-primary/40 bg-primary/10;
+    box-shadow: 0 0 20px -5px hsl(var(--primary) / 0.3);
+  }
+
+  /* ----------------------------------------
+     MOONLIGHT GRADIENT (Typography)
+     ---------------------------------------- */
+
+  .text-moonlight {
+    @apply bg-gradient-to-br from-white via-white to-primary/50 bg-clip-text text-transparent;
+  }
+
+  .text-glow {
+    text-shadow: 0 0 30px rgba(168, 85, 247, 0.5);
   }
 }
+
+/* ==========================================================================
+   Utility Layer
+   ========================================================================== */
 
 @layer utilities {
   /* Focus states for accessibility */
@@ -131,9 +243,31 @@
     @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background;
   }
 
-  /* Fade in animation */
+  /* ----------------------------------------
+     IGNITION ANIMATION
+     Elements wake up from darkness
+     ---------------------------------------- */
+
+  .animate-ignition {
+    animation: ignition 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  @keyframes ignition {
+    from {
+      opacity: 0;
+      transform: translateY(8px) scale(0.98);
+      filter: brightness(0.5) blur(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      filter: brightness(1) blur(0px);
+    }
+  }
+
+  /* Fade in (legacy, simpler) */
   .animate-fade-in {
-    animation: fadeIn 0.2s ease;
+    animation: fadeIn 0.3s ease;
   }
 
   @keyframes fadeIn {
@@ -147,104 +281,189 @@
     }
   }
 
-  /* Glow utilities - small */
+  /* ----------------------------------------
+     GLOW UTILITIES - The Energy System
+     ---------------------------------------- */
+
+  /* Small glow */
   .glow-sm {
-    box-shadow: 0 0 8px 0 hsl(var(--glow-primary) / 0.3);
+    box-shadow: 0 0 8px 0 rgba(168, 85, 247, 0.3);
   }
 
   .glow-sm-success {
-    box-shadow: 0 0 8px 0 hsl(var(--glow-success) / 0.3);
-  }
-
-  .glow-sm-accent {
-    box-shadow: 0 0 8px 0 hsl(var(--glow-accent) / 0.3);
+    box-shadow: 0 0 8px 0 hsl(var(--success) / 0.3);
   }
 
   .glow-sm-warning {
-    box-shadow: 0 0 8px 0 hsl(var(--glow-warning) / 0.3);
+    box-shadow: 0 0 8px 0 hsl(var(--warning) / 0.3);
   }
 
   .glow-sm-danger {
-    box-shadow: 0 0 8px 0 hsl(var(--glow-danger) / 0.3);
+    box-shadow: 0 0 8px 0 hsl(var(--danger) / 0.3);
   }
 
-  /* Glow utilities - medium */
+  /* Medium glow */
   .glow-md {
-    box-shadow: 0 0 16px 0 hsl(var(--glow-primary) / 0.4);
+    box-shadow: 0 0 16px 0 rgba(168, 85, 247, 0.4);
   }
 
   .glow-md-success {
-    box-shadow: 0 0 16px 0 hsl(var(--glow-success) / 0.4);
-  }
-
-  .glow-md-accent {
-    box-shadow: 0 0 16px 0 hsl(var(--glow-accent) / 0.4);
+    box-shadow: 0 0 16px 0 hsl(var(--success) / 0.4);
   }
 
   .glow-md-warning {
-    box-shadow: 0 0 16px 0 hsl(var(--glow-warning) / 0.4);
+    box-shadow: 0 0 16px 0 hsl(var(--warning) / 0.4);
   }
 
   .glow-md-danger {
-    box-shadow: 0 0 16px 0 hsl(var(--glow-danger) / 0.4);
+    box-shadow: 0 0 16px 0 hsl(var(--danger) / 0.4);
   }
 
-  /* Glow utilities - large */
+  /* Large glow */
   .glow-lg {
-    box-shadow: 0 0 24px 4px hsl(var(--glow-primary) / 0.5);
+    box-shadow: 0 0 24px 4px rgba(168, 85, 247, 0.5);
   }
 
   .glow-lg-success {
-    box-shadow: 0 0 24px 4px hsl(var(--glow-success) / 0.5);
-  }
-
-  .glow-lg-accent {
-    box-shadow: 0 0 24px 4px hsl(var(--glow-accent) / 0.5);
+    box-shadow: 0 0 24px 4px hsl(var(--success) / 0.5);
   }
 
   .glow-lg-warning {
-    box-shadow: 0 0 24px 4px hsl(var(--glow-warning) / 0.5);
+    box-shadow: 0 0 24px 4px hsl(var(--warning) / 0.5);
   }
 
   .glow-lg-danger {
-    box-shadow: 0 0 24px 4px hsl(var(--glow-danger) / 0.5);
+    box-shadow: 0 0 24px 4px hsl(var(--danger) / 0.5);
   }
 
-  /* Neon text glow for primary */
+  /* Intense glow (for active/hero elements) */
+  .glow-intense {
+    box-shadow: 0 0 40px -10px rgba(168, 85, 247, 0.5);
+  }
+
+  /* Beam glow (for atmospheric effects) */
+  .glow-beam {
+    box-shadow: 0 0 80px -20px rgba(168, 85, 247, 0.3);
+  }
+
+  /* ----------------------------------------
+     TEXT GLOW UTILITIES
+     ---------------------------------------- */
+
   .text-glow-primary {
-    text-shadow: 0 0 8px hsl(var(--glow-primary) / 0.6);
+    text-shadow: 0 0 8px rgba(168, 85, 247, 0.6);
   }
 
-  /* Neon text glow for success (Stealth Mode) */
   .text-glow-success {
-    text-shadow: 0 0 8px hsl(var(--glow-success) / 0.6);
+    text-shadow: 0 0 8px hsl(var(--success) / 0.6);
   }
 
-  /* Animated pulse glow */
+  .text-glow-warning {
+    text-shadow: 0 0 8px hsl(var(--warning) / 0.6);
+  }
+
+  .text-glow-danger {
+    text-shadow: 0 0 8px hsl(var(--danger) / 0.6);
+  }
+
+  /* ----------------------------------------
+     PULSE ANIMATIONS
+     ---------------------------------------- */
+
+  /* Primary pulse glow */
   .animate-pulse-glow {
     animation: pulseGlow 2s ease-in-out infinite;
   }
 
   @keyframes pulseGlow {
     0%, 100% {
-      box-shadow: 0 0 8px 0 hsl(var(--glow-primary) / 0.3);
+      box-shadow: 0 0 8px 0 rgba(168, 85, 247, 0.3);
     }
     50% {
-      box-shadow: 0 0 20px 4px hsl(var(--glow-primary) / 0.5);
+      box-shadow: 0 0 30px 4px rgba(168, 85, 247, 0.6);
     }
   }
 
-  /* Success variant pulse glow */
+  /* Success variant pulse */
   .animate-pulse-glow-success {
     animation: pulseGlowSuccess 2s ease-in-out infinite;
   }
 
   @keyframes pulseGlowSuccess {
     0%, 100% {
-      box-shadow: 0 0 8px 0 hsl(var(--glow-success) / 0.3);
+      box-shadow: 0 0 8px 0 hsl(var(--success) / 0.3);
     }
     50% {
-      box-shadow: 0 0 20px 4px hsl(var(--glow-success) / 0.5);
+      box-shadow: 0 0 20px 4px hsl(var(--success) / 0.5);
+    }
+  }
+
+  /* Ring breathing animation (0% to 50% state) */
+  .animate-ring-breathe {
+    animation: ringBreathe 3s ease-in-out infinite;
+  }
+
+  @keyframes ringBreathe {
+    0%, 100% {
+      filter: brightness(0.6) drop-shadow(0 0 10px rgba(168, 85, 247, 0.2));
+    }
+    50% {
+      filter: brightness(1) drop-shadow(0 0 30px rgba(168, 85, 247, 0.6));
+    }
+  }
+
+  /* Ring processing pulse */
+  .animate-ring-process {
+    animation: ringProcess 1.5s ease-in-out infinite;
+  }
+
+  @keyframes ringProcess {
+    0%, 100% {
+      filter: brightness(0.7) drop-shadow(0 0 15px rgba(168, 85, 247, 0.3));
+      transform: scale(1);
+    }
+    50% {
+      filter: brightness(1.1) drop-shadow(0 0 40px rgba(168, 85, 247, 0.7));
+      transform: scale(1.02);
+    }
+  }
+
+  /* ----------------------------------------
+     FOG/ATMOSPHERE UTILITIES
+     ---------------------------------------- */
+
+  .fog-drift {
+    animation: fogDrift 30s ease-in-out infinite;
+  }
+
+  @keyframes fogDrift {
+    0%, 100% {
+      transform: translate(0, 0);
+    }
+    25% {
+      transform: translate(20px, -10px);
+    }
+    50% {
+      transform: translate(-10px, 15px);
+    }
+    75% {
+      transform: translate(-20px, -5px);
+    }
+  }
+
+  .fog-drift-fast {
+    animation: fogDriftFast 15s ease-in-out infinite;
+  }
+
+  @keyframes fogDriftFast {
+    0%, 100% {
+      transform: translate(0, 0);
+    }
+    33% {
+      transform: translate(30px, -20px);
+    }
+    66% {
+      transform: translate(-25px, 15px);
     }
   }
 
@@ -270,13 +489,15 @@
   }
 }
 
-/* Selection styling */
+/* ==========================================================================
+   Selection & Scrollbar Styling
+   ========================================================================== */
+
 ::selection {
   background-color: hsl(var(--primary));
   color: hsl(var(--primary-foreground));
 }
 
-/* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -295,7 +516,10 @@
   background: hsl(var(--muted-foreground) / 0.5);
 }
 
-/* Link styles */
+/* ==========================================================================
+   Link & Button Base Styles
+   ========================================================================== */
+
 a {
   @apply text-primary no-underline transition-opacity duration-200;
 }
@@ -304,9 +528,8 @@ a:hover {
   @apply opacity-80;
 }
 
-/* Button base reset */
 button {
-  font-family: inherit;
+  font-family: 'Sora', sans-serif;
 }
 
 /* ==========================================================================
@@ -315,16 +538,19 @@ button {
 
 /* macOS vibrancy support - enhanced backdrop blur for Safari/WebKit */
 @supports (-webkit-backdrop-filter: blur(10px)) {
+  .obsidian,
   .glass {
     -webkit-backdrop-filter: blur(20px);
     backdrop-filter: blur(20px);
   }
 
+  .obsidian-subtle,
   .glass-subtle {
     -webkit-backdrop-filter: blur(12px);
     backdrop-filter: blur(12px);
   }
 
+  .obsidian-strong,
   .glass-strong {
     -webkit-backdrop-filter: blur(32px);
     backdrop-filter: blur(32px);
@@ -346,10 +572,15 @@ button {
 
 /* Respect macOS reduced motion preferences */
 @media (prefers-reduced-motion: reduce) {
+  .animate-ignition,
   .animate-fade-in,
   .animate-pulse-glow,
   .animate-pulse-glow-success,
-  .animate-shimmer {
+  .animate-ring-breathe,
+  .animate-ring-process,
+  .animate-shimmer,
+  .fog-drift,
+  .fog-drift-fast {
     animation: none;
   }
 }

@@ -1,7 +1,10 @@
 /**
- * Switch component for toggling boolean settings.
+ * Switch - The Obsidian Toggle
  *
- * A toggle switch styled with Tailwind CSS following shadcn/ui patterns.
+ * A toggle switch with obsidian glass styling and energy state transitions.
+ * Off = dormant (0%), On = active (50%) with purple energy glow.
+ *
+ * @see DESIGN_SYSTEM.md - Part 4: The Obsidian Glass Material System
  */
 
 import * as React from 'react';
@@ -21,7 +24,7 @@ export interface SwitchProps {
 }
 
 /**
- * Switch - A toggle switch component.
+ * Switch - A toggle switch component with obsidian styling.
  *
  * @example
  * ```tsx
@@ -56,19 +59,37 @@ const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
         onClick={handleClick}
         onKeyDown={handleKeyDown}
         className={cn(
-          'peer inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full',
-          'border-2 border-transparent shadow-sm transition-colors',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+          'peer inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full',
+          'transition-all duration-300',
+          'border border-white/[0.06]',
+          // Focus state
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+          // Disabled state
           'disabled:cursor-not-allowed disabled:opacity-50',
-          checked ? 'bg-primary' : 'bg-input',
+          // Off state (0% - dormant)
+          !checked && [
+            'bg-[#05030a]/80 backdrop-blur-lg',
+            'shadow-[inset_0_1px_0_0_rgba(255,255,255,0.03)]',
+          ],
+          // On state (50% - active energy)
+          checked && [
+            'bg-primary/80',
+            'border-primary/50',
+            'shadow-[inset_0_0_15px_rgba(168,85,247,0.3),0_0_20px_-5px_rgba(168,85,247,0.5)]',
+          ],
           className
         )}
         {...props}
       >
         <span
           className={cn(
-            'pointer-events-none block h-4 w-4 rounded-full bg-background shadow-lg ring-0 transition-transform',
-            checked ? 'translate-x-4' : 'translate-x-0'
+            'pointer-events-none block h-5 w-5 rounded-full transition-all duration-300',
+            // Thumb styling - obsidian glass
+            'bg-white/90 shadow-lg',
+            // Position
+            checked ? 'translate-x-5' : 'translate-x-0.5',
+            // Glow when active
+            checked && 'shadow-[0_0_10px_rgba(255,255,255,0.5)]'
           )}
         />
       </button>

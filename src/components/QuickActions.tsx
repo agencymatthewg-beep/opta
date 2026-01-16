@@ -1,11 +1,18 @@
 /**
- * QuickActions component - pre-built quick action buttons for common optimization queries.
+ * QuickActions - Obsidian Quick Action Grid
  *
- * Provides a grid of buttons that trigger predefined prompts for the AI assistant,
- * making it immediately useful without requiring users to type.
+ * Pre-built quick action buttons for common optimization queries.
+ * Uses obsidian glass material with 0%→50% energy transitions.
+ *
+ * @see DESIGN_SYSTEM.md - Part 4: The Obsidian Glass Material System
  */
 
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { Zap, Activity, Rocket, Cpu, Database, type LucideIcon } from 'lucide-react';
+
+// Easing curve for smooth energy transitions
+const smoothOut: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
 /** Quick action definition */
 export interface QuickAction {
@@ -49,87 +56,13 @@ export const QUICK_ACTIONS: QuickAction[] = [
   },
 ];
 
-/** Icon components using Lucide-style SVG paths */
-const Icons = {
-  zap: (
-    <svg
-      className="w-4 h-4"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-    </svg>
-  ),
-  activity: (
-    <svg
-      className="w-4 h-4"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-    </svg>
-  ),
-  rocket: (
-    <svg
-      className="w-4 h-4"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" />
-      <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" />
-      <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" />
-      <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" />
-    </svg>
-  ),
-  cpu: (
-    <svg
-      className="w-4 h-4"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <rect x="4" y="4" width="16" height="16" rx="2" />
-      <rect x="9" y="9" width="6" height="6" />
-      <path d="M15 2v2" />
-      <path d="M15 20v2" />
-      <path d="M2 15h2" />
-      <path d="M2 9h2" />
-      <path d="M20 15h2" />
-      <path d="M20 9h2" />
-      <path d="M9 2v2" />
-      <path d="M9 20v2" />
-    </svg>
-  ),
-  database: (
-    <svg
-      className="w-4 h-4"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <ellipse cx="12" cy="5" rx="9" ry="3" />
-      <path d="M3 5V19A9 3 0 0 0 21 19V5" />
-      <path d="M3 12A9 3 0 0 0 21 12" />
-    </svg>
-  ),
+/** Icon mapping using Lucide React components */
+const IconComponents: Record<string, LucideIcon> = {
+  zap: Zap,
+  activity: Activity,
+  rocket: Rocket,
+  cpu: Cpu,
+  database: Database,
 };
 
 interface QuickActionsProps {
@@ -144,7 +77,7 @@ interface QuickActionsProps {
 }
 
 /**
- * QuickActions component - Grid of quick action buttons for common optimization queries.
+ * QuickActions component - Grid of quick action buttons with obsidian styling.
  */
 function QuickActions({
   onAction,
@@ -154,28 +87,76 @@ function QuickActions({
 }: QuickActionsProps) {
   return (
     <div className={cn('w-full', className)}>
-      <p className="text-xs text-muted-foreground mb-3">Quick actions</p>
+      <p className="text-xs text-muted-foreground/60 mb-3 uppercase tracking-wider font-medium">
+        Quick actions
+      </p>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
-        {actions.map((action) => (
-          <button
-            key={action.id}
-            onClick={() => onAction(action.prompt, action.label)}
-            disabled={disabled}
-            className={cn(
-              'flex items-center gap-2 px-3 py-2',
-              'bg-background/50 hover:bg-muted/80',
-              'border border-border hover:border-primary/50',
-              'rounded-lg transition-all duration-200',
-              'text-sm text-muted-foreground hover:text-foreground',
-              'focus:outline-none focus:ring-1 focus:ring-primary',
-              'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-background/50 disabled:hover:border-border disabled:hover:text-muted-foreground',
-              'hover:glow-sm'
-            )}
-          >
-            <span className="text-primary">{Icons[action.icon]}</span>
-            <span className="truncate">{action.label}</span>
-          </button>
-        ))}
+        {actions.map((action, index) => {
+          const Icon = IconComponents[action.icon];
+          return (
+            <motion.button
+              key={action.id}
+              onClick={() => onAction(action.prompt, action.label)}
+              disabled={disabled}
+              // Ignition animation
+              initial={{
+                opacity: 0,
+                y: 8,
+                filter: 'brightness(0.5)',
+              }}
+              animate={{
+                opacity: 1,
+                y: 0,
+                filter: 'brightness(1)',
+              }}
+              transition={{
+                delay: index * 0.05,
+                duration: 0.4,
+                ease: smoothOut,
+              }}
+              // Hover: 0% → 50% energy
+              whileHover={{
+                y: -2,
+                transition: { duration: 0.2, ease: smoothOut },
+              }}
+              whileTap={{ scale: 0.97 }}
+              className={cn(
+                'group relative flex items-center gap-2 px-3 py-2.5 rounded-xl',
+                // Obsidian glass material
+                'bg-[#05030a]/60 backdrop-blur-lg',
+                'border border-white/[0.06]',
+                // Transition
+                'transition-all duration-300',
+                // Text
+                'text-sm text-muted-foreground',
+                // Focus state
+                'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                // Disabled state
+                'disabled:opacity-40 disabled:cursor-not-allowed'
+              )}
+            >
+              {/* Hover glow overlay */}
+              <motion.div
+                className="absolute inset-0 pointer-events-none rounded-xl opacity-0 group-hover:opacity-100"
+                style={{
+                  background: 'radial-gradient(ellipse at 50% 0%, rgba(168, 85, 247, 0.1) 0%, transparent 70%)',
+                  boxShadow: 'inset 0 0 0 1px rgba(168, 85, 247, 0.2), 0 0 15px -5px rgba(168, 85, 247, 0.25)',
+                }}
+                transition={{ duration: 0.2 }}
+              />
+
+              {/* Icon */}
+              <span className="relative text-primary group-hover:drop-shadow-[0_0_6px_rgba(168,85,247,0.5)] transition-all duration-300">
+                <Icon className="w-4 h-4" strokeWidth={1.75} />
+              </span>
+
+              {/* Label */}
+              <span className="relative truncate group-hover:text-foreground transition-colors duration-300">
+                {action.label}
+              </span>
+            </motion.button>
+          );
+        })}
       </div>
     </div>
   );
