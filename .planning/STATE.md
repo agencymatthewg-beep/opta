@@ -43,10 +43,10 @@ Progress: █████████░░░░░░░░░░░ 94% (15/1
 | 12. UX Flow Polish | 3/3 | 18 min | 6 min |
 | 13. Core Features | 4/4 | 15 min | 4 min |
 | 14. Educational Enhancement | 3/3 | 12 min | 4 min |
-| 15. Performance & Launch | 1/3 | 4 min | 4 min |
+| 15. Performance & Launch | 2/3 | 8 min | 4 min |
 
 **Recent Trend:**
-- Last 5 plans: 4, 4, 5, 3, 4 min
+- Last 5 plans: 4, 5, 3, 4, 4 min
 - Trend: Consistent fast execution
 
 ## Accumulated Context
@@ -210,6 +210,10 @@ Progress: █████████░░░░░░░░░░░ 94% (15/1
 | 15-01 | LazyMotion with domAnimation feature set | Smaller bundle, basic transform/opacity animations sufficient |
 | 15-01 | Dev-only performance logging (import.meta.env.DEV) | Tree-shakes in production, no runtime cost |
 | 15-01 | 16ms render threshold for warnings | Standard 60fps frame budget |
+| 15-02 | Overlay titleBarStyle for native macOS traffic lights | Native window controls positioning |
+| 15-02 | Enhanced backdrop blur values for WebKit vibrancy | 20px glass, 12px subtle, 32px strong |
+| 15-02 | Transparent window for glass effects | Backdrop-filter requires transparency |
+| 15-02 | 28px titlebar drag region | Standard macOS title bar height |
 
 ### Deferred Issues
 
@@ -233,6 +237,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-16
-Stopped at: Completed 15-01-PLAN.md (Performance Optimization)
+Stopped at: Completed 15-02-PLAN.md (macOS-Specific Polish)
 Resume file: None
-Next action: Execute 15-02-PLAN.md (macOS-specific polish)
+Next action: Execute 15-03-PLAN.md (Launch Preparation)
