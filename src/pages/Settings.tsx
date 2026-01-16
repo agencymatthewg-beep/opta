@@ -4,6 +4,7 @@ import { Switch } from '@/components/ui/switch';
 import { useConflicts } from '../hooks/useConflicts';
 import { useClaude } from '../hooks/useClaude';
 import { useUserProfile } from '../hooks/useUserProfile';
+import { useInvestigationMode } from '../components/InvestigationMode';
 import ConflictCard from '../components/ConflictCard';
 import PlatformIndicator from '../components/PlatformIndicator';
 import { ProfileViewer } from '../components/ProfileViewer';
@@ -22,12 +23,14 @@ import {
   Loader2,
   Cpu,
   User,
+  Eye,
 } from 'lucide-react';
 
 function Settings() {
   const { conflicts, summary, loading } = useConflicts();
   const { status: claudeStatus, loading: claudeLoading, sessionUsage } = useClaude();
   const { profile, loading: profileLoading, updateProfile, deleteProfile } = useUserProfile();
+  const { isInvestigationMode, setInvestigationMode } = useInvestigationMode();
   const [acknowledgedIds, setAcknowledgedIds] = useState<Set<string>>(new Set());
   const [showPrivacyIndicators, setShowPrivacyIndicators] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -389,6 +392,30 @@ function Settings() {
                 <Switch
                   checked={showPrivacyIndicators}
                   onCheckedChange={setShowPrivacyIndicators}
+                />
+              </div>
+
+              <div className="h-px bg-border/20" />
+
+              {/* Investigation Mode toggle */}
+              <div className="flex justify-between items-center gap-4">
+                <div className="flex items-start gap-3">
+                  <div className={cn(
+                    'w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5',
+                    'bg-primary/10 border border-primary/20'
+                  )}>
+                    <Eye className="w-4 h-4 text-primary" strokeWidth={1.75} />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-sm font-semibold text-foreground">Investigation Mode</span>
+                    <span className="text-xs text-muted-foreground/60">
+                      Show detailed technical information about what Opta is doing
+                    </span>
+                  </div>
+                </div>
+                <Switch
+                  checked={isInvestigationMode}
+                  onCheckedChange={setInvestigationMode}
                 />
               </div>
             </div>
