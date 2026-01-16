@@ -2,6 +2,7 @@ import { useState, useEffect, lazy, Suspense } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import Layout from './components/Layout';
 import Background from './components/Background';
+import ErrorBoundary from './components/ErrorBoundary';
 import { PageSkeleton } from './components/ui/skeleton';
 import { pageVariants } from './lib/animations';
 import { LearnModeProvider } from './components/LearnModeContext';
@@ -9,6 +10,9 @@ import { LearnModeToggle } from './components/LearnModeToggle';
 import { InvestigationModeProvider } from './components/InvestigationMode';
 import { ExpertiseProvider } from './components/ExpertiseContext';
 import { ExpertiseTracking } from './components/ExpertiseTracking';
+import { GameSessionProvider, useGameSessionContext } from './components/GameSessionContext';
+import GameSessionTracker from './components/GameSessionTracker';
+import SessionSummaryModal from './components/SessionSummaryModal';
 
 // Lazy load pages for better initial load performance
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -31,6 +35,38 @@ interface OnboardingPreferences {
 const PLATFORM_ONBOARDING_KEY = 'opta_platform_onboarding_complete';
 const PREFERENCES_ONBOARDING_KEY = 'opta_preferences_onboarding_complete';
 const USER_PREFERENCES_KEY = 'opta_user_preferences';
+
+/**
+ * GameSessionUI - Renders session tracker and summary modal.
+ * Must be inside GameSessionProvider.
+ */
+function GameSessionUI() {
+  const { session, telemetry, summary, endSession, clearSummary, isActive } = useGameSessionContext();
+
+  return (
+    <>
+      {/* Session Tracker - visible when game is running */}
+      <AnimatePresence>
+        {isActive && session && (
+          <GameSessionTracker
+            session={session}
+            telemetry={telemetry}
+            onEndSession={endSession}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Session Summary Modal - shown after session ends */}
+      {summary && (
+        <SessionSummaryModal
+          open={!!summary}
+          onClose={clearSummary}
+          summary={summary}
+        />
+      )}
+    </>
+  );
+}
 
 function App() {
   const [activePage, setActivePage] = useState('dashboard');
@@ -140,44 +176,51 @@ function App() {
     <ExpertiseProvider>
       <LearnModeProvider>
         <InvestigationModeProvider>
-          <div className="dark">
-            {/* Expertise signal tracking (session, shortcuts) */}
-            <ExpertiseTracking />
+          <GameSessionProvider>
+            <div className="dark">
+              {/* Expertise signal tracking (session, shortcuts) */}
+              <ExpertiseTracking />
 
-            {/* Immersive animated background */}
-            <Background />
+              {/* Immersive animated background */}
+              <Background />
 
-            {/* Main app layout */}
-            <Layout activePage={activePage} onNavigate={setActivePage}>
-              <AnimatePresence mode="wait">
-                {renderPage()}
+              {/* Main app layout wrapped in error boundary */}
+              <ErrorBoundary>
+                <Layout activePage={activePage} onNavigate={setActivePage}>
+                  <AnimatePresence mode="wait">
+                    {renderPage()}
+                  </AnimatePresence>
+                </Layout>
+              </ErrorBoundary>
+
+              {/* Learn Mode toggle - always visible */}
+              <LearnModeToggle />
+
+              {/* Game Session UI - tracker and summary modal */}
+              <GameSessionUI />
+
+              {/* Platform onboarding (first) */}
+              <AnimatePresence>
+                {showPlatformOnboarding && (
+                  <Suspense fallback={null}>
+                    <PlatformOnboarding
+                      onComplete={handlePlatformOnboardingComplete}
+                      onSkip={handlePlatformOnboardingSkip}
+                    />
+                  </Suspense>
+                )}
               </AnimatePresence>
-            </Layout>
 
-            {/* Learn Mode toggle - always visible */}
-            <LearnModeToggle />
-
-            {/* Platform onboarding (first) */}
-            <AnimatePresence>
-              {showPlatformOnboarding && (
-                <Suspense fallback={null}>
-                  <PlatformOnboarding
-                    onComplete={handlePlatformOnboardingComplete}
-                    onSkip={handlePlatformOnboardingSkip}
-                  />
-                </Suspense>
-              )}
-            </AnimatePresence>
-
-            {/* Preferences onboarding (second) */}
-            <AnimatePresence>
-              {showPreferencesOnboarding && (
-                <Suspense fallback={null}>
-                  <Onboarding onComplete={handlePreferencesComplete} />
-                </Suspense>
-              )}
-            </AnimatePresence>
-          </div>
+              {/* Preferences onboarding (second) */}
+              <AnimatePresence>
+                {showPreferencesOnboarding && (
+                  <Suspense fallback={null}>
+                    <Onboarding onComplete={handlePreferencesComplete} />
+                  </Suspense>
+                )}
+              </AnimatePresence>
+            </div>
+          </GameSessionProvider>
         </InvestigationModeProvider>
       </LearnModeProvider>
     </ExpertiseProvider>
