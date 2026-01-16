@@ -6,12 +6,13 @@
  */
 
 import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useConflicts } from '../hooks/useConflicts';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
 import type { ConflictSeverity } from '../types/conflicts';
+import { AlertTriangle, Info, ChevronDown, X, ExternalLink, RefreshCw } from 'lucide-react';
 
 /**
  * Get variant and styling based on highest severity.
@@ -20,28 +21,28 @@ function getSeverityConfig(severity: ConflictSeverity) {
   switch (severity) {
     case 'high':
       return {
-        variant: 'destructive' as const,
-        glowClass: 'glow-sm-danger',
+        glowClass: 'shadow-[0_0_24px_-8px_hsl(var(--danger)/0.4)]',
         iconColor: 'text-danger',
-        bgColor: 'bg-danger/5',
-        borderColor: 'border-danger/30',
+        bgColor: 'from-danger/10 via-danger/5 to-transparent',
+        borderColor: 'border-danger/40',
+        badgeClass: 'bg-danger/15 text-danger border-danger/30',
       };
     case 'medium':
       return {
-        variant: 'warning' as const,
-        glowClass: 'glow-sm-warning',
+        glowClass: 'shadow-[0_0_24px_-8px_hsl(var(--warning)/0.4)]',
         iconColor: 'text-warning',
-        bgColor: 'bg-warning/5',
-        borderColor: 'border-warning/30',
+        bgColor: 'from-warning/10 via-warning/5 to-transparent',
+        borderColor: 'border-warning/40',
+        badgeClass: 'bg-warning/15 text-warning border-warning/30',
       };
     case 'low':
     default:
       return {
-        variant: 'info' as const,
-        glowClass: 'glow-sm',
+        glowClass: 'shadow-[0_0_24px_-8px_hsl(var(--primary)/0.3)]',
         iconColor: 'text-primary',
-        bgColor: 'bg-primary/5',
-        borderColor: 'border-primary/30',
+        bgColor: 'from-primary/10 via-primary/5 to-transparent',
+        borderColor: 'border-primary/40',
+        badgeClass: 'bg-primary/15 text-primary border-primary/30',
       };
   }
 }
@@ -56,71 +57,22 @@ function getHighestSeverity(highCount: number, mediumCount: number): ConflictSev
 }
 
 /**
- * Warning triangle icon for high/medium severity.
+ * Severity badge component.
  */
-function WarningIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={cn('w-5 h-5', className)}
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-      />
-    </svg>
-  );
-}
+function SeverityBadge({ count, severity }: { count: number; severity: ConflictSeverity }) {
+  const colors: Record<ConflictSeverity, string> = {
+    high: 'bg-danger/15 text-danger border-danger/30',
+    medium: 'bg-warning/15 text-warning border-warning/30',
+    low: 'bg-muted/50 text-muted-foreground border-border/30',
+  };
 
-/**
- * Info circle icon for low severity.
- */
-function InfoIcon({ className }: { className?: string }) {
   return (
-    <svg
-      className={cn('w-5 h-5', className)}
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-      />
-    </svg>
-  );
-}
-
-/**
- * Chevron icon for expand/collapse.
- */
-function ChevronIcon({ className, expanded }: { className?: string; expanded: boolean }) {
-  return (
-    <svg
-      className={cn('w-4 h-4 transition-transform duration-200', expanded && 'rotate-180', className)}
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-    </svg>
-  );
-}
-
-/**
- * X icon for dismiss button.
- */
-function XIcon({ className }: { className?: string }) {
-  return (
-    <svg className={cn('w-4 h-4', className)} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-    </svg>
+    <span className={cn(
+      'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border',
+      colors[severity]
+    )}>
+      {count} {severity}
+    </span>
   );
 }
 
@@ -131,19 +83,50 @@ interface ConflictWarningProps {
 
 /**
  * ConflictWarning component displays a collapsible banner when conflicts are detected.
- *
- * Features:
- * - Color-coded by highest severity (high: red, medium: amber, low: blue)
- * - Expandable to show conflict details
- * - Per-session dismissible
- * - "View Details" link to Settings page
- *
- * Returns null if no conflicts detected.
  */
 function ConflictWarning({ onViewDetails }: ConflictWarningProps) {
-  const { conflicts, summary, loading } = useConflicts();
+  const { conflicts, summary, loading, error, refresh } = useConflicts();
   const [expanded, setExpanded] = useState(false);
   const [dismissed, setDismissed] = useState(false);
+  const [retrying, setRetrying] = useState(false);
+
+  // Handle retry with loading state
+  const handleRetry = async () => {
+    setRetrying(true);
+    try {
+      await refresh();
+    } finally {
+      setRetrying(false);
+    }
+  };
+
+  // Show error state if conflict detection failed
+  if (error && !loading) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mb-6"
+      >
+        <Alert variant="warning" className="glass-subtle">
+          <AlertTriangle className="w-4 h-4" strokeWidth={1.75} />
+          <AlertDescription className="flex items-center justify-between">
+            <span>Could not check for conflicting tools.</span>
+            <Button
+              variant="link"
+              size="sm"
+              onClick={handleRetry}
+              disabled={retrying}
+              className="p-0 h-auto text-warning gap-1.5"
+            >
+              <RefreshCw className={cn('w-3.5 h-3.5', retrying && 'animate-spin')} strokeWidth={2} />
+              {retrying ? 'Retrying...' : 'Retry'}
+            </Button>
+          </AlertDescription>
+        </Alert>
+      </motion.div>
+    );
+  }
 
   // Don't render during loading, when dismissed, or when no conflicts
   if (loading || dismissed || conflicts.length === 0 || !summary) {
@@ -152,121 +135,150 @@ function ConflictWarning({ onViewDetails }: ConflictWarningProps) {
 
   const highestSeverity = getHighestSeverity(summary.high_count, summary.medium_count);
   const config = getSeverityConfig(highestSeverity);
-  const Icon = highestSeverity === 'low' ? InfoIcon : WarningIcon;
+  const Icon = highestSeverity === 'low' ? Info : AlertTriangle;
 
   return (
-    <Alert
-      variant={config.variant}
+    <motion.div
+      initial={{ opacity: 0, y: -12, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: -12, scale: 0.98 }}
       className={cn(
-        'mb-6 transition-all duration-300',
-        config.glowClass,
-        config.bgColor,
+        'mb-6 rounded-xl overflow-hidden',
+        'glass border',
         config.borderColor,
-        'relative overflow-hidden'
+        config.glowClass
       )}
     >
+      {/* Background gradient */}
+      <div className={cn(
+        'absolute inset-0 bg-gradient-to-r',
+        config.bgColor
+      )} />
+
       {/* Main content row */}
-      <div className="flex items-start gap-3">
-        <Icon className={cn('mt-0.5 flex-shrink-0', config.iconColor)} />
+      <div className="relative flex items-start gap-4 p-4">
+        <motion.div
+          className={cn('mt-0.5 flex-shrink-0', config.iconColor)}
+          animate={{ rotate: [0, 5, -5, 0] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        >
+          <Icon className="w-5 h-5" strokeWidth={1.75} />
+        </motion.div>
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <AlertTitle className="text-foreground">
+            <h4 className="text-sm font-semibold text-foreground">
               {summary.total_count} conflict{summary.total_count !== 1 ? 's' : ''} detected
-            </AlertTitle>
+            </h4>
 
             {/* Severity badges */}
             <div className="flex gap-1.5">
               {summary.high_count > 0 && (
-                <Badge variant="destructive" className="text-xs">
-                  {summary.high_count} high
-                </Badge>
+                <SeverityBadge count={summary.high_count} severity="high" />
               )}
               {summary.medium_count > 0 && (
-                <Badge variant="warning" className="text-xs">
-                  {summary.medium_count} medium
-                </Badge>
+                <SeverityBadge count={summary.medium_count} severity="medium" />
               )}
               {summary.low_count > 0 && (
-                <Badge variant="secondary" className="text-xs">
-                  {summary.low_count} low
-                </Badge>
+                <SeverityBadge count={summary.low_count} severity="low" />
               )}
             </div>
           </div>
 
-          <AlertDescription className="mt-1 text-muted-foreground">
+          <p className="mt-1 text-sm text-muted-foreground/70">
             Other optimization tools may interfere with Opta's performance.
-          </AlertDescription>
+          </p>
 
           {/* Expanded details */}
-          <div
-            className={cn(
-              'overflow-hidden transition-all duration-300',
-              expanded ? 'max-h-96 mt-3 opacity-100' : 'max-h-0 opacity-0'
-            )}
-          >
-            <div className="space-y-2 pt-2 border-t border-border/50">
-              {conflicts.map((conflict) => (
-                <div
-                  key={conflict.tool_id}
-                  className="flex items-center gap-2 text-sm"
-                >
-                  <Badge
-                    variant={
-                      conflict.severity === 'high'
-                        ? 'destructive'
-                        : conflict.severity === 'medium'
-                        ? 'warning'
-                        : 'secondary'
-                    }
-                    className="text-xs min-w-[52px] justify-center"
-                  >
-                    {conflict.severity}
-                  </Badge>
-                  <span className="font-medium text-foreground">{conflict.name}</span>
-                  <span className="text-muted-foreground truncate">
-                    - {conflict.description}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            {onViewDetails && (
-              <Button
-                variant="link"
-                className="mt-2 p-0 h-auto text-primary"
-                onClick={onViewDetails}
+          <AnimatePresence>
+            {expanded && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
               >
-                View Details in Settings
-              </Button>
+                <div className="space-y-2 pt-3 mt-3 border-t border-border/30">
+                  {conflicts.map((conflict, index) => (
+                    <motion.div
+                      key={conflict.tool_id}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                      className="flex items-center gap-2 text-sm"
+                    >
+                      <span className={cn(
+                        'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border min-w-[52px] justify-center',
+                        conflict.severity === 'high'
+                          ? 'bg-danger/15 text-danger border-danger/30'
+                          : conflict.severity === 'medium'
+                          ? 'bg-warning/15 text-warning border-warning/30'
+                          : 'bg-muted/50 text-muted-foreground border-border/30'
+                      )}>
+                        {conflict.severity}
+                      </span>
+                      <span className="font-medium text-foreground">{conflict.name}</span>
+                      <span className="text-muted-foreground/60 truncate">
+                        - {conflict.description}
+                      </span>
+                    </motion.div>
+                  ))}
+                </div>
+
+                {onViewDetails && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.2 }}
+                  >
+                    <Button
+                      variant="link"
+                      className="mt-3 p-0 h-auto text-primary gap-1.5"
+                      onClick={onViewDetails}
+                    >
+                      View Details in Settings
+                      <ExternalLink className="w-3.5 h-3.5" strokeWidth={2} />
+                    </Button>
+                  </motion.div>
+                )}
+              </motion.div>
             )}
-          </div>
+          </AnimatePresence>
         </div>
 
         {/* Action buttons */}
         <div className="flex items-center gap-1 flex-shrink-0">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-            onClick={() => setExpanded(!expanded)}
-            aria-label={expanded ? 'Collapse' : 'Expand'}
-          >
-            <ChevronIcon expanded={expanded} />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-            onClick={() => setDismissed(true)}
-            aria-label="Dismiss"
-          >
-            <XIcon />
-          </Button>
+          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground glass-subtle rounded-lg"
+              onClick={() => setExpanded(!expanded)}
+              aria-label={expanded ? 'Collapse' : 'Expand'}
+            >
+              <motion.div
+                animate={{ rotate: expanded ? 180 : 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <ChevronDown className="w-4 h-4" strokeWidth={2} />
+              </motion.div>
+            </Button>
+          </motion.div>
+          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground glass-subtle rounded-lg"
+              onClick={() => setDismissed(true)}
+              aria-label="Dismiss"
+            >
+              <X className="w-4 h-4" strokeWidth={2} />
+            </Button>
+          </motion.div>
         </div>
       </div>
-    </Alert>
+    </motion.div>
   );
 }
 
