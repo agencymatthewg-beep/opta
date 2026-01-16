@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-15)
 
 **Core value:** One tool to replace them all — eliminates chaos of multiple conflicting optimizers, detects conflicts, explains optimizations, delivers measurable gains.
-**Current focus:** Phase 8.1 — Adaptive Intelligence (In Progress)
+**Current focus:** Phase 9 — Optimization Score (Planned)
 
 ## Current Position
 
-Phase: 8.1 of 10 (Adaptive Intelligence)
-Plan: 3 of 4 in current phase
+Phase: 9 of 10 (Optimization Score)
+Plan: 1 of 3 in current phase
 Status: In progress
-Last activity: 2026-01-16 — Completed 08.1-04-PLAN.md
+Last activity: 2026-01-16 — Completed 09-01-PLAN.md
 
-Progress: ███████████████░░░░░ 75% (30/40 plans)
+Progress: ████████████████░░░░ 80% (32/40 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 30
+- Total plans completed: 31
 - Average duration: 10 min
-- Total execution time: 4.8 hours
+- Total execution time: 5 hours
 
 **By Phase:**
 
@@ -36,10 +36,10 @@ Progress: ███████████████░░░░░ 75% (30/4
 | 6. Cloud LLM Integration | 3/3 | 9 min | 3 min |
 | 7. Game Detection | 3/3 | 9 min | 3 min |
 | 8. Optimization Engine | 4/4 | 12 min | 3 min |
-| 8.1 Adaptive Intelligence | 3/4 | 16 min | 5.3 min |
+| 8.1 Adaptive Intelligence | 4/4 | 28 min | 7 min |
 
 **Recent Trend:**
-- Last 5 plans: 3, 3, 3, 8, 5 min
+- Last 5 plans: 3, 3, 8, 5, 12 min
 - Trend: Fast execution with established patterns
 
 ## Accumulated Context
@@ -108,8 +108,17 @@ Progress: ███████████████░░░░░ 75% (30/4
 | 08.1-02 | Minimum 3 samples for patterns | Balances responsiveness with accuracy |
 | 08.1-02 | 70%/30% threshold for preference/aversion | Clear signal without being too strict |
 | 08.1-02 | Fire-and-forget choice recording | Non-blocking, never impacts UX |
+| 08.1-03 | Top 5 recommendation limit | Prevents overwhelming users, shows highest confidence first |
+| 08.1-03 | 0.5 confidence threshold for recommendations | Only show recommendations we're reasonably sure about |
+| 08.1-03 | Session-scoped dismissal | Dismissed recommendations return after app restart |
 | 08.1-04 | Inline select elements | Used native HTML select with glass styling since shadcn Select not installed |
 | 08.1-04 | Profile section after Privacy | Logical flow: privacy info -> user data control |
+| 09-01 | 40/35/25 dimension weights | Performance most important for gamers, Experience second, Competitive third |
+| 09-01 | Statistical percentile estimation | Use tier-based distributions until real community data available |
+| 09-01 | Money saved thresholds (40/25/15/10/5%) | Mapped to typical hardware upgrade costs ($600/$400/$250/$150/$50) |
+| 09-01 | VRAM + RAM for hardware tier | Simple heuristic correlating well with system capability |
+| 09-01 | Millisecond timestamps | JavaScript Date compatibility for frontend |
+| 09-01 | Preserve v1 functions | Backwards compatibility for existing score displays |
 
 ### Deferred Issues
 
@@ -126,5 +135,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-16
-Stopped at: Completed 08.1-04-PLAN.md (Transparency panel)
+Stopped at: Completed 09-01-PLAN.md (Enhanced Scoring Algorithm)
 Resume file: None
+Next action: /gsd:execute-plan 09-02
