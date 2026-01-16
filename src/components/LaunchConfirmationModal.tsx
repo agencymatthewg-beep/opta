@@ -1,0 +1,308 @@
+/**
+ * LaunchConfirmationModal - Pre-launch confirmation with action checklist.
+ *
+ * Follows DESIGN_SYSTEM.md:
+ * - Glass effects (glass-strong for modal)
+ * - Framer Motion animations
+ * - Lucide icons
+ */
+
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
+import {
+  Play,
+  Rocket,
+  X,
+  Zap,
+  Shield,
+  Activity,
+  Loader2,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import type { DetectedGame } from '../types/games';
+import type { LaunchConfig } from '../types/launcher';
+
+export interface LaunchConfirmationModalProps {
+  open: boolean;
+  onClose: () => void;
+  onLaunch: (config: LaunchConfig) => void;
+  game: DetectedGame;
+  pendingOptimizations: number;
+  estimatedMemorySavingsMb: number;
+  safeToKillCount: number;
+  loading?: boolean;
+  /** Initial config to use (from saved preferences) */
+  initialConfig?: Partial<LaunchConfig>;
+}
+
+interface PreLaunchActionProps {
+  icon: React.ElementType;
+  title: string;
+  description: string;
+  detail: string;
+  checked: boolean;
+  onCheckedChange: (checked: boolean) => void;
+  disabled?: boolean;
+}
+
+function PreLaunchAction({
+  icon: Icon,
+  title,
+  description,
+  detail,
+  checked,
+  onCheckedChange,
+  disabled = false,
+}: PreLaunchActionProps) {
+  return (
+    <label
+      className={cn(
+        'flex items-start gap-3 p-4 rounded-xl cursor-pointer transition-all',
+        'glass-subtle border',
+        checked
+          ? 'border-primary/30 bg-primary/5'
+          : 'border-border/20 hover:border-border/40',
+        disabled && 'opacity-50 cursor-not-allowed'
+      )}
+    >
+      <Checkbox
+        checked={checked}
+        onCheckedChange={(c: boolean) => !disabled && onCheckedChange(c)}
+        disabled={disabled}
+        className="mt-0.5"
+      />
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-1">
+          <div className="p-1.5 rounded-lg bg-primary/10">
+            <Icon className="w-4 h-4 text-primary" strokeWidth={1.75} />
+          </div>
+          <span className="text-sm font-medium text-foreground">{title}</span>
+          <span className="ml-auto text-xs text-muted-foreground/70 tabular-nums">
+            {detail}
+          </span>
+        </div>
+        <p className="text-xs text-muted-foreground/70 pl-8">{description}</p>
+      </div>
+    </label>
+  );
+}
+
+function LaunchConfirmationModal({
+  open,
+  onClose,
+  onLaunch,
+  game,
+  pendingOptimizations,
+  estimatedMemorySavingsMb,
+  safeToKillCount,
+  loading = false,
+  initialConfig,
+}: LaunchConfirmationModalProps) {
+  const [config, setConfig] = useState<LaunchConfig>({
+    applyOptimizations: initialConfig?.applyOptimizations ?? (pendingOptimizations > 0),
+    runStealthMode: initialConfig?.runStealthMode ?? true,
+    trackSession: initialConfig?.trackSession ?? false,
+  });
+
+  // Get launcher display name
+  const launcherName =
+    game.launcher === 'steam'
+      ? 'Steam'
+      : game.launcher === 'epic'
+      ? 'Epic Games'
+      : game.launcher === 'gog'
+      ? 'GOG Galaxy'
+      : game.launcher;
+
+  const handleClose = () => {
+    if (!loading) {
+      // Reset to saved preferences
+      setConfig({
+        applyOptimizations: initialConfig?.applyOptimizations ?? (pendingOptimizations > 0),
+        runStealthMode: initialConfig?.runStealthMode ?? true,
+        trackSession: initialConfig?.trackSession ?? false,
+      });
+      onClose();
+    }
+  };
+
+  const handleLaunch = () => {
+    onLaunch(config);
+  };
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <>
+          {/* Backdrop */}
+          <motion.div
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={handleClose}
+          />
+
+          {/* Modal */}
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="w-full max-w-lg glass-strong rounded-2xl border border-primary/30 overflow-hidden"
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="px-6 py-4 glass-subtle border-b border-border/30">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <motion.div
+                      className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center"
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: 'spring', duration: 0.5, delay: 0.1 }}
+                    >
+                      <Rocket className="w-5 h-5 text-primary" strokeWidth={2} />
+                    </motion.div>
+                    <div>
+                      <h2 className="text-lg font-semibold text-foreground">
+                        Launch via Opta
+                      </h2>
+                      <p className="text-sm text-muted-foreground/70">{game.name}</p>
+                    </div>
+                  </div>
+                  <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleClose}
+                      className="rounded-xl"
+                      disabled={loading}
+                    >
+                      <X className="w-5 h-5" strokeWidth={1.75} />
+                    </Button>
+                  </motion.div>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="p-6 space-y-4">
+                {/* Pre-launch actions */}
+                <div className="space-y-1">
+                  <h3 className="text-xs font-medium text-muted-foreground/70 uppercase tracking-wider px-1">
+                    Pre-Launch Actions
+                  </h3>
+                  <div className="space-y-2">
+                    <PreLaunchAction
+                      icon={Zap}
+                      title="Apply Optimizations"
+                      description={
+                        pendingOptimizations > 0
+                          ? `Apply ${pendingOptimizations} optimization${pendingOptimizations !== 1 ? 's' : ''} for better performance`
+                          : 'No optimizations available for this game'
+                      }
+                      detail={
+                        pendingOptimizations > 0
+                          ? `${pendingOptimizations} change${pendingOptimizations !== 1 ? 's' : ''}`
+                          : 'None'
+                      }
+                      checked={config.applyOptimizations}
+                      onCheckedChange={(checked) =>
+                        setConfig((prev) => ({ ...prev, applyOptimizations: checked }))
+                      }
+                      disabled={pendingOptimizations === 0}
+                    />
+
+                    <PreLaunchAction
+                      icon={Shield}
+                      title="Run Stealth Mode"
+                      description={`Kill ${safeToKillCount} background process${safeToKillCount !== 1 ? 'es' : ''} to free resources`}
+                      detail={`~${Math.round(estimatedMemorySavingsMb)} MB`}
+                      checked={config.runStealthMode}
+                      onCheckedChange={(checked) =>
+                        setConfig((prev) => ({ ...prev, runStealthMode: checked }))
+                      }
+                      disabled={safeToKillCount === 0}
+                    />
+
+                    <PreLaunchAction
+                      icon={Activity}
+                      title="Track Session Metrics"
+                      description="Monitor CPU, GPU, and RAM usage during gameplay"
+                      detail="Optional"
+                      checked={config.trackSession}
+                      onCheckedChange={(checked) =>
+                        setConfig((prev) => ({ ...prev, trackSession: checked }))
+                      }
+                    />
+                  </div>
+                </div>
+
+                {/* Launch info */}
+                <div className="flex items-center gap-2 p-3 glass-subtle rounded-xl border border-border/20">
+                  <div
+                    className={cn(
+                      'w-2 h-2 rounded-full',
+                      game.launcher === 'steam' && 'bg-primary',
+                      game.launcher === 'epic' && 'bg-muted-foreground',
+                      game.launcher === 'gog' && 'bg-accent'
+                    )}
+                  />
+                  <span className="text-xs text-muted-foreground/70">
+                    Launching via <span className="font-medium text-foreground">{launcherName}</span>
+                  </span>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="px-6 py-4 border-t border-border/20 flex items-center justify-end gap-3">
+                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                  <Button
+                    variant="outline"
+                    onClick={handleClose}
+                    disabled={loading}
+                    className="glass-subtle rounded-xl border-border/30"
+                  >
+                    Cancel
+                  </Button>
+                </motion.div>
+                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                  <Button
+                    onClick={handleLaunch}
+                    disabled={loading}
+                    className={cn(
+                      'gap-1.5 rounded-xl',
+                      'bg-gradient-to-r from-primary to-accent',
+                      'shadow-[0_0_16px_-4px_hsl(var(--glow-primary)/0.5)]'
+                    )}
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Launching...
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-4 h-4" strokeWidth={2} />
+                        Launch via Opta
+                      </>
+                    )}
+                  </Button>
+                </motion.div>
+              </div>
+            </motion.div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+}
+
+export default LaunchConfirmationModal;
