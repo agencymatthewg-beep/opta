@@ -142,6 +142,10 @@ Progress: ████████████████████ 100% (40/
 | 10-01 | Platform-specific conflict tools | Better UX by only showing relevant conflicts per OS |
 | 10-01 | Separate CI jobs for MCP/frontend/Tauri | Faster feedback and clearer failure identification |
 | 10-01 | macOS Intel + ARM builds | Support both legacy Macs and Apple Silicon |
+| 10-04 | Floating toggle positioned bottom-left | Not buried in Settings, always accessible |
+| 10-04 | localStorage for Learn Mode state | Session continuity, persists across refresh |
+| 10-04 | Three explanation types: info, tip, how-it-works | Visual distinction by purpose |
+| 10-04 | Technical details in expandable sections | Avoid overwhelming casual users |
 | 10-05 | Lucide icons for pipeline stages | Design system compliance over emojis |
 | 10-05 | Integrated into existing pages | Visualizations appear in context rather than separate view |
 | 10-05 | Mock data for demo | Will connect to real optimization data in future |
