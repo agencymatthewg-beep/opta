@@ -1,6 +1,8 @@
 import { ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import Sidebar from './Sidebar';
+import { OptaTextZone } from './OptaTextZone';
+import { OptaTextZoneProvider, useOptaTextZone } from './OptaTextZoneContext';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface LayoutProps {
@@ -10,10 +12,11 @@ interface LayoutProps {
 }
 
 /**
- * Main application layout with sidebar navigation.
- * Includes accessibility features: skip link, landmarks, and focus management.
+ * Inner layout component that accesses the OptaTextZone context.
  */
-function Layout({ activePage, onNavigate, children }: LayoutProps) {
+function LayoutInner({ activePage, onNavigate, children }: LayoutProps) {
+  const { state } = useOptaTextZone();
+
   return (
     <div className="flex min-h-screen">
       {/* Skip to main content link for keyboard users */}
@@ -36,11 +39,38 @@ function Layout({ activePage, onNavigate, children }: LayoutProps) {
 
       {/* Main content area */}
       <ScrollArea className="flex-1 h-screen">
-        <main id="main-content" className="p-8 max-w-7xl" role="main" tabIndex={-1}>
-          {children}
-        </main>
+        <div className="flex flex-col h-full">
+          {/* Text Zone at top */}
+          <div className="p-4 pb-0">
+            <OptaTextZone
+              message={state.message}
+              type={state.type}
+              indicator={state.indicator}
+              hint={state.hint}
+            />
+          </div>
+          {/* Page content */}
+          <main id="main-content" className="flex-1 p-8 max-w-7xl" role="main" tabIndex={-1}>
+            {children}
+          </main>
+        </div>
       </ScrollArea>
     </div>
+  );
+}
+
+/**
+ * Main application layout with sidebar navigation.
+ * Includes accessibility features: skip link, landmarks, and focus management.
+ * Provides OptaTextZone context for global messaging.
+ */
+function Layout({ activePage, onNavigate, children }: LayoutProps) {
+  return (
+    <OptaTextZoneProvider>
+      <LayoutInner activePage={activePage} onNavigate={onNavigate}>
+        {children}
+      </LayoutInner>
+    </OptaTextZoneProvider>
   );
 }
 
