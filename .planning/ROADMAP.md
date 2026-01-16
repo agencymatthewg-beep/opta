@@ -2,7 +2,7 @@
 
 ## Overview
 
-Opta transforms from an empty Tauri scaffold into a full-featured AI-powered PC optimization orchestrator. The journey starts with core infrastructure (app shell, hardware monitoring), builds through system management capabilities (process control, conflict detection), integrates AI (local + cloud LLM), then delivers the core value proposition (game optimization with measurable gains and shareable scores).
+Opta transforms from an empty Tauri scaffold into a full-featured AI-powered PC optimization orchestrator. Built on three pillars—**Unified Optimization**, **Adaptive Intelligence**, and **Educational Empowerment**—the journey starts with core infrastructure, builds through system management, integrates AI, then delivers personalized, understandable optimization with measurable results.
 
 ## Domain Expertise
 
@@ -22,11 +22,12 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3.1: Design System** - INSERTED: shadcn/ui integration, restyle all components for futuristic aesthetic
 - [x] **Phase 4: Conflict Detection** - Detect competing optimization tools, warn users
 - [x] **Phase 5: Local LLM Integration** - Llama 3 8B setup for routine queries
-- [ ] **Phase 6: Cloud LLM Integration** - Claude API for complex reasoning, hybrid routing
-- [ ] **Phase 7: Game Detection & Profiles** - Detect installed games, community benchmark settings
-- [ ] **Phase 8: Optimization Engine** - Apply settings, before/after benchmarking, explain changes
+- [x] **Phase 6: Cloud LLM Integration** - Claude API for complex reasoning, hybrid routing
+- [x] **Phase 7: Game Detection & Profiles** - Detect installed games, community benchmark settings
+- [x] **Phase 8: Optimization Engine** - Apply settings, before/after benchmarking, explain changes
+- [ ] **Phase 8.1: Adaptive Intelligence** - INSERTED: User profile storage, pattern learning, personalized recommendations
 - [ ] **Phase 9: Optimization Score** - Shareable metric, gamification, viral loop
-- [ ] **Phase 10: Polish & Launch** - Cross-platform testing, UX refinement, documentation
+- [ ] **Phase 10: Polish, Education & Launch** - Cross-platform testing, Learn Mode, visual explanations, UX refinement
 
 ## Phase Details
 
@@ -125,15 +126,26 @@ Plans:
 ### Phase 8: Optimization Engine
 **Goal**: Apply optimizations with before/after benchmarking and transparency
 **Depends on**: Phase 7, Phase 6
-**Research**: Likely (system modification patterns)
-**Research topics**: Windows registry optimization tweaks, GPU driver settings (NVIDIA Control Panel, AMD Adrenalin), safe system modifications, benchmarking methods, rollback strategies
-**Plans**: TBD
+**Research**: Unlikely (building on established patterns)
+**Plans**: 4
 
 Plans:
-- [ ] 08-01: Optimization action framework with rollback
-- [ ] 08-02: Before/after benchmarking system
-- [ ] 08-03: Optimization explanation and transparency UI
-- [ ] 08-04: Human-in-the-loop approval flow
+- [x] 08-01: Optimization action framework with rollback
+- [x] 08-02: Before/after benchmarking system
+- [x] 08-03: Optimization explanation and transparency UI
+- [x] 08-04: Human-in-the-loop approval flow
+
+### Phase 8.1: Adaptive Intelligence (INSERTED)
+**Goal**: Implement user profile storage and pattern learning for personalized recommendations
+**Depends on**: Phase 8
+**Research**: Likely (user modeling, local storage patterns)
+**Research topics**: SQLite vs JSON for profile storage, preference learning algorithms, recommendation personalization, privacy-preserving local analytics
+
+Plans:
+- [x] 08.1-01: User profile storage system (local SQLite/JSON)
+- [ ] 08.1-02: Pattern learning from optimization choices
+- [ ] 08.1-03: Personalized recommendation engine
+- [ ] 08.1-04: Transparency panel (view/edit/delete learned data)
 
 ### Phase 9: Optimization Score
 **Goal**: Shareable optimization metric for viral growth and gamification
@@ -146,21 +158,25 @@ Plans:
 - [ ] 09-02: Shareable score card generation
 - [ ] 09-03: Leaderboard and comparison features
 
-### Phase 10: Polish & Launch
-**Goal**: Cross-platform testing, UX refinement, and launch preparation
-**Depends on**: Phase 9
-**Research**: Unlikely (testing and refinement)
-**Plans**: TBD
+### Phase 10: Polish, Education & Launch
+**Goal**: Cross-platform testing, educational features, UX refinement, and launch preparation
+**Depends on**: Phase 9, Phase 8.1
+**Research**: Likely (educational UX patterns, progressive disclosure)
+**Research topics**: Interactive tutorial patterns, visual explanation libraries, progressive disclosure UX, expertise detection heuristics
 
 Plans:
 - [ ] 10-01: Cross-platform testing (Windows, macOS, Linux)
 - [ ] 10-02: UX polish and performance optimization
 - [ ] 10-03: Documentation and launch materials
+- [ ] 10-04: Learn Mode implementation (explains actions in real-time)
+- [ ] 10-05: Visual explanation components (diagrams/animations for concepts)
+- [ ] 10-06: Investigation mode for power users (deep-dive analysis)
+- [ ] 10-07: Expertise-level detection (adjust tip complexity)
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 → 8 → 9 → 10
+Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 → 8 → 8.1 → 9 → 10
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -170,8 +186,9 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 �
 | 3.1 Design System | 3/3 | Complete | 2026-01-15 |
 | 4. Conflict Detection | 2/2 | Complete | 2026-01-15 |
 | 5. Local LLM Integration | 3/3 | Complete | 2026-01-15 |
-| 6. Cloud LLM Integration | 0/3 | Not started | - |
-| 7. Game Detection & Profiles | 0/3 | Not started | - |
-| 8. Optimization Engine | 0/4 | Not started | - |
+| 6. Cloud LLM Integration | 3/3 | Complete | 2026-01-15 |
+| 7. Game Detection & Profiles | 3/3 | Complete | 2026-01-15 |
+| 8. Optimization Engine | 4/4 | Complete | 2026-01-16 |
+| 8.1 Adaptive Intelligence | 1/4 | In progress | - |
 | 9. Optimization Score | 0/3 | Not started | - |
-| 10. Polish & Launch | 0/3 | Not started | - |
+| 10. Polish, Education & Launch | 0/7 | Not started | - |
