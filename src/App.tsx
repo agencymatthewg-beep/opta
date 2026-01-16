@@ -8,30 +8,54 @@ import Optimize from './pages/Optimize';
 import Score from './pages/Score';
 import Settings from './pages/Settings';
 import PlatformOnboarding from './components/PlatformOnboarding';
+import Onboarding, { OnboardingPreferences } from './components/Onboarding';
 import { pageVariants } from './lib/animations';
 
-const ONBOARDING_COMPLETE_KEY = 'opta_onboarding_complete';
+const PLATFORM_ONBOARDING_KEY = 'opta_platform_onboarding_complete';
+const PREFERENCES_ONBOARDING_KEY = 'opta_preferences_onboarding_complete';
+const USER_PREFERENCES_KEY = 'opta_user_preferences';
 
 function App() {
   const [activePage, setActivePage] = useState('dashboard');
-  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showPlatformOnboarding, setShowPlatformOnboarding] = useState(false);
+  const [showPreferencesOnboarding, setShowPreferencesOnboarding] = useState(false);
 
   // Check if onboarding should be shown on first launch
   useEffect(() => {
-    const hasCompletedOnboarding = localStorage.getItem(ONBOARDING_COMPLETE_KEY);
-    if (!hasCompletedOnboarding) {
-      setShowOnboarding(true);
+    const hasPlatformOnboarding = localStorage.getItem(PLATFORM_ONBOARDING_KEY);
+    const hasPreferencesOnboarding = localStorage.getItem(PREFERENCES_ONBOARDING_KEY);
+
+    if (!hasPlatformOnboarding) {
+      setShowPlatformOnboarding(true);
+    } else if (!hasPreferencesOnboarding) {
+      setShowPreferencesOnboarding(true);
     }
   }, []);
 
-  const handleOnboardingComplete = () => {
-    localStorage.setItem(ONBOARDING_COMPLETE_KEY, 'true');
-    setShowOnboarding(false);
+  const handlePlatformOnboardingComplete = () => {
+    localStorage.setItem(PLATFORM_ONBOARDING_KEY, 'true');
+    setShowPlatformOnboarding(false);
+    // Show preferences onboarding next
+    const hasPreferencesOnboarding = localStorage.getItem(PREFERENCES_ONBOARDING_KEY);
+    if (!hasPreferencesOnboarding) {
+      setShowPreferencesOnboarding(true);
+    }
   };
 
-  const handleOnboardingSkip = () => {
-    localStorage.setItem(ONBOARDING_COMPLETE_KEY, 'true');
-    setShowOnboarding(false);
+  const handlePlatformOnboardingSkip = () => {
+    localStorage.setItem(PLATFORM_ONBOARDING_KEY, 'true');
+    setShowPlatformOnboarding(false);
+    // Show preferences onboarding next
+    const hasPreferencesOnboarding = localStorage.getItem(PREFERENCES_ONBOARDING_KEY);
+    if (!hasPreferencesOnboarding) {
+      setShowPreferencesOnboarding(true);
+    }
+  };
+
+  const handlePreferencesComplete = (preferences: OnboardingPreferences) => {
+    localStorage.setItem(PREFERENCES_ONBOARDING_KEY, 'true');
+    localStorage.setItem(USER_PREFERENCES_KEY, JSON.stringify(preferences));
+    setShowPreferencesOnboarding(false);
   };
 
   const renderPage = () => {
@@ -95,13 +119,20 @@ function App() {
         </AnimatePresence>
       </Layout>
 
-      {/* First-launch onboarding */}
+      {/* Platform onboarding (first) */}
       <AnimatePresence>
-        {showOnboarding && (
+        {showPlatformOnboarding && (
           <PlatformOnboarding
-            onComplete={handleOnboardingComplete}
-            onSkip={handleOnboardingSkip}
+            onComplete={handlePlatformOnboardingComplete}
+            onSkip={handlePlatformOnboardingSkip}
           />
+        )}
+      </AnimatePresence>
+
+      {/* Preferences onboarding (second) */}
+      <AnimatePresence>
+        {showPreferencesOnboarding && (
+          <Onboarding onComplete={handlePreferencesComplete} />
         )}
       </AnimatePresence>
     </div>
