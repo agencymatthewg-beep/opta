@@ -342,8 +342,8 @@ function Dashboard({ onNavigate }: DashboardProps) {
               exit={{ x: "100%", opacity: 0 }}
               transition={{
                 type: "spring",
-                stiffness: 300,
-                damping: 30,
+                stiffness: 200,
+                damping: 25,
               }}
             >
               <ChatInterface className="h-full border-0 rounded-none bg-transparent" />
