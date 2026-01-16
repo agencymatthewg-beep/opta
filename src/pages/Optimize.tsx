@@ -2,9 +2,14 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { Zap, Gamepad2 } from 'lucide-react';
+import { Gamepad2 } from 'lucide-react';
 
-function Optimize() {
+interface OptimizeProps {
+  /** Callback to navigate to another page */
+  onNavigate?: (page: string) => void;
+}
+
+function Optimize({ onNavigate }: OptimizeProps) {
   return (
     <div className="page max-w-3xl">
       <motion.h1
@@ -17,7 +22,7 @@ function Optimize() {
         </span>
       </motion.h1>
 
-      {/* Hero Section */}
+      {/* Hero Section - Guide user to Games page */}
       <motion.div
         className="text-center py-12 mb-8"
         initial={{ opacity: 0, y: 12 }}
@@ -25,25 +30,35 @@ function Optimize() {
         transition={{ delay: 0.1 }}
       >
         <motion.div
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
+          className={cn(
+            'w-20 h-20 flex items-center justify-center rounded-full mx-auto mb-6',
+            'glass border border-border/30'
+          )}
+          animate={{ rotate: [0, 5, -5, 0] }}
+          transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
         >
+          <Gamepad2 className="w-9 h-9 text-muted-foreground/40" strokeWidth={1.5} />
+        </motion.div>
+        <h2 className="text-lg font-medium text-foreground mb-2">
+          Select a game to optimize
+        </h2>
+        <p className="text-sm text-muted-foreground/70 mb-6 max-w-sm mx-auto">
+          Choose from your detected games to view and apply optimizations.
+        </p>
+        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
           <Button
             size="lg"
             className={cn(
-              "h-auto px-12 py-5 text-lg font-semibold gap-2",
-              "disabled:glow-none disabled:bg-card disabled:text-muted-foreground",
-              "bg-gradient-to-r from-primary to-accent"
+              "h-auto px-8 py-4 text-base font-semibold gap-2",
+              "bg-gradient-to-r from-primary to-accent",
+              "shadow-[0_0_24px_-8px_hsl(var(--glow-primary)/0.5)]"
             )}
-            disabled
+            onClick={() => onNavigate?.('games')}
           >
-            <Zap className="w-6 h-6" strokeWidth={2} />
-            One-Click Optimize
+            <Gamepad2 className="w-5 h-5" strokeWidth={2} />
+            Browse Games
           </Button>
         </motion.div>
-        <p className="mt-4 text-sm text-muted-foreground">
-          Automatically optimize your system for maximum gaming performance
-        </p>
       </motion.div>
 
       {/* Games Section */}

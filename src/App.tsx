@@ -141,7 +141,7 @@ function App() {
         return (
           <motion.div {...pageProps}>
             <Suspense fallback={<PageSkeleton />}>
-              <Optimize />
+              <Optimize onNavigate={setActivePage} />
             </Suspense>
           </motion.div>
         );
