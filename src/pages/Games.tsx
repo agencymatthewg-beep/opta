@@ -15,6 +15,11 @@ import type { Recommendation } from '../types/profile';
 import type { LaunchConfig } from '../types/launcher';
 import { Gamepad2, RefreshCw, X, AlertCircle, Play, FolderOpen, Hash } from 'lucide-react';
 import { LearnModeExplanation } from '../components/LearnModeExplanation';
+import {
+  GpuPipelineViz,
+  BeforeAfterDiff,
+  ImpactPrediction,
+} from '../components/visualizations';
 
 // Steam app IDs that have optimizations in the database
 const GAMES_WITH_OPTIMIZATIONS = new Set([
@@ -214,6 +219,30 @@ function GameDetailPanel({
               gameName={game.name}
             />
           </motion.div>
+
+          {/* Learn Mode Visualizations */}
+          <GpuPipelineViz
+            resolution={{ before: '1440p', after: '1080p' }}
+            quality={{ before: 'Ultra', after: 'High' }}
+            showComparison
+          />
+
+          <BeforeAfterDiff
+            changes={[
+              { name: 'Resolution Scale', before: '100%', after: '75%', impact: 'positive', fpsGain: 15, qualityLoss: 'minor' },
+              { name: 'Shadow Quality', before: 'Ultra', after: 'High', impact: 'positive', fpsGain: 8, qualityLoss: 'minor' },
+              { name: 'Anti-Aliasing', before: 'TAA', after: 'FXAA', impact: 'positive', fpsGain: 5, qualityLoss: 'moderate' },
+            ]}
+            totalFpsGain={28}
+          />
+
+          <ImpactPrediction
+            predictedFps={{ before: 60, after: 85 }}
+            predictedQuality={{ before: 100, after: 85 }}
+            predictedThermal={{ before: 82, after: 75 }}
+            predictedLoadTime={{ before: 12, after: 10 }}
+            confidence="medium"
+          />
         </div>
       </ScrollArea>
     </motion.div>
