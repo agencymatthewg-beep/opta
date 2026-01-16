@@ -165,8 +165,9 @@ function getQuestions(expertiseLevel: ExpertiseLevel): Question[] {
 
 /**
  * Welcome screen content adapted to expertise level.
+ * Exported for potential use in other welcome/intro screens.
  */
-const WELCOME_CONTENT: Record<ExpertiseLevel, { title: string; subtitle: string }> = {
+export const WELCOME_CONTENT: Record<ExpertiseLevel, { title: string; subtitle: string }> = {
   simple: {
     title: "Hi there!",
     subtitle: "I'm Opta. Let me help make your games run better.",
@@ -205,9 +206,6 @@ export function Onboarding({ onComplete }: OnboardingProps) {
       onComplete(newAnswers as OnboardingPreferences);
     }
   };
-
-  // Get welcome content based on expertise (shown in subtitle after expertise selection)
-  const welcomeContent = WELCOME_CONTENT[expertiseLevel];
 
   return (
     <motion.div
