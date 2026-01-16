@@ -5,7 +5,7 @@
  * Supports click-to-select for future Stealth Mode integration.
  */
 
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useProcesses } from '../hooks/useProcesses';
 import type { ProcessInfo, ProcessCategory } from '../types/processes';
@@ -32,8 +32,9 @@ interface ProcessRowProps {
 
 /**
  * Badge component for process category.
+ * Memoized to prevent re-renders when category unchanged.
  */
-function CategoryBadge({ category }: { category: ProcessCategory }) {
+const CategoryBadge = memo(function CategoryBadge({ category }: { category: ProcessCategory }) {
   const config: Record<ProcessCategory, { icon: React.ReactNode; label: string; className: string }> = {
     system: {
       icon: <Shield className="w-2.5 h-2.5" strokeWidth={2} />,
@@ -66,12 +67,13 @@ function CategoryBadge({ category }: { category: ProcessCategory }) {
       {label}
     </span>
   );
-}
+});
 
 /**
  * Single process row component.
+ * Memoized to prevent re-renders for unchanged rows in the list.
  */
-function ProcessRow({ process, isSelected, onSelect, index }: ProcessRowProps) {
+const ProcessRow = memo(function ProcessRow({ process, isSelected, onSelect, index }: ProcessRowProps) {
   const cpuColor = process.cpu_percent >= 50 ? 'text-danger' : process.cpu_percent >= 25 ? 'text-warning' : 'text-muted-foreground';
   const memColor = process.memory_percent >= 50 ? 'text-danger' : process.memory_percent >= 25 ? 'text-warning' : 'text-muted-foreground';
 
@@ -108,7 +110,7 @@ function ProcessRow({ process, isSelected, onSelect, index }: ProcessRowProps) {
       </TableCell>
     </motion.tr>
   );
-}
+});
 
 /**
  * Loading skeleton for process list.

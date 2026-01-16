@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, memo } from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Cpu, MemoryStick, MonitorSpeaker, HardDrive, LucideIcon } from 'lucide-react';
@@ -42,7 +42,11 @@ interface TelemetryCardProps {
   delay?: number;
 }
 
-function TelemetryCard({ title, icon, children, className, delay = 0 }: TelemetryCardProps) {
+/**
+ * TelemetryCard - Displays a telemetry metric with icon and educational content.
+ * Memoized to prevent re-renders when props haven't changed.
+ */
+const TelemetryCard = memo(function TelemetryCard({ title, icon, children, className, delay = 0 }: TelemetryCardProps) {
   const Icon = icons[icon];
   const explanation = telemetryExplanations[icon];
 
@@ -94,6 +98,6 @@ function TelemetryCard({ title, icon, children, className, delay = 0 }: Telemetr
       </div>
     </motion.div>
   );
-}
+});
 
 export default TelemetryCard;

@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import type { DetectedGame } from '../types/games';
@@ -71,8 +72,9 @@ export interface GameCardProps {
 
 /**
  * GameCard - Displays a single game with launcher badge and optimization indicator.
+ * Memoized to prevent re-renders when game data hasn't changed.
  */
-function GameCard({
+const GameCard = memo(function GameCard({
   game,
   hasOptimization,
   onClick,
@@ -238,6 +240,6 @@ function GameCard({
       </div>
     </motion.div>
   );
-}
+});
 
 export default GameCard;
