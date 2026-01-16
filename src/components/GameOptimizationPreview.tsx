@@ -4,9 +4,11 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { CheckCircle, Sparkles, Brush, Terminal, Lightbulb, Zap, HelpCircle, Eye } from 'lucide-react';
 import { LearnModeExplanation } from './LearnModeExplanation';
+import { LearningCallout } from './LearningCallout';
 import OptimizationApprovalModal from './OptimizationApprovalModal';
 import OptimizationResultModal from './OptimizationResultModal';
 import { useOptimizer } from '../hooks/useOptimizer';
+import { useLearning } from '../hooks/useLearning';
 import { useInvestigationMode } from './InvestigationMode';
 import type { GameOptimization } from '../types/games';
 import type { OptimizationResult } from '../types/optimizer';
@@ -257,9 +259,14 @@ function GameOptimizationPreview({
   const [showApproval, setShowApproval] = useState(false);
   const [showResult, setShowResult] = useState(false);
   const [result, setResult] = useState<OptimizationResult | null>(null);
+  const [showPreferenceCallout, setShowPreferenceCallout] = useState(true);
 
   const { applyOptimization, revertOptimization, loading: optimizing } = useOptimizer();
   const { isInvestigationMode, showReport } = useInvestigationMode();
+  const { getRelevantPreferences } = useLearning();
+
+  // Get preferences relevant to this game
+  const relevantPrefs = gameId ? getRelevantPreferences(gameId) : [];
 
   // Handle investigate button click - generate and show report
   const handleInvestigate = () => {
@@ -399,6 +406,20 @@ function GameOptimizationPreview({
           details="Settings are community-verified to balance FPS gains with visual quality. Higher impact settings give bigger FPS gains but may noticeably reduce visuals."
           type="info"
         />
+
+        {/* Learning Callout - show if relevant preferences exist */}
+        {relevantPrefs.length > 0 && showPreferenceCallout && (
+          <LearningCallout
+            preference={`You usually prefer ${relevantPrefs[0].name}`}
+            action={`I'm prioritizing ${relevantPrefs[0].description.toLowerCase()} for this optimization.`}
+            onChangePreference={() => {
+              // Navigate to settings learning section
+              // In production, would use a proper navigation method
+              console.log('Navigate to Settings -> Learning');
+            }}
+            onDismiss={() => setShowPreferenceCallout(false)}
+          />
+        )}
 
         {/* Graphics Settings */}
         {graphics && Object.keys(graphics).length > 0 && (
