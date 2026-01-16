@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-15)
 ## Current Position
 
 Phase: 17 of 18 (Chess Integration)
-Plan: 1 of ? in current phase
+Plan: 2 of ? in current phase
 Status: In progress
-Last activity: 2026-01-17 — Completed 17-01-PLAN.md (Chess Foundation)
+Last activity: 2026-01-17 — Completed 17-02-PLAN.md (Chess Hooks)
 
-Progress: █░░░░░░░░░ ~10% of v2.0 (1/? plans)
+Progress: ██░░░░░░░░ ~20% of v2.0 (2/? plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 52
+- Total plans completed: 53
 - Average duration: 9 min
-- Total execution time: 7.1 hours
+- Total execution time: 7.2 hours
 
 **By Phase:**
 
@@ -45,10 +45,10 @@ Progress: █░░░░░░░░░ ~10% of v2.0 (1/? plans)
 | 14. Educational Enhancement | 3/3 | 12 min | 4 min |
 | 15. Performance & Launch | 3/3 | 12 min | 4 min |
 | 16. Social Features | 1/1 | 8 min | 8 min |
-| 17. Chess Integration | 1/? | 3 min | 3 min |
+| 17. Chess Integration | 2/? | 9 min | 4.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 3, 4, 4, 8, 3 min
+- Last 5 plans: 4, 4, 8, 3, 6 min
 - Trend: Consistent fast execution
 
 ## Accumulated Context
@@ -222,6 +222,9 @@ Progress: █░░░░░░░░░ ~10% of v2.0 (1/? plans)
 | 17-01 | Standard chess stack: chess.js + react-chessboard + stockfish | De facto standard, TypeScript-native, handles all chess rules |
 | 17-01 | Skill level mapping (2/6/11/15/20) | Based on research calibration for user-friendly difficulty |
 | 17-01 | Helper functions for state and AI config | Simplifies game initialization across components |
+| 17-02 | chess.js as single source of truth | Prevents FEN/state desync pitfall |
+| 17-02 | Web Worker for Stockfish | WASM blocks main thread, must run off UI thread |
+| 17-02 | stockfish-lite-single variant | Smaller bundle, sufficient for casual play |
 
 ### Deferred Issues
 
@@ -245,6 +248,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-17
-Stopped at: Completed 17-01-PLAN.md (Chess Foundation)
+Stopped at: Completed 17-02-PLAN.md (Chess Hooks)
 Resume file: None
-Next action: Execute 17-02-PLAN.md (next chess plan)
+Next action: Execute 17-03-PLAN.md (next chess plan)
