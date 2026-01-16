@@ -1,15 +1,27 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import Layout from './components/Layout';
 import Background from './components/Background';
-import Dashboard from './pages/Dashboard';
-import Games from './pages/Games';
-import Optimize from './pages/Optimize';
-import Score from './pages/Score';
-import Settings from './pages/Settings';
-import PlatformOnboarding from './components/PlatformOnboarding';
-import Onboarding, { OnboardingPreferences } from './components/Onboarding';
+import { PageSkeleton } from './components/ui/skeleton';
 import { pageVariants } from './lib/animations';
+
+// Lazy load pages for better initial load performance
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Games = lazy(() => import('./pages/Games'));
+const Optimize = lazy(() => import('./pages/Optimize'));
+const Score = lazy(() => import('./pages/Score'));
+const Settings = lazy(() => import('./pages/Settings'));
+
+// Lazy load onboarding components (only needed on first launch)
+const PlatformOnboarding = lazy(() => import('./components/PlatformOnboarding'));
+const Onboarding = lazy(() => import('./components/Onboarding'));
+
+// Type for onboarding preferences (imported dynamically)
+interface OnboardingPreferences {
+  priority: 'fps' | 'quality' | 'balanced';
+  expertise: 'simple' | 'standard' | 'power';
+  gameType: 'competitive' | 'story' | 'both';
+}
 
 const PLATFORM_ONBOARDING_KEY = 'opta_platform_onboarding_complete';
 const PREFERENCES_ONBOARDING_KEY = 'opta_preferences_onboarding_complete';
@@ -71,37 +83,49 @@ function App() {
       case 'dashboard':
         return (
           <motion.div {...pageProps}>
-            <Dashboard onNavigate={setActivePage} />
+            <Suspense fallback={<PageSkeleton />}>
+              <Dashboard onNavigate={setActivePage} />
+            </Suspense>
           </motion.div>
         );
       case 'games':
         return (
           <motion.div {...pageProps}>
-            <Games />
+            <Suspense fallback={<PageSkeleton />}>
+              <Games />
+            </Suspense>
           </motion.div>
         );
       case 'optimize':
         return (
           <motion.div {...pageProps}>
-            <Optimize />
+            <Suspense fallback={<PageSkeleton />}>
+              <Optimize />
+            </Suspense>
           </motion.div>
         );
       case 'score':
         return (
           <motion.div {...pageProps}>
-            <Score />
+            <Suspense fallback={<PageSkeleton />}>
+              <Score />
+            </Suspense>
           </motion.div>
         );
       case 'settings':
         return (
           <motion.div {...pageProps}>
-            <Settings />
+            <Suspense fallback={<PageSkeleton />}>
+              <Settings />
+            </Suspense>
           </motion.div>
         );
       default:
         return (
           <motion.div {...pageProps}>
-            <Dashboard onNavigate={setActivePage} />
+            <Suspense fallback={<PageSkeleton />}>
+              <Dashboard onNavigate={setActivePage} />
+            </Suspense>
           </motion.div>
         );
     }
@@ -122,17 +146,21 @@ function App() {
       {/* Platform onboarding (first) */}
       <AnimatePresence>
         {showPlatformOnboarding && (
-          <PlatformOnboarding
-            onComplete={handlePlatformOnboardingComplete}
-            onSkip={handlePlatformOnboardingSkip}
-          />
+          <Suspense fallback={null}>
+            <PlatformOnboarding
+              onComplete={handlePlatformOnboardingComplete}
+              onSkip={handlePlatformOnboardingSkip}
+            />
+          </Suspense>
         )}
       </AnimatePresence>
 
       {/* Preferences onboarding (second) */}
       <AnimatePresence>
         {showPreferencesOnboarding && (
-          <Onboarding onComplete={handlePreferencesComplete} />
+          <Suspense fallback={null}>
+            <Onboarding onComplete={handlePreferencesComplete} />
+          </Suspense>
         )}
       </AnimatePresence>
     </div>

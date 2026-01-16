@@ -37,4 +37,43 @@ export default defineConfig(async () => ({
       ignored: ["**/src-tauri/**"],
     },
   },
+
+  // Production build optimizations
+  build: {
+    // Increase chunk size warning limit for desktop app
+    chunkSizeWarningLimit: 2000,
+    rollupOptions: {
+      output: {
+        // Split vendor chunks for better caching
+        manualChunks: {
+          "vendor-react": ["react", "react-dom"],
+          "vendor-motion": ["framer-motion"],
+          "vendor-radix": [
+            "@radix-ui/react-dialog",
+            "@radix-ui/react-dropdown-menu",
+            "@radix-ui/react-progress",
+            "@radix-ui/react-scroll-area",
+            "@radix-ui/react-separator",
+            "@radix-ui/react-slot",
+            "@radix-ui/react-tooltip",
+          ],
+        },
+      },
+    },
+    // Enable source maps for debugging production issues
+    sourcemap: false,
+    // Minification settings
+    minify: "esbuild",
+    target: "esnext",
+  },
+
+  // Optimize dependencies
+  optimizeDeps: {
+    include: [
+      "react",
+      "react-dom",
+      "framer-motion",
+      "lucide-react",
+    ],
+  },
 }));
