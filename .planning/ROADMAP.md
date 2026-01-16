@@ -36,7 +36,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 10: Polish, Education & Launch** - Cross-platform testing, Learn Mode, visual explanations, UX refinement
 - [ ] **Phase 11: Foundation & Stability** - Critical bug fixes, error boundaries, design system compliance
 - [ ] **Phase 12: UX Flow Polish** - Navigation fixes, loading states, session flow improvements
-- [ ] **Phase 13: Core Features** - Opta Text Zone, Communication Style, Preference Presets, Pinpoint Mode
+- [x] **Phase 13: Core Features** - Opta Text Zone, Communication Style, Preference Presets, Pinpoint Mode
 - [ ] **Phase 14: Educational Enhancement** - Expertise-adaptive explanations, learning visibility, rollback
 - [ ] **Phase 15: Performance & Launch** - Performance optimization, macOS polish, launch preparation
 - [ ] **Phase 16: Windows Platform** - Windows-specific testing, installer, conflict tools (v2.0)
@@ -217,10 +217,10 @@ Plans:
 **Research**: Likely (UX patterns for text zone)
 
 Plans:
-- [ ] 13-01: Opta Text Zone implementation
-- [ ] 13-02: Communication style preference
-- [ ] 13-03: Preference presets system
-- [ ] 13-04: Pinpoint optimization mode
+- [x] 13-01: Opta Text Zone implementation
+- [x] 13-02: Communication style preference
+- [x] 13-03: Preference presets system
+- [x] 13-04: Pinpoint optimization mode
 
 #### Phase 14: Educational Enhancement
 **Goal**: Deepen Learn Mode and personalized learning visibility
@@ -291,8 +291,8 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 �
 | 9. Optimization Score | v1.0 | 3/3 | Complete | 2026-01-16 |
 | 10. Polish, Education & Launch | v1.0 | 7/7 | Complete | 2026-01-16 |
 | 11. Foundation & Stability | v1.1 | 3/3 | Complete | 2026-01-16 |
-| 12. UX Flow Polish | v1.1 | 1/3 | In progress | - |
-| 13. Core Features | v1.1 | 0/4 | Not started | - |
+| 12. UX Flow Polish | v1.1 | 3/3 | Complete | 2026-01-16 |
+| 13. Core Features | v1.1 | 4/4 | Complete | 2026-01-16 |
 | 14. Educational Enhancement | v1.1 | 0/3 | Not started | - |
 | 15. Performance & Launch | v1.1 | 0/3 | Not started | - |
 | 16. Windows Platform | v2.0 | 0/? | Not started | - |
