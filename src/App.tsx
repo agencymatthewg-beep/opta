@@ -19,6 +19,7 @@ import SessionSummaryModal from './components/SessionSummaryModal';
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Games = lazy(() => import('./pages/Games'));
 const Optimize = lazy(() => import('./pages/Optimize'));
+const PinpointOptimize = lazy(() => import('./pages/PinpointOptimize'));
 const Score = lazy(() => import('./pages/Score'));
 const Settings = lazy(() => import('./pages/Settings'));
 
@@ -143,6 +144,14 @@ function App() {
           <motion.div {...pageProps}>
             <Suspense fallback={<PageSkeleton />}>
               <Optimize onNavigate={setActivePage} />
+            </Suspense>
+          </motion.div>
+        );
+      case 'pinpoint':
+        return (
+          <motion.div {...pageProps}>
+            <Suspense fallback={<PageSkeleton />}>
+              <PinpointOptimize />
             </Suspense>
           </motion.div>
         );

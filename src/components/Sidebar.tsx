@@ -9,6 +9,7 @@ import {
   Zap,
   Award,
   Settings,
+  Target,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -31,6 +32,11 @@ const navItems = [
     id: 'optimize',
     label: 'Optimize',
     icon: Zap,
+  },
+  {
+    id: 'pinpoint',
+    label: 'Pinpoint',
+    icon: Target,
   },
   {
     id: 'score',
