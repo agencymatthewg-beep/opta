@@ -689,6 +689,25 @@ async def list_tools() -> list[Tool]:
                 "required": ["badge_id"],
             },
         ),
+        # Investigation Mode Tool
+        Tool(
+            name="get_investigation_report",
+            description="Get full transparency report for an optimization - shows exact registry keys, config files, commands, dependencies, and rollback info",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "optimization_id": {
+                        "type": "string",
+                        "description": "ID of the optimization to investigate (e.g., 'game_730', 'stealth_mode')",
+                    },
+                    "optimization_name": {
+                        "type": "string",
+                        "description": "Display name of the optimization",
+                    },
+                },
+                "required": ["optimization_id"],
+            },
+        ),
     ]
 
 
@@ -945,6 +964,12 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
         from opta_mcp import badges
         badge_id = arguments.get("badge_id", "")
         result = badges.mark_badge_seen(badge_id)
+    # Investigation Mode Handler
+    elif name == "get_investigation_report":
+        from opta_mcp import investigation
+        optimization_id = arguments.get("optimization_id", "")
+        optimization_name = arguments.get("optimization_name", "Unknown Optimization")
+        result = investigation.get_investigation_report(optimization_id, optimization_name)
     else:
         result = {"error": f"Unknown tool: {name}"}
 
