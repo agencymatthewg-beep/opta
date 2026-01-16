@@ -3,6 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useGames } from '../hooks/useGames';
 import { useUserProfile } from '../hooks/useUserProfile';
 import { useLauncher } from '../hooks/useLauncher';
+import { useLaunchPreferences } from '../hooks/useLaunchPreferences';
+import { useStealthModeEstimate } from '../hooks/useStealthModeEstimate';
+import { useGameSessionContext } from '../components/GameSessionContext';
 import GameList from '../components/GameList';
 import GameOptimizationPreview from '../components/GameOptimizationPreview';
 import PersonalizedRecommendations from '../components/PersonalizedRecommendations';
@@ -297,6 +300,9 @@ function Games() {
 
   const { getRecommendations } = useUserProfile();
   const { launchGame, launching, launchingGame, clearError } = useLauncher();
+  const { getConfigForGame, setGameOverride } = useLaunchPreferences();
+  const { safeToKillCount, estimatedMemorySavingsMb, refresh: refreshStealthEstimate } = useStealthModeEstimate();
+  const { session, startSession } = useGameSessionContext();
 
   const [selectedGame, setSelectedGame] = useState<DetectedGame | null>(null);
   const [loadingOptimization, setLoadingOptimization] = useState(false);
@@ -306,11 +312,29 @@ function Games() {
   const [showLaunchModal, setShowLaunchModal] = useState(false);
   const [gameToLaunch, setGameToLaunch] = useState<DetectedGame | null>(null);
   const [gameOptimizationForLaunch, setGameOptimizationForLaunch] = useState<GameOptimization | null>(null);
+  const [launchInitialConfig, setLaunchInitialConfig] = useState<LaunchConfig | null>(null);
 
-  // Recommendations state
+  // Recommendations state with localStorage persistence
+  const DISMISSED_RECOMMENDATIONS_KEY = 'opta-dismissed-recommendations';
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [loadingRecommendations, setLoadingRecommendations] = useState(false);
-  const [dismissedRecommendations, setDismissedRecommendations] = useState<Set<string>>(new Set());
+  const [dismissedRecommendations, setDismissedRecommendations] = useState<Set<string>>(() => {
+    try {
+      const saved = localStorage.getItem(DISMISSED_RECOMMENDATIONS_KEY);
+      return saved ? new Set(JSON.parse(saved)) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
+
+  // Persist dismissed recommendations to localStorage when changed
+  useEffect(() => {
+    try {
+      localStorage.setItem(DISMISSED_RECOMMENDATIONS_KEY, JSON.stringify([...dismissedRecommendations]));
+    } catch {
+      // Silently fail if localStorage is unavailable
+    }
+  }, [dismissedRecommendations]);
 
   // Set of game IDs that have optimizations available
   const gamesWithOptimizations = useMemo(() => {
@@ -416,6 +440,13 @@ function Games() {
     setGameToLaunch(game);
     clearError();
 
+    // Load saved preferences for this game
+    const savedConfig = getConfigForGame(game.id);
+    setLaunchInitialConfig(savedConfig);
+
+    // Refresh stealth mode estimates for accurate data
+    refreshStealthEstimate();
+
     // Load optimization for this game to show pending count in modal
     try {
       const gameId = game.id.replace('steam_', '');
@@ -440,7 +471,14 @@ function Games() {
     const result = await launchGame(gameToLaunch, config);
 
     if (result.success) {
+      // Save launch preferences for this game
+      setGameOverride(gameToLaunch.id, config);
+
       handleCloseLaunchModal();
+      // Start session tracking if track session is enabled
+      if (config.trackSession) {
+        startSession(gameToLaunch);
+      }
     }
     // If failed, modal stays open and shows error state via launching prop
   };
@@ -580,6 +618,7 @@ function Games() {
             loading={loading}
             onPlay={handlePlayClick}
             launchingGameId={launchingGame?.id ?? null}
+            playingGameId={session?.gameId ?? null}
           />
         </div>
 
@@ -628,9 +667,10 @@ function Games() {
               ? Object.keys(gameOptimizationForLaunch.settings).length
               : 0
           }
-          estimatedMemorySavingsMb={512} // TODO: Get from Stealth Mode calculation
-          safeToKillCount={8} // TODO: Get from process scan
+          estimatedMemorySavingsMb={estimatedMemorySavingsMb}
+          safeToKillCount={safeToKillCount}
           loading={launching}
+          initialConfig={launchInitialConfig ?? undefined}
         />
       )}
     </div>
