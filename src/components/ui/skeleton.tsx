@@ -1,5 +1,16 @@
+/**
+ * Skeleton - The Obsidian Loading Placeholder
+ *
+ * Shimmer loading states with obsidian glass styling.
+ *
+ * @see DESIGN_SYSTEM.md - Part 4: The Obsidian Glass Material System
+ */
+
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+
+// Easing curve for smooth energy transitions
+const smoothOut: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
 /**
  * Skeleton loading component with shimmer animation.
@@ -12,8 +23,13 @@ export function Skeleton({
 }) {
   return (
     <motion.div
-      className={cn("bg-muted/50 rounded-md", className)}
-      animate={{ opacity: [0.5, 0.8, 0.5] }}
+      className={cn(
+        "rounded-md",
+        // Obsidian shimmer
+        "bg-white/[0.04]",
+        className
+      )}
+      animate={{ opacity: [0.4, 0.7, 0.4] }}
       transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
     />
   );
@@ -31,13 +47,19 @@ export function TelemetryCardSkeleton({
 }) {
   return (
     <motion.div
-      className={cn("glass rounded-xl overflow-hidden", className)}
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay }}
+      className={cn(
+        "relative rounded-xl overflow-hidden",
+        // Obsidian glass material
+        "bg-[#05030a]/80 backdrop-blur-xl",
+        "border border-white/[0.06]",
+        className
+      )}
+      initial={{ opacity: 0, y: 12, filter: 'brightness(0.5)' }}
+      animate={{ opacity: 1, y: 0, filter: 'brightness(1)' }}
+      transition={{ delay, ease: smoothOut }}
     >
       {/* Header */}
-      <div className="px-5 py-4 border-b border-border/30">
+      <div className="px-5 py-4 border-b border-white/[0.05]">
         <div className="flex items-center gap-2.5">
           <Skeleton className="w-7 h-7 rounded-lg" />
           <Skeleton className="h-4 w-16" />
@@ -58,10 +80,10 @@ export function TelemetryCardSkeleton({
 export function ProcessItemSkeleton({ delay = 0 }: { delay?: number }) {
   return (
     <motion.div
-      className="flex items-center justify-between py-3 px-4 border-b border-border/10"
+      className="flex items-center justify-between py-3 px-4 border-b border-white/[0.05]"
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay }}
+      transition={{ delay, ease: smoothOut }}
     >
       <div className="flex items-center gap-3 flex-1">
         <Skeleton className="w-8 h-8 rounded-lg" />
@@ -84,9 +106,13 @@ export function ProcessItemSkeleton({ delay = 0 }: { delay?: number }) {
  */
 export function ProcessListSkeleton() {
   return (
-    <div className="glass rounded-xl overflow-hidden">
+    <div className={cn(
+      "relative rounded-xl overflow-hidden",
+      "bg-[#05030a]/80 backdrop-blur-xl",
+      "border border-white/[0.06]"
+    )}>
       {/* Header */}
-      <div className="px-5 py-4 border-b border-border/30">
+      <div className="px-5 py-4 border-b border-white/[0.05]">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <Skeleton className="w-7 h-7 rounded-lg" />
@@ -111,10 +137,14 @@ export function ProcessListSkeleton() {
 export function GameCardSkeleton({ delay = 0 }: { delay?: number }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay }}
-      className="glass rounded-xl overflow-hidden border border-border/30"
+      initial={{ opacity: 0, y: 12, filter: 'brightness(0.5)' }}
+      animate={{ opacity: 1, y: 0, filter: 'brightness(1)' }}
+      transition={{ delay, ease: smoothOut }}
+      className={cn(
+        "relative rounded-xl overflow-hidden",
+        "bg-[#05030a]/80 backdrop-blur-xl",
+        "border border-white/[0.06]"
+      )}
     >
       <Skeleton className="h-1.5 rounded-t-xl" />
       <div className="p-4">
@@ -134,9 +164,14 @@ export function GameCardSkeleton({ delay = 0 }: { delay?: number }) {
 export function ScoreCardSkeleton() {
   return (
     <motion.div
-      className="glass rounded-2xl p-8"
-      initial={{ opacity: 0, scale: 0.98 }}
-      animate={{ opacity: 1, scale: 1 }}
+      className={cn(
+        "relative rounded-2xl p-8 overflow-hidden",
+        "bg-[#05030a]/90 backdrop-blur-2xl",
+        "border border-white/[0.08]"
+      )}
+      initial={{ opacity: 0, scale: 0.98, filter: 'brightness(0.5)' }}
+      animate={{ opacity: 1, scale: 1, filter: 'brightness(1)' }}
+      transition={{ ease: smoothOut }}
     >
       <div className="flex items-center justify-between mb-6">
         <Skeleton className="h-8 w-32" />
@@ -162,7 +197,7 @@ export function ScoreCardSkeleton() {
  */
 export function PageSkeleton() {
   return (
-    <div className="page max-w-6xl animate-pulse">
+    <div className="page max-w-6xl">
       {/* Header */}
       <Skeleton className="h-8 w-48 mb-6" />
       {/* Content grid */}

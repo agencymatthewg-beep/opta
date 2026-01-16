@@ -1,3 +1,11 @@
+/**
+ * ScrollArea - The Obsidian Scroll Container
+ *
+ * Custom scrollbar with obsidian glass thumb styling.
+ *
+ * @see DESIGN_SYSTEM.md - Part 4: The Obsidian Glass Material System
+ */
+
 import * as React from "react";
 import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area";
 
@@ -38,7 +46,15 @@ const ScrollBar = React.forwardRef<
     )}
     {...props}
   >
-    <ScrollAreaPrimitive.ScrollAreaThumb className="relative flex-1 rounded-full bg-border" />
+    <ScrollAreaPrimitive.ScrollAreaThumb
+      className={cn(
+        "relative flex-1 rounded-full",
+        // Obsidian glass thumb
+        "bg-white/[0.08]",
+        // Hover energy state
+        "hover:bg-primary/30 transition-colors duration-200"
+      )}
+    />
   </ScrollAreaPrimitive.ScrollAreaScrollbar>
 ));
 ScrollBar.displayName = ScrollAreaPrimitive.ScrollAreaScrollbar.displayName;

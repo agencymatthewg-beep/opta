@@ -1,6 +1,18 @@
+/**
+ * GpuMeter - The Obsidian GPU Monitor
+ *
+ * Circular GPU usage meter with obsidian styling and energy-based glow.
+ * Color transitions from success → warning → danger based on usage.
+ *
+ * @see DESIGN_SYSTEM.md - Part 4: The Obsidian Glass Material System
+ */
+
 import { motion, useSpring, useTransform } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { MonitorOff } from 'lucide-react';
+
+// Easing curve for smooth energy transitions
+const smoothOut: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
 interface GpuMeterProps {
   available: boolean;
@@ -31,13 +43,17 @@ function GpuMeter({ available, name, percent = 0, temperature }: GpuMeterProps) 
     return (
       <motion.div
         className="flex flex-col items-center justify-center gap-3 py-4"
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.3 }}
+        initial={{ opacity: 0, scale: 0.95, filter: 'brightness(0.5) blur(2px)' }}
+        animate={{ opacity: 1, scale: 1, filter: 'brightness(1) blur(0px)' }}
+        transition={{ duration: 0.5, ease: smoothOut }}
         role="status"
         aria-label="No GPU detected"
       >
-        <div className="w-32 h-32 rounded-full border-2 border-dashed border-muted/20 flex items-center justify-center">
+        <div className={cn(
+          "w-32 h-32 rounded-full flex items-center justify-center",
+          "bg-[#05030a]/60 backdrop-blur-lg",
+          "border-2 border-dashed border-white/[0.08]"
+        )}>
           <MonitorOff className="w-8 h-8 text-muted-foreground/30" strokeWidth={1.5} aria-hidden="true" />
         </div>
         <span className="text-xs text-muted-foreground/60">No GPU detected</span>
@@ -59,16 +75,16 @@ function GpuMeter({ available, name, percent = 0, temperature }: GpuMeterProps) 
   };
 
   const getGlowClass = (value: number) => {
-    if (value >= 85) return 'drop-shadow-[0_0_12px_hsl(var(--danger)/0.6)]';
-    if (value >= 60) return 'drop-shadow-[0_0_12px_hsl(var(--warning)/0.6)]';
-    return 'drop-shadow-[0_0_12px_hsl(var(--success)/0.6)]';
+    if (value >= 85) return 'drop-shadow-[0_0_15px_rgba(239,68,68,0.6)]';
+    if (value >= 60) return 'drop-shadow-[0_0_15px_rgba(234,179,8,0.6)]';
+    return 'drop-shadow-[0_0_15px_rgba(34,197,94,0.5)]';
   };
 
   // Temperature color
   const getTempColorClass = (temp: number) => {
-    if (temp >= 80) return 'text-danger border-danger/30 bg-danger/10';
-    if (temp >= 65) return 'text-warning border-warning/30 bg-warning/10';
-    return 'text-success border-success/30 bg-success/10';
+    if (temp >= 80) return 'text-danger border-danger/30 bg-danger/10 shadow-[0_0_8px_rgba(239,68,68,0.3)]';
+    if (temp >= 65) return 'text-warning border-warning/30 bg-warning/10 shadow-[0_0_8px_rgba(234,179,8,0.3)]';
+    return 'text-success border-success/30 bg-success/10 shadow-[0_0_8px_rgba(34,197,94,0.3)]';
   };
 
   const colorClass = getColorClass(percent);
@@ -77,32 +93,52 @@ function GpuMeter({ available, name, percent = 0, temperature }: GpuMeterProps) 
   const isHighUsage = percent >= 90;
 
   return (
-    <div
+    <motion.div
       className="flex flex-col items-center gap-3"
       role="meter"
       aria-valuenow={Math.round(percent)}
       aria-valuemin={0}
       aria-valuemax={100}
       aria-label={`GPU usage: ${Math.round(percent)} percent${temperature !== undefined ? `, temperature: ${temperature} degrees Celsius` : ''}`}
+      // Ignition animation
+      initial={{
+        opacity: 0,
+        scale: 0.9,
+        filter: 'brightness(0.5) blur(4px)',
+      }}
+      animate={{
+        opacity: 1,
+        scale: 1,
+        filter: 'brightness(1) blur(0px)',
+      }}
+      transition={{ duration: 0.6, ease: smoothOut }}
     >
       {/* Meter ring */}
       <div className={cn(
         "relative w-32 h-32",
         isHighUsage && "animate-pulse"
       )}>
+        {/* Ambient glow behind ring */}
+        <div
+          className="absolute inset-0 rounded-full"
+          style={{
+            background: `radial-gradient(circle, ${strokeColor}15 0%, transparent 70%)`,
+          }}
+        />
+
         <svg
-          className="w-full h-full -rotate-90"
+          className="w-full h-full -rotate-90 relative z-10"
           viewBox="0 0 120 120"
           aria-hidden="true"
         >
-          {/* Background circle */}
+          {/* Background circle - obsidian glass ring */}
           <circle
             cx="60"
             cy="60"
             r={radius}
             fill="none"
             strokeWidth="8"
-            className="stroke-muted/20"
+            className="stroke-white/[0.06]"
           />
           {/* Gradient definition */}
           <defs>
@@ -126,23 +162,27 @@ function GpuMeter({ available, name, percent = 0, temperature }: GpuMeterProps) 
           />
         </svg>
 
-        {/* Center content */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
+        {/* Center content - obsidian glass background */}
+        <div className={cn(
+          "absolute inset-4 flex flex-col items-center justify-center rounded-full",
+          "bg-[#05030a]/60 backdrop-blur-lg",
+          "border border-white/[0.06]"
+        )}>
           <motion.span
             className={cn("text-3xl font-bold tabular-nums", colorClass)}
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: 0.2 }}
+            transition={{ delay: 0.2, ease: smoothOut }}
           >
             {Math.round(percent)}
             <span className="text-lg">%</span>
           </motion.span>
-          <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide mt-0.5">
+          <span className="text-[10px] text-muted-foreground/60 font-medium uppercase tracking-wider mt-0.5">
             GPU
           </span>
         </div>
 
-        {/* Temperature badge */}
+        {/* Temperature badge - obsidian styled */}
         {temperature !== undefined && (
           <motion.div
             className={cn(
@@ -153,24 +193,29 @@ function GpuMeter({ available, name, percent = 0, temperature }: GpuMeterProps) 
             )}
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: 0.4, type: "spring", stiffness: 400 }}
+            transition={{ delay: 0.4, duration: 0.4, ease: smoothOut }}
           >
             {temperature}°C
           </motion.div>
         )}
       </div>
 
-      {/* GPU name */}
+      {/* GPU name - obsidian styled */}
       <motion.div
-        className="text-xs text-muted-foreground text-center truncate max-w-[140px]"
-        title={name}
-        initial={{ opacity: 0, y: 4 }}
+        className="flex items-center gap-1.5 text-xs"
+        initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
+        transition={{ delay: 0.3, ease: smoothOut }}
       >
-        <span className="text-foreground/70">{name || 'Unknown GPU'}</span>
+        <span className={cn(
+          "w-1.5 h-1.5 rounded-full bg-primary/60",
+          "shadow-[0_0_6px_rgba(168,85,247,0.4)]"
+        )} />
+        <span className="text-muted-foreground/70 truncate max-w-[120px]" title={name}>
+          <span className="font-medium text-foreground/80">{name || 'Unknown GPU'}</span>
+        </span>
       </motion.div>
-    </div>
+    </motion.div>
   );
 }
 

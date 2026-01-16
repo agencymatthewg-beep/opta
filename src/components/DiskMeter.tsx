@@ -1,5 +1,17 @@
+/**
+ * DiskMeter - The Obsidian Disk Monitor
+ *
+ * Linear disk usage meter with obsidian styling and energy-based glow.
+ * Color transitions from success → warning → danger based on usage.
+ *
+ * @see DESIGN_SYSTEM.md - Part 4: The Obsidian Glass Material System
+ */
+
 import { motion, useSpring, useTransform } from 'framer-motion';
 import { cn } from '@/lib/utils';
+
+// Easing curve for smooth energy transitions
+const smoothOut: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
 interface DiskMeterProps {
   usedGb: number;
@@ -31,9 +43,9 @@ function DiskMeter({ usedGb, totalGb, percent }: DiskMeterProps) {
   };
 
   const getGlowClass = (value: number) => {
-    if (value >= 85) return 'shadow-[0_0_12px_hsl(var(--danger)/0.4)]';
-    if (value >= 60) return 'shadow-[0_0_12px_hsl(var(--warning)/0.4)]';
-    return 'shadow-[0_0_12px_hsl(var(--success)/0.4)]';
+    if (value >= 85) return 'shadow-[0_0_15px_rgba(239,68,68,0.4)]';
+    if (value >= 60) return 'shadow-[0_0_15px_rgba(234,179,8,0.4)]';
+    return 'shadow-[0_0_15px_rgba(34,197,94,0.35)]';
   };
 
   // Format to show TB if >= 1000 GB
@@ -50,20 +62,32 @@ function DiskMeter({ usedGb, totalGb, percent }: DiskMeterProps) {
   const isHighUsage = percent >= 90;
 
   return (
-    <div
+    <motion.div
       className="flex flex-col gap-4 w-full"
       role="meter"
       aria-valuenow={Math.round(percent)}
       aria-valuemin={0}
       aria-valuemax={100}
       aria-label={`Disk usage: ${formatSize(usedGb)} of ${formatSize(totalGb)} (${Math.round(percent)} percent)`}
+      // Ignition animation
+      initial={{
+        opacity: 0,
+        y: 8,
+        filter: 'brightness(0.5) blur(2px)',
+      }}
+      animate={{
+        opacity: 1,
+        y: 0,
+        filter: 'brightness(1) blur(0px)',
+      }}
+      transition={{ duration: 0.5, ease: smoothOut }}
     >
       {/* Header */}
       <motion.div
         className="flex items-center justify-between"
         initial={{ opacity: 0, y: 4 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
+        transition={{ delay: 0.1, ease: smoothOut }}
       >
         <div className="flex items-baseline gap-2">
           <span className={cn("text-3xl font-bold tabular-nums", colorClass)}>
@@ -71,14 +95,16 @@ function DiskMeter({ usedGb, totalGb, percent }: DiskMeterProps) {
             <span className="text-lg">%</span>
           </span>
         </div>
-        <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+        <span className="text-[10px] text-muted-foreground/60 font-medium uppercase tracking-wider">
           Disk
         </span>
       </motion.div>
 
-      {/* Progress bar */}
+      {/* Progress bar - obsidian glass container */}
       <div className={cn(
-        "relative h-3 w-full rounded-full bg-muted/20 overflow-hidden",
+        "relative h-3 w-full rounded-full overflow-hidden",
+        "bg-white/[0.03]",
+        "border border-white/[0.06]",
         isHighUsage && "animate-pulse"
       )}>
         <motion.div
@@ -94,27 +120,31 @@ function DiskMeter({ usedGb, totalGb, percent }: DiskMeterProps) {
           animate={{ width: `${percent}%` }}
           transition={{
             duration: 0.8,
-            ease: [0.4, 0, 0.2, 1] as const,
+            ease: smoothOut,
           }}
         />
       </div>
 
-      {/* Stats */}
+      {/* Stats - obsidian styled */}
       <motion.div
         className="flex items-center justify-center gap-2 text-xs"
         initial={{ opacity: 0, y: 4 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
+        transition={{ delay: 0.3, ease: smoothOut }}
       >
+        <span className={cn(
+          "w-1.5 h-1.5 rounded-full bg-accent/60",
+          "shadow-[0_0_6px_rgba(147,51,234,0.4)]"
+        )} />
         <span className="text-foreground/80 font-medium tabular-nums">
           {formatSize(usedGb)}
         </span>
-        <span className="text-muted-foreground/50">/</span>
-        <span className="text-muted-foreground tabular-nums">
+        <span className="text-muted-foreground/40">/</span>
+        <span className="text-muted-foreground/70 tabular-nums">
           {formatSize(totalGb)}
         </span>
       </motion.div>
-    </div>
+    </motion.div>
   );
 }
 
