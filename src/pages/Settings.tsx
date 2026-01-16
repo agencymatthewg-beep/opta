@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Switch } from '@/components/ui/switch';
+import { Button } from '@/components/ui/button';
 import { useConflicts } from '../hooks/useConflicts';
 import { useClaude } from '../hooks/useClaude';
 import { useUserProfile } from '../hooks/useUserProfile';
 import { useInvestigationMode } from '../components/InvestigationMode';
+import { useExpertise } from '../components/ExpertiseContext';
 import ConflictCard from '../components/ConflictCard';
 import PlatformIndicator from '../components/PlatformIndicator';
 import { ProfileViewer } from '../components/ProfileViewer';
@@ -24,17 +26,27 @@ import {
   Cpu,
   User,
   Eye,
+  Brain,
+  RotateCcw,
 } from 'lucide-react';
+import type { ExpertiseLevel } from '@/types/expertise';
 
 function Settings() {
   const { conflicts, summary, loading } = useConflicts();
   const { status: claudeStatus, loading: claudeLoading, sessionUsage } = useClaude();
   const { profile, loading: profileLoading, updateProfile, deleteProfile } = useUserProfile();
   const { isInvestigationMode, setInvestigationMode } = useInvestigationMode();
+  const { level: expertiseLevel, confidence: expertiseConfidence, isManualOverride, setManualLevel } = useExpertise();
   const [acknowledgedIds, setAcknowledgedIds] = useState<Set<string>>(new Set());
   const [showPrivacyIndicators, setShowPrivacyIndicators] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+
+  const expertiseOptions: { value: ExpertiseLevel; label: string; desc: string }[] = [
+    { value: 'simple', label: 'Simple', desc: 'Plain language, safer options' },
+    { value: 'standard', label: 'Standard', desc: 'Balanced explanations' },
+    { value: 'power', label: 'Power User', desc: 'Full technical details' },
+  ];
 
   const handleDismiss = (toolId: string) => {
     setAcknowledgedIds((prev) => new Set([...prev, toolId]));
@@ -286,6 +298,59 @@ function Settings() {
                 </div>
               </div>
             </motion.div>
+          )}
+        </motion.section>
+
+        {/* Experience Level Section */}
+        <motion.section
+          className="space-y-4"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+        >
+          <div className="flex items-center gap-2">
+            <Brain className="w-5 h-5 text-primary" strokeWidth={1.75} />
+            <h2 className="text-lg font-semibold">Experience Level</h2>
+          </div>
+          <p className="text-sm text-muted-foreground/70">
+            Opta adapts explanations based on your expertise.
+            {!isManualOverride && (
+              <span className="ml-1 text-primary">
+                Currently auto-detected: {expertiseLevel} ({expertiseConfidence}% confident)
+              </span>
+            )}
+          </p>
+
+          <div className="grid grid-cols-3 gap-3">
+            {expertiseOptions.map((option) => (
+              <motion.button
+                key={option.value}
+                className={cn(
+                  'p-4 glass-subtle rounded-xl text-left border',
+                  expertiseLevel === option.value
+                    ? 'ring-2 ring-primary border-primary/30'
+                    : 'border-border/30 hover:border-border/50'
+                )}
+                onClick={() => setManualLevel(option.value)}
+                whileHover={{ y: -2 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <div className="font-medium text-sm">{option.label}</div>
+                <div className="text-xs text-muted-foreground/70 mt-1">{option.desc}</div>
+              </motion.button>
+            ))}
+          </div>
+
+          {isManualOverride && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-1.5"
+              onClick={() => setManualLevel(null)}
+            >
+              <RotateCcw className="w-3.5 h-3.5" strokeWidth={1.75} />
+              Reset to auto-detect
+            </Button>
           )}
         </motion.section>
 
