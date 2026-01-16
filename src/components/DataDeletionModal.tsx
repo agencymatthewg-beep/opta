@@ -2,12 +2,14 @@
  * DataDeletionModal component for confirming data deletion.
  *
  * Provides a clear confirmation flow before permanently deleting all user data.
- * Lists exactly what will be deleted and requires explicit confirmation.
+ * Lists exactly what will be deleted and requires typed confirmation ("DELETE").
  */
 
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Dialog,
   DialogContent,
@@ -27,7 +29,8 @@ interface DataDeletionModalProps {
 }
 
 /**
- * DataDeletionModal provides clear confirmation flow with loading states.
+ * DataDeletionModal provides clear confirmation flow with typed confirmation.
+ * User must type "DELETE" to enable the delete button.
  */
 export function DataDeletionModal({
   open,
@@ -35,7 +38,18 @@ export function DataDeletionModal({
   onConfirm,
   loading,
 }: DataDeletionModalProps) {
+  const [confirmText, setConfirmText] = useState('');
+  const isConfirmed = confirmText === 'DELETE';
+
+  // Reset confirmation text when modal opens/closes
+  useEffect(() => {
+    if (!open) {
+      setConfirmText('');
+    }
+  }, [open]);
+
   const handleConfirm = async () => {
+    if (!isConfirmed) return;
     await onConfirm();
     onOpenChange(false);
   };
@@ -100,6 +114,27 @@ export function DataDeletionModal({
             </motion.div>
           </DialogDescription>
         </DialogHeader>
+
+        {/* Typed confirmation input */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="py-2"
+        >
+          <label className="block text-sm text-muted-foreground/70 mb-2">
+            Type <span className="font-mono font-semibold text-danger">DELETE</span> to confirm
+          </label>
+          <Input
+            value={confirmText}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConfirmText(e.target.value.toUpperCase())}
+            placeholder="Type DELETE to confirm"
+            className="glass-subtle border-border/30 font-mono"
+            disabled={loading}
+            autoFocus
+          />
+        </motion.div>
+
         <DialogFooter className="gap-2 sm:gap-2">
           <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
             <Button
@@ -115,7 +150,7 @@ export function DataDeletionModal({
             <Button
               variant="destructive"
               onClick={handleConfirm}
-              disabled={loading}
+              disabled={loading || !isConfirmed}
               className="rounded-lg"
             >
               {loading ? (
@@ -123,7 +158,7 @@ export function DataDeletionModal({
               ) : (
                 <>
                   <Trash2 className="w-4 h-4 mr-1" strokeWidth={1.75} />
-                  Delete Everything
+                  Delete All Data
                 </>
               )}
             </Button>
