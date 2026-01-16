@@ -66,7 +66,7 @@ export function ApplyStep({ recommendations, onComplete }: ApplyStepProps) {
     >
       {/* Spinner */}
       <motion.div
-        className="w-20 h-20 mx-auto mb-6 rounded-2xl glass border border-primary/30 flex items-center justify-center"
+        className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-[#05030a]/80 backdrop-blur-xl border border-primary/30 flex items-center justify-center"
         animate={{
           boxShadow: [
             '0 0 0px hsl(var(--glow-primary)/0)',
@@ -94,7 +94,7 @@ export function ApplyStep({ recommendations, onComplete }: ApplyStepProps) {
       </div>
 
       {/* Recommendations checklist */}
-      <div className="glass-subtle rounded-xl p-4 max-w-sm mx-auto">
+      <div className="rounded-xl p-4 max-w-sm mx-auto bg-white/[0.02] border border-white/[0.04]">
         <div className="space-y-2">
           {recommendations.map((rec, index) => {
             const isComplete = completedIds.has(rec.id);

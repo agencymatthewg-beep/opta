@@ -77,7 +77,7 @@ export function AdaptiveExplanation({
                 transition={{ duration: 0.2 }}
                 className="overflow-hidden"
               >
-                <div className="glass-subtle rounded-lg p-3 mt-2 border border-border/20">
+                <div className="rounded-lg p-3 mt-2 bg-white/[0.02] border border-white/[0.04]">
                   <p className="text-xs font-mono text-muted-foreground leading-relaxed">
                     <span className="text-primary font-semibold">Advanced: </span>
                     {technicalDetails}

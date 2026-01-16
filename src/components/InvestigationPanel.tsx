@@ -63,10 +63,10 @@ export function InvestigationPanel({ report, onClose }: InvestigationPanelProps)
       initial={{ opacity: 0, x: 300 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 300 }}
-      className="fixed right-0 top-0 bottom-0 w-[480px] glass-strong border-l border-border/30 z-50 overflow-y-auto"
+      className="fixed right-0 top-0 bottom-0 w-[480px] bg-[#05030a]/95 backdrop-blur-2xl border-l border-white/[0.06] z-50 overflow-y-auto"
     >
       {/* Header */}
-      <div className="p-4 border-b border-border/30 sticky top-0 glass-strong z-10">
+      <div className="p-4 border-b border-white/[0.06] sticky top-0 bg-[#05030a]/90 backdrop-blur-xl z-10">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="p-1.5 rounded-lg bg-primary/10">
@@ -100,7 +100,7 @@ export function InvestigationPanel({ report, onClose }: InvestigationPanelProps)
               return (
                 <motion.div
                   key={change.id}
-                  className="glass-subtle rounded-lg overflow-hidden border border-border/20"
+                  className="rounded-lg bg-white/[0.02] overflow-hidden border border-white/[0.04]"
                   layout
                 >
                   <button
@@ -134,7 +134,7 @@ export function InvestigationPanel({ report, onClose }: InvestigationPanelProps)
                           <div>
                             <div className="text-xs text-muted-foreground/60 mb-1.5">Location</div>
                             <div className="flex items-center gap-2">
-                              <code className="text-xs bg-card p-2 rounded-lg flex-1 overflow-x-auto border border-border/20 text-foreground/80">
+                              <code className="text-xs bg-card p-2 rounded-lg flex-1 overflow-x-auto border border-white/[0.04] text-foreground/80">
                                 {change.location}
                               </code>
                               <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
@@ -176,7 +176,7 @@ export function InvestigationPanel({ report, onClose }: InvestigationPanelProps)
                           {/* Technical Detail */}
                           <div>
                             <div className="text-xs text-muted-foreground/60 mb-1.5">Technical Detail</div>
-                            <p className="text-xs text-muted-foreground bg-card/50 p-2.5 rounded-lg border border-border/20 leading-relaxed">
+                            <p className="text-xs text-muted-foreground bg-card/50 p-2.5 rounded-lg border border-white/[0.04] leading-relaxed">
                               {change.technical}
                             </p>
                           </div>
@@ -229,7 +229,7 @@ export function InvestigationPanel({ report, onClose }: InvestigationPanelProps)
             {report.dependencies.map((dep, i) => (
               <motion.div
                 key={i}
-                className="glass-subtle rounded-lg p-3 flex items-center gap-3 border border-border/20"
+                className="rounded-lg bg-white/[0.02] p-3 flex items-center gap-3 border border-white/[0.04]"
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
@@ -263,7 +263,7 @@ export function InvestigationPanel({ report, onClose }: InvestigationPanelProps)
               <motion.div
                 key={i}
                 className={cn(
-                  "glass-subtle rounded-lg p-3 border-l-2",
+                  "rounded-lg bg-white/[0.02] p-3 border-l-2",
                   impact.severity === 'low' && "border-l-success",
                   impact.severity === 'medium' && "border-l-warning",
                   impact.severity === 'high' && "border-l-danger"
@@ -304,7 +304,7 @@ export function InvestigationPanel({ report, onClose }: InvestigationPanelProps)
             Rollback
           </h3>
           <motion.div
-            className="glass-subtle rounded-lg p-4 border border-border/20"
+            className="rounded-lg bg-white/[0.02] p-4 border border-white/[0.04]"
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
           >

@@ -50,10 +50,10 @@ export function PresetSelector({ className }: PresetSelectorProps) {
             key={preset.id}
             onClick={() => applyPreset(preset.id)}
             className={cn(
-              'glass-subtle rounded-xl p-4 text-left border relative group',
+              'rounded-xl p-4 text-left border relative group bg-white/[0.02]',
               isActive
-                ? 'ring-2 ring-primary border-primary/30 shadow-[0_0_24px_-8px_hsl(var(--glow-primary)/0.4)]'
-                : 'border-border/30 hover:border-border/50'
+                ? 'ring-2 ring-primary border-primary/30 shadow-[0_0_24px_-8px_rgba(168,85,247,0.4)]'
+                : 'border-white/[0.04] hover:border-white/[0.08]'
             )}
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}

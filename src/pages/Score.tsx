@@ -69,7 +69,7 @@ export function Score() {
             variant="outline"
             size="sm"
             onClick={handlePlayTimelapse}
-            className="gap-2 glass-subtle rounded-xl border-border/30"
+            className="gap-2 rounded-xl bg-white/[0.02] border border-white/[0.04]"
           >
             <Play className="w-4 h-4" strokeWidth={1.75} />
             Replay Journey
@@ -197,7 +197,7 @@ interface StatCardProps {
 function StatCard({ label, value }: StatCardProps) {
   return (
     <motion.div
-      className="glass rounded-xl p-4 border border-border/30 text-center"
+      className="rounded-xl p-4 text-center bg-[#05030a]/80 backdrop-blur-xl border border-white/[0.06]"
       whileHover={{ y: -2 }}
     >
       <p className="text-xs text-muted-foreground mb-1">{label}</p>
@@ -229,7 +229,7 @@ function ScoreEmptyState({ onRefresh }: ScoreEmptyStateProps) {
         animate={{ opacity: 1, scale: 1 }}
       >
         <motion.div
-          className="w-20 h-20 flex items-center justify-center rounded-full glass border border-border/30 mb-6"
+          className="w-20 h-20 flex items-center justify-center rounded-full bg-[#05030a]/60 backdrop-blur-xl border border-white/[0.06] mb-6"
           animate={{ rotate: [0, 5, -5, 0] }}
           transition={{ duration: 4, repeat: Infinity }}
         >

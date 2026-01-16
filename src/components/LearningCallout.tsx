@@ -45,7 +45,7 @@ export function LearningCallout({
           exit={{ opacity: 0, x: -10 }}
           transition={{ duration: 0.2 }}
           className={cn(
-            'glass-subtle rounded-lg p-3 flex items-start gap-3',
+            'rounded-lg p-3 bg-white/[0.02] flex items-start gap-3',
             'border border-primary/20',
             className
           )}

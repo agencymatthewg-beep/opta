@@ -1,9 +1,9 @@
 /**
- * PersonalizedRecommendations - Displays personalized optimization recommendations
- * based on learned user patterns.
+ * PersonalizedRecommendations - The Obsidian AI Suggestions
  *
- * Shows recommendations with confidence indicators, reasons, and expected impact.
- * Allows users to apply or dismiss recommendations.
+ * Personalized recommendations with obsidian glass styling and energy effects.
+ *
+ * @see DESIGN_SYSTEM.md - Part 4: The Obsidian Glass Material System
  */
 
 import { useState } from 'react';
@@ -12,6 +12,9 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { Recommendation } from '@/types/profile';
 import { Sparkles, TrendingUp, Check, X, Lightbulb, ChevronRight } from 'lucide-react';
+
+// Easing curve for smooth energy transitions
+const smoothOut: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
 interface PersonalizedRecommendationsProps {
   /** List of recommendations to display */
@@ -91,13 +94,18 @@ function RecommendationCard({
   return (
     <motion.div
       className={cn(
-        'glass-subtle rounded-lg border border-border/20 overflow-hidden',
-        hovering && 'border-primary/30'
+        'rounded-lg overflow-hidden',
+        // Obsidian subtle glass
+        'bg-white/[0.02] border',
+        hovering
+          ? 'border-primary/30 shadow-[0_0_15px_-5px_rgba(168,85,247,0.2)]'
+          : 'border-white/[0.06]',
+        'transition-all duration-200'
       )}
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8, scale: 0.95 }}
-      transition={{ delay: index * 0.05 }}
+      transition={{ delay: index * 0.05, ease: smoothOut }}
       onMouseEnter={() => setHovering(true)}
       onMouseLeave={() => setHovering(false)}
       whileHover={{ y: -2 }}
@@ -155,7 +163,7 @@ function RecommendationCard({
               variant="ghost"
               size="icon"
               onClick={onDismiss}
-              className="h-7 w-7 rounded-lg glass-subtle"
+              className="h-7 w-7 rounded-lg bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.05]"
             >
               <X className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={2} />
               <span className="sr-only">Dismiss</span>
@@ -172,21 +180,25 @@ function RecommendationCard({
  */
 function LoadingSkeleton() {
   return (
-    <div className="glass rounded-xl p-4 border border-border/30">
+    <div className={cn(
+      "rounded-xl p-4",
+      "bg-[#05030a]/80 backdrop-blur-xl",
+      "border border-white/[0.06]"
+    )}>
       <div className="flex items-center gap-2 mb-3">
-        <div className="h-5 w-5 rounded bg-muted/30 animate-shimmer" />
-        <div className="h-4 w-32 rounded bg-muted/30 animate-shimmer" />
+        <div className="h-5 w-5 rounded bg-white/[0.04] animate-pulse" />
+        <div className="h-4 w-32 rounded bg-white/[0.04] animate-pulse" />
       </div>
       <div className="space-y-2">
         {[1, 2].map((i) => (
-          <div key={i} className="glass-subtle rounded-lg p-3 border border-border/20">
+          <div key={i} className="bg-white/[0.02] rounded-lg p-3 border border-white/[0.04]">
             <div className="flex items-center gap-2 mb-2">
-              <div className="h-6 w-6 rounded bg-muted/30 animate-shimmer" />
-              <div className="h-4 w-24 rounded bg-muted/30 animate-shimmer" />
-              <div className="ml-auto h-4 w-16 rounded-full bg-muted/30 animate-shimmer" />
+              <div className="h-6 w-6 rounded bg-white/[0.04] animate-pulse" />
+              <div className="h-4 w-24 rounded bg-white/[0.04] animate-pulse" />
+              <div className="ml-auto h-4 w-16 rounded-full bg-white/[0.04] animate-pulse" />
             </div>
-            <div className="h-3 w-full rounded bg-muted/30 animate-shimmer mb-2" />
-            <div className="h-3 w-2/3 rounded bg-muted/30 animate-shimmer" />
+            <div className="h-3 w-full rounded bg-white/[0.04] animate-pulse mb-2" />
+            <div className="h-3 w-2/3 rounded bg-white/[0.04] animate-pulse" />
           </div>
         ))}
       </div>
@@ -217,19 +229,28 @@ export function PersonalizedRecommendations({
 
   return (
     <motion.div
-      className="glass rounded-xl border border-border/30 overflow-hidden"
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
+      className={cn(
+        "relative rounded-xl overflow-hidden",
+        // Obsidian glass material
+        "bg-[#05030a]/80 backdrop-blur-xl",
+        "border border-white/[0.06]",
+        // Inner specular highlight
+        "before:absolute before:inset-x-0 before:top-0 before:h-px before:z-10",
+        "before:bg-gradient-to-r before:from-transparent before:via-white/10 before:to-transparent"
+      )}
+      initial={{ opacity: 0, y: 12, filter: 'brightness(0.5)' }}
+      animate={{ opacity: 1, y: 0, filter: 'brightness(1)' }}
+      transition={{ ease: smoothOut }}
     >
       {/* Header */}
       <motion.button
         className={cn(
           'w-full flex items-center justify-between gap-2 px-4 py-3',
-          'hover:bg-muted/20 transition-colors',
-          'border-b border-border/20'
+          'hover:bg-primary/[0.05] transition-colors',
+          'border-b border-white/[0.05]'
         )}
         onClick={() => setExpanded(!expanded)}
-        whileHover={{ backgroundColor: 'hsl(var(--muted) / 0.2)' }}
+        whileHover={{ backgroundColor: 'rgba(168, 85, 247, 0.05)' }}
       >
         <div className="flex items-center gap-2">
           <motion.div

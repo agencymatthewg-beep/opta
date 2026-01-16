@@ -1,7 +1,18 @@
+/**
+ * WowFactorsDisplay - The Obsidian Highlights Panel
+ *
+ * Shareable viral metrics with obsidian glass styling and energy effects.
+ *
+ * @see DESIGN_SYSTEM.md - Part 4: The Obsidian Glass Material System
+ */
+
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import type { WowFactors } from '@/types/scoring';
 import { DollarSign, TrendingUp, Award, Sparkles } from 'lucide-react';
+
+// Easing curve for smooth energy transitions
+const smoothOut: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
 interface WowFactorsDisplayProps {
   wowFactors: WowFactors;
@@ -17,9 +28,18 @@ export function WowFactorsDisplay({ wowFactors, animate }: WowFactorsDisplayProp
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="glass rounded-xl p-4 border border-border/30"
+      initial={{ opacity: 0, y: 12, filter: 'brightness(0.5)' }}
+      animate={{ opacity: 1, y: 0, filter: 'brightness(1)' }}
+      transition={{ ease: smoothOut }}
+      className={cn(
+        "relative rounded-xl p-4 overflow-hidden",
+        // Obsidian glass material
+        "bg-[#05030a]/80 backdrop-blur-xl",
+        "border border-white/[0.06]",
+        // Inner specular highlight
+        "before:absolute before:inset-x-0 before:top-0 before:h-px before:z-10",
+        "before:bg-gradient-to-r before:from-transparent before:via-white/10 before:to-transparent"
+      )}
     >
       <div className="flex items-center gap-2 mb-4">
         <Sparkles className="w-5 h-5 text-warning" strokeWidth={1.75} />
@@ -100,7 +120,15 @@ function WowFactorCard({
 
   return (
     <motion.div
-      className="flex items-start gap-3 p-3 rounded-lg glass-subtle"
+      className={cn(
+        "flex items-start gap-3 p-3 rounded-lg",
+        // Obsidian subtle glass
+        "bg-white/[0.02]",
+        "border border-white/[0.04]",
+        // Hover energy state
+        "hover:bg-primary/[0.05] hover:border-primary/20",
+        "transition-colors duration-200"
+      )}
       whileHover={{ scale: 1.02 }}
       transition={{ type: 'spring', stiffness: 400 }}
     >

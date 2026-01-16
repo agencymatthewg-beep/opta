@@ -125,7 +125,7 @@ function GameDetailPanel({
             variant="ghost"
             size="sm"
             onClick={onClose}
-            className="gap-1 -ml-2 glass-subtle rounded-xl border-border/20 hover:bg-card/60"
+            className="gap-1 -ml-2 rounded-xl bg-white/[0.02] border border-white/[0.04] hover:bg-white/[0.05]"
           >
             <ChevronLeft className="w-4 h-4" strokeWidth={1.75} />
             Back to Games
@@ -154,7 +154,7 @@ function GameDetailPanel({
               variant="ghost"
               size="icon"
               onClick={onClose}
-              className="shrink-0 glass-subtle rounded-xl h-9 w-9"
+              className="shrink-0 rounded-xl h-9 w-9 bg-white/[0.02] border border-white/[0.04]"
             >
               <X className="w-5 h-5" strokeWidth={1.75} />
               <span className="sr-only">Close</span>
@@ -168,7 +168,7 @@ function GameDetailPanel({
         <div className="p-4 space-y-4">
           {/* Game Info Card */}
           <motion.div
-            className="glass-subtle rounded-xl border border-border/20 overflow-hidden"
+            className="rounded-xl overflow-hidden bg-white/[0.02] border border-white/[0.04]"
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
@@ -185,7 +185,7 @@ function GameDetailPanel({
                   <FolderOpen className="w-3.5 h-3.5" strokeWidth={1.5} />
                   Install Location
                 </div>
-                <code className="text-xs text-foreground/80 glass-subtle px-3 py-1.5 rounded-lg block truncate border border-border/20" title={game.install_path}>
+                <code className="text-xs text-foreground/80 px-3 py-1.5 rounded-lg block truncate bg-white/[0.02] border border-white/[0.04]" title={game.install_path}>
                   {game.install_path}
                 </code>
               </div>
@@ -206,7 +206,7 @@ function GameDetailPanel({
                   <Hash className="w-3.5 h-3.5" strokeWidth={1.5} />
                   Game ID
                 </div>
-                <code className="text-xs text-foreground/60 glass-subtle px-2 py-0.5 rounded-lg border border-border/20">
+                <code className="text-xs text-foreground/60 px-2 py-0.5 rounded-lg bg-white/[0.02] border border-white/[0.04]">
                   {game.id}
                 </code>
               </div>
@@ -220,14 +220,14 @@ function GameDetailPanel({
             transition={{ delay: 0.15 }}
           >
             {loadingRecommendations ? (
-              <div className="glass rounded-xl border border-border/30 p-4">
+              <div className="rounded-xl p-4 bg-[#05030a]/80 backdrop-blur-xl border border-white/[0.06]">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="h-5 w-5 rounded bg-muted/30 animate-shimmer" />
                   <div className="h-4 w-32 rounded bg-muted/30 animate-shimmer" />
                 </div>
                 <div className="space-y-3">
                   {[1, 2, 3].map(i => (
-                    <div key={i} className="glass-subtle rounded-lg p-4 animate-pulse border border-border/20">
+                    <div key={i} className="rounded-lg p-4 animate-pulse bg-white/[0.02] border border-white/[0.04]">
                       <div className="h-4 bg-muted/20 rounded w-3/4 mb-2" />
                       <div className="h-3 bg-muted/20 rounded w-1/2" />
                     </div>
@@ -301,7 +301,7 @@ function EmptyDetailPanel() {
       <motion.div
         className={cn(
           'w-20 h-20 flex items-center justify-center rounded-full mb-6',
-          'glass border border-border/30'
+          'bg-[#05030a]/60 backdrop-blur-xl border border-white/[0.06]'
         )}
         animate={{ rotate: [0, 5, -5, 0] }}
         transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
@@ -613,7 +613,7 @@ function Games() {
           </span>
         </motion.h1>
         <motion.div
-          className="glass mt-6 flex flex-col items-center justify-center min-h-[300px] p-12 rounded-xl"
+          className="mt-6 flex flex-col items-center justify-center min-h-[300px] p-12 rounded-xl bg-[#05030a]/80 backdrop-blur-xl border border-white/[0.06]"
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
         >
@@ -681,7 +681,7 @@ function Games() {
                 size="sm"
                 onClick={refresh}
                 disabled={refreshing}
-                className="gap-1.5 glass-subtle rounded-xl border-border/30"
+                className="gap-1.5 rounded-xl bg-white/[0.02] border border-white/[0.04]"
               >
                 <RefreshCw
                   className={cn(
@@ -734,8 +734,8 @@ function Games() {
         {/* Detail Panel (Right Panel) */}
         <motion.div
           className={cn(
-            'glass rounded-xl overflow-hidden',
-            'border border-border/30',
+            'rounded-xl overflow-hidden bg-[#05030a]/80 backdrop-blur-xl',
+            'border border-white/[0.06]',
             'lg:flex-1 lg:max-w-md',
             (selectedGame || closingGame) ? 'flex flex-col w-full lg:w-auto' : 'hidden lg:flex lg:flex-col'
           )}

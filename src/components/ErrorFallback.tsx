@@ -1,11 +1,14 @@
 /**
  * ErrorFallback - Display when an error boundary catches an error.
  *
- * Follows DESIGN_SYSTEM.md:
- * - Glass effects (glass-strong for error panel)
- * - Framer Motion animations
+ * Follows DESIGN_SYSTEM.md Obsidian Standard:
+ * - Obsidian glass surfaces with danger energy glow
+ * - Framer Motion with smoothOut easing
  * - Lucide icons
  */
+
+// Smooth deceleration easing for premium feel
+const smoothOut: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -37,13 +40,16 @@ function ErrorFallback({ error, onReset }: ErrorFallbackProps) {
     <div className="min-h-screen flex items-center justify-center p-6 bg-background">
       <motion.div
         className={cn(
-          'w-full max-w-lg p-8 rounded-2xl',
-          'glass-strong border border-danger/30',
-          'shadow-[0_0_48px_-12px_hsl(var(--glow-danger)/0.3)]'
+          'relative w-full max-w-lg p-8 rounded-2xl',
+          'bg-[#05030a]/90 backdrop-blur-2xl',
+          'border border-danger/30',
+          'before:absolute before:inset-x-0 before:top-0 before:h-px before:z-10',
+          'before:bg-gradient-to-r before:from-transparent before:via-danger/20 before:to-transparent',
+          'shadow-[inset_0_0_20px_rgba(239,68,68,0.05),0_0_48px_-12px_rgba(239,68,68,0.3)]'
         )}
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+        initial={{ opacity: 0, scale: 0.95, y: 20, filter: 'brightness(0.5)' }}
+        animate={{ opacity: 1, scale: 1, y: 0, filter: 'brightness(1)' }}
+        transition={{ duration: 0.4, ease: smoothOut }}
       >
         {/* Error Icon */}
         <motion.div
@@ -85,12 +91,12 @@ function ErrorFallback({ error, onReset }: ErrorFallbackProps) {
         {/* Error Details */}
         {error && (
           <motion.div
-            className="mb-6 glass-subtle rounded-xl border border-border/20 overflow-hidden"
+            className="mb-6 rounded-xl bg-white/[0.02] border border-white/[0.04] overflow-hidden"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
           >
-            <div className="px-4 py-2 border-b border-border/20 flex items-center justify-between">
+            <div className="px-4 py-2 border-b border-white/[0.04] flex items-center justify-between">
               <span className="text-xs font-medium text-muted-foreground/70 uppercase tracking-wider">
                 Error Details
               </span>
@@ -152,7 +158,7 @@ function ErrorFallback({ error, onReset }: ErrorFallbackProps) {
             <Button
               variant="outline"
               onClick={() => window.location.reload()}
-              className="w-full gap-2 glass-subtle rounded-xl border-border/30"
+              className="w-full gap-2 rounded-xl bg-white/[0.02] border-white/[0.06]"
             >
               Restart App
             </Button>

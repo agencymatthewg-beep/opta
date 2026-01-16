@@ -1,14 +1,16 @@
 /**
- * SessionSummaryModal - Post-game statistics display.
+ * SessionSummaryModal - The Obsidian Session Summary
  *
- * Follows DESIGN_SYSTEM.md:
- * - Glass effects (glass-strong for modal)
- * - Framer Motion animations
- * - Lucide icons
+ * Post-game statistics display with obsidian glass styling.
+ *
+ * @see DESIGN_SYSTEM.md - Part 4: The Obsidian Glass Material System
  */
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+
+// Easing curve for smooth energy transitions
+const smoothOut: [number, number, number, number] = [0.22, 1, 0.36, 1];
 import {
   Trophy,
   Timer,
@@ -69,7 +71,11 @@ function StatCard({
   };
 
   return (
-    <div className="glass-subtle rounded-xl border border-border/20 p-4">
+    <div className={cn(
+      "rounded-xl p-4",
+      // Obsidian subtle glass
+      "bg-white/[0.02] border border-white/[0.04]"
+    )}>
       <div className="flex items-center gap-3">
         <div className={cn('p-2 rounded-lg', colorClasses[color])}>
           <Icon className="w-4 h-4" strokeWidth={1.75} />
@@ -119,10 +125,21 @@ function SessionSummaryModal({
             exit={{ opacity: 0 }}
           >
             <motion.div
-              className="w-full max-w-md glass-strong rounded-2xl border border-primary/30 overflow-hidden"
-              initial={{ scale: 0.95, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.95, y: 20 }}
+              className={cn(
+                "relative w-full max-w-md rounded-2xl overflow-hidden",
+                // Obsidian glass material
+                "bg-[#05030a]/90 backdrop-blur-2xl",
+                "border border-primary/30",
+                // Inner specular highlight
+                "before:absolute before:inset-x-0 before:top-0 before:h-px before:z-10",
+                "before:bg-gradient-to-r before:from-transparent before:via-white/15 before:to-transparent",
+                // Energy glow
+                "shadow-[0_0_40px_-10px_rgba(168,85,247,0.4)]"
+              )}
+              initial={{ scale: 0.95, y: 20, filter: 'brightness(0.5)' }}
+              animate={{ scale: 1, y: 0, filter: 'brightness(1)' }}
+              exit={{ scale: 0.95, y: 20, filter: 'brightness(0.5)' }}
+              transition={{ ease: smoothOut }}
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
@@ -166,7 +183,13 @@ function SessionSummaryModal({
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 }}
-                  className="glass rounded-xl border border-success/30 p-4 text-center"
+                  className={cn(
+                    "rounded-xl p-4 text-center",
+                    // Obsidian with success energy
+                    "bg-[#05030a]/60 backdrop-blur-xl",
+                    "border border-success/30",
+                    "shadow-[inset_0_0_20px_rgba(34,197,94,0.05),0_0_15px_-5px_rgba(34,197,94,0.2)]"
+                  )}
                 >
                   <div className="flex items-center justify-center gap-2 mb-2">
                     <Timer className="w-5 h-5 text-success" strokeWidth={1.75} />
@@ -221,7 +244,7 @@ function SessionSummaryModal({
                     </h4>
                     <div className="space-y-2">
                       {summary.stealthModeSavingsMb > 0 && (
-                        <div className="flex items-center justify-between glass-subtle rounded-xl border border-border/20 p-3">
+                        <div className="flex items-center justify-between rounded-xl p-3 bg-white/[0.02] border border-white/[0.04]">
                           <div className="flex items-center gap-2">
                             <div className="p-1.5 rounded-lg bg-success/10">
                               <Shield className="w-3.5 h-3.5 text-success" strokeWidth={2} />
@@ -235,7 +258,7 @@ function SessionSummaryModal({
                       )}
 
                       {summary.optimizationsApplied > 0 && (
-                        <div className="flex items-center justify-between glass-subtle rounded-xl border border-border/20 p-3">
+                        <div className="flex items-center justify-between rounded-xl p-3 bg-white/[0.02] border border-white/[0.04]">
                           <div className="flex items-center gap-2">
                             <div className="p-1.5 rounded-lg bg-primary/10">
                               <Zap className="w-3.5 h-3.5 text-primary" strokeWidth={2} />

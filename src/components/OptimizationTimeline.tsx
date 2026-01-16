@@ -34,7 +34,7 @@ function OptimizationTimeline({ history, onRevert, canRevert = true }: Optimizat
   if (history.length === 0) {
     return (
       <motion.div
-        className="glass-subtle rounded-xl p-6 border border-border/20 text-center"
+        className="rounded-xl bg-white/[0.02] p-6 border border-white/[0.04] text-center"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
       >
@@ -58,7 +58,7 @@ function OptimizationTimeline({ history, onRevert, canRevert = true }: Optimizat
 
   return (
     <motion.div
-      className="glass-subtle rounded-xl border border-border/20 overflow-hidden"
+      className="rounded-xl bg-white/[0.02] border border-white/[0.04] overflow-hidden"
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
     >
@@ -72,7 +72,7 @@ function OptimizationTimeline({ history, onRevert, canRevert = true }: Optimizat
               variant="outline"
               size="sm"
               onClick={onRevert}
-              className="gap-1.5 glass-subtle rounded-xl border-border/30"
+              className="gap-1.5 rounded-xl bg-white/[0.02] border-border/30"
             >
               <RotateCcw className="w-3.5 h-3.5" strokeWidth={2} />
               Revert All

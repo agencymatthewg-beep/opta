@@ -134,7 +134,7 @@ function CapabilitiesTooltip({
       className={cn(
         'absolute bottom-full left-0 mb-2 z-50',
         'w-56 p-3 rounded-xl',
-        'glass-strong border border-border/30',
+        'bg-[#05030a]/90 backdrop-blur-xl border border-white/[0.06]',
         'shadow-lg shadow-black/20'
       )}
     >
@@ -213,7 +213,7 @@ function PlatformIndicator({ expanded = false, className }: PlatformIndicatorPro
       <div
         className={cn(
           'flex items-center gap-2 px-2.5 py-1.5 rounded-lg',
-          'glass-subtle border border-border/20',
+          'bg-white/[0.02] border border-white/[0.04]',
           className
         )}
       >
@@ -230,7 +230,7 @@ function PlatformIndicator({ expanded = false, className }: PlatformIndicatorPro
         <motion.button
           className={cn(
             'flex items-center gap-2 px-2.5 py-1.5 rounded-lg',
-            'glass-subtle border border-border/20',
+            'bg-white/[0.02] border border-white/[0.04]',
             'hover:border-primary/30 transition-colors',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50'
           )}
@@ -266,7 +266,7 @@ function PlatformIndicator({ expanded = false, className }: PlatformIndicatorPro
   return (
     <motion.div
       className={cn(
-        'glass-subtle rounded-xl border border-border/20 overflow-hidden',
+        'rounded-xl overflow-hidden bg-white/[0.02] border border-white/[0.04]',
         className
       )}
       initial={{ opacity: 0, y: 8 }}
@@ -314,10 +314,10 @@ function PlatformIndicator({ expanded = false, className }: PlatformIndicatorPro
                   key={name}
                   className={cn(
                     'flex items-center gap-2 px-3 py-2 rounded-lg',
-                    'glass-subtle border',
+                    'bg-white/[0.02] border',
                     enabled
                       ? 'border-success/20 bg-success/5'
-                      : 'border-border/20'
+                      : 'border-white/[0.04]'
                   )}
                 >
                   {enabled ? (

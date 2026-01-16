@@ -1,17 +1,9 @@
 /**
- * OptimizationExplanation - Shows what an optimization does and why.
+ * OptimizationExplanation - The Obsidian Optimization Card
  *
- * Integrates with the adaptive explanation system to show content
- * appropriate for the user's expertise level:
- * - simple: Plain language, essential info only
- * - standard: Balanced explanations with context
- * - power: Full technical details with expandable advanced section
+ * Adaptive explanations with obsidian glass styling and energy accents.
  *
- * Follows DESIGN_SYSTEM.md:
- * - Glass effects with glass-subtle
- * - Framer Motion animations
- * - Lucide icons only
- * - Purple/violet palette
+ * @see DESIGN_SYSTEM.md - Part 4: The Obsidian Glass Material System
  */
 
 import { useState } from 'react';
@@ -21,6 +13,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useExpertise } from './ExpertiseContext';
 import { useExpertiseTracking } from '@/hooks/useExpertise';
 import { cn } from '@/lib/utils';
+
+// Easing curve for smooth energy transitions
+const smoothOut: [number, number, number, number] = [0.22, 1, 0.36, 1];
 import { getOptimizationExplanation, getAllExplanationLevels } from '@/utils/explanations';
 import type { DetectedGame } from '@/types/games';
 
@@ -128,9 +123,14 @@ function OptimizationExplanation({
 
   return (
     <motion.div
-      className="glass-subtle rounded-xl border border-border/20 overflow-hidden"
+      className={cn(
+        "rounded-xl overflow-hidden",
+        // Obsidian subtle glass
+        "bg-white/[0.02] border border-white/[0.04]"
+      )}
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
+      transition={{ ease: smoothOut }}
     >
       <div className="p-4 space-y-3">
         {/* Header */}
@@ -189,7 +189,11 @@ function OptimizationExplanation({
                   transition={{ duration: 0.2 }}
                   className="overflow-hidden"
                 >
-                  <div className="glass rounded-lg p-3 border border-primary/20">
+                  <div className={cn(
+                    "rounded-lg p-3",
+                    "bg-primary/[0.05] border border-primary/20",
+                    "shadow-[inset_0_0_15px_rgba(168,85,247,0.05)]"
+                  )}>
                     <p className="text-xs font-mono text-muted-foreground leading-relaxed">
                       <span className="text-primary font-semibold">Advanced: </span>
                       {allLevels.technical}

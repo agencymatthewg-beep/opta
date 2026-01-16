@@ -35,7 +35,7 @@ export function GpuPipelineViz({ resolution, quality, showComparison = false }: 
       initial={{ opacity: 0, height: 0 }}
       animate={{ opacity: 1, height: 'auto' }}
       exit={{ opacity: 0, height: 0 }}
-      className="glass-subtle rounded-xl p-4 my-4"
+      className="rounded-xl p-4 my-4 bg-white/[0.02] border border-white/[0.04]"
     >
       <h4 className="text-sm font-semibold mb-3">GPU Rendering Pipeline</h4>
 

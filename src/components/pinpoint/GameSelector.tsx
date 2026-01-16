@@ -75,7 +75,7 @@ export function GameSelector({ goal, onSelect }: GameSelectorProps) {
           onChange={(e) => setSearchQuery(e.target.value)}
           className={cn(
             'w-full pl-11 pr-4 py-3 rounded-xl',
-            'glass-subtle border border-border/30',
+            'bg-white/[0.02] border border-white/[0.04]',
             'text-sm text-foreground placeholder:text-muted-foreground/50',
             'focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50',
             'transition-all duration-200'
@@ -102,7 +102,7 @@ export function GameSelector({ goal, onSelect }: GameSelectorProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
         >
-          <div className="w-16 h-16 flex items-center justify-center rounded-full glass border border-danger/30 mb-4">
+          <div className="w-16 h-16 flex items-center justify-center rounded-full bg-[#05030a]/80 backdrop-blur-xl border border-danger/30 mb-4">
             <Gamepad2 className="w-7 h-7 text-danger" strokeWidth={1.5} />
           </div>
           <h3 className="text-lg font-medium text-foreground mb-2">Detection Error</h3>
@@ -118,7 +118,7 @@ export function GameSelector({ goal, onSelect }: GameSelectorProps) {
           animate={{ opacity: 1, scale: 1 }}
         >
           <motion.div
-            className="w-16 h-16 flex items-center justify-center rounded-full glass border border-border/30 mb-6"
+            className="w-16 h-16 flex items-center justify-center rounded-full bg-[#05030a]/80 backdrop-blur-xl border border-white/[0.06] mb-6"
             animate={{ rotate: [0, 5, -5, 0] }}
             transition={{ duration: 4, repeat: Infinity }}
           >
@@ -143,8 +143,8 @@ export function GameSelector({ goal, onSelect }: GameSelectorProps) {
               key={game.id}
               onClick={() => onSelect(game)}
               className={cn(
-                'w-full glass-subtle rounded-xl p-4 text-left',
-                'border border-border/20',
+                'w-full rounded-xl p-4 text-left bg-white/[0.02]',
+                'border border-white/[0.04]',
                 'group relative overflow-hidden',
                 'hover:border-primary/30 transition-colors duration-200'
               )}

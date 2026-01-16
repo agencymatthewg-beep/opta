@@ -73,7 +73,7 @@ export function ImpactPrediction({
       initial={{ opacity: 0, height: 0 }}
       animate={{ opacity: 1, height: 'auto' }}
       exit={{ opacity: 0, height: 0 }}
-      className="glass-subtle rounded-xl p-4 my-4"
+      className="rounded-xl p-4 my-4 bg-white/[0.02] border border-white/[0.04]"
     >
       <div className="flex items-center justify-between mb-3">
         <h4 className="text-sm font-semibold">Predicted Impact</h4>

@@ -34,7 +34,7 @@ function PreferenceCard({
   return (
     <motion.div
       className={cn(
-        'glass-subtle rounded-lg p-4 border border-border/20',
+        'rounded-lg p-4 bg-white/[0.02] border border-white/[0.04]',
         !preference.enabled && 'opacity-60'
       )}
       initial={{ opacity: 0, y: 10 }}
@@ -149,7 +149,7 @@ function EmptyPreferencesState() {
       <motion.div
         className={cn(
           'w-14 h-14 mx-auto flex items-center justify-center rounded-full mb-4',
-          'glass border border-border/30'
+          'bg-[#05030a]/60 backdrop-blur-xl border border-white/[0.06]'
         )}
         animate={{ rotate: [0, 5, -5, 0] }}
         transition={{ duration: 3, repeat: Infinity }}
@@ -182,7 +182,7 @@ function ClearConfirmation({
     <AnimatePresence>
       {visible && (
         <motion.div
-          className="glass-subtle rounded-lg p-4 border border-warning/30 mb-4"
+          className="rounded-lg p-4 bg-white/[0.02] border border-warning/30 mb-4"
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
@@ -205,7 +205,7 @@ function ClearConfirmation({
                     size="sm"
                     variant="outline"
                     onClick={onCancel}
-                    className="glass-subtle rounded-lg border-border/30"
+                    className="rounded-lg bg-white/[0.02] border-white/[0.06]"
                   >
                     Cancel
                   </Button>
@@ -257,7 +257,7 @@ export function EditablePreferences({ className }: EditablePreferencesProps) {
         </div>
         <div className="space-y-3">
           {[1, 2, 3].map(i => (
-            <div key={i} className="glass-subtle rounded-lg p-4 animate-pulse border border-border/20">
+            <div key={i} className="rounded-lg p-4 animate-pulse bg-white/[0.02] border border-white/[0.04]">
               <div className="h-4 bg-muted/20 rounded w-3/4 mb-2" />
               <div className="h-3 bg-muted/20 rounded w-1/2" />
             </div>
@@ -278,7 +278,7 @@ export function EditablePreferences({ className }: EditablePreferencesProps) {
               variant="outline"
               size="sm"
               onClick={() => setShowClearConfirm(true)}
-              className="gap-1.5 glass-subtle rounded-lg border-border/30 hover:text-danger hover:border-danger/30"
+              className="gap-1.5 rounded-lg bg-white/[0.02] border-white/[0.06] hover:text-danger hover:border-danger/30"
             >
               <Trash2 className="w-3.5 h-3.5" strokeWidth={1.75} />
               Clear All

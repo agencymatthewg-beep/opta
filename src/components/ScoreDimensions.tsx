@@ -1,7 +1,18 @@
+/**
+ * ScoreDimensions - The Obsidian Score Breakdown
+ *
+ * Displays three score dimensions with obsidian glass panels and energy glow.
+ *
+ * @see DESIGN_SYSTEM.md - Part 4: The Obsidian Glass Material System
+ */
+
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import type { DimensionScores, PerformanceScores, ExperienceScores, CompetitiveScores } from '@/types/scoring';
 import { Zap, Eye, Target } from 'lucide-react';
+
+// Easing curve for smooth energy transitions
+const smoothOut: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
 interface ScoreDimensionsProps {
   dimensions: DimensionScores;
@@ -62,10 +73,18 @@ export function ScoreDimensions({ dimensions, compact }: ScoreDimensionsProps) {
       {dimensionConfig.map((dim, index) => (
         <motion.div
           key={dim.key}
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: index * 0.1 }}
-          className="glass rounded-xl p-4 border border-border/30"
+          initial={{ opacity: 0, y: 12, filter: 'brightness(0.5)' }}
+          animate={{ opacity: 1, y: 0, filter: 'brightness(1)' }}
+          transition={{ delay: index * 0.1, ease: smoothOut }}
+          className={cn(
+            "relative rounded-xl p-4 overflow-hidden",
+            // Obsidian glass material
+            "bg-[#05030a]/80 backdrop-blur-xl",
+            "border border-white/[0.06]",
+            // Inner specular highlight
+            "before:absolute before:inset-x-0 before:top-0 before:h-px before:z-10",
+            "before:bg-gradient-to-r before:from-transparent before:via-white/10 before:to-transparent"
+          )}
         >
           <div className="flex items-center gap-2 mb-3">
             <dim.icon className={cn('w-5 h-5', dim.color)} strokeWidth={1.75} />
@@ -110,12 +129,17 @@ function SubScoreBar({ label, value, bgColor }: SubScoreBarProps) {
         <span className="text-muted-foreground">{label}</span>
         <span>{Math.round(value)}</span>
       </div>
-      <div className="h-1.5 rounded-full bg-muted/30 overflow-hidden">
+      {/* Obsidian glass progress container */}
+      <div className={cn(
+        "h-1.5 rounded-full overflow-hidden",
+        "bg-white/[0.03]",
+        "border border-white/[0.04]"
+      )}>
         <motion.div
-          className={cn('h-full rounded-full', bgColor)}
+          className={cn('h-full rounded-full', bgColor, 'shadow-[0_0_8px_rgba(168,85,247,0.3)]')}
           initial={{ width: 0 }}
           animate={{ width: `${value}%` }}
-          transition={{ duration: 0.8, ease: 'easeOut' }}
+          transition={{ duration: 0.8, ease: smoothOut }}
         />
       </div>
     </div>

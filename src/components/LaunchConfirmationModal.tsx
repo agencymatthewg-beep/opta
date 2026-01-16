@@ -1,11 +1,15 @@
 /**
  * LaunchConfirmationModal - Pre-launch confirmation with action checklist.
  *
- * Follows DESIGN_SYSTEM.md:
- * - Glass effects (glass-strong for modal)
- * - Framer Motion animations
+ * Follows DESIGN_SYSTEM.md Obsidian Standard:
+ * - Obsidian glass surfaces with volumetric glow
+ * - 0%→50% energy transitions with ignition animations
+ * - Framer Motion with smoothOut easing
  * - Lucide icons
  */
+
+// Smooth deceleration easing for premium feel
+const smoothOut: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -66,10 +70,10 @@ function PreLaunchAction({
     <label
       className={cn(
         'flex items-start gap-3 p-4 rounded-xl cursor-pointer transition-all',
-        'glass-subtle border',
+        'bg-white/[0.02] border',
         checked
-          ? 'border-primary/30 bg-primary/5'
-          : 'border-border/20 hover:border-border/40',
+          ? 'border-primary/30 bg-primary/5 shadow-[0_0_15px_-5px_rgba(168,85,247,0.3)]'
+          : 'border-white/[0.04] hover:border-white/[0.08]',
         disabled && 'opacity-50 cursor-not-allowed'
       )}
     >
@@ -177,14 +181,22 @@ function LaunchConfirmationModal({
             exit={{ opacity: 0 }}
           >
             <motion.div
-              className="w-full max-w-lg glass-strong rounded-2xl border border-primary/30 overflow-hidden"
-              initial={{ scale: 0.95, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.95, y: 20 }}
+              className={cn(
+                "relative w-full max-w-lg rounded-2xl overflow-hidden",
+                "bg-[#05030a]/90 backdrop-blur-2xl",
+                "border border-primary/30",
+                "before:absolute before:inset-x-0 before:top-0 before:h-px before:z-10",
+                "before:bg-gradient-to-r before:from-transparent before:via-white/15 before:to-transparent",
+                "shadow-[0_0_40px_-10px_rgba(168,85,247,0.4)]"
+              )}
+              initial={{ scale: 0.95, y: 20, filter: 'brightness(0.5)' }}
+              animate={{ scale: 1, y: 0, filter: 'brightness(1)' }}
+              exit={{ scale: 0.95, y: 20, filter: 'brightness(0.5)' }}
+              transition={{ duration: 0.4, ease: smoothOut }}
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="px-6 py-4 glass-subtle border-b border-border/30">
+              <div className="px-6 py-4 bg-white/[0.02] border-b border-white/[0.06]">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <motion.div
@@ -270,7 +282,7 @@ function LaunchConfirmationModal({
                 </div>
 
                 {/* Launch info */}
-                <div className="flex items-center gap-2 p-3 glass-subtle rounded-xl border border-border/20">
+                <div className="flex items-center gap-2 p-3 rounded-xl bg-white/[0.02] border border-white/[0.04]">
                   <div
                     className={cn(
                       'w-2 h-2 rounded-full',
@@ -374,7 +386,7 @@ function LaunchConfirmationModal({
                   <Button
                     variant="outline"
                     onClick={handleClose}
-                    className="glass-subtle rounded-xl border-border/30"
+                    className="rounded-xl bg-white/[0.02] border-white/[0.06]"
                   >
                     Cancel
                   </Button>

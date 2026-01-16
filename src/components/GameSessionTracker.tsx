@@ -1,8 +1,8 @@
 /**
  * GameSessionTracker - Floating panel showing active game session.
  *
- * Follows DESIGN_SYSTEM.md:
- * - Glass effects (glass-strong for floating panel)
+ * Follows DESIGN_SYSTEM.md Obsidian Standard:
+ * - Obsidian glass surfaces with volumetric glow
  * - Framer Motion animations
  * - Lucide icons
  */
@@ -105,8 +105,8 @@ function GameSessionTracker({
         transition={{ type: 'spring', damping: 20, stiffness: 300 }}
         className={cn(
           'fixed bottom-6 right-6 z-50',
-          'glass-strong rounded-2xl border border-primary/30',
-          'shadow-[0_0_32px_-8px_hsl(var(--glow-primary)/0.4)]',
+          'bg-[#05030a]/90 backdrop-blur-2xl rounded-2xl border border-primary/30',
+          'shadow-[0_0_32px_-8px_rgba(168,85,247,0.4)]',
           'overflow-hidden'
         )}
       >

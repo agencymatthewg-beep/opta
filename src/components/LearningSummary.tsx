@@ -46,7 +46,7 @@ function EmptyLearningState() {
       <motion.div
         className={cn(
           'w-14 h-14 mx-auto flex items-center justify-center rounded-full mb-4',
-          'glass border border-border/30'
+          'bg-[#05030a]/60 backdrop-blur-xl border border-white/[0.06]'
         )}
         animate={{ rotate: [0, 5, -5, 0] }}
         transition={{ duration: 3, repeat: Infinity }}
@@ -72,14 +72,14 @@ export function LearningSummary({ className }: LearningSummaryProps) {
 
   if (loading) {
     return (
-      <div className={cn('glass rounded-xl p-6', className)}>
+      <div className={cn('rounded-xl p-6 bg-[#05030a]/80 backdrop-blur-xl border border-white/[0.06]', className)}>
         <div className="flex items-center gap-2 mb-4">
           <div className="h-5 w-5 rounded bg-muted/30 animate-shimmer" />
           <div className="h-4 w-48 rounded bg-muted/30 animate-shimmer" />
         </div>
         <div className="space-y-3">
           {[1, 2, 3].map(i => (
-            <div key={i} className="glass-subtle rounded-lg p-4 animate-pulse border border-border/20">
+            <div key={i} className="rounded-lg p-4 animate-pulse bg-white/[0.02] border border-white/[0.04]">
               <div className="h-4 bg-muted/20 rounded w-3/4 mb-2" />
               <div className="h-3 bg-muted/20 rounded w-1/2" />
             </div>
@@ -92,7 +92,7 @@ export function LearningSummary({ className }: LearningSummaryProps) {
   // Show empty state if no patterns
   if (learnedPreferences.length === 0) {
     return (
-      <div className={cn('glass rounded-xl p-6', className)}>
+      <div className={cn('rounded-xl p-6 bg-[#05030a]/80 backdrop-blur-xl border border-white/[0.06]', className)}>
         <div className="flex items-center gap-2 mb-4">
           <Brain className="w-5 h-5 text-primary" strokeWidth={1.75} />
           <h3 className="font-semibold">What Opta Learned This Month</h3>
@@ -104,7 +104,7 @@ export function LearningSummary({ className }: LearningSummaryProps) {
 
   return (
     <motion.div
-      className={cn('glass rounded-xl p-6', className)}
+      className={cn('rounded-xl p-6 bg-[#05030a]/80 backdrop-blur-xl border border-white/[0.06]', className)}
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
     >
@@ -128,7 +128,7 @@ export function LearningSummary({ className }: LearningSummaryProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.1 }}
             className={cn(
-              'glass-subtle rounded-lg p-3 border border-border/20',
+              'rounded-lg p-3 bg-white/[0.02] border border-white/[0.04]',
               'flex items-center justify-between gap-3'
             )}
           >

@@ -162,7 +162,7 @@ function StepContent({
               transition={{ delay: 0.4 + index * 0.1 }}
               className={cn(
                 'flex items-center gap-3 px-4 py-2 rounded-xl',
-                'glass-subtle border border-border/20',
+                'bg-white/[0.02] border border-white/[0.04]',
                 'max-w-xs mx-auto'
               )}
             >
@@ -297,7 +297,7 @@ function PlatformOnboarding({ onComplete, onSkip }: PlatformOnboardingProps) {
       <motion.div
         className={cn(
           'relative w-full max-w-md',
-          'glass-strong rounded-2xl border border-border/30',
+          'bg-[#05030a]/90 backdrop-blur-2xl rounded-2xl border border-white/[0.06]',
           'shadow-2xl shadow-black/30'
         )}
         initial={{ scale: 0.9, y: 20 }}

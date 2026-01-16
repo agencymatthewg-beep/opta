@@ -1,3 +1,11 @@
+/**
+ * GameList - The Obsidian Game Grid
+ *
+ * Game list with obsidian glass styling, search, and filtering.
+ *
+ * @see DESIGN_SYSTEM.md - Part 4: The Obsidian Glass Material System
+ */
+
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -5,6 +13,9 @@ import { cn } from '@/lib/utils';
 import GameCard from './GameCard';
 import type { DetectedGame, LauncherInfo } from '../types/games';
 import { Search, X, List, ChevronDown } from 'lucide-react';
+
+// Easing curve for smooth energy transitions
+const smoothOut: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
 /**
  * Sort options for the game list.
@@ -60,9 +71,11 @@ function SearchInput({
         onChange={(e) => onChange(e.target.value)}
         className={cn(
           'w-full pl-10 pr-10 py-2.5 rounded-xl',
-          'glass-subtle border border-border/30',
+          // Obsidian subtle glass
+          'bg-white/[0.02] border border-white/[0.06]',
           'text-sm text-foreground placeholder:text-muted-foreground/50',
-          'focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50',
+          'focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40',
+          'focus:shadow-[0_0_12px_-4px_rgba(168,85,247,0.3)]',
           'transition-all duration-200'
         )}
       />
@@ -110,8 +123,8 @@ function LauncherFilters({
           className={cn(
             'gap-1.5 rounded-xl transition-all',
             activeFilter === 'all'
-              ? 'bg-primary/15 text-primary border border-primary/30 shadow-[0_0_16px_-4px_hsl(var(--glow-primary)/0.3)]'
-              : 'glass-subtle border border-border/30'
+              ? 'bg-primary/15 text-primary border border-primary/30 shadow-[0_0_16px_-4px_rgba(168,85,247,0.3)]'
+              : 'bg-white/[0.02] border border-white/[0.06] hover:bg-primary/[0.05]'
           )}
         >
           <List className="w-3.5 h-3.5" strokeWidth={2} />
@@ -135,8 +148,8 @@ function LauncherFilters({
             className={cn(
               'gap-1.5 rounded-xl transition-all',
               activeFilter === launcher.id
-                ? 'bg-primary/15 text-primary border border-primary/30 shadow-[0_0_16px_-4px_hsl(var(--glow-primary)/0.3)]'
-                : 'glass-subtle border border-border/30'
+                ? 'bg-primary/15 text-primary border border-primary/30 shadow-[0_0_16px_-4px_rgba(168,85,247,0.3)]'
+                : 'bg-white/[0.02] border border-white/[0.06] hover:bg-primary/[0.05]'
             )}
           >
             {launcher.name}
@@ -169,9 +182,11 @@ function SortDropdown({
           onChange={(e) => onChange(e.target.value as SortOption)}
           className={cn(
             'appearance-none pl-3 pr-8 py-2 rounded-xl',
-            'glass-subtle border border-border/30',
+            // Obsidian subtle glass
+            'bg-white/[0.02] border border-white/[0.06]',
             'text-sm text-foreground',
-            'focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50',
+            'focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40',
+            'focus:shadow-[0_0_12px_-4px_rgba(168,85,247,0.3)]',
             'transition-all duration-200',
             'cursor-pointer'
           )}
@@ -202,12 +217,14 @@ function EmptyState({
     return (
       <motion.div
         className="flex flex-col items-center justify-center py-16 text-center"
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
+        initial={{ opacity: 0, scale: 0.95, filter: 'brightness(0.5)' }}
+        animate={{ opacity: 1, scale: 1, filter: 'brightness(1)' }}
+        transition={{ ease: smoothOut }}
       >
         <div className={cn(
           'w-16 h-16 flex items-center justify-center rounded-full mb-6',
-          'glass border border-border/30'
+          'bg-[#05030a]/60 backdrop-blur-xl',
+          'border border-white/[0.06]'
         )}>
           <Search className="w-7 h-7 text-muted-foreground/40" strokeWidth={1.5} />
         </div>
@@ -223,12 +240,14 @@ function EmptyState({
     return (
       <motion.div
         className="flex flex-col items-center justify-center py-16 text-center"
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
+        initial={{ opacity: 0, scale: 0.95, filter: 'brightness(0.5)' }}
+        animate={{ opacity: 1, scale: 1, filter: 'brightness(1)' }}
+        transition={{ ease: smoothOut }}
       >
         <div className={cn(
           'w-16 h-16 flex items-center justify-center rounded-full mb-6',
-          'glass border border-border/30'
+          'bg-[#05030a]/60 backdrop-blur-xl',
+          'border border-white/[0.06]'
         )}>
           <Search className="w-7 h-7 text-muted-foreground/40" strokeWidth={1.5} />
         </div>
@@ -237,7 +256,7 @@ function EmptyState({
           No games match your search criteria.
         </p>
         <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-          <Button variant="outline" onClick={onClearSearch} className="glass-subtle rounded-xl">
+          <Button variant="outline" onClick={onClearSearch} className="bg-white/[0.02] border-white/[0.06] rounded-xl">
             Clear Search
           </Button>
         </motion.div>
@@ -248,12 +267,14 @@ function EmptyState({
   return (
     <motion.div
       className="flex flex-col items-center justify-center py-16 text-center"
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
+      initial={{ opacity: 0, scale: 0.95, filter: 'brightness(0.5)' }}
+      animate={{ opacity: 1, scale: 1, filter: 'brightness(1)' }}
+      transition={{ ease: smoothOut }}
     >
       <div className={cn(
         'w-16 h-16 flex items-center justify-center rounded-full mb-6',
-        'glass border border-border/30'
+        'bg-[#05030a]/60 backdrop-blur-xl',
+        'border border-white/[0.06]'
       )}>
         <Search className="w-7 h-7 text-muted-foreground/40" strokeWidth={1.5} />
       </div>
@@ -271,19 +292,23 @@ function EmptyState({
 function GameCardSkeleton({ delay = 0 }: { delay?: number }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay }}
-      className="glass rounded-xl overflow-hidden border border-border/30"
+      initial={{ opacity: 0, y: 12, filter: 'brightness(0.5)' }}
+      animate={{ opacity: 1, y: 0, filter: 'brightness(1)' }}
+      transition={{ delay, ease: smoothOut }}
+      className={cn(
+        "rounded-xl overflow-hidden",
+        "bg-[#05030a]/80 backdrop-blur-xl",
+        "border border-white/[0.06]"
+      )}
     >
-      <div className="h-1.5 bg-muted/30 animate-shimmer rounded-t-xl" />
+      <div className="h-1.5 bg-white/[0.04] animate-pulse rounded-t-xl" />
       <div className="p-4">
         <div className="flex items-start justify-between gap-2 mb-3">
-          <div className="h-5 w-3/4 rounded bg-muted/30 animate-shimmer" />
-          <div className="h-5 w-14 rounded-full bg-muted/30 animate-shimmer" />
+          <div className="h-5 w-3/4 rounded bg-white/[0.04] animate-pulse" />
+          <div className="h-5 w-14 rounded-full bg-white/[0.04] animate-pulse" />
         </div>
         <div className="space-y-2">
-          <div className="h-4 w-20 rounded bg-muted/30 animate-shimmer" />
+          <div className="h-4 w-20 rounded bg-white/[0.04] animate-pulse" />
         </div>
       </div>
     </motion.div>

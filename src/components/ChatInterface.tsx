@@ -4,6 +4,11 @@
  * Provides the main chat UI with message history, input, LLM status,
  * and routing mode toggle for switching between local and cloud AI.
  * Auto-scrolls to bottom on new messages and handles error states gracefully.
+ *
+ * Follows DESIGN_SYSTEM.md Obsidian Standard:
+ * - Obsidian glass surfaces with volumetric glow
+ * - Framer Motion animations
+ * - Lucide icons
  */
 
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
@@ -107,7 +112,7 @@ function RoutingModeSelector({
           size="sm"
           className={cn(
             'h-7 gap-1.5 text-xs px-2.5 rounded-lg',
-            'glass-subtle hover:bg-white/10',
+            'bg-white/[0.02] border border-white/[0.04] hover:bg-white/[0.05]',
             'transition-all duration-200'
           )}
         >
@@ -116,7 +121,7 @@ function RoutingModeSelector({
           <ChevronDown className="w-3 h-3 opacity-50" strokeWidth={2} />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56 glass-strong border-border/30">
+      <DropdownMenuContent align="end" className="w-56 bg-[#05030a]/90 backdrop-blur-xl border-white/[0.06]">
         {(Object.keys(labels) as RoutingPreference[]).map((pref) => (
           <DropdownMenuItem
             key={pref}

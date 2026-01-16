@@ -2,7 +2,7 @@
  * OptimizationApprovalModal - Human-in-the-loop approval before applying optimizations.
  *
  * Follows DESIGN_SYSTEM.md:
- * - Glass effects (glass-strong for modal)
+ * - Obsidian glass effects with energy glow
  * - Framer Motion animations
  * - Lucide icons
  */
@@ -47,7 +47,7 @@ function SettingPreview({ type, settings }: SettingPreviewProps) {
   const title = type === 'graphics' ? 'Graphics Settings' : type === 'launch_options' ? 'Launch Options' : 'Process Priority';
 
   return (
-    <div className="glass-subtle rounded-xl border border-border/20 overflow-hidden">
+    <div className="rounded-xl bg-white/[0.02] border border-white/[0.04] overflow-hidden">
       <button
         onClick={() => setExpanded(!expanded)}
         className="w-full px-4 py-3 flex items-center justify-between hover:bg-white/5 transition-colors"
@@ -147,7 +147,7 @@ function OptimizationApprovalModal({
             exit={{ opacity: 0 }}
           >
             <motion.div
-              className="w-full max-w-lg glass-strong rounded-2xl border border-warning/30 overflow-hidden"
+              className="w-full max-w-lg bg-[#05030a]/90 backdrop-blur-2xl rounded-2xl border border-warning/30 overflow-hidden"
               initial={{ scale: 0.95, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.95, y: 20 }}
@@ -190,7 +190,7 @@ function OptimizationApprovalModal({
               <ScrollArea className="max-h-[50vh]">
                 <div className="p-6 space-y-4">
                   {/* Warning Notice */}
-                  <div className="flex items-start gap-3 p-4 glass-subtle rounded-xl border border-warning/20">
+                  <div className="flex items-start gap-3 p-4 rounded-xl bg-white/[0.02] border border-warning/20">
                     <AlertTriangle className="w-5 h-5 text-warning shrink-0 mt-0.5" strokeWidth={2} />
                     <div className="space-y-1">
                       <p className="text-sm font-medium text-foreground">
@@ -217,7 +217,7 @@ function OptimizationApprovalModal({
                   </div>
 
                   {/* Source Indicator */}
-                  <div className="flex items-center gap-2 p-3 glass-subtle rounded-xl border border-border/20">
+                  <div className="flex items-center gap-2 p-3 rounded-xl bg-white/[0.02] border border-white/[0.04]">
                     <Info className="w-4 h-4 text-primary" strokeWidth={1.75} />
                     <span className="text-xs text-muted-foreground/70">
                       Source:{' '}
@@ -258,7 +258,7 @@ function OptimizationApprovalModal({
                     variant="outline"
                     onClick={handleClose}
                     disabled={loading}
-                    className="glass-subtle rounded-xl border-border/30"
+                    className="rounded-xl bg-white/[0.02] border-white/[0.06]"
                   >
                     Cancel
                   </Button>

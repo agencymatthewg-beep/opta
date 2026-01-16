@@ -1,6 +1,17 @@
+/**
+ * ShareModal - The Obsidian Share Experience
+ *
+ * Modal for sharing score to various platforms with obsidian glass styling.
+ *
+ * @see DESIGN_SYSTEM.md - Part 4: The Obsidian Glass Material System
+ */
+
 import { useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+
+// Easing curve for smooth energy transitions
+const smoothOut: [number, number, number, number] = [0.22, 1, 0.36, 1];
 import { Button } from '@/components/ui/button';
 import { ShareCard } from './ShareCard';
 import {
@@ -86,12 +97,23 @@ export function ShareModal({ score, isOpen, onClose }: ShareModalProps) {
 
           {/* Modal */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            initial={{ opacity: 0, scale: 0.95, y: 20, filter: 'brightness(0.5)' }}
+            animate={{ opacity: 1, scale: 1, y: 0, filter: 'brightness(1)' }}
+            exit={{ opacity: 0, scale: 0.95, y: 20, filter: 'brightness(0.5)' }}
+            transition={{ ease: smoothOut }}
             className="fixed inset-x-4 top-1/2 -translate-y-1/2 z-50 mx-auto max-w-lg"
           >
-            <div className="glass-strong rounded-2xl border border-border/30 overflow-hidden">
+            <div className={cn(
+                "relative rounded-2xl overflow-hidden",
+                // Obsidian glass material
+                "bg-[#05030a]/90 backdrop-blur-2xl",
+                "border border-white/[0.08]",
+                // Inner specular highlight
+                "before:absolute before:inset-x-0 before:top-0 before:h-px before:z-10",
+                "before:bg-gradient-to-r before:from-transparent before:via-white/15 before:to-transparent",
+                // Energy glow
+                "shadow-[0_0_40px_-10px_rgba(168,85,247,0.3)]"
+              )}>
               {/* Header */}
               <div className="flex items-center justify-between p-4 border-b border-border/20">
                 <h2 className="text-lg font-semibold">Share Your Score</h2>

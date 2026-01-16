@@ -1,19 +1,18 @@
 /**
- * PerformanceDropAlert - Alert modal for performance degradation.
+ * PerformanceDropAlert - The Obsidian Performance Warning
  *
  * Shows when optimization causes performance to degrade significantly.
- * Offers option to rollback changes.
+ * Offers option to rollback changes with obsidian glass styling.
  *
- * Follows DESIGN_SYSTEM.md:
- * - Glass effects (glass-strong for modal)
- * - Framer Motion animations
- * - Lucide icons
- * - Semantic colors
+ * @see DESIGN_SYSTEM.md - Part 4: The Obsidian Glass Material System
  */
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+
+// Easing curve for smooth energy transitions
+const smoothOut: [number, number, number, number] = [0.22, 1, 0.36, 1];
 import { AlertTriangle, Undo2, X, TrendingDown } from 'lucide-react';
 import type { PerformanceMetrics } from '../hooks/usePerformanceMonitor';
 
@@ -56,11 +55,21 @@ function PerformanceDropAlert({
         onClick={onDismiss}
       >
         <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          transition={{ type: 'spring', stiffness: 200, damping: 25 }}
-          className="glass-strong rounded-2xl p-6 max-w-md w-full border border-warning/30 shadow-[0_8px_32px_-8px_rgba(0,0,0,0.5)]"
+          initial={{ opacity: 0, scale: 0.95, y: 20, filter: 'brightness(0.5)' }}
+          animate={{ opacity: 1, scale: 1, y: 0, filter: 'brightness(1)' }}
+          exit={{ opacity: 0, scale: 0.95, y: 20, filter: 'brightness(0.5)' }}
+          transition={{ ease: smoothOut }}
+          className={cn(
+            "relative rounded-2xl p-6 max-w-md w-full overflow-hidden",
+            // Obsidian glass with warning energy
+            "bg-[#05030a]/90 backdrop-blur-2xl",
+            "border border-warning/30",
+            // Inner specular highlight
+            "before:absolute before:inset-x-0 before:top-0 before:h-px before:z-10",
+            "before:bg-gradient-to-r before:from-transparent before:via-warning/20 before:to-transparent",
+            // Warning energy glow
+            "shadow-[inset_0_0_20px_rgba(245,158,11,0.05),0_0_40px_-10px_rgba(245,158,11,0.3)]"
+          )}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -97,7 +106,7 @@ function PerformanceDropAlert({
           <div className="grid grid-cols-2 gap-4 mb-6">
             {/* Before */}
             <motion.div
-              className="glass-subtle rounded-xl p-4 text-center border border-border/20"
+              className="rounded-xl p-4 text-center bg-white/[0.02] border border-white/[0.04]"
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.1 }}
@@ -116,7 +125,7 @@ function PerformanceDropAlert({
 
             {/* After */}
             <motion.div
-              className="glass-subtle rounded-xl p-4 text-center border border-danger/20"
+              className="rounded-xl p-4 text-center bg-white/[0.02] border border-danger/20"
               initial={{ opacity: 0, x: 10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.15 }}
@@ -145,7 +154,7 @@ function PerformanceDropAlert({
 
           {/* Impact summary */}
           <motion.div
-            className="glass-subtle rounded-xl p-4 mb-6 border border-border/20"
+            className="rounded-xl p-4 mb-6 bg-white/[0.02] border border-white/[0.04]"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
@@ -175,7 +184,7 @@ function PerformanceDropAlert({
             <motion.div className="flex-1" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
               <Button
                 variant="outline"
-                className="w-full gap-1.5 glass-subtle rounded-xl border-border/30"
+                className="w-full gap-1.5 rounded-xl bg-white/[0.02] border-white/[0.06]"
                 onClick={onDismiss}
                 disabled={isRollingBack}
               >

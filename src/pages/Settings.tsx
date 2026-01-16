@@ -127,7 +127,7 @@ function Settings() {
           </div>
 
           {loading ? (
-            <div className="glass rounded-xl border border-border/30 p-6">
+            <div className="rounded-xl p-6 bg-[#05030a]/80 backdrop-blur-xl border border-white/[0.06]">
               <div className="flex items-center justify-center gap-3">
                 <Loader2 className="w-5 h-5 animate-spin text-primary" />
                 <span className="text-sm text-muted-foreground/70">Scanning for conflicts...</span>
@@ -136,7 +136,7 @@ function Settings() {
           ) : conflicts.length === 0 ? (
             <motion.div
               className={cn(
-                'glass rounded-xl border border-success/30 p-5',
+                'rounded-xl p-5 bg-[#05030a]/80 backdrop-blur-xl border border-success/30',
                 'shadow-[0_0_24px_-8px_hsl(var(--success)/0.3)]'
               )}
               initial={{ opacity: 0, scale: 0.98 }}
@@ -187,7 +187,7 @@ function Settings() {
           </h2>
 
           {claudeLoading ? (
-            <div className="glass rounded-xl border border-border/30 p-6">
+            <div className="rounded-xl p-6 bg-[#05030a]/80 backdrop-blur-xl border border-white/[0.06]">
               <div className="flex items-center justify-center gap-3">
                 <Loader2 className="w-5 h-5 animate-spin text-primary" />
                 <span className="text-sm text-muted-foreground/70">Checking Claude API status...</span>
@@ -196,7 +196,7 @@ function Settings() {
           ) : claudeStatus?.available ? (
             <motion.div
               className={cn(
-                'glass rounded-xl border border-success/30 overflow-hidden',
+                'rounded-xl overflow-hidden bg-[#05030a]/80 backdrop-blur-xl border border-success/30',
                 'shadow-[0_0_24px_-8px_hsl(var(--success)/0.3)]'
               )}
               initial={{ opacity: 0, scale: 0.98 }}
@@ -225,19 +225,19 @@ function Settings() {
                         Session Usage
                       </div>
                       <div className="grid grid-cols-3 gap-3">
-                        <div className="glass-subtle rounded-xl p-3 border border-border/20 text-center">
+                        <div className="rounded-xl p-3 text-center bg-white/[0.02] border border-white/[0.04]">
                           <div className="text-2xl font-bold text-primary tabular-nums">
                             {sessionUsage.requestCount}
                           </div>
                           <div className="text-[10px] text-muted-foreground/60 uppercase tracking-wide">Requests</div>
                         </div>
-                        <div className="glass-subtle rounded-xl p-3 border border-border/20 text-center">
+                        <div className="rounded-xl p-3 text-center bg-white/[0.02] border border-white/[0.04]">
                           <div className="text-2xl font-bold text-foreground tabular-nums">
                             {(sessionUsage.totalInputTokens / 1000).toFixed(1)}k
                           </div>
                           <div className="text-[10px] text-muted-foreground/60 uppercase tracking-wide">Input</div>
                         </div>
-                        <div className="glass-subtle rounded-xl p-3 border border-border/20 text-center">
+                        <div className="rounded-xl p-3 text-center bg-white/[0.02] border border-white/[0.04]">
                           <div className="text-2xl font-bold text-foreground tabular-nums">
                             {(sessionUsage.totalOutputTokens / 1000).toFixed(1)}k
                           </div>
@@ -252,7 +252,7 @@ function Settings() {
           ) : (
             <motion.div
               className={cn(
-                'glass rounded-xl border border-warning/30 overflow-hidden',
+                'rounded-xl overflow-hidden bg-[#05030a]/80 backdrop-blur-xl border border-warning/30',
                 'shadow-[0_0_24px_-8px_hsl(var(--warning)/0.3)]'
               )}
               initial={{ opacity: 0, scale: 0.98 }}
@@ -343,7 +343,7 @@ function Settings() {
               <motion.button
                 key={option.value}
                 className={cn(
-                  'p-4 glass-subtle rounded-xl text-left border',
+                  'p-4 rounded-xl text-left bg-white/[0.02] border border-white/[0.04]',
                   expertiseLevel === option.value
                     ? 'ring-2 ring-primary border-primary/30'
                     : 'border-border/30 hover:border-border/50'
@@ -390,7 +390,7 @@ function Settings() {
             <motion.button
               onClick={() => setCommunicationStyle('informative')}
               className={cn(
-                'glass-subtle rounded-xl p-4 text-left border transition-all',
+                'rounded-xl p-4 text-left transition-all bg-white/[0.02] border border-white/[0.04]',
                 communicationStyle === 'informative'
                   ? 'ring-2 ring-primary border-primary/30'
                   : 'border-border/30 hover:border-border/50'
@@ -408,7 +408,7 @@ function Settings() {
             <motion.button
               onClick={() => setCommunicationStyle('concise')}
               className={cn(
-                'glass-subtle rounded-xl p-4 text-left border transition-all',
+                'rounded-xl p-4 text-left transition-all bg-white/[0.02] border border-white/[0.04]',
                 communicationStyle === 'concise'
                   ? 'ring-2 ring-primary border-primary/30'
                   : 'border-border/30 hover:border-border/50'
@@ -447,8 +447,8 @@ function Settings() {
               className={cn(
                 'px-4 py-2 rounded-lg text-sm font-medium transition-all',
                 learningTab === 'summary'
-                  ? 'glass border border-primary/30 text-primary'
-                  : 'glass-subtle border border-border/30 text-muted-foreground hover:text-foreground'
+                  ? 'bg-[#05030a]/80 backdrop-blur-xl border border-primary/30 text-primary'
+                  : 'bg-white/[0.02] border border-white/[0.04] text-muted-foreground hover:text-foreground'
               )}
               whileHover={{ y: -1 }}
               whileTap={{ scale: 0.98 }}
@@ -460,8 +460,8 @@ function Settings() {
               className={cn(
                 'px-4 py-2 rounded-lg text-sm font-medium transition-all',
                 learningTab === 'preferences'
-                  ? 'glass border border-primary/30 text-primary'
-                  : 'glass-subtle border border-border/30 text-muted-foreground hover:text-foreground'
+                  ? 'bg-[#05030a]/80 backdrop-blur-xl border border-primary/30 text-primary'
+                  : 'bg-white/[0.02] border border-white/[0.04] text-muted-foreground hover:text-foreground'
               )}
               whileHover={{ y: -1 }}
               whileTap={{ scale: 0.98 }}
@@ -474,7 +474,7 @@ function Settings() {
           {learningTab === 'summary' ? (
             <LearningSummary />
           ) : (
-            <div className="glass rounded-xl p-4 border border-border/30">
+            <div className="rounded-xl p-4 bg-[#05030a]/80 backdrop-blur-xl border border-white/[0.06]">
               <EditablePreferences />
             </div>
           )}
@@ -511,7 +511,7 @@ function Settings() {
 
           <motion.div
             className={cn(
-              'glass rounded-xl border border-success/30 p-5',
+              'rounded-xl p-5 bg-[#05030a]/80 backdrop-blur-xl border border-success/30',
               'shadow-[0_0_24px_-8px_hsl(var(--success)/0.3)]'
             )}
             initial={{ opacity: 0, scale: 0.98 }}
@@ -533,7 +533,7 @@ function Settings() {
             </div>
           </motion.div>
 
-          <div className="glass rounded-xl border border-border/30 overflow-hidden">
+          <div className="rounded-xl overflow-hidden bg-[#05030a]/80 backdrop-blur-xl border border-white/[0.06]">
             <div className="p-5 space-y-5">
               {/* Privacy model explanation */}
               <div>
@@ -571,19 +571,19 @@ function Settings() {
                 <div className="text-sm font-semibold text-foreground mb-3">What Gets Anonymized</div>
                 <div className="text-sm text-muted-foreground/70 space-y-2">
                   <div className="flex items-center gap-2">
-                    <code className="px-2 py-1 glass-subtle rounded-lg text-xs border border-border/20">/Users/john/</code>
+                    <code className="px-2 py-1 rounded-lg text-xs bg-white/[0.02] border border-white/[0.04]">/Users/john/</code>
                     <span className="text-muted-foreground/40">-&gt;</span>
-                    <code className="px-2 py-1 glass-subtle rounded-lg text-xs border border-border/20">/Users/[USER]/</code>
+                    <code className="px-2 py-1 rounded-lg text-xs bg-white/[0.02] border border-white/[0.04]">/Users/[USER]/</code>
                   </div>
                   <div className="flex items-center gap-2">
-                    <code className="px-2 py-1 glass-subtle rounded-lg text-xs border border-border/20">192.168.1.100</code>
+                    <code className="px-2 py-1 rounded-lg text-xs bg-white/[0.02] border border-white/[0.04]">192.168.1.100</code>
                     <span className="text-muted-foreground/40">-&gt;</span>
-                    <code className="px-2 py-1 glass-subtle rounded-lg text-xs border border-border/20">[IP_ADDR]</code>
+                    <code className="px-2 py-1 rounded-lg text-xs bg-white/[0.02] border border-white/[0.04]">[IP_ADDR]</code>
                   </div>
                   <div className="flex items-center gap-2">
-                    <code className="px-2 py-1 glass-subtle rounded-lg text-xs border border-border/20">AA:BB:CC:DD:EE:FF</code>
+                    <code className="px-2 py-1 rounded-lg text-xs bg-white/[0.02] border border-white/[0.04]">AA:BB:CC:DD:EE:FF</code>
                     <span className="text-muted-foreground/40">-&gt;</span>
-                    <code className="px-2 py-1 glass-subtle rounded-lg text-xs border border-border/20">[MAC_ADDR]</code>
+                    <code className="px-2 py-1 rounded-lg text-xs bg-white/[0.02] border border-white/[0.04]">[MAC_ADDR]</code>
                   </div>
                 </div>
               </div>
@@ -671,7 +671,7 @@ function Settings() {
           <h2 className="text-xs font-semibold text-muted-foreground/60 uppercase tracking-widest">
             Appearance
           </h2>
-          <div className="glass rounded-xl border border-border/30 p-5">
+          <div className="rounded-xl p-5 bg-[#05030a]/80 backdrop-blur-xl border border-white/[0.06]">
             <div className="flex justify-between items-center gap-4">
               <div className="flex items-center gap-3">
                 <div className={cn(
@@ -690,7 +690,7 @@ function Settings() {
               <select
                 className={cn(
                   'px-4 py-2 text-sm rounded-xl',
-                  'glass-subtle border border-border/30',
+                  'bg-white/[0.02] border border-white/[0.04]',
                   'cursor-not-allowed opacity-50'
                 )}
                 disabled
@@ -725,7 +725,7 @@ function Settings() {
 
           <PlatformIndicator expanded className="w-full" />
 
-          <div className="glass rounded-xl border border-border/30 p-5">
+          <div className="rounded-xl p-5 bg-[#05030a]/80 backdrop-blur-xl border border-white/[0.06]">
             <div className="text-sm text-muted-foreground/70">
               <p className="mb-3">
                 Opta automatically detects and optimizes for your platform, providing native integration
@@ -749,7 +749,7 @@ function Settings() {
           <h2 className="text-xs font-semibold text-muted-foreground/60 uppercase tracking-widest">
             About
           </h2>
-          <div className="glass rounded-xl border border-border/30 overflow-hidden">
+          <div className="rounded-xl overflow-hidden bg-[#05030a]/80 backdrop-blur-xl border border-white/[0.06]">
             <div className="p-5">
               <div className="flex items-center gap-3 mb-5">
                 <div className={cn(
@@ -766,15 +766,15 @@ function Settings() {
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-3">
-                <div className="glass-subtle rounded-xl p-3 border border-border/20 text-center">
+                <div className="rounded-xl p-3 text-center bg-white/[0.02] border border-white/[0.04]">
                   <div className="text-sm font-semibold text-foreground">0.1.0</div>
                   <div className="text-[10px] text-muted-foreground/60 uppercase tracking-wide">Version</div>
                 </div>
-                <div className="glass-subtle rounded-xl p-3 border border-border/20 text-center">
+                <div className="rounded-xl p-3 text-center bg-white/[0.02] border border-white/[0.04]">
                   <div className="text-sm font-semibold text-foreground">Foundation</div>
                   <div className="text-[10px] text-muted-foreground/60 uppercase tracking-wide">Build</div>
                 </div>
-                <div className="glass-subtle rounded-xl p-3 border border-border/20 text-center">
+                <div className="rounded-xl p-3 text-center bg-white/[0.02] border border-white/[0.04]">
                   <div className="text-sm font-semibold text-foreground">Tauri v2</div>
                   <div className="text-[10px] text-muted-foreground/60 uppercase tracking-wide">Platform</div>
                 </div>

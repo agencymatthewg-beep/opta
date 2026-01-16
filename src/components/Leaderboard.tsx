@@ -1,9 +1,20 @@
+/**
+ * Leaderboard - The Obsidian Rankings
+ *
+ * Competitive rankings with obsidian glass styling and energy highlights.
+ *
+ * @see DESIGN_SYSTEM.md - Part 4: The Obsidian Glass Material System
+ */
+
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { HardwareTierFilter, FilterMode } from './HardwareTierFilter';
 import type { LeaderboardEntry, HardwareTier } from '@/types/scoring';
 import { Trophy, Medal, Award, User } from 'lucide-react';
+
+// Easing curve for smooth energy transitions
+const smoothOut: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
 interface LeaderboardProps {
   entries: LeaderboardEntry[];
@@ -49,14 +60,29 @@ export function Leaderboard({
       {/* User's position highlight */}
       {userRank && userScore && (
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="glass rounded-xl p-4 border-2 border-primary/50"
+          initial={{ opacity: 0, scale: 0.95, filter: 'brightness(0.5)' }}
+          animate={{ opacity: 1, scale: 1, filter: 'brightness(1)' }}
+          transition={{ ease: smoothOut }}
+          className={cn(
+            "relative rounded-xl p-4 overflow-hidden",
+            // Obsidian glass with energy border
+            "bg-[#05030a]/80 backdrop-blur-xl",
+            "border-2 border-primary/50",
+            // Energy glow
+            "shadow-[inset_0_0_20px_rgba(168,85,247,0.1),0_0_20px_-5px_rgba(168,85,247,0.3)]",
+            // Inner specular highlight
+            "before:absolute before:inset-x-0 before:top-0 before:h-px before:z-10",
+            "before:bg-gradient-to-r before:from-transparent before:via-primary/30 before:to-transparent"
+          )}
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full glass flex items-center justify-center">
-                <User className="w-5 h-5 text-primary" strokeWidth={1.75} />
+              <div className={cn(
+                "w-10 h-10 rounded-full flex items-center justify-center",
+                "bg-primary/20 border border-primary/30",
+                "shadow-[0_0_12px_rgba(168,85,247,0.3)]"
+              )}>
+                <User className="w-5 h-5 text-primary drop-shadow-[0_0_6px_rgba(168,85,247,0.5)]" strokeWidth={1.75} />
               </div>
               <div>
                 <p className="text-sm font-medium">Your Position</p>
@@ -74,12 +100,20 @@ export function Leaderboard({
       )}
 
       {/* Leaderboard list */}
-      <div className="glass rounded-xl border border-border/30 overflow-hidden">
-        <div className="px-4 py-3 border-b border-border/20">
+      <div className={cn(
+        "relative rounded-xl overflow-hidden",
+        // Obsidian glass material
+        "bg-[#05030a]/80 backdrop-blur-xl",
+        "border border-white/[0.06]",
+        // Inner specular highlight
+        "before:absolute before:inset-x-0 before:top-0 before:h-px before:z-10",
+        "before:bg-gradient-to-r before:from-transparent before:via-white/10 before:to-transparent"
+      )}>
+        <div className="px-4 py-3 border-b border-white/[0.05]">
           <h3 className="text-sm font-semibold">Leaderboard</h3>
         </div>
 
-        <div className="divide-y divide-border/10">
+        <div className="divide-y divide-white/[0.04]">
           <AnimatePresence mode="popLayout">
             {entries.slice(0, 10).map((entry, index) => (
               <LeaderboardRow
@@ -167,16 +201,26 @@ function LeaderboardRow({
 function LeaderboardSkeleton() {
   return (
     <div className="space-y-4">
-      <div className="h-32 rounded-xl bg-muted/30 animate-shimmer" />
-      <div className="glass rounded-xl border border-border/30 divide-y divide-border/10">
+      <div className={cn(
+        "h-32 rounded-xl",
+        "bg-[#05030a]/80 backdrop-blur-xl",
+        "border border-white/[0.06]",
+        "animate-pulse"
+      )} />
+      <div className={cn(
+        "rounded-xl overflow-hidden",
+        "bg-[#05030a]/80 backdrop-blur-xl",
+        "border border-white/[0.06]",
+        "divide-y divide-white/[0.04]"
+      )}>
         {[...Array(5)].map((_, i) => (
           <div key={i} className="flex items-center gap-3 px-4 py-3">
-            <div className="w-8 h-8 rounded bg-muted/30 animate-shimmer" />
+            <div className="w-8 h-8 rounded bg-white/[0.04] animate-pulse" />
             <div className="flex-1 space-y-2">
-              <div className="h-4 w-32 rounded bg-muted/30 animate-shimmer" />
-              <div className="h-3 w-24 rounded bg-muted/30 animate-shimmer" />
+              <div className="h-4 w-32 rounded bg-white/[0.04] animate-pulse" />
+              <div className="h-3 w-24 rounded bg-white/[0.04] animate-pulse" />
             </div>
-            <div className="h-6 w-12 rounded bg-muted/30 animate-shimmer" />
+            <div className="h-6 w-12 rounded bg-white/[0.04] animate-pulse" />
           </div>
         ))}
       </div>

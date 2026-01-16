@@ -1,9 +1,9 @@
 /**
- * ProfileViewer component for displaying and editing user profile data.
+ * ProfileViewer - The Obsidian User Profile
  *
- * Displays all stored profile data with edit capability, showing preferences,
- * learned patterns, and statistics. Allows users to view and control all data
- * Opta has learned about them (privacy-first transparency).
+ * Displays user profile with obsidian glass styling and energy accents.
+ *
+ * @see DESIGN_SYSTEM.md - Part 4: The Obsidian Glass Material System
  */
 
 import { useState } from 'react';
@@ -13,6 +13,9 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 
 import { cn } from '@/lib/utils';
+
+// Easing curve for smooth energy transitions
+const smoothOut: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
 import type {
   UserProfile,
@@ -60,11 +63,16 @@ function EmptyProfileState() {
   return (
     <motion.div
       className="flex flex-col items-center justify-center py-12 text-center"
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
+      initial={{ opacity: 0, scale: 0.95, filter: 'brightness(0.5)' }}
+      animate={{ opacity: 1, scale: 1, filter: 'brightness(1)' }}
+      transition={{ ease: smoothOut }}
     >
       <motion.div
-        className="w-16 h-16 flex items-center justify-center rounded-full glass border border-border/30 mb-6"
+        className={cn(
+          "w-16 h-16 flex items-center justify-center rounded-full mb-6",
+          "bg-[#05030a]/60 backdrop-blur-xl",
+          "border border-white/[0.06]"
+        )}
         animate={{ rotate: [0, 5, -5, 0] }}
         transition={{ duration: 4, repeat: Infinity }}
       >
@@ -114,9 +122,11 @@ function PreferenceRow({
           onChange={(e) => onChange(e.target.value)}
           className={cn(
             'px-3 py-1.5 text-sm rounded-lg',
-            'glass-subtle border border-border/30',
+            // Obsidian subtle glass
+            'bg-white/[0.02] border border-white/[0.06]',
             'text-foreground',
-            'focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50',
+            'focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40',
+            'focus:shadow-[0_0_12px_-4px_rgba(168,85,247,0.3)]',
             'transition-all duration-200',
             'cursor-pointer'
           )}
@@ -155,7 +165,12 @@ function PatternCard({ pattern }: PatternCardProps) {
     <motion.div
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
-      className="glass-subtle rounded-lg p-3 border border-border/20"
+      transition={{ ease: smoothOut }}
+      className={cn(
+        "rounded-lg p-3",
+        // Obsidian subtle glass
+        "bg-white/[0.02] border border-white/[0.04]"
+      )}
     >
       <div className="flex items-start gap-3">
         <div
@@ -199,7 +214,11 @@ interface StatItemProps {
  */
 function StatItem({ label, value }: StatItemProps) {
   return (
-    <div className="glass-subtle rounded-lg p-3 border border-border/20 text-center">
+    <div className={cn(
+      "rounded-lg p-3 text-center",
+      // Obsidian subtle glass
+      "bg-white/[0.02] border border-white/[0.04]"
+    )}>
       <div className="text-lg font-bold text-foreground tabular-nums">{value}</div>
       <div className="text-[10px] text-muted-foreground/60 uppercase tracking-wide mt-0.5">
         {label}
@@ -252,10 +271,18 @@ export function ProfileViewer({
       className="space-y-4"
     >
       {/* Preferences Section */}
-      <div className="glass rounded-xl p-4 border border-border/30">
+      <div className={cn(
+        "relative rounded-xl p-4 overflow-hidden",
+        // Obsidian glass material
+        "bg-[#05030a]/80 backdrop-blur-xl",
+        "border border-white/[0.06]",
+        // Inner specular highlight
+        "before:absolute before:inset-x-0 before:top-0 before:h-px before:z-10",
+        "before:bg-gradient-to-r before:from-transparent before:via-white/10 before:to-transparent"
+      )}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <Settings className="w-5 h-5 text-primary" strokeWidth={1.75} />
+            <Settings className="w-5 h-5 text-primary drop-shadow-[0_0_6px_rgba(168,85,247,0.5)]" strokeWidth={1.75} />
             <h3 className="text-sm font-medium">Your Preferences</h3>
           </div>
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
@@ -275,7 +302,7 @@ export function ProfileViewer({
           </motion.div>
         </div>
 
-        <div className="space-y-1 divide-y divide-border/20">
+        <div className="space-y-1 divide-y divide-white/[0.05]">
           <PreferenceRow
             label="User Mode"
             value={pendingChanges.userMode ?? profile.userMode}
@@ -329,7 +356,7 @@ export function ProfileViewer({
           <motion.div
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex justify-end gap-2 mt-4 pt-4 border-t border-border/30"
+            className="flex justify-end gap-2 mt-4 pt-4 border-t border-white/[0.05]"
           >
             <Button
               variant="outline"
@@ -357,15 +384,23 @@ export function ProfileViewer({
       </div>
 
       {/* Learned Patterns Section */}
-      <div className="glass rounded-xl p-4 border border-border/30">
+      <div className={cn(
+        "relative rounded-xl p-4 overflow-hidden",
+        // Obsidian glass material
+        "bg-[#05030a]/80 backdrop-blur-xl",
+        "border border-white/[0.06]",
+        // Inner specular highlight
+        "before:absolute before:inset-x-0 before:top-0 before:h-px before:z-10",
+        "before:bg-gradient-to-r before:from-transparent before:via-white/10 before:to-transparent"
+      )}>
         <div className="flex items-center gap-2 mb-4">
-          <Brain className="w-5 h-5 text-primary" strokeWidth={1.75} />
+          <Brain className="w-5 h-5 text-primary drop-shadow-[0_0_6px_rgba(168,85,247,0.5)]" strokeWidth={1.75} />
           <h3 className="text-sm font-medium">What Opta Has Learned</h3>
         </div>
 
         {profile.patterns.length === 0 ? (
           <div className="flex items-center gap-3 py-4">
-            <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-muted/30 border border-border/20">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-white/[0.03] border border-white/[0.04]">
               <Sparkles className="w-5 h-5 text-muted-foreground/40" strokeWidth={1.5} />
             </div>
             <p className="text-sm text-muted-foreground/70">
@@ -382,9 +417,17 @@ export function ProfileViewer({
       </div>
 
       {/* Statistics Section */}
-      <div className="glass rounded-xl p-4 border border-border/30">
+      <div className={cn(
+        "relative rounded-xl p-4 overflow-hidden",
+        // Obsidian glass material
+        "bg-[#05030a]/80 backdrop-blur-xl",
+        "border border-white/[0.06]",
+        // Inner specular highlight
+        "before:absolute before:inset-x-0 before:top-0 before:h-px before:z-10",
+        "before:bg-gradient-to-r before:from-transparent before:via-white/10 before:to-transparent"
+      )}>
         <div className="flex items-center gap-2 mb-4">
-          <User className="w-5 h-5 text-primary" strokeWidth={1.75} />
+          <User className="w-5 h-5 text-primary drop-shadow-[0_0_6px_rgba(168,85,247,0.5)]" strokeWidth={1.75} />
           <h3 className="text-sm font-medium">Your Stats</h3>
         </div>
 
@@ -400,7 +443,12 @@ export function ProfileViewer({
       </div>
 
       {/* Delete Data Section */}
-      <div className="glass rounded-xl p-4 border border-danger/30 bg-danger/5">
+      <div className={cn(
+        "relative rounded-xl p-4 overflow-hidden",
+        "bg-[#05030a]/80 backdrop-blur-xl",
+        "border border-danger/30",
+        "shadow-[inset_0_0_20px_rgba(239,68,68,0.05)]"
+      )}>
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-sm font-medium text-danger">Delete All Data</h3>

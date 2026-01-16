@@ -139,7 +139,7 @@ function StealthMode({ onComplete }: StealthModeProps) {
         className={cn(
           'relative w-full flex flex-col items-center justify-center',
           'py-8 px-8 rounded-2xl',
-          'glass overflow-hidden group',
+          'bg-[#05030a]/80 backdrop-blur-xl border border-white/[0.06] overflow-hidden group',
           'border-2 border-success/40',
           'transition-all duration-300 ease-out',
           'hover:border-success/60',
@@ -210,7 +210,7 @@ function StealthMode({ onComplete }: StealthModeProps) {
 
       {/* Confirmation / Loading / Results Dialog */}
       <Dialog open={modalState !== 'closed'} onOpenChange={(open) => !open && handleClose()}>
-        <DialogContent className="sm:max-w-[480px] glass-strong border-border/30 shadow-[0_0_48px_-12px_hsl(var(--success)/0.3)]">
+        <DialogContent className="sm:max-w-[480px] bg-[#05030a]/90 backdrop-blur-2xl border-white/[0.08] shadow-[0_0_48px_-12px_hsl(var(--success)/0.3)]">
           <AnimatePresence mode="wait">
             {/* Confirmation State */}
             {modalState === 'confirm' && (
@@ -233,7 +233,7 @@ function StealthMode({ onComplete }: StealthModeProps) {
 
                 {hasProcesses ? (
                   <>
-                    <div className="glass-subtle rounded-xl border border-border/20 p-4 my-4">
+                    <div className="rounded-xl bg-white/[0.02] border border-white/[0.04] p-4 my-4">
                       <div className="flex justify-between items-center mb-3 text-xs text-muted-foreground">
                         <span>Processes to terminate:</span>
                         <span className="text-success font-semibold">~{estimatedMemory} MB</span>
@@ -262,7 +262,7 @@ function StealthMode({ onComplete }: StealthModeProps) {
                     </div>
 
                     <DialogFooter className="gap-3 sm:gap-2">
-                      <Button variant="ghost" onClick={handleClose} className="glass-subtle">
+                      <Button variant="ghost" onClick={handleClose} className="bg-white/[0.02] border border-white/[0.04]">
                         Cancel
                       </Button>
                       <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
@@ -303,7 +303,7 @@ function StealthMode({ onComplete }: StealthModeProps) {
                       </p>
                     </motion.div>
                     <DialogFooter>
-                      <Button variant="ghost" onClick={handleClose} className="w-full sm:w-auto glass-subtle">
+                      <Button variant="ghost" onClick={handleClose} className="w-full sm:w-auto bg-white/[0.02] border border-white/[0.04]">
                         Close
                       </Button>
                     </DialogFooter>
@@ -427,7 +427,7 @@ function StealthMode({ onComplete }: StealthModeProps) {
 
                     {/* Terminated list */}
                     {result.terminated.length > 0 && (
-                      <div className="glass-subtle rounded-xl p-4 border border-border/20">
+                      <div className="rounded-xl p-4 bg-white/[0.02] border border-white/[0.04]">
                         <p className="text-xs text-muted-foreground/60 mb-2 uppercase tracking-wide">
                           Terminated:
                         </p>
@@ -455,7 +455,7 @@ function StealthMode({ onComplete }: StealthModeProps) {
                 )}
 
                 <DialogFooter className="flex-col items-center gap-4">
-                  <Button variant="ghost" onClick={handleClose} className="glass-subtle">
+                  <Button variant="ghost" onClick={handleClose} className="bg-white/[0.02] border border-white/[0.04]">
                     Close
                   </Button>
                   <motion.p

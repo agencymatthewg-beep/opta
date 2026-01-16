@@ -1,7 +1,19 @@
+/**
+ * ScoreTimeline - The Obsidian Score Journey
+ *
+ * Animated timeline with obsidian glass styling and energy chart.
+ *
+ * @see DESIGN_SYSTEM.md - Part 4: The Obsidian Glass Material System
+ */
+
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { cn } from '@/lib/utils';
 import type { OptaScoreHistoryEntry } from '@/types/scoring';
 import { TrendingUp, Clock } from 'lucide-react';
+
+// Easing curve for smooth energy transitions
+const smoothOut: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
 interface ScoreTimelineProps {
   history: OptaScoreHistoryEntry[];
@@ -46,9 +58,18 @@ export function ScoreTimeline({ history, currentScore, playAnimation }: ScoreTim
   if (history.length === 0) {
     return (
       <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="glass rounded-xl p-4 border border-border/30"
+        initial={{ opacity: 0, y: 12, filter: 'brightness(0.5)' }}
+        animate={{ opacity: 1, y: 0, filter: 'brightness(1)' }}
+        transition={{ ease: smoothOut }}
+        className={cn(
+          "relative rounded-xl p-4 overflow-hidden",
+          // Obsidian glass material
+          "bg-[#05030a]/80 backdrop-blur-xl",
+          "border border-white/[0.06]",
+          // Inner specular highlight
+          "before:absolute before:inset-x-0 before:top-0 before:h-px before:z-10",
+          "before:bg-gradient-to-r before:from-transparent before:via-white/10 before:to-transparent"
+        )}
       >
         <div className="flex items-center gap-2 mb-4">
           <Clock className="w-5 h-5 text-primary" strokeWidth={1.75} />
@@ -77,13 +98,22 @@ export function ScoreTimeline({ history, currentScore, playAnimation }: ScoreTim
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="glass rounded-xl p-4 border border-border/30"
+      initial={{ opacity: 0, y: 12, filter: 'brightness(0.5)' }}
+      animate={{ opacity: 1, y: 0, filter: 'brightness(1)' }}
+      transition={{ ease: smoothOut }}
+      className={cn(
+        "relative rounded-xl p-4 overflow-hidden",
+        // Obsidian glass material
+        "bg-[#05030a]/80 backdrop-blur-xl",
+        "border border-white/[0.06]",
+        // Inner specular highlight
+        "before:absolute before:inset-x-0 before:top-0 before:h-px before:z-10",
+        "before:bg-gradient-to-r before:from-transparent before:via-white/10 before:to-transparent"
+      )}
     >
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <Clock className="w-5 h-5 text-primary" strokeWidth={1.75} />
+          <Clock className="w-5 h-5 text-primary drop-shadow-[0_0_6px_rgba(168,85,247,0.5)]" strokeWidth={1.75} />
           <h3 className="text-sm font-semibold">Score Journey</h3>
         </div>
         <motion.div

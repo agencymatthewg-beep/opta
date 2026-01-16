@@ -2,7 +2,7 @@
  * OptimizationResultModal - Shows optimization result with explanations.
  *
  * Follows DESIGN_SYSTEM.md:
- * - Glass effects (glass-strong for modal)
+ * - Obsidian glass effects with energy glow
  * - Framer Motion animations
  * - Lucide icons
  */
@@ -59,7 +59,7 @@ function OptimizationResultModal({
           >
             <motion.div
               className={cn(
-                'w-full max-w-lg glass-strong rounded-2xl border overflow-hidden',
+                'w-full max-w-lg bg-[#05030a]/90 backdrop-blur-2xl rounded-2xl border overflow-hidden',
                 isSuccess ? 'border-success/30' : 'border-danger/30'
               )}
               initial={{ scale: 0.95, y: 20 }}
@@ -113,7 +113,7 @@ function OptimizationResultModal({
               <ScrollArea className="max-h-[60vh]">
                 <div className="p-6 space-y-4">
                   {/* Summary */}
-                  <div className="flex items-center justify-between p-4 glass-subtle rounded-xl border border-border/20">
+                  <div className="flex items-center justify-between p-4 rounded-xl bg-white/[0.02] border border-white/[0.04]">
                     <div>
                       <span className="text-2xl font-bold text-foreground">
                         {result.actions_applied}
@@ -143,7 +143,7 @@ function OptimizationResultModal({
                   {result.details.length > 0 && (
                     <button
                       onClick={() => setShowDetails(!showDetails)}
-                      className="w-full flex items-center justify-between p-3 glass-subtle rounded-xl border border-border/20 text-sm text-muted-foreground/70 hover:text-foreground transition-colors"
+                      className="w-full flex items-center justify-between p-3 rounded-xl bg-white/[0.02] border border-white/[0.04] text-sm text-muted-foreground/70 hover:text-foreground transition-colors"
                     >
                       <span>View {result.details.length} applied settings</span>
                       <ChevronDown
@@ -178,7 +178,7 @@ function OptimizationResultModal({
                   </AnimatePresence>
 
                   {/* Next Steps */}
-                  <div className="p-4 glass-subtle rounded-xl border border-border/20 space-y-2">
+                  <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.04] space-y-2">
                     <div className="flex items-center gap-2 text-sm font-medium text-foreground">
                       <Sparkles className="w-4 h-4 text-primary" strokeWidth={1.75} />
                       Next Steps
@@ -199,7 +199,7 @@ function OptimizationResultModal({
                     <Button
                       variant="outline"
                       onClick={onRevert}
-                      className="gap-1.5 glass-subtle rounded-xl border-border/30"
+                      className="gap-1.5 rounded-xl bg-white/[0.02] border-white/[0.06]"
                     >
                       <RotateCcw className="w-4 h-4" strokeWidth={2} />
                       Revert

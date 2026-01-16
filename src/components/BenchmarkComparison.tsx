@@ -42,7 +42,7 @@ function MetricCard({ label, icon: Icon, before, after, unit, lowerIsBetter = tr
 
   return (
     <motion.div
-      className="glass-subtle rounded-xl p-4 border border-border/20"
+      className="rounded-xl bg-white/[0.02] p-4 border border-white/[0.04]"
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
     >
@@ -84,7 +84,7 @@ function BenchmarkComparison({ comparison }: BenchmarkComparisonProps) {
   if (!before || !after) {
     return (
       <motion.div
-        className="glass-subtle rounded-xl p-6 border border-border/20 text-center"
+        className="rounded-xl bg-white/[0.02] p-6 border border-white/[0.04] text-center"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
       >
@@ -101,7 +101,7 @@ function BenchmarkComparison({ comparison }: BenchmarkComparisonProps) {
 
   return (
     <motion.div
-      className="glass-subtle rounded-xl border border-border/20 overflow-hidden"
+      className="rounded-xl bg-white/[0.02] border border-white/[0.04] overflow-hidden"
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
     >

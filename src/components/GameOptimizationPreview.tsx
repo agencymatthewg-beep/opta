@@ -111,7 +111,7 @@ function NoOptimizationState({
       <motion.div
         className={cn(
           'w-14 h-14 mx-auto flex items-center justify-center rounded-full mb-4',
-          'glass border border-border/30'
+          'bg-[#05030a]/60 backdrop-blur-xl border border-white/[0.06]'
         )}
         animate={{ rotate: [0, 5, -5, 0] }}
         transition={{ duration: 3, repeat: Infinity }}
@@ -130,7 +130,7 @@ function NoOptimizationState({
           variant="outline"
           size="sm"
           onClick={onRequestAI}
-          className="gap-1.5 glass-subtle rounded-xl border-border/30"
+          className="gap-1.5 rounded-xl bg-white/[0.02] border-white/[0.06]"
           disabled={!onRequestAI}
         >
           <Sparkles className="w-4 h-4" strokeWidth={2} />
@@ -169,7 +169,7 @@ function GraphicsSection({ settings }: { settings: Record<string, string> }) {
             initial={{ opacity: 0, x: -8 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.1 + index * 0.03 }}
-            className="flex items-center justify-between px-3 py-2 rounded-xl glass-subtle border border-border/20"
+            className="flex items-center justify-between px-3 py-2 rounded-xl bg-white/[0.02] border border-white/[0.04]"
           >
             <span className="text-xs text-muted-foreground/60 capitalize">
               {key.replace(/_/g, ' ')}
@@ -200,7 +200,7 @@ function LaunchOptionsSection({ options }: { options: string[] }) {
         <Terminal className="w-4 h-4 text-primary" strokeWidth={1.75} />
         Launch Options
       </h4>
-      <code className="block px-4 py-3 rounded-xl glass-subtle border border-border/20 font-mono text-xs text-foreground/80">
+      <code className="block px-4 py-3 rounded-xl bg-white/[0.02] border border-white/[0.04] font-mono text-xs text-foreground/80">
         {options.join(' ')}
       </code>
     </motion.div>
@@ -351,7 +351,7 @@ function GameOptimizationPreview({
 
   if (loading) {
     return (
-      <div className="glass-subtle rounded-xl border border-border/20 overflow-hidden">
+      <div className="rounded-xl bg-white/[0.02] border border-white/[0.04] overflow-hidden">
         <div className="px-4 py-3 border-b border-border/20">
           <h3 className="text-sm font-semibold">Optimization Settings</h3>
         </div>
@@ -364,7 +364,7 @@ function GameOptimizationPreview({
 
   if (!optimization) {
     return (
-      <div className="glass-subtle rounded-xl border border-border/20 overflow-hidden">
+      <div className="rounded-xl bg-white/[0.02] border border-white/[0.04] overflow-hidden">
         <div className="px-4 py-3 border-b border-border/20">
           <h3 className="text-sm font-semibold">Optimization Settings</h3>
         </div>
@@ -383,7 +383,7 @@ function GameOptimizationPreview({
 
   return (
     <motion.div
-      className="glass-subtle rounded-xl border border-border/20 overflow-hidden"
+      className="rounded-xl bg-white/[0.02] border border-white/[0.04] overflow-hidden"
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
     >
@@ -457,7 +457,7 @@ function GameOptimizationPreview({
                 variant="outline"
                 onClick={handleInvestigate}
                 disabled={!gameId}
-                className="gap-1.5 rounded-xl glass-subtle border-border/30"
+                className="gap-1.5 rounded-xl bg-white/[0.02] border border-white/[0.04]"
               >
                 <Eye className="w-4 h-4" strokeWidth={1.75} />
                 Investigate

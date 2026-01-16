@@ -1,13 +1,15 @@
 /**
- * DataDeletionModal component for confirming data deletion.
+ * DataDeletionModal - The Obsidian Deletion Confirmation
  *
  * Provides a clear confirmation flow before permanently deleting all user data.
  * Lists exactly what will be deleted and requires typed confirmation ("DELETE").
+ *
+ * @see DESIGN_SYSTEM.md - Part 4: The Obsidian Glass Material System
  */
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -56,7 +58,17 @@ export function DataDeletionModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="glass rounded-xl border border-border/30 sm:max-w-md">
+      <DialogContent className={cn(
+          "relative rounded-xl sm:max-w-md overflow-hidden",
+          // Obsidian glass with danger energy
+          "bg-[#05030a]/90 backdrop-blur-2xl",
+          "border border-danger/30",
+          // Inner specular highlight
+          "before:absolute before:inset-x-0 before:top-0 before:h-px before:z-10",
+          "before:bg-gradient-to-r before:from-transparent before:via-danger/20 before:to-transparent",
+          // Danger energy glow
+          "shadow-[inset_0_0_20px_rgba(239,68,68,0.05),0_0_30px_-10px_rgba(239,68,68,0.3)]"
+        )}>
         <DialogHeader>
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
@@ -129,7 +141,13 @@ export function DataDeletionModal({
             value={confirmText}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConfirmText(e.target.value.toUpperCase())}
             placeholder="Type DELETE to confirm"
-            className="glass-subtle border-border/30 font-mono"
+            className={cn(
+              "font-mono",
+              // Obsidian subtle
+              "bg-white/[0.02] border border-white/[0.06]",
+              "focus:border-danger/40 focus:ring-danger/20",
+              "focus:shadow-[0_0_12px_-4px_rgba(239,68,68,0.3)]"
+            )}
             disabled={loading}
             autoFocus
           />

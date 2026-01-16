@@ -116,7 +116,7 @@ function Dashboard({ onNavigate }: DashboardProps) {
           {[1, 2, 3, 4].map((i) => (
             <motion.div
               key={i}
-              className="glass rounded-xl overflow-hidden"
+              className="rounded-xl overflow-hidden bg-[#05030a]/80 backdrop-blur-xl border border-white/[0.06]"
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.1 }}
@@ -147,7 +147,7 @@ function Dashboard({ onNavigate }: DashboardProps) {
           </span>
         </motion.h1>
         <motion.div
-          className="glass mt-6 flex flex-col items-center justify-center min-h-[300px] p-12 rounded-xl"
+          className="mt-6 flex flex-col items-center justify-center min-h-[300px] p-12 rounded-xl bg-[#05030a]/80 backdrop-blur-xl border border-white/[0.06]"
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
         >
@@ -272,7 +272,7 @@ function Dashboard({ onNavigate }: DashboardProps) {
       {/* Additional Cards Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <motion.div
-          className="glass rounded-xl overflow-hidden group"
+          className="rounded-xl overflow-hidden group bg-[#05030a]/80 backdrop-blur-xl border border-white/[0.06]"
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.35 }}
@@ -296,7 +296,7 @@ function Dashboard({ onNavigate }: DashboardProps) {
         </motion.div>
 
         <motion.div
-          className="glass rounded-xl overflow-hidden group"
+          className="rounded-xl overflow-hidden group bg-[#05030a]/80 backdrop-blur-xl border border-white/[0.06]"
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
@@ -335,7 +335,7 @@ function Dashboard({ onNavigate }: DashboardProps) {
             <motion.div
               className={cn(
                 'fixed top-0 right-0 h-full w-[400px] z-40',
-                'glass-strong border-l-0 rounded-l-2xl shadow-2xl'
+                'bg-[#05030a]/90 backdrop-blur-2xl border-l border-white/[0.06] rounded-l-2xl shadow-2xl'
               )}
               initial={{ x: "100%", opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}

@@ -32,7 +32,7 @@ function Optimize({ onNavigate }: OptimizeProps) {
         <motion.div
           className={cn(
             'w-20 h-20 flex items-center justify-center rounded-full mx-auto mb-6',
-            'glass border border-border/30'
+            'bg-[#05030a]/60 backdrop-blur-xl border border-white/[0.06]'
           )}
           animate={{ rotate: [0, 5, -5, 0] }}
           transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
@@ -69,7 +69,7 @@ function Optimize({ onNavigate }: OptimizeProps) {
         transition={{ delay: 0.2 }}
       >
         <h2 className="text-lg font-semibold text-foreground mb-4">Detected Games</h2>
-        <Card className="glass">
+        <Card className="bg-[#05030a]/80 backdrop-blur-xl border border-white/[0.06]">
           <CardContent className="p-8">
             <motion.div
               className="flex flex-col items-center justify-center py-6 text-center"

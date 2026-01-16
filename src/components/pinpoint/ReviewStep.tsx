@@ -1,8 +1,19 @@
+/**
+ * ReviewStep - The Obsidian Review Panel
+ *
+ * Recommendations review with obsidian glass styling and energy impacts.
+ *
+ * @see DESIGN_SYSTEM.md - Part 4: The Obsidian Glass Material System
+ */
+
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ArrowRight, X, Sparkles, Cpu, Monitor, Mouse } from 'lucide-react';
+
+// Easing curve for smooth energy transitions
+const smoothOut: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
 /**
  * Recommendation type for Pinpoint optimization.
@@ -90,10 +101,14 @@ export function ReviewStep({ recommendations, onApprove, onSkip }: ReviewStepPro
           return (
             <motion.div
               key={rec.id}
-              className="glass-subtle rounded-xl p-4 border border-border/20"
+              className={cn(
+                "rounded-xl p-4",
+                // Obsidian subtle glass
+                "bg-white/[0.02] border border-white/[0.04]"
+              )}
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.08, duration: 0.3 }}
+              transition={{ delay: index * 0.08, duration: 0.3, ease: smoothOut }}
             >
               <div className="flex items-start justify-between gap-4">
                 {/* Left side - info */}
@@ -146,10 +161,16 @@ export function ReviewStep({ recommendations, onApprove, onSkip }: ReviewStepPro
 
       {/* Total impact summary */}
       <motion.div
-        className="glass rounded-xl p-4 mb-6 border border-success/20"
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.4 }}
+        className={cn(
+          "relative rounded-xl p-4 mb-6 overflow-hidden",
+          // Obsidian glass with success energy
+          "bg-[#05030a]/80 backdrop-blur-xl",
+          "border border-success/30",
+          "shadow-[inset_0_0_20px_rgba(34,197,94,0.05),0_0_15px_-5px_rgba(34,197,94,0.2)]"
+        )}
+        initial={{ opacity: 0, scale: 0.95, filter: 'brightness(0.5)' }}
+        animate={{ opacity: 1, scale: 1, filter: 'brightness(1)' }}
+        transition={{ delay: 0.4, ease: smoothOut }}
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -173,7 +194,7 @@ export function ReviewStep({ recommendations, onApprove, onSkip }: ReviewStepPro
       >
         <Button
           variant="outline"
-          className="flex-1 gap-1.5 glass-subtle rounded-xl border-border/30 h-12"
+          className="flex-1 gap-1.5 bg-white/[0.02] rounded-xl border-white/[0.06] h-12"
           onClick={onSkip}
         >
           <X className="w-4 h-4" strokeWidth={1.75} />

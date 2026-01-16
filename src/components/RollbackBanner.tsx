@@ -1,18 +1,18 @@
 /**
- * RollbackBanner - One-click rollback UI after optimization.
+ * RollbackBanner - The Obsidian Rollback Toast
  *
  * Shows a timed banner allowing quick undo of recent optimizations.
- * Follows DESIGN_SYSTEM.md:
- * - Framer Motion animations
- * - Lucide icons
- * - Glass effects
- * - Semantic colors
+ *
+ * @see DESIGN_SYSTEM.md - Part 4: The Obsidian Glass Material System
  */
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+
+// Easing curve for smooth energy transitions
+const smoothOut: [number, number, number, number] = [0.22, 1, 0.36, 1];
 import { Undo2, X, CheckCircle, Loader2 } from 'lucide-react';
 import type { AppliedOptimization } from '../hooks/useRollback';
 
@@ -97,15 +97,19 @@ function RollbackBanner({
           initial={{ opacity: 0, y: -20, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -20, scale: 0.95 }}
-          transition={{ type: 'spring', stiffness: 200, damping: 25 }}
+          transition={{ ease: smoothOut }}
           className={cn(
             'fixed top-4 right-4 z-50',
-            'glass rounded-xl p-4 max-w-sm',
-            'shadow-[0_8px_32px_-8px_rgba(0,0,0,0.4)]',
+            'relative rounded-xl p-4 max-w-sm overflow-hidden',
+            // Obsidian glass material
+            'bg-[#05030a]/90 backdrop-blur-2xl',
             'border',
             rollbackSuccess
-              ? 'border-success/30'
-              : 'border-primary/30'
+              ? 'border-success/30 shadow-[inset_0_0_20px_rgba(34,197,94,0.05),0_0_20px_-8px_rgba(34,197,94,0.3)]'
+              : 'border-primary/30 shadow-[inset_0_0_20px_rgba(168,85,247,0.05),0_0_20px_-8px_rgba(168,85,247,0.3)]',
+            // Inner specular highlight
+            'before:absolute before:inset-x-0 before:top-0 before:h-px before:z-10',
+            'before:bg-gradient-to-r before:from-transparent before:via-white/10 before:to-transparent'
           )}
         >
           <div className="flex items-start gap-3">
@@ -154,7 +158,7 @@ function RollbackBanner({
                       variant="outline"
                       onClick={handleRollback}
                       disabled={isRollingBack}
-                      className="gap-1.5 glass-subtle rounded-lg border-border/30 text-xs"
+                      className="gap-1.5 rounded-lg text-xs bg-white/[0.02] border-white/[0.06]"
                     >
                       {isRollingBack ? (
                         <>

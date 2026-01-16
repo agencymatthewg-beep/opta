@@ -1,8 +1,8 @@
 /**
  * ErrorBoundary - Catches React errors during rendering.
  *
- * Follows DESIGN_SYSTEM.md:
- * - Glass effects (glass-strong for error panel)
+ * Follows DESIGN_SYSTEM.md Obsidian Standard:
+ * - Obsidian glass surfaces with danger energy glow
  * - Framer Motion animations
  * - Lucide icons
  */

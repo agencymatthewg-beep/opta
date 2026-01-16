@@ -11,6 +11,7 @@ import {
   Award,
   Settings,
   Target,
+  Crown,
 } from 'lucide-react';
 
 /**
@@ -42,6 +43,11 @@ const navItems = [
     id: 'games',
     label: 'Games',
     icon: Gamepad2,
+  },
+  {
+    id: 'chess',
+    label: 'Chess',
+    icon: Crown,
   },
   {
     id: 'optimize',

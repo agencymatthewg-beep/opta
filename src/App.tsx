@@ -18,6 +18,7 @@ import SessionSummaryModal from './components/SessionSummaryModal';
 // Lazy load pages for better initial load performance
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Games = lazy(() => import('./pages/Games'));
+const Chess = lazy(() => import('./pages/Chess'));
 const Optimize = lazy(() => import('./pages/Optimize'));
 const PinpointOptimize = lazy(() => import('./pages/PinpointOptimize'));
 const Score = lazy(() => import('./pages/Score'));

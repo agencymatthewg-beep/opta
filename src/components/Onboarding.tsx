@@ -1,13 +1,9 @@
 /**
- * Onboarding - Conversational onboarding flow for first-time users.
+ * Onboarding - The Obsidian Welcome Experience
  *
- * Collects user preferences through a friendly 3-question quiz:
- * - Priority (FPS, Quality, Balanced)
- * - Expertise level (Simple, Standard, Power)
- * - Game types (Competitive, Story, Both)
+ * Conversational onboarding with obsidian glass styling and energy effects.
  *
- * The onboarding tone adapts based on the selected expertise level,
- * making the experience feel personalized from the start.
+ * @see DESIGN_SYSTEM.md - Part 4: The Obsidian Glass Material System
  */
 
 import { useState, useMemo } from 'react';
@@ -15,6 +11,9 @@ import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { cn } from '@/lib/utils';
+
+// Easing curve for smooth energy transitions
+const smoothOut: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
 import {
   Zap,
@@ -215,9 +214,20 @@ export function Onboarding({ onComplete }: OnboardingProps) {
       className="fixed inset-0 bg-background/95 backdrop-blur-sm z-50 flex items-center justify-center"
     >
       <motion.div
-        className="glass p-8 rounded-2xl max-w-md w-full mx-4"
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
+        className={cn(
+          "relative p-8 rounded-2xl max-w-md w-full mx-4 overflow-hidden",
+          // Obsidian glass material
+          "bg-[#05030a]/90 backdrop-blur-2xl",
+          "border border-white/[0.08]",
+          // Inner specular highlight
+          "before:absolute before:inset-x-0 before:top-0 before:h-px before:z-10",
+          "before:bg-gradient-to-r before:from-transparent before:via-white/15 before:to-transparent",
+          // Energy glow shadow
+          "shadow-[0_0_60px_-15px_rgba(168,85,247,0.3)]"
+        )}
+        initial={{ opacity: 0, scale: 0.95, filter: 'brightness(0.5)' }}
+        animate={{ opacity: 1, scale: 1, filter: 'brightness(1)' }}
+        transition={{ ease: smoothOut }}
       >
         {/* Progress */}
         <div className="flex gap-2 mb-8">
@@ -255,14 +265,18 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                   <motion.button
                     key={option.value}
                     className={cn(
-                      "w-full p-4 glass-subtle rounded-xl text-left",
-                      "border border-border/30",
-                      "hover:bg-primary/10 hover:border-primary/50",
-                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                      "w-full p-4 rounded-xl text-left",
+                      // Obsidian subtle glass
+                      "bg-white/[0.02] border border-white/[0.06]",
+                      // Hover energy state
+                      "hover:bg-primary/[0.08] hover:border-primary/40",
+                      "hover:shadow-[inset_0_0_15px_rgba(168,85,247,0.08),0_0_15px_-5px_rgba(168,85,247,0.2)]",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+                      "transition-all duration-200"
                     )}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
+                    transition={{ delay: index * 0.05, ease: smoothOut }}
                     whileHover={{ scale: 1.02, y: -2 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => handleSelect(option.value)}

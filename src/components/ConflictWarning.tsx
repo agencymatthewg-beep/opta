@@ -1,8 +1,10 @@
 /**
- * ConflictWarning banner component.
+ * ConflictWarning - The Obsidian Conflict Banner
  *
  * Displays a collapsible banner at the top of the Dashboard when conflicting
- * optimization tools are detected. Shows severity-based styling with glow effects.
+ * optimization tools are detected. Shows severity-based styling with energy glows.
+ *
+ * @see DESIGN_SYSTEM.md - Part 4: The Obsidian Glass Material System
  */
 
 import { useState } from 'react';
@@ -108,7 +110,7 @@ function ConflictWarning({ onViewDetails }: ConflictWarningProps) {
         animate={{ opacity: 1, y: 0 }}
         className="mb-6"
       >
-        <Alert variant="warning" className="glass-subtle">
+        <Alert variant="warning" className="bg-white/[0.02] border-white/[0.04]">
           <AlertTriangle className="w-4 h-4" strokeWidth={1.75} />
           <AlertDescription className="flex items-center justify-between">
             <span>Could not check for conflicting tools.</span>
@@ -143,8 +145,12 @@ function ConflictWarning({ onViewDetails }: ConflictWarningProps) {
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: -12, scale: 0.98 }}
       className={cn(
-        'mb-6 rounded-xl overflow-hidden',
-        'glass border',
+        'relative mb-6 rounded-xl overflow-hidden',
+        // Obsidian glass material
+        'bg-[#05030a]/80 backdrop-blur-xl border',
+        // Inner specular highlight
+        'before:absolute before:inset-x-0 before:top-0 before:h-px before:z-10',
+        'before:bg-gradient-to-r before:from-transparent before:via-white/10 before:to-transparent',
         config.borderColor,
         config.glowClass
       )}
@@ -253,7 +259,7 @@ function ConflictWarning({ onViewDetails }: ConflictWarningProps) {
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground glass-subtle rounded-lg"
+              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground bg-white/[0.02] border border-white/[0.04] rounded-lg"
               onClick={() => setExpanded(!expanded)}
               aria-label={expanded ? 'Collapse' : 'Expand'}
             >
@@ -269,7 +275,7 @@ function ConflictWarning({ onViewDetails }: ConflictWarningProps) {
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground glass-subtle rounded-lg"
+              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground bg-white/[0.02] border border-white/[0.04] rounded-lg"
               onClick={() => setDismissed(true)}
               aria-label="Dismiss"
             >
