@@ -19,9 +19,9 @@ Progress: ███░░░░░░░░░░░░░░░░░ 19% (3/16
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 36
+- Total plans completed: 39
 - Average duration: 10 min
-- Total execution time: 5.83 hours
+- Total execution time: 6.18 hours
 
 **By Phase:**
 
@@ -39,6 +39,7 @@ Progress: ███░░░░░░░░░░░░░░░░░ 19% (3/16
 | 8.1 Adaptive Intelligence | 4/4 | 28 min | 7 min |
 | 9. Optimization Score | 3/3 | 32 min | 11 min |
 | 10. Polish, Education & Launch | 7/7 | 78 min | 11 min |
+| 11. Foundation & Stability | 3/3 | 21 min | 7 min |
 
 **Recent Trend:**
 - Last 5 plans: 8, 12, 8, 15, 18 min
@@ -154,6 +155,9 @@ Progress: ███░░░░░░░░░░░░░░░░░ 19% (3/16
 | 10-07 | Fire-and-forget signal recording | Never impact UI responsiveness for non-critical tracking |
 | 10-07 | ExpertiseTracking as invisible component | Clean separation of concerns, easy to test and maintain |
 | 10-07 | Manual override with 100% confidence | Respect explicit user choice completely |
+| 11-01 | ErrorBoundary wraps Layout only | Ensures providers remain accessible during error recovery |
+| 11-01 | closingGame state for exit animation | Allows AnimatePresence to animate out before clearing selectedGame |
+| 11-01 | Cancel during loading shows confirmation | Prevents accidental cancellation during launch |
 | 11-02 | Steam → primary, Epic → muted-foreground, GOG → accent | Visual distinction while maintaining design system compliance |
 | 11-02 | Glass-subtle for modal headers | Design system mandates glass effects over solid backgrounds |
 | 11-03 | localStorage for dismissed recommendations | Simple, browser-native, persists across sessions without backend |
