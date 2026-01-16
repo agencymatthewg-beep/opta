@@ -6,13 +6,14 @@
  * Auto-scrolls to bottom on new messages and handles error states gracefully.
  */
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useLlm } from '../hooks/useLlm';
+import { useCommunicationStyle } from './CommunicationStyleContext';
 import type { RoutingPreference } from '../types/llm';
 import ChatMessage from './ChatMessage';
 import ChatInput from './ChatInput';
 import QuickActions from './QuickActions';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
@@ -22,6 +23,16 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import {
+  Sparkles,
+  Cloud,
+  Monitor,
+  Zap,
+  ChevronDown,
+  AlertTriangle,
+  RefreshCw,
+  Loader2,
+} from 'lucide-react';
 
 /** Message type for local state */
 interface Message {
@@ -36,38 +47,25 @@ interface Message {
  */
 function StatusIndicator({ running, error }: { running: boolean; error?: string | null }) {
   return (
-    <div className="flex items-center gap-2">
-      <span
+    <motion.div
+      className="flex items-center gap-2"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+    >
+      <motion.span
         className={cn(
           'w-2 h-2 rounded-full',
-          running ? 'bg-green-500 animate-pulse' : 'bg-red-500'
+          running
+            ? 'bg-success shadow-[0_0_8px_hsl(var(--success)/0.6)]'
+            : 'bg-danger shadow-[0_0_8px_hsl(var(--danger)/0.6)]'
         )}
+        animate={running ? { scale: [1, 1.2, 1] } : {}}
+        transition={{ duration: 2, repeat: Infinity }}
       />
       <span className="text-xs text-muted-foreground">
         {running ? 'Connected' : error ? 'Disconnected' : 'Checking...'}
       </span>
-    </div>
-  );
-}
-
-/**
- * AI assistant icon for the header.
- */
-function AssistantIcon() {
-  return (
-    <svg
-      className="w-5 h-5 text-primary"
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
-      strokeWidth={1.5}
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z"
-      />
-    </svg>
+    </motion.div>
   );
 }
 
@@ -95,68 +93,47 @@ function RoutingModeSelector({
     cloud: 'Always use Claude (costs API credits)',
   };
 
+  const icons: Record<RoutingPreference, React.ReactNode> = {
+    auto: <Zap className="w-3.5 h-3.5" strokeWidth={2} />,
+    local: <Monitor className="w-3.5 h-3.5" strokeWidth={2} />,
+    cloud: <Cloud className="w-3.5 h-3.5" strokeWidth={2} />,
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild disabled={disabled}>
         <Button
           variant="ghost"
           size="sm"
-          className="h-7 gap-1.5 text-xs px-2"
+          className={cn(
+            'h-7 gap-1.5 text-xs px-2.5 rounded-lg',
+            'glass-subtle hover:bg-white/10',
+            'transition-all duration-200'
+          )}
         >
-          <svg
-            className="w-3.5 h-3.5"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
-          </svg>
+          {icons[preference]}
           <span>AI: {labels[preference]}</span>
-          <svg
-            className="w-3 h-3 opacity-50"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path d="m6 9 6 6 6-6" />
-          </svg>
+          <ChevronDown className="w-3 h-3 opacity-50" strokeWidth={2} />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
+      <DropdownMenuContent align="end" className="w-56 glass-strong border-border/30">
         {(Object.keys(labels) as RoutingPreference[]).map((pref) => (
           <DropdownMenuItem
             key={pref}
             onClick={() => onChange(pref)}
             className={cn(
-              'flex flex-col items-start gap-0.5 py-2',
-              preference === pref && 'bg-accent'
+              'flex flex-col items-start gap-0.5 py-2.5 cursor-pointer',
+              'focus:bg-white/10',
+              preference === pref && 'bg-primary/10'
             )}
           >
-            <div className="flex items-center gap-2 font-medium">
-              {pref === 'cloud' && (
-                <svg className="w-3.5 h-3.5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                  <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />
-                </svg>
-              )}
-              {pref === 'local' && (
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                  <rect x="2" y="3" width="20" height="14" rx="2" />
-                  <path d="M8 21h8" />
-                  <path d="M12 17v4" />
-                </svg>
-              )}
-              {pref === 'auto' && (
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                  <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
-                </svg>
-              )}
+            <div className="flex items-center gap-2 font-medium text-foreground">
+              <span className="text-primary">{icons[pref]}</span>
               {labels[pref]}
             </div>
-            <span className="text-xs text-muted-foreground">{descriptions[pref]}</span>
+            <span className="text-xs text-muted-foreground/70">{descriptions[pref]}</span>
             {pref === 'cloud' && (
-              <span className="text-[10px] text-amber-500 mt-0.5">Uses API credits</span>
+              <span className="text-[10px] text-warning mt-0.5">Uses API credits</span>
             )}
           </DropdownMenuItem>
         ))}
@@ -170,25 +147,42 @@ function RoutingModeSelector({
  */
 function NotConnectedState({ onRetry }: { onRetry: () => void }) {
   return (
-    <div className="flex flex-col items-center justify-center h-full p-6 text-center">
-      <div className="w-16 h-16 flex items-center justify-center text-3xl font-bold text-warning bg-warning/10 border-2 border-warning rounded-full mb-4">
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-          />
-        </svg>
-      </div>
+    <motion.div
+      className="flex flex-col items-center justify-center h-full p-8 text-center"
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.3 }}
+    >
+      <motion.div
+        className={cn(
+          'w-16 h-16 flex items-center justify-center rounded-full mb-5',
+          'bg-warning/10 border-2 border-warning/30',
+          'shadow-[0_0_24px_-4px_hsl(var(--warning)/0.4)]'
+        )}
+        animate={{ scale: [1, 1.05, 1] }}
+        transition={{ duration: 2, repeat: Infinity }}
+      >
+        <AlertTriangle className="w-7 h-7 text-warning" strokeWidth={1.75} />
+      </motion.div>
       <h3 className="text-lg font-semibold text-foreground mb-2">Ollama Not Running</h3>
-      <p className="text-sm text-muted-foreground mb-4 max-w-[250px]">
+      <p className="text-sm text-muted-foreground/70 mb-6 max-w-[260px] leading-relaxed">
         Start Ollama to enable AI features. Make sure the llama3:8b model is installed.
       </p>
-      <Button onClick={onRetry} size="sm" className="glow-sm">
-        Check Again
-      </Button>
-    </div>
+      <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+        <Button
+          onClick={onRetry}
+          size="sm"
+          className={cn(
+            'gap-2 rounded-xl px-5',
+            'bg-gradient-to-r from-primary to-accent',
+            'shadow-[0_0_16px_-4px_hsl(var(--glow-primary)/0.5)]'
+          )}
+        >
+          <RefreshCw className="w-4 h-4" strokeWidth={2} />
+          Check Again
+        </Button>
+      </motion.div>
+    </motion.div>
   );
 }
 
@@ -203,16 +197,42 @@ function WelcomeMessage({
   disabled: boolean;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center h-full p-6 text-center">
-      <div className="w-16 h-16 flex items-center justify-center text-primary bg-primary/10 border-2 border-primary/30 rounded-full mb-4">
-        <AssistantIcon />
-      </div>
-      <h3 className="text-lg font-semibold text-foreground mb-2">AI Assistant</h3>
-      <p className="text-sm text-muted-foreground max-w-[280px] mb-6">
+    <motion.div
+      className="flex flex-col items-center justify-center h-full p-6 text-center"
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+    >
+      <motion.div
+        className={cn(
+          'w-16 h-16 flex items-center justify-center rounded-full mb-5',
+          'bg-gradient-to-br from-primary/20 to-accent/20',
+          'border-2 border-primary/30',
+          'shadow-[0_0_32px_-8px_hsl(var(--glow-primary)/0.5)]'
+        )}
+        animate={{ rotate: [0, 5, -5, 0] }}
+        transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+      >
+        <Sparkles className="w-7 h-7 text-primary" strokeWidth={1.5} />
+      </motion.div>
+      <motion.h3
+        className="text-lg font-semibold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent mb-2"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.1 }}
+      >
+        AI Assistant
+      </motion.h3>
+      <motion.p
+        className="text-sm text-muted-foreground/70 max-w-[280px] mb-6 leading-relaxed"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.2 }}
+      >
         Ask me about improving your PC's performance, managing resources, or optimizing settings.
-      </p>
+      </motion.p>
       <QuickActions onAction={onQuickAction} disabled={disabled} className="max-w-xl" />
-    </div>
+    </motion.div>
   );
 }
 
@@ -223,11 +243,6 @@ export interface ChatInterfaceProps {
 
 /**
  * ChatInterface component providing the complete chat UI.
- *
- * @example
- * ```tsx
- * <ChatInterface className="h-[500px]" />
- * ```
  */
 function ChatInterface({ className }: ChatInterfaceProps) {
   const {
@@ -240,10 +255,42 @@ function ChatInterface({ className }: ChatInterfaceProps) {
     routingPreference,
     setRoutingPreference,
   } = useLlm();
+  const { isVerbose } = useCommunicationStyle();
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const messageIdCounter = useRef(0);
+
+  /**
+   * Generate system prompt based on communication style preference.
+   */
+  const systemPrompt = useMemo(() => {
+    const basePrompt = `You are Opta, a helpful PC optimization assistant. You provide clear, actionable advice for improving system performance, managing resources, and optimizing settings for gaming and productivity.`;
+
+    const styleInstructions = isVerbose
+      ? `
+
+Communication Style: Informative & Educational
+- Provide detailed explanations
+- Teach the user why each optimization works
+- Include technical details when helpful
+- Explain the reasoning behind recommendations
+- Help users understand their system better`
+      : `
+
+Communication Style: Concise & Efficient
+- Be concise and direct
+- Give short, actionable answers
+- Only elaborate if explicitly asked
+- Skip lengthy explanations
+- Focus on what to do, not why`;
+
+    return basePrompt + styleInstructions + `
+
+General Guidelines:
+- Warn about potential risks when relevant
+- Focus on Windows/macOS optimizations`;
+  }, [isVerbose]);
 
   /**
    * Generate unique message ID.
@@ -271,6 +318,7 @@ function ChatInterface({ className }: ChatInterfaceProps) {
 
   /**
    * Handle sending a message.
+   * Includes communication style in system prompt for consistent responses.
    */
   const handleSend = useCallback(async (content: string) => {
     // Add user message
@@ -283,8 +331,8 @@ function ChatInterface({ className }: ChatInterfaceProps) {
     setIsTyping(true);
 
     try {
-      // Get response from LLM with backend info
-      const result = await sendMessage(content);
+      // Get response from LLM with backend info and communication style
+      const result = await sendMessage(content, systemPrompt);
 
       // Add assistant message with backend info
       const assistantMessage: Message = {
@@ -305,7 +353,7 @@ function ChatInterface({ className }: ChatInterfaceProps) {
     } finally {
       setIsTyping(false);
     }
-  }, [generateId, sendMessage]);
+  }, [generateId, sendMessage, systemPrompt]);
 
   /**
    * Handle quick action button click - sends the preset prompt.
@@ -317,20 +365,28 @@ function ChatInterface({ className }: ChatInterfaceProps) {
   // Show loading state while checking initial status
   if (loading) {
     return (
-      <Card className={cn('flex flex-col overflow-hidden', className)}>
-        <CardHeader className="py-3 px-4 border-b border-border/50 shrink-0">
-          <CardTitle className="flex items-center justify-between text-sm font-semibold">
+      <div className={cn('flex flex-col overflow-hidden', className)}>
+        {/* Header */}
+        <div className="py-3 px-4 border-b border-border/20 shrink-0">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <AssistantIcon />
-              <span>AI Assistant</span>
+              <Sparkles className="w-5 h-5 text-primary" strokeWidth={1.5} />
+              <span className="text-sm font-semibold">AI Assistant</span>
             </div>
             <StatusIndicator running={false} />
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex-1 flex items-center justify-center p-4">
-          <div className="text-sm text-muted-foreground">Checking Ollama status...</div>
-        </CardContent>
-      </Card>
+          </div>
+        </div>
+        <div className="flex-1 flex items-center justify-center p-4">
+          <motion.div
+            className="flex items-center gap-3 text-sm text-muted-foreground"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+          >
+            <Loader2 className="w-4 h-4 animate-spin text-primary" />
+            Checking Ollama status...
+          </motion.div>
+        </div>
+      </div>
     );
   }
 
@@ -338,13 +394,24 @@ function ChatInterface({ className }: ChatInterfaceProps) {
   const isConnected = status?.running ?? false;
 
   return (
-    <Card className={cn('flex flex-col overflow-hidden', className)}>
+    <div className={cn('flex flex-col overflow-hidden', className)}>
       {/* Header */}
-      <CardHeader className="py-3 px-4 border-b border-border/50 shrink-0">
-        <CardTitle className="flex items-center justify-between text-sm font-semibold">
+      <motion.div
+        className="py-3 px-4 border-b border-border/20 shrink-0"
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <AssistantIcon />
-            <span>AI Assistant</span>
+            <motion.div
+              animate={{ rotate: [0, 10, -10, 0] }}
+              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+            >
+              <Sparkles className="w-5 h-5 text-primary" strokeWidth={1.5} />
+            </motion.div>
+            <span className="text-sm font-semibold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+              AI Assistant
+            </span>
           </div>
           <div className="flex items-center gap-3">
             {isConnected && (
@@ -356,39 +423,47 @@ function ChatInterface({ className }: ChatInterfaceProps) {
             )}
             <StatusIndicator running={isConnected} error={error} />
           </div>
-        </CardTitle>
-      </CardHeader>
+        </div>
+      </motion.div>
 
       {/* Content area */}
       {!isConnected ? (
-        <CardContent className="flex-1 p-0">
+        <div className="flex-1 p-0">
           <NotConnectedState onRetry={checkStatus} />
-        </CardContent>
+        </div>
       ) : (
         <>
           {/* Message area */}
           <ScrollArea className="flex-1">
             <div ref={scrollRef} className="p-4 min-h-full">
-              {messages.length === 0 ? (
-                <WelcomeMessage
-                  onQuickAction={handleQuickAction}
-                  disabled={chatLoading || isTyping}
-                />
-              ) : (
-                <>
-                  {messages.map((msg) => (
-                    <ChatMessage
-                      key={msg.id}
-                      role={msg.role}
-                      content={msg.content}
-                      backend={msg.backend}
-                    />
-                  ))}
-                  {isTyping && (
-                    <ChatMessage role="assistant" content="" isStreaming={true} />
-                  )}
-                </>
-              )}
+              <AnimatePresence mode="wait">
+                {messages.length === 0 ? (
+                  <WelcomeMessage
+                    key="welcome"
+                    onQuickAction={handleQuickAction}
+                    disabled={chatLoading || isTyping}
+                  />
+                ) : (
+                  <motion.div
+                    key="messages"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                  >
+                    {messages.map((msg) => (
+                      <ChatMessage
+                        key={msg.id}
+                        role={msg.role}
+                        content={msg.content}
+                        backend={msg.backend}
+                      />
+                    ))}
+                    {isTyping && (
+                      <ChatMessage role="assistant" content="" isStreaming={true} />
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </ScrollArea>
 
@@ -400,7 +475,7 @@ function ChatInterface({ className }: ChatInterfaceProps) {
           />
         </>
       )}
-    </Card>
+    </div>
   );
 }
 
