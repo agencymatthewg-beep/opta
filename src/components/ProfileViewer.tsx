@@ -37,7 +37,7 @@ import {
 
 interface ProfileViewerProps {
   profile: UserProfile | null;
-  onUpdate: (updates: Partial<UserProfile>) => Promise<void>;
+  onUpdate: (updates: Partial<UserProfile>) => Promise<UserProfile | void>;
   onDelete: () => void;
   loading?: boolean;
 }

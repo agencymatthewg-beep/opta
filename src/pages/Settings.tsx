@@ -1,82 +1,37 @@
 import { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { Badge } from '@/components/ui/badge';
+import { motion } from 'framer-motion';
 import { Switch } from '@/components/ui/switch';
 import { useConflicts } from '../hooks/useConflicts';
 import { useClaude } from '../hooks/useClaude';
+import { useUserProfile } from '../hooks/useUserProfile';
 import ConflictCard from '../components/ConflictCard';
-import PrivacyIndicator from '../components/PrivacyIndicator';
-
-/**
- * Check circle icon for success state.
- */
-function CheckCircleIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-      />
-    </svg>
-  );
-}
-
-/**
- * Warning triangle icon for warning state.
- */
-function WarningIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-      />
-    </svg>
-  );
-}
-
-/**
- * External link icon for links.
- */
-function ExternalLinkIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-      />
-    </svg>
-  );
-}
-
-/**
- * Shield icon for privacy section.
- */
-function ShieldIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-      />
-    </svg>
-  );
-}
+import PlatformIndicator from '../components/PlatformIndicator';
+import { ProfileViewer } from '../components/ProfileViewer';
+import { DataDeletionModal } from '../components/DataDeletionModal';
+import { cn } from '@/lib/utils';
+import {
+  Settings as SettingsIcon,
+  CheckCircle,
+  AlertTriangle,
+  ExternalLink,
+  Shield,
+  Palette,
+  Info,
+  Cloud,
+  Monitor,
+  Loader2,
+  Cpu,
+  User,
+} from 'lucide-react';
 
 function Settings() {
   const { conflicts, summary, loading } = useConflicts();
   const { status: claudeStatus, loading: claudeLoading, sessionUsage } = useClaude();
+  const { profile, loading: profileLoading, updateProfile, deleteProfile } = useUserProfile();
   const [acknowledgedIds, setAcknowledgedIds] = useState<Set<string>>(new Set());
   const [showPrivacyIndicators, setShowPrivacyIndicators] = useState(true);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const handleDismiss = (toolId: string) => {
     setAcknowledgedIds((prev) => new Set([...prev, toolId]));
@@ -86,204 +41,310 @@ function Settings() {
     // Placeholder for future docs link
     console.log('Learn more about:', toolId);
   };
+
+  const handleDeleteProfile = async () => {
+    setDeleteLoading(true);
+    try {
+      await deleteProfile();
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
   return (
     <div className="page max-w-2xl">
-      <h1 className="page-title text-glow-primary">Settings</h1>
+      {/* Header */}
+      <motion.div
+        className="flex items-center gap-3 mb-8"
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <div className="p-2 rounded-lg bg-primary/10">
+          <SettingsIcon className="w-5 h-5 text-primary" strokeWidth={1.75} />
+        </div>
+        <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+          Settings
+        </h1>
+      </motion.div>
 
-      <div className="flex flex-col gap-8 mt-6">
+      <div className="flex flex-col gap-8">
         {/* Detected Conflicts Section */}
-        <section className="space-y-3">
+        <motion.section
+          className="space-y-4"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
           <div className="flex items-center gap-2">
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+            <h2 className="text-xs font-semibold text-muted-foreground/60 uppercase tracking-widest">
               Detected Conflicts
             </h2>
             {!loading && summary && summary.total_count > 0 && (
-              <Badge
-                variant={
-                  summary.high_count > 0
-                    ? 'destructive'
-                    : summary.medium_count > 0
-                    ? 'warning'
-                    : 'secondary'
-                }
-                className="text-xs"
-              >
+              <span className={cn(
+                'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border',
+                summary.high_count > 0
+                  ? 'bg-danger/15 text-danger border-danger/30'
+                  : summary.medium_count > 0
+                  ? 'bg-warning/15 text-warning border-warning/30'
+                  : 'bg-muted/50 text-muted-foreground border-border/30'
+              )}>
                 {summary.total_count}
-              </Badge>
+              </span>
             )}
           </div>
 
           {loading ? (
-            <Card>
-              <CardContent className="p-5">
-                <div className="h-24 flex items-center justify-center">
-                  <div className="text-muted-foreground text-sm">Scanning for conflicts...</div>
-                </div>
-              </CardContent>
-            </Card>
+            <div className="glass rounded-xl border border-border/30 p-6">
+              <div className="flex items-center justify-center gap-3">
+                <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                <span className="text-sm text-muted-foreground/70">Scanning for conflicts...</span>
+              </div>
+            </div>
           ) : conflicts.length === 0 ? (
-            <Card className="border-success/30 bg-success/5">
-              <CardContent className="p-5">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-success/20 flex items-center justify-center">
-                    <CheckCircleIcon className="w-5 h-5 text-success" />
-                  </div>
-                  <div>
-                    <div className="font-medium text-foreground">No conflicts detected</div>
-                    <div className="text-sm text-muted-foreground">
-                      Opta has full control over system optimizations
-                    </div>
+            <motion.div
+              className={cn(
+                'glass rounded-xl border border-success/30 p-5',
+                'shadow-[0_0_24px_-8px_hsl(var(--success)/0.3)]'
+              )}
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+            >
+              <div className="flex items-center gap-4">
+                <div className={cn(
+                  'w-12 h-12 rounded-full flex items-center justify-center',
+                  'bg-success/15 border border-success/30'
+                )}>
+                  <CheckCircle className="w-6 h-6 text-success" strokeWidth={1.75} />
+                </div>
+                <div>
+                  <div className="font-semibold text-foreground">No conflicts detected</div>
+                  <div className="text-sm text-muted-foreground/70">
+                    Opta has full control over system optimizations
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </motion.div>
           ) : (
             <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground/70">
                 These tools may interfere with Opta's optimizations. Consider disabling them for best results.
               </p>
-              {conflicts.map((conflict) => (
+              {conflicts.map((conflict, index) => (
                 <ConflictCard
                   key={conflict.tool_id}
                   conflict={conflict}
                   acknowledged={acknowledgedIds.has(conflict.tool_id)}
                   onDismiss={handleDismiss}
                   onLearnMore={handleLearnMore}
+                  delay={index * 0.05}
                 />
               ))}
             </div>
           )}
-        </section>
+        </motion.section>
 
         {/* Cloud AI Section */}
-        <section className="space-y-3">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+        <motion.section
+          className="space-y-4"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <h2 className="text-xs font-semibold text-muted-foreground/60 uppercase tracking-widest">
             Cloud AI
           </h2>
 
           {claudeLoading ? (
-            <Card>
-              <CardContent className="p-5">
-                <div className="h-24 flex items-center justify-center">
-                  <div className="text-muted-foreground text-sm">Checking Claude API status...</div>
-                </div>
-              </CardContent>
-            </Card>
+            <div className="glass rounded-xl border border-border/30 p-6">
+              <div className="flex items-center justify-center gap-3">
+                <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                <span className="text-sm text-muted-foreground/70">Checking Claude API status...</span>
+              </div>
+            </div>
           ) : claudeStatus?.available ? (
-            <Card className="border-success/30 bg-success/5">
-              <CardContent className="p-5">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-success/20 flex items-center justify-center">
-                    <CheckCircleIcon className="w-5 h-5 text-success" />
+            <motion.div
+              className={cn(
+                'glass rounded-xl border border-success/30 overflow-hidden',
+                'shadow-[0_0_24px_-8px_hsl(var(--success)/0.3)]'
+              )}
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+            >
+              <div className="p-5">
+                <div className="flex items-center gap-4">
+                  <div className={cn(
+                    'w-12 h-12 rounded-full flex items-center justify-center',
+                    'bg-success/15 border border-success/30'
+                  )}>
+                    <CheckCircle className="w-6 h-6 text-success" strokeWidth={1.75} />
                   </div>
                   <div className="flex-1">
-                    <div className="font-medium text-foreground">Claude API Configured</div>
-                    <div className="text-sm text-muted-foreground">
+                    <div className="font-semibold text-foreground">Claude API Configured</div>
+                    <div className="text-sm text-muted-foreground/70">
                       Using {claudeStatus.model || 'Claude Sonnet'}
                     </div>
                   </div>
                 </div>
                 {sessionUsage.requestCount > 0 && (
                   <>
-                    <Separator className="my-4" />
-                    <div className="space-y-2">
-                      <div className="text-xs font-medium text-muted-foreground uppercase">
+                    <div className="h-px bg-border/20 my-5" />
+                    <div className="space-y-3">
+                      <div className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-widest">
                         Session Usage
                       </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Requests</span>
-                        <span className="text-foreground">{sessionUsage.requestCount}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Input Tokens</span>
-                        <span className="text-foreground">{sessionUsage.totalInputTokens.toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Output Tokens</span>
-                        <span className="text-foreground">{sessionUsage.totalOutputTokens.toLocaleString()}</span>
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="glass-subtle rounded-xl p-3 border border-border/20 text-center">
+                          <div className="text-2xl font-bold text-primary tabular-nums">
+                            {sessionUsage.requestCount}
+                          </div>
+                          <div className="text-[10px] text-muted-foreground/60 uppercase tracking-wide">Requests</div>
+                        </div>
+                        <div className="glass-subtle rounded-xl p-3 border border-border/20 text-center">
+                          <div className="text-2xl font-bold text-foreground tabular-nums">
+                            {(sessionUsage.totalInputTokens / 1000).toFixed(1)}k
+                          </div>
+                          <div className="text-[10px] text-muted-foreground/60 uppercase tracking-wide">Input</div>
+                        </div>
+                        <div className="glass-subtle rounded-xl p-3 border border-border/20 text-center">
+                          <div className="text-2xl font-bold text-foreground tabular-nums">
+                            {(sessionUsage.totalOutputTokens / 1000).toFixed(1)}k
+                          </div>
+                          <div className="text-[10px] text-muted-foreground/60 uppercase tracking-wide">Output</div>
+                        </div>
                       </div>
                     </div>
                   </>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </motion.div>
           ) : (
-            <Card className="border-warning/30 bg-warning/5">
-              <CardContent className="p-5">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-warning/20 flex items-center justify-center">
-                    <WarningIcon className="w-5 h-5 text-warning" />
+            <motion.div
+              className={cn(
+                'glass rounded-xl border border-warning/30 overflow-hidden',
+                'shadow-[0_0_24px_-8px_hsl(var(--warning)/0.3)]'
+              )}
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+            >
+              <div className="p-5">
+                <div className="flex items-center gap-4">
+                  <div className={cn(
+                    'w-12 h-12 rounded-full flex items-center justify-center',
+                    'bg-warning/15 border border-warning/30'
+                  )}>
+                    <AlertTriangle className="w-6 h-6 text-warning" strokeWidth={1.75} />
                   </div>
                   <div className="flex-1">
-                    <div className="font-medium text-foreground">Claude API Not Configured</div>
-                    <div className="text-sm text-muted-foreground">
+                    <div className="font-semibold text-foreground">Claude API Not Configured</div>
+                    <div className="text-sm text-muted-foreground/70">
                       {claudeStatus?.error || 'API key not set'}
                     </div>
                   </div>
                 </div>
-                <Separator className="my-4" />
+                <div className="h-px bg-border/20 my-5" />
                 <div className="space-y-3">
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-sm text-muted-foreground/70">
                     To enable cloud AI features, set your API key:
                   </div>
-                  <ol className="text-sm text-muted-foreground list-decimal list-inside space-y-1">
-                    <li>
-                      Get an API key from{' '}
-                      <a
-                        href="https://console.anthropic.com"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:underline inline-flex items-center gap-1"
-                      >
-                        console.anthropic.com
-                        <ExternalLinkIcon className="w-3 h-3" />
-                      </a>
+                  <ol className="text-sm text-muted-foreground/70 space-y-2">
+                    <li className="flex items-start gap-2">
+                      <span className={cn(
+                        'flex-shrink-0 w-5 h-5 flex items-center justify-center rounded-full text-xs font-medium mt-0.5',
+                        'bg-primary/10 text-primary border border-primary/20'
+                      )}>1</span>
+                      <span>
+                        Get an API key from{' '}
+                        <a
+                          href="https://console.anthropic.com"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary hover:underline inline-flex items-center gap-1"
+                        >
+                          console.anthropic.com
+                          <ExternalLink className="w-3 h-3" strokeWidth={2} />
+                        </a>
+                      </span>
                     </li>
-                    <li>Set ANTHROPIC_API_KEY environment variable</li>
-                    <li>Restart Opta</li>
+                    <li className="flex items-start gap-2">
+                      <span className={cn(
+                        'flex-shrink-0 w-5 h-5 flex items-center justify-center rounded-full text-xs font-medium mt-0.5',
+                        'bg-primary/10 text-primary border border-primary/20'
+                      )}>2</span>
+                      <span>Set ANTHROPIC_API_KEY environment variable</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className={cn(
+                        'flex-shrink-0 w-5 h-5 flex items-center justify-center rounded-full text-xs font-medium mt-0.5',
+                        'bg-primary/10 text-primary border border-primary/20'
+                      )}>3</span>
+                      <span>Restart Opta</span>
+                    </li>
                   </ol>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </motion.div>
           )}
-        </section>
+        </motion.section>
 
         {/* Privacy Section */}
-        <section className="space-y-3">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+        <motion.section
+          className="space-y-4"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <h2 className="text-xs font-semibold text-muted-foreground/60 uppercase tracking-widest">
             Privacy
           </h2>
 
-          <Card className="border-success/30 bg-success/5">
-            <CardContent className="p-5">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-success/20 flex items-center justify-center">
-                  <ShieldIcon className="w-5 h-5 text-success" />
-                </div>
-                <div className="flex-1">
-                  <div className="font-medium text-foreground">Your Data is Protected</div>
-                  <div className="text-sm text-muted-foreground">
-                    Sensitive information is anonymized before cloud transmission
-                  </div>
+          <motion.div
+            className={cn(
+              'glass rounded-xl border border-success/30 p-5',
+              'shadow-[0_0_24px_-8px_hsl(var(--success)/0.3)]'
+            )}
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+          >
+            <div className="flex items-center gap-4">
+              <div className={cn(
+                'w-12 h-12 rounded-full flex items-center justify-center',
+                'bg-success/15 border border-success/30'
+              )}>
+                <Shield className="w-6 h-6 text-success" strokeWidth={1.75} />
+              </div>
+              <div className="flex-1">
+                <div className="font-semibold text-foreground">Your Data is Protected</div>
+                <div className="text-sm text-muted-foreground/70">
+                  Sensitive information is anonymized before cloud transmission
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </motion.div>
 
-          <Card>
-            <CardContent className="p-5 space-y-4">
+          <div className="glass rounded-xl border border-border/30 overflow-hidden">
+            <div className="p-5 space-y-5">
               {/* Privacy model explanation */}
               <div>
-                <div className="text-sm font-medium text-foreground mb-2">How Opta Protects Your Privacy</div>
-                <div className="space-y-3 text-sm text-muted-foreground">
+                <div className="text-sm font-semibold text-foreground mb-3">How Opta Protects Your Privacy</div>
+                <div className="space-y-3 text-sm text-muted-foreground/70">
                   <div className="flex items-start gap-3">
-                    <PrivacyIndicator backend="local" className="flex-shrink-0 mt-0.5" />
+                    <div className={cn(
+                      'w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5',
+                      'bg-success/10 border border-success/20'
+                    )}>
+                      <Monitor className="w-4 h-4 text-success" strokeWidth={1.75} />
+                    </div>
                     <span>
                       <strong className="text-foreground">Local queries</strong> stay completely on your device. No data is transmitted.
                     </span>
                   </div>
                   <div className="flex items-start gap-3">
-                    <PrivacyIndicator backend="cloud" anonymizedFields={[]} className="flex-shrink-0 mt-0.5" />
+                    <div className={cn(
+                      'w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5',
+                      'bg-primary/10 border border-primary/20'
+                    )}>
+                      <Cloud className="w-4 h-4 text-primary" strokeWidth={1.75} />
+                    </div>
                     <span>
                       <strong className="text-foreground">Cloud queries</strong> have sensitive data automatically removed before transmission.
                     </span>
@@ -291,37 +352,37 @@ function Settings() {
                 </div>
               </div>
 
-              <Separator />
+              <div className="h-px bg-border/20" />
 
               {/* Sample anonymization */}
               <div>
-                <div className="text-sm font-medium text-foreground mb-2">What Gets Anonymized</div>
-                <div className="text-sm text-muted-foreground space-y-1.5">
+                <div className="text-sm font-semibold text-foreground mb-3">What Gets Anonymized</div>
+                <div className="text-sm text-muted-foreground/70 space-y-2">
                   <div className="flex items-center gap-2">
-                    <code className="px-1.5 py-0.5 bg-muted rounded text-xs">/Users/john/</code>
-                    <span className="text-muted-foreground/60">-&gt;</span>
-                    <code className="px-1.5 py-0.5 bg-muted rounded text-xs">/Users/[USER]/</code>
+                    <code className="px-2 py-1 glass-subtle rounded-lg text-xs border border-border/20">/Users/john/</code>
+                    <span className="text-muted-foreground/40">-&gt;</span>
+                    <code className="px-2 py-1 glass-subtle rounded-lg text-xs border border-border/20">/Users/[USER]/</code>
                   </div>
                   <div className="flex items-center gap-2">
-                    <code className="px-1.5 py-0.5 bg-muted rounded text-xs">192.168.1.100</code>
-                    <span className="text-muted-foreground/60">-&gt;</span>
-                    <code className="px-1.5 py-0.5 bg-muted rounded text-xs">[IP_ADDR]</code>
+                    <code className="px-2 py-1 glass-subtle rounded-lg text-xs border border-border/20">192.168.1.100</code>
+                    <span className="text-muted-foreground/40">-&gt;</span>
+                    <code className="px-2 py-1 glass-subtle rounded-lg text-xs border border-border/20">[IP_ADDR]</code>
                   </div>
                   <div className="flex items-center gap-2">
-                    <code className="px-1.5 py-0.5 bg-muted rounded text-xs">AA:BB:CC:DD:EE:FF</code>
-                    <span className="text-muted-foreground/60">-&gt;</span>
-                    <code className="px-1.5 py-0.5 bg-muted rounded text-xs">[MAC_ADDR]</code>
+                    <code className="px-2 py-1 glass-subtle rounded-lg text-xs border border-border/20">AA:BB:CC:DD:EE:FF</code>
+                    <span className="text-muted-foreground/40">-&gt;</span>
+                    <code className="px-2 py-1 glass-subtle rounded-lg text-xs border border-border/20">[MAC_ADDR]</code>
                   </div>
                 </div>
               </div>
 
-              <Separator />
+              <div className="h-px bg-border/20" />
 
               {/* Privacy indicator toggle */}
               <div className="flex justify-between items-center gap-4">
                 <div className="flex flex-col gap-1">
-                  <span className="text-sm font-medium text-foreground">Show Privacy Indicators</span>
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-sm font-semibold text-foreground">Show Privacy Indicators</span>
+                  <span className="text-xs text-muted-foreground/60">
                     Display privacy badges on chat messages
                   </span>
                 </div>
@@ -330,61 +391,161 @@ function Settings() {
                   onCheckedChange={setShowPrivacyIndicators}
                 />
               </div>
-            </CardContent>
-          </Card>
-        </section>
+            </div>
+          </div>
+        </motion.section>
+
+        {/* Your Profile Section */}
+        <motion.section
+          className="space-y-4"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35 }}
+        >
+          <div className="flex items-center gap-2">
+            <User className="w-5 h-5 text-primary" strokeWidth={1.75} />
+            <h2 className="text-lg font-semibold">Your Profile</h2>
+          </div>
+          <p className="text-sm text-muted-foreground/70">
+            View and manage all data Opta has stored about you
+          </p>
+
+          <ProfileViewer
+            profile={profile}
+            onUpdate={updateProfile}
+            onDelete={() => setShowDeleteModal(true)}
+            loading={profileLoading}
+          />
+        </motion.section>
+
+        <DataDeletionModal
+          open={showDeleteModal}
+          onOpenChange={setShowDeleteModal}
+          onConfirm={handleDeleteProfile}
+          loading={deleteLoading}
+        />
 
         {/* Appearance Section */}
-        <section className="space-y-3">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+        <motion.section
+          className="space-y-4"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+        >
+          <h2 className="text-xs font-semibold text-muted-foreground/60 uppercase tracking-widest">
             Appearance
           </h2>
-          <Card>
-            <CardContent className="p-5">
-              <div className="flex justify-between items-center gap-4">
-                <div className="flex flex-col gap-1">
-                  <span className="text-sm font-medium text-foreground">Theme</span>
-                  <span className="text-xs text-muted-foreground">
+          <div className="glass rounded-xl border border-border/30 p-5">
+            <div className="flex justify-between items-center gap-4">
+              <div className="flex items-center gap-3">
+                <div className={cn(
+                  'w-10 h-10 rounded-lg flex items-center justify-center',
+                  'bg-primary/10 border border-primary/20'
+                )}>
+                  <Palette className="w-5 h-5 text-primary" strokeWidth={1.75} />
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-sm font-semibold text-foreground">Theme</span>
+                  <span className="text-xs text-muted-foreground/60">
                     Customize the app appearance
                   </span>
                 </div>
-                <select
-                  className="px-4 py-2 text-sm bg-secondary text-foreground border border-border rounded-lg cursor-not-allowed opacity-50"
-                  disabled
-                >
-                  <option>Dark (Default)</option>
-                  <option>Light</option>
-                  <option>System</option>
-                </select>
               </div>
-            </CardContent>
-          </Card>
-        </section>
+              <select
+                className={cn(
+                  'px-4 py-2 text-sm rounded-xl',
+                  'glass-subtle border border-border/30',
+                  'cursor-not-allowed opacity-50'
+                )}
+                disabled
+              >
+                <option>Dark (Default)</option>
+                <option>Light</option>
+                <option>System</option>
+              </select>
+            </div>
+          </div>
+        </motion.section>
+
+        {/* Platform Section */}
+        <motion.section
+          className="space-y-4"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.45 }}
+        >
+          <div className="flex items-center gap-2">
+            <h2 className="text-xs font-semibold text-muted-foreground/60 uppercase tracking-widest">
+              Platform
+            </h2>
+            <div className={cn(
+              'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium',
+              'bg-primary/15 text-primary border border-primary/30'
+            )}>
+              <Cpu className="w-3 h-3 mr-1" strokeWidth={2} />
+              Native
+            </div>
+          </div>
+
+          <PlatformIndicator expanded className="w-full" />
+
+          <div className="glass rounded-xl border border-border/30 p-5">
+            <div className="text-sm text-muted-foreground/70">
+              <p className="mb-3">
+                Opta automatically detects and optimizes for your platform, providing native integration
+                and performance tuning specific to your operating system.
+              </p>
+              <p className="text-xs text-muted-foreground/50">
+                Platform-specific features are enabled at launch and run in the background to ensure
+                optimal performance without requiring any configuration.
+              </p>
+            </div>
+          </div>
+        </motion.section>
 
         {/* About Section */}
-        <section className="space-y-3">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+        <motion.section
+          className="space-y-4"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+        >
+          <h2 className="text-xs font-semibold text-muted-foreground/60 uppercase tracking-widest">
             About
           </h2>
-          <Card>
-            <CardContent className="p-5 space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Version</span>
-                <span className="text-sm font-medium text-foreground">0.1.0</span>
+          <div className="glass rounded-xl border border-border/30 overflow-hidden">
+            <div className="p-5">
+              <div className="flex items-center gap-3 mb-5">
+                <div className={cn(
+                  'w-10 h-10 rounded-lg flex items-center justify-center',
+                  'bg-primary/10 border border-primary/20'
+                )}>
+                  <Info className="w-5 h-5 text-primary" strokeWidth={1.75} />
+                </div>
+                <div>
+                  <div className="font-bold text-lg bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                    Opta
+                  </div>
+                  <div className="text-xs text-muted-foreground/60">PC Optimization Suite</div>
+                </div>
               </div>
-              <Separator />
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Build</span>
-                <span className="text-sm font-medium text-foreground">Foundation</span>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="glass-subtle rounded-xl p-3 border border-border/20 text-center">
+                  <div className="text-sm font-semibold text-foreground">0.1.0</div>
+                  <div className="text-[10px] text-muted-foreground/60 uppercase tracking-wide">Version</div>
+                </div>
+                <div className="glass-subtle rounded-xl p-3 border border-border/20 text-center">
+                  <div className="text-sm font-semibold text-foreground">Foundation</div>
+                  <div className="text-[10px] text-muted-foreground/60 uppercase tracking-wide">Build</div>
+                </div>
+                <div className="glass-subtle rounded-xl p-3 border border-border/20 text-center">
+                  <div className="text-sm font-semibold text-foreground">Tauri v2</div>
+                  <div className="text-[10px] text-muted-foreground/60 uppercase tracking-wide">Platform</div>
+                </div>
               </div>
-              <Separator />
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Platform</span>
-                <span className="text-sm font-medium text-foreground">Tauri v2</span>
-              </div>
-            </CardContent>
-          </Card>
-        </section>
+            </div>
+          </div>
+        </motion.section>
       </div>
     </div>
   );
