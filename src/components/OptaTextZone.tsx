@@ -6,6 +6,7 @@
  * understanding what Opta is doing.
  */
 
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { cn } from '@/lib/utils';
@@ -28,9 +29,32 @@ export interface OptaTextZoneProps {
 
 /**
  * Animated counter component for satisfying number transitions.
+ * Counts up from 0 to the target value with easing.
  */
-function CountUp({ end, className }: { end: number; className?: string }) {
-  // Use motion value for smooth animation
+function CountUp({ end, className, duration = 500 }: { end: number; className?: string; duration?: number }) {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    // Reset to 0 when end value changes
+    setCount(0);
+
+    const steps = 20;
+    const increment = end / steps;
+    let current = 0;
+
+    const timer = setInterval(() => {
+      current += increment;
+      if (current >= end) {
+        setCount(end);
+        clearInterval(timer);
+      } else {
+        setCount(Math.round(current));
+      }
+    }, duration / steps);
+
+    return () => clearInterval(timer);
+  }, [end, duration]);
+
   return (
     <motion.span
       key={end}
@@ -39,7 +63,7 @@ function CountUp({ end, className }: { end: number; className?: string }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ type: 'spring', stiffness: 200, damping: 25 }}
     >
-      {end}
+      {count}
     </motion.span>
   );
 }
