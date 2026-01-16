@@ -11,6 +11,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useRadialNav } from '@/contexts/RadialNavContext';
 import { RadialNavItem } from './RadialNavItem';
+import { RadialNavCenter } from './RadialNavCenter';
 import { smoothOut } from '@/lib/animations';
 
 /**
@@ -183,21 +184,8 @@ export function RadialNav({ activePage, onNavigate }: RadialNavProps) {
             animate="visible"
             exit="exit"
           >
-            {/* Center placeholder for RadialNavCenter (Phase 2) */}
-            <div
-              className={cn(
-                'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2',
-                'w-24 h-24 rounded-full',
-                'bg-[#05030a]/90 backdrop-blur-2xl',
-                'border border-white/[0.08]',
-                'shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]',
-                'flex items-center justify-center'
-              )}
-            >
-              <span className="text-xl font-bold bg-gradient-to-br from-white via-white/95 to-white/70 bg-clip-text text-transparent">
-                Opta
-              </span>
-            </div>
+            {/* Center Opta text with semantic color morphing */}
+            <RadialNavCenter />
 
             {/* Navigation Items */}
             {navItems.map((item, index) => (
