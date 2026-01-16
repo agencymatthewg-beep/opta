@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils';
 import type { DetectedGame, GameOptimization } from '../types/games';
 import type { Recommendation } from '../types/profile';
 import type { LaunchConfig } from '../types/launcher';
-import { Gamepad2, RefreshCw, X, AlertCircle, Play, FolderOpen, Hash } from 'lucide-react';
+import { Gamepad2, RefreshCw, X, AlertCircle, Play, FolderOpen, Hash, ChevronLeft } from 'lucide-react';
 import { LearnModeExplanation } from '../components/LearnModeExplanation';
 import {
   GpuPipelineViz,
@@ -114,6 +114,23 @@ function GameDetailPanel({
     >
       {/* Header */}
       <div className="p-4 border-b border-border/20">
+        {/* Mobile back button - visible only on mobile */}
+        <motion.div
+          className="lg:hidden mb-3"
+          initial={{ opacity: 0, x: -8 }}
+          animate={{ opacity: 1, x: 0 }}
+        >
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onClose}
+            className="gap-1 -ml-2 glass-subtle rounded-xl border-border/20 hover:bg-card/60"
+          >
+            <ChevronLeft className="w-4 h-4" strokeWidth={1.75} />
+            Back to Games
+          </Button>
+        </motion.div>
+
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <h2 className="text-xl font-semibold text-foreground truncate">
@@ -354,6 +371,21 @@ function Games() {
       // Silently fail if localStorage is unavailable
     }
   }, [dismissedRecommendations]);
+
+  // Retry loading state for error recovery
+  const [retryLoading, setRetryLoading] = useState(false);
+
+  // Handle retry with proper loading state management
+  const handleRetry = async () => {
+    setRetryLoading(true);
+    try {
+      await refresh();
+    } catch {
+      // Error already handled by useGames hook
+    } finally {
+      setRetryLoading(false); // Always reset loading state
+    }
+  };
 
   // Set of game IDs that have optimizations available
   const gamesWithOptimizations = useMemo(() => {
