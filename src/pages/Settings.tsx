@@ -36,7 +36,7 @@ function Settings() {
   const { status: claudeStatus, loading: claudeLoading, sessionUsage } = useClaude();
   const { profile, loading: profileLoading, updateProfile, deleteProfile } = useUserProfile();
   const { isInvestigationMode, setInvestigationMode } = useInvestigationMode();
-  const { level: expertiseLevel, confidence: expertiseConfidence, isManualOverride, setManualLevel } = useExpertise();
+  const { level: expertiseLevel, confidence: expertiseConfidence, isManualOverride, setManualLevel, recordSignal } = useExpertise();
   const [acknowledgedIds, setAcknowledgedIds] = useState<Set<string>>(new Set());
   const [showPrivacyIndicators, setShowPrivacyIndicators] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -50,6 +50,14 @@ function Settings() {
 
   const handleDismiss = (toolId: string) => {
     setAcknowledgedIds((prev) => new Set([...prev, toolId]));
+  };
+
+  // Track when user toggles Investigation Mode (indicates power user behavior)
+  const handleInvestigationModeChange = (enabled: boolean) => {
+    setInvestigationMode(enabled);
+    if (enabled) {
+      recordSignal('uses_investigation_mode', 100);
+    }
   };
 
   const handleLearnMore = (toolId: string) => {
@@ -480,7 +488,7 @@ function Settings() {
                 </div>
                 <Switch
                   checked={isInvestigationMode}
-                  onCheckedChange={setInvestigationMode}
+                  onCheckedChange={handleInvestigationModeChange}
                 />
               </div>
             </div>

@@ -7,6 +7,8 @@ import { pageVariants } from './lib/animations';
 import { LearnModeProvider } from './components/LearnModeContext';
 import { LearnModeToggle } from './components/LearnModeToggle';
 import { InvestigationModeProvider } from './components/InvestigationMode';
+import { ExpertiseProvider } from './components/ExpertiseContext';
+import { ExpertiseTracking } from './components/ExpertiseTracking';
 
 // Lazy load pages for better initial load performance
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -135,45 +137,50 @@ function App() {
   };
 
   return (
-    <LearnModeProvider>
-      <InvestigationModeProvider>
-        <div className="dark">
-          {/* Immersive animated background */}
-          <Background />
+    <ExpertiseProvider>
+      <LearnModeProvider>
+        <InvestigationModeProvider>
+          <div className="dark">
+            {/* Expertise signal tracking (session, shortcuts) */}
+            <ExpertiseTracking />
 
-          {/* Main app layout */}
-          <Layout activePage={activePage} onNavigate={setActivePage}>
-            <AnimatePresence mode="wait">
-              {renderPage()}
+            {/* Immersive animated background */}
+            <Background />
+
+            {/* Main app layout */}
+            <Layout activePage={activePage} onNavigate={setActivePage}>
+              <AnimatePresence mode="wait">
+                {renderPage()}
+              </AnimatePresence>
+            </Layout>
+
+            {/* Learn Mode toggle - always visible */}
+            <LearnModeToggle />
+
+            {/* Platform onboarding (first) */}
+            <AnimatePresence>
+              {showPlatformOnboarding && (
+                <Suspense fallback={null}>
+                  <PlatformOnboarding
+                    onComplete={handlePlatformOnboardingComplete}
+                    onSkip={handlePlatformOnboardingSkip}
+                  />
+                </Suspense>
+              )}
             </AnimatePresence>
-          </Layout>
 
-          {/* Learn Mode toggle - always visible */}
-          <LearnModeToggle />
-
-          {/* Platform onboarding (first) */}
-          <AnimatePresence>
-            {showPlatformOnboarding && (
-              <Suspense fallback={null}>
-                <PlatformOnboarding
-                  onComplete={handlePlatformOnboardingComplete}
-                  onSkip={handlePlatformOnboardingSkip}
-                />
-              </Suspense>
-            )}
-          </AnimatePresence>
-
-          {/* Preferences onboarding (second) */}
-          <AnimatePresence>
-            {showPreferencesOnboarding && (
-              <Suspense fallback={null}>
-                <Onboarding onComplete={handlePreferencesComplete} />
-              </Suspense>
-            )}
-          </AnimatePresence>
-        </div>
-      </InvestigationModeProvider>
-    </LearnModeProvider>
+            {/* Preferences onboarding (second) */}
+            <AnimatePresence>
+              {showPreferencesOnboarding && (
+                <Suspense fallback={null}>
+                  <Onboarding onComplete={handlePreferencesComplete} />
+                </Suspense>
+              )}
+            </AnimatePresence>
+          </div>
+        </InvestigationModeProvider>
+      </LearnModeProvider>
+    </ExpertiseProvider>
   );
 }
 
