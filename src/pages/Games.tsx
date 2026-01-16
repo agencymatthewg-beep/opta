@@ -337,7 +337,7 @@ function Games() {
   const { launchGame, launching, launchingGame, clearError } = useLauncher();
   const { getConfigForGame, setGameOverride } = useLaunchPreferences();
   const { safeToKillCount, estimatedMemorySavingsMb, refresh: refreshStealthEstimate } = useStealthModeEstimate();
-  const { session, startSession } = useGameSessionContext();
+  const { session, startSession, handleStealthModeResult, setOptimizationsApplied } = useGameSessionContext();
 
   const [selectedGame, setSelectedGame] = useState<DetectedGame | null>(null);
   const [closingGame, setClosingGame] = useState<DetectedGame | null>(null);
@@ -547,7 +547,16 @@ function Games() {
   const handleLaunch = async (config: LaunchConfig) => {
     if (!gameToLaunch) return;
 
-    const result = await launchGame(gameToLaunch, config);
+    const result = await launchGame(gameToLaunch, config, {
+      // Pass stealth mode result to session tracking
+      onStealthModeComplete: (stealthResult) => {
+        handleStealthModeResult(stealthResult);
+      },
+      // Pass optimization count to session tracking
+      onOptimizationsApplied: (count) => {
+        setOptimizationsApplied(count);
+      },
+    });
 
     if (result.success) {
       // Save launch preferences for this game
@@ -556,7 +565,7 @@ function Games() {
       handleCloseLaunchModal();
       // Start session tracking if track session is enabled
       if (config.trackSession) {
-        startSession(gameToLaunch);
+        startSession(gameToLaunch, config);
       }
     }
     // If failed, modal stays open and shows error state via launching prop
