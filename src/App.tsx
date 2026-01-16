@@ -10,6 +10,7 @@ import { LearnModeToggle } from './components/LearnModeToggle';
 import { InvestigationModeProvider } from './components/InvestigationMode';
 import { ExpertiseProvider } from './components/ExpertiseContext';
 import { ExpertiseTracking } from './components/ExpertiseTracking';
+import { CommunicationStyleProvider } from './components/CommunicationStyleContext';
 import { GameSessionProvider, useGameSessionContext } from './components/GameSessionContext';
 import GameSessionTracker from './components/GameSessionTracker';
 import SessionSummaryModal from './components/SessionSummaryModal';
@@ -175,9 +176,10 @@ function App() {
   return (
     <ExpertiseProvider>
       <LearnModeProvider>
-        <InvestigationModeProvider>
-          <GameSessionProvider>
-            <div className="dark">
+        <CommunicationStyleProvider>
+          <InvestigationModeProvider>
+            <GameSessionProvider>
+              <div className="dark">
               {/* Expertise signal tracking (session, shortcuts) */}
               <ExpertiseTracking />
 
@@ -219,9 +221,10 @@ function App() {
                   </Suspense>
                 )}
               </AnimatePresence>
-            </div>
-          </GameSessionProvider>
-        </InvestigationModeProvider>
+              </div>
+            </GameSessionProvider>
+          </InvestigationModeProvider>
+        </CommunicationStyleProvider>
       </LearnModeProvider>
     </ExpertiseProvider>
   );
