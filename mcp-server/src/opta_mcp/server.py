@@ -708,6 +708,48 @@ async def list_tools() -> list[Tool]:
                 "required": ["optimization_id"],
             },
         ),
+        # Expertise Detection Tools
+        Tool(
+            name="get_expertise_profile",
+            description="Get current expertise profile with level, confidence, signals, and history",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+        ),
+        Tool(
+            name="record_expertise_signal",
+            description="Record a behavioral signal for expertise detection (e.g., shortcut usage, technical details expanded)",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "signal_name": {
+                        "type": "string",
+                        "description": "Signal name (e.g., 'uses_shortcuts', 'expands_technical_details')",
+                    },
+                    "value": {
+                        "type": "number",
+                        "description": "Signal value (0-100 for rates, raw numbers for counts)",
+                    },
+                },
+                "required": ["signal_name", "value"],
+            },
+        ),
+        Tool(
+            name="set_expertise_override",
+            description="Set or clear manual expertise level override",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "level": {
+                        "type": ["string", "null"],
+                        "description": "Expertise level ('simple', 'standard', 'power') or null to clear override",
+                    },
+                },
+                "required": [],
+            },
+        ),
     ]
 
 
@@ -970,6 +1012,19 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
         optimization_id = arguments.get("optimization_id", "")
         optimization_name = arguments.get("optimization_name", "Unknown Optimization")
         result = investigation.get_investigation_report(optimization_id, optimization_name)
+    # Expertise Detection Handlers
+    elif name == "get_expertise_profile":
+        from opta_mcp import expertise
+        result = expertise.get_expertise_profile()
+    elif name == "record_expertise_signal":
+        from opta_mcp import expertise
+        signal_name = arguments.get("signal_name", "")
+        value = arguments.get("value", 0)
+        result = expertise.record_signal(signal_name, int(value))
+    elif name == "set_expertise_override":
+        from opta_mcp import expertise
+        level = arguments.get("level")
+        result = expertise.set_manual_override(level)
     else:
         result = {"error": f"Unknown tool: {name}"}
 

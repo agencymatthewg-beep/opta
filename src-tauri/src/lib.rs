@@ -2,7 +2,9 @@ mod badges;
 mod benchmark;
 mod claude;
 mod conflicts;
+mod expertise;
 mod games;
+mod launcher;
 mod llm;
 mod optimizer;
 pub mod platform;
@@ -66,7 +68,15 @@ pub fn run() {
             profile::delete_user_profile,
             // Badges
             badges::check_badges,
-            badges::mark_badge_seen
+            badges::mark_badge_seen,
+            // Launcher
+            launcher::launch_game,
+            launcher::check_game_running,
+            launcher::get_game_process_names,
+            // Expertise Detection
+            expertise::get_expertise_profile,
+            expertise::record_expertise_signal,
+            expertise::set_expertise_override
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
