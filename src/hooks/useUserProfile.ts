@@ -7,7 +7,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
-import type { UserProfile, ProfileUpdate } from '../types/profile';
+import type { UserProfile, ProfileUpdate, RecommendationResponse } from '../types/profile';
 
 export interface UseUserProfileResult {
   /** Current user profile, null if not loaded */
@@ -24,6 +24,8 @@ export interface UseUserProfileResult {
   deleteProfile: () => Promise<boolean>;
   /** Refresh profile from storage */
   refresh: () => Promise<void>;
+  /** Get personalized recommendations for a game */
+  getRecommendations: (gameId: string, gameName: string) => Promise<RecommendationResponse>;
 }
 
 export function useUserProfile(): UseUserProfileResult {
@@ -85,6 +87,26 @@ export function useUserProfile(): UseUserProfileResult {
     await loadProfile();
   }, [loadProfile]);
 
+  const getRecommendations = useCallback(async (
+    gameId: string,
+    gameName: string
+  ): Promise<RecommendationResponse> => {
+    try {
+      const result = await invoke<RecommendationResponse>('get_recommendations', {
+        args: { gameId, gameName },
+      });
+      return result;
+    } catch (e) {
+      console.error('Failed to get recommendations:', e);
+      // Return empty response on error
+      return {
+        recommendations: [],
+        generatedAt: Date.now(),
+        patternCount: 0,
+      };
+    }
+  }, []);
+
   // Auto-load profile on mount
   useEffect(() => {
     loadProfile().catch((e) => {
@@ -101,6 +123,7 @@ export function useUserProfile(): UseUserProfileResult {
     updateProfile,
     deleteProfile,
     refresh,
+    getRecommendations,
   };
 }
 

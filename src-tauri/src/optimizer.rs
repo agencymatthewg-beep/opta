@@ -109,6 +109,17 @@ stats = get_choice_stats()
 print(json.dumps(stats))
 "#;
 
+const GET_RECOMMENDATIONS_SCRIPT: &str = r#"
+import sys
+import json
+sys.path.insert(0, 'mcp-server/src')
+from opta_mcp.patterns import get_recommendations_for_game
+
+args = json.loads(sys.argv[1])
+result = get_recommendations_for_game(args['gameId'], args['gameName'])
+print(json.dumps(result))
+"#;
+
 #[tauri::command]
 pub async fn apply_optimization(game_id: String) -> Result<OptimizationResult, String> {
     let output = Command::new("python3")
@@ -228,6 +239,36 @@ pub async fn get_choice_stats() -> Result<serde_json::Value, String> {
     let output = Command::new("python3")
         .arg("-c")
         .arg(GET_CHOICE_STATS_SCRIPT)
+        .current_dir(std::env::current_dir().map_err(|e| e.to_string())?)
+        .output()
+        .map_err(|e| format!("Failed to execute Python: {}", e))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("Python script failed: {}", stderr));
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    serde_json::from_str(&stdout)
+        .map_err(|e| format!("Failed to parse result: {} - Output: {}", e, stdout))
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GetRecommendationsArgs {
+    pub game_id: String,
+    pub game_name: String,
+}
+
+#[tauri::command]
+pub async fn get_recommendations(args: GetRecommendationsArgs) -> Result<serde_json::Value, String> {
+    let args_json = serde_json::to_string(&args)
+        .map_err(|e| format!("Failed to serialize args: {}", e))?;
+
+    let output = Command::new("python3")
+        .arg("-c")
+        .arg(GET_RECOMMENDATIONS_SCRIPT)
+        .arg(&args_json)
         .current_dir(std::env::current_dir().map_err(|e| e.to_string())?)
         .output()
         .map_err(|e| format!("Failed to execute Python: {}", e))?;

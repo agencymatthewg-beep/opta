@@ -46,6 +46,7 @@ pub fn run() {
             optimizer::record_optimization_choice,
             optimizer::get_user_patterns,
             optimizer::get_choice_stats,
+            optimizer::get_recommendations,
             benchmark::start_benchmark,
             benchmark::capture_benchmark_sample,
             benchmark::end_benchmark,
