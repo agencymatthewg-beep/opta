@@ -8,6 +8,7 @@ import { useUserProfile } from '../hooks/useUserProfile';
 import { useInvestigationMode } from '../components/InvestigationMode';
 import { useExpertise } from '../components/ExpertiseContext';
 import { useCommunicationStyle } from '../components/CommunicationStyleContext';
+import { PresetSelector } from '../components/PresetSelector';
 import ConflictCard from '../components/ConflictCard';
 import PlatformIndicator from '../components/PlatformIndicator';
 import { ProfileViewer } from '../components/ProfileViewer';
@@ -32,6 +33,7 @@ import {
   BookOpen,
   Zap,
   MessageSquare,
+  Sliders,
 } from 'lucide-react';
 import type { ExpertiseLevel } from '@/types/expertise';
 
@@ -421,12 +423,30 @@ function Settings() {
           </div>
         </motion.section>
 
+        {/* Optimization Presets Section */}
+        <motion.section
+          className="space-y-4"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.28 }}
+        >
+          <div className="flex items-center gap-2">
+            <Sliders className="w-5 h-5 text-primary" strokeWidth={1.75} />
+            <h2 className="text-lg font-semibold">Optimization Presets</h2>
+          </div>
+          <p className="text-sm text-muted-foreground/70">
+            Quick-apply optimization profiles for different scenarios.
+          </p>
+
+          <PresetSelector />
+        </motion.section>
+
         {/* Privacy Section */}
         <motion.section
           className="space-y-4"
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
+          transition={{ delay: 0.32 }}
         >
           <h2 className="text-xs font-semibold text-muted-foreground/60 uppercase tracking-widest">
             Privacy
@@ -559,7 +579,7 @@ function Settings() {
           className="space-y-4"
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.35 }}
+          transition={{ delay: 0.37 }}
         >
           <div className="flex items-center gap-2">
             <User className="w-5 h-5 text-primary" strokeWidth={1.75} />
@@ -589,7 +609,7 @@ function Settings() {
           className="space-y-4"
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
+          transition={{ delay: 0.42 }}
         >
           <h2 className="text-xs font-semibold text-muted-foreground/60 uppercase tracking-widest">
             Appearance
@@ -631,7 +651,7 @@ function Settings() {
           className="space-y-4"
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.45 }}
+          transition={{ delay: 0.47 }}
         >
           <div className="flex items-center gap-2">
             <h2 className="text-xs font-semibold text-muted-foreground/60 uppercase tracking-widest">
@@ -667,7 +687,7 @@ function Settings() {
           className="space-y-4"
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
+          transition={{ delay: 0.52 }}
         >
           <h2 className="text-xs font-semibold text-muted-foreground/60 uppercase tracking-widest">
             About
