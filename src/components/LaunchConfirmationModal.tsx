@@ -18,6 +18,8 @@ import {
   Shield,
   Activity,
   Loader2,
+  AlertCircle,
+  RefreshCw,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -35,6 +37,10 @@ export interface LaunchConfirmationModalProps {
   loading?: boolean;
   /** Initial config to use (from saved preferences) */
   initialConfig?: Partial<LaunchConfig>;
+  /** Error message to display when launch fails */
+  error?: string;
+  /** Callback when user clicks retry after error */
+  onRetry?: () => void;
 }
 
 interface PreLaunchActionProps {
@@ -99,6 +105,8 @@ function LaunchConfirmationModal({
   safeToKillCount,
   loading = false,
   initialConfig,
+  error,
+  onRetry,
 }: LaunchConfirmationModalProps) {
   const [config, setConfig] = useState<LaunchConfig>({
     applyOptimizations: initialConfig?.applyOptimizations ?? (pendingOptimizations > 0),
@@ -261,13 +269,50 @@ function LaunchConfirmationModal({
                 </div>
               </div>
 
+              {/* Error display */}
+              <AnimatePresence>
+                {error && (
+                  <motion.div
+                    className="px-6 pb-4"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                  >
+                    <div
+                      className={cn(
+                        'p-3 rounded-xl flex items-start gap-3',
+                        'bg-danger/10 border border-danger/30'
+                      )}
+                    >
+                      <AlertCircle className="w-4 h-4 text-danger shrink-0 mt-0.5" strokeWidth={2} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-danger font-medium">Launch Failed</p>
+                        <p className="text-xs text-danger/70 mt-0.5">{error}</p>
+                      </div>
+                      {onRetry && (
+                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={onRetry}
+                            className="h-7 px-2 text-xs gap-1.5 text-danger hover:text-danger hover:bg-danger/10"
+                          >
+                            <RefreshCw className="w-3 h-3" strokeWidth={2} />
+                            Retry
+                          </Button>
+                        </motion.div>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               {/* Footer */}
               <div className="px-6 py-4 border-t border-border/20 flex items-center justify-end gap-3">
                 <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                   <Button
                     variant="outline"
                     onClick={handleClose}
-                    disabled={loading}
                     className="glass-subtle rounded-xl border-border/30"
                   >
                     Cancel
