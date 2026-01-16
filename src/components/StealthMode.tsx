@@ -22,6 +22,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { Zap, CheckCircle, XCircle, Loader2, Sparkles } from 'lucide-react';
 import { LearnModeExplanation } from './LearnModeExplanation';
+import { useOptaTextZone } from './OptaTextZoneContext';
 
 type ModalState = 'closed' | 'confirm' | 'loading' | 'results';
 
@@ -39,6 +40,7 @@ function StealthMode({ onComplete }: StealthModeProps) {
   const [estimatedMemory, setEstimatedMemory] = useState<number>(0);
   const [result, setResult] = useState<StealthModeResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { showSuccess, showError: showTextZoneError, setMessage } = useOptaTextZone();
 
   // Fetch safe-to-kill processes when opening confirmation
   const fetchProcesses = useCallback(async () => {
@@ -72,15 +74,27 @@ function StealthMode({ onComplete }: StealthModeProps) {
   // Execute stealth mode
   const handleActivate = async () => {
     setModalState('loading');
+    setMessage('Activating Stealth Mode...');
     try {
       const stealthResult = await invoke<StealthModeResult>('stealth_mode');
       setResult(stealthResult);
       setModalState('results');
+
+      // Update text zone with success message
+      showSuccess('Freed up system resources', {
+        direction: 'up',
+        value: stealthResult.freed_memory_mb.toFixed(0),
+        label: 'MB freed',
+      });
+
       onComplete?.(stealthResult);
     } catch (err) {
       console.error('Stealth mode failed:', err);
       setError(String(err));
       setModalState('results');
+
+      // Update text zone with error message
+      showTextZoneError('Stealth Mode failed', 'Check permissions and try again');
     }
   };
 

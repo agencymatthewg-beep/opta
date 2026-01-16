@@ -18,6 +18,7 @@ import type { Recommendation } from '../types/profile';
 import type { LaunchConfig } from '../types/launcher';
 import { Gamepad2, RefreshCw, X, AlertCircle, Play, FolderOpen, Hash, ChevronLeft } from 'lucide-react';
 import { LearnModeExplanation } from '../components/LearnModeExplanation';
+import { useOptaTextZone } from '../components/OptaTextZoneContext';
 import {
   GpuPipelineViz,
   BeforeAfterDiff,
@@ -338,6 +339,7 @@ function Games() {
   const { getConfigForGame, setGameOverride } = useLaunchPreferences();
   const { safeToKillCount, estimatedMemorySavingsMb, refresh: refreshStealthEstimate } = useStealthModeEstimate();
   const { session, startSession, handleStealthModeResult, setOptimizationsApplied } = useGameSessionContext();
+  const { setMessage, showSuccess, clear: clearTextZone } = useOptaTextZone();
 
   const [selectedGame, setSelectedGame] = useState<DetectedGame | null>(null);
   const [closingGame, setClosingGame] = useState<DetectedGame | null>(null);
@@ -397,10 +399,14 @@ function Games() {
     if (!selectedGame) {
       setOptimization(null);
       setRecommendations([]);
+      clearTextZone();
       return;
     }
 
     let cancelled = false;
+
+    // Update text zone when selecting a game
+    setMessage(`Analyzing ${selectedGame.name}...`);
 
     const loadOptimization = async () => {
       setLoadingOptimization(true);
@@ -410,12 +416,26 @@ function Games() {
         const opt = await getGameOptimization(gameId);
         if (!cancelled) {
           // Only set if we got real optimization data (not generic)
-          setOptimization(opt.source !== 'generic' ? opt : null);
+          const hasOptimizations = opt.source !== 'generic';
+          setOptimization(hasOptimizations ? opt : null);
+
+          // Update text zone with results
+          if (hasOptimizations && opt.settings) {
+            const optimizationCount = Object.keys(opt.settings).length;
+            showSuccess(`Found ${optimizationCount} optimizations`, {
+              direction: 'up',
+              value: String(optimizationCount),
+              label: 'settings to apply',
+            });
+          } else {
+            setMessage(`${selectedGame.name} selected`, 'neutral', 'No optimizations available yet');
+          }
         }
       } catch (e) {
         console.error('Failed to load optimization:', e);
         if (!cancelled) {
           setOptimization(null);
+          setMessage(`${selectedGame.name} selected`, 'neutral', 'Could not load optimizations');
         }
       } finally {
         if (!cancelled) {
@@ -451,7 +471,7 @@ function Games() {
     loadOptimization();
     loadRecommendations();
     return () => { cancelled = true; };
-  }, [selectedGame, getGameOptimization, getRecommendations, dismissedRecommendations]);
+  }, [selectedGame, getGameOptimization, getRecommendations, dismissedRecommendations, setMessage, showSuccess, clearTextZone]);
 
   // Clear selected game if it's no longer in the list (with exit animation)
   useEffect(() => {
