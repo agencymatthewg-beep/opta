@@ -248,6 +248,303 @@ async def list_tools() -> list[Tool]:
                 "required": [],
             },
         ),
+        Tool(
+            name="detect_games",
+            description="Detect installed games across all supported launchers (Steam, Epic Games, GOG)",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+        ),
+        Tool(
+            name="get_game_info",
+            description="Get detailed information for a specific game by ID",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "game_id": {
+                        "type": "string",
+                        "description": "Game identifier (e.g., 'steam_730', 'epic_Fortnite')",
+                    },
+                },
+                "required": ["game_id"],
+            },
+        ),
+        Tool(
+            name="get_game_optimization",
+            description="Get optimization settings for a specific game from community database",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "game_id": {
+                        "type": "string",
+                        "description": "Game identifier (Steam app ID or 'steam_XXX' format)",
+                    },
+                },
+                "required": ["game_id"],
+            },
+        ),
+        Tool(
+            name="get_optimization_tips",
+            description="Get optimization tips - game-specific if game_id provided, otherwise generic tips",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "game_id": {
+                        "type": "string",
+                        "description": "Optional game identifier for game-specific tips",
+                    },
+                },
+                "required": [],
+            },
+        ),
+        Tool(
+            name="ai_optimize_game",
+            description="Generate AI-based optimization recommendations for a game based on system specs",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "game_name": {
+                        "type": "string",
+                        "description": "Name of the game to optimize",
+                    },
+                    "system_specs": {
+                        "type": "object",
+                        "description": "System specifications (cpu, gpu, memory info)",
+                    },
+                },
+                "required": ["game_name"],
+            },
+        ),
+        Tool(
+            name="apply_optimization",
+            description="Apply optimization settings to a game with automatic backup for rollback",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "game_id": {
+                        "type": "string",
+                        "description": "Game ID (e.g., '730' for CS2)",
+                    },
+                },
+                "required": ["game_id"],
+            },
+        ),
+        Tool(
+            name="revert_optimization",
+            description="Revert a game to its original settings before optimization",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "game_id": {
+                        "type": "string",
+                        "description": "Game ID to revert",
+                    },
+                },
+                "required": ["game_id"],
+            },
+        ),
+        Tool(
+            name="get_optimization_history",
+            description="Get optimization history for a specific game or all optimized games",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "game_id": {
+                        "type": "string",
+                        "description": "Optional game ID. Omit for all games summary.",
+                    },
+                },
+                "required": [],
+            },
+        ),
+        Tool(
+            name="start_benchmark",
+            description="Start a benchmark session to measure performance",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "game_id": {
+                        "type": "string",
+                        "description": "Game ID being benchmarked",
+                    },
+                    "game_name": {
+                        "type": "string",
+                        "description": "Game display name",
+                    },
+                    "phase": {
+                        "type": "string",
+                        "enum": ["before", "after"],
+                        "description": "Benchmark phase",
+                    },
+                },
+                "required": ["game_id", "game_name", "phase"],
+            },
+        ),
+        Tool(
+            name="capture_benchmark_sample",
+            description="Capture a single benchmark sample (call periodically during benchmark)",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "benchmark_id": {
+                        "type": "string",
+                        "description": "Active benchmark ID",
+                    },
+                },
+                "required": ["benchmark_id"],
+            },
+        ),
+        Tool(
+            name="end_benchmark",
+            description="End a benchmark session and get metrics",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "benchmark_id": {
+                        "type": "string",
+                        "description": "Benchmark ID to end",
+                    },
+                },
+                "required": ["benchmark_id"],
+            },
+        ),
+        Tool(
+            name="get_benchmark_results",
+            description="Get benchmark results for a game or all games",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "game_id": {
+                        "type": "string",
+                        "description": "Optional game ID",
+                    },
+                },
+                "required": [],
+            },
+        ),
+        Tool(
+            name="quick_benchmark",
+            description="Run a quick system benchmark without game context",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "duration_seconds": {
+                        "type": "integer",
+                        "description": "Benchmark duration (default 10)",
+                    },
+                },
+                "required": [],
+            },
+        ),
+        Tool(
+            name="calculate_score",
+            description="Calculate optimization score for a game based on optimization actions and benchmark improvements",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "game_id": {
+                        "type": "string",
+                        "description": "Game ID to calculate score for",
+                    },
+                    "game_name": {
+                        "type": "string",
+                        "description": "Optional game display name",
+                    },
+                },
+                "required": ["game_id"],
+            },
+        ),
+        Tool(
+            name="get_score",
+            description="Get the current optimization score for a game",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "game_id": {
+                        "type": "string",
+                        "description": "Game ID to get score for",
+                    },
+                },
+                "required": ["game_id"],
+            },
+        ),
+        Tool(
+            name="get_leaderboard",
+            description="Get leaderboard of all game optimization scores",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+        ),
+        Tool(
+            name="get_score_history",
+            description="Get score history over time for a game",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "game_id": {
+                        "type": "string",
+                        "description": "Game ID to get history for",
+                    },
+                },
+                "required": ["game_id"],
+            },
+        ),
+        Tool(
+            name="get_global_stats",
+            description="Get global scoring statistics across all optimized games",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+        ),
+        Tool(
+            name="get_user_profile",
+            description="Get user profile with preferences, hardware signature, and optimization statistics",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+        ),
+        Tool(
+            name="update_user_profile",
+            description="Update user preferences (userMode, optimizationDepth, communicationStyle)",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "userMode": {
+                        "type": "string",
+                        "enum": ["simple", "standard", "power"],
+                        "description": "UI complexity level",
+                    },
+                    "optimizationDepth": {
+                        "type": "string",
+                        "enum": ["efficient", "thorough", "optimised"],
+                        "description": "Analysis thoroughness level",
+                    },
+                    "communicationStyle": {
+                        "type": "string",
+                        "enum": ["informative", "concise"],
+                        "description": "AI response verbosity",
+                    },
+                },
+                "required": [],
+            },
+        ),
+        Tool(
+            name="delete_user_profile",
+            description="Delete all user profile data",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+        ),
     ]
 
 
@@ -314,6 +611,148 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
     elif name == "routing_stats":
         from opta_mcp import router
         result = router.get_routing_stats()
+    elif name == "detect_games":
+        from opta_mcp import games
+        result = games.detect_all_games()
+    elif name == "get_game_info":
+        from opta_mcp import games
+        game_id = arguments.get("game_id", "")
+        result = games.get_game_info(game_id)
+    elif name == "get_game_optimization":
+        from opta_mcp import game_settings
+        game_id = arguments.get("game_id", "")
+        optimization = game_settings.get_game_settings(game_id)
+        if optimization:
+            result = optimization
+        else:
+            # Return generic tips if game not in database
+            result = {
+                "name": "Unknown Game",
+                "settings": {},
+                "tips": game_settings.get_generic_optimization_tips(),
+                "source": "generic",
+                "confidence": "low"
+            }
+    elif name == "get_optimization_tips":
+        from opta_mcp import game_settings
+        game_id = arguments.get("game_id")
+        if game_id:
+            optimization = game_settings.get_game_settings(game_id)
+            if optimization:
+                result = {
+                    "tips": optimization.get("tips", []),
+                    "source": "database",
+                    "game_name": optimization.get("name")
+                }
+            else:
+                result = {
+                    "tips": game_settings.get_generic_optimization_tips(),
+                    "source": "generic"
+                }
+        else:
+            result = {
+                "tips": game_settings.get_generic_optimization_tips(),
+                "source": "generic"
+            }
+    elif name == "ai_optimize_game":
+        from opta_mcp import game_settings
+        from opta_mcp import telemetry
+        game_name = arguments.get("game_name", "Unknown")
+        system_specs = arguments.get("system_specs")
+        # If no specs provided, get current system telemetry
+        if not system_specs:
+            snapshot = telemetry.get_system_snapshot()
+            system_specs = {
+                "cpu": snapshot.get("cpu", {}),
+                "gpu": snapshot.get("gpu", {}),
+                "memory": snapshot.get("memory", {})
+            }
+        result = game_settings.generate_ai_recommendations(game_name, system_specs)
+    elif name == "apply_optimization":
+        from opta_mcp import optimizer
+        from opta_mcp import game_settings
+        from dataclasses import asdict
+        game_id = arguments.get("game_id", "")
+        optimization = game_settings.get_game_settings(game_id)
+        if not optimization:
+            optimization = {
+                "name": "Unknown Game",
+                "settings": {},
+                "tips": game_settings.get_generic_optimization_tips(),
+                "source": "generic"
+            }
+        opt_result = optimizer.apply_game_optimization(game_id, optimization)
+        result = asdict(opt_result)
+    elif name == "revert_optimization":
+        from opta_mcp import optimizer
+        from dataclasses import asdict
+        game_id = arguments.get("game_id", "")
+        opt_result = optimizer.revert_game_optimization(game_id)
+        result = asdict(opt_result)
+    elif name == "get_optimization_history":
+        from opta_mcp import optimizer
+        game_id = arguments.get("game_id")
+        if game_id:
+            result = optimizer.get_optimization_history(game_id)
+        else:
+            result = optimizer.get_all_optimized_games()
+    elif name == "start_benchmark":
+        from opta_mcp import benchmark
+        result = benchmark.start_benchmark(
+            arguments.get("game_id", ""),
+            arguments.get("game_name", "Unknown"),
+            arguments.get("phase", "before")
+        )
+    elif name == "capture_benchmark_sample":
+        from opta_mcp import benchmark
+        sample = benchmark.capture_sample(arguments.get("benchmark_id", ""))
+        result = sample or {"error": "Benchmark not found"}
+    elif name == "end_benchmark":
+        from opta_mcp import benchmark
+        metrics = benchmark.end_benchmark(arguments.get("benchmark_id", ""))
+        result = metrics or {"error": "Benchmark not found or insufficient samples"}
+    elif name == "get_benchmark_results":
+        from opta_mcp import benchmark
+        game_id = arguments.get("game_id")
+        if game_id:
+            result = benchmark.get_benchmark_pair(game_id) or []
+        else:
+            result = benchmark.get_all_benchmarks()
+    elif name == "quick_benchmark":
+        from opta_mcp import benchmark
+        duration = arguments.get("duration_seconds", 10)
+        result = benchmark.run_quick_benchmark(duration)
+    elif name == "calculate_score":
+        from opta_mcp import scoring
+        game_id = arguments.get("game_id", "")
+        game_name = arguments.get("game_name", "Unknown")
+        score = scoring.calculate_score(game_id, game_name)
+        result = score or {"error": "No optimization history found for this game"}
+    elif name == "get_score":
+        from opta_mcp import scoring
+        game_id = arguments.get("game_id", "")
+        score = scoring.get_score(game_id)
+        result = score or {"error": "No score found for this game"}
+    elif name == "get_leaderboard":
+        from opta_mcp import scoring
+        result = scoring.get_all_scores()
+    elif name == "get_score_history":
+        from opta_mcp import scoring
+        game_id = arguments.get("game_id", "")
+        result = scoring.get_score_history(game_id)
+    elif name == "get_global_stats":
+        from opta_mcp import scoring
+        result = scoring.get_global_stats()
+    elif name == "get_user_profile":
+        from opta_mcp import profile
+        result = profile.get_or_create_profile()
+    elif name == "update_user_profile":
+        from opta_mcp import profile
+        result = profile.update_profile(arguments)
+    elif name == "delete_user_profile":
+        from opta_mcp import profile
+        deleted = profile.delete_profile()
+        result = {"deleted": deleted}
     else:
         result = {"error": f"Unknown tool: {name}"}
 
