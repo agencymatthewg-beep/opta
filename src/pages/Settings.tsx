@@ -13,6 +13,8 @@ import ConflictCard from '../components/ConflictCard';
 import PlatformIndicator from '../components/PlatformIndicator';
 import { ProfileViewer } from '../components/ProfileViewer';
 import { DataDeletionModal } from '../components/DataDeletionModal';
+import { LearningSummary } from '../components/LearningSummary';
+import { EditablePreferences } from '../components/EditablePreferences';
 import { cn } from '@/lib/utils';
 import {
   Settings as SettingsIcon,
@@ -48,6 +50,7 @@ function Settings() {
   const [showPrivacyIndicators, setShowPrivacyIndicators] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [learningTab, setLearningTab] = useState<'summary' | 'preferences'>('summary');
 
   const expertiseOptions: { value: ExpertiseLevel; label: string; desc: string }[] = [
     { value: 'simple', label: 'Simple', desc: 'Plain language, safer options' },
@@ -423,12 +426,67 @@ function Settings() {
           </div>
         </motion.section>
 
-        {/* Optimization Presets Section */}
+        {/* What Opta Has Learned Section */}
         <motion.section
           className="space-y-4"
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.28 }}
+        >
+          <div className="flex items-center gap-2">
+            <Brain className="w-5 h-5 text-primary" strokeWidth={1.75} />
+            <h2 className="text-lg font-semibold">What Opta Has Learned</h2>
+          </div>
+          <p className="text-sm text-muted-foreground/70">
+            View and manage preferences Opta has learned from your usage.
+          </p>
+
+          {/* Tab switcher */}
+          <div className="flex gap-2">
+            <motion.button
+              onClick={() => setLearningTab('summary')}
+              className={cn(
+                'px-4 py-2 rounded-lg text-sm font-medium transition-all',
+                learningTab === 'summary'
+                  ? 'glass border border-primary/30 text-primary'
+                  : 'glass-subtle border border-border/30 text-muted-foreground hover:text-foreground'
+              )}
+              whileHover={{ y: -1 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              Summary
+            </motion.button>
+            <motion.button
+              onClick={() => setLearningTab('preferences')}
+              className={cn(
+                'px-4 py-2 rounded-lg text-sm font-medium transition-all',
+                learningTab === 'preferences'
+                  ? 'glass border border-primary/30 text-primary'
+                  : 'glass-subtle border border-border/30 text-muted-foreground hover:text-foreground'
+              )}
+              whileHover={{ y: -1 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              Preferences
+            </motion.button>
+          </div>
+
+          {/* Tab content */}
+          {learningTab === 'summary' ? (
+            <LearningSummary />
+          ) : (
+            <div className="glass rounded-xl p-4 border border-border/30">
+              <EditablePreferences />
+            </div>
+          )}
+        </motion.section>
+
+        {/* Optimization Presets Section */}
+        <motion.section
+          className="space-y-4"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.30 }}
         >
           <div className="flex items-center gap-2">
             <Sliders className="w-5 h-5 text-primary" strokeWidth={1.75} />
