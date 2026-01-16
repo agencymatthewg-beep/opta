@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-15)
 ## Current Position
 
 Phase: 8.1 of 10 (Adaptive Intelligence)
-Plan: 2 of 4 in current phase
+Plan: 3 of 4 in current phase
 Status: In progress
-Last activity: 2026-01-16 — Completed 08.1-02-PLAN.md
+Last activity: 2026-01-16 — Completed 08.1-04-PLAN.md
 
-Progress: ███████████████░░░░░ 72% (29/40 plans)
+Progress: ███████████████░░░░░ 75% (30/40 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 29
+- Total plans completed: 30
 - Average duration: 10 min
-- Total execution time: 4.7 hours
+- Total execution time: 4.8 hours
 
 **By Phase:**
 
@@ -36,10 +36,10 @@ Progress: ███████████████░░░░░ 72% (29/4
 | 6. Cloud LLM Integration | 3/3 | 9 min | 3 min |
 | 7. Game Detection | 3/3 | 9 min | 3 min |
 | 8. Optimization Engine | 4/4 | 12 min | 3 min |
-| 8.1 Adaptive Intelligence | 2/4 | 11 min | 5.5 min |
+| 8.1 Adaptive Intelligence | 3/4 | 16 min | 5.3 min |
 
 **Recent Trend:**
-- Last 5 plans: 3, 3, 3, 3, 8 min
+- Last 5 plans: 3, 3, 3, 8, 5 min
 - Trend: Fast execution with established patterns
 
 ## Accumulated Context
@@ -108,6 +108,8 @@ Progress: ███████████████░░░░░ 72% (29/4
 | 08.1-02 | Minimum 3 samples for patterns | Balances responsiveness with accuracy |
 | 08.1-02 | 70%/30% threshold for preference/aversion | Clear signal without being too strict |
 | 08.1-02 | Fire-and-forget choice recording | Non-blocking, never impacts UX |
+| 08.1-04 | Inline select elements | Used native HTML select with glass styling since shadcn Select not installed |
+| 08.1-04 | Profile section after Privacy | Logical flow: privacy info -> user data control |
 
 ### Deferred Issues
 
@@ -124,5 +126,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-16
-Stopped at: Completed 08.1-02-PLAN.md (Pattern learning engine)
+Stopped at: Completed 08.1-04-PLAN.md (Transparency panel)
 Resume file: None
