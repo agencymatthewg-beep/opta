@@ -308,3 +308,58 @@ a:hover {
 button {
   font-family: inherit;
 }
+
+/* ==========================================================================
+   macOS-Specific Polish
+   ========================================================================== */
+
+/* macOS vibrancy support - enhanced backdrop blur for Safari/WebKit */
+@supports (-webkit-backdrop-filter: blur(10px)) {
+  .glass {
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
+  }
+
+  .glass-subtle {
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+  }
+
+  .glass-strong {
+    -webkit-backdrop-filter: blur(32px);
+    backdrop-filter: blur(32px);
+  }
+}
+
+/* macOS window controls spacing - drag region for title bar */
+.titlebar-drag-region {
+  -webkit-app-region: drag;
+  height: 28px;
+}
+
+/* Make interactive elements non-draggable within drag region */
+.titlebar-drag-region button,
+.titlebar-drag-region a,
+.titlebar-drag-region input {
+  -webkit-app-region: no-drag;
+}
+
+/* Respect macOS reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-pulse-glow,
+  .animate-pulse-glow-success,
+  .animate-shimmer {
+    animation: none;
+  }
+}
+
+/* macOS rubber-band scrolling */
+html {
+  overscroll-behavior: auto;
+}
+
+/* Smooth scrolling momentum for trackpad */
+* {
+  -webkit-overflow-scrolling: touch;
+}
