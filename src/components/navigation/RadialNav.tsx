@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { useRadialNav } from '@/contexts/RadialNavContext';
 import { RadialNavItem } from './RadialNavItem';
 import { RadialNavCenter } from './RadialNavCenter';
+import { RadialHalo } from './RadialHalo';
 import { smoothOut } from '@/lib/animations';
 
 /**
@@ -100,6 +101,46 @@ const containerVariants = {
     },
   },
 };
+
+/**
+ * HaloCenter - Compact center element for the halo state
+ *
+ * Shows a minimized "O" with breathing animation, styled to match
+ * the obsidian glass aesthetic.
+ */
+function HaloCenter() {
+  return (
+    <motion.div
+      className={cn(
+        'w-20 h-20 rounded-full',
+        'bg-[#05030a]/90 backdrop-blur-2xl',
+        'border border-white/[0.08]',
+        'shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]',
+        'flex flex-col items-center justify-center'
+      )}
+      // Subtle breathing animation
+      animate={{
+        filter: [
+          'brightness(1) drop-shadow(0 0 15px rgba(255,255,255,0.08))',
+          'brightness(1.1) drop-shadow(0 0 25px rgba(255,255,255,0.15))',
+          'brightness(1) drop-shadow(0 0 15px rgba(255,255,255,0.08))',
+        ],
+      }}
+      transition={{
+        duration: 4,
+        repeat: Infinity,
+        ease: 'easeInOut',
+      }}
+    >
+      <span className="text-2xl font-bold bg-gradient-to-br from-white via-white/95 to-white/70 bg-clip-text text-transparent">
+        O
+      </span>
+      <span className="text-[8px] text-muted-foreground/50 uppercase tracking-[0.2em] mt-0.5">
+        pta
+      </span>
+    </motion.div>
+  );
+}
 
 export function RadialNav({ activePage, onNavigate }: RadialNavProps) {
   const {
@@ -213,33 +254,11 @@ export function RadialNav({ activePage, onNavigate }: RadialNavProps) {
           </motion.div>
         )}
 
-        {/* Halo state placeholder (Phase 3) */}
+        {/* Halo state - minimized ring with center */}
         {mode === 'halo' && (
-          <motion.div
-            className={cn(
-              'w-16 h-16 rounded-full',
-              'bg-[#05030a]/90 backdrop-blur-2xl',
-              'border border-white/[0.08]',
-              'shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]',
-              'flex items-center justify-center',
-              'cursor-pointer'
-            )}
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 1.2, opacity: 0 }}
-            transition={{ duration: 0.4, ease: smoothOut }}
-            whileHover={{
-              scale: 1.05,
-              borderColor: 'rgba(168, 85, 247, 0.3)',
-              boxShadow:
-                'inset 0 0 15px rgba(168, 85, 247, 0.1), 0 0 20px rgba(168, 85, 247, 0.25)',
-            }}
-            onClick={expand}
-          >
-            <span className="text-sm font-bold bg-gradient-to-br from-white via-white/95 to-white/70 bg-clip-text text-transparent">
-              O
-            </span>
-          </motion.div>
+          <RadialHalo onExpand={expand}>
+            <HaloCenter />
+          </RadialHalo>
         )}
       </AnimatePresence>
     </div>
