@@ -5,6 +5,7 @@ import { OptaScoreCard } from '@/components/OptaScoreCard';
 import { ScoreTimeline } from '@/components/ScoreTimeline';
 import { Leaderboard } from '@/components/Leaderboard';
 import { MilestoneBadges } from '@/components/MilestoneBadges';
+import { LearnModeExplanation } from '@/components/LearnModeExplanation';
 import { useScore } from '@/hooks/useScore';
 import type { FilterMode } from '@/components/HardwareTierFilter';
 import { Award, RefreshCw, Play } from 'lucide-react';
@@ -97,6 +98,15 @@ export function Score() {
           currentScore={optaScore.overall}
           playAnimation={playTimelapse}
         />
+
+        {/* Learn Mode Explanation for Timeline */}
+        <LearnModeExplanation
+          title="Score Timeline"
+          description="Track your optimization journey over time. Each point represents a snapshot after you applied optimizations."
+          details="Hit 'Replay Journey' to watch your progress animate. Score changes come from optimizing games, adjusting settings, and earning achievements."
+          type="info"
+          className="mt-4"
+        />
       </div>
 
       {/* Stats summary */}
@@ -128,16 +138,36 @@ export function Score() {
         className="grid grid-cols-1 lg:grid-cols-2 gap-6"
       >
         {/* Leaderboard */}
-        <Leaderboard
-          entries={leaderboard}
-          userRank={leaderboard.findIndex(e => e.score === optaScore.overall) + 1 || undefined}
-          userScore={optaScore.overall}
-          hardwareTier={optaScore.hardwareTier}
-          onFilterChange={handleFilterChange}
-        />
+        <div>
+          <Leaderboard
+            entries={leaderboard}
+            userRank={leaderboard.findIndex(e => e.score === optaScore.overall) + 1 || undefined}
+            userScore={optaScore.overall}
+            hardwareTier={optaScore.hardwareTier}
+            onFilterChange={handleFilterChange}
+          />
+
+          {/* Learn Mode Explanation for Leaderboard */}
+          <LearnModeExplanation
+            title="Fair Comparison"
+            description="The leaderboard groups users by hardware tier so you compete with similar systems. Filter to see global or tier-specific rankings."
+            type="tip"
+            className="mt-2"
+          />
+        </div>
 
         {/* Milestones */}
-        <MilestoneBadges />
+        <div>
+          <MilestoneBadges />
+
+          {/* Learn Mode Explanation for Milestones */}
+          <LearnModeExplanation
+            title="Milestone Badges"
+            description="Unlock badges as you reach optimization milestones. Each badge represents a significant achievement on your journey."
+            type="tip"
+            className="mt-2"
+          />
+        </div>
       </motion.div>
     </div>
   );

@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ScoreDimensions } from './ScoreDimensions';
 import { WowFactorsDisplay } from './WowFactorsDisplay';
+import { LearnModeExplanation } from './LearnModeExplanation';
 import type { OptaScore } from '@/types/scoring';
 import { Award, Share2, Download } from 'lucide-react';
 
@@ -71,12 +72,27 @@ export function OptaScoreCard({
       {/* Dimensions */}
       <div className="p-4">
         <ScoreDimensions dimensions={score.dimensions} compact={compact} />
+
+        {/* Learn Mode Explanation */}
+        <LearnModeExplanation
+          title="Understanding Your Score"
+          description="Your Opta Score reflects your system's optimization level compared to users with similar hardware."
+          details="Score is calculated from: Hardware Tier (matched with peers), Performance Efficiency (FPS vs settings), and Optimization Coverage (% of games optimized). Higher is better. Share to compare with friends!"
+          type="how-it-works"
+        />
       </div>
 
       {/* Wow Factors (not in compact mode) */}
       {!compact && (
         <div className="px-4 pb-4">
           <WowFactorsDisplay wowFactors={score.wowFactors} animate />
+
+          {/* Learn Mode Explanation for Wow Factors */}
+          <LearnModeExplanation
+            title="Wow Factors"
+            description="Bonus achievements that unlock as you optimize. These represent unique accomplishments like first optimization or reaching milestones."
+            type="tip"
+          />
         </div>
       )}
 
