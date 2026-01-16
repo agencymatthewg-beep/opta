@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-01-15)
 
 **Core value:** One tool to replace them all — eliminates chaos of multiple conflicting optimizers, detects conflicts, explains optimizations, delivers measurable gains.
-**Current focus:** Phase 11 — Launch Integration (v1.1 milestone)
+**Current focus:** Phase 11 — Foundation & Stability (v1.1 macOS Refinement)
 
 ## Current Position
 
-Phase: 11 of 15 (Launch Integration)
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-01-16 — Milestone v1.1 Integration & Windows created
+Phase: 11 of 18 (Foundation & Stability)
+Plan: 2 of 3 in current phase
+Status: In progress
+Last activity: 2026-01-16 — Completed 11-02-PLAN.md (Design System Compliance Audit)
 
-Progress: ░░░░░░░░░░░░░░░░░░░░ 0% (0/? plans in v1.1)
+Progress: █░░░░░░░░░░░░░░░░░░░ 6% (1/16 plans in v1.1)
 
 ## Performance Metrics
 
@@ -154,6 +154,8 @@ Progress: ░░░░░░░░░░░░░░░░░░░░ 0% (0/? p
 | 10-07 | Fire-and-forget signal recording | Never impact UI responsiveness for non-critical tracking |
 | 10-07 | ExpertiseTracking as invisible component | Clean separation of concerns, easy to test and maintain |
 | 10-07 | Manual override with 100% confidence | Respect explicit user choice completely |
+| 11-02 | Steam → primary, Epic → muted-foreground, GOG → accent | Visual distinction while maintaining design system compliance |
+| 11-02 | Glass-subtle for modal headers | Design system mandates glass effects over solid backgrounds |
 
 ### Deferred Issues
 
@@ -170,10 +172,13 @@ None yet.
 ## Roadmap Evolution
 
 - Milestone v1.1 created: Integration & Windows polish, 5 phases (Phase 11-15)
+- Milestone v1.1 restructured: macOS Refinement focus, Windows deferred to v2.0
+- v1.1 phases now: Foundation & Stability, UX Flow Polish, Core Features, Educational Enhancement, Performance & Launch
+- v2.0 created: Windows Platform, Social Features, Chess Integration (Phases 16-18)
 
 ## Session Continuity
 
 Last session: 2026-01-16
-Stopped at: Milestone v1.1 Integration & Windows initialization
+Stopped at: Completed 11-02-PLAN.md (Design System Compliance Audit)
 Resume file: None
-Next action: Plan Phase 11 (Launch Integration)
+Next action: Execute 11-03-PLAN.md (State persistence improvements)
