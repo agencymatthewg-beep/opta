@@ -4,6 +4,11 @@
 
 Opta transforms from an empty Tauri scaffold into a full-featured AI-powered PC optimization orchestrator. Built on three pillars—**Unified Optimization**, **Adaptive Intelligence**, and **Educational Empowerment**—the journey starts with core infrastructure, builds through system management, integrates AI, then delivers personalized, understandable optimization with measurable results.
 
+## Milestones
+
+- ✅ **v1.0 MVP** - Phases 1-10 (shipped 2026-01-16)
+- 🚧 **v1.1 Integration & Windows** - Phases 11-15 (in progress)
+
 ## Domain Expertise
 
 None
@@ -28,6 +33,11 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 8.1: Adaptive Intelligence** - INSERTED: User profile storage, pattern learning, personalized recommendations
 - [x] **Phase 9: Optimization Score** - Shareable metric, gamification, viral loop
 - [x] **Phase 10: Polish, Education & Launch** - Cross-platform testing, Learn Mode, visual explanations, UX refinement
+- [ ] **Phase 11: Launch Integration** - Connect "Launch via Opta" to optimization and Stealth Mode flows
+- [ ] **Phase 12: Session Persistence** - Save session history, GPU telemetry, usage analytics
+- [ ] **Phase 13: Windows Platform** - Windows-specific testing, installer, conflict tools
+- [ ] **Phase 14: Performance & Stability** - Memory optimization, error handling, crash reporting
+- [ ] **Phase 15: Community Preparation** - Feedback collection, telemetry opt-in, beta infrastructure
 
 ## Phase Details
 
@@ -173,22 +183,80 @@ Plans:
 - [x] 10-06: Investigation mode for power users (deep-dive analysis)
 - [x] 10-07: Expertise-level detection (adjust tip complexity)
 
+### 🚧 v1.1 Integration & Windows (In Progress)
+
+**Milestone Goal:** Connect the "Launch via Opta" feature to the full optimization pipeline, add session persistence, and polish Windows support for beta release.
+
+#### Phase 11: Launch Integration
+**Goal**: Connect "Launch via Opta" to optimization and Stealth Mode flows for seamless pre-game preparation
+**Depends on**: Phase 10 (v1.0 complete)
+**Research**: Unlikely (internal integration work)
+**Plans**: TBD
+
+Plans:
+- [ ] 11-01: TBD (run /gsd:plan-phase 11 to break down)
+
+#### Phase 12: Session Persistence
+**Goal**: Save game session history, add GPU telemetry during sessions, and create usage analytics foundation
+**Depends on**: Phase 11
+**Research**: Likely (Tauri Store patterns, GPU monitoring)
+**Research topics**: Tauri plugin-store patterns, cross-session data persistence, GPU utilization tracking, privacy-preserving analytics
+**Plans**: TBD
+
+Plans:
+- [ ] 12-01: TBD
+
+#### Phase 13: Windows Platform
+**Goal**: Windows-specific testing, installer improvements, and platform-native conflict detection
+**Depends on**: Phase 12
+**Research**: Likely (Windows installer, registry patterns)
+**Research topics**: Tauri Windows installer customization, Windows registry conflict detection, UAC handling, Windows-specific process signatures
+**Plans**: TBD
+
+Plans:
+- [ ] 13-01: TBD
+
+#### Phase 14: Performance & Stability
+**Goal**: Memory optimization, comprehensive error handling, and crash reporting infrastructure
+**Depends on**: Phase 13
+**Research**: Likely (crash reporting services)
+**Research topics**: Sentry vs Crashlytics for Tauri, memory profiling tools, React performance patterns, Rust memory optimization
+**Plans**: TBD
+
+Plans:
+- [ ] 14-01: TBD
+
+#### Phase 15: Community Preparation
+**Goal**: Feedback collection mechanisms, opt-in telemetry, and beta testing infrastructure
+**Depends on**: Phase 14
+**Research**: Likely (feedback tools, beta distribution)
+**Research topics**: In-app feedback widgets, privacy-compliant telemetry, beta distribution channels (TestFlight alternative for desktop), changelog automation
+**Plans**: TBD
+
+Plans:
+- [ ] 15-01: TBD
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 → 8 → 8.1 → 9 → 10
+Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 → 8 → 8.1 → 9 → 10 → 11 → 12 → 13 → 14 → 15
 
-| Phase | Plans Complete | Status | Completed |
-|-------|----------------|--------|-----------|
-| 1. Foundation | 3/3 | Complete | 2026-01-15 |
-| 2. Hardware Telemetry | 3/3 | Complete | 2026-01-15 |
-| 3. Process Management | 2/2 | Complete | 2026-01-15 |
-| 3.1 Design System | 3/3 | Complete | 2026-01-15 |
-| 4. Conflict Detection | 2/2 | Complete | 2026-01-15 |
-| 5. Local LLM Integration | 3/3 | Complete | 2026-01-15 |
-| 6. Cloud LLM Integration | 3/3 | Complete | 2026-01-15 |
-| 7. Game Detection & Profiles | 3/3 | Complete | 2026-01-15 |
-| 8. Optimization Engine | 4/4 | Complete | 2026-01-16 |
-| 8.1 Adaptive Intelligence | 4/4 | Complete | 2026-01-16 |
-| 9. Optimization Score | 3/3 | Complete | 2026-01-16 |
-| 10. Polish, Education & Launch | 7/7 | Complete | 2026-01-16 |
+| Phase | Milestone | Plans Complete | Status | Completed |
+|-------|-----------|----------------|--------|-----------|
+| 1. Foundation | v1.0 | 3/3 | Complete | 2026-01-15 |
+| 2. Hardware Telemetry | v1.0 | 3/3 | Complete | 2026-01-15 |
+| 3. Process Management | v1.0 | 2/2 | Complete | 2026-01-15 |
+| 3.1 Design System | v1.0 | 3/3 | Complete | 2026-01-15 |
+| 4. Conflict Detection | v1.0 | 2/2 | Complete | 2026-01-15 |
+| 5. Local LLM Integration | v1.0 | 3/3 | Complete | 2026-01-15 |
+| 6. Cloud LLM Integration | v1.0 | 3/3 | Complete | 2026-01-15 |
+| 7. Game Detection & Profiles | v1.0 | 3/3 | Complete | 2026-01-15 |
+| 8. Optimization Engine | v1.0 | 4/4 | Complete | 2026-01-16 |
+| 8.1 Adaptive Intelligence | v1.0 | 4/4 | Complete | 2026-01-16 |
+| 9. Optimization Score | v1.0 | 3/3 | Complete | 2026-01-16 |
+| 10. Polish, Education & Launch | v1.0 | 7/7 | Complete | 2026-01-16 |
+| 11. Launch Integration | v1.1 | 0/? | Not started | - |
+| 12. Session Persistence | v1.1 | 0/? | Not started | - |
+| 13. Windows Platform | v1.1 | 0/? | Not started | - |
+| 14. Performance & Stability | v1.1 | 0/? | Not started | - |
+| 15. Community Preparation | v1.1 | 0/? | Not started | - |
