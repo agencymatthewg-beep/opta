@@ -1,0 +1,22 @@
+# Cargo configuration for faster macOS builds
+# Optimizations for Tauri development workflow
+
+[target.aarch64-apple-darwin]
+# Use default macOS linker (fast and reliable)
+rustflags = ["-C", "link-arg=-fuse-ld=/usr/bin/ld"]
+
+[target.x86_64-apple-darwin]
+# Use default macOS linker for Intel Macs
+rustflags = ["-C", "link-arg=-fuse-ld=/usr/bin/ld"]
+
+[build]
+# Enable incremental compilation for faster rebuilds
+incremental = true
+
+[profile.dev]
+# Don't optimize app code in dev mode (faster compilation)
+opt-level = 0
+
+[profile.dev.package."*"]
+# But optimize dependencies (they don't change often)
+opt-level = 2

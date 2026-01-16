@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "google-drive": {
+      "command": "node",
+      "args": ["/Users/matthewbyrden/Documents/Opta/node_modules/@isaacphi/mcp-gdrive/dist/index.js"],
+      "env": {
+        "GDRIVE_CREDS_DIR": "/Users/matthewbyrden/.config/mcp-gdrive",
+        "CLIENT_ID": "88000480710-ghdb76imcc66g2opbsif3t7s20mkv2q0.apps.googleusercontent.com",
+        "CLIENT_SECRET": "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"
+      }
+    }
+  }
+}
