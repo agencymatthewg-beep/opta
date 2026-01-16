@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-15)
 
 **Core value:** One tool to replace them all — eliminates chaos of multiple conflicting optimizers, detects conflicts, explains optimizations, delivers measurable gains.
-**Current focus:** Phase 12 — UX Flow Polish (v1.1 macOS Refinement)
+**Current focus:** Phase 13 — Core Features (v1.1 macOS Refinement)
 
 ## Current Position
 
-Phase: 12 of 18 (UX Flow Polish)
-Plan: 3 of 3 in current phase
-Status: Phase complete
-Last activity: 2026-01-16 — Completed 12-03-PLAN.md (Session Flow Improvements)
+Phase: 13 of 18 (Core Features)
+Plan: 1 of 4 in current phase
+Status: In progress
+Last activity: 2026-01-16 — Completed 13-01-PLAN.md (Opta Text Zone Implementation)
 
-Progress: █████░░░░░░░░░░░░░░░ 38% (6/16 plans in v1.1)
+Progress: █████░░░░░░░░░░░░░░░ 44% (7/16 plans in v1.1)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 42
-- Average duration: 10 min
-- Total execution time: 6.48 hours
+- Total plans completed: 43
+- Average duration: 9 min
+- Total execution time: 6.53 hours
 
 **By Phase:**
 
@@ -41,10 +41,11 @@ Progress: █████░░░░░░░░░░░░░░░ 38% (6/16
 | 10. Polish, Education & Launch | 7/7 | 78 min | 11 min |
 | 11. Foundation & Stability | 3/3 | 21 min | 7 min |
 | 12. UX Flow Polish | 3/3 | 18 min | 6 min |
+| 13. Core Features | 1/4 | 3 min | 3 min |
 
 **Recent Trend:**
-- Last 5 plans: 15, 18, 2, 12, 4 min
-- Trend: Consistent execution speed
+- Last 5 plans: 18, 2, 12, 4, 3 min
+- Trend: Consistent fast execution
 
 ## Accumulated Context
 
@@ -174,6 +175,10 @@ Progress: █████░░░░░░░░░░░░░░░ 38% (6/16
 | 12-03 | Use callbacks in launchGame for stealth mode results | Allows decoupled tracking without storing in hook state |
 | 12-03 | Keep last 50 sessions in history | Balances useful history with localStorage limits |
 | 12-03 | Use ref for sessionMetrics | Ensures summary captures latest values during async operations |
+| 13-01 | Provider wraps Layout not App | Keeps provider close to where it's rendered, easier testing |
+| 13-01 | Four message types with glow effects | Semantic colors for instant recognition of state |
+| 13-01 | Optional indicator with direction | Supports both positive (up) and negative (down) trends |
+| 13-01 | 20-step interval for CountUp | Smooth animation without performance overhead |
 
 ### Deferred Issues
 
@@ -197,6 +202,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-16
-Stopped at: Completed 12-03-PLAN.md (Session Flow Improvements)
+Stopped at: Completed 13-01-PLAN.md (Opta Text Zone Implementation)
 Resume file: None
-Next action: Plan Phase 13 (Core Features)
+Next action: Execute 13-02-PLAN.md (Communication Style)
