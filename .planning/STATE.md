@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-15)
 ## Current Position
 
 Phase: 8.1 of 10 (Adaptive Intelligence)
-Plan: 1 of 4 in current phase
+Plan: 2 of 4 in current phase
 Status: In progress
-Last activity: 2026-01-16 — Completed 08.1-01-PLAN.md
+Last activity: 2026-01-16 — Completed 08.1-02-PLAN.md
 
-Progress: ██████████████░░░░░░ 68% (27/40 plans)
+Progress: ███████████████░░░░░ 72% (29/40 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 27
+- Total plans completed: 29
 - Average duration: 10 min
-- Total execution time: 4.5 hours
+- Total execution time: 4.7 hours
 
 **By Phase:**
 
@@ -36,10 +36,10 @@ Progress: ██████████████░░░░░░ 68% (27/4
 | 6. Cloud LLM Integration | 3/3 | 9 min | 3 min |
 | 7. Game Detection | 3/3 | 9 min | 3 min |
 | 8. Optimization Engine | 4/4 | 12 min | 3 min |
-| 8.1 Adaptive Intelligence | 1/4 | 3 min | 3 min |
+| 8.1 Adaptive Intelligence | 2/4 | 11 min | 5.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 3, 3, 3, 3, 3 min
+- Last 5 plans: 3, 3, 3, 3, 8 min
 - Trend: Fast execution with established patterns
 
 ## Accumulated Context
@@ -104,6 +104,10 @@ Progress: ██████████████░░░░░░ 68% (27/4
 | 08.1-01 | Case conversion in Python layer | Snake_case storage, camelCase API for convention compliance |
 | 08.1-01 | Atomic file writes | Temp file + rename prevents corruption |
 | 08.1-01 | GPU detection fallback chain | GPUtil -> pynvml -> system_profiler -> null |
+| 08.1-02 | JSONL for choice log | Append-only, crash-safe, easy streaming reads |
+| 08.1-02 | Minimum 3 samples for patterns | Balances responsiveness with accuracy |
+| 08.1-02 | 70%/30% threshold for preference/aversion | Clear signal without being too strict |
+| 08.1-02 | Fire-and-forget choice recording | Non-blocking, never impacts UX |
 
 ### Deferred Issues
 
@@ -120,5 +124,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-16
-Stopped at: Completed 08.1-01-PLAN.md (Profile storage system)
+Stopped at: Completed 08.1-02-PLAN.md (Pattern learning engine)
 Resume file: None
