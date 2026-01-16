@@ -260,7 +260,10 @@ Plans:
 **Research**: Likely (chess engines, UI patterns)
 
 Plans:
-- [ ] 17-01: TBD
+- [x] 17-01: Chess foundation - dependencies and TypeScript types
+- [ ] 17-02: TBD
+- [ ] 17-03: TBD
+- [ ] 17-04: TBD
 
 #### Phase 18: Windows Platform
 **Goal**: Windows-specific testing, installer improvements, and platform-native conflict detection
@@ -296,5 +299,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 �
 | 14. Educational Enhancement | v1.1 | 3/3 | Complete | 2026-01-16 |
 | 15. Performance & Launch | v1.1 | 3/3 | Complete | 2026-01-16 |
 | 16. Social Features | v2.0 | 1/1 | Complete | 2026-01-16 |
-| 17. Chess Integration | v2.0 | 0/? | Not started | - |
+| 17. Chess Integration | v2.0 | 1/4 | In progress | - |
 | 18. Windows Platform | v2.0 | 0/? | Not started | - |

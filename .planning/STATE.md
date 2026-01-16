@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-01-15)
 
 ## Current Position
 
-Phase: 15 of 18 (Performance & Launch)
-Plan: 3 of 3 in current phase (COMPLETE)
-Status: v1.1 Milestone Complete
-Last activity: 2026-01-16 — Completed 15-03-PLAN.md (Launch Preparation)
+Phase: 17 of 18 (Chess Integration)
+Plan: 1 of ? in current phase
+Status: In progress
+Last activity: 2026-01-17 — Completed 17-01-PLAN.md (Chess Foundation)
 
-Progress: ██████████░░░░░░░░░░ 100% (16/16 plans in v1.1)
+Progress: █░░░░░░░░░ ~10% of v2.0 (1/? plans)
 
 ## Performance Metrics
 
@@ -44,9 +44,11 @@ Progress: ██████████░░░░░░░░░░ 100% (16/
 | 13. Core Features | 4/4 | 15 min | 4 min |
 | 14. Educational Enhancement | 3/3 | 12 min | 4 min |
 | 15. Performance & Launch | 3/3 | 12 min | 4 min |
+| 16. Social Features | 1/1 | 8 min | 8 min |
+| 17. Chess Integration | 1/? | 3 min | 3 min |
 
 **Recent Trend:**
-- Last 5 plans: 4, 5, 3, 4, 4 min
+- Last 5 plans: 3, 4, 4, 8, 3 min
 - Trend: Consistent fast execution
 
 ## Accumulated Context
@@ -217,6 +219,9 @@ Progress: ██████████░░░░░░░░░░ 100% (16/
 | 15-03 | Keep a Changelog format for CHANGELOG.md | Standardized changelog format |
 | 15-03 | Semantic versioning for v1.1.0 | Clear version progression |
 | 15-03 | Separate release notes from changelog | Detailed features in .planning/, summary in CHANGELOG |
+| 17-01 | Standard chess stack: chess.js + react-chessboard + stockfish | De facto standard, TypeScript-native, handles all chess rules |
+| 17-01 | Skill level mapping (2/6/11/15/20) | Based on research calibration for user-friendly difficulty |
+| 17-01 | Helper functions for state and AI config | Simplifies game initialization across components |
 
 ### Deferred Issues
 
@@ -239,7 +244,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-16
-Stopped at: Completed 15-03-PLAN.md (Launch Preparation) - v1.1 MILESTONE COMPLETE
+Last session: 2026-01-17
+Stopped at: Completed 17-01-PLAN.md (Chess Foundation)
 Resume file: None
-Next action: /gsd:complete-milestone to archive v1.1 and prepare for v2.0
+Next action: Execute 17-02-PLAN.md (next chess plan)
