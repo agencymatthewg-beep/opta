@@ -306,6 +306,7 @@ function Games() {
   const { session, startSession } = useGameSessionContext();
 
   const [selectedGame, setSelectedGame] = useState<DetectedGame | null>(null);
+  const [closingGame, setClosingGame] = useState<DetectedGame | null>(null);
   const [loadingOptimization, setLoadingOptimization] = useState(false);
   const [optimization, setOptimization] = useState<GameOptimization | null>(null);
 
@@ -403,10 +404,17 @@ function Games() {
     return () => { cancelled = true; };
   }, [selectedGame, getGameOptimization, getRecommendations, dismissedRecommendations]);
 
-  // Clear selected game if it's no longer in the list
+  // Clear selected game if it's no longer in the list (with exit animation)
   useEffect(() => {
     if (selectedGame && !games.find((g) => g.id === selectedGame.id)) {
+      // Keep the game for exit animation, then clear after animation completes
+      setClosingGame(selectedGame);
       setSelectedGame(null);
+      // Clear closingGame after animation duration (300ms)
+      const timer = setTimeout(() => {
+        setClosingGame(null);
+      }, 300);
+      return () => clearTimeout(timer);
     }
   }, [games, selectedGame]);
 
@@ -650,17 +658,17 @@ function Games() {
             'glass rounded-xl overflow-hidden',
             'border border-border/30',
             'lg:flex-1 lg:max-w-md',
-            selectedGame ? 'flex flex-col w-full lg:w-auto' : 'hidden lg:flex lg:flex-col'
+            (selectedGame || closingGame) ? 'flex flex-col w-full lg:w-auto' : 'hidden lg:flex lg:flex-col'
           )}
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.2 }}
         >
           <AnimatePresence mode="wait">
-            {selectedGame ? (
+            {(selectedGame || closingGame) ? (
               <GameDetailPanel
-                key={selectedGame.id}
-                game={selectedGame}
+                key={(selectedGame || closingGame)!.id}
+                game={(selectedGame || closingGame)!}
                 optimization={optimization}
                 loadingOptimization={loadingOptimization}
                 onClose={handleCloseDetail}
