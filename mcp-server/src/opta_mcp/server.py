@@ -665,6 +665,30 @@ async def list_tools() -> list[Tool]:
                 "required": [],
             },
         ),
+        # Badge Tools
+        Tool(
+            name="check_badges",
+            description="Check all badges and return current state with progress",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+        ),
+        Tool(
+            name="mark_badge_seen",
+            description="Mark a badge as seen (remove 'new' indicator)",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "badge_id": {
+                        "type": "string",
+                        "description": "ID of the badge to mark as seen",
+                    },
+                },
+                "required": ["badge_id"],
+            },
+        ),
     ]
 
 
@@ -913,6 +937,14 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
     elif name == "get_hardware_tier":
         from opta_mcp import scoring
         result = scoring.get_hardware_tier()
+    # Badge Handlers
+    elif name == "check_badges":
+        from opta_mcp import badges
+        result = badges.check_badges()
+    elif name == "mark_badge_seen":
+        from opta_mcp import badges
+        badge_id = arguments.get("badge_id", "")
+        result = badges.mark_badge_seen(badge_id)
     else:
         result = {"error": f"Unknown tool: {name}"}
 
