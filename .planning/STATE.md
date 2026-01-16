@@ -192,6 +192,10 @@ Progress: ███████▒░░░░░░░░░░░░ 75% (12/1
 | 13-04 | Four optimization goals | Max FPS, Min Latency, Reduce Heat, Battery Life - covers primary needs |
 | 13-04 | Mock recommendation generation | Using goal-specific mock data until backend engine integration |
 | 13-04 | Impact percentage predictions | Shows estimated improvement for each recommendation |
+| 14-01 | Export WELCOME_CONTENT for reuse | Enables reuse in other welcome/intro screens |
+| 14-01 | Function-based explanations | Allows game name interpolation in explanation text |
+| 14-01 | LearnModeTopic component | Simplifies usage of pre-defined content in components |
+| 14-01 | 6 pre-defined Learn Mode topics | Covers all major features with full/short versions per expertise level |
 | 14-02 | State-based tabs for learning section | No existing Tabs component, useState approach matches existing patterns |
 | 14-02 | Native HTML range slider | No Slider component exists, styled with glass classes |
 | 14-02 | localStorage for preference persistence | Fast, simple persistence without backend changes |
