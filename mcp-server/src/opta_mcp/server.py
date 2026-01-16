@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+from dataclasses import asdict
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from mcp.types import Tool, TextContent
@@ -545,6 +546,70 @@ async def list_tools() -> list[Tool]:
                 "required": [],
             },
         ),
+        Tool(
+            name="record_optimization_choice",
+            description="Record user's choice on an optimization for pattern learning",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "game_id": {
+                        "type": "string",
+                        "description": "Game identifier",
+                    },
+                    "game_name": {
+                        "type": "string",
+                        "description": "Game display name",
+                    },
+                    "setting_category": {
+                        "type": "string",
+                        "description": "Category: graphics, launch_options, priority",
+                    },
+                    "setting_key": {
+                        "type": "string",
+                        "description": "Specific setting key",
+                    },
+                    "original_value": {
+                        "description": "Original value before change",
+                    },
+                    "new_value": {
+                        "description": "New value after change",
+                    },
+                    "action": {
+                        "type": "string",
+                        "enum": ["accepted", "reverted"],
+                        "description": "User action on this optimization",
+                    },
+                },
+                "required": ["game_id", "game_name", "setting_category", "action"],
+            },
+        ),
+        Tool(
+            name="analyze_patterns",
+            description="Analyze user choices and return detected patterns",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+        ),
+        Tool(
+            name="get_user_patterns",
+            description="Get current detected patterns for the user",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+        ),
+        Tool(
+            name="get_choice_stats",
+            description="Get statistics about recorded optimization choices",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+        ),
     ]
 
 
@@ -753,6 +818,27 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
         from opta_mcp import profile
         deleted = profile.delete_profile()
         result = {"deleted": deleted}
+    elif name == "record_optimization_choice":
+        from opta_mcp import optimizer
+        result = optimizer.record_optimization_choice(
+            game_id=arguments.get("game_id", ""),
+            game_name=arguments.get("game_name", ""),
+            setting_category=arguments.get("setting_category", ""),
+            setting_key=arguments.get("setting_key", ""),
+            original_value=arguments.get("original_value"),
+            new_value=arguments.get("new_value"),
+            action=arguments.get("action", "accepted")
+        )
+    elif name == "analyze_patterns":
+        from opta_mcp import patterns
+        detected = patterns.analyze_patterns()
+        result = [asdict(p) for p in detected]
+    elif name == "get_user_patterns":
+        from opta_mcp import patterns
+        result = patterns.get_user_patterns()
+    elif name == "get_choice_stats":
+        from opta_mcp import patterns
+        result = patterns.get_choice_stats()
     else:
         result = {"error": f"Unknown tool: {name}"}
 
