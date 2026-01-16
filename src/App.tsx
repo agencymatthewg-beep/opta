@@ -1,5 +1,5 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, LazyMotion, domAnimation } from 'framer-motion';
 import Layout from './components/Layout';
 import Background from './components/Background';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -183,6 +183,7 @@ function App() {
   };
 
   return (
+    <LazyMotion features={domAnimation} strict>
     <ExpertiseProvider>
       <LearnModeProvider>
         <CommunicationStyleProvider>
@@ -236,6 +237,7 @@ function App() {
         </CommunicationStyleProvider>
       </LearnModeProvider>
     </ExpertiseProvider>
+    </LazyMotion>
   );
 }
 

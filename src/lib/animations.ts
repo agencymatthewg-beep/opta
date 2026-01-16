@@ -1,4 +1,14 @@
-import { Variants, Transition } from "framer-motion";
+import { Variants, Transition, domAnimation, domMax } from "framer-motion";
+
+/**
+ * Re-export LazyMotion feature sets for tree-shaking optimization.
+ *
+ * - domAnimation: Basic animations (transform, opacity) - smaller bundle
+ * - domMax: Full feature set including layout animations - larger bundle
+ *
+ * Usage: Wrap app with <LazyMotion features={domAnimation}>
+ */
+export { domAnimation, domMax };
 
 /**
  * Animation variants library for Opta
