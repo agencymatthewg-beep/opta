@@ -1,3 +1,4 @@
+import { motion, useSpring, useTransform } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
 interface DiskMeterProps {
@@ -7,11 +8,20 @@ interface DiskMeterProps {
 }
 
 function DiskMeter({ usedGb, totalGb, percent }: DiskMeterProps) {
+  // Animated value for smooth transitions
+  const springValue = useSpring(percent, {
+    stiffness: 100,
+    damping: 30,
+    restDelta: 0.001,
+  });
+
+  const width = useTransform(springValue, [0, 100], ["0%", "100%"]);
+
   // Determine color based on usage level
   const getColorClass = (value: number) => {
-    if (value >= 85) return 'text-[hsl(var(--danger))]';
-    if (value >= 60) return 'text-[hsl(var(--warning))]';
-    return 'text-[hsl(var(--success))]';
+    if (value >= 85) return 'text-danger';
+    if (value >= 60) return 'text-warning';
+    return 'text-success';
   };
 
   const getBarColor = (value: number) => {
@@ -20,9 +30,10 @@ function DiskMeter({ usedGb, totalGb, percent }: DiskMeterProps) {
     return 'hsl(var(--success))';
   };
 
-  const getGlowStyle = (value: number) => {
-    const color = getBarColor(value);
-    return `0 0 10px ${color.replace(')', ' / 0.4)')}`;
+  const getGlowClass = (value: number) => {
+    if (value >= 85) return 'shadow-[0_0_12px_hsl(var(--danger)/0.4)]';
+    if (value >= 60) return 'shadow-[0_0_12px_hsl(var(--warning)/0.4)]';
+    return 'shadow-[0_0_12px_hsl(var(--success)/0.4)]';
   };
 
   // Format to show TB if >= 1000 GB
@@ -35,36 +46,74 @@ function DiskMeter({ usedGb, totalGb, percent }: DiskMeterProps) {
 
   const colorClass = getColorClass(percent);
   const barColor = getBarColor(percent);
+  const glowClass = getGlowClass(percent);
   const isHighUsage = percent >= 90;
 
   return (
-    <div className="flex flex-col gap-3 w-full">
-      <div className="flex items-center justify-between">
+    <div
+      className="flex flex-col gap-4 w-full"
+      role="meter"
+      aria-valuenow={Math.round(percent)}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-label={`Disk usage: ${formatSize(usedGb)} of ${formatSize(totalGb)} (${Math.round(percent)} percent)`}
+    >
+      {/* Header */}
+      <motion.div
+        className="flex items-center justify-between"
+        initial={{ opacity: 0, y: 4 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+      >
         <div className="flex items-baseline gap-2">
-          <span className={cn("text-2xl font-bold", colorClass)}>
-            {Math.round(percent)}%
+          <span className={cn("text-3xl font-bold tabular-nums", colorClass)}>
+            {Math.round(percent)}
+            <span className="text-lg">%</span>
           </span>
-          <span className="text-xs text-muted-foreground font-medium">Disk</span>
         </div>
-      </div>
+        <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+          Disk
+        </span>
+      </motion.div>
 
+      {/* Progress bar */}
       <div className={cn(
-        "relative h-3 w-full rounded-full bg-muted/30 overflow-hidden",
+        "relative h-3 w-full rounded-full bg-muted/20 overflow-hidden",
         isHighUsage && "animate-pulse"
       )}>
-        <div
-          className="absolute inset-y-0 left-0 rounded-full transition-all duration-300"
+        <motion.div
+          className={cn(
+            "absolute inset-y-0 left-0 rounded-full",
+            glowClass
+          )}
           style={{
-            width: `${percent}%`,
+            width,
             background: `linear-gradient(90deg, hsl(var(--success)) 0%, ${barColor} 100%)`,
-            boxShadow: getGlowStyle(percent)
+          }}
+          initial={{ width: "0%" }}
+          animate={{ width: `${percent}%` }}
+          transition={{
+            duration: 0.8,
+            ease: [0.4, 0, 0.2, 1] as const,
           }}
         />
       </div>
 
-      <div className="text-xs text-muted-foreground text-center">
-        <span>{formatSize(usedGb)} / {formatSize(totalGb)}</span>
-      </div>
+      {/* Stats */}
+      <motion.div
+        className="flex items-center justify-center gap-2 text-xs"
+        initial={{ opacity: 0, y: 4 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+      >
+        <span className="text-foreground/80 font-medium tabular-nums">
+          {formatSize(usedGb)}
+        </span>
+        <span className="text-muted-foreground/50">/</span>
+        <span className="text-muted-foreground tabular-nums">
+          {formatSize(totalGb)}
+        </span>
+      </motion.div>
     </div>
   );
 }

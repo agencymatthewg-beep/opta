@@ -37,6 +37,9 @@ export function OptaScoreCard({
         'glass-strong rounded-2xl border border-border/30 overflow-hidden',
         compact ? 'max-w-sm' : 'max-w-2xl'
       )}
+      role="region"
+      aria-label={`Opta Score: ${score.overall} out of 100`}
+      aria-live="polite"
     >
       {/* Header with overall score */}
       <div className="relative p-6 text-center border-b border-border/20">
