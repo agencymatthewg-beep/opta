@@ -410,6 +410,27 @@ function Games() {
     }
   }, [games, selectedGame]);
 
+  // Read game ID from URL params on mount and select the game
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const gameId = params.get('game');
+    if (gameId && games.length > 0 && !selectedGame) {
+      const game = games.find(g => g.id === gameId);
+      if (game) setSelectedGame(game);
+    }
+  }, [games, selectedGame]);
+
+  // Update URL when game selection changes
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (selectedGame) {
+      url.searchParams.set('game', selectedGame.id);
+    } else {
+      url.searchParams.delete('game');
+    }
+    window.history.replaceState({}, '', url.toString());
+  }, [selectedGame]);
+
   const handleGameSelect = (game: DetectedGame) => {
     setSelectedGame(game);
   };
