@@ -7,7 +7,7 @@ Opta transforms from an empty Tauri scaffold into a full-featured AI-powered PC 
 ## Milestones
 
 - ✅ **v1.0 MVP** - Phases 1-10 (shipped 2026-01-16)
-- 🚧 **v1.1 macOS Refinement** - Phases 11-15 (in progress)
+- **v1.1 macOS Refinement** - Phases 11-15 (complete 2026-01-16)
 - 📋 **v2.0 Windows & Social** - Phases 16-18 (planned)
 
 ## Domain Expertise
@@ -34,11 +34,11 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 8.1: Adaptive Intelligence** - INSERTED: User profile storage, pattern learning, personalized recommendations
 - [x] **Phase 9: Optimization Score** - Shareable metric, gamification, viral loop
 - [x] **Phase 10: Polish, Education & Launch** - Cross-platform testing, Learn Mode, visual explanations, UX refinement
-- [ ] **Phase 11: Foundation & Stability** - Critical bug fixes, error boundaries, design system compliance
-- [ ] **Phase 12: UX Flow Polish** - Navigation fixes, loading states, session flow improvements
+- [x] **Phase 11: Foundation & Stability** - Critical bug fixes, error boundaries, design system compliance
+- [x] **Phase 12: UX Flow Polish** - Navigation fixes, loading states, session flow improvements
 - [x] **Phase 13: Core Features** - Opta Text Zone, Communication Style, Preference Presets, Pinpoint Mode
 - [x] **Phase 14: Educational Enhancement** - Expertise-adaptive explanations, learning visibility, rollback
-- [ ] **Phase 15: Performance & Launch** - Performance optimization, macOS polish, launch preparation
+- [x] **Phase 15: Performance & Launch** - Performance optimization, macOS polish, launch preparation
 - [ ] **Phase 16: Windows Platform** - Windows-specific testing, installer, conflict tools (v2.0)
 - [ ] **Phase 17: Social Features** - Friend system, score sharing, comparisons (v2.0)
 - [ ] **Phase 18: Chess Integration** - Ambient chess, three modes, AI opponents (v2.0)
@@ -239,8 +239,8 @@ Plans:
 
 Plans:
 - [x] 15-01: Performance optimization
-- [ ] 15-02: macOS-specific polish
-- [ ] 15-03: Launch preparation
+- [x] 15-02: macOS-specific polish
+- [x] 15-03: Launch preparation
 
 ### 📋 v2.0 Windows & Social (Planned)
 
@@ -294,7 +294,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 �
 | 12. UX Flow Polish | v1.1 | 3/3 | Complete | 2026-01-16 |
 | 13. Core Features | v1.1 | 4/4 | Complete | 2026-01-16 |
 | 14. Educational Enhancement | v1.1 | 3/3 | Complete | 2026-01-16 |
-| 15. Performance & Launch | v1.1 | 1/3 | In progress | - |
+| 15. Performance & Launch | v1.1 | 3/3 | Complete | 2026-01-16 |
 | 16. Windows Platform | v2.0 | 0/? | Not started | - |
 | 17. Social Features | v2.0 | 0/? | Not started | - |
 | 18. Chess Integration | v2.0 | 0/? | Not started | - |
