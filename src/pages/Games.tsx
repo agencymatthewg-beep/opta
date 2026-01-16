@@ -2,15 +2,19 @@ import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGames } from '../hooks/useGames';
 import { useUserProfile } from '../hooks/useUserProfile';
+import { useLauncher } from '../hooks/useLauncher';
 import GameList from '../components/GameList';
 import GameOptimizationPreview from '../components/GameOptimizationPreview';
 import PersonalizedRecommendations from '../components/PersonalizedRecommendations';
+import LaunchConfirmationModal from '../components/LaunchConfirmationModal';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import type { DetectedGame, GameOptimization } from '../types/games';
 import type { Recommendation } from '../types/profile';
+import type { LaunchConfig } from '../types/launcher';
 import { Gamepad2, RefreshCw, X, AlertCircle, Play, FolderOpen, Hash } from 'lucide-react';
+import { LearnModeExplanation } from '../components/LearnModeExplanation';
 
 // Steam app IDs that have optimizations in the database
 const GAMES_WITH_OPTIMIZATIONS = new Set([
@@ -263,10 +267,16 @@ function Games() {
   } = useGames();
 
   const { getRecommendations } = useUserProfile();
+  const { launchGame, launching, launchingGame, clearError } = useLauncher();
 
   const [selectedGame, setSelectedGame] = useState<DetectedGame | null>(null);
   const [loadingOptimization, setLoadingOptimization] = useState(false);
   const [optimization, setOptimization] = useState<GameOptimization | null>(null);
+
+  // Launch modal state
+  const [showLaunchModal, setShowLaunchModal] = useState(false);
+  const [gameToLaunch, setGameToLaunch] = useState<DetectedGame | null>(null);
+  const [gameOptimizationForLaunch, setGameOptimizationForLaunch] = useState<GameOptimization | null>(null);
 
   // Recommendations state
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
@@ -370,6 +380,40 @@ function Games() {
     // Add to dismissed set and remove from current list
     setDismissedRecommendations((prev) => new Set([...prev, recommendationId]));
     setRecommendations((prev) => prev.filter((r) => r.id !== recommendationId));
+  };
+
+  // Launch via Opta handlers
+  const handlePlayClick = async (game: DetectedGame) => {
+    setGameToLaunch(game);
+    clearError();
+
+    // Load optimization for this game to show pending count in modal
+    try {
+      const gameId = game.id.replace('steam_', '');
+      const opt = await getGameOptimization(gameId);
+      setGameOptimizationForLaunch(opt.source !== 'generic' ? opt : null);
+    } catch {
+      setGameOptimizationForLaunch(null);
+    }
+
+    setShowLaunchModal(true);
+  };
+
+  const handleCloseLaunchModal = () => {
+    setShowLaunchModal(false);
+    setGameToLaunch(null);
+    setGameOptimizationForLaunch(null);
+  };
+
+  const handleLaunch = async (config: LaunchConfig) => {
+    if (!gameToLaunch) return;
+
+    const result = await launchGame(gameToLaunch, config);
+
+    if (result.success) {
+      handleCloseLaunchModal();
+    }
+    // If failed, modal stays open and shows error state via launching prop
   };
 
   // Calculate time since last update
@@ -478,6 +522,15 @@ function Games() {
         <p className="text-sm text-muted-foreground/70 ml-12">
           Detected games across your launchers
         </p>
+
+        {/* Learn Mode Explanation */}
+        <LearnModeExplanation
+          title="How Game Detection Works"
+          description="Opta scans Steam, Epic Games, and GOG Galaxy libraries to find your installed games automatically."
+          details="Reads libraryfolders.vdf (Steam), manifests (Epic), and GOG registry entries. Config files are located in standard game directories. Re-scan to detect newly installed games."
+          type="how-it-works"
+          className="mt-4"
+        />
       </motion.div>
 
       {/* Split View Layout */}
@@ -496,6 +549,8 @@ function Games() {
             onGameSelect={handleGameSelect}
             gamesWithOptimizations={gamesWithOptimizations}
             loading={loading}
+            onPlay={handlePlayClick}
+            launchingGameId={launchingGame?.id ?? null}
           />
         </div>
 
@@ -531,6 +586,24 @@ function Games() {
           </AnimatePresence>
         </motion.div>
       </div>
+
+      {/* Launch Confirmation Modal */}
+      {gameToLaunch && (
+        <LaunchConfirmationModal
+          open={showLaunchModal}
+          onClose={handleCloseLaunchModal}
+          onLaunch={handleLaunch}
+          game={gameToLaunch}
+          pendingOptimizations={
+            gameOptimizationForLaunch?.settings
+              ? Object.keys(gameOptimizationForLaunch.settings).length
+              : 0
+          }
+          estimatedMemorySavingsMb={512} // TODO: Get from Stealth Mode calculation
+          safeToKillCount={8} // TODO: Get from process scan
+          loading={launching}
+        />
+      )}
     </div>
   );
 }
