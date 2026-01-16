@@ -598,15 +598,16 @@ function Games() {
           <p className="text-muted-foreground/70 text-center mb-6">{error}</p>
           <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
             <Button
-              onClick={refresh}
+              onClick={handleRetry}
+              disabled={retryLoading}
               className={cn(
                 'gap-2 rounded-xl px-5',
                 'bg-gradient-to-r from-primary to-accent',
                 'shadow-[0_0_16px_-4px_hsl(var(--glow-primary)/0.5)]'
               )}
             >
-              <RefreshCw className="w-4 h-4" strokeWidth={2} />
-              Retry
+              <RefreshCw className={cn('w-4 h-4', retryLoading && 'animate-spin')} strokeWidth={2} />
+              {retryLoading ? 'Retrying...' : 'Retry'}
             </Button>
           </motion.div>
         </motion.div>
