@@ -140,6 +140,14 @@ function App() {
             </Suspense>
           </motion.div>
         );
+      case 'chess':
+        return (
+          <motion.div {...pageProps}>
+            <Suspense fallback={<PageSkeleton />}>
+              <Chess />
+            </Suspense>
+          </motion.div>
+        );
       case 'optimize':
         return (
           <motion.div {...pageProps}>
