@@ -271,3 +271,240 @@ def get_choice_stats() -> Dict:
         "uniqueSettings": unique_settings,
         "gamesTracked": games_tracked
     }
+
+
+def _generate_recommendation_reason(pattern: DetectedPattern, setting_key: str) -> str:
+    """Generate a user-friendly reason for a recommendation based on a pattern."""
+    if pattern.pattern_type == "preference":
+        if "fps" in setting_key.lower() or "performance" in setting_key.lower():
+            return "Based on your history, I'm prioritizing FPS. Change this?"
+        if "quality" in setting_key.lower() or "visual" in setting_key.lower():
+            return "You typically accept quality improvements - high confidence this will work."
+        if pattern.setting_category == "launch_options":
+            return "You tend to accept launch option changes. This should improve performance."
+        if pattern.setting_category == "priority":
+            return "You've liked process priority changes before. This boosts responsiveness."
+        return f"Based on your {pattern.setting_category} preferences, this is a good fit."
+    elif pattern.pattern_type == "aversion":
+        # For aversions, we recommend NOT applying certain settings
+        return "I'm skipping this based on your preferences - you typically revert these."
+    return "This recommendation is based on your optimization history."
+
+
+def _estimate_impact(setting_key: str, setting_category: str) -> str:
+    """Generate an estimated impact string for a recommendation."""
+    # Impact estimates based on common optimization knowledge
+    impact_map = {
+        "fps_boost": "+10-15 FPS estimated",
+        "vsync": "Lower input lag, potential tearing",
+        "shadows": "+5-10 FPS estimated",
+        "anti_aliasing": "+5-8 FPS estimated",
+        "texture_quality": "Minimal FPS impact, visual change",
+        "ray_tracing": "+15-25 FPS estimated",
+        "launch_options": "Faster startup, better stability",
+        "priority": "More responsive gameplay"
+    }
+
+    for key, impact in impact_map.items():
+        if key in setting_key.lower():
+            return impact
+
+    if setting_category == "graphics":
+        return "+5-10 FPS potential"
+    if setting_category == "launch_options":
+        return "Improved stability"
+    if setting_category == "priority":
+        return "Better responsiveness"
+
+    return "Performance improvement expected"
+
+
+def _confidence_to_level(confidence: float) -> str:
+    """Convert numeric confidence to high/medium/low."""
+    if confidence >= 0.75:
+        return "high"
+    if confidence >= 0.5:
+        return "medium"
+    return "low"
+
+
+def generate_recommendations(
+    game_id: str,
+    game_name: str,
+    available_settings: Dict,
+    patterns: List[DetectedPattern]
+) -> List[Dict]:
+    """
+    Generate personalized recommendations for a game based on patterns.
+
+    Uses detected user patterns to suggest optimizations that align with
+    the user's historical preferences and avoid settings they typically reject.
+
+    Args:
+        game_id: Game identifier
+        game_name: Game display name
+        available_settings: Settings available for this game (from game_settings database)
+        patterns: List of detected user patterns
+
+    Returns:
+        List of recommendation dictionaries ready for frontend consumption.
+    """
+    recommendations = []
+    current_time = time.time()
+
+    # Track which settings we've already recommended
+    recommended_keys = set()
+
+    for pattern in patterns:
+        # Skip low-confidence patterns
+        if pattern.confidence < 0.5:
+            continue
+
+        # For preferences, recommend matching settings
+        if pattern.pattern_type == "preference":
+            category = pattern.setting_category
+
+            # Check if available_settings has this category
+            if category in available_settings:
+                category_settings = available_settings[category]
+
+                # Look for settings that match this pattern
+                if isinstance(category_settings, dict):
+                    for setting_key, setting_value in category_settings.items():
+                        # Avoid duplicate recommendations
+                        rec_key = f"{category}:{setting_key}"
+                        if rec_key in recommended_keys:
+                            continue
+
+                        # Check if this setting relates to the pattern
+                        if _settings_match_pattern(setting_key, pattern):
+                            recommended_keys.add(rec_key)
+                            recommendations.append({
+                                "id": f"rec_{game_id}_{category}_{setting_key}_{int(current_time)}",
+                                "gameId": game_id,
+                                "gameName": game_name,
+                                "settingCategory": category,
+                                "settingKey": setting_key,
+                                "suggestedValue": setting_value,
+                                "reason": _generate_recommendation_reason(pattern, setting_key),
+                                "expectedImpact": _estimate_impact(setting_key, category),
+                                "confidence": _confidence_to_level(pattern.confidence),
+                                "basedOnPattern": f"{pattern.setting_category}:{pattern.setting_key}"
+                            })
+                elif isinstance(category_settings, str):
+                    # Launch options are stored as a string
+                    rec_key = f"{category}:launch_options"
+                    if rec_key not in recommended_keys:
+                        recommended_keys.add(rec_key)
+                        recommendations.append({
+                            "id": f"rec_{game_id}_{category}_launch_options_{int(current_time)}",
+                            "gameId": game_id,
+                            "gameName": game_name,
+                            "settingCategory": category,
+                            "settingKey": "launch_options",
+                            "suggestedValue": category_settings,
+                            "reason": _generate_recommendation_reason(pattern, "launch_options"),
+                            "expectedImpact": _estimate_impact("launch_options", category),
+                            "confidence": _confidence_to_level(pattern.confidence),
+                            "basedOnPattern": f"{pattern.setting_category}:{pattern.setting_key}"
+                        })
+
+            # Also check for priority settings
+            if category == "priority" and "priority" in available_settings:
+                rec_key = "priority:priority"
+                if rec_key not in recommended_keys:
+                    recommended_keys.add(rec_key)
+                    recommendations.append({
+                        "id": f"rec_{game_id}_priority_{int(current_time)}",
+                        "gameId": game_id,
+                        "gameName": game_name,
+                        "settingCategory": "priority",
+                        "settingKey": "process_priority",
+                        "suggestedValue": available_settings["priority"],
+                        "reason": _generate_recommendation_reason(pattern, "priority"),
+                        "expectedImpact": _estimate_impact("priority", "priority"),
+                        "confidence": _confidence_to_level(pattern.confidence),
+                        "basedOnPattern": f"{pattern.setting_category}:{pattern.setting_key}"
+                    })
+
+    # Sort by confidence (high first) and limit to top 5
+    recommendations.sort(key=lambda r: {"high": 3, "medium": 2, "low": 1}.get(r["confidence"], 0), reverse=True)
+    return recommendations[:5]
+
+
+def _settings_match_pattern(setting_key: str, pattern: DetectedPattern) -> bool:
+    """Check if a setting key matches a pattern's preferences."""
+    setting_lower = setting_key.lower()
+    pattern_key_lower = pattern.setting_key.lower()
+
+    # Direct match
+    if pattern_key_lower in setting_lower or setting_lower in pattern_key_lower:
+        return True
+
+    # FPS-related pattern matches FPS-boosting settings
+    if "fps" in pattern_key_lower:
+        fps_settings = ["shadows", "anti_aliasing", "vsync", "ray_tracing", "effects"]
+        if any(s in setting_lower for s in fps_settings):
+            return True
+
+    # Quality-related pattern matches quality settings
+    if "quality" in pattern_key_lower:
+        quality_settings = ["texture", "quality", "detail", "resolution"]
+        if any(s in setting_lower for s in quality_settings):
+            return True
+
+    return False
+
+
+def get_recommendations_for_game(game_id: str, game_name: str) -> Dict:
+    """
+    Get personalized recommendations for a specific game.
+
+    Loads user patterns and available settings for the game,
+    then generates recommendations based on the user's preferences.
+
+    Args:
+        game_id: Game identifier (e.g., "730" for CS2)
+        game_name: Game display name
+
+    Returns:
+        Dictionary with recommendations, generation timestamp, and pattern count.
+    """
+    # Load user patterns
+    patterns = analyze_patterns()
+
+    if not patterns:
+        return {
+            "recommendations": [],
+            "generatedAt": int(time.time() * 1000),
+            "patternCount": 0
+        }
+
+    # Load available settings for this game
+    from opta_mcp.game_settings import get_game_settings
+
+    game_settings = get_game_settings(game_id)
+
+    if not game_settings or game_settings.get("source") == "generic":
+        # No specific settings for this game
+        return {
+            "recommendations": [],
+            "generatedAt": int(time.time() * 1000),
+            "patternCount": len(patterns)
+        }
+
+    available_settings = game_settings.get("settings", {})
+
+    # Generate recommendations
+    recommendations = generate_recommendations(
+        game_id,
+        game_name,
+        available_settings,
+        patterns
+    )
+
+    return {
+        "recommendations": recommendations,
+        "generatedAt": int(time.time() * 1000),
+        "patternCount": len(patterns)
+    }

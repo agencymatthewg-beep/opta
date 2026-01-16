@@ -610,6 +610,24 @@ async def list_tools() -> list[Tool]:
                 "required": [],
             },
         ),
+        Tool(
+            name="get_recommendations",
+            description="Get personalized optimization recommendations for a game based on learned user patterns",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "game_id": {
+                        "type": "string",
+                        "description": "Game identifier (e.g., '730' for CS2)",
+                    },
+                    "game_name": {
+                        "type": "string",
+                        "description": "Game display name",
+                    },
+                },
+                "required": ["game_id", "game_name"],
+            },
+        ),
     ]
 
 
@@ -839,6 +857,11 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
     elif name == "get_choice_stats":
         from opta_mcp import patterns
         result = patterns.get_choice_stats()
+    elif name == "get_recommendations":
+        from opta_mcp import patterns
+        game_id = arguments.get("game_id", "")
+        game_name = arguments.get("game_name", "Unknown")
+        result = patterns.get_recommendations_for_game(game_id, game_name)
     else:
         result = {"error": f"Unknown tool: {name}"}
 
