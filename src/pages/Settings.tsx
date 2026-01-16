@@ -162,14 +162,13 @@ function Settings() {
               <p className="text-sm text-muted-foreground/70">
                 These tools may interfere with Opta's optimizations. Consider disabling them for best results.
               </p>
-              {conflicts.map((conflict, index) => (
+              {conflicts.map((conflict) => (
                 <ConflictCard
                   key={conflict.tool_id}
                   conflict={conflict}
                   acknowledged={acknowledgedIds.has(conflict.tool_id)}
                   onDismiss={handleDismiss}
                   onLearnMore={handleLearnMore}
-                  delay={index * 0.05}
                 />
               ))}
             </div>

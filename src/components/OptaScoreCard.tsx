@@ -23,8 +23,8 @@ interface OptaScoreCardProps {
  */
 export function OptaScoreCard({
   score,
-  onShare,
-  onExport,
+  onShare: _onShare,
+  onExport: _onExport,
   showActions = true,
   compact = false
 }: OptaScoreCardProps) {

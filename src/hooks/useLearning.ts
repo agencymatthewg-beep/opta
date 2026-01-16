@@ -241,7 +241,7 @@ export function useLearning(): UseLearningResult {
   }, [learnedPreferences]);
 
   // Get preferences relevant to a specific game
-  const getRelevantPreferences = useCallback((gameId: string) => {
+  const getRelevantPreferences = useCallback((_gameId: string) => {
     // For now, return all enabled preferences
     // In production, would filter based on game category/settings
     return learnedPreferences.filter(p => p.enabled);
