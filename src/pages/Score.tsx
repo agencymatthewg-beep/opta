@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { OptaScoreCard } from '@/components/OptaScoreCard';
@@ -6,7 +6,10 @@ import { ScoreTimeline } from '@/components/ScoreTimeline';
 import { Leaderboard } from '@/components/Leaderboard';
 import { MilestoneBadges } from '@/components/MilestoneBadges';
 import { LearnModeExplanation } from '@/components/LearnModeExplanation';
+import { ShareModal } from '@/components/ShareModal';
+import { ShareCard } from '@/components/ShareCard';
 import { useScore } from '@/hooks/useScore';
+import { saveAsImage } from '@/lib/shareUtils';
 import type { FilterMode } from '@/components/HardwareTierFilter';
 import { Award, RefreshCw, Play } from 'lucide-react';
 
@@ -16,6 +19,8 @@ import { Award, RefreshCw, Play } from 'lucide-react';
 export function Score() {
   const { optaScore, leaderboard, loading, error, refreshScore } = useScore();
   const [playTimelapse, setPlayTimelapse] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const shareCardRef = useRef<HTMLDivElement>(null);
 
   const handleFilterChange = (filter: FilterMode) => {
     // TODO: Implement filtering by tier - for v1 just logs
@@ -23,13 +28,12 @@ export function Score() {
   };
 
   const handleShare = async () => {
-    // TODO: Implement share functionality (clipboard, social)
-    console.log('Share score');
+    setIsShareModalOpen(true);
   };
 
   const handleExport = async () => {
-    // TODO: Implement export to image
-    console.log('Export score card');
+    if (!shareCardRef.current || !optaScore) return;
+    await saveAsImage(shareCardRef.current, optaScore);
   };
 
   const handlePlayTimelapse = () => {
@@ -169,6 +173,18 @@ export function Score() {
           />
         </div>
       </motion.div>
+
+      {/* Share Modal */}
+      <ShareModal
+        score={optaScore}
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+      />
+
+      {/* Hidden ShareCard for export */}
+      <div className="fixed -left-[9999px] -top-[9999px]">
+        <ShareCard ref={shareCardRef} score={optaScore} />
+      </div>
     </div>
   );
 }

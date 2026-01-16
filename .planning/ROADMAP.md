@@ -7,8 +7,8 @@ Opta transforms from an empty Tauri scaffold into a full-featured AI-powered PC 
 ## Milestones
 
 - ✅ **v1.0 MVP** - Phases 1-10 (shipped 2026-01-16)
-- **v1.1 macOS Refinement** - Phases 11-15 (complete 2026-01-16)
-- 📋 **v2.0 Windows & Social** - Phases 16-18 (planned)
+- ✅ **v1.1 macOS Refinement** - Phases 11-15 (shipped 2026-01-16)
+- 📋 **v2.0 Social, Chess & Windows** - Phases 16-18 (planned)
 
 ## Domain Expertise
 
@@ -39,9 +39,9 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 13: Core Features** - Opta Text Zone, Communication Style, Preference Presets, Pinpoint Mode
 - [x] **Phase 14: Educational Enhancement** - Expertise-adaptive explanations, learning visibility, rollback
 - [x] **Phase 15: Performance & Launch** - Performance optimization, macOS polish, launch preparation
-- [ ] **Phase 16: Windows Platform** - Windows-specific testing, installer, conflict tools (v2.0)
-- [ ] **Phase 17: Social Features** - Friend system, score sharing, comparisons (v2.0)
-- [ ] **Phase 18: Chess Integration** - Ambient chess, three modes, AI opponents (v2.0)
+- [x] **Phase 16: Social Features** - Score sharing and export (v2.0)
+- [ ] **Phase 17: Chess Integration** - Ambient chess, three modes, AI opponents (v2.0)
+- [ ] **Phase 18: Windows Platform** - Windows-specific testing, installer, conflict tools (v2.0)
 
 ## Phase Details
 
@@ -187,7 +187,7 @@ Plans:
 - [x] 10-06: Investigation mode for power users (deep-dive analysis)
 - [x] 10-07: Expertise-level detection (adjust tip complexity)
 
-### 🚧 v1.1 macOS Refinement (In Progress)
+### ✅ v1.1 macOS Refinement (Complete)
 
 **Milestone Goal:** Polish aesthetic, complete core features, fix foundations, improve UX flow for a polished macOS experience.
 
@@ -242,31 +242,31 @@ Plans:
 - [x] 15-02: macOS-specific polish
 - [x] 15-03: Launch preparation
 
-### 📋 v2.0 Windows & Social (Planned)
+### 📋 v2.0 Social, Chess & Windows (Planned)
 
-**Milestone Goal:** Expand to Windows platform, add social features, integrate chess.
+**Milestone Goal:** Add social features, integrate chess, then expand to Windows platform.
 
-#### Phase 16: Windows Platform
-**Goal**: Windows-specific testing, installer improvements, and platform-native conflict detection
+#### Phase 16: Social Features
+**Goal**: Simple score sharing and export - no backend, no accounts
 **Depends on**: Phase 15 (v1.1 complete)
-**Research**: Likely (Windows installer, registry patterns)
-**Research topics**: Tauri Windows installer customization, Windows registry conflict detection, UAC handling, Windows-specific process signatures
+**Research**: Complete (16-RESEARCH.md)
 
 Plans:
-- [ ] 16-01: TBD
+- [x] 16-01: Score sharing (ShareCard, export, Twitter/Discord)
 
-#### Phase 17: Social Features
-**Goal**: Friend system, score sharing, direct comparisons
+#### Phase 17: Chess Integration
+**Goal**: Ambient chess experience with three modes and AI opponents
 **Depends on**: Phase 16
-**Research**: Likely (social features, sharing APIs)
+**Research**: Likely (chess engines, UI patterns)
 
 Plans:
 - [ ] 17-01: TBD
 
-#### Phase 18: Chess Integration
-**Goal**: Ambient chess experience with three modes and AI opponents
+#### Phase 18: Windows Platform
+**Goal**: Windows-specific testing, installer improvements, and platform-native conflict detection
 **Depends on**: Phase 17
-**Research**: Likely (chess engines, UI patterns)
+**Research**: Likely (Windows installer, registry patterns)
+**Research topics**: Tauri Windows installer customization, Windows registry conflict detection, UAC handling, Windows-specific process signatures
 
 Plans:
 - [ ] 18-01: TBD
@@ -295,6 +295,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 �
 | 13. Core Features | v1.1 | 4/4 | Complete | 2026-01-16 |
 | 14. Educational Enhancement | v1.1 | 3/3 | Complete | 2026-01-16 |
 | 15. Performance & Launch | v1.1 | 3/3 | Complete | 2026-01-16 |
-| 16. Windows Platform | v2.0 | 0/? | Not started | - |
-| 17. Social Features | v2.0 | 0/? | Not started | - |
-| 18. Chess Integration | v2.0 | 0/? | Not started | - |
+| 16. Social Features | v2.0 | 1/1 | Complete | 2026-01-16 |
+| 17. Chess Integration | v2.0 | 0/? | Not started | - |
+| 18. Windows Platform | v2.0 | 0/? | Not started | - |

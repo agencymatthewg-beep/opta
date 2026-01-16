@@ -104,26 +104,26 @@ export function OptaScoreCard({
             <TooltipTrigger asChild>
               <Button
                 variant="outline"
-                disabled
+                onClick={_onShare}
                 className="flex-1 gap-2 glass-subtle rounded-xl border-border/30"
               >
                 <Share2 className="w-4 h-4" strokeWidth={1.75} />
                 Share
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Coming in v1.2</TooltipContent>
+            <TooltipContent>Share your score on social media</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                disabled
+                onClick={_onExport}
                 className="flex-1 gap-2 rounded-xl"
               >
                 <Download className="w-4 h-4" strokeWidth={1.75} />
                 Export Card
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Coming in v1.2</TooltipContent>
+            <TooltipContent>Download score card as image</TooltipContent>
           </Tooltip>
         </div>
       )}
