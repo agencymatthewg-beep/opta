@@ -1,0 +1,104 @@
+import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
+import { BadgeCard } from './BadgeCard';
+import { useBadges } from '@/hooks/useBadges';
+import type { BadgeCategory } from '@/types/badges';
+import { Award, Sparkles } from 'lucide-react';
+
+interface MilestoneBadgesProps {
+  compact?: boolean;  // Show fewer badges
+  category?: BadgeCategory;  // Filter by category
+}
+
+export function MilestoneBadges({ compact, category }: MilestoneBadgesProps) {
+  const { badges, newUnlocks, loading, markBadgeSeen } = useBadges();
+
+  const filteredBadges = category
+    ? badges.filter(b => b.category === category)
+    : badges;
+
+  const displayBadges = compact
+    ? filteredBadges.slice(0, 4)
+    : filteredBadges;
+
+  const unlockedCount = filteredBadges.filter(b => b.unlockedAt !== null).length;
+
+  if (loading) {
+    return <BadgesSkeleton compact={compact} />;
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="glass rounded-xl p-4 border border-border/30"
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Award className="w-5 h-5 text-primary" strokeWidth={1.75} />
+          <h3 className="text-sm font-semibold">Milestones</h3>
+        </div>
+        <span className="text-xs text-muted-foreground">
+          {unlockedCount}/{filteredBadges.length} unlocked
+        </span>
+      </div>
+
+      {/* New unlock notification */}
+      <AnimatePresence>
+        {newUnlocks.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="mb-4 p-3 rounded-lg bg-success/10 border border-success/30"
+          >
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-success" strokeWidth={1.75} />
+              <span className="text-sm font-medium text-success">
+                {newUnlocks.length} new badge{newUnlocks.length > 1 ? 's' : ''} unlocked!
+              </span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Badge grid */}
+      <div className={cn(
+        'grid gap-3',
+        compact ? 'grid-cols-4' : 'grid-cols-3 sm:grid-cols-4'
+      )}>
+        {displayBadges.map((badge, index) => (
+          <motion.div
+            key={badge.id}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: index * 0.05 }}
+          >
+            <BadgeCard
+              badge={badge}
+              onClick={() => badge.isNew && markBadgeSeen(badge.id)}
+            />
+          </motion.div>
+        ))}
+      </div>
+    </motion.div>
+  );
+}
+
+function BadgesSkeleton({ compact }: { compact?: boolean }) {
+  const count = compact ? 4 : 8;
+  return (
+    <div className="glass rounded-xl p-4 border border-border/30">
+      <div className="h-6 w-32 rounded bg-muted/30 animate-shimmer mb-4" />
+      <div className={cn(
+        'grid gap-3',
+        compact ? 'grid-cols-4' : 'grid-cols-3 sm:grid-cols-4'
+      )}>
+        {[...Array(count)].map((_, i) => (
+          <div key={i} className="h-24 rounded-xl bg-muted/30 animate-shimmer" />
+        ))}
+      </div>
+    </div>
+  );
+}
