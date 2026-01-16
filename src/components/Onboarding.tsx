@@ -5,11 +5,17 @@
  * - Priority (FPS, Quality, Balanced)
  * - Expertise level (Simple, Standard, Power)
  * - Game types (Competitive, Story, Both)
+ *
+ * The onboarding tone adapts based on the selected expertise level,
+ * making the experience feel personalized from the start.
  */
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+
 import { motion, AnimatePresence } from 'framer-motion';
+
 import { cn } from '@/lib/utils';
+
 import {
   Zap,
   Palette,
@@ -22,6 +28,8 @@ import {
   Sparkles,
   ArrowRight,
 } from 'lucide-react';
+
+import type { ExpertiseLevel } from '@/types/expertise';
 
 /**
  * Onboarding preferences interface.
@@ -50,47 +58,128 @@ interface QuestionOption {
 }
 
 /**
- * Question definition.
+ * Question content that adapts to expertise level.
+ */
+interface AdaptiveContent {
+  simple: { title: string; subtitle: string };
+  standard: { title: string; subtitle: string };
+  power: { title: string; subtitle: string };
+}
+
+/**
+ * Question definition with optional adaptive content.
  */
 interface Question {
   id: keyof OnboardingPreferences;
   title: string;
   subtitle: string;
+  /** Adaptive titles/subtitles based on selected expertise (for questions after expertise selection) */
+  adaptiveContent?: AdaptiveContent;
   options: QuestionOption[];
 }
 
-const questions: Question[] = [
-  {
-    id: 'priority',
-    title: "What matters most to you?",
-    subtitle: "I'll optimize accordingly.",
-    options: [
-      { value: 'fps', label: 'Maximum FPS', desc: 'Every frame counts', icon: Zap },
-      { value: 'quality', label: 'Visual Quality', desc: 'Keep games looking great', icon: Palette },
-      { value: 'balanced', label: 'Balanced', desc: 'Best of both worlds', icon: Scale },
-    ],
+/**
+ * Get questions with content adapted to expertise level.
+ */
+function getQuestions(expertiseLevel: ExpertiseLevel): Question[] {
+  return [
+    {
+      id: 'priority',
+      title: "What matters most to you?",
+      subtitle: "I'll optimize accordingly.",
+      options: [
+        { value: 'fps', label: 'Maximum FPS', desc: 'Every frame counts', icon: Zap },
+        { value: 'quality', label: 'Visual Quality', desc: 'Keep games looking great', icon: Palette },
+        { value: 'balanced', label: 'Balanced', desc: 'Best of both worlds', icon: Scale },
+      ],
+    },
+    {
+      id: 'expertise',
+      title: "How technical are you?",
+      subtitle: "I'll adjust my explanations.",
+      options: [
+        { value: 'simple', label: 'Keep it simple', desc: 'Plain language only', icon: Eye },
+        { value: 'standard', label: 'Standard', desc: 'Good balance', icon: Gauge },
+        { value: 'power', label: 'Show me everything', desc: 'Full technical details', icon: Wrench },
+      ],
+    },
+    {
+      id: 'gameType',
+      title: {
+        simple: "What games do you like?",
+        standard: "What kind of games do you play?",
+        power: "Game genre focus?",
+      }[expertiseLevel],
+      subtitle: {
+        simple: "I'll help make them run better!",
+        standard: "I'll prioritize those optimizations.",
+        power: "Determines optimization profile priority.",
+      }[expertiseLevel],
+      options: [
+        {
+          value: 'competitive',
+          label: {
+            simple: 'Fast games',
+            standard: 'Competitive',
+            power: 'Competitive/Esports',
+          }[expertiseLevel],
+          desc: {
+            simple: 'Shooters, racing',
+            standard: 'Valorant, CS2, Apex',
+            power: 'Input latency focus, 1%/0.1% lows',
+          }[expertiseLevel],
+          icon: Crosshair,
+        },
+        {
+          value: 'story',
+          label: {
+            simple: 'Adventure games',
+            standard: 'Story/Adventure',
+            power: 'Single-player/Immersive',
+          }[expertiseLevel],
+          desc: {
+            simple: 'Explore, adventure',
+            standard: 'RPGs, open world',
+            power: 'Visual quality priority, stable frametime',
+          }[expertiseLevel],
+          icon: Gamepad2,
+        },
+        {
+          value: 'both',
+          label: {
+            simple: 'Everything!',
+            standard: 'Both',
+            power: 'Mixed workload',
+          }[expertiseLevel],
+          desc: {
+            simple: 'I play all kinds',
+            standard: 'I play everything',
+            power: 'Balanced profile, per-game tuning',
+          }[expertiseLevel],
+          icon: Sparkles,
+        },
+      ],
+    },
+  ];
+}
+
+/**
+ * Welcome screen content adapted to expertise level.
+ */
+const WELCOME_CONTENT: Record<ExpertiseLevel, { title: string; subtitle: string }> = {
+  simple: {
+    title: "Hi there!",
+    subtitle: "I'm Opta. Let me help make your games run better.",
   },
-  {
-    id: 'expertise',
-    title: "How technical are you?",
-    subtitle: "I'll adjust my explanations.",
-    options: [
-      { value: 'simple', label: 'Keep it simple', desc: 'Plain language only', icon: Eye },
-      { value: 'standard', label: 'Standard', desc: 'Good balance', icon: Gauge },
-      { value: 'power', label: 'Show me everything', desc: 'Full technical details', icon: Wrench },
-    ],
+  standard: {
+    title: "Welcome to Opta",
+    subtitle: "Let's optimize your system for peak performance.",
   },
-  {
-    id: 'gameType',
-    title: "What kind of games do you play?",
-    subtitle: "I'll prioritize those optimizations.",
-    options: [
-      { value: 'competitive', label: 'Competitive', desc: 'Valorant, CS2, Apex', icon: Crosshair },
-      { value: 'story', label: 'Story/Adventure', desc: 'RPGs, open world', icon: Gamepad2 },
-      { value: 'both', label: 'Both', desc: 'I play everything', icon: Sparkles },
-    ],
+  power: {
+    title: "Opta Initialized",
+    subtitle: "Ready to analyze your system configuration.",
   },
-];
+};
 
 /**
  * Onboarding component.
@@ -99,6 +188,11 @@ export function Onboarding({ onComplete }: OnboardingProps) {
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Partial<OnboardingPreferences>>({});
 
+  // Determine expertise level for adaptive content
+  const expertiseLevel: ExpertiseLevel = (answers.expertise as ExpertiseLevel) || 'standard';
+
+  // Get questions adapted to current expertise selection
+  const questions = useMemo(() => getQuestions(expertiseLevel), [expertiseLevel]);
   const currentQuestion = questions[step];
 
   const handleSelect = (value: string) => {
@@ -111,6 +205,9 @@ export function Onboarding({ onComplete }: OnboardingProps) {
       onComplete(newAnswers as OnboardingPreferences);
     }
   };
+
+  // Get welcome content based on expertise (shown in subtitle after expertise selection)
+  const welcomeContent = WELCOME_CONTENT[expertiseLevel];
 
   return (
     <motion.div
@@ -143,12 +240,14 @@ export function Onboarding({ onComplete }: OnboardingProps) {
         {/* Question */}
         <AnimatePresence mode="wait">
           <motion.div
-            key={step}
+            key={`${step}-${expertiseLevel}`}
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
           >
-            <h2 className="text-2xl font-semibold mb-2 text-foreground">{currentQuestion.title}</h2>
+            <h2 className="text-2xl font-semibold mb-2 text-foreground">
+              {currentQuestion.title}
+            </h2>
             <p className="text-muted-foreground mb-6">{currentQuestion.subtitle}</p>
 
             <div className="space-y-3">
@@ -190,15 +289,29 @@ export function Onboarding({ onComplete }: OnboardingProps) {
           </motion.div>
         </AnimatePresence>
 
-        {/* Step indicator */}
-        <motion.p
-          className="text-center text-xs text-muted-foreground/50 mt-6"
+        {/* Step indicator with adaptive messaging */}
+        <motion.div
+          className="text-center mt-6"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3 }}
         >
-          Question {step + 1} of {questions.length}
-        </motion.p>
+          <p className="text-xs text-muted-foreground/50">
+            Question {step + 1} of {questions.length}
+          </p>
+          {/* Show personalized message after expertise selection */}
+          {step > 1 && (
+            <motion.p
+              className="text-xs text-primary/70 mt-1"
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              {expertiseLevel === 'simple' && "Almost done!"}
+              {expertiseLevel === 'standard' && "One more question..."}
+              {expertiseLevel === 'power' && "Final configuration step."}
+            </motion.p>
+          )}
+        </motion.div>
       </motion.div>
     </motion.div>
   );
