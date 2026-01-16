@@ -201,12 +201,29 @@ function GameDetailPanel({
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15 }}
           >
-            <PersonalizedRecommendations
-              recommendations={recommendations}
-              loading={loadingRecommendations}
-              onApply={onApplyRecommendation}
-              onDismiss={onDismissRecommendation}
-            />
+            {loadingRecommendations ? (
+              <div className="glass rounded-xl border border-border/30 p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="h-5 w-5 rounded bg-muted/30 animate-shimmer" />
+                  <div className="h-4 w-32 rounded bg-muted/30 animate-shimmer" />
+                </div>
+                <div className="space-y-3">
+                  {[1, 2, 3].map(i => (
+                    <div key={i} className="glass-subtle rounded-lg p-4 animate-pulse border border-border/20">
+                      <div className="h-4 bg-muted/20 rounded w-3/4 mb-2" />
+                      <div className="h-3 bg-muted/20 rounded w-1/2" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <PersonalizedRecommendations
+                recommendations={recommendations}
+                loading={loadingRecommendations}
+                onApply={onApplyRecommendation}
+                onDismiss={onDismissRecommendation}
+              />
+            )}
           </motion.div>
 
           {/* Optimization Preview */}
