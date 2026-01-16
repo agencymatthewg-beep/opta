@@ -12,9 +12,16 @@
   "app": {
     "windows": [
       {
-        "title": "Opta - AI PC Optimizer",
+        "title": "Opta",
         "width": 1200,
-        "height": 800
+        "height": 800,
+        "minWidth": 800,
+        "minHeight": 600,
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true,
+        "transparent": true,
+        "decorations": true,
+        "center": true
       }
     ],
     "security": {
