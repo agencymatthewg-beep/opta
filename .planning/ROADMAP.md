@@ -9,6 +9,7 @@ Opta transforms from an empty Tauri scaffold into a full-featured AI-powered PC 
 - ✅ **v1.0 MVP** - Phases 1-10 (shipped 2026-01-16)
 - ✅ **v1.1 macOS Refinement** - Phases 11-15 (shipped 2026-01-16)
 - 📋 **v2.0 Social, Chess & Windows** - Phases 16-18 (planned)
+- 📋 **v3.0 Native Platforms** - Phase 19+ (planned)
 
 ## Domain Expertise
 
@@ -42,6 +43,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 16: Social Features** - Score sharing and export (v2.0)
 - [ ] **Phase 17: Chess Integration** - Ambient chess, three modes, AI opponents (v2.0)
 - [ ] **Phase 18: Windows Platform** - Windows-specific testing, installer, conflict tools (v2.0)
+- [ ] **Phase 19: Native macOS** - Full native Swift/SwiftUI build for maximum hardware utilization (v3.0)
 
 ## Phase Details
 
@@ -274,10 +276,27 @@ Plans:
 Plans:
 - [ ] 18-01: TBD
 
+### 📋 v3.0 Native Platforms (Planned)
+
+**Milestone Goal:** Create fully native platform builds for maximum hardware utilization and performance.
+
+#### Phase 19: Native macOS
+**Goal**: Full native Swift/SwiftUI build with direct hardware access for maximum Apple Silicon utilization
+**Depends on**: Phase 18 (v2.0 complete)
+**Research**: Complete (19-RESEARCH.md)
+**Research topics**: Swift/SwiftUI, IOKit, SMC sensor access, privileged helpers, menu bar apps, NSVisualEffectView
+
+Plans:
+- [ ] 19-01: TBD
+- [ ] 19-02: TBD
+- [ ] 19-03: TBD
+
+*Note: Native Windows phase will follow after macOS native is complete.*
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 → 8 → 8.1 → 9 → 10 → 11 → 12 → 13 → 14 → 15 → 16 → 17 → 18
+Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 → 8 → 8.1 → 9 → 10 → 11 → 12 → 13 → 14 → 15 → 16 → 17 → 18 → 19
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -301,3 +320,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 �
 | 16. Social Features | v2.0 | 1/1 | Complete | 2026-01-16 |
 | 17. Chess Integration | v2.0 | 1/4 | In progress | - |
 | 18. Windows Platform | v2.0 | 0/? | Not started | - |
+| 19. Native macOS | v3.0 | 0/? | Research complete | - |
