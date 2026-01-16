@@ -1,58 +1,98 @@
 import { ReactNode } from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { Cpu, MemoryStick, MonitorSpeaker, HardDrive, LucideIcon } from 'lucide-react';
+import { LearnModeExplanation } from './LearnModeExplanation';
 
 // Icon components for telemetry cards
-const icons = {
-  cpu: (
-    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
-    </svg>
-  ),
-  memory: (
-    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-    </svg>
-  ),
-  gpu: (
-    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2V7a2 2 0 00-2-2H5z" />
-    </svg>
-  ),
-  disk: (
-    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
-    </svg>
-  ),
+const icons: Record<string, LucideIcon> = {
+  cpu: Cpu,
+  memory: MemoryStick,
+  gpu: MonitorSpeaker,
+  disk: HardDrive,
 };
 
 type IconType = keyof typeof icons;
+
+// Educational explanations for each telemetry type
+const telemetryExplanations: Record<string, { short: string; technical: string }> = {
+  cpu: {
+    short: 'Shows how much of your processor is being used. Lower is better for gaming headroom.',
+    technical: 'Measures CPU utilization across all cores. High sustained usage (>80%) may cause frame drops and stuttering.',
+  },
+  gpu: {
+    short: 'Shows graphics card usage. In games, you typically want this near 95-99% (GPU-bound).',
+    technical: 'GPU utilization from NVIDIA/AMD drivers. Low GPU + high CPU indicates a CPU bottleneck limiting your framerate.',
+  },
+  memory: {
+    short: 'RAM usage. Keep some headroom (70-80%) for smooth gaming.',
+    technical: 'Physical memory usage. When full, Windows uses slow disk swap (paging), causing major stutters.',
+  },
+  disk: {
+    short: 'Storage usage. Keep 10-15% free for optimal performance and game updates.',
+    technical: 'Available disk space. Full drives slow down significantly and may prevent game updates or crash during play.',
+  },
+};
 
 interface TelemetryCardProps {
   title: string;
   icon: IconType;
   children: ReactNode;
   className?: string;
+  delay?: number;
 }
 
-function TelemetryCard({ title, icon, children, className }: TelemetryCardProps) {
+function TelemetryCard({ title, icon, children, className, delay = 0 }: TelemetryCardProps) {
+  const Icon = icons[icon];
+  const explanation = telemetryExplanations[icon];
+
   return (
-    <Card className={cn(
-      "bg-card/80 border-border/50 backdrop-blur-sm",
-      "transition-all duration-300",
-      "hover:border-primary/30 hover:glow-sm",
-      className
-    )}>
-      <CardHeader className="pb-2 pt-4 px-4">
-        <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-          <span className="text-primary">{icons[icon]}</span>
-          <span>{title}</span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="px-4 pb-4">
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{
+        duration: 0.4,
+        delay,
+        ease: [0, 0, 0.2, 1] as const,
+      }}
+      whileHover={{ y: -2 }}
+      className={cn(
+        "glass rounded-xl overflow-hidden group",
+        "transition-shadow duration-300",
+        "hover:shadow-[0_0_0_1px_hsl(var(--glow-primary)/0.2),0_8px_32px_-8px_hsl(var(--glow-primary)/0.2)]",
+        className
+      )}
+    >
+      {/* Header */}
+      <div className="px-5 py-4 border-b border-border/30">
+        <div className="flex items-center gap-2.5">
+          <div className="p-1.5 rounded-lg bg-primary/10 group-hover:bg-primary/15 transition-colors">
+            <Icon
+              className="w-4 h-4 text-primary group-hover:drop-shadow-[0_0_6px_hsl(var(--glow-primary)/0.5)] transition-all"
+              strokeWidth={1.75}
+            />
+          </div>
+          <span className="text-sm font-medium text-muted-foreground group-hover:text-foreground/80 transition-colors">
+            {title}
+          </span>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="px-5 py-4">
         {children}
-      </CardContent>
-    </Card>
+
+        {/* Learn Mode Explanation */}
+        {explanation && (
+          <LearnModeExplanation
+            title={`Understanding ${title}`}
+            description={explanation.short}
+            details={explanation.technical}
+            type="how-it-works"
+          />
+        )}
+      </div>
+    </motion.div>
   );
 }
 

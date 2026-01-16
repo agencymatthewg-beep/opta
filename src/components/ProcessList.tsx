@@ -6,10 +6,9 @@
  */
 
 import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useProcesses } from '../hooks/useProcesses';
 import type { ProcessInfo, ProcessCategory } from '../types/processes';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
@@ -21,39 +20,70 @@ import {
   TableCell,
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
+import { Activity, AlertCircle, RefreshCw, Shield, User, Skull } from 'lucide-react';
+import { LearnModeExplanation } from './LearnModeExplanation';
 
 interface ProcessRowProps {
   process: ProcessInfo;
   isSelected: boolean;
   onSelect: (pid: number) => void;
+  index: number;
 }
 
 /**
  * Badge component for process category.
  */
 function CategoryBadge({ category }: { category: ProcessCategory }) {
-  const variantMap: Record<ProcessCategory, 'secondary' | 'default' | 'warning'> = {
-    system: 'secondary',
-    user: 'default',
-    'safe-to-kill': 'warning',
+  const config: Record<ProcessCategory, { icon: React.ReactNode; label: string; className: string }> = {
+    system: {
+      icon: <Shield className="w-2.5 h-2.5" strokeWidth={2} />,
+      label: 'System',
+      className: 'bg-muted/50 text-muted-foreground border-border/30',
+    },
+    user: {
+      icon: <User className="w-2.5 h-2.5" strokeWidth={2} />,
+      label: 'User',
+      className: 'bg-primary/10 text-primary border-primary/20',
+    },
+    'safe-to-kill': {
+      icon: <Skull className="w-2.5 h-2.5" strokeWidth={2} />,
+      label: 'Safe',
+      className: 'bg-warning/10 text-warning border-warning/20',
+    },
   };
 
+  const { icon, label, className } = config[category];
+
   return (
-    <Badge variant={variantMap[category]} className="text-[10px] uppercase tracking-wide">
-      {category}
-    </Badge>
+    <span
+      className={cn(
+        'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium',
+        'border backdrop-blur-sm',
+        className
+      )}
+    >
+      {icon}
+      {label}
+    </span>
   );
 }
 
 /**
  * Single process row component.
  */
-function ProcessRow({ process, isSelected, onSelect }: ProcessRowProps) {
+function ProcessRow({ process, isSelected, onSelect, index }: ProcessRowProps) {
+  const cpuColor = process.cpu_percent >= 50 ? 'text-danger' : process.cpu_percent >= 25 ? 'text-warning' : 'text-muted-foreground';
+  const memColor = process.memory_percent >= 50 ? 'text-danger' : process.memory_percent >= 25 ? 'text-warning' : 'text-muted-foreground';
+
   return (
-    <TableRow
+    <motion.tr
+      initial={{ opacity: 0, x: -10 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: index * 0.02, duration: 0.2 }}
       className={cn(
-        "cursor-pointer transition-colors",
-        isSelected && "bg-primary/10 hover:bg-primary/15"
+        'cursor-pointer transition-all duration-200',
+        'hover:bg-white/5',
+        isSelected && 'bg-primary/10 hover:bg-primary/15'
       )}
       onClick={() => onSelect(process.pid)}
       data-state={isSelected ? 'selected' : undefined}
@@ -64,19 +94,19 @@ function ProcessRow({ process, isSelected, onSelect }: ProcessRowProps) {
       >
         {process.name}
       </TableCell>
-      <TableCell className="text-right font-mono text-xs text-muted-foreground">
+      <TableCell className={cn('text-right font-mono text-xs tabular-nums', cpuColor)}>
         {process.cpu_percent.toFixed(1)}%
       </TableCell>
-      <TableCell className="text-right font-mono text-xs text-muted-foreground">
+      <TableCell className={cn('text-right font-mono text-xs tabular-nums', memColor)}>
         {process.memory_percent.toFixed(1)}%
       </TableCell>
       <TableCell className="text-center">
         <CategoryBadge category={process.category} />
       </TableCell>
-      <TableCell className="text-right font-mono text-xs text-muted-foreground/70">
+      <TableCell className="text-right font-mono text-xs text-muted-foreground/60 tabular-nums">
         {process.pid}
       </TableCell>
-    </TableRow>
+    </motion.tr>
   );
 }
 
@@ -85,22 +115,32 @@ function ProcessRow({ process, isSelected, onSelect }: ProcessRowProps) {
  */
 function ProcessListSkeleton() {
   return (
-    <Card className="bg-card/80 border-border/50 backdrop-blur-sm">
-      <CardHeader className="pb-2">
+    <motion.div
+      className="glass rounded-xl overflow-hidden"
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+    >
+      <div className="px-5 py-4 border-b border-border/20">
         <div className="h-5 w-40 rounded animate-shimmer" />
-      </CardHeader>
-      <CardContent className="space-y-2">
+      </div>
+      <div className="p-5 space-y-3">
         {[1, 2, 3, 4, 5].map((i) => (
-          <div key={i} className="flex gap-3 py-2 border-b border-border/20 last:border-0">
+          <motion.div
+            key={i}
+            className="flex gap-3 py-2"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: i * 0.05 }}
+          >
             <div className="flex-[2] h-4 rounded animate-shimmer" />
             <div className="w-12 h-4 rounded animate-shimmer" />
             <div className="w-12 h-4 rounded animate-shimmer" />
             <div className="w-16 h-4 rounded animate-shimmer" />
             <div className="w-12 h-4 rounded animate-shimmer" />
-          </div>
+          </motion.div>
         ))}
-      </CardContent>
-    </Card>
+      </div>
+    </motion.div>
   );
 }
 
@@ -121,70 +161,118 @@ function ProcessList() {
 
   if (error) {
     return (
-      <Card className="bg-card/80 border-border/50 backdrop-blur-sm">
-        <CardContent className="flex flex-col items-center justify-center py-12 gap-4">
-          <div className="w-12 h-12 flex items-center justify-center text-xl font-bold text-danger bg-danger/10 border-2 border-danger rounded-full">
-            !
-          </div>
-          <p className="text-sm text-muted-foreground text-center">{error}</p>
-          <Button onClick={refresh} size="sm" className="glow-sm">
-            Retry
-          </Button>
-        </CardContent>
-      </Card>
+      <motion.div
+        className="glass rounded-xl overflow-hidden"
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+      >
+        <div className="flex flex-col items-center justify-center py-12 px-6 gap-4">
+          <motion.div
+            className={cn(
+              'w-14 h-14 flex items-center justify-center rounded-full',
+              'bg-danger/10 border-2 border-danger/30',
+              'shadow-[0_0_20px_-4px_hsl(var(--danger)/0.4)]'
+            )}
+            animate={{ scale: [1, 1.05, 1] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          >
+            <AlertCircle className="w-6 h-6 text-danger" strokeWidth={1.75} />
+          </motion.div>
+          <p className="text-sm text-muted-foreground/70 text-center max-w-[250px]">{error}</p>
+          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+            <Button
+              onClick={refresh}
+              size="sm"
+              className={cn(
+                'gap-2 rounded-xl px-5',
+                'bg-gradient-to-r from-primary to-accent',
+                'shadow-[0_0_16px_-4px_hsl(var(--glow-primary)/0.5)]'
+              )}
+            >
+              <RefreshCw className="w-4 h-4" strokeWidth={2} />
+              Retry
+            </Button>
+          </motion.div>
+        </div>
+      </motion.div>
     );
   }
 
   const processCount = processes?.length ?? 0;
 
   return (
-    <Card className={cn(
-      "bg-card/80 border-border/50 backdrop-blur-sm",
-      "transition-all duration-300",
-      "hover:border-primary/30 hover:glow-sm"
-    )}>
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide">
-          Running Processes
-          <span className="text-xs font-normal text-muted-foreground">({processCount})</span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="pt-0">
-        <ScrollArea className="h-[400px] rounded-lg bg-background/50">
+    <motion.div
+      className={cn(
+        'glass rounded-xl overflow-hidden group',
+        'transition-all duration-300'
+      )}
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ y: -2 }}
+    >
+      {/* Header */}
+      <div className="px-5 py-4 border-b border-border/20">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-primary/10 group-hover:bg-primary/15 transition-colors">
+            <Activity className="w-4 h-4 text-primary" strokeWidth={1.75} />
+          </div>
+          <h3 className="text-sm font-semibold uppercase tracking-wide">
+            Running Processes
+          </h3>
+          <span className="text-xs text-muted-foreground/60 font-medium">
+            ({processCount})
+          </span>
+        </div>
+
+        {/* Learn Mode Explanation */}
+        <LearnModeExplanation
+          title="Process Categories"
+          description="Processes are grouped by type. 'Safe' processes can be stopped for gaming without breaking your system."
+          details="System processes are protected and essential for Windows/macOS. User processes include browsers and productivity apps. Safe-to-kill includes updaters, cloud sync services, and background apps that restart automatically."
+          type="tip"
+        />
+      </div>
+
+      {/* Table */}
+      <div className="p-3">
+        <ScrollArea className="h-[360px] rounded-lg">
           <Table>
-            <TableHeader className="sticky top-0 z-10 bg-primary/5 backdrop-blur-sm">
-              <TableRow className="hover:bg-transparent border-b border-border">
-                <TableHead className="w-[40%] text-primary text-xs uppercase tracking-wide font-semibold">
+            <TableHeader className="sticky top-0 z-10">
+              <TableRow className="hover:bg-transparent border-b border-border/20 bg-background/50 backdrop-blur-sm">
+                <TableHead className="w-[40%] text-primary/80 text-[10px] uppercase tracking-widest font-semibold">
                   Name
                 </TableHead>
-                <TableHead className="w-[12%] text-right text-primary text-xs uppercase tracking-wide font-semibold">
-                  CPU%
+                <TableHead className="w-[12%] text-right text-primary/80 text-[10px] uppercase tracking-widest font-semibold">
+                  CPU
                 </TableHead>
-                <TableHead className="w-[12%] text-right text-primary text-xs uppercase tracking-wide font-semibold">
-                  Mem%
+                <TableHead className="w-[12%] text-right text-primary/80 text-[10px] uppercase tracking-widest font-semibold">
+                  Mem
                 </TableHead>
-                <TableHead className="w-[20%] text-center text-primary text-xs uppercase tracking-wide font-semibold">
-                  Category
+                <TableHead className="w-[20%] text-center text-primary/80 text-[10px] uppercase tracking-widest font-semibold">
+                  Type
                 </TableHead>
-                <TableHead className="w-[16%] text-right text-primary text-xs uppercase tracking-wide font-semibold">
+                <TableHead className="w-[16%] text-right text-primary/80 text-[10px] uppercase tracking-widest font-semibold">
                   PID
                 </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {processes?.map((process) => (
-                <ProcessRow
-                  key={process.pid}
-                  process={process}
-                  isSelected={selectedPid === process.pid}
-                  onSelect={handleSelect}
-                />
-              ))}
+              <AnimatePresence>
+                {processes?.map((process, index) => (
+                  <ProcessRow
+                    key={process.pid}
+                    process={process}
+                    isSelected={selectedPid === process.pid}
+                    onSelect={handleSelect}
+                    index={index}
+                  />
+                ))}
+              </AnimatePresence>
             </TableBody>
           </Table>
         </ScrollArea>
-      </CardContent>
-    </Card>
+      </div>
+    </motion.div>
   );
 }
 
