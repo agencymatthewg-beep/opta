@@ -24,7 +24,7 @@ const rarityGlows: Record<string, string> = {
 
 export function BadgeCard({ badge, onClick }: BadgeCardProps) {
   // Get icon component from lucide-react dynamically
-  const IconComponent = (Icons as Record<string, Icons.LucideIcon>)[badge.icon];
+  const IconComponent = (Icons as unknown as Record<string, Icons.LucideIcon>)[badge.icon];
   const isUnlocked = badge.unlockedAt !== null;
 
   // Get the text color from the rarity classes
