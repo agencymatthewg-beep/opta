@@ -207,7 +207,7 @@ Plans:
 **Research**: Unlikely (UX improvements)
 
 Plans:
-- [ ] 12-01: Navigation fixes (dead-ends, mobile)
+- [x] 12-01: Navigation fixes (dead-ends, mobile)
 - [ ] 12-02: Loading & error states
 - [ ] 12-03: Session flow improvements
 
@@ -291,7 +291,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 �
 | 9. Optimization Score | v1.0 | 3/3 | Complete | 2026-01-16 |
 | 10. Polish, Education & Launch | v1.0 | 7/7 | Complete | 2026-01-16 |
 | 11. Foundation & Stability | v1.1 | 3/3 | Complete | 2026-01-16 |
-| 12. UX Flow Polish | v1.1 | 0/3 | Not started | - |
+| 12. UX Flow Polish | v1.1 | 1/3 | In progress | - |
 | 13. Core Features | v1.1 | 0/4 | Not started | - |
 | 14. Educational Enhancement | v1.1 | 0/3 | Not started | - |
 | 15. Performance & Launch | v1.1 | 0/3 | Not started | - |

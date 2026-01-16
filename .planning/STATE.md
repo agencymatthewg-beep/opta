@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-15)
 
 **Core value:** One tool to replace them all — eliminates chaos of multiple conflicting optimizers, detects conflicts, explains optimizations, delivers measurable gains.
-**Current focus:** Phase 11 — Foundation & Stability (v1.1 macOS Refinement)
+**Current focus:** Phase 12 — UX Flow Polish (v1.1 macOS Refinement)
 
 ## Current Position
 
-Phase: 11 of 18 (Foundation & Stability)
-Plan: 3 of 3 in current phase
-Status: Phase complete
-Last activity: 2026-01-16 — Completed 11-03-PLAN.md (State Persistence Improvements)
+Phase: 12 of 18 (UX Flow Polish)
+Plan: 1 of 3 in current phase
+Status: In progress
+Last activity: 2026-01-16 — Completed 12-01-PLAN.md (Navigation Fixes)
 
-Progress: ███░░░░░░░░░░░░░░░░░ 19% (3/16 plans in v1.1)
+Progress: ████░░░░░░░░░░░░░░░░ 25% (4/16 plans in v1.1)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 39
+- Total plans completed: 40
 - Average duration: 10 min
-- Total execution time: 6.18 hours
+- Total execution time: 6.21 hours
 
 **By Phase:**
 
@@ -40,10 +40,11 @@ Progress: ███░░░░░░░░░░░░░░░░░ 19% (3/16
 | 9. Optimization Score | 3/3 | 32 min | 11 min |
 | 10. Polish, Education & Launch | 7/7 | 78 min | 11 min |
 | 11. Foundation & Stability | 3/3 | 21 min | 7 min |
+| 12. UX Flow Polish | 1/3 | 2 min | 2 min |
 
 **Recent Trend:**
-- Last 5 plans: 8, 12, 8, 15, 18 min
-- Trend: Slightly longer as features become more integrated
+- Last 5 plans: 12, 8, 15, 18, 2 min
+- Trend: Fast plan due to focused scope
 
 ## Accumulated Context
 
@@ -163,6 +164,9 @@ Progress: ███░░░░░░░░░░░░░░░░░ 19% (3/16
 | 11-03 | localStorage for dismissed recommendations | Simple, browser-native, persists across sessions without backend |
 | 11-03 | URL params for game selection | Enables link sharing, browser back/forward, survives refresh |
 | 11-03 | Typed "DELETE" confirmation | Industry standard for destructive actions, prevents accidents |
+| 12-01 | Guide users from Optimize to Games | Keeps Optimize page accessible while providing clear path forward |
+| 12-01 | Mobile back button with ChevronLeft | Industry standard mobile navigation pattern |
+| 12-01 | Spring stiffness 200, damping 25 | Softer, less jarring animation while maintaining responsive feel |
 
 ### Deferred Issues
 
@@ -186,6 +190,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-16
-Stopped at: Completed 11-03-PLAN.md (State Persistence Improvements) - Phase 11 complete
+Stopped at: Completed 12-01-PLAN.md (Navigation Fixes)
 Resume file: None
-Next action: Plan or execute Phase 12 (UX Flow Polish)
+Next action: Execute 12-02-PLAN.md (Loading & Error States)
