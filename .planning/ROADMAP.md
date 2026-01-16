@@ -25,7 +25,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 6: Cloud LLM Integration** - Claude API for complex reasoning, hybrid routing
 - [x] **Phase 7: Game Detection & Profiles** - Detect installed games, community benchmark settings
 - [x] **Phase 8: Optimization Engine** - Apply settings, before/after benchmarking, explain changes
-- [ ] **Phase 8.1: Adaptive Intelligence** - INSERTED: User profile storage, pattern learning, personalized recommendations
+- [x] **Phase 8.1: Adaptive Intelligence** - INSERTED: User profile storage, pattern learning, personalized recommendations
 - [ ] **Phase 9: Optimization Score** - Shareable metric, gamification, viral loop
 - [ ] **Phase 10: Polish, Education & Launch** - Cross-platform testing, Learn Mode, visual explanations, UX refinement
 
@@ -143,9 +143,9 @@ Plans:
 
 Plans:
 - [x] 08.1-01: User profile storage system (local SQLite/JSON)
-- [ ] 08.1-02: Pattern learning from optimization choices
-- [ ] 08.1-03: Personalized recommendation engine
-- [ ] 08.1-04: Transparency panel (view/edit/delete learned data)
+- [x] 08.1-02: Pattern learning from optimization choices
+- [x] 08.1-03: Personalized recommendation engine
+- [x] 08.1-04: Transparency panel (view/edit/delete learned data)
 
 ### Phase 9: Optimization Score
 **Goal**: Shareable optimization metric for viral growth and gamification
@@ -189,6 +189,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 �
 | 6. Cloud LLM Integration | 3/3 | Complete | 2026-01-15 |
 | 7. Game Detection & Profiles | 3/3 | Complete | 2026-01-15 |
 | 8. Optimization Engine | 4/4 | Complete | 2026-01-16 |
-| 8.1 Adaptive Intelligence | 1/4 | In progress | - |
+| 8.1 Adaptive Intelligence | 4/4 | Complete | 2026-01-16 |
 | 9. Optimization Score | 0/3 | Not started | - |
 | 10. Polish, Education & Launch | 0/7 | Not started | - |
