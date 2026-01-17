@@ -75,10 +75,11 @@ function CpuMeter({ percent, cores, threads }: CpuMeterProps) {
       transition={{ duration: 0.3, ease: smoothOut }}
     >
       {/* Meter ring */}
-      <div className={cn(
-        "relative w-32 h-32",
-        isHighUsage && "animate-pulse"
-      )}>
+      <motion.div
+        className="relative w-32 h-32"
+        animate={isHighUsage ? { opacity: [1, 0.7, 1] } : { opacity: 1 }}
+        transition={isHighUsage ? { duration: 1.5, repeat: Infinity, ease: 'easeInOut' } : {}}
+      >
         {/* Ambient glow behind ring */}
         <div
           className="absolute inset-0 rounded-full"
@@ -119,7 +120,7 @@ function CpuMeter({ percent, cores, threads }: CpuMeterProps) {
             style={{ strokeDashoffset: dashOffset }}
             strokeLinecap="round"
             stroke="url(#cpuGradient)"
-            className={cn("transition-all duration-300", glowClass)}
+            className={glowClass}
           />
         </svg>
 
@@ -142,7 +143,7 @@ function CpuMeter({ percent, cores, threads }: CpuMeterProps) {
             CPU
           </span>
         </div>
-      </div>
+      </motion.div>
 
       {/* Stats - obsidian styled */}
       <motion.div

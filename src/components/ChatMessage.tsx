@@ -7,6 +7,7 @@
  */
 
 import { cn } from '@/lib/utils';
+import { Cloud, Monitor } from 'lucide-react';
 
 export interface ChatMessageProps {
   /** Message role - determines styling and alignment */
@@ -49,18 +50,12 @@ function BackendBadge({ backend }: { backend: 'local' | 'cloud' }) {
     >
       {isCloud ? (
         <>
-          <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-            <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />
-          </svg>
+          <Cloud className="w-2.5 h-2.5" strokeWidth={2} />
           Claude
         </>
       ) : (
         <>
-          <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-            <rect x="2" y="3" width="20" height="14" rx="2" />
-            <path d="M8 21h8" />
-            <path d="M12 17v4" />
-          </svg>
+          <Monitor className="w-2.5 h-2.5" strokeWidth={2} />
           Local
         </>
       )}

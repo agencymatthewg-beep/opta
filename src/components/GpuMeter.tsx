@@ -106,10 +106,11 @@ function GpuMeter({ available, name, percent = 0, temperature }: GpuMeterProps) 
       transition={{ duration: 0.3, ease: smoothOut }}
     >
       {/* Meter ring */}
-      <div className={cn(
-        "relative w-32 h-32",
-        isHighUsage && "animate-pulse"
-      )}>
+      <motion.div
+        className="relative w-32 h-32"
+        animate={isHighUsage ? { opacity: [1, 0.7, 1] } : { opacity: 1 }}
+        transition={isHighUsage ? { duration: 1.5, repeat: Infinity, ease: 'easeInOut' } : {}}
+      >
         {/* Ambient glow behind ring */}
         <div
           className="absolute inset-0 rounded-full"
@@ -150,7 +151,7 @@ function GpuMeter({ available, name, percent = 0, temperature }: GpuMeterProps) 
             style={{ strokeDashoffset: dashOffset }}
             strokeLinecap="round"
             stroke="url(#gpuGradient)"
-            className={cn("transition-all duration-300", glowClass)}
+            className={glowClass}
           />
         </svg>
 
@@ -190,7 +191,7 @@ function GpuMeter({ available, name, percent = 0, temperature }: GpuMeterProps) 
             {temperature}°C
           </motion.div>
         )}
-      </div>
+      </motion.div>
 
       {/* GPU name - obsidian styled */}
       <motion.div

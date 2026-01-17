@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,8 @@ import { ProfileViewer } from '../components/ProfileViewer';
 import { DataDeletionModal } from '../components/DataDeletionModal';
 import { LearningSummary } from '../components/LearningSummary';
 import { EditablePreferences } from '../components/EditablePreferences';
+import { getShortcutPreferences, saveShortcutPreferences } from '../components/GlobalShortcuts';
+import { isHapticsEnabled, setHapticsEnabled, isHapticsSupported } from '../lib/haptics';
 import { cn } from '@/lib/utils';
 import {
   Settings as SettingsIcon,
@@ -51,6 +53,37 @@ function Settings() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [learningTab, setLearningTab] = useState<'summary' | 'preferences'>('summary');
+
+  // Keyboard shortcuts state
+  const [shortcutQuickOptimize, setShortcutQuickOptimize] = useState(true);
+
+  // Haptics state (macOS only)
+  const [hapticsEnabledState, setHapticsEnabledState] = useState(true);
+  const [hapticsSupported, setHapticsSupported] = useState(false);
+
+  // Load shortcut and haptic preferences
+  useEffect(() => {
+    const prefs = getShortcutPreferences();
+    setShortcutQuickOptimize(prefs.quickOptimize);
+
+    // Check haptics support
+    isHapticsSupported().then(setHapticsSupported);
+    setHapticsEnabledState(isHapticsEnabled());
+  }, []);
+
+  // Handle shortcut toggle
+  const handleShortcutQuickOptimizeChange = (enabled: boolean) => {
+    setShortcutQuickOptimize(enabled);
+    saveShortcutPreferences({ quickOptimize: enabled });
+    // Trigger storage event for other components
+    window.dispatchEvent(new Event('storage'));
+  };
+
+  // Handle haptics toggle
+  const handleHapticsChange = (enabled: boolean) => {
+    setHapticsEnabledState(enabled);
+    setHapticsEnabled(enabled);
+  };
 
   const expertiseOptions: { value: ExpertiseLevel; label: string; desc: string }[] = [
     { value: 'simple', label: 'Simple', desc: 'Plain language, safer options' },
@@ -390,10 +423,10 @@ function Settings() {
             <motion.button
               onClick={() => setCommunicationStyle('informative')}
               className={cn(
-                'rounded-xl p-4 text-left transition-all bg-white/[0.02] border border-white/[0.04]',
+                'rounded-xl p-4 text-left bg-white/[0.02] border border-white/[0.04]',
                 communicationStyle === 'informative'
                   ? 'ring-2 ring-primary border-primary/30'
-                  : 'border-border/30 hover:border-border/50'
+                  : 'border-border/30'
               )}
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.98 }}
@@ -408,10 +441,10 @@ function Settings() {
             <motion.button
               onClick={() => setCommunicationStyle('concise')}
               className={cn(
-                'rounded-xl p-4 text-left transition-all bg-white/[0.02] border border-white/[0.04]',
+                'rounded-xl p-4 text-left bg-white/[0.02] border border-white/[0.04]',
                 communicationStyle === 'concise'
                   ? 'ring-2 ring-primary border-primary/30'
-                  : 'border-border/30 hover:border-border/50'
+                  : 'border-border/30'
               )}
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.98 }}
@@ -445,10 +478,10 @@ function Settings() {
             <motion.button
               onClick={() => setLearningTab('summary')}
               className={cn(
-                'px-4 py-2 rounded-lg text-sm font-medium transition-all',
+                'px-4 py-2 rounded-lg text-sm font-medium',
                 learningTab === 'summary'
                   ? 'bg-[#05030a]/80 backdrop-blur-xl border border-primary/30 text-primary'
-                  : 'bg-white/[0.02] border border-white/[0.04] text-muted-foreground hover:text-foreground'
+                  : 'bg-white/[0.02] border border-white/[0.04] text-muted-foreground'
               )}
               whileHover={{ y: -1 }}
               whileTap={{ scale: 0.98 }}
@@ -458,10 +491,10 @@ function Settings() {
             <motion.button
               onClick={() => setLearningTab('preferences')}
               className={cn(
-                'px-4 py-2 rounded-lg text-sm font-medium transition-all',
+                'px-4 py-2 rounded-lg text-sm font-medium',
                 learningTab === 'preferences'
                   ? 'bg-[#05030a]/80 backdrop-blur-xl border border-primary/30 text-primary'
-                  : 'bg-white/[0.02] border border-white/[0.04] text-muted-foreground hover:text-foreground'
+                  : 'bg-white/[0.02] border border-white/[0.04] text-muted-foreground'
               )}
               whileHover={{ y: -1 }}
               whileTap={{ scale: 0.98 }}
@@ -497,6 +530,128 @@ function Settings() {
 
           <PresetSelector />
         </motion.section>
+
+        {/* Keyboard Shortcuts Section */}
+        <motion.section
+          className="space-y-4"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.31 }}
+        >
+          <div className="flex items-center gap-2">
+            <Zap className="w-5 h-5 text-primary" strokeWidth={1.75} />
+            <h2 className="text-lg font-semibold">Keyboard Shortcuts</h2>
+          </div>
+          <p className="text-sm text-muted-foreground/70">
+            Global shortcuts work even when Opta is in the background.
+          </p>
+
+          <div className="rounded-xl overflow-hidden bg-[#05030a]/80 backdrop-blur-xl border border-white/[0.06]">
+            <div className="p-5 space-y-4">
+              {/* Quick Optimization Shortcut */}
+              <div className="flex justify-between items-center gap-4">
+                <div className="flex items-start gap-3">
+                  <div className={cn(
+                    'w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0',
+                    'bg-primary/10 border border-primary/20'
+                  )}>
+                    <Zap className="w-5 h-5 text-primary" strokeWidth={1.75} />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-sm font-semibold text-foreground">Quick Optimization</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground/60">
+                        Cmd+Shift+O (macOS) / Ctrl+Shift+O
+                      </span>
+                      <span className={cn(
+                        'inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium',
+                        'bg-success/15 text-success border border-success/30'
+                      )}>
+                        Background
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <Switch
+                  checked={shortcutQuickOptimize}
+                  onCheckedChange={handleShortcutQuickOptimizeChange}
+                />
+              </div>
+
+              <div className="h-px bg-border/20" />
+
+              {/* Shortcut reference */}
+              <div className="space-y-2">
+                <div className="text-xs font-semibold text-muted-foreground/50 uppercase tracking-widest">
+                  All Shortcuts
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div className="flex items-center justify-between p-2 rounded-lg bg-white/[0.02]">
+                    <span className="text-muted-foreground/70">Command Palette</span>
+                    <kbd className={cn(
+                      'px-2 py-0.5 rounded text-xs font-mono',
+                      'bg-white/[0.04] border border-white/[0.08]'
+                    )}>
+                      Cmd/Ctrl+K
+                    </kbd>
+                  </div>
+                  <div className="flex items-center justify-between p-2 rounded-lg bg-white/[0.02]">
+                    <span className="text-muted-foreground/70">Quick Optimize</span>
+                    <kbd className={cn(
+                      'px-2 py-0.5 rounded text-xs font-mono',
+                      'bg-white/[0.04] border border-white/[0.08]'
+                    )}>
+                      Cmd/Ctrl+Shift+O
+                    </kbd>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.section>
+
+        {/* Feedback Section (Haptics - macOS only) */}
+        {hapticsSupported && (
+          <motion.section
+            className="space-y-4"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.315 }}
+          >
+            <div className="flex items-center gap-2">
+              <Cpu className="w-5 h-5 text-primary" strokeWidth={1.75} />
+              <h2 className="text-lg font-semibold">Feedback</h2>
+            </div>
+            <p className="text-sm text-muted-foreground/70">
+              Tactile feedback on Force Touch trackpad.
+            </p>
+
+            <div className="rounded-xl overflow-hidden bg-[#05030a]/80 backdrop-blur-xl border border-white/[0.06]">
+              <div className="p-5">
+                <div className="flex justify-between items-center gap-4">
+                  <div className="flex items-start gap-3">
+                    <div className={cn(
+                      'w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0',
+                      'bg-primary/10 border border-primary/20'
+                    )}>
+                      <Cpu className="w-5 h-5 text-primary" strokeWidth={1.75} />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <span className="text-sm font-semibold text-foreground">Haptic Feedback</span>
+                      <span className="text-xs text-muted-foreground/60">
+                        Subtle vibration on optimization complete and key actions
+                      </span>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={hapticsEnabledState}
+                    onCheckedChange={handleHapticsChange}
+                  />
+                </div>
+              </div>
+            </div>
+          </motion.section>
+        )}
 
         {/* Privacy Section */}
         <motion.section

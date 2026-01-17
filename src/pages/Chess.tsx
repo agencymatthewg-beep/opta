@@ -569,9 +569,9 @@ function Chess() {
                 disabled={!tab.available && tab.id !== 'casual'}
                 className={cn(
                   'relative flex items-center gap-2 px-4 py-2 rounded-lg',
-                  'text-sm font-medium transition-colors duration-200',
+                  'text-sm font-medium',
                   isActive && 'text-primary',
-                  !isActive && tab.available && 'text-muted-foreground hover:text-foreground',
+                  !isActive && tab.available && 'text-muted-foreground',
                   !tab.available && tab.id !== 'casual' && 'text-muted-foreground/40 cursor-not-allowed'
                 )}
                 whileHover={tab.available ? { scale: 1.02 } : undefined}
