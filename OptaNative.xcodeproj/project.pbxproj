@@ -21,6 +21,7 @@
 		A100014001 /* HelperManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100014000 /* HelperManager.swift */; };
 		A100015001 /* ChipDetection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100015000 /* ChipDetection.swift */; };
 		A100016001 /* SensorKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100016000 /* SensorKeys.swift */; };
+		A100019001 /* SensorReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100019000 /* SensorReader.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -68,6 +69,7 @@
 		A100014000 /* HelperManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelperManager.swift; sourceTree = "<group>"; };
 		A100015000 /* ChipDetection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChipDetection.swift; sourceTree = "<group>"; };
 		A100016000 /* SensorKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SensorKeys.swift; sourceTree = "<group>"; };
+		A100019000 /* SensorReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SensorReader.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -112,6 +114,7 @@
 			isa = PBXGroup;
 			children = (
 				A100016000 /* SensorKeys.swift */,
+				A100019000 /* SensorReader.swift */,
 			);
 			path = Sensors;
 			sourceTree = "<group>";
@@ -339,6 +342,7 @@
 				A100014001 /* HelperManager.swift in Sources */,
 				A100015001 /* ChipDetection.swift in Sources */,
 				A100016001 /* SensorKeys.swift in Sources */,
+				A100019001 /* SensorReader.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
