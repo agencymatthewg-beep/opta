@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-15)
 ## Current Position
 
 Phase: 17 of 18 (Chess Integration)
-Plan: 3 of ? in current phase
-Status: In progress
-Last activity: 2026-01-17 — Completed 17-03-PLAN.md (Chess UI Components)
+Plan: 4 of 4 in current phase
+Status: Awaiting human verification (checkpoint)
+Last activity: 2026-01-17 — Completed 17-04-PLAN.md tasks 1-2 (ChessPage integration)
 
-Progress: ███░░░░░░░ ~30% of v2.0 (3/? plans)
+Progress: ████░░░░░░ ~40% of v2.0 (4/? plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 54
+- Total plans completed: 55
 - Average duration: 9 min
-- Total execution time: 7.3 hours
+- Total execution time: 7.4 hours
 
 **By Phase:**
 
@@ -45,7 +45,7 @@ Progress: ███░░░░░░░ ~30% of v2.0 (3/? plans)
 | 14. Educational Enhancement | 3/3 | 12 min | 4 min |
 | 15. Performance & Launch | 3/3 | 12 min | 4 min |
 | 16. Social Features | 1/1 | 8 min | 8 min |
-| 17. Chess Integration | 3/? | 17 min | 5.7 min |
+| 17. Chess Integration | 4/4 | 23 min | 5.75 min |
 
 **Recent Trend:**
 - Last 5 plans: 4, 4, 8, 3, 6 min
@@ -228,6 +228,10 @@ Progress: ███░░░░░░░ ~30% of v2.0 (3/? plans)
 | 17-03 | react-chessboard v5 options API | New API uses options prop instead of individual props |
 | 17-03 | Lucide icons for promotion | Crown/Castle/Cross/Sword best available chess-like icons |
 | 17-03 | Move pairs grouping | Standard chess notation displays moves in pairs per row |
+| 17-04 | Three-mode architecture | Casual active, Puzzles/Analysis coming in v2.1 |
+| 17-04 | Ambient UX no counters | Hidden win/loss stats reduce anxiety in casual play |
+| 17-04 | 30-second inactivity hint | Gentle take your time message encourages relaxed play |
+| 17-04 | LocalStorage for game FEN | Simple persistence without backend changes |
 
 ### Deferred Issues
 
@@ -251,6 +255,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-17
-Stopped at: Completed 17-03-PLAN.md (Chess UI Components)
+Stopped at: 17-04-PLAN.md at human verification checkpoint (Tasks 1-2 complete)
 Resume file: None
-Next action: Execute 17-04-PLAN.md (ChessPage integration)
+Next action: Human verification of chess feature, then Phase 17 complete
