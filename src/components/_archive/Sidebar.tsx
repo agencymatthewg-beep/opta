@@ -1,9 +1,9 @@
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { useConflicts } from '../hooks/useConflicts';
+import { useConflicts } from '../../hooks/useConflicts';
 import { useOptaRing } from '@/contexts/OptaRingContext';
-import PlatformIndicator from './PlatformIndicator';
-import { OptaRing } from './OptaRing';
+import PlatformIndicator from '../PlatformIndicator';
+import { OptaRing } from '../OptaRing';
 import {
   LayoutDashboard,
   Gamepad2,

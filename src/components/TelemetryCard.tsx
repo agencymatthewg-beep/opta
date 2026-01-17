@@ -73,22 +73,10 @@ const TelemetryCard = memo(function TelemetryCard({
 
   return (
     <motion.div
-      // Ignition animation - emerges from darkness
-      initial={{
-        opacity: 0,
-        y: 12,
-        filter: 'brightness(0.5) blur(2px)',
-      }}
-      animate={{
-        opacity: 1,
-        y: 0,
-        filter: 'brightness(1) blur(0px)',
-      }}
-      transition={{
-        duration: 0.5,
-        delay,
-        ease: smoothOut,
-      }}
+      // Simple fade-in animation (removed filter for performance)
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, delay, ease: smoothOut }}
       // Hover: 0% → 50% energy transition
       whileHover={{
         y: -3,

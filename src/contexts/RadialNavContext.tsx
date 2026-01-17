@@ -34,6 +34,8 @@ export interface RadialNavState {
   isMobile: boolean;
   /** Content to preview in the center area */
   previewContent: React.ReactNode | null;
+  /** Whether we're in the home/hero view (fullscreen dial, no page content) */
+  isHomeView: boolean;
 }
 
 // ============================================================================
@@ -43,6 +45,7 @@ export interface RadialNavState {
 export const SEMANTIC_COLORS = {
   dashboard: { name: 'warmth' as SemanticColor, color: 'hsl(var(--warning))', glow: 'rgba(250,204,21,0.5)' },
   games: { name: 'gaming' as SemanticColor, color: 'hsl(210 90% 60%)', glow: 'rgba(59,130,246,0.5)' },
+  chess: { name: 'gaming' as SemanticColor, color: 'hsl(280 80% 55%)', glow: 'rgba(168,85,247,0.5)' },
   optimize: { name: 'energy' as SemanticColor, color: 'hsl(var(--primary))', glow: 'rgba(168,85,247,0.5)' },
   pinpoint: { name: 'precision' as SemanticColor, color: 'hsl(185 80% 55%)', glow: 'rgba(34,211,238,0.5)' },
   score: { name: 'success' as SemanticColor, color: 'hsl(var(--success))', glow: 'rgba(74,222,128,0.5)' },
@@ -71,6 +74,10 @@ interface RadialNavContextValue extends RadialNavState {
   collapse: () => void;
   /** Transition to halo mode */
   toHalo: () => void;
+
+  // Home view
+  /** Return to home/hero view (fullscreen dial) */
+  goHome: () => void;
 
   // Utility island
   /** Open the utility island */
@@ -107,6 +114,7 @@ const DEFAULT_STATE: RadialNavState = {
   isUtilityIslandOpen: false,
   isMobile: false,
   previewContent: null,
+  isHomeView: true, // Start in home/hero view
 };
 
 // Durations in ms
@@ -116,8 +124,19 @@ const HALO_COLLAPSE_DELAY = 300;
 // Provider Implementation
 // ============================================================================
 
-export function RadialNavProvider({ children }: { children: React.ReactNode }) {
-  const [state, setState] = useState<RadialNavState>(DEFAULT_STATE);
+interface RadialNavProviderProps {
+  children: React.ReactNode;
+  /** Active page ID from parent - syncs with external navigation state */
+  activePage?: string;
+  /** Navigation callback from parent - called when navigation occurs */
+  onNavigate?: (page: string) => void;
+}
+
+export function RadialNavProvider({ children, activePage, onNavigate }: RadialNavProviderProps) {
+  const [state, setState] = useState<RadialNavState>(() => ({
+    ...DEFAULT_STATE,
+    activePageId: activePage || DEFAULT_STATE.activePageId,
+  }));
 
   // Detect mobile on mount and window resize
   useEffect(() => {
@@ -141,13 +160,29 @@ export function RadialNavProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  // Sync activePage prop with internal state
+  useEffect(() => {
+    if (activePage && activePage !== state.activePageId) {
+      setState((prev) => ({
+        ...prev,
+        activePageId: activePage,
+      }));
+    }
+  }, [activePage, state.activePageId]);
+
   // Navigate to a page
   const navigateTo = useCallback((pageId: string) => {
+    // Call external onNavigate if provided
+    if (onNavigate) {
+      onNavigate(pageId);
+    }
+
     setState((prev) => ({
       ...prev,
       activePageId: pageId,
       hoveredItemId: null,
       hoveredItemSemanticColor: null,
+      isHomeView: false, // Exit home view when navigating to a page
     }));
 
     // Auto-collapse to halo after navigation with delay for animation
@@ -157,6 +192,17 @@ export function RadialNavProvider({ children }: { children: React.ReactNode }) {
         mode: 'halo',
       }));
     }, HALO_COLLAPSE_DELAY);
+  }, [onNavigate]);
+
+  // Return to home/hero view
+  const goHome = useCallback(() => {
+    setState((prev) => ({
+      ...prev,
+      isHomeView: true,
+      mode: 'expanded',
+      hoveredItemId: null,
+      hoveredItemSemanticColor: null,
+    }));
   }, []);
 
   // Set hovered item
@@ -243,6 +289,7 @@ export function RadialNavProvider({ children }: { children: React.ReactNode }) {
     expand,
     collapse,
     toHalo,
+    goHome,
     openUtilityIsland,
     closeUtilityIsland,
     toggleUtilityIsland,

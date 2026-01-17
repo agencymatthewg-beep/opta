@@ -250,11 +250,12 @@ export function useRadialNavKeyboard() {
         return;
       }
 
-      // Number keys 1-6 for quick navigation (when radial is visible)
-      if (/^[1-6]$/.test(e.key) && mode === 'expanded') {
+      // Number keys 1-7 for quick navigation (when radial is visible)
+      if (/^[1-7]$/.test(e.key) && mode === 'expanded') {
         const navItems = [
           'dashboard',
           'games',
+          'chess',
           'optimize',
           'pinpoint',
           'score',
@@ -266,13 +267,14 @@ export function useRadialNavKeyboard() {
       }
 
       // If in halo mode and any number key pressed, expand first
-      if (/^[1-6]$/.test(e.key) && mode === 'halo') {
+      if (/^[1-7]$/.test(e.key) && mode === 'halo') {
         expand();
         // Navigate after a short delay for visual feedback
         setTimeout(() => {
           const navItems = [
             'dashboard',
             'games',
+            'chess',
             'optimize',
             'pinpoint',
             'score',

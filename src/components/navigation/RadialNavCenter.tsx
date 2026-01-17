@@ -28,6 +28,7 @@ interface RadialNavCenterProps {
 const ITEM_LABELS: Record<SemanticColorKey, string> = {
   dashboard: 'Dashboard',
   games: 'Games',
+  chess: 'Chess',
   optimize: 'Optimize',
   pinpoint: 'Pinpoint',
   score: 'Score',
@@ -41,7 +42,7 @@ const IDLE_GLOW = 'rgba(255, 255, 255, 0.1)';
 const IDLE_GLOW_SECONDARY = 'rgba(168, 85, 247, 0.15)';
 
 export function RadialNavCenter({ onClick }: RadialNavCenterProps) {
-  const { hoveredItemId, toggleUtilityIsland, getSemanticColor } = useRadialNav();
+  const { hoveredItemId, isHomeView, goHome, toggleUtilityIsland, getSemanticColor } = useRadialNav();
 
   // Determine display text and colors
   const isHovered = !!hoveredItemId;
@@ -52,13 +53,17 @@ export function RadialNavCenter({ onClick }: RadialNavCenterProps) {
   const glowColor = semanticColor?.glow ?? IDLE_GLOW;
 
   // Handle click action
+  // - If NOT in home view: return to home view
+  // - If in home view: toggle utility island
   const handleClick = useCallback(() => {
     if (onClick) {
       onClick();
+    } else if (!isHomeView) {
+      goHome();
     } else {
       toggleUtilityIsland();
     }
-  }, [onClick, toggleUtilityIsland]);
+  }, [onClick, isHomeView, goHome, toggleUtilityIsland]);
 
   // Handle keyboard activation
   const handleKeyDown = useCallback(
@@ -85,7 +90,13 @@ export function RadialNavCenter({ onClick }: RadialNavCenterProps) {
       )}
       role="button"
       tabIndex={0}
-      aria-label={isHovered ? `Navigate to ${displayText}` : 'Opta - Click to open utility island'}
+      aria-label={
+        isHovered
+          ? `Navigate to ${displayText}`
+          : isHomeView
+            ? 'Opta - Click to open utility island'
+            : 'Opta - Click to return to home'
+      }
       onClick={handleClick}
       onKeyDown={handleKeyDown}
       // Breathing animation only when idle

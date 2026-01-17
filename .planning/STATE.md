@@ -254,6 +254,7 @@ None yet.
 - Milestone v1.1 restructured: macOS Refinement focus, Windows deferred to v2.0
 - v1.1 phases now: Foundation & Stability, UX Flow Polish, Core Features, Educational Enhancement, Performance & Launch
 - v2.0 created: Windows Platform, Social Features, Chess Integration (Phases 16-18)
+- v4.0 created: Rich Features - interactions, visualizations, AI/ML, cross-device sync (Phases 20-23)
 
 ## Session Continuity
 

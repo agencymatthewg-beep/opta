@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { AnimatePresence, motion, LazyMotion, domAnimation } from 'framer-motion';
 import Layout from './components/Layout';
 import Background from './components/Background';
@@ -14,6 +14,9 @@ import { CommunicationStyleProvider } from './components/CommunicationStyleConte
 import { GameSessionProvider, useGameSessionContext } from './components/GameSessionContext';
 import GameSessionTracker from './components/GameSessionTracker';
 import SessionSummaryModal from './components/SessionSummaryModal';
+import { useNavigationHistory } from './hooks/useNavigationHistory';
+import { useSwipeNavigation } from './hooks/useSwipeNavigation';
+import SwipeIndicator from './components/SwipeIndicator';
 
 // Lazy load pages for better initial load performance
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -72,9 +75,33 @@ function GameSessionUI() {
 }
 
 function App() {
-  const [activePage, setActivePage] = useState('dashboard');
   const [showPlatformOnboarding, setShowPlatformOnboarding] = useState(false);
   const [showPreferencesOnboarding, setShowPreferencesOnboarding] = useState(false);
+
+  // Navigation history for back/forward support
+  const {
+    currentPage: activePage,
+    canGoBack,
+    canGoForward,
+    navigate,
+    goBack,
+    goForward,
+  } = useNavigationHistory('dashboard');
+
+  // Magic Mouse swipe navigation
+  const { swipeProgress, swipeDirection } = useSwipeNavigation({
+    onSwipeLeft: goForward,
+    onSwipeRight: goBack,
+    canSwipeLeft: canGoForward,
+    canSwipeRight: canGoBack,
+    threshold: 100,
+    enabled: !showPlatformOnboarding && !showPreferencesOnboarding,
+  });
+
+  // Wrapper for navigation that uses history
+  const setActivePage = useCallback((pageId: string) => {
+    navigate(pageId);
+  }, [navigate]);
 
   // Check if onboarding should be shown on first launch
   useEffect(() => {
@@ -219,6 +246,14 @@ function App() {
 
               {/* Game Session UI - tracker and summary modal */}
               <GameSessionUI />
+
+              {/* Swipe navigation indicator */}
+              <SwipeIndicator
+                progress={swipeProgress}
+                direction={swipeDirection}
+                canGoBack={canGoBack}
+                canGoForward={canGoForward}
+              />
 
               {/* Platform onboarding (first) */}
               <AnimatePresence>

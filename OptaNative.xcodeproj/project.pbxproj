@@ -16,6 +16,9 @@
 		A1000007002 /* HelperProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000007000 /* HelperProtocol.swift */; };
 		A1000008001 /* HelperTool.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000008000 /* HelperTool.swift */; };
 		A1000009001 /* com.opta.native.helper in Copy Helper */ = {isa = PBXBuildFile; fileRef = A1000060000 /* com.opta.native.helper */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		A100010001 /* SMC.c in Sources */ = {isa = PBXBuildFile; fileRef = A100010000 /* SMC.c */; };
+		A100011001 /* SMCBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100011000 /* SMCBridge.swift */; };
+		A100014001 /* HelperManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100014000 /* HelperManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -56,6 +59,10 @@
 		A1000008100 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A1000008200 /* launchd.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = launchd.plist; sourceTree = "<group>"; };
 		A1000060000 /* com.opta.native.helper */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = com.opta.native.helper; sourceTree = BUILT_PRODUCTS_DIR; };
+		A100010000 /* SMC.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = SMC.c; sourceTree = "<group>"; };
+		A100010100 /* SMC.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SMC.h; sourceTree = "<group>"; };
+		A100011000 /* SMCBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SMCBridge.swift; sourceTree = "<group>"; };
+		A100012000 /* OptaNative-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "OptaNative-Bridging-Header.h"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -80,10 +87,21 @@
 			isa = PBXGroup;
 			children = (
 				A1000021000 /* OptaNative */,
+				A100013000 /* SMC */,
 				A1000028000 /* Shared */,
 				A1000029000 /* Helper */,
 				A1000022000 /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		A100013000 /* SMC */ = {
+			isa = PBXGroup;
+			children = (
+				A100010100 /* SMC.h */,
+				A100010000 /* SMC.c */,
+				A100011000 /* SMCBridge.swift */,
+			);
+			path = OptaNative/SMC;
 			sourceTree = "<group>";
 		};
 		A1000021000 /* OptaNative */ = {
@@ -97,6 +115,7 @@
 				A1000002000 /* Assets.xcassets */,
 				A1000004000 /* OptaNative.entitlements */,
 				A1000004100 /* Info.plist */,
+				A100012000 /* OptaNative-Bridging-Header.h */,
 				A1000027000 /* Preview Content */,
 			);
 			path = "OptaNative/OptaNative";
@@ -291,6 +310,8 @@
 				A1000005001 /* GlassBackground.swift in Sources */,
 				A1000006001 /* DesignSystem.swift in Sources */,
 				A1000007001 /* HelperProtocol.swift in Sources */,
+				A100010001 /* SMC.c in Sources */,
+				A100011001 /* SMCBridge.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -456,6 +477,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.opta.native;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "OptaNative/OptaNative/OptaNative-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
@@ -484,6 +506,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.opta.native;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "OptaNative/OptaNative/OptaNative-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 			};
 			name = Release;

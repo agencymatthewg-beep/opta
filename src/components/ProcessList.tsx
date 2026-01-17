@@ -8,7 +8,7 @@
  */
 
 import { useState, memo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useProcesses } from '../hooks/useProcesses';
 import type { ProcessInfo, ProcessCategory } from '../types/processes';
 import { MotionButton } from '@/components/ui/button';
@@ -33,7 +33,6 @@ interface ProcessRowProps {
   process: ProcessInfo;
   isSelected: boolean;
   onSelect: (pid: number) => void;
-  index: number;
 }
 
 /**
@@ -79,15 +78,12 @@ const CategoryBadge = memo(function CategoryBadge({ category }: { category: Proc
  * Single process row component with obsidian hover states.
  * Memoized to prevent re-renders for unchanged rows in the list.
  */
-const ProcessRow = memo(function ProcessRow({ process, isSelected, onSelect, index }: ProcessRowProps) {
+const ProcessRow = memo(function ProcessRow({ process, isSelected, onSelect }: ProcessRowProps) {
   const cpuColor = process.cpu_percent >= 50 ? 'text-danger' : process.cpu_percent >= 25 ? 'text-warning' : 'text-muted-foreground';
   const memColor = process.memory_percent >= 50 ? 'text-danger' : process.memory_percent >= 25 ? 'text-warning' : 'text-muted-foreground';
 
   return (
-    <motion.tr
-      initial={{ opacity: 0, x: -10, filter: 'brightness(0.7)' }}
-      animate={{ opacity: 1, x: 0, filter: 'brightness(1)' }}
-      transition={{ delay: index * 0.02, duration: 0.25, ease: smoothOut }}
+    <tr
       className={cn(
         'cursor-pointer transition-all duration-200',
         'hover:bg-primary/[0.03]',
@@ -114,7 +110,7 @@ const ProcessRow = memo(function ProcessRow({ process, isSelected, onSelect, ind
       <TableCell className="text-right font-mono text-xs text-muted-foreground/50 tabular-nums">
         {process.pid}
       </TableCell>
-    </motion.tr>
+    </tr>
   );
 });
 
@@ -129,9 +125,9 @@ function ProcessListSkeleton() {
         'bg-[#05030a]/80 backdrop-blur-xl',
         'border border-white/[0.06]'
       )}
-      initial={{ opacity: 0, y: 12, filter: 'brightness(0.5)' }}
-      animate={{ opacity: 1, y: 0, filter: 'brightness(1)' }}
-      transition={{ duration: 0.5, ease: smoothOut }}
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: smoothOut }}
     >
       <div className="flex flex-col items-center justify-center py-16 gap-4">
         <OptaRingLoader size="md" />
@@ -209,9 +205,9 @@ function ProcessList() {
         'before:bg-gradient-to-r before:from-transparent before:via-white/10 before:to-transparent',
         'before:rounded-t-xl'
       )}
-      initial={{ opacity: 0, y: 12, filter: 'brightness(0.5)' }}
-      animate={{ opacity: 1, y: 0, filter: 'brightness(1)' }}
-      transition={{ duration: 0.5, ease: smoothOut }}
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: smoothOut }}
       whileHover={{ y: -2 }}
     >
       {/* Hover glow overlay */}
@@ -276,17 +272,14 @@ function ProcessList() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              <AnimatePresence>
-                {processes?.map((process, index) => (
-                  <ProcessRow
-                    key={process.pid}
-                    process={process}
-                    isSelected={selectedPid === process.pid}
-                    onSelect={handleSelect}
-                    index={index}
-                  />
-                ))}
-              </AnimatePresence>
+              {processes?.map((process) => (
+                <ProcessRow
+                  key={process.pid}
+                  process={process}
+                  isSelected={selectedPid === process.pid}
+                  onSelect={handleSelect}
+                />
+              ))}
             </TableBody>
           </Table>
         </ScrollArea>

@@ -61,18 +61,10 @@ function MemoryMeter({ usedGb, totalGb, percent }: MemoryMeterProps) {
       aria-valuemin={0}
       aria-valuemax={100}
       aria-label={`Memory usage: ${usedGb.toFixed(1)} GB of ${totalGb.toFixed(1)} GB (${Math.round(percent)} percent)`}
-      // Ignition animation
-      initial={{
-        opacity: 0,
-        y: 8,
-        filter: 'brightness(0.5) blur(2px)',
-      }}
-      animate={{
-        opacity: 1,
-        y: 0,
-        filter: 'brightness(1) blur(0px)',
-      }}
-      transition={{ duration: 0.5, ease: smoothOut }}
+      // Simple fade-in (filter removed for performance)
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: smoothOut }}
     >
       {/* Header */}
       <motion.div

@@ -69,18 +69,10 @@ function CpuMeter({ percent, cores, threads }: CpuMeterProps) {
       aria-valuemin={0}
       aria-valuemax={100}
       aria-label={`CPU usage: ${Math.round(percent)} percent`}
-      // Ignition animation
-      initial={{
-        opacity: 0,
-        scale: 0.9,
-        filter: 'brightness(0.5) blur(4px)',
-      }}
-      animate={{
-        opacity: 1,
-        scale: 1,
-        filter: 'brightness(1) blur(0px)',
-      }}
-      transition={{ duration: 0.6, ease: smoothOut }}
+      // Simple fade-in (filter removed for performance)
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.3, ease: smoothOut }}
     >
       {/* Meter ring */}
       <div className={cn(

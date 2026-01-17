@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard,
   Gamepad2,
+  Crown,
   Zap,
   Target,
   Award,
@@ -13,6 +14,7 @@ import { useRadialNav } from '@/contexts/RadialNavContext';
 import { RadialNavItem } from './RadialNavItem';
 import { RadialNavCenter } from './RadialNavCenter';
 import { RadialHalo } from './RadialHalo';
+import { RadialNavMobile } from './RadialNavMobile';
 import { smoothOut } from '@/lib/animations';
 
 /**
@@ -34,6 +36,7 @@ interface RadialNavProps {
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'games', label: 'Games', icon: Gamepad2 },
+  { id: 'chess', label: 'Chess', icon: Crown },
   { id: 'optimize', label: 'Optimize', icon: Zap },
   { id: 'pinpoint', label: 'Pinpoint', icon: Target },
   { id: 'score', label: 'Score', icon: Award },
@@ -146,6 +149,7 @@ export function RadialNav({ activePage, onNavigate }: RadialNavProps) {
   const {
     mode,
     isMobile,
+    isHomeView,
     hoveredItemId,
     setHoveredItem,
     navigateTo,
@@ -193,24 +197,23 @@ export function RadialNav({ activePage, onNavigate }: RadialNavProps) {
     }
   }, [mode, expand]);
 
-  // Render mobile version (placeholder for now)
+  // Render mobile version with bottom arc layout
   if (isMobile) {
-    return (
-      <div className="fixed bottom-0 left-0 right-0 h-20 glass-strong border-t border-border/30 flex items-center justify-center">
-        <span className="text-muted-foreground text-sm">
-          RadialNavMobile (Coming Soon)
-        </span>
-      </div>
-    );
+    return <RadialNavMobile activePage={activePage} onNavigate={onNavigate} />;
   }
 
   // Don't render expanded items in halo mode
   const showItems = mode === 'expanded';
 
+  // Scale factor for home view (fullscreen dial)
+  const homeScale = isHomeView ? 1.4 : 1;
+
   return (
-    <div
+    <motion.div
       className="relative flex items-center justify-center"
       onMouseEnter={handleContainerHover}
+      animate={{ scale: homeScale }}
+      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
     >
       <AnimatePresence mode="wait">
         {showItems && (
@@ -261,7 +264,7 @@ export function RadialNav({ activePage, onNavigate }: RadialNavProps) {
           </RadialHalo>
         )}
       </AnimatePresence>
-    </div>
+    </motion.div>
   );
 }
 

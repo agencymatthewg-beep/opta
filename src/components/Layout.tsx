@@ -1,12 +1,13 @@
 import { ReactNode, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import Sidebar from './Sidebar';
 import { OptaTextZone } from './OptaTextZone';
 import { OptaTextZoneProvider, useOptaTextZone } from './OptaTextZoneContext';
 import { OptaRingProvider, useOptaRing } from '@/contexts/OptaRingContext';
 import { FogProvider, useFog } from '@/contexts/FogContext';
+import { RadialNavProvider, useRadialNav } from '@/contexts/RadialNavContext';
 import { Background } from './Background';
 import { FloatingRingOverlay } from './FloatingRingOverlay';
+import { RadialNav, UtilityIsland, useRadialNavKeyboard } from './navigation';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { pageContentVariants } from '@/lib/pageTransitions';
 import { cn } from '@/lib/utils';
@@ -36,6 +37,7 @@ interface LayoutProps {
 
 /**
  * Inner layout component that accesses contexts.
+ * Uses RadialNav for center-focused navigation.
  */
 function LayoutInner({ activePage, onNavigate, children }: LayoutProps) {
   const { state: textZoneState } = useOptaTextZone();
@@ -43,6 +45,12 @@ function LayoutInner({ activePage, onNavigate, children }: LayoutProps) {
   const fogContext = useFog();
   const prevPageRef = useRef(activePage);
   const isFirstRender = useRef(true);
+
+  // Access RadialNav context for home view state
+  const { isHomeView } = useRadialNav();
+
+  // Enable global keyboard shortcuts for radial navigation
+  useRadialNavKeyboard();
 
   // Page transition orchestration
   useEffect(() => {
@@ -73,7 +81,7 @@ function LayoutInner({ activePage, onNavigate, children }: LayoutProps) {
   }, [activePage, ringContext, fogContext]);
 
   return (
-    <div className="relative flex min-h-screen">
+    <div className="relative min-h-screen">
       {/* The Living Void - Background with integrated fog */}
       <Background />
 
@@ -92,42 +100,64 @@ function LayoutInner({ activePage, onNavigate, children }: LayoutProps) {
         Skip to main content
       </a>
 
-      {/* Sidebar navigation - Fixed obsidian spine */}
-      <nav aria-label="Main navigation">
-        <Sidebar activePage={activePage} onNavigate={onNavigate} />
-      </nav>
+      {/* Radial Navigation - Centered in home view, top in page view */}
+      <motion.nav
+        aria-label="Main navigation"
+        className={cn(
+          'fixed left-1/2 -translate-x-1/2 z-30',
+          isHomeView ? 'top-1/2 -translate-y-1/2' : 'top-8'
+        )}
+        layout
+        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+      >
+        <RadialNav activePage={activePage} onNavigate={onNavigate} />
+      </motion.nav>
 
-      {/* Main content area */}
-      <ScrollArea className="flex-1 h-screen">
-        <div className="flex flex-col h-full">
-          {/* Text Zone at top */}
-          <div className="p-4 pb-0">
-            <OptaTextZone
-              message={textZoneState.message}
-              type={textZoneState.type}
-              indicator={textZoneState.indicator}
-              hint={textZoneState.hint}
-            />
-          </div>
+      {/* Utility Island - Quick access modal (rendered via portal-like behavior) */}
+      <UtilityIsland />
 
-          {/* Page content with ignition animation */}
-          <AnimatePresence mode="wait">
-            <motion.main
-              key={activePage}
-              id="main-content"
-              className="flex-1 p-8 max-w-7xl"
-              role="main"
-              tabIndex={-1}
-              variants={pageContentVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-            >
-              {children}
-            </motion.main>
-          </AnimatePresence>
-        </div>
-      </ScrollArea>
+      {/* Main content area - only visible when not in home view */}
+      <AnimatePresence>
+        {!isHomeView && (
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <ScrollArea className="h-screen pt-80">
+              <div className="flex flex-col h-full">
+                {/* Text Zone at top of content */}
+                <div className="p-4 pb-0 max-w-4xl mx-auto w-full">
+                  <OptaTextZone
+                    message={textZoneState.message}
+                    type={textZoneState.type}
+                    indicator={textZoneState.indicator}
+                    hint={textZoneState.hint}
+                  />
+                </div>
+
+                {/* Page content with ignition animation */}
+                <AnimatePresence mode="wait">
+                  <motion.main
+                    key={activePage}
+                    id="main-content"
+                    className="flex-1 p-8 max-w-6xl mx-auto w-full"
+                    role="main"
+                    tabIndex={-1}
+                    variants={pageContentVariants}
+                    initial="initial"
+                    animate="animate"
+                    exit="exit"
+                  >
+                    {children}
+                  </motion.main>
+                </AnimatePresence>
+              </div>
+            </ScrollArea>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Floating Ring Overlay - Appears during page transitions */}
       <FloatingRingOverlay />
@@ -139,7 +169,8 @@ function LayoutInner({ activePage, onNavigate, children }: LayoutProps) {
  * Main application layout with obsidian aesthetic.
  *
  * Includes:
- * - OptaRing as protagonist (sidebar + floating overlay)
+ * - RadialNav as center-focused navigation protagonist
+ * - OptaRing for page transitions (floating overlay)
  * - Atmospheric fog integration
  * - Page transition orchestration
  * - Accessibility features: skip link, landmarks, focus management
@@ -149,9 +180,11 @@ function Layout({ activePage, onNavigate, children }: LayoutProps) {
     <FogProvider>
       <OptaRingProvider>
         <OptaTextZoneProvider>
-          <LayoutInner activePage={activePage} onNavigate={onNavigate}>
-            {children}
-          </LayoutInner>
+          <RadialNavProvider activePage={activePage} onNavigate={onNavigate}>
+            <LayoutInner activePage={activePage} onNavigate={onNavigate}>
+              {children}
+            </LayoutInner>
+          </RadialNavProvider>
         </OptaTextZoneProvider>
       </OptaRingProvider>
     </FogProvider>

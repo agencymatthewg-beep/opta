@@ -71,8 +71,8 @@ export function GameControls({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12, filter: 'brightness(0.5) blur(2px)' }}
-      animate={{ opacity: 1, y: 0, filter: 'brightness(1) blur(0px)' }}
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.1, ease: smoothOut }}
       className={cn(
         'rounded-xl p-4',

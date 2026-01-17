@@ -9,7 +9,8 @@ Opta transforms from an empty Tauri scaffold into a full-featured AI-powered PC 
 - ✅ **v1.0 MVP** - Phases 1-10 (shipped 2026-01-16)
 - ✅ **v1.1 macOS Refinement** - Phases 11-15 (shipped 2026-01-16)
 - 📋 **v2.0 Social, Chess & Windows** - Phases 16-18 (planned)
-- 📋 **v3.0 Native Platforms** - Phase 19+ (planned)
+- 📋 **v3.0 Native Platforms** - Phase 19 (planned)
+- 📋 **v4.0 Rich Features** - Phases 20-23 (planned)
 
 ## Domain Expertise
 
@@ -44,6 +45,10 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 17: Chess Integration** - Ambient chess, three modes, AI opponents (v2.0)
 - [ ] **Phase 18: Windows Platform** - Windows-specific testing, installer, conflict tools (v2.0)
 - [ ] **Phase 19: Native macOS** - Full native Swift/SwiftUI build for maximum hardware utilization (v3.0)
+- [ ] **Phase 20: Rich Interactions** - Command palette, drag-drop, gestures, shortcuts, haptics, accessibility (v4.0)
+- [ ] **Phase 21: Advanced Visualizations** - ECharts telemetry, flame graphs, treemaps, deep glow effects (v4.0)
+- [ ] **Phase 22: AI/ML Intelligence** - Time series forecasting, anomaly detection, smart recommendations (v4.0)
+- [ ] **Phase 23: Cross-Device Sync** - ElectricSQL cloud sync, P2P LAN sync, offline-first (v4.0)
 
 ## Phase Details
 
@@ -297,10 +302,59 @@ Plans:
 
 *Note: Native Windows phase will follow after macOS native is complete.*
 
+### 📋 v4.0 Rich Features (Planned)
+
+**Milestone Goal:** Add cutting-edge interactions, visualizations, intelligence, and cross-device sync for competitive differentiation.
+
+#### Phase 20: Rich Interactions
+**Goal**: Command palette, drag-drop, trackpad gestures, global shortcuts, haptics, accessibility
+**Depends on**: Phase 19 (v3.0 complete) or can start earlier
+**Research**: Complete (20-RESEARCH.md)
+
+Plans:
+- [ ] 20-01: Command palette (cmdk, Cmd+K pattern)
+- [ ] 20-02: Drag-drop process management (dnd-kit)
+- [ ] 20-03: Trackpad gestures (@use-gesture)
+- [ ] 20-04: Global shortcuts & haptics (Tauri plugins)
+- [ ] 20-05: Accessibility audit (reduced motion, high contrast, ARIA)
+
+#### Phase 21: Advanced Visualizations
+**Goal**: Real-time ECharts telemetry, flame graphs, treemaps, deep glow effects
+**Depends on**: Phase 20
+**Research**: Complete (20-RESEARCH.md)
+
+Plans:
+- [ ] 21-01: ECharts real-time telemetry (Canvas, 10K+ points)
+- [ ] 21-02: CPU attribution flame graph (Visx)
+- [ ] 21-03: Disk space treemap (Visx)
+- [ ] 21-04: Deep glow microinteractions (2025 design trends)
+
+#### Phase 22: AI/ML Intelligence
+**Goal**: Time series forecasting, anomaly detection, smart recommendations
+**Depends on**: Phase 21
+**Research**: Complete (20-RESEARCH.md)
+
+Plans:
+- [ ] 22-01: Time series forecasting (Python MCP + Kats/Darts)
+- [ ] 22-02: Anomaly detection (CPU spikes, memory pressure)
+- [ ] 22-03: Content-based recommendation engine
+- [ ] 22-04: Behavior pattern detection (gaming hours, work hours)
+
+#### Phase 23: Cross-Device Sync
+**Goal**: ElectricSQL cloud sync, P2P LAN sync, offline-first architecture
+**Depends on**: Phase 22
+**Research**: Complete (20-RESEARCH.md)
+
+Plans:
+- [ ] 23-01: SQLite local storage foundation
+- [ ] 23-02: ElectricSQL cloud sync (settings/profiles)
+- [ ] 23-03: P2P LAN sync via WebRTC
+- [ ] 23-04: Offline-first queue with optimistic updates
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 → 8 → 8.1 → 9 → 10 → 11 → 12 → 13 → 14 → 15 → 16 → 17 → 18 → 19
+Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 → 8 → 8.1 → 9 → 10 → 11 → 12 → 13 → 14 → 15 → 16 → 17 → 18 → 19 → 20 → 21 → 22 → 23
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -325,3 +379,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 �
 | 17. Chess Integration | v2.0 | 1/4 | In progress | - |
 | 18. Windows Platform | v2.0 | 0/? | Not started | - |
 | 19. Native macOS | v3.0 | 0/7 | Planned | - |
+| 20. Rich Interactions | v4.0 | 0/5 | Planned | - |
+| 21. Advanced Visualizations | v4.0 | 0/4 | Planned | - |
+| 22. AI/ML Intelligence | v4.0 | 0/4 | Planned | - |
+| 23. Cross-Device Sync | v4.0 | 0/4 | Planned | - |

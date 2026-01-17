@@ -43,9 +43,9 @@ function GpuMeter({ available, name, percent = 0, temperature }: GpuMeterProps) 
     return (
       <motion.div
         className="flex flex-col items-center justify-center gap-3 py-4"
-        initial={{ opacity: 0, scale: 0.95, filter: 'brightness(0.5) blur(2px)' }}
-        animate={{ opacity: 1, scale: 1, filter: 'brightness(1) blur(0px)' }}
-        transition={{ duration: 0.5, ease: smoothOut }}
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.3, ease: smoothOut }}
         role="status"
         aria-label="No GPU detected"
       >
@@ -100,18 +100,10 @@ function GpuMeter({ available, name, percent = 0, temperature }: GpuMeterProps) 
       aria-valuemin={0}
       aria-valuemax={100}
       aria-label={`GPU usage: ${Math.round(percent)} percent${temperature !== undefined ? `, temperature: ${temperature} degrees Celsius` : ''}`}
-      // Ignition animation
-      initial={{
-        opacity: 0,
-        scale: 0.9,
-        filter: 'brightness(0.5) blur(4px)',
-      }}
-      animate={{
-        opacity: 1,
-        scale: 1,
-        filter: 'brightness(1) blur(0px)',
-      }}
-      transition={{ duration: 0.6, ease: smoothOut }}
+      // Simple fade-in (filter removed for performance)
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.3, ease: smoothOut }}
     >
       {/* Meter ring */}
       <div className={cn(
