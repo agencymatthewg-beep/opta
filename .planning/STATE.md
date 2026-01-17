@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-01-15)
 
 ## Current Position
 
-Phase: 20 of 23 (Rich Interactions & Premium Visuals) ✅ COMPLETE
-Plan: 11 of 11 in current phase
-Status: Phase 20 complete - all 11 plans executed across 4 waves
-Last activity: 2026-01-17 — Completed Phase 20 (Rich Interactions)
+Phase: 21 of 23 (Advanced Visualizations)
+Plan: 2 of 4 in current phase
+Status: In progress
+Last activity: 2026-01-17 — Completed 21-02-PLAN.md (CPU Flame Graph)
 
-Progress: ██████████ 100% of Phase 20 (11/11 plans)
+Progress: ██████████ 50% of Phase 21 (2/4 plans)
 
 ## Performance Metrics
 
@@ -250,6 +250,10 @@ Progress: ██████████ 100% of Phase 20 (11/11 plans)
 | 19-05 | MAXPATHLEN * 4 for proc_pidpath | macOS 26.2 SDK missing PROC_PIDPATHINFO_MAXSIZE macro |
 | 19-06 | Dynamic menu bar icon | flame.fill when CPU > 80°C, bolt.fill otherwise |
 | 19-07 | TabView for navigation | Native macOS pattern for dashboard sections |
+| 21-02 | --legacy-peer-deps for Visx | Visx expects React 16-18, project uses React 19; workaround until Visx updates |
+| 21-02 | treemapSlice layout for flame graphs | Creates horizontal bars matching traditional flame graph orientation |
+| 21-02 | Click-to-drill-down categories | Allows exploring category details without cluttering initial view |
+| 21-02 | 0.1% CPU threshold for noise reduction | Filters idle processes, keeps visualization clean |
 
 ### Deferred Issues
 
@@ -274,6 +278,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-17
-Stopped at: Phase 21 planned - 4 plans created
+Stopped at: Completed 21-02-PLAN.md (CPU Flame Graph)
 Resume file: None
-Next action: Execute Phase 21 (Advanced Visualizations) - `/gsd:execute-phase 21`
+Next action: Execute 21-03-PLAN.md (Memory Treemap) or continue Phase 21
