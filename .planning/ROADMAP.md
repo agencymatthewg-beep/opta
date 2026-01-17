@@ -308,17 +308,35 @@ Plans:
 
 **Milestone Goal:** Add cutting-edge interactions, visualizations, intelligence, and cross-device sync for competitive differentiation.
 
-#### Phase 20: Rich Interactions
-**Goal**: Command palette, drag-drop, trackpad gestures, global shortcuts, haptics, accessibility
+#### Phase 20: Rich Interactions & Premium Visuals
+**Goal**: Premium visual effects, physics-based animations, command palette, drag-drop, gestures, accessibility, and native macOS Menu Bar integration
 **Depends on**: Phase 19 (v3.0 complete) or can start earlier
-**Research**: Complete (20-RESEARCH.md)
+**Research**: Complete (20-RESEARCH.md, Gemini Premium UI/UX, Gemini Native Capabilities)
 
-Plans:
-- [ ] 20-01: Command palette (cmdk, Cmd+K pattern)
-- [ ] 20-02: Drag-drop process management (dnd-kit)
-- [ ] 20-03: Trackpad gestures (@use-gesture)
-- [ ] 20-04: Global shortcuts & haptics (Tauri plugins)
-- [ ] 20-05: Accessibility audit (reduced motion, high contrast, ARIA)
+**Key Features:**
+- WebGL shader-based "Neon Luminal Glassmorphism" effects
+- Physics-based spring animations with haptic sync
+- Chromatic aberration loading effects
+- Native Swift Menu Bar Extra with FlatBuffers IPC
+- Holographic 3D System View (SceneKit)
+- Momentum Border (data-driven neon that reflects system state)
+
+Plans (Foundation - Execute First):
+- [ ] 20-00: WebGL & Shader Foundation (Three.js, glass/neon shaders, chromatic aberration)
+- [ ] 20-01: Premium Animation System (springs, blur-back, stagger, chromatic loading)
+- [ ] 20-02: Design System Evolution (updated tokens, Z-layering docs)
+
+Plans (Features):
+- [ ] 20-03: Command palette (cmdk, Cmd+K pattern, "Tactical Search" NLP)
+- [ ] 20-04: Drag-drop process management (dnd-kit, Momentum Border)
+- [ ] 20-05: Trackpad gestures (@use-gesture, pinch-to-zoom)
+- [ ] 20-06: Global shortcuts & haptics (Tauri plugins, premonition alerts)
+- [ ] 20-07: Accessibility audit (reduced motion, high contrast, ARIA)
+
+Plans (Menu Bar - Native Swift):
+- [ ] 20-08: Menu Bar Extra - Swift Plugin (Tauri integration, FlatBuffers schema)
+- [ ] 20-09: Menu Bar Extra - Popover UI (SwiftUI, Holographic System View, chromatic loading)
+- [ ] 20-10: Menu Bar Extra - State Sync (25Hz binary IPC, Momentum Border sync)
 
 #### Phase 21: Advanced Visualizations
 **Goal**: Real-time ECharts telemetry, flame graphs, treemaps, deep glow effects
@@ -356,7 +374,7 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 → 8 → 8.1 → 9 → 10 → 11 → 12 → 13 → 14 → 15 → 16 → 17 → 18 → 19 → 20 → 21 → 22 → 23
+Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 → 8 → 8.1 → 9 → 10 → 11 → 12 → 13 → 14 → 15 → 16 → 17 → 19 → 20 → 21 → 22 → 23 → (18 deferred)
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -379,9 +397,9 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 �
 | 15. Performance & Launch | v1.1 | 3/3 | Complete | 2026-01-16 |
 | 16. Social Features | v2.0 | 1/1 | Complete | 2026-01-16 |
 | 17. Chess Integration | v2.0 | 4/4 | Complete | 2026-01-17 |
-| 18. Windows Platform | v2.0 | 0/3 | Planned | - |
+| 18. Windows Platform | v2.0 | 0/3 | Deferred | - |
 | 19. Native macOS | v3.0 | 0/7 | Planned | - |
-| 20. Rich Interactions | v4.0 | 0/5 | Planned | - |
+| 20. Rich Interactions & Premium Visuals | v4.0 | 0/11 | Planned | - |
 | 21. Advanced Visualizations | v4.0 | 0/4 | Planned | - |
 | 22. AI/ML Intelligence | v4.0 | 0/4 | Planned | - |
 | 23. Cross-Device Sync | v4.0 | 0/4 | Planned | - |
