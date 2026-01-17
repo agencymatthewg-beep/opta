@@ -60,6 +60,19 @@ pub struct SystemSnapshot {
     pub timestamp: String,
 }
 
+/// Disk analysis node for treemap visualization.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DiskAnalysisNode {
+    pub name: String,
+    pub path: String,
+    pub size: u64,
+    pub category: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub children: Option<Vec<DiskAnalysisNode>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
 /// Python script to get system snapshot.
 ///
 /// This inline script avoids path resolution issues and directly imports
@@ -125,6 +138,72 @@ pub async fn get_system_telemetry() -> Result<SystemSnapshot, String> {
         serde_json::from_str(&stdout).map_err(|e| format!("JSON parse error: {} (raw: {})", e, stdout))?;
 
     Ok(snapshot)
+}
+
+/// Python script to get disk analysis.
+const PYTHON_DISK_ANALYSIS_SCRIPT: &str = r#"
+import json
+import sys
+
+try:
+    from opta_mcp.telemetry import get_disk_analysis
+    path = sys.argv[1] if len(sys.argv) > 1 else "/"
+    max_depth = int(sys.argv[2]) if len(sys.argv) > 2 else 2
+    result = get_disk_analysis(path, max_depth)
+    print(json.dumps(result))
+except Exception as e:
+    print(json.dumps({
+        'name': 'Error',
+        'path': path if 'path' in dir() else '/',
+        'size': 0,
+        'category': 'other',
+        'children': [],
+        'error': str(e)
+    }))
+    sys.exit(0)
+"#;
+
+/// Get disk analysis for treemap visualization.
+///
+/// Analyzes disk usage hierarchically for visualization as a treemap.
+///
+/// # Arguments
+///
+/// * `path` - Root path to analyze (default "/")
+/// * `max_depth` - Maximum depth to traverse (default 2)
+///
+/// # Returns
+///
+/// A `DiskAnalysisNode` containing hierarchical disk usage data.
+#[command]
+pub async fn get_disk_analysis(path: Option<String>, max_depth: Option<u32>) -> Result<DiskAnalysisNode, String> {
+    let path = path.unwrap_or_else(|| "/".to_string());
+    let max_depth = max_depth.unwrap_or(2);
+
+    let python_cmd = if cfg!(target_os = "windows") {
+        "python"
+    } else {
+        "python3"
+    };
+
+    let output = Command::new(python_cmd)
+        .arg("-c")
+        .arg(PYTHON_DISK_ANALYSIS_SCRIPT)
+        .arg(&path)
+        .arg(max_depth.to_string())
+        .output()
+        .map_err(|e| format!("Failed to spawn Python: {}", e))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("Python error: {}", stderr));
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let node: DiskAnalysisNode =
+        serde_json::from_str(&stdout).map_err(|e| format!("JSON parse error: {} (raw: {})", e, stdout))?;
+
+    Ok(node)
 }
 
 #[cfg(test)]

@@ -4,6 +4,7 @@ mod claude;
 mod conflicts;
 mod expertise;
 mod games;
+pub mod ipc;
 mod launcher;
 mod llm;
 mod optimizer;
@@ -27,9 +28,12 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
+        .plugin(tauri_plugin_os::init())
         .invoke_handler(tauri::generate_handler![
             greet,
             telemetry::get_system_telemetry,
+            telemetry::get_disk_analysis,
             processes::get_processes,
             processes::terminate_process,
             processes::stealth_mode,

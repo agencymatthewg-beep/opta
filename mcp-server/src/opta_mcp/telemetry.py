@@ -3,8 +3,12 @@
 Provides CPU, memory, disk, and GPU monitoring with graceful error handling.
 """
 
+import os
+import platform
+import time
 import psutil
-from typing import Optional
+from functools import lru_cache
+from typing import Dict, List, Optional
 
 
 def get_cpu_info() -> dict:
@@ -325,6 +329,311 @@ def get_gpu_info() -> dict:
         "temperature_c": None,
         "utilization_percent": None,
     }
+
+
+# Disk analysis cache with TTL
+_disk_analysis_cache: Dict[str, tuple] = {}
+_CACHE_TTL_SECONDS = 30
+
+# Directories to skip (system directories that require root or are not useful)
+_SKIP_DIRS = {
+    # macOS system directories
+    "/private/var/db",
+    "/private/var/folders",
+    "/System/Volumes/Data/.Spotlight-V100",
+    "/System/Volumes/Data/.fseventsd",
+    "/.Spotlight-V100",
+    "/.fseventsd",
+    "/dev",
+    "/proc",
+    "/sys",
+    # Windows system directories
+    "C:\\$Recycle.Bin",
+    "C:\\System Volume Information",
+    "C:\\Windows\\CSC",
+}
+
+# File type categories for coloring
+_FILE_TYPE_CATEGORIES = {
+    # Applications
+    ".app": "applications",
+    ".exe": "applications",
+    ".dmg": "applications",
+    ".pkg": "applications",
+    ".msi": "applications",
+    # Documents
+    ".pdf": "documents",
+    ".doc": "documents",
+    ".docx": "documents",
+    ".xls": "documents",
+    ".xlsx": "documents",
+    ".ppt": "documents",
+    ".pptx": "documents",
+    ".txt": "documents",
+    ".md": "documents",
+    ".rtf": "documents",
+    # Media
+    ".mp3": "media",
+    ".mp4": "media",
+    ".mov": "media",
+    ".avi": "media",
+    ".mkv": "media",
+    ".wav": "media",
+    ".flac": "media",
+    ".jpg": "media",
+    ".jpeg": "media",
+    ".png": "media",
+    ".gif": "media",
+    ".webp": "media",
+    ".heic": "media",
+    # Code/Development
+    ".py": "code",
+    ".js": "code",
+    ".ts": "code",
+    ".tsx": "code",
+    ".jsx": "code",
+    ".rs": "code",
+    ".go": "code",
+    ".java": "code",
+    ".cpp": "code",
+    ".c": "code",
+    ".h": "code",
+    ".swift": "code",
+    # Cache/Temp
+    ".cache": "cache",
+    ".tmp": "cache",
+    ".temp": "cache",
+    ".log": "cache",
+}
+
+
+def _get_file_category(path: str) -> str:
+    """Determine the category of a file based on its extension or path."""
+    # Check by extension
+    _, ext = os.path.splitext(path.lower())
+    if ext in _FILE_TYPE_CATEGORIES:
+        return _FILE_TYPE_CATEGORIES[ext]
+
+    # Check by path patterns
+    path_lower = path.lower()
+    if "/applications" in path_lower or "\\program files" in path_lower:
+        return "applications"
+    if "/library/caches" in path_lower or "\\appdata\\local\\temp" in path_lower:
+        return "cache"
+    if "/documents" in path_lower or "\\documents" in path_lower:
+        return "documents"
+    if "/system" in path_lower or "\\windows" in path_lower:
+        return "system"
+
+    return "other"
+
+
+def _should_skip_dir(path: str) -> bool:
+    """Check if a directory should be skipped."""
+    # Check exact matches
+    if path in _SKIP_DIRS:
+        return True
+
+    # Check prefixes for problematic paths
+    path_lower = path.lower()
+    if any(skip.lower() in path_lower for skip in _SKIP_DIRS):
+        return True
+
+    return False
+
+
+def get_disk_analysis(path: str = "/", max_depth: int = 2) -> dict:
+    """Analyze disk usage by directory.
+
+    Returns hierarchical structure suitable for treemap visualization.
+
+    Args:
+        path: Root path to analyze (default "/" on Unix, "C:\\" on Windows)
+        max_depth: How deep to traverse (default 2 levels)
+
+    Returns:
+        {
+            "name": "root",
+            "path": "/",
+            "size": 500000000000,  # bytes
+            "category": "system",
+            "children": [
+                {"name": "Applications", "path": "/Applications", "size": 50000000000, "category": "applications", "children": [...]},
+                {"name": "Users", "path": "/Users", "size": 200000000000, "category": "documents", "children": [...]},
+                ...
+            ]
+        }
+
+    Safety:
+        - Never follows symlinks (prevents infinite loops)
+        - Skips system directories that require root
+        - Times out after 10 seconds to prevent hanging
+    """
+    # Use platform-appropriate default path
+    if path == "/" and platform.system() == "Windows":
+        path = "C:\\"
+
+    # Check cache
+    cache_key = f"{path}:{max_depth}"
+    if cache_key in _disk_analysis_cache:
+        cached_result, timestamp = _disk_analysis_cache[cache_key]
+        if time.time() - timestamp < _CACHE_TTL_SECONDS:
+            return cached_result
+
+    start_time = time.time()
+    timeout_seconds = 10
+
+    def analyze_dir(dir_path: str, depth: int) -> Optional[dict]:
+        """Recursively analyze a directory."""
+        # Check timeout
+        if time.time() - start_time > timeout_seconds:
+            return None
+
+        # Skip symlinks
+        if os.path.islink(dir_path):
+            return None
+
+        # Skip problematic directories
+        if _should_skip_dir(dir_path):
+            return None
+
+        name = os.path.basename(dir_path) or dir_path
+        result: dict = {
+            "name": name,
+            "path": dir_path,
+            "size": 0,
+            "category": _get_file_category(dir_path),
+            "children": [],
+        }
+
+        try:
+            entries: List[dict] = []
+            total_size = 0
+            small_files_size = 0
+            small_files_count = 0
+
+            # Use os.scandir for efficiency
+            with os.scandir(dir_path) as scanner:
+                for entry in scanner:
+                    # Check timeout
+                    if time.time() - start_time > timeout_seconds:
+                        break
+
+                    try:
+                        # Skip symlinks
+                        if entry.is_symlink():
+                            continue
+
+                        if entry.is_file(follow_symlinks=False):
+                            file_size = entry.stat(follow_symlinks=False).st_size
+                            total_size += file_size
+
+                            # Aggregate files smaller than 10MB
+                            if file_size < 10 * 1024 * 1024:
+                                small_files_size += file_size
+                                small_files_count += 1
+                            else:
+                                entries.append({
+                                    "name": entry.name,
+                                    "path": entry.path,
+                                    "size": file_size,
+                                    "category": _get_file_category(entry.path),
+                                })
+
+                        elif entry.is_dir(follow_symlinks=False) and depth < max_depth:
+                            child_result = analyze_dir(entry.path, depth + 1)
+                            if child_result and child_result["size"] > 0:
+                                entries.append(child_result)
+                                total_size += child_result["size"]
+
+                        elif entry.is_dir(follow_symlinks=False):
+                            # For directories beyond max_depth, just get size
+                            try:
+                                dir_size = 0
+                                for root, dirs, files in os.walk(entry.path, followlinks=False):
+                                    # Check timeout during walk
+                                    if time.time() - start_time > timeout_seconds:
+                                        break
+                                    for f in files:
+                                        try:
+                                            fp = os.path.join(root, f)
+                                            if not os.path.islink(fp):
+                                                dir_size += os.path.getsize(fp)
+                                        except (OSError, PermissionError):
+                                            pass
+                                if dir_size > 0:
+                                    entries.append({
+                                        "name": entry.name,
+                                        "path": entry.path,
+                                        "size": dir_size,
+                                        "category": _get_file_category(entry.path),
+                                    })
+                                    total_size += dir_size
+                            except (OSError, PermissionError):
+                                pass
+
+                    except (OSError, PermissionError):
+                        continue
+
+            # Add aggregated small files as "Other" node
+            if small_files_size > 0:
+                entries.append({
+                    "name": f"Other ({small_files_count} small files)",
+                    "path": f"{dir_path}/__other__",
+                    "size": small_files_size,
+                    "category": "other",
+                })
+
+            # Sort by size (largest first)
+            entries.sort(key=lambda x: x["size"], reverse=True)
+
+            # Limit to top 20 items, aggregate rest into "Other"
+            if len(entries) > 20:
+                top_entries = entries[:20]
+                other_entries = entries[20:]
+                other_size = sum(e["size"] for e in other_entries)
+                if other_size > 0:
+                    top_entries.append({
+                        "name": f"Other ({len(other_entries)} items)",
+                        "path": f"{dir_path}/__aggregated__",
+                        "size": other_size,
+                        "category": "other",
+                    })
+                entries = top_entries
+
+            result["size"] = total_size
+            result["children"] = entries
+
+        except (OSError, PermissionError) as e:
+            result["error"] = str(e)
+
+        return result
+
+    try:
+        result = analyze_dir(path, 0)
+        if result is None:
+            result = {
+                "name": os.path.basename(path) or path,
+                "path": path,
+                "size": 0,
+                "category": "other",
+                "children": [],
+                "error": "Analysis timed out or path inaccessible",
+            }
+    except Exception as e:
+        result = {
+            "name": os.path.basename(path) or path,
+            "path": path,
+            "size": 0,
+            "category": "other",
+            "children": [],
+            "error": str(e),
+        }
+
+    # Cache result
+    _disk_analysis_cache[cache_key] = (result, time.time())
+
+    return result
 
 
 def get_system_snapshot() -> dict:
