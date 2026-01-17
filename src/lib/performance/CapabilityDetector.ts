@@ -140,7 +140,12 @@ const VRAM_ESTIMATES: Record<string, number> = {
   'rtx 3080': 10,
   'rtx 3070': 8,
   'rtx 3060': 12,
-  // Apple Silicon
+  // Apple Silicon M4 Series
+  'm4 ultra': 256, // Unified memory (expected)
+  'm4 max': 128,   // 48GB-128GB configs
+  'm4 pro': 48,    // 24GB-48GB configs
+  'm4': 16,        // Base M4
+  // Apple Silicon M3 Series
   'm3 ultra': 192, // Unified memory
   'm3 max': 96,
   'm3 pro': 36,
