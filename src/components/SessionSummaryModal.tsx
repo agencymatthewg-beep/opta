@@ -20,6 +20,7 @@ import {
   Shield,
   X,
   TrendingUp,
+  type LucideIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { SessionSummary } from '../types/launcher';
@@ -58,7 +59,7 @@ function StatCard({
   subValue,
   color = 'primary',
 }: {
-  icon: React.ElementType;
+  icon: LucideIcon;
   label: string;
   value: string;
   subValue?: string;

@@ -18,6 +18,7 @@ import {
   Minimize2,
   Maximize2,
   X,
+  type LucideIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { GameSession, SessionTelemetry } from '../types/launcher';
@@ -55,7 +56,7 @@ function Metric({
   value,
   unit,
 }: {
-  icon: React.ElementType;
+  icon: LucideIcon;
   label: string;
   value: number | null;
   unit: string;

@@ -8,7 +8,7 @@
  */
 
 import { motion } from 'framer-motion';
-import { Clock, CheckCircle, RotateCcw, Settings, Terminal, Cpu } from 'lucide-react';
+import { Clock, CheckCircle, RotateCcw, Settings, Terminal, Cpu, type LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { OptimizationHistoryEntry } from '../types/optimizer';
 
@@ -18,7 +18,7 @@ export interface OptimizationTimelineProps {
   canRevert?: boolean;
 }
 
-const ACTION_ICONS: Record<string, React.ElementType> = {
+const ACTION_ICONS: Record<string, LucideIcon> = {
   graphics: Settings,
   launch_options: Terminal,
   priority: Cpu,

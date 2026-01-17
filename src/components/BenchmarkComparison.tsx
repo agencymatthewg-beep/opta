@@ -9,7 +9,7 @@
 
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { TrendingDown, TrendingUp, Minus, Cpu, MemoryStick, Thermometer, Activity } from 'lucide-react';
+import { TrendingDown, TrendingUp, Minus, Cpu, MemoryStick, Thermometer, Activity, type LucideIcon } from 'lucide-react';
 import type { BenchmarkComparison as BenchmarkComparisonType } from '../types/benchmark';
 
 export interface BenchmarkComparisonProps {
@@ -18,7 +18,7 @@ export interface BenchmarkComparisonProps {
 
 interface MetricCardProps {
   label: string;
-  icon: React.ElementType;
+  icon: LucideIcon;
   before: number | null;
   after: number | null;
   unit: string;

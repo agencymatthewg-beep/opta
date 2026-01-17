@@ -8,10 +8,9 @@
  */
 
 import { useState, useCallback, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Group } from '@visx/group';
 import { hierarchy, Treemap, treemapSlice } from '@visx/hierarchy';
-import { scaleLinear } from '@visx/scale';
 import { useTooltip, TooltipWithBounds, defaultStyles } from '@visx/tooltip';
 import { ParentSize } from '@visx/responsive';
 import { useProcessCpuAttribution } from '@/hooks/useProcessCpuAttribution';
@@ -189,14 +188,6 @@ function FlameGraphInner({
       .sum((d) => (d.children ? 0 : d.value))
       .sort((a, b) => (b.value || 0) - (a.value || 0));
   }, [attributionRoot, expandedCategories]);
-
-  // Create scales
-  const colorScale = useMemo(() => {
-    return scaleLinear<string>({
-      domain: [0, 100],
-      range: ['rgb(39, 39, 42)', 'rgb(168, 85, 247)'],
-    });
-  }, []);
 
   // Loading state
   if (loading && !attributionRoot) {

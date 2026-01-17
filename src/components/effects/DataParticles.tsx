@@ -13,10 +13,11 @@
  * @see DESIGN_SYSTEM.md - Premium Visual Effects
  */
 
-import { useCallback, useEffect, useMemo, useState, useId } from 'react';
-import Particles from '@tsparticles/react';
+import { useCallback, useMemo, useState, useId, useEffect } from 'react';
+import Particles, { initParticlesEngine } from '@tsparticles/react';
 import { loadSlim } from '@tsparticles/slim';
-import type { Container, Engine, ISourceOptions, MoveDirection } from '@tsparticles/engine';
+import { MoveDirection, OutMode } from '@tsparticles/engine';
+import type { Container, ISourceOptions } from '@tsparticles/engine';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
@@ -51,16 +52,6 @@ const presetConfigs: Record<string, { direction: 'up' | 'down' | 'radial'; color
 // =============================================================================
 
 let engineInitialized = false;
-let enginePromise: Promise<void> | null = null;
-
-async function initEngine(engine: Engine): Promise<void> {
-  if (engineInitialized) return;
-  if (enginePromise) return enginePromise;
-
-  enginePromise = loadSlim(engine);
-  await enginePromise;
-  engineInitialized = true;
-}
 
 // =============================================================================
 // PARTICLE OPTIONS GENERATOR
@@ -78,34 +69,22 @@ function createParticleOptions(
   // Speed scales with intensity
   const baseSpeed = reducedMotion ? 0 : 0.5 + intensity * 2;
 
-  // Determine move direction
-  let moveDirection: MoveDirection = 'none';
-  let outModes: Record<string, string> = {};
+  // Determine move direction and out modes
+  let moveDirection: MoveDirection = MoveDirection.none;
+  let outModes: OutMode = OutMode.out;
 
   switch (direction) {
     case 'up':
-      moveDirection = 'top';
-      outModes = {
-        top: 'out',
-        bottom: 'out',
-        left: 'out',
-        right: 'out',
-      };
+      moveDirection = MoveDirection.top;
+      outModes = OutMode.out;
       break;
     case 'down':
-      moveDirection = 'bottom';
-      outModes = {
-        top: 'out',
-        bottom: 'out',
-        left: 'out',
-        right: 'out',
-      };
+      moveDirection = MoveDirection.bottom;
+      outModes = OutMode.out;
       break;
     case 'radial':
-      moveDirection = 'none';
-      outModes = {
-        default: 'bounce',
-      };
+      moveDirection = MoveDirection.none;
+      outModes = OutMode.bounce;
       break;
   }
 
@@ -158,8 +137,10 @@ function createParticleOptions(
         outModes: outModes,
         attract: {
           enable: direction === 'radial',
-          rotateX: 600,
-          rotateY: 1200,
+          rotate: {
+            x: 600,
+            y: 1200,
+          },
         },
       },
       shadow: {
@@ -246,6 +227,21 @@ export function DataParticles({
   const [isEngineReady, setIsEngineReady] = useState(engineInitialized);
   const particlesId = useId();
 
+  // Initialize tsParticles engine once
+  useEffect(() => {
+    if (engineInitialized) {
+      setIsEngineReady(true);
+      return;
+    }
+
+    initParticlesEngine(async (engine) => {
+      await loadSlim(engine);
+    }).then(() => {
+      engineInitialized = true;
+      setIsEngineReady(true);
+    });
+  }, []);
+
   // Resolve preset or individual props
   const config = useMemo(() => {
     if (preset && presetConfigs[preset]) {
@@ -261,12 +257,6 @@ export function DataParticles({
       intensity: intensityProp ?? 0.3,
     };
   }, [preset, directionProp, colorProp, intensityProp]);
-
-  // Initialize tsParticles engine
-  const particlesInit = useCallback(async (engine: Engine) => {
-    await initEngine(engine);
-    setIsEngineReady(true);
-  }, []);
 
   // Handle container loaded
   const particlesLoaded = useCallback(async (_container?: Container) => {
@@ -304,13 +294,14 @@ export function DataParticles({
         exit={{ opacity: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <Particles
-          id={particlesId}
-          init={particlesInit}
-          loaded={particlesLoaded}
-          options={options}
-          className="absolute inset-0"
-        />
+        {isEngineReady && (
+          <Particles
+            id={particlesId}
+            particlesLoaded={particlesLoaded}
+            options={options}
+            className="absolute inset-0"
+          />
+        )}
       </motion.div>
     </AnimatePresence>
   );

@@ -15,7 +15,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Crown, Puzzle, BarChart3, Loader2, Trophy, Handshake, Minus } from 'lucide-react';
+import { Crown, Puzzle, BarChart3, Loader2, Trophy, Handshake, Minus, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ChessBoard, GameControls, MoveHistory } from '@/components/chess';
 import { useChessGame } from '@/hooks/useChessGame';
@@ -37,7 +37,7 @@ const CHESS_GAME_FEN_KEY = 'opta_chess_game_fen';
 const modeTabs: Array<{
   id: ChessMode;
   label: string;
-  icon: React.ElementType;
+  icon: LucideIcon;
   available: boolean;
 }> = [
   { id: 'casual', label: 'Casual', icon: Crown, available: true },
@@ -48,7 +48,7 @@ const modeTabs: Array<{
 /**
  * Game result messages for ambient UX
  */
-const resultMessages: Record<NonNullable<ChessGameResult>, { title: string; subtitle: string; icon: React.ElementType }> = {
+const resultMessages: Record<NonNullable<ChessGameResult>, { title: string; subtitle: string; icon: LucideIcon }> = {
   checkmate: { title: 'Checkmate', subtitle: 'Well played!', icon: Trophy },
   stalemate: { title: 'Stalemate', subtitle: 'A draw by stalemate', icon: Handshake },
   draw: { title: 'Draw', subtitle: 'Game ended in a draw', icon: Minus },

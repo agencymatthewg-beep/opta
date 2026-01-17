@@ -24,6 +24,7 @@ import {
   Loader2,
   AlertCircle,
   RefreshCw,
+  type LucideIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -48,7 +49,7 @@ export interface LaunchConfirmationModalProps {
 }
 
 interface PreLaunchActionProps {
-  icon: React.ElementType;
+  icon: LucideIcon;
   title: string;
   description: string;
   detail: string;

@@ -85,7 +85,7 @@ function Ring({
         duration: reducedMotion ? 0 : duration / 1000,
         delay: reducedMotion ? 0 : delay,
         repeat: reducedMotion ? 0 : Infinity,
-        ease: 'easeOut',
+        ease: 'easeOut' as const,
       },
     },
   };

@@ -19,7 +19,7 @@ const smoothOut: [number, number, number, number] = [0.22, 1, 0.36, 1];
 import { getOptimizationExplanation, getAllExplanationLevels } from '@/utils/explanations';
 import type { DetectedGame } from '@/types/games';
 
-import { Info, Zap, Monitor, Cpu, HardDrive, Gauge, ChevronDown, ChevronRight } from 'lucide-react';
+import { Info, Zap, Monitor, Cpu, HardDrive, Gauge, ChevronDown, ChevronRight, type LucideIcon } from 'lucide-react';
 
 export interface OptimizationExplanationProps {
   /** Setting key (e.g., "shadow_quality") */
@@ -35,7 +35,7 @@ export interface OptimizationExplanationProps {
 }
 
 // Icon mapping for setting types
-const SETTING_ICONS: Record<string, React.ElementType> = {
+const SETTING_ICONS: Record<string, LucideIcon> = {
   shadow_quality: Monitor,
   anti_aliasing: Monitor,
   texture_quality: HardDrive,
