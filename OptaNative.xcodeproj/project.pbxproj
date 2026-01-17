@@ -19,6 +19,8 @@
 		A100010001 /* SMC.c in Sources */ = {isa = PBXBuildFile; fileRef = A100010000 /* SMC.c */; };
 		A100011001 /* SMCBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100011000 /* SMCBridge.swift */; };
 		A100014001 /* HelperManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100014000 /* HelperManager.swift */; };
+		A100015001 /* ChipDetection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100015000 /* ChipDetection.swift */; };
+		A100016001 /* SensorKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100016000 /* SensorKeys.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -63,6 +65,9 @@
 		A100010100 /* SMC.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SMC.h; sourceTree = "<group>"; };
 		A100011000 /* SMCBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SMCBridge.swift; sourceTree = "<group>"; };
 		A100012000 /* OptaNative-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "OptaNative-Bridging-Header.h"; sourceTree = "<group>"; };
+		A100014000 /* HelperManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelperManager.swift; sourceTree = "<group>"; };
+		A100015000 /* ChipDetection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChipDetection.swift; sourceTree = "<group>"; };
+		A100016000 /* SensorKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SensorKeys.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -87,11 +92,28 @@
 			isa = PBXGroup;
 			children = (
 				A1000021000 /* OptaNative */,
+				A100017000 /* Modules */,
 				A100013000 /* SMC */,
 				A1000028000 /* Shared */,
 				A1000029000 /* Helper */,
 				A1000022000 /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		A100017000 /* Modules */ = {
+			isa = PBXGroup;
+			children = (
+				A100018000 /* Sensors */,
+			);
+			path = OptaNative/Modules;
+			sourceTree = "<group>";
+		};
+		A100018000 /* Sensors */ = {
+			isa = PBXGroup;
+			children = (
+				A100016000 /* SensorKeys.swift */,
+			);
+			path = Sensors;
 			sourceTree = "<group>";
 		};
 		A100013000 /* SMC */ = {
@@ -172,6 +194,7 @@
 		A1000025000 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				A100014000 /* HelperManager.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -180,6 +203,7 @@
 			isa = PBXGroup;
 			children = (
 				A1000006000 /* DesignSystem.swift */,
+				A100015000 /* ChipDetection.swift */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
@@ -312,6 +336,9 @@
 				A1000007001 /* HelperProtocol.swift in Sources */,
 				A100010001 /* SMC.c in Sources */,
 				A100011001 /* SMCBridge.swift in Sources */,
+				A100014001 /* HelperManager.swift in Sources */,
+				A100015001 /* ChipDetection.swift in Sources */,
+				A100016001 /* SensorKeys.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
