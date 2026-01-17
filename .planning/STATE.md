@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-01-15)
 
 ## Current Position
 
-Phase: 17 of 18 (Chess Integration)
-Plan: 4 of 4 in current phase
-Status: Awaiting human verification (checkpoint)
-Last activity: 2026-01-17 — Completed 17-04-PLAN.md tasks 1-2 (ChessPage integration)
+Phase: 19 of 19 (Native macOS)
+Plan: 1 of 7 in current phase
+Status: Executing Wave 1 complete, Wave 2 pending
+Last activity: 2026-01-17 — Completed 19-01-PLAN.md (Xcode project foundation)
 
-Progress: ████░░░░░░ ~40% of v2.0 (4/? plans)
+Progress: █░░░░░░░░░ ~14% of v3.0 (1/7 plans)
 
 ## Performance Metrics
 
@@ -232,6 +232,9 @@ Progress: ████░░░░░░ ~40% of v2.0 (4/? plans)
 | 17-04 | Ambient UX no counters | Hidden win/loss stats reduce anxiety in casual play |
 | 17-04 | 30-second inactivity hint | Gentle take your time message encourages relaxed play |
 | 17-04 | LocalStorage for game FEN | Simple persistence without backend changes |
+| 19-01 | Nested OptaNative structure | OptaNative/OptaNative/ keeps source separate from project-level files |
+| 19-01 | App sandbox disabled | IOKit for SMC access requires non-sandboxed distribution |
+| 19-01 | Defer SPM packages | Blessed, SecureXPC, VisualEffects added when needed in 19-03/04 |
 
 ### Deferred Issues
 
@@ -255,6 +258,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-17
-Stopped at: 17-04-PLAN.md at human verification checkpoint (Tasks 1-2 complete)
+Stopped at: 19-01-PLAN.md complete (Wave 1 of Phase 19)
 Resume file: None
-Next action: Human verification of chess feature, then Phase 17 complete
+Next action: Execute Wave 2 (plans 19-02, 19-03, 19-04)
