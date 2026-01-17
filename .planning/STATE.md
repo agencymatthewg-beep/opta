@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-01-15)
 ## Current Position
 
 Phase: 21 of 23 (Advanced Visualizations)
-Plan: 2 of 4 in current phase
+Plan: 2 of 4 in current phase (21-01 and 21-02 complete)
 Status: In progress
-Last activity: 2026-01-17 — Completed 21-02-PLAN.md (CPU Flame Graph)
+Last activity: 2026-01-17 — Completed 21-01-PLAN.md (Real-time Telemetry Charts)
 
 Progress: ██████████ 50% of Phase 21 (2/4 plans)
 
@@ -250,6 +250,10 @@ Progress: ██████████ 50% of Phase 21 (2/4 plans)
 | 19-05 | MAXPATHLEN * 4 for proc_pidpath | macOS 26.2 SDK missing PROC_PIDPATHINFO_MAXSIZE macro |
 | 19-06 | Dynamic menu bar icon | flame.fill when CPU > 80°C, bolt.fill otherwise |
 | 19-07 | TabView for navigation | Native macOS pattern for dashboard sections |
+| 21-01 | Canvas renderer (not SVG) for ECharts | 60fps performance with 10K+ data points; SVG degrades >5000 nodes |
+| 21-01 | CircularBuffer class for telemetry history | O(1) append vs O(n) for array.shift(); essential for real-time |
+| 21-01 | animation: false for real-time charts | Prevents lag during continuous streaming updates |
+| 21-01 | 60%/85% threshold lines on charts | Consistent with existing meter warning/danger thresholds |
 | 21-02 | --legacy-peer-deps for Visx | Visx expects React 16-18, project uses React 19; workaround until Visx updates |
 | 21-02 | treemapSlice layout for flame graphs | Creates horizontal bars matching traditional flame graph orientation |
 | 21-02 | Click-to-drill-down categories | Allows exploring category details without cluttering initial view |
@@ -278,6 +282,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-17
-Stopped at: Completed 21-02-PLAN.md (CPU Flame Graph)
+Stopped at: Completed 21-01-PLAN.md (Real-time Telemetry Charts) - 21-02 also complete
 Resume file: None
 Next action: Execute 21-03-PLAN.md (Memory Treemap) or continue Phase 21
