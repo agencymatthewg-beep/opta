@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-01-15)
 ## Current Position
 
 Phase: 19 of 19 (Native macOS)
-Plan: 1 of 7 in current phase
-Status: Executing Wave 1 complete, Wave 2 pending
-Last activity: 2026-01-17 — Completed 19-01-PLAN.md (Xcode project foundation)
+Plan: 2 of 7 in current phase
+Status: Executing Wave 2 (19-02 complete, 19-03/04 pending)
+Last activity: 2026-01-17 — Completed 19-02-PLAN.md (SMC module integration)
 
-Progress: █░░░░░░░░░ ~14% of v3.0 (1/7 plans)
+Progress: ██░░░░░░░░ ~29% of v3.0 (2/7 plans)
 
 ## Performance Metrics
 
@@ -235,6 +235,10 @@ Progress: █░░░░░░░░░ ~14% of v3.0 (1/7 plans)
 | 19-01 | Nested OptaNative structure | OptaNative/OptaNative/ keeps source separate from project-level files |
 | 19-01 | App sandbox disabled | IOKit for SMC access requires non-sandboxed distribution |
 | 19-01 | Defer SPM packages | Blessed, SecureXPC, VisualEffects added when needed in 19-03/04 |
+| 19-02 | Per-chip SMC key mappings | CRITICAL: Keys differ significantly between M1/M2/M3/M4 generations |
+| 19-02 | Background queue for SMC reads | IOKit calls can block - never run on main thread |
+| 19-02 | @Observable for SensorReaderObservable | Modern macOS 14+ pattern for reactive SwiftUI |
+| 19-02 | Graceful nil returns for missing sensors | Missing sensors common on different chips - don't crash |
 
 ### Deferred Issues
 
@@ -259,6 +263,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-17
-Stopped at: 19-01-PLAN.md complete (Wave 1 of Phase 19)
+Stopped at: 19-02-PLAN.md complete (SMC module integration)
 Resume file: None
-Next action: Execute Wave 2 (plans 19-02, 19-03, 19-04)
+Next action: Execute Wave 2 (plans 19-03, 19-04 remaining)
