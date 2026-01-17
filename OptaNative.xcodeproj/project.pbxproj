@@ -22,6 +22,18 @@
 		A100015001 /* ChipDetection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100015000 /* ChipDetection.swift */; };
 		A100016001 /* SensorKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100016000 /* SensorKeys.swift */; };
 		A100019001 /* SensorReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100019000 /* SensorReader.swift */; };
+		A100020001 /* TelemetryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020000 /* TelemetryService.swift */; };
+		A100021001 /* TelemetryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100021000 /* TelemetryViewModel.swift */; };
+		A100022001 /* ProcessService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100022000 /* ProcessService.swift */; };
+		A100023001 /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100023000 /* MenuBarView.swift */; };
+		A100024001 /* QuickStatRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100024000 /* QuickStatRow.swift */; };
+		A100025001 /* MainWindowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100025000 /* MainWindowView.swift */; };
+		A100026001 /* TelemetryCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100026000 /* TelemetryCard.swift */; };
+		A100027001 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100027000 /* DashboardView.swift */; };
+		A100028001 /* ProcessViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100028000 /* ProcessViewModel.swift */; };
+		A100029001 /* ProcessListSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100029000 /* ProcessListSection.swift */; };
+		A100030001 /* ProcessRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100030000 /* ProcessRow.swift */; };
+		A100031001 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100031000 /* SettingsView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -70,6 +82,18 @@
 		A100015000 /* ChipDetection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChipDetection.swift; sourceTree = "<group>"; };
 		A100016000 /* SensorKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SensorKeys.swift; sourceTree = "<group>"; };
 		A100019000 /* SensorReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SensorReader.swift; sourceTree = "<group>"; };
+		A100020000 /* TelemetryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelemetryService.swift; sourceTree = "<group>"; };
+		A100021000 /* TelemetryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelemetryViewModel.swift; sourceTree = "<group>"; };
+		A100022000 /* ProcessService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessService.swift; sourceTree = "<group>"; };
+		A100023000 /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
+		A100024000 /* QuickStatRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickStatRow.swift; sourceTree = "<group>"; };
+		A100025000 /* MainWindowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainWindowView.swift; sourceTree = "<group>"; };
+		A100026000 /* TelemetryCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelemetryCard.swift; sourceTree = "<group>"; };
+		A100027000 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
+		A100028000 /* ProcessViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessViewModel.swift; sourceTree = "<group>"; };
+		A100029000 /* ProcessListSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessListSection.swift; sourceTree = "<group>"; };
+		A100030000 /* ProcessRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessRow.swift; sourceTree = "<group>"; };
+		A100031000 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -168,6 +192,12 @@
 		A1000023100 /* MainWindow */ = {
 			isa = PBXGroup;
 			children = (
+				A100025000 /* MainWindowView.swift */,
+				A100026000 /* TelemetryCard.swift */,
+				A100027000 /* DashboardView.swift */,
+				A100029000 /* ProcessListSection.swift */,
+				A100030000 /* ProcessRow.swift */,
+				A100031000 /* SettingsView.swift */,
 			);
 			path = MainWindow;
 			sourceTree = "<group>";
@@ -175,6 +205,8 @@
 		A1000023200 /* MenuBar */ = {
 			isa = PBXGroup;
 			children = (
+				A100023000 /* MenuBarView.swift */,
+				A100024000 /* QuickStatRow.swift */,
 			);
 			path = MenuBar;
 			sourceTree = "<group>";
@@ -190,6 +222,8 @@
 		A1000024000 /* ViewModels */ = {
 			isa = PBXGroup;
 			children = (
+				A100021000 /* TelemetryViewModel.swift */,
+				A100028000 /* ProcessViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -198,6 +232,8 @@
 			isa = PBXGroup;
 			children = (
 				A100014000 /* HelperManager.swift */,
+				A100020000 /* TelemetryService.swift */,
+				A100022000 /* ProcessService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -343,6 +379,18 @@
 				A100015001 /* ChipDetection.swift in Sources */,
 				A100016001 /* SensorKeys.swift in Sources */,
 				A100019001 /* SensorReader.swift in Sources */,
+				A100020001 /* TelemetryService.swift in Sources */,
+				A100021001 /* TelemetryViewModel.swift in Sources */,
+				A100022001 /* ProcessService.swift in Sources */,
+				A100023001 /* MenuBarView.swift in Sources */,
+				A100024001 /* QuickStatRow.swift in Sources */,
+				A100025001 /* MainWindowView.swift in Sources */,
+				A100026001 /* TelemetryCard.swift in Sources */,
+				A100027001 /* DashboardView.swift in Sources */,
+				A100028001 /* ProcessViewModel.swift in Sources */,
+				A100029001 /* ProcessListSection.swift in Sources */,
+				A100030001 /* ProcessRow.swift in Sources */,
+				A100031001 /* SettingsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

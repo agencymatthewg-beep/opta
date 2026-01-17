@@ -9,7 +9,7 @@ Opta transforms from an empty Tauri scaffold into a full-featured AI-powered PC 
 - ✅ **v1.0 MVP** - Phases 1-10 (shipped 2026-01-16)
 - ✅ **v1.1 macOS Refinement** - Phases 11-15 (shipped 2026-01-16)
 - 📋 **v2.0 Social, Chess & Windows** - Phases 16-18 (planned)
-- 📋 **v3.0 Native Platforms** - Phase 19 (planned)
+- ✅ **v3.0 Native Platforms** - Phase 19 (shipped 2026-01-17)
 - 📋 **v4.0 Rich Features** - Phases 20-23 (planned)
 
 ## Domain Expertise
@@ -42,9 +42,9 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 14: Educational Enhancement** - Expertise-adaptive explanations, learning visibility, rollback
 - [x] **Phase 15: Performance & Launch** - Performance optimization, macOS polish, launch preparation
 - [x] **Phase 16: Social Features** - Score sharing and export (v2.0)
-- [ ] **Phase 17: Chess Integration** - Ambient chess, three modes, AI opponents (v2.0)
+- [x] **Phase 17: Chess Integration** - Ambient chess, three modes, AI opponents (v2.0)
 - [ ] **Phase 18: Windows Platform** - Windows-specific testing, installer, conflict tools (v2.0)
-- [ ] **Phase 19: Native macOS** - Full native Swift/SwiftUI build for maximum hardware utilization (v3.0)
+- [x] **Phase 19: Native macOS** - Full native Swift/SwiftUI build for maximum hardware utilization (v3.0)
 - [ ] **Phase 20: Rich Interactions** - Command palette, drag-drop, gestures, shortcuts, haptics, accessibility (v4.0)
 - [ ] **Phase 21: Advanced Visualizations** - ECharts telemetry, flame graphs, treemaps, deep glow effects (v4.0)
 - [ ] **Phase 22: AI/ML Intelligence** - Time series forecasting, anomaly detection, smart recommendations (v4.0)
@@ -294,13 +294,13 @@ Plans:
 **Research topics**: Swift/SwiftUI, IOKit, SMC sensor access, privileged helpers, menu bar apps, NSVisualEffectView
 
 Plans:
-- [ ] 19-01: Xcode project foundation with SwiftUI template and SPM dependencies
-- [ ] 19-02: SMC module integration with chip detection and sensor key mapping
-- [ ] 19-03: UI foundation with glass effects (NSVisualEffectView) and design system
-- [ ] 19-04: Privileged helper tool for process termination via SMJobBless
-- [ ] 19-05: Hardware telemetry services with @Observable pattern
-- [ ] 19-06: Menu bar integration with live stats popup
-- [ ] 19-07: Main window dashboard with process management
+- [x] 19-01: Xcode project foundation with SwiftUI template and SPM dependencies
+- [x] 19-02: SMC module integration with chip detection and sensor key mapping
+- [x] 19-03: UI foundation with glass effects (NSVisualEffectView) and design system
+- [x] 19-04: Privileged helper tool for process termination via SMJobBless
+- [x] 19-05: Hardware telemetry services with @Observable pattern
+- [x] 19-06: Menu bar integration with live stats popup
+- [x] 19-07: Main window dashboard with process management
 
 *Note: Native Windows phase will follow after macOS native is complete.*
 
