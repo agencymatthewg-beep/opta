@@ -287,9 +287,13 @@ Plans:
 **Research topics**: Swift/SwiftUI, IOKit, SMC sensor access, privileged helpers, menu bar apps, NSVisualEffectView
 
 Plans:
-- [ ] 19-01: TBD
-- [ ] 19-02: TBD
-- [ ] 19-03: TBD
+- [ ] 19-01: Xcode project foundation with SwiftUI template and SPM dependencies
+- [ ] 19-02: SMC module integration with chip detection and sensor key mapping
+- [ ] 19-03: UI foundation with glass effects (NSVisualEffectView) and design system
+- [ ] 19-04: Privileged helper tool for process termination via SMJobBless
+- [ ] 19-05: Hardware telemetry services with @Observable pattern
+- [ ] 19-06: Menu bar integration with live stats popup
+- [ ] 19-07: Main window dashboard with process management
 
 *Note: Native Windows phase will follow after macOS native is complete.*
 
@@ -320,4 +324,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 �
 | 16. Social Features | v2.0 | 1/1 | Complete | 2026-01-16 |
 | 17. Chess Integration | v2.0 | 1/4 | In progress | - |
 | 18. Windows Platform | v2.0 | 0/? | Not started | - |
-| 19. Native macOS | v3.0 | 0/? | Research complete | - |
+| 19. Native macOS | v3.0 | 0/7 | Planned | - |
