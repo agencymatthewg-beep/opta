@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleName</key>
+    <string>OptaNative</string>
+    <key>CFBundleDisplayName</key>
+    <string>Opta Native</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.opta.native</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0.0</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>14.0</string>
+    <key>LSUIElement</key>
+    <true/>
+    <!-- SMJobBless configuration: which helpers can be installed by this app -->
+    <key>SMPrivilegedExecutables</key>
+    <dict>
+        <!-- Helper tool's code signing requirement -->
+        <key>com.opta.native.helper</key>
+        <string>anchor apple generic and identifier "com.opta.native.helper" and (certificate leaf[field.1.2.840.113635.100.6.1.9] /* exists */ or certificate 1[field.1.2.840.113635.100.6.2.6] /* exists */ and certificate leaf[field.1.2.840.113635.100.6.1.13] /* exists */)</string>
+    </dict>
+</dict>
+</plist>
