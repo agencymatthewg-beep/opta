@@ -262,6 +262,11 @@ Progress: ██████████ 100% of Phase 21 (4/4 plans)
 | 21-04 | SVG for PulseRing | Simpler than Canvas, better accessibility, adequate performance |
 | 21-04 | Global tsParticles engine | Avoids re-initialization overhead on component remount |
 | 21-04 | Static dots for reduced motion | Maintains visual context without animation |
+| 21-03 | treemapSquarify layout for disk visualization | Better space utilization than treemapSlice for storage display |
+| 21-03 | 7 category colors for disk | applications, documents, media, system, cache, code, other |
+| 21-03 | 10-second timeout for disk analysis | Prevents hanging on large filesystems |
+| 21-03 | 30-second cache TTL for disk analysis | Balances freshness with performance |
+| 21-03 | MAX_VISIBLE_NODES=100 | Performance optimization for SVG rendering |
 
 ### Deferred Issues
 
