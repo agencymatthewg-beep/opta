@@ -10,7 +10,8 @@ Opta transforms from an empty Tauri scaffold into a full-featured AI-powered PC 
 - ✅ **v1.1 macOS Refinement** - Phases 11-15 (shipped 2026-01-16)
 - 📋 **v2.0 Social, Chess & Windows** - Phases 16-18 (planned)
 - ✅ **v3.0 Native Platforms** - Phase 19 (shipped 2026-01-17)
-- 📋 **v4.0 Rich Features** - Phases 20-23 (planned)
+- ✅ **v4.0 Rich Features** - Phases 20-23 (shipped 2026-01-17)
+- 🚧 **v5.0 Premium Visual Experience** - Phases 24-40 (in progress)
 
 ## Domain Expertise
 
@@ -46,9 +47,26 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 18: Windows Platform** - Windows-specific testing, installer, conflict tools (v2.0)
 - [x] **Phase 19: Native macOS** - Full native Swift/SwiftUI build for maximum hardware utilization (v3.0)
 - [x] **Phase 20: Rich Interactions & Premium Visuals** - WebGL shaders, premium animations, command palette, drag-drop, gestures, shortcuts, haptics, menu bar extra, accessibility (v4.0)
-- [ ] **Phase 21: Advanced Visualizations** - ECharts telemetry, flame graphs, treemaps, deep glow effects (v4.0)
-- [ ] **Phase 22: AI/ML Intelligence** - Time series forecasting, anomaly detection, smart recommendations (v4.0)
-- [ ] **Phase 23: Cross-Device Sync** - ElectricSQL cloud sync, P2P LAN sync, offline-first (v4.0)
+- [x] **Phase 21: Advanced Visualizations** - ECharts telemetry, flame graphs, treemaps, deep glow effects (v4.0)
+- [x] **Phase 22: AI/ML Intelligence** - Time series forecasting, anomaly detection, smart recommendations (v4.0)
+- [x] **Phase 23: Cross-Device Sync** - ElectricSQL cloud sync, P2P LAN sync, offline-first (v4.0)
+- [ ] **Phase 24: 3D Ring Foundation** - Three.js Canvas, spinning torus, 3-point lighting (v5.0)
+- [ ] **Phase 25: Glassmorphism Ring Shader** - GLSL fresnel shader, energy glow uniforms, inner light (v5.0)
+- [ ] **Phase 26: Ring Wake-Up Animation** - Spring-physics rotation on engagement (v5.0)
+- [ ] **Phase 27: Ring Explosion Effect** - Particle burst, shockwave ring, bloom, camera shake (v5.0)
+- [ ] **Phase 28: Ring State Machine & Context** - Extended states, useOptaWakeUp hook (v5.0)
+- [ ] **Phase 29: Persistent Ring (App-Wide)** - Ring follows user across all pages (v5.0)
+- [ ] **Phase 30: Atmospheric Fog System** - Dynamic fog breathing with ring state (v5.0)
+- [ ] **Phase 31: Neon Glow Trails** - Energy lines through UI, data visualization as art (v5.0)
+- [ ] **Phase 32: Particle Environment** - Ambient particles, energy sparks, data bursts (v5.0)
+- [ ] **Phase 33: Glass Depth System** - Multi-layer translucent panels, blur hierarchy (v5.0)
+- [ ] **Phase 34: Premium Loading States** - Chromatic aberration, scan lines, holographic (v5.0)
+- [ ] **Phase 35: Page Transitions & Micro-Animations** - Apple-level polish, spring physics (v5.0)
+- [ ] **Phase 36: Telemetry Visualization Upgrade** - Data as art (CPU core, liquid memory, heat glow) (v5.0)
+- [ ] **Phase 37: Sound Design Integration** - Sci-fi audio feedback, ring sounds (v5.0)
+- [ ] **Phase 38: High-End Performance Optimization** - Dynamic quality, LOD, 60fps target (v5.0)
+- [ ] **Phase 39: Visual Polish & QA** - Pixel-perfect audit, animation timing, edge cases (v5.0)
+- [ ] **Phase 40: Documentation & Launch** - Style guide, showcase video, release (v5.0)
 
 ## Phase Details
 
@@ -355,10 +373,10 @@ Plans:
 **Research**: Complete (20-RESEARCH.md)
 
 Plans:
-- [ ] 22-01: Time series forecasting (Python MCP + Kats/Darts)
-- [ ] 22-02: Anomaly detection (CPU spikes, memory pressure)
-- [ ] 22-03: Content-based recommendation engine
-- [ ] 22-04: Behavior pattern detection (gaming hours, work hours)
+- [x] 22-01: Time series forecasting (Python MCP + Holt-Winters)
+- [x] 22-02: Anomaly detection (CPU spikes, memory pressure)
+- [x] 22-03: Content-based recommendation engine
+- [x] 22-04: Behavior pattern detection (gaming hours, work hours)
 
 #### Phase 23: Cross-Device Sync
 **Goal**: ElectricSQL cloud sync, P2P LAN sync, offline-first architecture
@@ -366,15 +384,226 @@ Plans:
 **Research**: Complete (20-RESEARCH.md)
 
 Plans:
-- [ ] 23-01: SQLite local storage foundation
-- [ ] 23-02: ElectricSQL cloud sync (settings/profiles)
-- [ ] 23-03: P2P LAN sync via WebRTC
-- [ ] 23-04: Offline-first queue with optimistic updates
+- [x] 23-01: SQLite local storage foundation
+- [x] 23-02: Cloud sync service (settings/profiles)
+- [x] 23-03: P2P LAN sync via BroadcastChannel
+- [x] 23-04: Offline-first queue with optimistic updates
+
+### 🚧 v5.0 Premium Visual Experience (In Progress)
+
+**Milestone Goal:** Transform Opta into a visually stunning, sci-fi inspired premium application with Apple-level refinement. The ring becomes the soul of the app, surrounded by glass depth, neon energy trails, and particle systems that make users feel excitement and energy. Target: high-end hardware, go all out.
+
+**Design Pillars:**
+- 🎯 Sci-Fi HUD (Cyberpunk/TRON) + Apple refinement + Linear sophistication
+- 💫 Excitement & Energy - the app feels alive, responsive, eager
+- ⚡ Maximum visual richness - show what WebGL can do
+- 🔮 Signature elements: Ring animation, Glass depth, Neon glow trails, Particle systems
+
+---
+
+#### Phase 24: 3D Ring Foundation
+**Goal**: Three.js Canvas setup with spinning torus, 3-point lighting, and premium ring geometry
+**Depends on**: Phase 23 (v4.0 complete)
+**Research**: Unlikely (Three.js/R3F established)
+
+Plans:
+- [ ] 24-01: Three.js Canvas with React Three Fiber, transparent background
+- [ ] 24-02: Torus geometry optimization (segments, tube radius, bevel)
+- [ ] 24-03: Professional 3-point lighting (key, fill, rim with purple edge)
+- [ ] 24-04: Camera positioning and FOV tuning for dramatic perspective
+
+#### Phase 25: Glassmorphism Ring Shader
+**Goal**: Custom GLSL fresnel shader creating premium glass material with inner glow
+**Depends on**: Phase 24
+**Research**: Likely (GLSL fresnel, subsurface scattering)
+**Research topics**: Fresnel equations, glass refraction, energy glow uniforms
+
+Plans:
+- [ ] 25-01: Base fresnel shader with rim lighting
+- [ ] 25-02: Energy glow uniform (0-1) affecting emissive intensity
+- [ ] 25-03: Inner light scattering simulation
+- [ ] 25-04: Color temperature shift based on state (cool dormant → hot active)
+
+#### Phase 26: Ring Wake-Up Animation
+**Goal**: Spring-physics rotation from tilted dormant to facing camera when user engages
+**Depends on**: Phase 25
+**Research**: Unlikely (spec exists)
+
+Plans:
+- [ ] 26-01: Dormant state: 15° tilt, slow Y-axis spin (0.1 rad/s)
+- [ ] 26-02: Wake trigger on hover/type with 800ms spring transition
+- [ ] 26-03: Active state: directly facing camera, faster spin
+- [ ] 26-04: Sleep transition after 3s inactivity with ease-out
+
+#### Phase 27: Ring Explosion Effect
+**Goal**: Spectacular particle burst with shockwave ring and bloom on click
+**Depends on**: Phase 26
+**Research**: Likely (particle systems, bloom post-processing)
+
+Plans:
+- [ ] 27-01: Particle emitter (200+ particles) with velocity spread
+- [ ] 27-02: Purple-to-white particle color gradient with fade
+- [ ] 27-03: Expanding shockwave ring geometry
+- [ ] 27-04: Bloom post-processing pass during explosion
+- [ ] 27-05: Camera shake micro-animation (subtle, 50ms)
+
+#### Phase 28: Ring State Machine & Context
+**Goal**: Robust state management with useOptaWakeUp hook and global ring context
+**Depends on**: Phase 27
+**Research**: Unlikely
+
+Plans:
+- [ ] 28-01: Extended RingState: dormant → waking → active → processing → exploding → recovering
+- [ ] 28-02: useOptaWakeUp hook with activity detection
+- [ ] 28-03: OptaRingContext provider with global state
+- [ ] 28-04: State transition timing and easing curves
+
+#### Phase 29: Persistent Ring (App-Wide)
+**Goal**: Ring appears across all pages, follows user everywhere like "Opta" text
+**Depends on**: Phase 28
+**Research**: Unlikely
+
+Plans:
+- [ ] 29-01: Ring positioning strategy (corner vs floating vs integrated)
+- [ ] 29-02: Z-index layering above page content
+- [ ] 29-03: Page transition ring behavior (stays, pulses, or moves)
+- [ ] 29-04: Ring size scaling based on context (hero vs ambient)
+
+#### Phase 30: Atmospheric Fog System
+**Goal**: Dynamic fog that breathes with ring state, creating sci-fi depth
+**Depends on**: Phase 29
+**Research**: Likely (Three.js fog, post-processing)
+
+Plans:
+- [ ] 30-01: Radial gradient fog from ring center
+- [ ] 30-02: Fog intensity synced with ring energy level
+- [ ] 30-03: Fog color shift (deep purple dormant → electric violet active)
+- [ ] 30-04: Subtle fog animation (breathing, pulsing)
+
+#### Phase 31: Neon Glow Trails
+**Goal**: Energy lines flowing through UI elements, data visualization as art
+**Depends on**: Phase 30
+**Research**: Likely (SVG path animation, canvas trails)
+
+Plans:
+- [ ] 31-01: Trail system architecture (Canvas vs SVG vs WebGL)
+- [ ] 31-02: Glow trail renderer with motion blur
+- [ ] 31-03: Data-driven trail triggers (CPU spike = energy burst)
+- [ ] 31-04: Trail-to-UI element connection points
+- [ ] 31-05: Ambient idle trails (subtle, decorative)
+
+#### Phase 32: Particle Environment
+**Goal**: Ambient particle systems that make the app feel alive and dynamic
+**Depends on**: Phase 31
+**Research**: Likely (Three.js particle systems, instanced mesh)
+
+Plans:
+- [ ] 32-01: Ambient floating particles (subtle dust motes)
+- [ ] 32-02: Energy spark particles near active elements
+- [ ] 32-03: Data burst particles on telemetry updates
+- [ ] 32-04: Particle attraction to ring during processing
+- [ ] 32-05: Reduced motion fallback (static dots)
+
+#### Phase 33: Glass Depth System
+**Goal**: Multi-layer translucent panels with proper depth hierarchy
+**Depends on**: Phase 32
+**Research**: Unlikely (extending existing glass system)
+
+Plans:
+- [ ] 33-01: Glass layer z-index hierarchy (background → content → overlay)
+- [ ] 33-02: Dynamic blur intensity based on layer depth
+- [ ] 33-03: Light refraction simulation between layers
+- [ ] 33-04: Frosted edge effects on panel borders
+- [ ] 33-05: Glass reflection highlights (subtle, moving)
+
+#### Phase 34: Premium Loading States
+**Goal**: Chromatic aberration, scan lines, and holographic effects for loading
+**Depends on**: Phase 33
+**Research**: Likely (post-processing shaders)
+
+Plans:
+- [ ] 34-01: Chromatic aberration shader for loading screens
+- [ ] 34-02: Horizontal scan line effect (TRON-style)
+- [ ] 34-03: Holographic shimmer on loading cards
+- [ ] 34-04: Data stream effect (falling matrix-style characters)
+- [ ] 34-05: Ring-synchronized loading pulse
+
+#### Phase 35: Page Transitions & Micro-Animations
+**Goal**: Every interaction feels responsive with Apple-level polish
+**Depends on**: Phase 34
+**Research**: Unlikely (Framer Motion mastery)
+
+Plans:
+- [ ] 35-01: Page enter/exit choreography with stagger
+- [ ] 35-02: Hover state depth shifts (subtle 3D lift)
+- [ ] 35-03: Click/tap feedback with ripple + glow
+- [ ] 35-04: Scroll-linked animations (parallax, reveal)
+- [ ] 35-05: Spring physics for all motion (no linear easing)
+
+#### Phase 36: Telemetry Visualization Upgrade
+**Goal**: Real-time data becomes visual art, not just charts
+**Depends on**: Phase 35
+**Research**: Unlikely
+
+Plans:
+- [ ] 36-01: CPU meter as pulsing energy core
+- [ ] 36-02: Memory as liquid fill with surface tension
+- [ ] 36-03: GPU as heat visualization with glow
+- [ ] 36-04: Disk as holographic storage visualization
+- [ ] 36-05: Network as data packet flow animation
+
+#### Phase 37: Sound Design Integration
+**Goal**: Audio feedback that reinforces the sci-fi premium feel
+**Depends on**: Phase 36
+**Research**: Likely (Web Audio API, audio sprites)
+
+Plans:
+- [ ] 37-01: Audio system architecture (muted by default)
+- [ ] 37-02: Ring state change sounds (subtle whoosh, hum)
+- [ ] 37-03: UI interaction sounds (click, hover, success)
+- [ ] 37-04: Explosion effect sound with reverb
+- [ ] 37-05: Ambient background hum (optional)
+
+#### Phase 38: High-End Performance Optimization
+**Goal**: Maintain visual richness while hitting 60fps on target hardware
+**Depends on**: Phase 37
+**Research**: Unlikely
+
+Plans:
+- [ ] 38-01: WebGL capability detection and tier system
+- [ ] 38-02: Dynamic quality scaling based on FPS
+- [ ] 38-03: Asset LOD (level of detail) for particles/geometry
+- [ ] 38-04: Reduced motion accessibility mode
+- [ ] 38-05: PNG/CSS fallback for non-WebGL browsers
+
+#### Phase 39: Visual Polish & QA
+**Goal**: Every pixel perfect, every animation butter-smooth
+**Depends on**: Phase 38
+**Research**: Unlikely
+
+Plans:
+- [ ] 39-01: Animation timing audit (consistency check)
+- [ ] 39-02: Color harmony verification across states
+- [ ] 39-03: Edge case visual testing (extreme values)
+- [ ] 39-04: Cross-browser visual parity
+- [ ] 39-05: Screenshot documentation of all visual states
+
+#### Phase 40: Documentation & Launch
+**Goal**: Ship the premium visual experience with proper documentation
+**Depends on**: Phase 39
+**Research**: Unlikely
+
+Plans:
+- [ ] 40-01: Visual style guide update with new effects
+- [ ] 40-02: Animation specification documentation
+- [ ] 40-03: Performance benchmarks and requirements
+- [ ] 40-04: Showcase video/GIF creation
+- [ ] 40-05: Release notes and changelog
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 → 8 → 8.1 → 9 → 10 → 11 → 12 → 13 → 14 → 15 → 16 → 17 → 19 → 20 → 21 → 22 → 23 → (18 deferred)
+Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 → 8 → 8.1 → 9 → 10 → 11 → 12 → 13 → 14 → 15 → 16 → 17 → 19 → 20 → 21 → 22 → 23 → 24 → 25 → 26 → 27 → 28 → 29 → 30 → 31 → 32 → 33 → 34 → 35 → 36 → 37 → 38 → 39 → 40 → (18 deferred)
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -401,5 +630,22 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 �
 | 19. Native macOS | v3.0 | 7/7 | Complete | 2026-01-17 |
 | 20. Rich Interactions & Premium Visuals | v4.0 | 11/11 | Complete | 2026-01-17 |
 | 21. Advanced Visualizations | v4.0 | 4/4 | Complete | 2026-01-17 |
-| 22. AI/ML Intelligence | v4.0 | 0/4 | Planned | - |
-| 23. Cross-Device Sync | v4.0 | 0/4 | Planned | - |
+| 22. AI/ML Intelligence | v4.0 | 4/4 | Complete | 2026-01-17 |
+| 23. Cross-Device Sync | v4.0 | 4/4 | Complete | 2026-01-17 |
+| 24. 3D Ring Foundation | v5.0 | 0/4 | Not Started | - |
+| 25. Glassmorphism Ring Shader | v5.0 | 0/4 | Not Started | - |
+| 26. Ring Wake-Up Animation | v5.0 | 0/4 | Not Started | - |
+| 27. Ring Explosion Effect | v5.0 | 0/5 | Not Started | - |
+| 28. Ring State Machine & Context | v5.0 | 0/4 | Not Started | - |
+| 29. Persistent Ring (App-Wide) | v5.0 | 0/4 | Not Started | - |
+| 30. Atmospheric Fog System | v5.0 | 0/4 | Not Started | - |
+| 31. Neon Glow Trails | v5.0 | 0/5 | Not Started | - |
+| 32. Particle Environment | v5.0 | 0/5 | Not Started | - |
+| 33. Glass Depth System | v5.0 | 0/5 | Not Started | - |
+| 34. Premium Loading States | v5.0 | 0/5 | Not Started | - |
+| 35. Page Transitions & Micro-Animations | v5.0 | 0/5 | Not Started | - |
+| 36. Telemetry Visualization Upgrade | v5.0 | 0/5 | Not Started | - |
+| 37. Sound Design Integration | v5.0 | 0/5 | Not Started | - |
+| 38. High-End Performance Optimization | v5.0 | 0/5 | Not Started | - |
+| 39. Visual Polish & QA | v5.0 | 0/5 | Not Started | - |
+| 40. Documentation & Launch | v5.0 | 0/5 | Not Started | - |
