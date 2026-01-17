@@ -1,25 +1,50 @@
-import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
-import type { RingState, RingSize } from '@/components/OptaRing';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useRef,
+  useEffect,
+  useMemo,
+} from 'react';
+import {
+  type RingState,
+  type RingSize,
+  getDefaultEnergy,
+  getTransitionTiming,
+  isValidTransition,
+} from '@/components/OptaRing3D/types';
 
 /**
- * OptaRingContext - Global state for the Opta Ring protagonist
+ * OptaRingContext - Global State Machine for the Opta Ring Protagonist
  *
- * Controls ring behavior across the app including:
- * - State transitions (dormant, active, processing)
- * - Position for page transitions (ring moves to center, ignites, dissolves)
- * - Coordination with fog/atmosphere effects
+ * Phase 28: Ring State Machine & Context
  *
- * @see DESIGN_SYSTEM.md - Part 7: The Opta Ring
+ * Provides app-wide control of the Opta Ring including:
+ * - Full state machine with 7 states (dormant, waking, active, sleeping, processing, exploding, recovering)
+ * - Energy level tracking (0-1) derived from state
+ * - Automatic state transitions with proper timing
+ * - Explosion trigger for celebration moments
+ * - Processing state for async operations
+ * - SSR-safe implementation
+ *
+ * @see DESIGN_SYSTEM.md - Part 9: The Opta Ring
+ * @see src/components/OptaRing3D/types.ts for state definitions
  */
 
-export type RingPosition = {
-  x: number;
-  y: number;
-} | 'center' | 'sidebar' | 'hidden';
+/** Ring position for floating ring */
+export type RingPosition =
+  | { x: number; y: number }
+  | 'center'
+  | 'sidebar'
+  | 'hidden';
 
-interface OptaRingState {
+/** Internal state shape */
+interface OptaRingInternalState {
   /** Current ring state */
   state: RingState;
+  /** Energy level (0-1) */
+  energyLevel: number;
   /** Current position */
   position: RingPosition;
   /** Size for the floating ring */
@@ -28,19 +53,39 @@ interface OptaRingState {
   isTransitioning: boolean;
   /** Whether the floating ring overlay is visible */
   showFloating: boolean;
+  /** State before processing started (for recovery) */
+  previousState: RingState | null;
 }
 
-interface OptaRingContextValue extends OptaRingState {
-  /** Trigger ignition (0% → 50%) */
+/** Context value exposed to consumers */
+export interface OptaRingContextValue {
+  // State
+  /** Current ring state */
+  state: RingState;
+  /** Energy level (0-1) - derived from state with smooth transitions */
+  energyLevel: number;
+  /** Current position */
+  position: RingPosition;
+  /** Size for the floating ring */
+  size: RingSize;
+  /** Whether the ring is currently transitioning */
+  isTransitioning: boolean;
+  /** Whether the floating ring overlay is visible */
+  showFloating: boolean;
+
+  // Actions
+  /** Trigger explosion effect (celebration) */
+  triggerExplosion: () => void;
+  /** Set processing state (for async operations) */
+  setProcessing: (processing: boolean) => void;
+  /** Trigger ignition (dormant → waking → active) */
   ignite: () => Promise<void>;
-  /** Return to dormant state (50% → 0%) */
+  /** Return to dormant state (active → sleeping → dormant) */
   sleep: () => Promise<void>;
-  /** Start processing animation */
-  startProcessing: () => void;
-  /** Stop processing and return to previous state */
-  stopProcessing: () => void;
-  /** Set ring state directly */
+  /** Set ring state directly (validates transitions) */
   setState: (state: RingState) => void;
+  /** Force state without validation (use sparingly) */
+  forceState: (state: RingState) => void;
   /** Move ring to a position */
   moveTo: (position: RingPosition) => Promise<void>;
   /** Show/hide floating ring overlay */
@@ -55,100 +100,286 @@ interface OptaRingContextValue extends OptaRingState {
 
 const OptaRingContext = createContext<OptaRingContextValue | null>(null);
 
-const DEFAULT_STATE: OptaRingState = {
+/** Default state */
+const DEFAULT_STATE: OptaRingInternalState = {
   state: 'dormant',
+  energyLevel: 0.1, // Default dormant energy
   position: 'sidebar',
   size: 'md',
   isTransitioning: false,
   showFloating: false,
+  previousState: null,
 };
 
-// Transition durations in ms
-const TRANSITION_DURATION = 600;
+/** Animation timing constants (ms) */
+const WAKING_DURATION = 800;
+const SLEEPING_DURATION = 800;
+const EXPLODING_DURATION = 800;
+const RECOVERING_DURATION = 500;
 const FLASH_DURATION = 300;
+const POSITION_TRANSITION_DURATION = 300;
 
+/**
+ * Provider component for OptaRing global state
+ */
 export function OptaRingProvider({ children }: { children: React.ReactNode }) {
-  const [ringState, setRingState] = useState<OptaRingState>(DEFAULT_STATE);
-  const previousStateRef = useRef<RingState>('dormant');
+  const [internalState, setInternalState] = useState<OptaRingInternalState>(DEFAULT_STATE);
 
-  // Ignite: transition from 0% to 50%
-  const ignite = useCallback(async () => {
-    setRingState((prev) => ({
-      ...prev,
-      state: 'active',
-      isTransitioning: true,
-    }));
+  // Refs for cleanup
+  const transitionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const energyAnimationRef = useRef<ReturnType<typeof requestAnimationFrame> | null>(null);
 
-    await new Promise((resolve) => setTimeout(resolve, TRANSITION_DURATION));
-
-    setRingState((prev) => ({
-      ...prev,
-      isTransitioning: false,
-    }));
+  // Clear timeouts on cleanup
+  const clearTransitionTimeout = useCallback(() => {
+    if (transitionTimeoutRef.current) {
+      clearTimeout(transitionTimeoutRef.current);
+      transitionTimeoutRef.current = null;
+    }
   }, []);
 
-  // Sleep: transition from 50% to 0%
-  const sleep = useCallback(async () => {
-    setRingState((prev) => ({
-      ...prev,
-      state: 'dormant',
-      isTransitioning: true,
-    }));
-
-    await new Promise((resolve) => setTimeout(resolve, TRANSITION_DURATION));
-
-    setRingState((prev) => ({
-      ...prev,
-      isTransitioning: false,
-    }));
+  const clearEnergyAnimation = useCallback(() => {
+    if (energyAnimationRef.current) {
+      cancelAnimationFrame(energyAnimationRef.current);
+      energyAnimationRef.current = null;
+    }
   }, []);
 
-  // Start processing animation
-  const startProcessing = useCallback(() => {
-    setRingState((prev) => {
-      previousStateRef.current = prev.state;
-      return {
-        ...prev,
-        state: 'processing',
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      clearTransitionTimeout();
+      clearEnergyAnimation();
+    };
+  }, [clearTransitionTimeout, clearEnergyAnimation]);
+
+  // Animate energy level
+  const animateEnergy = useCallback(
+    (targetEnergy: number, duration: number) => {
+      clearEnergyAnimation();
+
+      const startEnergy = internalState.energyLevel;
+      const startTime = performance.now();
+      const delta = targetEnergy - startEnergy;
+
+      const animate = (currentTime: number) => {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+
+        // Ease-out cubic
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+        const newEnergy = startEnergy + delta * easeOut;
+
+        setInternalState((prev) => ({ ...prev, energyLevel: newEnergy }));
+
+        if (progress < 1) {
+          energyAnimationRef.current = requestAnimationFrame(animate);
+        }
       };
+
+      if (duration > 0) {
+        energyAnimationRef.current = requestAnimationFrame(animate);
+      } else {
+        setInternalState((prev) => ({ ...prev, energyLevel: targetEnergy }));
+      }
+    },
+    [internalState.energyLevel, clearEnergyAnimation]
+  );
+
+  // Trigger explosion effect
+  const triggerExplosion = useCallback(() => {
+    const currentState = internalState.state;
+
+    // Can only explode from active or processing
+    if (currentState !== 'active' && currentState !== 'processing') {
+      console.warn(`Cannot trigger explosion from state: ${currentState}`);
+      return;
+    }
+
+    clearTransitionTimeout();
+
+    // Set exploding state
+    setInternalState((prev) => ({
+      ...prev,
+      state: 'exploding',
+      energyLevel: 1.0,
+      isTransitioning: true,
+    }));
+
+    // Transition to recovering after explosion duration
+    transitionTimeoutRef.current = setTimeout(() => {
+      setInternalState((prev) => ({
+        ...prev,
+        state: 'recovering',
+        isTransitioning: true,
+      }));
+
+      animateEnergy(0.55, RECOVERING_DURATION);
+
+      // Transition back to active after recovery
+      transitionTimeoutRef.current = setTimeout(() => {
+        setInternalState((prev) => ({
+          ...prev,
+          state: 'active',
+          isTransitioning: false,
+        }));
+
+        animateEnergy(0.6, 200);
+      }, RECOVERING_DURATION);
+    }, EXPLODING_DURATION);
+  }, [internalState.state, animateEnergy, clearTransitionTimeout]);
+
+  // Set processing state
+  const setProcessing = useCallback(
+    (processing: boolean) => {
+      if (processing) {
+        // Start processing - store previous state
+        setInternalState((prev) => ({
+          ...prev,
+          state: 'processing',
+          previousState: prev.state,
+          isTransitioning: false,
+        }));
+        animateEnergy(0.75, 200);
+      } else {
+        // Stop processing - return to previous state
+        setInternalState((prev) => {
+          const returnState = prev.previousState ?? 'active';
+          return {
+            ...prev,
+            state: returnState,
+            previousState: null,
+            isTransitioning: false,
+          };
+        });
+        animateEnergy(0.6, 200);
+      }
+    },
+    [animateEnergy]
+  );
+
+  // Ignite: dormant → waking → active
+  const ignite = useCallback(async () => {
+    clearTransitionTimeout();
+
+    // Start waking
+    setInternalState((prev) => ({
+      ...prev,
+      state: 'waking',
+      isTransitioning: true,
+    }));
+
+    animateEnergy(0.5, WAKING_DURATION);
+
+    // Wait for waking duration
+    await new Promise<void>((resolve) => {
+      transitionTimeoutRef.current = setTimeout(() => {
+        setInternalState((prev) => ({
+          ...prev,
+          state: 'active',
+          isTransitioning: false,
+        }));
+        animateEnergy(0.6, 200);
+        resolve();
+      }, WAKING_DURATION);
     });
-  }, []);
+  }, [animateEnergy, clearTransitionTimeout]);
 
-  // Stop processing and return to previous state
-  const stopProcessing = useCallback(() => {
-    setRingState((prev) => ({
-      ...prev,
-      state: previousStateRef.current,
-    }));
-  }, []);
+  // Sleep: active → sleeping → dormant
+  const sleep = useCallback(async () => {
+    clearTransitionTimeout();
 
-  // Set state directly
-  const setState = useCallback((state: RingState) => {
-    setRingState((prev) => ({
+    // Start sleeping
+    setInternalState((prev) => ({
       ...prev,
-      state,
+      state: 'sleeping',
+      isTransitioning: true,
     }));
-  }, []);
+
+    animateEnergy(0.2, SLEEPING_DURATION);
+
+    // Wait for sleeping duration
+    await new Promise<void>((resolve) => {
+      transitionTimeoutRef.current = setTimeout(() => {
+        setInternalState((prev) => ({
+          ...prev,
+          state: 'dormant',
+          isTransitioning: false,
+        }));
+        animateEnergy(0.1, 200);
+        resolve();
+      }, SLEEPING_DURATION);
+    });
+  }, [animateEnergy, clearTransitionTimeout]);
+
+  // Set state with validation
+  const setState = useCallback(
+    (newState: RingState) => {
+      const currentState = internalState.state;
+
+      if (!isValidTransition(currentState, newState)) {
+        console.warn(`Invalid state transition: ${currentState} → ${newState}`);
+        return;
+      }
+
+      const timing = getTransitionTiming(currentState, newState);
+
+      setInternalState((prev) => ({
+        ...prev,
+        state: newState,
+        isTransitioning: timing.duration > 0,
+      }));
+
+      animateEnergy(getDefaultEnergy(newState), timing.duration || 200);
+
+      if (timing.duration > 0) {
+        clearTransitionTimeout();
+        transitionTimeoutRef.current = setTimeout(() => {
+          setInternalState((prev) => ({
+            ...prev,
+            isTransitioning: false,
+          }));
+        }, timing.duration);
+      }
+    },
+    [internalState.state, animateEnergy, clearTransitionTimeout]
+  );
+
+  // Force state without validation
+  const forceState = useCallback(
+    (newState: RingState) => {
+      clearTransitionTimeout();
+      setInternalState((prev) => ({
+        ...prev,
+        state: newState,
+        energyLevel: getDefaultEnergy(newState),
+        isTransitioning: false,
+      }));
+    },
+    [clearTransitionTimeout]
+  );
 
   // Move ring to position
   const moveTo = useCallback(async (position: RingPosition) => {
-    setRingState((prev) => ({
+    setInternalState((prev) => ({
       ...prev,
       position,
       isTransitioning: true,
     }));
 
-    await new Promise((resolve) => setTimeout(resolve, TRANSITION_DURATION / 2));
-
-    setRingState((prev) => ({
-      ...prev,
-      isTransitioning: false,
-    }));
+    await new Promise<void>((resolve) => {
+      setTimeout(() => {
+        setInternalState((prev) => ({
+          ...prev,
+          isTransitioning: false,
+        }));
+        resolve();
+      }, POSITION_TRANSITION_DURATION);
+    });
   }, []);
 
   // Show/hide floating ring
   const setShowFloating = useCallback((show: boolean) => {
-    setRingState((prev) => ({
+    setInternalState((prev) => ({
       ...prev,
       showFloating: show,
     }));
@@ -156,7 +387,7 @@ export function OptaRingProvider({ children }: { children: React.ReactNode }) {
 
   // Set ring size
   const setSize = useCallback((size: RingSize) => {
-    setRingState((prev) => ({
+    setInternalState((prev) => ({
       ...prev,
       size,
     }));
@@ -165,7 +396,7 @@ export function OptaRingProvider({ children }: { children: React.ReactNode }) {
   // Page transition sequence
   const triggerPageTransition = useCallback(async () => {
     // 1. Show floating ring at center
-    setRingState((prev) => ({
+    setInternalState((prev) => ({
       ...prev,
       position: 'center',
       showFloating: true,
@@ -173,64 +404,84 @@ export function OptaRingProvider({ children }: { children: React.ReactNode }) {
       isTransitioning: true,
     }));
 
-    // 2. Ignite (0% → 50%)
+    // 2. Ignite (dormant → waking → active)
     await new Promise((resolve) => setTimeout(resolve, 100));
-    setRingState((prev) => ({
-      ...prev,
-      state: 'active',
-    }));
+    await ignite();
 
-    // 3. Hold at 50%
-    await new Promise((resolve) => setTimeout(resolve, 400));
-
-    // 4. Fade out
-    setRingState((prev) => ({
-      ...prev,
-      state: 'dormant',
-    }));
-
+    // 3. Hold at active briefly
     await new Promise((resolve) => setTimeout(resolve, 300));
 
+    // 4. Sleep (active → sleeping → dormant)
+    await sleep();
+
     // 5. Hide floating ring
-    setRingState((prev) => ({
+    setInternalState((prev) => ({
       ...prev,
       showFloating: false,
       position: 'sidebar',
       size: 'md',
       isTransitioning: false,
     }));
-  }, []);
+  }, [ignite, sleep]);
 
   // Flash for feedback
   const flash = useCallback(async () => {
-    const currentState = ringState.state;
+    const currentState = internalState.state;
+    const currentEnergy = internalState.energyLevel;
 
-    setRingState((prev) => ({
+    // Quick ignite
+    setInternalState((prev) => ({
       ...prev,
       state: 'active',
+      energyLevel: 0.8,
     }));
 
     await new Promise((resolve) => setTimeout(resolve, FLASH_DURATION));
 
-    setRingState((prev) => ({
+    // Return to previous state
+    setInternalState((prev) => ({
       ...prev,
       state: currentState,
+      energyLevel: currentEnergy,
     }));
-  }, [ringState.state]);
+  }, [internalState.state, internalState.energyLevel]);
 
-  const value: OptaRingContextValue = {
-    ...ringState,
-    ignite,
-    sleep,
-    startProcessing,
-    stopProcessing,
-    setState,
-    moveTo,
-    setShowFloating,
-    setSize,
-    triggerPageTransition,
-    flash,
-  };
+  // Build context value
+  const value: OptaRingContextValue = useMemo(
+    () => ({
+      state: internalState.state,
+      energyLevel: internalState.energyLevel,
+      position: internalState.position,
+      size: internalState.size,
+      isTransitioning: internalState.isTransitioning,
+      showFloating: internalState.showFloating,
+      triggerExplosion,
+      setProcessing,
+      ignite,
+      sleep,
+      setState,
+      forceState,
+      moveTo,
+      setShowFloating,
+      setSize,
+      triggerPageTransition,
+      flash,
+    }),
+    [
+      internalState,
+      triggerExplosion,
+      setProcessing,
+      ignite,
+      sleep,
+      setState,
+      forceState,
+      moveTo,
+      setShowFloating,
+      setSize,
+      triggerPageTransition,
+      flash,
+    ]
+  );
 
   return (
     <OptaRingContext.Provider value={value}>
@@ -257,6 +508,22 @@ export function useOptaRing(): OptaRingContextValue {
  */
 export function useOptaRingOptional(): OptaRingContextValue | null {
   return useContext(OptaRingContext);
+}
+
+/**
+ * Hook to get just the ring state (for performance-sensitive renders)
+ */
+export function useRingState(): RingState {
+  const context = useOptaRing();
+  return context.state;
+}
+
+/**
+ * Hook to get just the energy level
+ */
+export function useRingEnergy(): number {
+  const context = useOptaRing();
+  return context.energyLevel;
 }
 
 export default OptaRingContext;

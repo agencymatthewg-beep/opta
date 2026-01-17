@@ -133,6 +133,12 @@ Before responding to any significant request, check these context sources:
 - `opta-optimizer.md` - Agent behavior definition
 - `opta-optimizer-training.md` - Learned preferences and corrections
 
+### Skills (`.claude/skills/`)
+- `opta-ring-animation.md` - **Opta Ring wake-up animation & explosion effects**
+  - Use when working on OptaRing components or ring-related animations
+  - References visual frames in `/Opta Vision/animation-frames/`
+  - Full spec in `/.planning/phases/20-rich-interactions/ring-animation/`
+
 ## Contextual Awareness Protocol
 
 For every significant interaction:

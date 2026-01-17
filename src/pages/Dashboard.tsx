@@ -14,6 +14,9 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Sparkles, X, TrendingUp, Wand2, RefreshCw } from 'lucide-react';
 import { ThermalViz, MemoryHierarchyViz } from '../components/visualizations';
+import { OptaRing } from '@/components/OptaRing';
+import { OptaRing3D } from '@/components/OptaRing3D';
+import type { RingState } from '@/components/OptaRing3D';
 
 /** Storage key for chat panel open state */
 const CHAT_OPEN_KEY = 'opta-chat-open';
@@ -67,6 +70,87 @@ function ChatToggleButton({ isOpen, onClick }: { isOpen: boolean; onClick: () =>
         </AnimatePresence>
         <span className="sr-only">{isOpen ? 'Close AI Assistant' : 'Open AI Assistant'}</span>
       </Button>
+    </motion.div>
+  );
+}
+
+/**
+ * 🧪 Test component for OptaRing3D - REMOVE AFTER TESTING
+ */
+function OptaRing3DTest() {
+  const [ring3DState, setRing3DState] = useState<RingState>('dormant');
+  const states: RingState[] = ['dormant', 'waking', 'active', 'sleeping', 'processing', 'exploding', 'recovering'];
+
+  return (
+    <motion.div
+      className="mb-6 p-6 rounded-xl bg-[#05030a]/80 backdrop-blur-xl border border-primary/30"
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+    >
+      <div className="flex items-center gap-2 mb-4">
+        <span className="text-lg">🧪</span>
+        <h2 className="text-lg font-semibold text-primary">OptaRing3D Test</h2>
+        <span className="text-xs text-muted-foreground ml-auto">Phase 1: WebGL Foundation</span>
+      </div>
+
+      {/* State Controls */}
+      <div className="flex flex-wrap gap-2 mb-6">
+        {states.map((s) => (
+          <Button
+            key={s}
+            size="sm"
+            variant={ring3DState === s ? 'default' : 'outline'}
+            onClick={() => setRing3DState(s)}
+            className="capitalize"
+          >
+            {s}
+          </Button>
+        ))}
+      </div>
+
+      {/* Side by Side Comparison */}
+      <div className="grid grid-cols-2 gap-8">
+        {/* Original PNG Ring */}
+        <div className="flex flex-col items-center">
+          <span className="text-sm text-muted-foreground mb-4">Original (PNG)</span>
+          <div className="relative">
+            <OptaRing
+              state={
+                ring3DState === 'dormant' || ring3DState === 'sleeping' ? 'dormant' :
+                ring3DState === 'processing' ? 'processing' :
+                'active' // waking, active, exploding, recovering all map to active
+              }
+              size="xl"
+              breathe={ring3DState === 'dormant' || ring3DState === 'sleeping'}
+            />
+          </div>
+          <span className="text-xs text-muted-foreground/50 mt-2">
+            States: dormant, active, processing
+          </span>
+        </div>
+
+        {/* New 3D Ring */}
+        <div className="flex flex-col items-center">
+          <span className="text-sm text-primary mb-4">New 3D (WebGL)</span>
+          <div className="relative">
+            <OptaRing3D
+              state={ring3DState}
+              size="xl"
+              onClick={() => setRing3DState('exploding')}
+            />
+          </div>
+          <span className="text-xs text-muted-foreground/50 mt-2">
+            Click ring to trigger explosion
+          </span>
+        </div>
+      </div>
+
+      {/* Current State Display */}
+      <div className="mt-4 pt-4 border-t border-border/30 text-center">
+        <span className="text-sm text-muted-foreground">
+          Current State: <code className="text-primary font-mono">{ring3DState}</code>
+        </span>
+      </div>
     </motion.div>
   );
 }
@@ -191,6 +275,9 @@ function Dashboard({ onNavigate }: DashboardProps) {
           </motion.span>
         )}
       </motion.div>
+
+      {/* 🧪 OptaRing3D Test Section - REMOVE AFTER TESTING */}
+      <OptaRing3DTest />
 
       {/* Telemetry Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">

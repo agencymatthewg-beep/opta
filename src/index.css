@@ -5,62 +5,101 @@
 @tailwind utilities;
 
 /* ==========================================================================
-   CSS Variables - The Obsidian Standard
+   CSS Variables - The Obsidian Standard v2.0
+   Premium Enhancement Update - Based on Gemini "Neon Luminal Glassmorphism" research
    ========================================================================== */
 
 :root {
-  /* The Void (Backgrounds) */
-  --background: 270 50% 3%;       /* Deep void black with purple hint */
-  --foreground: 270 10% 98%;      /* Stark white for contrast */
+  /* ==========================================================================
+     BASE COLORS - OLED Optimized
+     Using #09090b (not true black) to prevent OLED black smear on scroll
+     ========================================================================== */
 
-  /* Obsidian Surfaces (Cards/Panels) */
-  --card: 270 30% 5%;             /* Slightly lighter, glossy */
-  --card-foreground: 270 10% 90%;
-  --popover: 270 30% 5%;
-  --popover-foreground: 270 10% 90%;
+  /* The Void (Backgrounds) - OLED optimized deep grey-purple */
+  --background: 240 6% 4%;        /* #09090b - deep grey-purple, avoids black smear */
+  --foreground: 0 0% 98%;         /* #fafafa - stark white for contrast */
+
+  /* Obsidian Surfaces (Cards/Panels) - Elevated from background */
+  --card: 240 6% 6%;              /* #0c0c12 - subtle elevation from background */
+  --card-foreground: 0 0% 95%;
+  --popover: 240 6% 6%;
+  --popover-foreground: 0 0% 95%;
+
+  /* RGB format for glass effects (allows alpha channel manipulation) */
+  --card-rgb: 12 12 18;           /* RGB values for gradient overlays */
+  --background-rgb: 9 9 11;       /* RGB values for backdrop effects */
 
   /* The Energy (Primary Brand) - Matches "50% Opta" Glow */
   --primary: 265 90% 65%;         /* Electric Violet - The Core Glow */
   --primary-foreground: 0 0% 100%;
   --secondary: 265 50% 20%;       /* Dormant Violet - The 0% State */
-  --secondary-foreground: 270 10% 90%;
+  --secondary-foreground: 0 0% 90%;
 
   /* Functional States */
   --success: 160 70% 45%;         /* Green for positive */
   --success-foreground: 0 0% 100%;
   --warning: 45 90% 55%;          /* Amber for caution */
-  --warning-foreground: 270 50% 3%;
+  --warning-foreground: 240 6% 4%;
   --danger: 0 75% 55%;            /* Red for errors */
   --danger-foreground: 0 0% 100%;
   --destructive: 0 75% 55%;
   --destructive-foreground: 0 0% 100%;
 
   /* Muted */
-  --muted: 270 20% 10%;
-  --muted-foreground: 270 10% 50%;
+  --muted: 240 6% 10%;
+  --muted-foreground: 240 5% 50%;
   --accent: 265 80% 60%;
   --accent-foreground: 0 0% 100%;
 
   /* Borders */
-  --border: 270 30% 15%;
-  --input: 270 30% 15%;
+  --border: 240 6% 15%;
+  --input: 240 6% 15%;
   --ring: 265 90% 65%;
 
   /* Radius */
   --radius: 0.75rem;
 
-  /* Glow Radiance */
+  /* ==========================================================================
+     NEON ACCENTS - USE SPARINGLY (active states only)
+     Per Gemini research: "Neon for active states only"
+     ========================================================================== */
+
+  /* Primary neon palette */
+  --neon-purple: 139 92 246;      /* #8b5cf6 - primary neon */
+  --neon-blue: 59 130 246;        /* #3b82f6 - secondary neon */
+  --neon-green: 34 197 94;        /* #22c55e - success neon */
+  --neon-amber: 245 158 11;       /* #f59e0b - warning neon */
+  --neon-red: 239 68 68;          /* #ef4444 - danger neon */
+  --neon-cyan: 6 182 212;         /* #06b6d4 - info/cool neon */
+
+  /* Neon glow intensities (shadow definitions) */
+  --neon-glow-sm: 0 0 10px;
+  --neon-glow-md: 0 0 20px;
+  --neon-glow-lg: 0 0 30px;
+  --neon-glow-xl: 0 0 50px;
+
+  /* ==========================================================================
+     GLOW RADIANCE - The Energy System
+     ========================================================================== */
+
   --glow-strong: 0 0 30px -5px rgba(168, 85, 247, 0.6);
   --glow-subtle: 0 0 15px -3px rgba(168, 85, 247, 0.2);
   --glow-intense: 0 0 40px -10px rgba(168, 85, 247, 0.5);
   --glow-beam: 0 0 80px -20px rgba(168, 85, 247, 0.3);
 
-  /* Glass System Variables */
-  --glass-bg: 270 30% 5%;
+  /* ==========================================================================
+     GLASS SYSTEM VARIABLES - 4-Layer Optical Simulation
+     Backdrop -> Blur -> Noise -> Specular
+     ========================================================================== */
+
+  --glass-bg: 240 6% 6%;
   --glass-opacity: 0.5;
   --glass-blur: 20px;
-  --glass-border: 270 10% 98%;
+  --glass-border: 0 0% 100%;
   --glass-border-opacity: 0.08;
+
+  /* Noise texture (SVG data URI - prevents color banding on OLED) */
+  --noise-texture: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
 
   /* Radial Nav Semantic Colors */
   --radial-gaming: 210 90% 60%;
@@ -81,8 +120,8 @@
 
 /* Dark mode is the default and only theme */
 .dark {
-  --background: 270 50% 3%;
-  --foreground: 270 10% 98%;
+  --background: 240 6% 4%;        /* #09090b - OLED optimized */
+  --foreground: 0 0% 98%;
 }
 
 /* ==========================================================================
@@ -177,20 +216,317 @@
   }
 
   /* ----------------------------------------
-     LEGACY GLASS ALIASES (for compatibility)
-     Mapped to obsidian equivalents
+     ENHANCED GLASS EFFECTS (Premium v2.0)
+     4-Layer System: Backdrop -> Blur -> Noise -> Specular
      ---------------------------------------- */
 
-  .glass {
-    @apply obsidian;
+  .glass-subtle {
+    background: linear-gradient(
+      135deg,
+      rgb(var(--card-rgb) / 0.4) 0%,
+      rgb(var(--card-rgb) / 0.2) 100%
+    );
+    backdrop-filter: blur(8px) saturate(150%);
+    -webkit-backdrop-filter: blur(8px) saturate(150%);
+    border: 1px solid rgb(255 255 255 / 0.1);
+    /* Noise overlay for anti-banding */
+    background-image: var(--noise-texture);
   }
 
-  .glass-subtle {
-    @apply obsidian-subtle;
+  .glass {
+    background: linear-gradient(
+      135deg,
+      rgb(var(--card-rgb) / 0.5) 0%,
+      rgb(var(--card-rgb) / 0.3) 100%
+    );
+    backdrop-filter: blur(12px) saturate(160%);
+    -webkit-backdrop-filter: blur(12px) saturate(160%);
+    border: 1px solid rgb(255 255 255 / 0.15);
+    /* Specular-like top highlight */
+    box-shadow:
+      inset 0 1px 0 0 rgb(255 255 255 / 0.1),
+      0 4px 24px -4px rgb(0 0 0 / 0.3);
+    /* Noise overlay */
+    background-image: var(--noise-texture);
   }
 
   .glass-strong {
-    @apply obsidian-strong;
+    background: linear-gradient(
+      135deg,
+      rgb(var(--card-rgb) / 0.6) 0%,
+      rgb(var(--card-rgb) / 0.4) 100%
+    );
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgb(255 255 255 / 0.2);
+    /* Stronger specular highlight */
+    box-shadow:
+      inset 0 1px 0 0 rgb(255 255 255 / 0.15),
+      0 8px 32px -8px rgb(0 0 0 / 0.4);
+    /* Noise overlay */
+    background-image: var(--noise-texture);
+  }
+
+  /* ----------------------------------------
+     GLASS DEPTH SYSTEM (Phase 33)
+     Three-layer z-index hierarchy for depth
+     ---------------------------------------- */
+
+  /* Background layer: z-0, blur 8px, opacity 0.3 (deepest) */
+  .glass-background {
+    z-index: 0;
+    background: linear-gradient(
+      135deg,
+      rgb(var(--card-rgb) / 0.3) 0%,
+      rgb(var(--card-rgb) / 0.18) 100%
+    );
+    backdrop-filter: blur(8px) saturate(150%);
+    -webkit-backdrop-filter: blur(8px) saturate(150%);
+    border: 1px solid rgb(255 255 255 / 0.08);
+    box-shadow:
+      inset 0 1px 0 0 rgb(255 255 255 / 0.03),
+      0 2px 12px -2px rgb(0 0 0 / 0.2);
+    background-image: var(--noise-texture);
+    border-radius: 16px;
+  }
+
+  /* Content layer: z-10, blur 12px, opacity 0.5 (middle) */
+  .glass-content {
+    z-index: 10;
+    background: linear-gradient(
+      135deg,
+      rgb(var(--card-rgb) / 0.5) 0%,
+      rgb(var(--card-rgb) / 0.3) 100%
+    );
+    backdrop-filter: blur(12px) saturate(160%);
+    -webkit-backdrop-filter: blur(12px) saturate(160%);
+    border: 1px solid rgb(255 255 255 / 0.1);
+    box-shadow:
+      inset 0 1px 0 0 rgb(255 255 255 / 0.08),
+      0 4px 20px -4px rgb(0 0 0 / 0.3);
+    background-image: var(--noise-texture);
+    border-radius: 16px;
+  }
+
+  /* Overlay layer: z-20, blur 16px, opacity 0.7 (front) */
+  .glass-overlay {
+    z-index: 20;
+    background: linear-gradient(
+      135deg,
+      rgb(var(--card-rgb) / 0.7) 0%,
+      rgb(var(--card-rgb) / 0.5) 100%
+    );
+    backdrop-filter: blur(16px) saturate(170%);
+    -webkit-backdrop-filter: blur(16px) saturate(170%);
+    border: 1px solid rgb(255 255 255 / 0.15);
+    box-shadow:
+      inset 0 1px 0 0 rgb(255 255 255 / 0.12),
+      0 8px 28px -6px rgb(0 0 0 / 0.4);
+    background-image: var(--noise-texture);
+    border-radius: 16px;
+  }
+
+  /* Hover blur boost for glass depth layers (+2px) */
+  .glass-background:hover,
+  .glass-content:hover,
+  .glass-overlay:hover {
+    transition: backdrop-filter 0.3s ease-out;
+  }
+
+  .glass-background:hover {
+    backdrop-filter: blur(10px) saturate(155%);
+    -webkit-backdrop-filter: blur(10px) saturate(155%);
+  }
+
+  .glass-content:hover {
+    backdrop-filter: blur(14px) saturate(165%);
+    -webkit-backdrop-filter: blur(14px) saturate(165%);
+  }
+
+  .glass-overlay:hover {
+    backdrop-filter: blur(18px) saturate(175%);
+    -webkit-backdrop-filter: blur(18px) saturate(175%);
+  }
+
+  /* ----------------------------------------
+     FROSTED EDGE EFFECTS (Phase 33)
+     Gradient borders and edge highlights
+     ---------------------------------------- */
+
+  .glass-frosted-edge {
+    position: relative;
+  }
+
+  .glass-frosted-edge::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(
+      135deg,
+      transparent 0%,
+      rgb(255 255 255 / 0.1) 50%,
+      transparent 100%
+    );
+    -webkit-mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  .glass-frosted-edge::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05);
+    pointer-events: none;
+  }
+
+  /* Hover glow effect for frosted edges */
+  .glass-frosted-edge:hover::after {
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.05),
+      0 0 20px rgb(var(--neon-purple) / 0.2);
+    transition: box-shadow 0.3s ease-out;
+  }
+
+  /* ----------------------------------------
+     GLASS REFLECTION HIGHLIGHT (Phase 33)
+     Animated diagonal reflection
+     ---------------------------------------- */
+
+  .glass-reflection {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .glass-reflection::before {
+    content: '';
+    position: absolute;
+    top: -100%;
+    left: -100%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+      135deg,
+      transparent 0%,
+      transparent 40%,
+      rgb(255 255 255 / 0.05) 45%,
+      rgb(255 255 255 / 0.08) 50%,
+      rgb(255 255 255 / 0.05) 55%,
+      transparent 60%,
+      transparent 100%
+    );
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .glass-reflection:hover::before,
+  .glass-reflection:focus-within::before {
+    opacity: 1;
+    animation: glass-reflection-move 8s ease-in-out infinite alternate;
+  }
+
+  @keyframes glass-reflection-move {
+    0% {
+      transform: translate(0, 0);
+    }
+    100% {
+      transform: translate(50%, 50%);
+    }
+  }
+
+  /* Reduced motion: no animation, just static highlight on hover */
+  @media (prefers-reduced-motion: reduce) {
+    .glass-reflection:hover::before,
+    .glass-reflection:focus-within::before {
+      animation: none;
+      transform: translate(25%, 25%);
+    }
+  }
+
+  /* ----------------------------------------
+     NEON UTILITIES - For Active States Only
+     Per Gemini: "Neon for active states only"
+     ---------------------------------------- */
+
+  /* Text neon glow */
+  .neon-glow {
+    text-shadow: var(--neon-glow-sm) rgb(var(--neon-purple) / 0.5);
+  }
+
+  .neon-glow-strong {
+    text-shadow: var(--neon-glow-md) rgb(var(--neon-purple) / 0.6);
+  }
+
+  /* Border neon glow */
+  .neon-glow-border {
+    box-shadow: var(--neon-glow-md) rgb(var(--neon-purple) / 0.3);
+  }
+
+  /* Active state neon - full border + glow */
+  .neon-active {
+    box-shadow:
+      0 0 0 1px rgb(var(--neon-purple)),
+      var(--neon-glow-md) rgb(var(--neon-purple) / 0.4);
+  }
+
+  /* Neon color variants */
+  .neon-glow-blue {
+    text-shadow: var(--neon-glow-sm) rgb(var(--neon-blue) / 0.5);
+  }
+
+  .neon-glow-green {
+    text-shadow: var(--neon-glow-sm) rgb(var(--neon-green) / 0.5);
+  }
+
+  .neon-glow-amber {
+    text-shadow: var(--neon-glow-sm) rgb(var(--neon-amber) / 0.5);
+  }
+
+  .neon-glow-red {
+    text-shadow: var(--neon-glow-sm) rgb(var(--neon-red) / 0.5);
+  }
+
+  .neon-glow-cyan {
+    text-shadow: var(--neon-glow-sm) rgb(var(--neon-cyan) / 0.5);
+  }
+
+  /* Momentum border - traveling light effect (CSS approximation) */
+  .momentum-border {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .momentum-border::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(
+      var(--momentum-angle, 90deg),
+      transparent 0%,
+      rgb(var(--neon-purple)) 50%,
+      transparent 100%
+    );
+    -webkit-mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
   }
 
   /* ----------------------------------------
@@ -646,4 +982,203 @@ html {
 /* Smooth scrolling momentum for trackpad */
 * {
   -webkit-overflow-scrolling: touch;
+}
+
+/* ==========================================================================
+   Command Palette (cmdk) - Obsidian Glass Theme
+   ========================================================================== */
+
+/* Group headings */
+[cmdk-group-heading] {
+  @apply px-3 py-2 text-xs font-medium text-muted-foreground/50 uppercase tracking-wider select-none;
+}
+
+/* Input placeholder styling */
+[cmdk-input]::placeholder {
+  @apply text-muted-foreground/50;
+}
+
+/* List scrollbar styling */
+[cmdk-list]::-webkit-scrollbar {
+  width: 6px;
+}
+
+[cmdk-list]::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+[cmdk-list]::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.2);
+  border-radius: 3px;
+}
+
+[cmdk-list]::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.3);
+}
+
+/* Selected item glow effect */
+[cmdk-item][data-selected="true"] {
+  box-shadow:
+    inset 0 0 12px rgba(168, 85, 247, 0.08),
+    0 0 8px rgba(168, 85, 247, 0.15);
+}
+
+/* Separator styling */
+[cmdk-separator] {
+  @apply h-px bg-white/5 my-2;
+}
+
+/* ==========================================================================
+   Accessibility - High Contrast Mode
+   ========================================================================== */
+
+/* High contrast mode overrides - increases visibility for users who prefer more contrast */
+@media (prefers-contrast: more) {
+  /* Glass elements get stronger borders */
+  .glass,
+  .glass-subtle,
+  .glass-strong,
+  .obsidian,
+  .obsidian-subtle,
+  .obsidian-strong {
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+
+  /* Muted text becomes more readable */
+  .text-muted-foreground {
+    color: rgba(255, 255, 255, 0.8);
+  }
+
+  /* Command palette items get visible selection border */
+  [cmdk-item][data-selected="true"] {
+    border: 2px solid hsl(var(--primary));
+    box-shadow:
+      inset 0 0 12px rgba(168, 85, 247, 0.15),
+      0 0 12px rgba(168, 85, 247, 0.25);
+  }
+
+  /* Borders become more visible */
+  .border-border\/30,
+  .border-white\/5,
+  .border-white\/\[0\.03\],
+  .border-white\/\[0\.05\],
+  .border-white\/\[0\.06\],
+  .border-white\/\[0\.08\],
+  .border-white\/10 {
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+
+  /* Buttons get stronger outlines */
+  button:not(:disabled) {
+    border-color: rgba(255, 255, 255, 0.25);
+  }
+
+  /* Cards and panels get enhanced contrast */
+  .bg-card,
+  [class*="bg-\[#05030a\]"] {
+    background-color: hsl(240 6% 3%);
+  }
+
+  /* Primary elements more vibrant */
+  .text-primary {
+    color: hsl(265 95% 70%);
+  }
+
+  /* Success, warning, danger more visible */
+  .text-success {
+    color: hsl(160 80% 50%);
+  }
+
+  .text-warning {
+    color: hsl(45 100% 60%);
+  }
+
+  .text-danger {
+    color: hsl(0 85% 60%);
+  }
+}
+
+/* ==========================================================================
+   Accessibility - Focus Indicators
+   ========================================================================== */
+
+/* Visible focus indicator for keyboard users */
+*:focus-visible {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+}
+
+/* Remove default outline, rely on focus-visible for modern browsers */
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Screen reader only utility */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Make sr-only visible when focused (for skip links) */
+.sr-only.focus\:not-sr-only:focus,
+.focus\:not-sr-only:focus {
+  position: static;
+  width: auto;
+  height: auto;
+  padding: inherit;
+  margin: inherit;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+}
+
+/* Skip link styling */
+a[href="#main-content"]:focus {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  z-index: 100;
+  padding: 0.5rem 1rem;
+  background-color: hsl(var(--primary));
+  color: white;
+  border-radius: var(--radius);
+  text-decoration: none;
+  font-weight: 500;
+  box-shadow: 0 0 20px -5px hsl(var(--primary));
+}
+
+/* Ensure interactive elements have visible focus states */
+button:focus-visible,
+[role="button"]:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px hsl(var(--primary) / 0.2);
+}
+
+/* Custom focus ring for obsidian-styled elements */
+.obsidian:focus-visible,
+.obsidian-interactive:focus-visible,
+.glass:focus-visible {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+  box-shadow:
+    inset 0 0 20px rgba(168, 85, 247, 0.15),
+    0 0 20px rgba(168, 85, 247, 0.3);
+}
+
+/* Focus within for container elements */
+.obsidian:focus-within,
+.glass:focus-within {
+  border-color: hsl(var(--primary) / 0.3);
 }

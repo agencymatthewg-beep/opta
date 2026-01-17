@@ -22,6 +22,12 @@ Quick reference for all custom slash commands available in this project.
 | `/commit` | Guided commit | Workflow |
 | `/phase-done` | Complete phase | Workflow |
 | `/help` | Show all commands | Utility |
+| `/ralph` | Run Ralph agent loop | Automation |
+| `/ralph-task` | Add task to scratchpad | Automation |
+| `/ralph-plan` | Start planning session | Automation |
+| `/ralph-resume` | Resume interrupted loop | Automation |
+| `/ralph-status` | Check loop status | Automation |
+| `/ralph-clean` | Clear Ralph state | Automation |
 
 ---
 
@@ -158,6 +164,75 @@ Complete current phase:
 
 ---
 
+## Automation Commands (Ralph)
+
+Ralph is an autonomous agent loop system for feature development.
+
+### `/ralph`
+**File:** `.claude/commands/ralph.md`
+
+Run a Ralph agent loop:
+```
+/ralph Add dark mode toggle
+```
+- Starts Builder → Reviewer cycle
+- Interactive TUI for monitoring
+- Each task = one commit
+- Backpressure (tests/lint) required
+
+### `/ralph-task`
+**File:** `.claude/commands/ralph-task.md`
+
+Add tasks to scratchpad without running:
+```
+/ralph-task Fix memory leak in process monitor
+```
+- Tasks queued in `.agent/scratchpad.md`
+- Run `/ralph` when ready to execute
+
+### `/ralph-plan`
+**File:** `.claude/commands/ralph-plan.md`
+
+Start a planning session:
+```
+/ralph-plan User authentication system
+```
+- Generates task breakdown
+- Saves plan to `specs/`
+- Option to add tasks to scratchpad
+
+### `/ralph-resume`
+**File:** `.claude/commands/ralph-resume.md`
+
+Resume interrupted loop:
+```
+/ralph-resume
+```
+- Continues from existing state
+- Shows completed/remaining tasks
+
+### `/ralph-status`
+**File:** `.claude/commands/ralph-status.md`
+
+Check current loop status:
+```
+/ralph-status
+```
+- Shows progress, pending tasks
+- Identifies blockers
+
+### `/ralph-clean`
+**File:** `.claude/commands/ralph-clean.md`
+
+Clear Ralph state:
+```
+/ralph-clean
+```
+- Removes `.agent/` contents
+- Start fresh
+
+---
+
 ## Adding New Commands
 
 1. Create `.claude/commands/[name].md`
@@ -166,4 +241,4 @@ Complete current phase:
 
 ---
 
-*Last updated: 2026-01-16*
+*Last updated: 2026-01-17*

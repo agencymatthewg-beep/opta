@@ -1,10 +1,27 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useOptaRing } from '@/contexts/OptaRingContext';
-import { OptaRing } from './OptaRing';
+import { OptaRing, type RingState as OptaRing2DState } from './OptaRing';
+import { type RingState } from '@/components/OptaRing3D/types';
 import {
   floatingRingVariants,
   RING_DISSOLVE_DURATION,
 } from '@/lib/pageTransitions';
+
+/**
+ * Maps extended 3D ring state to 2D ring state
+ */
+function mapTo2DState(state: RingState): OptaRing2DState {
+  switch (state) {
+    case 'dormant':
+    case 'sleeping':
+      return 'dormant';
+    case 'processing':
+      return 'processing';
+    default:
+      // waking, active, exploding, recovering all map to active
+      return 'active';
+  }
+}
 
 /**
  * FloatingRingOverlay - The Protagonist During Transitions
@@ -98,7 +115,7 @@ export function FloatingRingOverlay() {
               }}
             >
               <OptaRing
-                state={state}
+                state={mapTo2DState(state)}
                 size="hero"
                 breathe={false}
                 position="centered"

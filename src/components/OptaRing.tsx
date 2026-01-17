@@ -5,23 +5,53 @@ import { cn } from '@/lib/utils';
 import opta0Percent from '@/assets/branding/opta-0-percent.png';
 import opta50Percent from '@/assets/branding/opta-50-percent.png';
 
+// Re-export types from the canonical source
+export type { RingState, RingSize } from '@/components/OptaRing3D/types';
+import type { RingState, RingSize } from '@/components/OptaRing3D/types';
+
 /**
- * OptaRing - The Protagonist of the Living Artifact
+ * OptaRing - The Protagonist of the Living Artifact (PNG-based 2D version)
  *
  * The Opta Ring is the "AI brain" of the application. It sits dark and observant
  * in its dormant state (0%) until called upon, then ignites to its active state (50%).
  *
- * States:
- * - dormant: Dark obsidian glass, faint glow, high gloss reflections
- * - active: Internal plasma swirls, 50% brightness, casts purple light
- * - processing: Rhythmic pulse between 0% and 50%
+ * This is the legacy PNG-based implementation. For the full 3D experience,
+ * use OptaRing3D which supports all 7 states.
  *
- * @see DESIGN_SYSTEM.md - Part 7: The Opta Ring
+ * Supported States (maps to visual):
+ * - dormant: Dark obsidian glass, faint glow
+ * - active: Internal plasma swirls, 50% brightness
+ * - processing: Rhythmic pulse between 0% and 50%
+ * - waking/sleeping: Maps to active/dormant for transition animation
+ * - exploding/recovering: Maps to active with glow
+ *
+ * @see DESIGN_SYSTEM.md - Part 9: The Opta Ring
+ * @see OptaRing3D for the full 3D implementation
  */
 
-export type RingState = 'dormant' | 'active' | 'processing';
-export type RingSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'hero';
 export type RingPosition = 'inline' | 'centered' | 'floating';
+
+/** Helper type for visual state mapping */
+type VisualState = 'dormant' | 'active' | 'processing' | 'breathe';
+
+/** Map extended RingState to visual state for PNG animation */
+function mapToVisualState(state: RingState, breathe: boolean): VisualState {
+  switch (state) {
+    case 'dormant':
+      return breathe ? 'breathe' : 'dormant';
+    case 'sleeping':
+      return 'dormant';
+    case 'waking':
+    case 'active':
+    case 'exploding':
+    case 'recovering':
+      return 'active';
+    case 'processing':
+      return 'processing';
+    default:
+      return breathe ? 'breathe' : 'dormant';
+  }
+}
 
 interface OptaRingProps {
   /** Current state of the ring */
@@ -141,8 +171,11 @@ export function OptaRing({
   className,
   onClick,
 }: OptaRingProps) {
-  // Determine animation state
-  const animationState = state === 'dormant' && breathe ? 'breathe' : state;
+  // Map extended state to visual state for PNG animation
+  const visualState = mapToVisualState(state, breathe);
+
+  // Determine which variant set to use based on visual state
+  const useBreathVariants = visualState === 'breathe';
 
   return (
     <motion.div
@@ -162,8 +195,8 @@ export function OptaRing({
       {/* Glow container */}
       <motion.div
         className="relative w-full h-full"
-        variants={state === 'dormant' && breathe ? breatheVariants : glowVariants}
-        animate={animationState}
+        variants={useBreathVariants ? breatheVariants : glowVariants}
+        animate={visualState}
         onAnimationComplete={onTransitionComplete}
       >
         {/* 0% State - Always visible base layer (dark obsidian) */}
@@ -180,14 +213,18 @@ export function OptaRing({
           alt=""
           className="absolute inset-0 w-full h-full object-contain"
           variants={overlayVariants}
-          animate={state}
+          animate={visualState === 'breathe' ? 'dormant' : visualState}
           draggable={false}
         />
       </motion.div>
 
       {/* Accessibility label */}
       <span className="sr-only">
-        Opta Ring - {state === 'processing' ? 'Loading' : state === 'active' ? 'Active' : 'Ready'}
+        Opta Ring - {
+          state === 'processing' ? 'Loading' :
+          state === 'active' || state === 'waking' || state === 'exploding' || state === 'recovering' ? 'Active' :
+          'Ready'
+        }
       </span>
     </motion.div>
   );

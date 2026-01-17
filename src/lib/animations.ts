@@ -256,13 +256,20 @@ export const fogIntensity: Variants = {
 };
 
 // =============================================================================
-// PAGE TRANSITIONS
+// PAGE TRANSITIONS - Spring-based choreography
 // =============================================================================
 
+/**
+ * Page transition variants with spring physics
+ *
+ * - Exit: fade out + slide up (150ms)
+ * - Enter: fade in + slide up from below (300ms)
+ * - Children stagger: 50ms delay between elements
+ */
 export const pageVariants: Variants = {
   initial: {
     opacity: 0,
-    y: 12,
+    y: 20,
     filter: "brightness(0.8)",
   },
   animate: {
@@ -270,18 +277,52 @@ export const pageVariants: Variants = {
     y: 0,
     filter: "brightness(1)",
     transition: {
-      duration: 0.5,
-      ease: smoothOut,
-      staggerChildren: 0.08,
+      type: "spring",
+      stiffness: 200,
+      damping: 25,
+      mass: 1,
+      staggerChildren: 0.05,
+      delayChildren: 0.05,
+    },
+  },
+  exit: {
+    opacity: 0,
+    y: -10,
+    filter: "brightness(0.9)",
+    transition: {
+      type: "spring",
+      stiffness: 300,
+      damping: 30,
+      duration: 0.15,
+    },
+  },
+};
+
+/**
+ * Page child variants - used by children of page containers
+ * Automatically staggers when parent has staggerChildren
+ */
+export const pageChildVariants: Variants = {
+  initial: {
+    opacity: 0,
+    y: 12,
+  },
+  animate: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: "spring",
+      stiffness: 200,
+      damping: 25,
     },
   },
   exit: {
     opacity: 0,
     y: -8,
-    filter: "brightness(0.9)",
     transition: {
-      duration: 0.25,
-      ease: smoothOut,
+      type: "spring",
+      stiffness: 300,
+      damping: 30,
     },
   },
 };
@@ -661,12 +702,102 @@ export const microHoverVariants: Variants = {
   },
 };
 
-/** Card lift effect on hover */
+/**
+ * Card lift effect on hover - subtle 3D depth shift
+ *
+ * Features:
+ * - Scale: 1 → 1.02
+ * - Y translate: 0 → -4px (lift)
+ * - Enhanced shadow on hover
+ * - Spring physics (200ms feel)
+ */
 export const cardLiftVariants: Variants = {
-  initial: { y: 0 },
+  initial: {
+    y: 0,
+    scale: 1,
+    boxShadow: "0 0 0 0 transparent, 0 4px 12px -4px rgba(0, 0, 0, 0.2)",
+  },
+  hover: {
+    y: -4,
+    scale: 1.02,
+    boxShadow: "0 0 0 1px rgba(168, 85, 247, 0.15), 0 12px 24px -8px rgba(168, 85, 247, 0.25)",
+    transition: {
+      type: "spring",
+      stiffness: 200,
+      damping: 25,
+      mass: 0.9,
+    },
+  },
+  tap: {
+    y: -2,
+    scale: 0.99,
+    transition: {
+      type: "spring",
+      stiffness: 400,
+      damping: 30,
+    },
+  },
+};
+
+/**
+ * Card lift variants - compact version for smaller cards
+ */
+export const cardLiftSubtleVariants: Variants = {
+  initial: {
+    y: 0,
+    scale: 1,
+  },
   hover: {
     y: -2,
-    transition: transitions.smooth,
+    scale: 1.01,
+    transition: {
+      type: "spring",
+      stiffness: 250,
+      damping: 25,
+    },
+  },
+  tap: {
+    scale: 0.99,
+    transition: {
+      type: "spring",
+      stiffness: 400,
+      damping: 30,
+    },
+  },
+};
+
+/**
+ * Interactive card with deep glow on hover
+ * Combines lift with obsidian energy awakening
+ */
+export const cardInteractiveVariants: Variants = {
+  initial: {
+    y: 0,
+    scale: 1,
+    boxShadow: "inset 0 1px 0 0 rgba(255, 255, 255, 0.05)",
+    borderColor: "rgba(255, 255, 255, 0.05)",
+  },
+  hover: {
+    y: -4,
+    scale: 1.02,
+    boxShadow: "inset 0 0 20px rgba(168, 85, 247, 0.1), 0 12px 32px -8px rgba(168, 85, 247, 0.3)",
+    borderColor: "rgba(168, 85, 247, 0.4)",
+    transition: {
+      type: "spring",
+      stiffness: 200,
+      damping: 25,
+      mass: 0.9,
+    },
+  },
+  tap: {
+    y: -2,
+    scale: 0.99,
+    boxShadow: "inset 0 0 30px rgba(168, 85, 247, 0.15), 0 8px 24px -6px rgba(168, 85, 247, 0.35)",
+    transition: {
+      type: "spring",
+      stiffness: 400,
+      damping: 30,
+    },
   },
 };
 

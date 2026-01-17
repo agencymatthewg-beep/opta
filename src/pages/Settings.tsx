@@ -17,6 +17,7 @@ import { LearningSummary } from '../components/LearningSummary';
 import { EditablePreferences } from '../components/EditablePreferences';
 import { getShortcutPreferences, saveShortcutPreferences } from '../components/GlobalShortcuts';
 import { isHapticsEnabled, setHapticsEnabled, isHapticsSupported } from '../lib/haptics';
+import { useAudio } from '../hooks/useAudio';
 import { cn } from '@/lib/utils';
 import {
   Settings as SettingsIcon,
@@ -38,6 +39,8 @@ import {
   Zap,
   MessageSquare,
   Sliders,
+  Volume2,
+  VolumeX,
 } from 'lucide-react';
 import type { ExpertiseLevel } from '@/types/expertise';
 
@@ -61,6 +64,19 @@ function Settings() {
   const [hapticsEnabledState, setHapticsEnabledState] = useState(true);
   const [hapticsSupported, setHapticsSupported] = useState(false);
 
+  // Audio state
+  const {
+    isMuted: audioMuted,
+    setMuted: setAudioMuted,
+    masterVolume,
+    setMasterVolume,
+    preferences: audioPreferences,
+    setPreferences: setAudioPreferences,
+    isSupported: audioSupported,
+    playSound,
+    initialize: initAudio,
+  } = useAudio();
+
   // Load shortcut and haptic preferences
   useEffect(() => {
     const prefs = getShortcutPreferences();
@@ -83,6 +99,44 @@ function Settings() {
   const handleHapticsChange = (enabled: boolean) => {
     setHapticsEnabledState(enabled);
     setHapticsEnabled(enabled);
+  };
+
+  // Handle audio toggle
+  const handleAudioToggle = async (enabled: boolean) => {
+    if (enabled) {
+      // Initialize audio on first enable
+      await initAudio();
+    }
+    setAudioMuted(!enabled);
+    if (enabled) {
+      // Play a test sound when enabling
+      playSound('ui-success');
+    }
+  };
+
+  // Handle audio volume change
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseFloat(e.target.value);
+    setMasterVolume(value);
+  };
+
+  // Handle category toggles
+  const handleUISoundsToggle = (enabled: boolean) => {
+    setAudioPreferences({ uiSoundsEnabled: enabled });
+    if (enabled) {
+      playSound('ui-toggle');
+    }
+  };
+
+  const handleRingSoundsToggle = (enabled: boolean) => {
+    setAudioPreferences({ ringSoundsEnabled: enabled });
+    if (enabled) {
+      playSound('ui-toggle');
+    }
+  };
+
+  const handleAmbientToggle = (enabled: boolean) => {
+    setAudioPreferences({ ambientEnabled: enabled });
   };
 
   const expertiseOptions: { value: ExpertiseLevel; label: string; desc: string }[] = [
@@ -648,6 +702,142 @@ function Settings() {
                     onCheckedChange={handleHapticsChange}
                   />
                 </div>
+              </div>
+            </div>
+          </motion.section>
+        )}
+
+        {/* Sound Section */}
+        {audioSupported && (
+          <motion.section
+            className="space-y-4"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.317 }}
+          >
+            <div className="flex items-center gap-2">
+              {audioMuted ? (
+                <VolumeX className="w-5 h-5 text-primary" strokeWidth={1.75} />
+              ) : (
+                <Volume2 className="w-5 h-5 text-primary" strokeWidth={1.75} />
+              )}
+              <h2 className="text-lg font-semibold">Sound</h2>
+            </div>
+            <p className="text-sm text-muted-foreground/70">
+              Audio feedback for UI interactions and ring state changes.
+            </p>
+
+            <div className="rounded-xl overflow-hidden bg-[#05030a]/80 backdrop-blur-xl border border-white/[0.06]">
+              <div className="p-5 space-y-5">
+                {/* Master sound toggle */}
+                <div className="flex justify-between items-center gap-4">
+                  <div className="flex items-start gap-3">
+                    <div className={cn(
+                      'w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0',
+                      'bg-primary/10 border border-primary/20'
+                    )}>
+                      {audioMuted ? (
+                        <VolumeX className="w-5 h-5 text-primary" strokeWidth={1.75} />
+                      ) : (
+                        <Volume2 className="w-5 h-5 text-primary" strokeWidth={1.75} />
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <span className="text-sm font-semibold text-foreground">Enable Sound</span>
+                      <span className="text-xs text-muted-foreground/60">
+                        Crystalline audio feedback for UI and ring states
+                      </span>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={!audioMuted}
+                    onCheckedChange={handleAudioToggle}
+                  />
+                </div>
+
+                {/* Volume slider - only show when not muted */}
+                {!audioMuted && (
+                  <>
+                    <div className="h-px bg-border/20" />
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground/70">Master Volume</span>
+                        <span className="text-sm font-medium text-foreground tabular-nums">
+                          {Math.round(masterVolume * 100)}%
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.05"
+                        value={masterVolume}
+                        onChange={handleVolumeChange}
+                        className={cn(
+                          'w-full h-2 rounded-full appearance-none cursor-pointer',
+                          'bg-white/10',
+                          '[&::-webkit-slider-thumb]:appearance-none',
+                          '[&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4',
+                          '[&::-webkit-slider-thumb]:rounded-full',
+                          '[&::-webkit-slider-thumb]:bg-primary',
+                          '[&::-webkit-slider-thumb]:shadow-[0_0_8px_rgba(168,85,247,0.5)]',
+                          '[&::-webkit-slider-thumb]:cursor-pointer'
+                        )}
+                      />
+                    </div>
+
+                    <div className="h-px bg-border/20" />
+
+                    {/* Sound categories */}
+                    <div className="space-y-4">
+                      <div className="text-xs font-semibold text-muted-foreground/50 uppercase tracking-widest">
+                        Sound Categories
+                      </div>
+
+                      {/* UI Sounds */}
+                      <div className="flex justify-between items-center gap-4">
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-sm text-foreground">UI Interactions</span>
+                          <span className="text-xs text-muted-foreground/60">
+                            Clicks, hovers, success, and error sounds
+                          </span>
+                        </div>
+                        <Switch
+                          checked={audioPreferences.uiSoundsEnabled}
+                          onCheckedChange={handleUISoundsToggle}
+                        />
+                      </div>
+
+                      {/* Ring Sounds */}
+                      <div className="flex justify-between items-center gap-4">
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-sm text-foreground">Ring State Changes</span>
+                          <span className="text-xs text-muted-foreground/60">
+                            Wake up, sleep, processing, and explosion sounds
+                          </span>
+                        </div>
+                        <Switch
+                          checked={audioPreferences.ringSoundsEnabled}
+                          onCheckedChange={handleRingSoundsToggle}
+                        />
+                      </div>
+
+                      {/* Ambient Sounds */}
+                      <div className="flex justify-between items-center gap-4">
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-sm text-foreground">Ambient Background</span>
+                          <span className="text-xs text-muted-foreground/60">
+                            Subtle sci-fi computer hum (very quiet)
+                          </span>
+                        </div>
+                        <Switch
+                          checked={audioPreferences.ambientEnabled}
+                          onCheckedChange={handleAmbientToggle}
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </motion.section>

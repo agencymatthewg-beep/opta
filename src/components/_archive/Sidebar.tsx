@@ -3,7 +3,23 @@ import { cn } from '@/lib/utils';
 import { useConflicts } from '../../hooks/useConflicts';
 import { useOptaRing } from '@/contexts/OptaRingContext';
 import PlatformIndicator from '../PlatformIndicator';
-import { OptaRing } from '../OptaRing';
+import { OptaRing, type RingState as OptaRing2DState } from '../OptaRing';
+import { type RingState } from '@/components/OptaRing3D/types';
+
+/**
+ * Maps extended 3D ring state to 2D ring state
+ */
+function mapTo2DState(state: RingState): OptaRing2DState {
+  switch (state) {
+    case 'dormant':
+    case 'sleeping':
+      return 'dormant';
+    case 'processing':
+      return 'processing';
+    default:
+      return 'active';
+  }
+}
 import {
   LayoutDashboard,
   Gamepad2,
@@ -112,7 +128,7 @@ function Sidebar({ activePage, onNavigate }: SidebarProps) {
             onHoverEnd={() => ringContext.sleep()}
           >
             <OptaRing
-              state={ringContext.state}
+              state={mapTo2DState(ringContext.state)}
               size="sm"
               breathe={true}
             />

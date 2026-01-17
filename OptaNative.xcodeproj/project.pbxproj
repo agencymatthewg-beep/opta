@@ -34,6 +34,10 @@
 		A100029001 /* ProcessListSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100029000 /* ProcessListSection.swift */; };
 		A100030001 /* ProcessRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100030000 /* ProcessRow.swift */; };
 		A100031001 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100031000 /* SettingsView.swift */; };
+		A100032001 /* PopoverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100032000 /* PopoverView.swift */; };
+		A100033001 /* SystemOrbitalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100033000 /* SystemOrbitalView.swift */; };
+		A100034001 /* ChromaticLoadingEffect.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100034000 /* ChromaticLoadingEffect.swift */; };
+		A100035001 /* VisualEffects.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100035000 /* VisualEffects.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -94,6 +98,10 @@
 		A100029000 /* ProcessListSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessListSection.swift; sourceTree = "<group>"; };
 		A100030000 /* ProcessRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessRow.swift; sourceTree = "<group>"; };
 		A100031000 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		A100032000 /* PopoverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PopoverView.swift; sourceTree = "<group>"; };
+		A100033000 /* SystemOrbitalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemOrbitalView.swift; sourceTree = "<group>"; };
+		A100034000 /* ChromaticLoadingEffect.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChromaticLoadingEffect.swift; sourceTree = "<group>"; };
+		A100035000 /* VisualEffects.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisualEffects.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -207,6 +215,8 @@
 			children = (
 				A100023000 /* MenuBarView.swift */,
 				A100024000 /* QuickStatRow.swift */,
+				A100032000 /* PopoverView.swift */,
+				A100033000 /* SystemOrbitalView.swift */,
 			);
 			path = MenuBar;
 			sourceTree = "<group>";
@@ -215,6 +225,8 @@
 			isa = PBXGroup;
 			children = (
 				A1000005000 /* GlassBackground.swift */,
+				A100034000 /* ChromaticLoadingEffect.swift */,
+				A100035000 /* VisualEffects.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -391,6 +403,10 @@
 				A100029001 /* ProcessListSection.swift in Sources */,
 				A100030001 /* ProcessRow.swift in Sources */,
 				A100031001 /* SettingsView.swift in Sources */,
+				A100032001 /* PopoverView.swift in Sources */,
+				A100033001 /* SystemOrbitalView.swift in Sources */,
+				A100034001 /* ChromaticLoadingEffect.swift in Sources */,
+				A100035001 /* VisualEffects.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

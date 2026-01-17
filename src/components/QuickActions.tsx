@@ -86,11 +86,11 @@ function QuickActions({
   disabled = false,
 }: QuickActionsProps) {
   return (
-    <div className={cn('w-full', className)}>
-      <p className="text-xs text-muted-foreground/60 mb-3 uppercase tracking-wider font-medium">
+    <div className={cn('w-full', className)} role="group" aria-label="Quick actions">
+      <p className="text-xs text-muted-foreground/60 mb-3 uppercase tracking-wider font-medium" id="quick-actions-label">
         Quick actions
       </p>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2" aria-labelledby="quick-actions-label">
         {actions.map((action, index) => {
           const Icon = IconComponents[action.icon];
           return (
@@ -98,6 +98,7 @@ function QuickActions({
               key={action.id}
               onClick={() => onAction(action.prompt, action.label)}
               disabled={disabled}
+              aria-label={`${action.label}: ${action.prompt.slice(0, 50)}...`}
               // Ignition animation
               initial={{
                 opacity: 0,

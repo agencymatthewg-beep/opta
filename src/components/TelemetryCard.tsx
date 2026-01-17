@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Cpu, MemoryStick, MonitorSpeaker, HardDrive, LucideIcon } from 'lucide-react';
 import { LearnModeExplanation } from './LearnModeExplanation';
+import { PinchZoomContainer } from './Gestures';
 
 /**
  * TelemetryCard - The Obsidian Metric Display
@@ -54,6 +55,8 @@ interface TelemetryCardProps {
   delay?: number;
   /** Energy state for the card */
   energyState?: 'dormant' | 'active';
+  /** Enable pinch-to-zoom on card content (default: false) */
+  zoomable?: boolean;
 }
 
 /**
@@ -67,6 +70,7 @@ const TelemetryCard = memo(function TelemetryCard({
   className,
   delay = 0,
   energyState = 'dormant',
+  zoomable = false,
 }: TelemetryCardProps) {
   const Icon = icons[icon];
   const explanation = telemetryExplanations[icon];
@@ -157,7 +161,18 @@ const TelemetryCard = memo(function TelemetryCard({
 
       {/* Content */}
       <div className="relative px-5 py-4">
-        {children}
+        {zoomable ? (
+          <PinchZoomContainer
+            showControls={true}
+            showIndicator={true}
+            minScale={0.75}
+            maxScale={2.5}
+          >
+            {children}
+          </PinchZoomContainer>
+        ) : (
+          children
+        )}
 
         {/* Learn Mode Explanation */}
         {explanation && (

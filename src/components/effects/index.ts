@@ -63,6 +63,23 @@ export { GlassPanel } from './GlassPanel';
 export type { GlassPanelProps } from './GlassPanel';
 
 // =============================================================================
+// GLASS LAYER (Phase 33 - Glass Depth System)
+// =============================================================================
+
+export {
+  GlassLayer,
+  GlassBackground,
+  GlassContent,
+  GlassOverlay,
+  GLASS_Z_LAYERS,
+} from './GlassLayer';
+export type {
+  GlassLayerProps,
+  GlassDepth,
+  GlassZLayer,
+} from './GlassLayer';
+
+// =============================================================================
 // NEON BORDER
 // =============================================================================
 
@@ -147,3 +164,170 @@ export {
   IdleParticles,
 } from './DataParticles';
 export type { DataParticlesProps } from './DataParticles';
+
+// =============================================================================
+// ATMOSPHERIC FOG - Phase 30
+// =============================================================================
+
+export {
+  AtmosphericFog,
+  AtmosphericFogStatic,
+  AtmosphericFogAuto,
+} from './AtmosphericFog';
+export type { AtmosphericFogProps } from './AtmosphericFog';
+
+export { AtmosphericFogConnected } from './AtmosphericFogConnected';
+export type { AtmosphericFogConnectedProps } from './AtmosphericFogConnected';
+
+// =============================================================================
+// NEON TRAILS - Phase 31
+// =============================================================================
+
+export {
+  NeonTrails,
+  ConnectedNeonTrails,
+  useConnectionPoints,
+  useTrailTriggers,
+} from './NeonTrails';
+export type {
+  NeonTrailsProps,
+  ConnectedNeonTrailsProps,
+  TrailPoint,
+  Trail,
+  TrailTrigger,
+  ConnectionPoint,
+} from './NeonTrails';
+
+// =============================================================================
+// RIPPLE EFFECT - Phase 35
+// =============================================================================
+
+export {
+  Ripple,
+  RippleButton,
+  RippleCard,
+  RipplePrimary,
+} from './Ripple';
+export type { RippleProps, RippleButtonProps, RippleCardProps } from './Ripple';
+
+// =============================================================================
+// PARTICLE FIELD - Phase 32 (Ambient Dust Motes)
+// =============================================================================
+
+export { ParticleField } from './ParticleField';
+export type { ParticleFieldProps } from './ParticleField';
+
+// =============================================================================
+// ENERGY SPARKS - Phase 32 (Active Element Feedback)
+// =============================================================================
+
+export { EnergySparks, SparkBurst, useEnergySparks } from './EnergySparks';
+export type {
+  EnergySparkProps,
+  SparkBurstProps,
+  UseEnergySparkOptions,
+} from './EnergySparks';
+
+// =============================================================================
+// TELEMETRY BURST - Phase 32 (Data Change Visualization)
+// =============================================================================
+
+export { TelemetryBurst, DataBurst, useTelemetryBurst } from './TelemetryBurst';
+export type {
+  TelemetryBurstProps,
+  DataBurstProps,
+  BurstParticle,
+  UseTelemetryBurstOptions,
+  UseTelemetryBurstReturn,
+} from './TelemetryBurst';
+
+// =============================================================================
+// RING ATTRACTOR - Phase 32 (Processing State Particle Flow)
+// =============================================================================
+
+export { RingAttractor, useRingAttraction } from './RingAttractor';
+export type { RingAttractorProps, UseRingAttractionReturn } from './RingAttractor';
+
+// =============================================================================
+// CHROMATIC LOADING (Phase 34 - Premium Loading States)
+// =============================================================================
+
+export {
+  ChromaticLoading,
+  SubtleChromaticLoading,
+  IntenseChromaticLoading,
+  FastChromaticLoading,
+} from './ChromaticLoading';
+export type { ChromaticLoadingProps } from './ChromaticLoading';
+
+// =============================================================================
+// SCAN LINES (Phase 34 - Premium Loading States)
+// =============================================================================
+
+export {
+  ScanLines,
+  HeavyScanLines,
+  SubtleScanLines,
+  FastScanLines,
+  PurpleScanLines,
+  ScanLineBackground,
+} from './ScanLines';
+export type { ScanLinesProps, ScanLineBackgroundProps } from './ScanLines';
+
+// =============================================================================
+// HOLOGRAPHIC SHIMMER (Phase 34 - Premium Loading States)
+// =============================================================================
+
+export {
+  HoloShimmer,
+  SubtleHoloShimmer,
+  IntenseHoloShimmer,
+  FastHoloShimmer,
+  PurpleShimmer,
+  SkeletonShimmer,
+} from './HoloShimmer';
+export type { HoloShimmerProps, SkeletonShimmerProps } from './HoloShimmer';
+
+// =============================================================================
+// DATA STREAM (Phase 34 - Premium Loading States)
+// =============================================================================
+
+export {
+  DataStream,
+  DenseDataStream,
+  SparseDataStream,
+  FastDataStream,
+  BinaryDataStream,
+  BlueDataStream,
+  CyanDataStream,
+  DataStreamBackground,
+} from './DataStream';
+export type { DataStreamProps, DataStreamBackgroundProps } from './DataStream';
+
+// =============================================================================
+// LOADING OVERLAY (Phase 34 - Premium Loading States)
+// =============================================================================
+
+export {
+  LoadingOverlay,
+  MinimalLoadingOverlay,
+  CinematicLoadingOverlay,
+  MatrixLoadingOverlay,
+  RetroLoadingOverlay,
+  HolographicLoadingOverlay,
+  CompactLoading,
+} from './LoadingOverlay';
+export type { LoadingOverlayProps, CompactLoadingProps, LoadingPreset, LoadingSize } from './LoadingOverlay';
+
+// =============================================================================
+// LOADING RING (Phase 34 - Premium Loading States)
+// =============================================================================
+
+export {
+  LoadingRing,
+  SmallLoadingRing,
+  LargeLoadingRing,
+  HeroLoadingRing,
+  FastLoadingRing,
+} from './LoadingRing';
+export type { LoadingRingProps } from './LoadingRing';

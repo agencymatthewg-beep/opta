@@ -750,6 +750,202 @@ async def list_tools() -> list[Tool]:
                 "required": [],
             },
         ),
+        # Phase 22: AI/ML Intelligence Tools
+        Tool(
+            name="record_telemetry_for_forecast",
+            description="Record telemetry data for forecasting. Call this with each telemetry update to build prediction history.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "cpu_percent": {"type": "number", "description": "CPU usage percentage"},
+                    "memory_percent": {"type": "number", "description": "Memory usage percentage"},
+                    "gpu_percent": {"type": ["number", "null"], "description": "GPU usage percentage (optional)"},
+                },
+                "required": ["cpu_percent", "memory_percent"],
+            },
+        ),
+        Tool(
+            name="get_forecast",
+            description="Get time series forecast for a specific metric (cpu, memory, or gpu)",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "metric": {"type": "string", "enum": ["cpu", "memory", "gpu"], "description": "Metric to forecast"},
+                    "horizon_seconds": {"type": "integer", "description": "How far ahead to forecast (default 60)"},
+                },
+                "required": ["metric"],
+            },
+        ),
+        Tool(
+            name="get_all_forecasts",
+            description="Get time series forecasts for all metrics (CPU, memory, GPU)",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "horizon_seconds": {"type": "integer", "description": "How far ahead to forecast (default 60)"},
+                },
+                "required": [],
+            },
+        ),
+        Tool(
+            name="process_anomaly_detection",
+            description="Process telemetry through anomaly detection and return any detected anomalies",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "cpu_percent": {"type": "number", "description": "CPU usage percentage"},
+                    "memory_percent": {"type": "number", "description": "Memory usage percentage"},
+                    "gpu_percent": {"type": ["number", "null"], "description": "GPU usage percentage (optional)"},
+                    "gpu_temp": {"type": ["number", "null"], "description": "GPU temperature in Celsius (optional)"},
+                },
+                "required": ["cpu_percent", "memory_percent"],
+            },
+        ),
+        Tool(
+            name="get_active_anomalies",
+            description="Get all currently active anomalies that haven't been dismissed",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+        ),
+        Tool(
+            name="dismiss_anomaly",
+            description="Dismiss an anomaly by its ID",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "anomaly_id": {"type": "string", "description": "ID of the anomaly to dismiss"},
+                },
+                "required": ["anomaly_id"],
+            },
+        ),
+        Tool(
+            name="get_baseline_stats",
+            description="Get baseline statistics for all metrics used by anomaly detection",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+        ),
+        Tool(
+            name="set_recommendation_context",
+            description="Set user context for personalized recommendations",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "primary_use": {"type": "string", "enum": ["gaming", "productivity", "mixed"], "description": "Primary use case"},
+                    "expertise_level": {"type": "string", "enum": ["beginner", "intermediate", "advanced"], "description": "User expertise level"},
+                    "preferred_style": {"type": "string", "enum": ["conservative", "balanced", "aggressive"], "description": "Optimization aggressiveness"},
+                    "thermal_sensitivity": {"type": "string", "enum": ["cool", "balanced", "performance"], "description": "Thermal preference"},
+                },
+                "required": [],
+            },
+        ),
+        Tool(
+            name="generate_smart_recommendations",
+            description="Generate personalized optimization recommendations based on current system state",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "cpu_percent": {"type": "number", "description": "Current CPU usage"},
+                    "memory_percent": {"type": "number", "description": "Current memory usage"},
+                    "disk_percent": {"type": "number", "description": "Current disk usage"},
+                    "gpu_percent": {"type": ["number", "null"], "description": "Current GPU usage (optional)"},
+                    "gpu_temp": {"type": ["number", "null"], "description": "Current GPU temperature (optional)"},
+                    "max_recommendations": {"type": "integer", "description": "Max recommendations to return (default 5)"},
+                },
+                "required": ["cpu_percent", "memory_percent"],
+            },
+        ),
+        Tool(
+            name="dismiss_recommendation",
+            description="Dismiss a recommendation and optionally mark if it was helpful",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "rec_id": {"type": "string", "description": "Recommendation ID"},
+                    "helpful": {"type": "boolean", "description": "Whether the recommendation was helpful"},
+                },
+                "required": ["rec_id"],
+            },
+        ),
+        Tool(
+            name="mark_recommendation_applied",
+            description="Mark a recommendation as applied by the user",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "rec_id": {"type": "string", "description": "Recommendation ID"},
+                },
+                "required": ["rec_id"],
+            },
+        ),
+        Tool(
+            name="record_activity_sample",
+            description="Record an activity sample for behavior pattern detection",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "cpu_percent": {"type": "number", "description": "CPU usage percentage"},
+                    "memory_percent": {"type": "number", "description": "Memory usage percentage"},
+                    "gpu_percent": {"type": ["number", "null"], "description": "GPU usage percentage (optional)"},
+                },
+                "required": ["cpu_percent", "memory_percent"],
+            },
+        ),
+        Tool(
+            name="get_daily_patterns",
+            description="Get detected activity patterns for each hour of the day",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+        ),
+        Tool(
+            name="get_weekly_patterns",
+            description="Get detected activity patterns for each day of the week",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+        ),
+        Tool(
+            name="get_current_activity",
+            description="Get the current detected activity type (gaming, productivity, idle, etc.)",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+        ),
+        Tool(
+            name="predict_activity",
+            description="Predict likely activity for the next N hours based on learned patterns",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "hours_ahead": {"type": "integer", "description": "Hours to predict ahead (default 1)"},
+                },
+                "required": [],
+            },
+        ),
+        Tool(
+            name="get_disk_analysis",
+            description="Get hierarchical disk usage analysis for treemap visualization",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "Root path to analyze (default '/')"},
+                    "max_depth": {"type": "integer", "description": "How deep to traverse (default 2)"},
+                },
+                "required": [],
+            },
+        ),
     ]
 
 
@@ -1025,6 +1221,100 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
         from opta_mcp import expertise
         level = arguments.get("level")
         result = expertise.set_manual_override(level)
+    # Phase 22: AI/ML Intelligence Handlers
+    elif name == "record_telemetry_for_forecast":
+        from opta_mcp import forecasting
+        forecasting.record_telemetry(
+            cpu_percent=arguments.get("cpu_percent", 0),
+            memory_percent=arguments.get("memory_percent", 0),
+            gpu_percent=arguments.get("gpu_percent"),
+        )
+        result = {"recorded": True}
+    elif name == "get_forecast":
+        from opta_mcp import forecasting
+        metric = arguments.get("metric", "cpu")
+        horizon = arguments.get("horizon_seconds", 60)
+        forecast = forecasting.get_forecast(metric, horizon)
+        result = forecast or {"error": "Insufficient data for forecast"}
+    elif name == "get_all_forecasts":
+        from opta_mcp import forecasting
+        horizon = arguments.get("horizon_seconds", 60)
+        result = forecasting.get_all_forecasts(horizon)
+    elif name == "process_anomaly_detection":
+        from opta_mcp import anomaly
+        result = anomaly.process_telemetry(
+            cpu_percent=arguments.get("cpu_percent", 0),
+            memory_percent=arguments.get("memory_percent", 0),
+            gpu_percent=arguments.get("gpu_percent"),
+            gpu_temp=arguments.get("gpu_temp"),
+        )
+    elif name == "get_active_anomalies":
+        from opta_mcp import anomaly
+        result = anomaly.get_active_anomalies()
+    elif name == "dismiss_anomaly":
+        from opta_mcp import anomaly
+        anomaly_id = arguments.get("anomaly_id", "")
+        dismissed = anomaly.dismiss_anomaly(anomaly_id)
+        result = {"dismissed": dismissed}
+    elif name == "get_baseline_stats":
+        from opta_mcp import anomaly
+        result = anomaly.get_baseline_stats()
+    elif name == "set_recommendation_context":
+        from opta_mcp import recommendations
+        recommendations.set_user_context(
+            primary_use=arguments.get("primary_use", "mixed"),
+            expertise_level=arguments.get("expertise_level", "intermediate"),
+            preferred_style=arguments.get("preferred_style", "balanced"),
+            thermal_sensitivity=arguments.get("thermal_sensitivity", "balanced"),
+        )
+        result = {"context_set": True}
+    elif name == "generate_smart_recommendations":
+        from opta_mcp import recommendations
+        result = recommendations.generate_recommendations(
+            cpu_percent=arguments.get("cpu_percent", 0),
+            memory_percent=arguments.get("memory_percent", 0),
+            disk_percent=arguments.get("disk_percent", 0),
+            gpu_percent=arguments.get("gpu_percent"),
+            gpu_temp=arguments.get("gpu_temp"),
+            max_recommendations=arguments.get("max_recommendations", 5),
+        )
+    elif name == "dismiss_recommendation":
+        from opta_mcp import recommendations
+        rec_id = arguments.get("rec_id", "")
+        helpful = arguments.get("helpful", False)
+        dismissed = recommendations.dismiss_recommendation(rec_id, helpful)
+        result = {"dismissed": dismissed}
+    elif name == "mark_recommendation_applied":
+        from opta_mcp import recommendations
+        rec_id = arguments.get("rec_id", "")
+        applied = recommendations.mark_recommendation_applied(rec_id)
+        result = {"applied": applied}
+    elif name == "record_activity_sample":
+        from opta_mcp import behavior
+        activity_change = behavior.record_activity_sample(
+            cpu_percent=arguments.get("cpu_percent", 0),
+            memory_percent=arguments.get("memory_percent", 0),
+            gpu_percent=arguments.get("gpu_percent"),
+        )
+        result = {"recorded": True, "activityChange": activity_change}
+    elif name == "get_daily_patterns":
+        from opta_mcp import behavior
+        result = behavior.get_daily_patterns()
+    elif name == "get_weekly_patterns":
+        from opta_mcp import behavior
+        result = behavior.get_weekly_patterns()
+    elif name == "get_current_activity":
+        from opta_mcp import behavior
+        activity = behavior.get_current_activity()
+        result = activity or {"type": "unknown", "message": "Not enough data"}
+    elif name == "predict_activity":
+        from opta_mcp import behavior
+        hours = arguments.get("hours_ahead", 1)
+        result = behavior.predict_activity(hours)
+    elif name == "get_disk_analysis":
+        path = arguments.get("path", "/")
+        max_depth = arguments.get("max_depth", 2)
+        result = telemetry.get_disk_analysis(path, max_depth)
     else:
         result = {"error": f"Unknown tool: {name}"}
 

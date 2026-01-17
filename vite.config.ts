@@ -48,6 +48,7 @@ export default defineConfig(async () => ({
         manualChunks: {
           "vendor-react": ["react", "react-dom"],
           "vendor-motion": ["framer-motion"],
+          "vendor-three": ["three", "@react-three/fiber", "@react-three/drei"],
           "vendor-radix": [
             "@radix-ui/react-dialog",
             "@radix-ui/react-dropdown-menu",
@@ -74,6 +75,9 @@ export default defineConfig(async () => ({
       "react-dom",
       "framer-motion",
       "lucide-react",
+      "three",
+      "@react-three/fiber",
+      "@react-three/drei",
     ],
   },
 }));

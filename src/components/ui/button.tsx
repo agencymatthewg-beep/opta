@@ -1,9 +1,10 @@
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
-import { motion, type HTMLMotionProps } from "framer-motion";
+import { motion, AnimatePresence, type HTMLMotionProps } from "framer-motion";
 
 import { cn } from "@/lib/utils";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 /**
  * Button - The Energy Interface
@@ -225,11 +226,61 @@ export interface MotionButtonProps
   processing?: boolean;
 }
 
+// =============================================================================
+// RIPPLE HOOK - Internal ripple effect for buttons
+// =============================================================================
+
+interface RippleInstance {
+  id: number;
+  x: number;
+  y: number;
+  size: number;
+}
+
+function useButtonRipple(disabled: boolean) {
+  const prefersReducedMotion = useReducedMotion();
+  const [ripples, setRipples] = React.useState<RippleInstance[]>([]);
+  const nextId = React.useRef(0);
+
+  const createRipple = React.useCallback(
+    (e: React.MouseEvent<HTMLButtonElement>) => {
+      if (disabled || prefersReducedMotion) return;
+
+      const button = e.currentTarget;
+      const rect = button.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      // Calculate size to cover entire button
+      const maxX = Math.max(x, rect.width - x);
+      const maxY = Math.max(y, rect.height - y);
+      const size = Math.sqrt(maxX * maxX + maxY * maxY) * 2;
+
+      const newRipple: RippleInstance = {
+        id: nextId.current++,
+        x,
+        y,
+        size,
+      };
+
+      setRipples((prev) => [...prev, newRipple]);
+
+      // Remove after animation
+      setTimeout(() => {
+        setRipples((prev) => prev.filter((r) => r.id !== newRipple.id));
+      }, 400);
+    },
+    [disabled, prefersReducedMotion]
+  );
+
+  return { ripples, createRipple };
+}
+
 /**
  * MotionButton - Animated button with full Framer Motion support
  *
  * Use this for primary CTAs and interactions where animation quality matters.
- * Provides magnetic hover effects and energy transitions.
+ * Provides magnetic hover effects, energy transitions, and ripple click feedback.
  */
 const MotionButton = React.forwardRef<HTMLButtonElement, MotionButtonProps>(
   (
@@ -240,24 +291,34 @@ const MotionButton = React.forwardRef<HTMLButtonElement, MotionButtonProps>(
       glow,
       processing = false,
       children,
+      onClick,
       ...props
     },
     ref
   ) => {
     const effectiveGlow = processing ? "pulse" : glow;
+    const { ripples, createRipple } = useButtonRipple(processing || props.disabled || false);
 
-    // Base variants for animation
+    // Base variants for animation - spring physics
     const motionVariants = {
       initial: {
         scale: 1,
       },
       hover: {
         scale: variant === "ghost" || variant === "link" ? 1 : 1.02,
-        transition: { duration: 0.3, ease: smoothOut },
+        transition: {
+          type: "spring" as const,
+          stiffness: 200,
+          damping: 25,
+        },
       },
       tap: {
         scale: 0.98,
-        transition: { duration: 0.1 },
+        transition: {
+          type: "spring" as const,
+          stiffness: 400,
+          damping: 30,
+        },
       },
     };
 
@@ -272,12 +333,21 @@ const MotionButton = React.forwardRef<HTMLButtonElement, MotionButtonProps>(
         }
       : {};
 
+    const handleClick = React.useCallback(
+      (e: React.MouseEvent<HTMLButtonElement>) => {
+        createRipple(e);
+        onClick?.(e);
+      },
+      [createRipple, onClick]
+    );
+
     return (
       <motion.button
         ref={ref}
         className={cn(
           buttonVariants({ variant, size, glow: effectiveGlow, className }),
-          processing && "pointer-events-none"
+          processing && "pointer-events-none",
+          "overflow-hidden" // Required for ripple containment
         )}
         variants={motionVariants}
         initial="initial"
@@ -289,9 +359,42 @@ const MotionButton = React.forwardRef<HTMLButtonElement, MotionButtonProps>(
             ? { duration: 1.5, repeat: Infinity, ease: "easeInOut" }
             : undefined
         }
+        onClick={handleClick}
         {...props}
       >
-        {children}
+        {/* Ripple layer */}
+        <AnimatePresence>
+          {ripples.map((ripple) => (
+            <motion.span
+              key={ripple.id}
+              initial={{
+                opacity: 1,
+                scale: 0,
+                x: ripple.x - ripple.size / 2,
+                y: ripple.y - ripple.size / 2,
+              }}
+              animate={{
+                opacity: 0,
+                scale: 1,
+              }}
+              exit={{ opacity: 0 }}
+              transition={{
+                type: "spring",
+                stiffness: 200,
+                damping: 25,
+              }}
+              className="pointer-events-none absolute rounded-full"
+              style={{
+                width: ripple.size,
+                height: ripple.size,
+                backgroundColor: "rgba(255, 255, 255, 0.2)",
+              }}
+            />
+          ))}
+        </AnimatePresence>
+
+        {/* Button content */}
+        <span className="relative z-10">{children}</span>
       </motion.button>
     );
   }

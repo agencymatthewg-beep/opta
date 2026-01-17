@@ -12,6 +12,7 @@ Opta transforms from an empty Tauri scaffold into a full-featured AI-powered PC 
 - ✅ **v3.0 Native Platforms** - Phase 19 (shipped 2026-01-17)
 - ✅ **v4.0 Rich Features** - Phases 20-23 (shipped 2026-01-17)
 - 🚧 **v5.0 Premium Visual Experience** - Phases 24-40 (in progress)
+- 📋 **v6.0 Optimization Intelligence Core** - Phases 41-50 (planned)
 
 ## Domain Expertise
 
@@ -67,6 +68,16 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 38: High-End Performance Optimization** - Dynamic quality, LOD, 60fps target (v5.0)
 - [ ] **Phase 39: Visual Polish & QA** - Pixel-perfect audit, animation timing, edge cases (v5.0)
 - [ ] **Phase 40: Documentation & Launch** - Style guide, showcase video, release (v5.0)
+- [ ] **Phase 41: Knowledge Research Foundation** - Gemini deep research: GPU architectures, CPU optimization, VRAM management (v6.0)
+- [ ] **Phase 42: Hardware Synergy Database** - Component interaction matrices, bottleneck calculations, thermal profiles (v6.0)
+- [ ] **Phase 43: Settings Interaction Engine** - Cross-setting dependencies, conflict detection, synergy calculations (v6.0)
+- [ ] **Phase 44: macOS Optimization Core** - Apple Silicon deep optimization, Metal shader hints, power modes (v6.0)
+- [ ] **Phase 45: Game-Specific Profiles** - Per-game optimal configs, engine-aware settings, benchmark integration (v6.0)
+- [ ] **Phase 46: Windows Optimization Core** - DirectX/Vulkan tuning, scheduler hints, power plan optimization (v6.0)
+- [ ] **Phase 47: Configuration Calculator** - Mathematical optimization model, constraint solver, synergy scoring (v6.0)
+- [ ] **Phase 48: Knowledge Graph Integration** - Relationship mapping between all optimization domains (v6.0)
+- [ ] **Phase 49: Real-Time Adaptation Engine** - Dynamic config adjustment based on workload patterns (v6.0)
+- [ ] **Phase 50: Optimization Intelligence Launch** - Testing, validation, knowledge base release (v6.0)
 
 ## Phase Details
 
@@ -600,10 +611,155 @@ Plans:
 - [ ] 40-04: Showcase video/GIF creation
 - [ ] 40-05: Release notes and changelog
 
+### 📋 v6.0 Optimization Intelligence Core (Planned)
+
+**Milestone Goal:** Transform Opta from a visual optimizer into a true optimization intelligence system. Build comprehensive knowledge through Gemini deep research across all optimization domains. Create mathematical models for calculating optimal configurations where all settings work in perfect synergy. Focus on macOS first, then expand to Windows.
+
+**Core Pillars:**
+- 🧠 Deep Knowledge — Not just understanding, but calculating optimal outcomes
+- ⚡ Synergy Engine — Every setting affects others; model the interactions
+- 🎯 Precision — Mathematical optimization, not guesswork
+- 🍎 Apple-First — Master macOS/Apple Silicon before Windows
+
+---
+
+#### Phase 41: Knowledge Research Foundation
+**Goal**: Use Gemini to conduct deep research across all major optimization domains
+**Depends on**: Phase 40 (v5.0 complete)
+**Research**: Required — This phase IS research
+**Research Topics**:
+- GPU architectures (NVIDIA, AMD, Apple, Intel)
+- CPU optimization (thread scheduling, cache hierarchies, branch prediction)
+- VRAM management and memory bandwidth optimization
+- Thermal throttling patterns and prevention
+- Power delivery and efficiency curves
+- Storage I/O optimization (NVMe, SATA, APFS, NTFS)
+
+Plans:
+- [ ] 41-01: GPU architecture deep dive (CUDA cores, RT cores, Tensor cores, Metal shaders)
+- [ ] 41-02: CPU optimization research (core parking, P/E cores, frequency scaling)
+- [ ] 41-03: Memory subsystem research (VRAM, RAM, swap, unified memory)
+- [ ] 41-04: Thermal and power research (TDP, throttling, efficiency curves)
+- [ ] 41-05: Storage optimization research (queue depths, block sizes, caching)
+
+#### Phase 42: Hardware Synergy Database
+**Goal**: Build structured database of component interactions and synergies
+**Depends on**: Phase 41
+**Research**: Likely (validation of interaction patterns)
+
+Plans:
+- [ ] 42-01: Component interaction matrix schema design
+- [ ] 42-02: GPU-CPU bottleneck calculation models
+- [ ] 42-03: Memory bandwidth impact calculations
+- [ ] 42-04: Thermal profile database per hardware generation
+- [ ] 42-05: Power budget optimization tables
+
+#### Phase 43: Settings Interaction Engine
+**Goal**: Model how settings interact and affect each other
+**Depends on**: Phase 42
+**Research**: Likely (game engine behaviors)
+
+Plans:
+- [ ] 43-01: Settings dependency graph structure
+- [ ] 43-02: Cross-setting conflict detection rules
+- [ ] 43-03: Synergy calculation algorithms
+- [ ] 43-04: Impact propagation system (change X → affects Y, Z)
+- [ ] 43-05: Optimal setting combination solver
+
+#### Phase 44: macOS Optimization Core
+**Goal**: Deep Apple Silicon and macOS-specific optimization intelligence
+**Depends on**: Phase 43
+**Research**: Required (Apple Silicon specifics)
+**Research Topics**:
+- Apple Silicon unified memory architecture
+- Metal shader optimization patterns
+- macOS power modes (Low Power, High Power, Automatic)
+- Apple GPU tile-based deferred rendering
+- ProMotion and display refresh optimization
+
+Plans:
+- [ ] 44-01: Apple Silicon unified memory optimization rules
+- [ ] 44-02: Metal shader hint database
+- [ ] 44-03: macOS power mode optimization matrix
+- [ ] 44-04: Apple GPU-specific settings tuning
+- [ ] 44-05: Display and ProMotion sync optimization
+
+#### Phase 45: Game-Specific Profiles
+**Goal**: Build per-game optimal configuration database with engine awareness
+**Depends on**: Phase 44
+**Research**: Required (game engines, community benchmarks)
+
+Plans:
+- [ ] 45-01: Game engine detection and classification
+- [ ] 45-02: Engine-specific optimization rule sets
+- [ ] 45-03: Community benchmark integration (PCGamingWiki, ProtonDB)
+- [ ] 45-04: Per-game optimal settings calculator
+- [ ] 45-05: Profile export/import system
+
+#### Phase 46: Windows Optimization Core
+**Goal**: DirectX, Vulkan, and Windows-specific optimization intelligence
+**Depends on**: Phase 45
+**Research**: Required (Windows internals)
+
+Plans:
+- [ ] 46-01: DirectX 11/12 optimization knowledge base
+- [ ] 46-02: Vulkan tuning parameters database
+- [ ] 46-03: Windows scheduler hints (Game Mode, HAGS)
+- [ ] 46-04: Power plan optimization rules
+- [ ] 46-05: NVIDIA/AMD driver setting matrices
+
+#### Phase 47: Configuration Calculator
+**Goal**: Mathematical optimization model for computing ideal configurations
+**Depends on**: Phase 46
+**Research**: Likely (optimization algorithms)
+
+Plans:
+- [ ] 47-01: Constraint solver architecture
+- [ ] 47-02: Multi-objective optimization (FPS vs quality vs thermals)
+- [ ] 47-03: Synergy scoring algorithm
+- [ ] 47-04: Hardware capability assessment
+- [ ] 47-05: Configuration recommendation engine
+
+#### Phase 48: Knowledge Graph Integration
+**Goal**: Unified knowledge graph connecting all optimization domains
+**Depends on**: Phase 47
+**Research**: Likely (graph database patterns)
+
+Plans:
+- [ ] 48-01: Knowledge graph schema design
+- [ ] 48-02: Entity relationship mapping
+- [ ] 48-03: Query interface for optimization lookups
+- [ ] 48-04: Graph visualization for debugging
+- [ ] 48-05: Knowledge validation and consistency checks
+
+#### Phase 49: Real-Time Adaptation Engine
+**Goal**: Dynamic configuration adjustment based on live workload patterns
+**Depends on**: Phase 48
+**Research**: Likely (adaptive algorithms)
+
+Plans:
+- [ ] 49-01: Workload pattern detection
+- [ ] 49-02: Dynamic reconfiguration triggers
+- [ ] 49-03: Smooth transition algorithms
+- [ ] 49-04: Performance impact monitoring
+- [ ] 49-05: User preference learning integration
+
+#### Phase 50: Optimization Intelligence Launch
+**Goal**: Testing, validation, and release of v6.0
+**Depends on**: Phase 49
+**Research**: Unlikely
+
+Plans:
+- [ ] 50-01: Knowledge base accuracy validation
+- [ ] 50-02: Synergy calculation verification
+- [ ] 50-03: Cross-platform testing
+- [ ] 50-04: Documentation and API reference
+- [ ] 50-05: Release notes and changelog
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 → 8 → 8.1 → 9 → 10 → 11 → 12 → 13 → 14 → 15 → 16 → 17 → 19 → 20 → 21 → 22 → 23 → 24 → 25 → 26 → 27 → 28 → 29 → 30 → 31 → 32 → 33 → 34 → 35 → 36 → 37 → 38 → 39 → 40 → (18 deferred)
+Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 → 8 → 8.1 → 9 → 10 → 11 → 12 → 13 → 14 → 15 → 16 → 17 → 19 → 20 → 21 → 22 → 23 → 24 → 25 → 26 → 27 → 28 → 29 → 30 → 31 → 32 → 33 → 34 → 35 → 36 → 37 → 38 → 39 → 40 → 41 → 42 → 43 → 44 → 45 → 46 → 47 → 48 → 49 → 50 → (18 deferred)
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -649,3 +805,13 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 �
 | 38. High-End Performance Optimization | v5.0 | 0/5 | Not Started | - |
 | 39. Visual Polish & QA | v5.0 | 0/5 | Not Started | - |
 | 40. Documentation & Launch | v5.0 | 0/5 | Not Started | - |
+| 41. Knowledge Research Foundation | v6.0 | 0/5 | Not Started | - |
+| 42. Hardware Synergy Database | v6.0 | 0/5 | Not Started | - |
+| 43. Settings Interaction Engine | v6.0 | 0/5 | Not Started | - |
+| 44. macOS Optimization Core | v6.0 | 0/5 | Not Started | - |
+| 45. Game-Specific Profiles | v6.0 | 0/5 | Not Started | - |
+| 46. Windows Optimization Core | v6.0 | 0/5 | Not Started | - |
+| 47. Configuration Calculator | v6.0 | 0/5 | Not Started | - |
+| 48. Knowledge Graph Integration | v6.0 | 0/5 | Not Started | - |
+| 49. Real-Time Adaptation Engine | v6.0 | 0/5 | Not Started | - |
+| 50. Optimization Intelligence Launch | v6.0 | 0/5 | Not Started | - |

@@ -1,15 +1,19 @@
 /**
- * useSwipeNavigation - Magic Mouse swipe gesture detection
+ * useSwipeNavigation - Magic Mouse/Trackpad swipe gesture detection
  *
  * Detects horizontal swipe gestures from Magic Mouse/trackpad and triggers
  * back/forward navigation similar to browser behavior.
  *
- * Magic Mouse generates wheel events with deltaX for horizontal scrolling.
- * We accumulate deltaX and trigger navigation when threshold is reached.
+ * Features:
+ * - Magic Mouse horizontal scroll detection
+ * - Trackpad two-finger swipe detection
+ * - Rubber band effect at navigation boundaries
+ * - Velocity-based triggering for natural feel
+ * - Reduced motion support
  *
  * @example
  * ```tsx
- * const { swipeProgress, swipeDirection } = useSwipeNavigation({
+ * const { swipeProgress, swipeDirection, rubberBandOffset } = useSwipeNavigation({
  *   onSwipeLeft: goForward,
  *   onSwipeRight: goBack,
  *   canSwipeLeft: canGoForward,
@@ -19,6 +23,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useReducedMotion } from './useReducedMotion';
 
 export type SwipeDirection = 'left' | 'right' | null;
 
@@ -35,6 +40,10 @@ export interface UseSwipeNavigationOptions {
   threshold?: number;
   /** Enabled state (default: true) */
   enabled?: boolean;
+  /** Velocity threshold to trigger (default: 0.3) */
+  velocityThreshold?: number;
+  /** Maximum rubber band stretch in pixels (default: 50) */
+  maxRubberBand?: number;
 }
 
 export interface SwipeNavigationState {
@@ -44,10 +53,30 @@ export interface SwipeNavigationState {
   swipeDirection: SwipeDirection;
   /** Whether a swipe is currently in progress */
   isSwiping: boolean;
+  /** Rubber band offset when at boundary (positive = right edge, negative = left edge) */
+  rubberBandOffset: number;
+  /** Whether rubber band is active (swiping at boundary) */
+  isAtBoundary: boolean;
 }
 
 /**
- * Hook for detecting Magic Mouse swipe gestures.
+ * Rubber band easing function - applies resistance as offset increases.
+ * Creates a natural "stretching" feel similar to iOS.
+ */
+function rubberBandEasing(offset: number, max: number): number {
+  const absOffset = Math.abs(offset);
+  const sign = offset >= 0 ? 1 : -1;
+
+  // Use a logarithmic curve for natural rubber band feel
+  // As offset approaches max, resistance increases dramatically
+  const resistance = 1 - Math.min(absOffset / (max * 3), 0.8);
+  const easedOffset = absOffset * resistance;
+
+  return Math.min(easedOffset, max) * sign;
+}
+
+/**
+ * Hook for detecting Magic Mouse/trackpad swipe gestures.
  */
 export function useSwipeNavigation({
   onSwipeLeft,
@@ -56,19 +85,28 @@ export function useSwipeNavigation({
   canSwipeRight = true,
   threshold = 100,
   enabled = true,
+  velocityThreshold = 0.3,
+  maxRubberBand = 50,
 }: UseSwipeNavigationOptions): SwipeNavigationState {
+  const prefersReducedMotion = useReducedMotion();
+
   const [swipeProgress, setSwipeProgress] = useState(0);
   const [swipeDirection, setSwipeDirection] = useState<SwipeDirection>(null);
   const [isSwiping, setIsSwiping] = useState(false);
+  const [rubberBandOffset, setRubberBandOffset] = useState(0);
+  const [isAtBoundary, setIsAtBoundary] = useState(false);
 
   // Accumulated delta for gesture detection
   const accumulatedDeltaRef = useRef(0);
   const lastWheelTimeRef = useRef(0);
   const isGestureActiveRef = useRef(false);
   const hasTriggeredRef = useRef(false);
+  const velocityRef = useRef(0);
+  const lastDeltaRef = useRef(0);
 
   // Reset timeout ref
   const resetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const rubberBandTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /**
    * Reset swipe state after gesture ends.
@@ -77,17 +115,47 @@ export function useSwipeNavigation({
     accumulatedDeltaRef.current = 0;
     isGestureActiveRef.current = false;
     hasTriggeredRef.current = false;
+    velocityRef.current = 0;
+    lastDeltaRef.current = 0;
     setSwipeProgress(0);
     setSwipeDirection(null);
     setIsSwiping(false);
   }, []);
 
   /**
-   * Handle wheel events from Magic Mouse.
+   * Animate rubber band back to zero.
+   */
+  const resetRubberBand = useCallback(() => {
+    if (prefersReducedMotion) {
+      setRubberBandOffset(0);
+      setIsAtBoundary(false);
+      return;
+    }
+
+    // Animate back with spring-like motion
+    const animate = () => {
+      setRubberBandOffset((current) => {
+        const next = current * 0.85; // Decay factor
+        if (Math.abs(next) < 0.5) {
+          setIsAtBoundary(false);
+          return 0;
+        }
+        requestAnimationFrame(animate);
+        return next;
+      });
+    };
+    requestAnimationFrame(animate);
+  }, [prefersReducedMotion]);
+
+  /**
+   * Handle wheel events from Magic Mouse/trackpad.
    */
   const handleWheel = useCallback(
     (event: WheelEvent) => {
       if (!enabled) return;
+
+      // Skip if reduced motion is preferred
+      if (prefersReducedMotion) return;
 
       // Ignore vertical scrolling (deltaY dominant)
       // Magic Mouse horizontal swipes have larger deltaX
@@ -102,16 +170,22 @@ export function useSwipeNavigation({
 
       const now = Date.now();
       const timeSinceLastWheel = now - lastWheelTimeRef.current;
+      const deltaTime = Math.max(timeSinceLastWheel, 1) / 1000; // Convert to seconds
       lastWheelTimeRef.current = now;
 
       // If it's been a while since last wheel event, start fresh
       if (timeSinceLastWheel > 150) {
         accumulatedDeltaRef.current = 0;
         hasTriggeredRef.current = false;
+        velocityRef.current = 0;
       }
+
+      // Calculate velocity (pixels per second)
+      velocityRef.current = event.deltaX / deltaTime;
 
       // Accumulate delta (negative deltaX = swipe right = go back)
       accumulatedDeltaRef.current += event.deltaX;
+      lastDeltaRef.current = event.deltaX;
 
       // Determine direction and check if allowed
       const delta = accumulatedDeltaRef.current;
@@ -123,21 +197,46 @@ export function useSwipeNavigation({
         (direction === 'right' && canSwipeRight);
 
       if (!isAllowed) {
-        // Apply resistance - reduce accumulated delta
-        accumulatedDeltaRef.current *= 0.5;
+        // Apply rubber band effect at boundary
+        setIsAtBoundary(true);
+        const rubberOffset = rubberBandEasing(delta, maxRubberBand);
+        setRubberBandOffset(rubberOffset);
+
+        // Apply strong resistance to accumulated delta
+        accumulatedDeltaRef.current *= 0.3;
+
+        // Clear any existing rubber band reset
+        if (rubberBandTimeoutRef.current) {
+          clearTimeout(rubberBandTimeoutRef.current);
+        }
+
+        // Reset rubber band after gesture ends
+        rubberBandTimeoutRef.current = setTimeout(resetRubberBand, 150);
+
+        // Still show some progress for visual feedback
+        const resistedProgress = Math.max(-0.3, Math.min(0.3, delta / (threshold * 3)));
+        setSwipeProgress(resistedProgress);
+      } else {
+        setIsAtBoundary(false);
+        setRubberBandOffset(0);
+
+        // Calculate progress (clamped -1 to 1)
+        const progress = Math.max(-1, Math.min(1, delta / threshold));
+        setSwipeProgress(progress);
       }
 
-      // Calculate progress (clamped -1 to 1)
-      const progress = Math.max(-1, Math.min(1, accumulatedDeltaRef.current / threshold));
-
       // Update state
-      setSwipeProgress(progress);
       setSwipeDirection(direction);
       setIsSwiping(true);
       isGestureActiveRef.current = true;
 
       // Check if threshold reached and navigation should trigger
-      if (!hasTriggeredRef.current && Math.abs(accumulatedDeltaRef.current) >= threshold) {
+      // Also check velocity for quick flick gestures
+      const velocityTrigger = Math.abs(velocityRef.current) > velocityThreshold * 1000 &&
+        Math.abs(delta) > threshold * 0.5;
+      const distanceTrigger = Math.abs(delta) >= threshold;
+
+      if (!hasTriggeredRef.current && isAllowed && (distanceTrigger || velocityTrigger)) {
         hasTriggeredRef.current = true;
 
         if (direction === 'left' && canSwipeLeft && onSwipeLeft) {
@@ -169,12 +268,24 @@ export function useSwipeNavigation({
         event.preventDefault();
       }
     },
-    [enabled, canSwipeLeft, canSwipeRight, threshold, onSwipeLeft, onSwipeRight, resetSwipe]
+    [
+      enabled,
+      prefersReducedMotion,
+      canSwipeLeft,
+      canSwipeRight,
+      threshold,
+      velocityThreshold,
+      maxRubberBand,
+      onSwipeLeft,
+      onSwipeRight,
+      resetSwipe,
+      resetRubberBand,
+    ]
   );
 
   // Attach wheel event listener
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || prefersReducedMotion) return;
 
     // Use passive: false to allow preventDefault
     window.addEventListener('wheel', handleWheel, { passive: false });
@@ -184,13 +295,18 @@ export function useSwipeNavigation({
       if (resetTimeoutRef.current) {
         clearTimeout(resetTimeoutRef.current);
       }
+      if (rubberBandTimeoutRef.current) {
+        clearTimeout(rubberBandTimeoutRef.current);
+      }
     };
-  }, [enabled, handleWheel]);
+  }, [enabled, prefersReducedMotion, handleWheel]);
 
   return {
     swipeProgress,
     swipeDirection,
     isSwiping,
+    rubberBandOffset,
+    isAtBoundary,
   };
 }
 

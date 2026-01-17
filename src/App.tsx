@@ -17,6 +17,10 @@ import SessionSummaryModal from './components/SessionSummaryModal';
 import { useNavigationHistory } from './hooks/useNavigationHistory';
 import { useSwipeNavigation } from './hooks/useSwipeNavigation';
 import SwipeIndicator from './components/SwipeIndicator';
+import { CommandPalette } from './components/CommandPalette';
+import GlobalShortcuts from './components/GlobalShortcuts';
+import { PersistentRing } from './components/OptaRing3D';
+import { PerformanceProvider } from './contexts/PerformanceContext';
 
 // Lazy load pages for better initial load performance
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -220,6 +224,7 @@ function App() {
 
   return (
     <LazyMotion features={domAnimation} strict>
+    <PerformanceProvider>
     <ExpertiseProvider>
       <LearnModeProvider>
         <CommunicationStyleProvider>
@@ -241,11 +246,41 @@ function App() {
                 </Layout>
               </ErrorBoundary>
 
+              {/* Command Palette - global keyboard access (Cmd+K) */}
+              <CommandPalette
+                navigate={setActivePage}
+                actions={{
+                  runOptimization: () => {
+                    // Navigate to optimize page and trigger optimization
+                    setActivePage('optimize');
+                  },
+                  toggleStealth: () => {
+                    // Toggle stealth mode (placeholder - can be connected to context)
+                    console.log('[Opta] Stealth mode toggled');
+                  },
+                }}
+              />
+
+              {/* Global keyboard shortcuts (Cmd+Shift+O for quick optimize) */}
+              <GlobalShortcuts />
+
               {/* Learn Mode toggle - always visible */}
               <LearnModeToggle />
 
               {/* Game Session UI - tracker and summary modal */}
               <GameSessionUI />
+
+              {/* Persistent Ring - Phase 29: App-wide ring presence
+                  Fixed bottom-right corner, pulses on page transitions,
+                  z-40 (above content, below modals) */}
+              <PersistentRing
+                currentPage={activePage}
+                interactive
+                onClick={() => {
+                  // Could trigger a radial menu or quick actions in the future
+                  console.log('[Opta] Ring clicked');
+                }}
+              />
 
               {/* Swipe navigation indicator */}
               <SwipeIndicator
@@ -281,6 +316,7 @@ function App() {
         </CommunicationStyleProvider>
       </LearnModeProvider>
     </ExpertiseProvider>
+    </PerformanceProvider>
     </LazyMotion>
   );
 }

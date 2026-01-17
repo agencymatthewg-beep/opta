@@ -7,7 +7,7 @@ export default {
   theme: {
     extend: {
       colors: {
-        // The Void - Obsidian Standard
+        // The Void - Obsidian Standard v2.0 (OLED optimized)
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
 
@@ -67,6 +67,17 @@ export default {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
+
+        // Neon Accents - USE SPARINGLY (active states only)
+        // Per Gemini: "Neon for active states only"
+        neon: {
+          purple: "rgb(var(--neon-purple) / <alpha-value>)",
+          blue: "rgb(var(--neon-blue) / <alpha-value>)",
+          green: "rgb(var(--neon-green) / <alpha-value>)",
+          amber: "rgb(var(--neon-amber) / <alpha-value>)",
+          red: "rgb(var(--neon-red) / <alpha-value>)",
+          cyan: "rgb(var(--neon-cyan) / <alpha-value>)",
+        },
       },
 
       // Typography - Sora (The Obsidian Standard)
