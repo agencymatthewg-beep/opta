@@ -7,3 +7,4 @@
 
 export { CpuFlameGraph, type CpuFlameGraphProps } from './CpuFlameGraph';
 export { RealtimeTelemetryChart, type RealtimeTelemetryChartProps } from './RealtimeTelemetryChart';
+export { DiskSpaceTreemap, type DiskSpaceTreemapProps } from './DiskSpaceTreemap';
