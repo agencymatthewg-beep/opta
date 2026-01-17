@@ -279,7 +279,9 @@ Plans:
 **Research topics**: Tauri Windows installer customization, Windows registry conflict detection, UAC handling, Windows-specific process signatures
 
 Plans:
-- [ ] 18-01: TBD
+- [ ] 18-01: Windows installer customization (NSIS hooks and branding)
+- [ ] 18-02: Registry-based conflict detection (installed programs scanning)
+- [ ] 18-03: Windows build and verification (checkpoint on real hardware)
 
 ### 📋 v3.0 Native Platforms (Planned)
 
@@ -377,7 +379,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 �
 | 15. Performance & Launch | v1.1 | 3/3 | Complete | 2026-01-16 |
 | 16. Social Features | v2.0 | 1/1 | Complete | 2026-01-16 |
 | 17. Chess Integration | v2.0 | 4/4 | Complete | 2026-01-17 |
-| 18. Windows Platform | v2.0 | 0/? | Not started | - |
+| 18. Windows Platform | v2.0 | 0/3 | Planned | - |
 | 19. Native macOS | v3.0 | 0/7 | Planned | - |
 | 20. Rich Interactions | v4.0 | 0/5 | Planned | - |
 | 21. Advanced Visualizations | v4.0 | 0/4 | Planned | - |
