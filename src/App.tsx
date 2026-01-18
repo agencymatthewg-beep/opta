@@ -19,8 +19,12 @@ import { useSwipeNavigation } from './hooks/useSwipeNavigation';
 import SwipeIndicator from './components/SwipeIndicator';
 import { CommandPalette } from './components/CommandPalette';
 import GlobalShortcuts from './components/GlobalShortcuts';
-import { PersistentRing } from './components/OptaRing3D';
+import { ChessWidget } from './components/chess';
 import { PerformanceProvider } from './contexts/PerformanceContext';
+import { ChromeProvider } from './contexts/ChromeContext';
+
+// LocalStorage key for chess widget visibility
+const CHESS_WIDGET_VISIBLE_KEY = 'opta_chess_widget_visible';
 
 // Lazy load pages for better initial load performance
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -81,6 +85,30 @@ function GameSessionUI() {
 function App() {
   const [showPlatformOnboarding, setShowPlatformOnboarding] = useState(false);
   const [showPreferencesOnboarding, setShowPreferencesOnboarding] = useState(false);
+
+  // Chess widget visibility state
+  const [chessWidgetVisible, setChessWidgetVisible] = useState(() => {
+    try {
+      return localStorage.getItem(CHESS_WIDGET_VISIBLE_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  // Toggle chess widget
+  const toggleChessWidget = useCallback(() => {
+    setChessWidgetVisible((prev) => {
+      const newValue = !prev;
+      localStorage.setItem(CHESS_WIDGET_VISIBLE_KEY, String(newValue));
+      return newValue;
+    });
+  }, []);
+
+  // Close chess widget
+  const closeChessWidget = useCallback(() => {
+    setChessWidgetVisible(false);
+    localStorage.setItem(CHESS_WIDGET_VISIBLE_KEY, 'false');
+  }, []);
 
   // Navigation history for back/forward support
   const {
@@ -225,6 +253,7 @@ function App() {
   return (
     <LazyMotion features={domAnimation} strict>
     <PerformanceProvider>
+    <ChromeProvider>
     <ExpertiseProvider>
       <LearnModeProvider>
         <CommunicationStyleProvider>
@@ -261,8 +290,15 @@ function App() {
                 }}
               />
 
-              {/* Global keyboard shortcuts (Cmd+Shift+O for quick optimize) */}
-              <GlobalShortcuts />
+              {/* Global keyboard shortcuts (Cmd+Shift+O for quick optimize, Cmd+Shift+C for chess) */}
+              <GlobalShortcuts onToggleChessWidget={toggleChessWidget} />
+
+              {/* Chess Widget - floating draggable quick access (Phase 51) */}
+              <ChessWidget
+                isVisible={chessWidgetVisible}
+                onClose={closeChessWidget}
+                onNavigateToChess={() => setActivePage('chess')}
+              />
 
               {/* Learn Mode toggle - always visible */}
               <LearnModeToggle />
@@ -270,17 +306,7 @@ function App() {
               {/* Game Session UI - tracker and summary modal */}
               <GameSessionUI />
 
-              {/* Persistent Ring - Phase 29: App-wide ring presence
-                  Fixed bottom-right corner, pulses on page transitions,
-                  z-40 (above content, below modals) */}
-              <PersistentRing
-                currentPage={activePage}
-                interactive
-                onClick={() => {
-                  // Could trigger a radial menu or quick actions in the future
-                  console.log('[Opta] Ring clicked');
-                }}
-              />
+              {/* Persistent Ring moved to Layout.tsx for isHomeView access */}
 
               {/* Swipe navigation indicator */}
               <SwipeIndicator
@@ -316,6 +342,7 @@ function App() {
         </CommunicationStyleProvider>
       </LearnModeProvider>
     </ExpertiseProvider>
+    </ChromeProvider>
     </PerformanceProvider>
     </LazyMotion>
   );

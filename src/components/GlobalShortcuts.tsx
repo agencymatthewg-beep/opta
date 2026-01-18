@@ -35,10 +35,12 @@ const SHORTCUT_PREFS_KEY = 'opta_shortcut_preferences';
  */
 interface ShortcutPreferences {
   quickOptimize: boolean;
+  chessWidget: boolean;
 }
 
 const defaultPreferences: ShortcutPreferences = {
   quickOptimize: true,
+  chessWidget: true,
 };
 
 /**
@@ -107,9 +109,9 @@ function ShortcutToastNotification({
       exit={{ opacity: 0, y: -10, scale: 0.95 }}
       transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
       className={cn(
-        'fixed top-4 left-1/2 -translate-x-1/2 z-[100]',
+        'fixed top-4 left-1/2 -translate-x-1/2 z-40',
         'rounded-xl p-4 min-w-[280px] max-w-[360px]',
-        'bg-[#05030a]/95 backdrop-blur-xl border',
+        'glass-overlay border',
         typeStyles[toast.type]
       )}
     >
@@ -137,13 +139,18 @@ function ShortcutToastNotification({
   );
 }
 
+export interface GlobalShortcutsProps {
+  /** Callback when chess widget toggle shortcut is pressed */
+  onToggleChessWidget?: () => void;
+}
+
 /**
  * GlobalShortcuts component.
  *
  * Registers all global shortcuts and shows toast notifications when triggered.
  * This component should be rendered once at the app root level.
  */
-export function GlobalShortcuts() {
+export function GlobalShortcuts({ onToggleChessWidget }: GlobalShortcutsProps = {}) {
   const [preferences, setPreferences] = useState<ShortcutPreferences>(loadPreferences);
   const [toast, setToast] = useState<ShortcutToast | null>(null);
   const [isOptimizing, setIsOptimizing] = useState(false);
@@ -199,6 +206,18 @@ export function GlobalShortcuts() {
     shortcut: 'CommandOrControl+Shift+O',
     handler: handleQuickOptimize,
     enabled: preferences.quickOptimize,
+  });
+
+  // Chess widget toggle handler
+  const handleToggleChessWidget = useCallback(() => {
+    onToggleChessWidget?.();
+  }, [onToggleChessWidget]);
+
+  // Register Cmd/Ctrl+Shift+C for Chess Widget toggle
+  useGlobalShortcut({
+    shortcut: 'CommandOrControl+Shift+C',
+    handler: handleToggleChessWidget,
+    enabled: preferences.chessWidget && !!onToggleChessWidget,
   });
 
   // Dismiss toast handler

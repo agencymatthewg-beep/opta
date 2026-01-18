@@ -17,7 +17,8 @@ export type ShortcutKey =
   | 'CommandOrControl+Shift+O'  // Quick Optimization
   | 'CommandOrControl+Shift+S'  // Quick Score check
   | 'CommandOrControl+Shift+G'  // Games library
-  | 'CommandOrControl+Shift+D'; // Dashboard
+  | 'CommandOrControl+Shift+D'  // Dashboard
+  | 'CommandOrControl+Shift+C'; // Chess widget toggle (Phase 51)
 
 /**
  * Shortcut event state from Tauri plugin.
