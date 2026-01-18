@@ -19,6 +19,16 @@
  * - Polished mirror quality with sharp, moving specular highlights
  * - View-angle dependent reflection intensity (fresnel-based reflectivity)
  *
+ * Phase 41.4: Energy Contrast System
+ * - Dramatic fresnel contrast between dormant and active states
+ * - Dormant: nearly invisible with minimal, tight rim lighting
+ * - Active: bright, energetic rim glow that commands attention
+ * - Smooth interpolation between states driven by energy uniform
+ * - uDormantFresnelPower: high value (8.0) for tight, minimal rim
+ * - uActiveFresnelPower: low value (1.5) for wide, dramatic rim
+ * - uDormantRimIntensity: very low (0.15) for near-invisibility
+ * - uActiveRimIntensity: high (2.5) for bright, energetic glow
+ *
  * The shader creates a premium obsidian glass look that responds
  * dynamically to the ring's state and energy level, with internal
  * plasma that tells the energy story at a glance.
@@ -86,6 +96,14 @@ export interface RingShaderUniforms {
   uEnvReflectionIntensity: Uniform<number>;
   /** Specular sharpness for mirror highlights (41.3) */
   uSpecularSharpness: Uniform<number>;
+  /** Fresnel power for dormant state - high = tight rim (41.4) */
+  uDormantFresnelPower: Uniform<number>;
+  /** Fresnel power for active state - low = wide rim (41.4) */
+  uActiveFresnelPower: Uniform<number>;
+  /** Rim intensity multiplier for dormant state - low = nearly invisible (41.4) */
+  uDormantRimIntensity: Uniform<number>;
+  /** Rim intensity multiplier for active state - high = bright glow (41.4) */
+  uActiveRimIntensity: Uniform<number>;
 }
 
 /**
@@ -106,6 +124,14 @@ export interface RingShaderConfig {
   envReflectionIntensity?: number;
   /** Specular sharpness for mirror highlights (41.3) */
   specularSharpness?: number;
+  /** Fresnel power for dormant state - high = tight rim (41.4) */
+  dormantFresnelPower?: number;
+  /** Fresnel power for active state - low = wide rim (41.4) */
+  activeFresnelPower?: number;
+  /** Rim intensity multiplier for dormant state - low = nearly invisible (41.4) */
+  dormantRimIntensity?: number;
+  /** Rim intensity multiplier for active state - high = bright glow (41.4) */
+  activeRimIntensity?: number;
 }
 
 // =============================================================================
@@ -192,6 +218,11 @@ uniform float uPulsePhase;
 uniform float uMirrorReflectivity;
 uniform float uEnvReflectionIntensity;
 uniform float uSpecularSharpness;
+// Phase 41.4: Energy Contrast System
+uniform float uDormantFresnelPower;
+uniform float uActiveFresnelPower;
+uniform float uDormantRimIntensity;
+uniform float uActiveRimIntensity;
 
 // Varyings from vertex shader
 varying vec3 vNormal;
@@ -392,13 +423,34 @@ float calculateEmissiveIntensity(float energyLevel, float baseEmissive) {
 }
 
 /**
- * Calculate fresnel power modulation by energy
- * Higher energy = stronger rim glow (lower power = wider spread)
+ * Calculate fresnel power modulation by energy (41.4 Energy Contrast System)
+ * Interpolates between dormant (tight, subtle) and active (wide, dramatic)
+ *
+ * @param dormantPower - High value for tight rim when dormant (e.g., 8.0)
+ * @param activePower - Low value for wide rim when active (e.g., 1.5)
+ * @param energyLevel - 0-1 energy amount
  */
-float calculateEnergyFresnelPower(float basePower, float energyLevel) {
-  // More energy = lower power = wider fresnel rim
-  // Range: basePower at 0 energy, basePower * 0.5 at full energy
-  return basePower * (1.0 - energyLevel * 0.5);
+float calculateEnergyFresnelPower(float dormantPower, float activePower, float energyLevel) {
+  // Smooth interpolation: dormant (high power, tight) -> active (low power, wide)
+  // Use smoothstep for more natural transition
+  float t = smoothstep(0.0, 1.0, energyLevel);
+  return mix(dormantPower, activePower, t);
+}
+
+/**
+ * Calculate rim intensity modulation by energy (41.4 Energy Contrast System)
+ * Creates dramatic visibility contrast between dormant and active states
+ *
+ * @param dormantIntensity - Very low for near-invisibility (e.g., 0.15)
+ * @param activeIntensity - High for bright glow (e.g., 2.5)
+ * @param energyLevel - 0-1 energy amount
+ */
+float calculateEnergyRimIntensity(float dormantIntensity, float activeIntensity, float energyLevel) {
+  // Use smoothstep for natural easing - more dramatic at high energy
+  float t = smoothstep(0.0, 1.0, energyLevel);
+  // Apply slight exponential curve for more dramatic contrast
+  t = t * t * (3.0 - 2.0 * t); // Hermite smoothstep for extra smoothness
+  return mix(dormantIntensity, activeIntensity, t);
 }
 
 // =============================================================================
@@ -596,12 +648,27 @@ void main() {
   vec3 lightDir = normalize(vec3(0.5, 0.5, -0.3));
 
   // ==========================================================================
-  // FRESNEL CALCULATION (25-01)
+  // FRESNEL CALCULATION (25-01 + 41.4 Energy Contrast System)
   // ==========================================================================
 
-  // Modulate fresnel power by energy level
-  float fresnelPower = calculateEnergyFresnelPower(uFresnelPower, uEnergyLevel);
+  // Phase 41.4: Energy-driven fresnel power interpolation
+  // Dormant: high power (8.0) = tight, minimal rim
+  // Active: low power (1.5) = wide, dramatic rim
+  float fresnelPower = calculateEnergyFresnelPower(
+    uDormantFresnelPower,
+    uActiveFresnelPower,
+    uEnergyLevel
+  );
   float fresnel = calculateFresnel(normal, viewDir, fresnelPower, uFresnelBias);
+
+  // Phase 41.4: Energy-driven rim intensity for dramatic contrast
+  // Dormant: very low intensity (0.15) = nearly invisible
+  // Active: high intensity (2.5) = bright, energetic glow
+  float rimIntensityMultiplier = calculateEnergyRimIntensity(
+    uDormantRimIntensity,
+    uActiveRimIntensity,
+    uEnergyLevel
+  );
 
   // ==========================================================================
   // COLOR TEMPERATURE (25-04)
@@ -625,13 +692,15 @@ void main() {
   );
 
   // ==========================================================================
-  // EMISSIVE INTENSITY (25-02)
+  // EMISSIVE INTENSITY (25-02 + 41.4 Energy Contrast System)
   // ==========================================================================
 
   float emissiveIntensity = calculateEmissiveIntensity(uEnergyLevel, 1.0);
 
   // Fresnel-enhanced emissive (rim glows more)
-  vec3 rimEmissive = baseColor * fresnel * emissiveIntensity * 1.5;
+  // Phase 41.4: Apply rim intensity multiplier for dramatic contrast
+  // Dormant: nearly invisible rim | Active: bright energetic glow
+  vec3 rimEmissive = baseColor * fresnel * emissiveIntensity * rimIntensityMultiplier;
 
   // ==========================================================================
   // SUBSURFACE SCATTERING (25-03)
@@ -789,6 +858,11 @@ const defaultRingConfig: Required<RingShaderConfig> = {
   mirrorReflectivity: 0.7,      // High reflectivity for obsidian glass
   envReflectionIntensity: 0.5, // Subtle environment reflections
   specularSharpness: 128.0,    // Sharp mirror-like specular highlights
+  // Phase 41.4: Energy Contrast System defaults
+  dormantFresnelPower: 8.0,    // High = tight, minimal rim when dormant
+  activeFresnelPower: 1.5,     // Low = wide, dramatic rim when active
+  dormantRimIntensity: 0.15,   // Very low = nearly invisible when dormant
+  activeRimIntensity: 2.5,     // High = bright energetic glow when active
 };
 
 /**
@@ -845,6 +919,11 @@ export function createRingShaderUniforms(config: RingShaderConfig = {}): RingSha
     uMirrorReflectivity: { value: mergedConfig.mirrorReflectivity },
     uEnvReflectionIntensity: { value: mergedConfig.envReflectionIntensity },
     uSpecularSharpness: { value: mergedConfig.specularSharpness },
+    // Phase 41.4: Energy Contrast System uniforms
+    uDormantFresnelPower: { value: mergedConfig.dormantFresnelPower },
+    uActiveFresnelPower: { value: mergedConfig.activeFresnelPower },
+    uDormantRimIntensity: { value: mergedConfig.dormantRimIntensity },
+    uActiveRimIntensity: { value: mergedConfig.activeRimIntensity },
   };
 }
 
@@ -1078,6 +1157,95 @@ export function setRingObsidianMirror(
 }
 
 /**
+ * Set dormant fresnel power (41.4)
+ * Higher values = tighter, more subtle rim lighting when dormant
+ *
+ * @param material - The ring shader material
+ * @param power - Fresnel power for dormant state (recommended 6-12)
+ */
+export function setRingDormantFresnelPower(
+  material: ShaderMaterial,
+  power: number
+): void {
+  const uniforms = material.uniforms as unknown as RingShaderUniforms;
+  uniforms.uDormantFresnelPower.value = Math.max(1, power);
+}
+
+/**
+ * Set active fresnel power (41.4)
+ * Lower values = wider, more dramatic rim lighting when active
+ *
+ * @param material - The ring shader material
+ * @param power - Fresnel power for active state (recommended 1-3)
+ */
+export function setRingActiveFresnelPower(
+  material: ShaderMaterial,
+  power: number
+): void {
+  const uniforms = material.uniforms as unknown as RingShaderUniforms;
+  uniforms.uActiveFresnelPower.value = Math.max(0.5, power);
+}
+
+/**
+ * Set dormant rim intensity (41.4)
+ * Lower values = nearly invisible rim when dormant
+ *
+ * @param material - The ring shader material
+ * @param intensity - Rim intensity multiplier (recommended 0.1-0.3)
+ */
+export function setRingDormantRimIntensity(
+  material: ShaderMaterial,
+  intensity: number
+): void {
+  const uniforms = material.uniforms as unknown as RingShaderUniforms;
+  uniforms.uDormantRimIntensity.value = Math.max(0, intensity);
+}
+
+/**
+ * Set active rim intensity (41.4)
+ * Higher values = bright, energetic glow when active
+ *
+ * @param material - The ring shader material
+ * @param intensity - Rim intensity multiplier (recommended 1.5-3.5)
+ */
+export function setRingActiveRimIntensity(
+  material: ShaderMaterial,
+  intensity: number
+): void {
+  const uniforms = material.uniforms as unknown as RingShaderUniforms;
+  uniforms.uActiveRimIntensity.value = Math.max(0, intensity);
+}
+
+/**
+ * Configure all energy contrast parameters at once (41.4)
+ *
+ * @param material - The ring shader material
+ * @param config - Energy contrast configuration
+ */
+export function setRingEnergyContrast(
+  material: ShaderMaterial,
+  config: {
+    dormantFresnelPower?: number;
+    activeFresnelPower?: number;
+    dormantRimIntensity?: number;
+    activeRimIntensity?: number;
+  }
+): void {
+  if (config.dormantFresnelPower !== undefined) {
+    setRingDormantFresnelPower(material, config.dormantFresnelPower);
+  }
+  if (config.activeFresnelPower !== undefined) {
+    setRingActiveFresnelPower(material, config.activeFresnelPower);
+  }
+  if (config.dormantRimIntensity !== undefined) {
+    setRingDormantRimIntensity(material, config.dormantRimIntensity);
+  }
+  if (config.activeRimIntensity !== undefined) {
+    setRingActiveRimIntensity(material, config.activeRimIntensity);
+  }
+}
+
+/**
  * Dispose ring shader material and free GPU resources
  */
 export function disposeRingShader(material: ShaderMaterial): void {
@@ -1091,9 +1259,10 @@ export function disposeRingShader(material: ShaderMaterial): void {
 /**
  * Shader presets for common ring states
  * Updated with Phase 41.3 obsidian mirror settings
+ * Updated with Phase 41.4 energy contrast system settings
  */
 export const ringShaderPresets = {
-  /** Default dormant state - cool, minimal glow, maximum obsidian reflection */
+  /** Default dormant state - nearly invisible rim, maximum obsidian reflection */
   dormant: {
     energyLevel: 0,
     innerGlow: 0.2,
@@ -1102,8 +1271,13 @@ export const ringShaderPresets = {
     mirrorReflectivity: 0.8,       // High reflectivity when dormant
     envReflectionIntensity: 0.6,  // Visible environment reflections
     specularSharpness: 128.0,     // Sharp polished look
+    // Phase 41.4: Maximum contrast - nearly invisible
+    dormantFresnelPower: 8.0,     // Tight rim
+    activeFresnelPower: 1.5,      // (not used at 0 energy)
+    dormantRimIntensity: 0.15,    // Nearly invisible
+    activeRimIntensity: 2.5,      // (not used at 0 energy)
   },
-  /** Active state - warm, visible energy, reduced reflection */
+  /** Active state - bright energetic rim glow, reduced reflection */
   active: {
     energyLevel: 0.6,
     innerGlow: 0.5,
@@ -1112,6 +1286,11 @@ export const ringShaderPresets = {
     mirrorReflectivity: 0.6,       // Reduced - plasma dominates
     envReflectionIntensity: 0.4,  // Subtler reflections
     specularSharpness: 96.0,      // Slightly softer
+    // Phase 41.4: Energetic glow
+    dormantFresnelPower: 8.0,
+    activeFresnelPower: 1.5,      // Wide dramatic rim
+    dormantRimIntensity: 0.15,
+    activeRimIntensity: 2.5,      // Bright glow
   },
   /** Processing state - pulsing between states */
   processing: {
@@ -1122,8 +1301,13 @@ export const ringShaderPresets = {
     mirrorReflectivity: 0.7,
     envReflectionIntensity: 0.5,
     specularSharpness: 112.0,
+    // Phase 41.4: Mid-range contrast during pulse
+    dormantFresnelPower: 8.0,
+    activeFresnelPower: 1.5,
+    dormantRimIntensity: 0.15,
+    activeRimIntensity: 2.5,
   },
-  /** Exploding state - maximum energy, intense specular, plasma-dominated */
+  /** Exploding state - maximum energy, intense rim, plasma-dominated */
   exploding: {
     energyLevel: 1.0,
     innerGlow: 1.0,
@@ -1132,6 +1316,11 @@ export const ringShaderPresets = {
     mirrorReflectivity: 0.5,       // Minimal - energy overwhelms
     envReflectionIntensity: 0.3,  // Almost hidden by glow
     specularSharpness: 64.0,      // Broader hot glow
+    // Phase 41.4: Maximum intensity - full energy
+    dormantFresnelPower: 8.0,
+    activeFresnelPower: 1.2,      // Extra wide for explosion
+    dormantRimIntensity: 0.15,
+    activeRimIntensity: 3.5,      // Extra bright for explosion
   },
 } as const;
 
