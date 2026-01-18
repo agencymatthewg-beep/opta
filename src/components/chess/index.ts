@@ -26,3 +26,11 @@ export { GameReview, type GameReviewProps } from './games/GameReview';
 
 // Premium board components (Phase 56)
 export { PremiumBoard, type PremiumBoardProps, ThemeSelector, type ThemeSelectorProps } from './premium';
+
+// Settings components (Phase 57)
+export {
+  ChessSettingsPanel,
+  type ChessSettingsPanelProps,
+  type PresetTheme,
+  presetThemes,
+} from './settings';
