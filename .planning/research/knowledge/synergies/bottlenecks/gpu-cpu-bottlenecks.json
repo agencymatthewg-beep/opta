@@ -787,5 +787,205 @@
         "Use frame rate limiter to reduce overhead"
       ]
     }
+  ],
+  "heuristics": [
+    {
+      "id": "cpu-bottleneck-detection",
+      "name": "CPU Bottleneck Detection",
+      "description": "How to detect when CPU is limiting GPU performance",
+      "indicators": [
+        "GPU utilization < 70% while CPU > 85%",
+        "Frame time variance > 5ms (inconsistent frame delivery)",
+        "Single core maxed (>95%) while others idle",
+        "Low draw calls per frame despite high CPU usage",
+        "High CPU wait time visible in Metal System Trace",
+        "Game threads migrating to E-cores in Activity Monitor"
+      ],
+      "thresholds": {
+        "cpu_utilization_min": 85,
+        "gpu_utilization_max": 70,
+        "frame_variance_max_ms": 5,
+        "confidence": "high"
+      },
+      "remediation": [
+        "Enable macOS Game Mode (enter fullscreen)",
+        "Reduce physics quality setting",
+        "Lower AI/simulation complexity",
+        "Enable multi-threading options if available",
+        "Close background applications (browsers, Electron apps)",
+        "Reduce draw call-heavy settings (shadow quality, view distance)",
+        "Check Activity Monitor for CPU-intensive processes"
+      ],
+      "relatedInteractions": [
+        "cpu-bound-draw-call-overhead",
+        "cpu-bound-physics-simulation",
+        "cpu-bound-ai-game-logic",
+        "cpu-bound-single-thread-limitation"
+      ]
+    },
+    {
+      "id": "gpu-bottleneck-detection",
+      "name": "GPU Bottleneck Detection",
+      "description": "How to detect when GPU is the performance limiter",
+      "indicators": [
+        "GPU utilization > 95% sustained",
+        "CPU utilization < 60% with consistent frame times",
+        "Resolution/quality changes significantly impact FPS",
+        "Memory pressure warning in Activity Monitor",
+        "High GPU temperature approaching thermal limits",
+        "Frame rate scales linearly with render resolution"
+      ],
+      "thresholds": {
+        "gpu_utilization_min": 95,
+        "cpu_utilization_max": 60,
+        "confidence": "high"
+      },
+      "remediation": [
+        "Enable MetalFX temporal upscaling",
+        "Lower render resolution or use scaling",
+        "Reduce texture quality",
+        "Disable or lower ray tracing (M3+ only)",
+        "Turn off post-processing effects (motion blur, DoF, bloom)",
+        "Lower shader/effects quality",
+        "Reduce shadow quality and resolution",
+        "Disable anti-aliasing or use lower setting"
+      ],
+      "relatedInteractions": [
+        "gpu-bound-shader-complexity",
+        "gpu-bound-resolution-fillrate",
+        "gpu-bound-post-processing",
+        "gpu-bound-ray-tracing"
+      ]
+    },
+    {
+      "id": "memory-bandwidth-bottleneck-detection",
+      "name": "Memory Bandwidth Bottleneck Detection",
+      "description": "How to detect unified memory bandwidth saturation",
+      "indicators": [
+        "Both CPU (>70%) and GPU (>70%) highly utilized simultaneously",
+        "Performance drops during texture streaming moments",
+        "Memory pressure indicator yellow/red in Activity Monitor",
+        "Swap usage increasing during gameplay",
+        "Stutter when entering new areas with many assets",
+        "Performance improves when closing memory-heavy apps"
+      ],
+      "thresholds": {
+        "cpu_utilization_min": 70,
+        "gpu_utilization_min": 70,
+        "memory_pressure": "yellow_or_red",
+        "confidence": "medium"
+      },
+      "remediation": [
+        "Close memory-intensive background applications",
+        "Reduce texture quality setting",
+        "Lower texture streaming distance",
+        "Disable high-resolution texture packs",
+        "Reduce geometric detail/LOD aggressiveness",
+        "Install game on fastest SSD",
+        "Consider more unified memory for future upgrade"
+      ],
+      "relatedInteractions": [
+        "unified-memory-contention",
+        "gpu-bound-vram-pressure"
+      ]
+    },
+    {
+      "id": "thermal-throttling-detection",
+      "name": "Thermal Throttling Detection",
+      "description": "How to detect performance loss from thermal management",
+      "indicators": [
+        "Performance degrades after 15-30 minutes of sustained load",
+        "CPU/GPU frequency drops visible in monitoring tools",
+        "Fan noise increases significantly before performance drop",
+        "Initial FPS higher than sustained FPS (fanless devices)",
+        "GPU temperature >95C or CPU >100C",
+        "Performance recovers after cooling period"
+      ],
+      "thresholds": {
+        "gpu_temp_max_celsius": 95,
+        "cpu_temp_max_celsius": 100,
+        "performance_degradation_threshold_percent": 10,
+        "sustained_load_duration_minutes": 15,
+        "confidence": "high"
+      },
+      "remediation": [
+        "Enable High Power Mode (MacBook Pro only)",
+        "Ensure adequate ventilation around device",
+        "Use laptop stand for airflow (MacBook)",
+        "Clean dust from vents if applicable",
+        "Lower ambient room temperature",
+        "Consider external cooling pad",
+        "Accept lower settings for sustained performance",
+        "Take breaks to allow thermal recovery"
+      ],
+      "deviceSpecific": {
+        "macbookAir": "Fanless design - expect throttling after ~45 min sustained",
+        "macbookPro": "Enable High Power Mode in System Settings > Battery",
+        "macMini": "Ensure not enclosed; needs open airflow",
+        "macStudio": "Should sustain indefinitely with proper ventilation"
+      },
+      "relatedInteractions": []
+    },
+    {
+      "id": "translation-overhead-detection",
+      "name": "Translation Layer Overhead Detection",
+      "description": "How to detect performance loss from DirectX-to-Metal translation",
+      "indicators": [
+        "Higher CPU usage than expected for game complexity",
+        "Game runs via GPTK, CrossOver, or Whisky",
+        "CPU bottleneck symptoms despite simple graphics",
+        "Performance significantly lower than native Mac games",
+        "Draw call-heavy games perform worse than shader-heavy games"
+      ],
+      "thresholds": {
+        "cpu_overhead_factor": 1.3,
+        "fps_reduction_typical_percent": 25,
+        "confidence": "high"
+      },
+      "remediation": [
+        "Check if native Mac/Metal version exists",
+        "Update translation layer to latest version (GPTK 2.0+)",
+        "Enable DXVK or D3DMetal optimizations",
+        "Reduce settings that increase draw calls",
+        "Lower crowd/NPC density",
+        "Reduce shadow cascade count",
+        "Accept ~20-30% performance overhead as normal"
+      ],
+      "relatedInteractions": [
+        "translation-layer-cpu-overhead"
+      ]
+    },
+    {
+      "id": "balanced-system-detection",
+      "name": "Balanced System Detection",
+      "description": "How to confirm system is well-optimized with no major bottlenecks",
+      "indicators": [
+        "CPU utilization 70-85% range",
+        "GPU utilization 75-90% range",
+        "Consistent frame times (low variance <3ms)",
+        "No thermal throttling occurring",
+        "Memory pressure green in Activity Monitor",
+        "FPS meets target (60/120) consistently"
+      ],
+      "thresholds": {
+        "cpu_utilization_min": 70,
+        "cpu_utilization_max": 85,
+        "gpu_utilization_min": 75,
+        "gpu_utilization_max": 90,
+        "frame_variance_max_ms": 3,
+        "confidence": "high"
+      },
+      "remediation": [
+        "System is optimally configured",
+        "Consider increasing quality settings slightly",
+        "Could try higher resolution if GPU headroom exists",
+        "Enable additional effects if CPU headroom exists",
+        "Current settings represent good balance"
+      ],
+      "relatedInteractions": [
+        "balanced-optimal-utilization",
+        "e-core-background-benefit"
+      ]
+    }
   ]
 }
