@@ -226,7 +226,7 @@ export function OptaRing3D({
           preserveDrawingBuffer: false, // Better performance
           failIfMajorPerformanceCaveat: false,
         }}
-        style={{ background: 'transparent' }}
+        style={{ background: 'transparent', width: '100%', height: '100%' }}
         flat // Disables tone mapping for more accurate colors
         linear // Disables sRGB encoding for consistent colors
       >
@@ -260,7 +260,7 @@ export function OptaRing3D({
         />
 
         {/* Ring Mesh with Suspense for async shader loading */}
-        <Suspense fallback={null}>
+        <Suspense fallback={<mesh><boxGeometry args={[0.5, 0.5, 0.5]} /><meshBasicMaterial color="purple" /></mesh>}>
           <RingMesh
             state={state}
             energyLevel={calculatedEnergy}

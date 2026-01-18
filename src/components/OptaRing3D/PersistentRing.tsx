@@ -29,11 +29,15 @@ import { transitions } from '@/lib/animations';
 // TYPES
 // =============================================================================
 
+export type RingPosition = 'center' | 'bottom-right';
+
 export interface PersistentRingProps {
   /** Current page/route for context-aware sizing */
   currentPage?: string;
   /** Override size mode */
   sizeMode?: RingSizeMode;
+  /** Position override - 'center' for home view, 'bottom-right' for pages */
+  position?: RingPosition;
   /** Callback when ring is clicked */
   onClick?: () => void;
   /** Whether the ring should be interactive */
@@ -141,6 +145,7 @@ const getPositionStyles = (
 export function PersistentRing({
   currentPage,
   sizeMode,
+  position,
   onClick,
   interactive = true,
   className,
@@ -246,12 +251,14 @@ export function PersistentRing({
   // Determine ring state from context or local
   const ringState = ringContext?.state ?? 'dormant';
 
-  // Position styles
-  const positionStyles = getPositionStyles(mode, edgeOffset, config.centered);
+  // Position styles - position prop takes precedence over config.centered
+  const isCentered = position === 'center' || (position === undefined && config.centered);
+  const positionStyles = getPositionStyles(mode, edgeOffset, isCentered);
 
   return (
-    <AnimatePresence>
+    <AnimatePresence mode="wait">
       <motion.div
+        key="persistent-ring"
         className={cn(
           'select-none',
           interactive && 'cursor-pointer',
