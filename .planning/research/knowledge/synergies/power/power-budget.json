@@ -665,5 +665,195 @@
       "tags": ["high-power-mode", "sustained-workload", "throttle-prevention"],
       "source": "macOS Power Management"
     }
-  ]
+  ],
+  "heuristics": [
+    {
+      "id": "battery-gaming-optimization",
+      "name": "Battery Gaming Optimization",
+      "description": "Maximize gaming time when running on battery power",
+      "indicators": [
+        "Gaming on battery (unplugged)",
+        "Battery level dropping rapidly (>15% per hour)",
+        "Device running warm or fans spinning up",
+        "Low Power Mode notification appearing"
+      ],
+      "remediation": [
+        "Enable Low Power Mode in System Settings > Battery",
+        "Cap frame rate to 30-60 FPS in game settings",
+        "Lower resolution to 1080p or native resolution without scaling",
+        "Reduce graphics settings (shadows off, AA off, reflections low)",
+        "Close background apps (browsers, Electron apps like Slack/Discord)",
+        "Lower screen brightness to 50-70%",
+        "Disable keyboard backlight"
+      ],
+      "expectedImprovement": "+30-50% battery life during gaming",
+      "applicableTo": ["MacBook Air", "MacBook Pro"]
+    },
+    {
+      "id": "maximum-performance-usage",
+      "name": "Maximum Performance Mode Usage",
+      "description": "When and how to use High Power Mode for maximum gaming performance",
+      "indicators": [
+        "Playing demanding AAA games",
+        "Targeting 120+ FPS gameplay",
+        "External monitor at high resolution",
+        "Long gaming sessions (>30 minutes)",
+        "Noticing gradual FPS drops during play"
+      ],
+      "remediation": [
+        "Enable High Power Mode in System Settings > Battery",
+        "Connect to power adapter (96W for MacBook Pro)",
+        "Ensure adequate ventilation (don't use on soft surfaces)",
+        "Use external display to offload internal panel rendering",
+        "Close all unnecessary background applications",
+        "Consider a laptop cooling pad for extended sessions"
+      ],
+      "expectedImprovement": "+10-20% sustained FPS in demanding games",
+      "applicableTo": ["MacBook Pro M3 Pro", "MacBook Pro M3 Max", "MacBook Pro M4 Pro", "MacBook Pro M4 Max"]
+    },
+    {
+      "id": "power-efficient-long-sessions",
+      "name": "Power-Efficient Long Sessions",
+      "description": "Optimize for extended gaming sessions without overheating",
+      "indicators": [
+        "Planning to game for 2+ hours",
+        "Device getting hot after extended play",
+        "Fan noise becoming intrusive",
+        "Thermal throttling visible in FPS drops"
+      ],
+      "remediation": [
+        "Target 60 FPS instead of maximum FPS",
+        "Use medium graphics settings instead of high/ultra",
+        "Enable MetalFX upscaling if available",
+        "Take 5-minute breaks every hour to let device cool",
+        "Use Automatic power mode (not High Power)",
+        "Elevate laptop for better airflow underneath",
+        "Consider external keyboard to keep hands off hot chassis"
+      ],
+      "expectedImprovement": "Stable performance without thermal throttling",
+      "applicableTo": ["MacBook Air", "MacBook Pro"]
+    },
+    {
+      "id": "charging-while-gaming",
+      "name": "Charging While Gaming Best Practices",
+      "description": "Optimize charging behavior during gaming sessions",
+      "indicators": [
+        "Need to charge while gaming",
+        "Battery below 20% during gaming",
+        "Device running hotter than usual while charging and gaming"
+      ],
+      "remediation": [
+        "Charge to 80% before starting gaming session (use Optimized Battery Charging)",
+        "If must charge while gaming, use a lower wattage adapter (30-45W) to reduce heat",
+        "Avoid full 100% charge while gaming (increases heat)",
+        "Consider using clamshell mode with external display to reduce heat sources",
+        "Enable 'Optimized Battery Charging' to protect battery health"
+      ],
+      "expectedImprovement": "Reduced thermal throttling while maintaining charge",
+      "applicableTo": ["MacBook Air", "MacBook Pro"]
+    },
+    {
+      "id": "background-power-drain-reduction",
+      "name": "Background Power Drain Reduction",
+      "description": "Eliminate unnecessary background power consumption for better gaming performance",
+      "indicators": [
+        "Activity Monitor shows high background CPU/GPU usage",
+        "Battery draining fast even without active gaming",
+        "Multiple Electron apps running (Slack, Discord, Teams, VS Code)",
+        "Browser with many tabs open"
+      ],
+      "remediation": [
+        "Quit all browser tabs not needed for gaming (each tab uses memory/CPU)",
+        "Close Electron apps: Slack, Discord, VS Code, Teams (heavy resource users)",
+        "Disable Login Items in System Settings > General > Login Items",
+        "Check Activity Monitor for unexpected high-CPU processes",
+        "Disable automatic iCloud sync during gaming sessions",
+        "Turn off Spotlight indexing if actively running (mdworker processes)",
+        "Quit cloud sync apps (Dropbox, Google Drive, OneDrive) temporarily"
+      ],
+      "expectedImprovement": "+5-15W available for gaming, +10-15% FPS improvement",
+      "applicableTo": ["All Macs"]
+    }
+  ],
+  "powerModes": {
+    "low-power": {
+      "available": ["MacBook Air", "MacBook Pro"],
+      "effect": "Reduces CPU/GPU clocks by 20-30%, limits P-core usage, prioritizes E-cores",
+      "batteryBenefit": "+30-50% battery life",
+      "performanceCost": "-15-30% depending on workload",
+      "bestFor": "Light tasks, extending battery, casual gaming at 30 FPS",
+      "howToEnable": "System Settings > Battery > Low Power Mode",
+      "notes": "Automatically disables when plugged in unless manually enabled"
+    },
+    "automatic": {
+      "available": ["All Macs"],
+      "effect": "Dynamic scaling based on workload and power source",
+      "batteryBenefit": "Balanced - adapts to conditions",
+      "performanceCost": "None when plugged in, slight reduction on battery",
+      "bestFor": "Default for most users, general productivity and moderate gaming",
+      "howToEnable": "Default mode - no action needed",
+      "notes": "macOS intelligently balances performance and efficiency"
+    },
+    "high-power": {
+      "available": ["MacBook Pro M3 Pro", "MacBook Pro M3 Max", "MacBook Pro M4 Pro", "MacBook Pro M4 Max", "Mac Mini M4 Pro"],
+      "effect": "Aggressive fan curves spin up before thermal limit, maintains boost clocks longer",
+      "batteryBenefit": "None - drains faster, typically requires power adapter",
+      "performanceCost": "None - provides additional performance",
+      "bestFor": "Sustained demanding workloads, AAA gaming, video export, 3D rendering",
+      "howToEnable": "System Settings > Battery > High Power Mode (when plugged in)",
+      "notes": "Only beneficial for sustained workloads >5 minutes that would otherwise throttle"
+    }
+  },
+  "batteryEstimates": {
+    "light-gaming-30fps": {
+      "description": "Casual gaming at 30 FPS cap, medium settings",
+      "macbook-air-m3": "3-4 hours",
+      "macbook-air-m4": "3.5-4.5 hours",
+      "macbook-pro-14-m3-pro": "4-5 hours",
+      "macbook-pro-14-m4-pro": "4.5-5.5 hours",
+      "macbook-pro-16-m3-pro": "5-6 hours",
+      "macbook-pro-16-m4-pro": "5.5-6.5 hours",
+      "notes": "With Low Power Mode and reduced brightness"
+    },
+    "medium-gaming-60fps": {
+      "description": "Standard gaming at 60 FPS, high settings",
+      "macbook-air-m3": "1.5-2 hours",
+      "macbook-air-m4": "1.75-2.25 hours",
+      "macbook-pro-14-m3-pro": "2.5-3 hours",
+      "macbook-pro-14-m4-pro": "2.75-3.25 hours",
+      "macbook-pro-16-m3-pro": "3-3.5 hours",
+      "macbook-pro-16-m4-pro": "3.25-4 hours",
+      "notes": "Automatic power mode, normal brightness"
+    },
+    "heavy-gaming-uncapped": {
+      "description": "Demanding gaming at max FPS, high/ultra settings",
+      "macbook-air-m3": "45-60 minutes",
+      "macbook-air-m4": "50-70 minutes",
+      "macbook-pro-14-m3-max": "1.5-2 hours",
+      "macbook-pro-14-m4-max": "1.75-2.25 hours",
+      "macbook-pro-16-m3-max": "2-2.5 hours",
+      "macbook-pro-16-m4-max": "2.25-2.75 hours",
+      "notes": "High Power Mode if available, thermal limits may affect sustained performance"
+    },
+    "idle-desktop": {
+      "description": "Screen on, minimal activity",
+      "macbook-air-m3": "15-18 hours",
+      "macbook-air-m4": "16-20 hours",
+      "macbook-pro-14-m3-pro": "12-14 hours",
+      "macbook-pro-14-m4-pro": "13-15 hours",
+      "macbook-pro-16-m3-pro": "14-16 hours",
+      "macbook-pro-16-m4-pro": "15-17 hours",
+      "notes": "Web browsing, light productivity"
+    },
+    "video-playback": {
+      "description": "Streaming or local video playback",
+      "macbook-air-m3": "18-22 hours",
+      "macbook-air-m4": "20-24 hours",
+      "macbook-pro-14-m3-pro": "17-20 hours",
+      "macbook-pro-14-m4-pro": "19-22 hours",
+      "macbook-pro-16-m3-pro": "20-24 hours",
+      "macbook-pro-16-m4-pro": "22-26 hours",
+      "notes": "Hardware video decode via Media Engine is extremely efficient"
+    }
+  }
 }
