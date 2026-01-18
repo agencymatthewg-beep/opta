@@ -1,58 +1,133 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 
 /**
- * useExplosion - Hook for managing ring explosion state
+ * useExplosion - State Management Hook for Ring Explosion Effect
  *
- * Provides:
- * - Explosion trigger function
- * - Active state
- * - Progress tracking
- * - Auto-cleanup after animation
+ * Provides complete explosion lifecycle management including:
+ * - Trigger function with optional config overrides
+ * - Active state for conditional rendering
+ * - Real-time progress tracking (0-1)
+ * - Auto-cleanup after animation completion
+ * - Cancel/reset functions for interruption handling
+ *
+ * ## Usage Example
+ * ```tsx
+ * const { isExploding, explode, progress, config } = useExplosion({
+ *   duration: 800,
+ *   particleCount: 250,
+ * });
+ *
+ * // Trigger explosion
+ * <button onClick={() => explode()}>Celebrate!</button>
+ *
+ * // Pass state to visual components
+ * <RingExplosion active={isExploding} config={config} />
+ * ```
  *
  * @see Phase 27: Ring Explosion Effect
+ * @see RingExplosion for the visual component
  */
 
+// =============================================================================
+// TYPES
+// =============================================================================
+
+/**
+ * Configuration options for the explosion effect.
+ * All properties are optional with sensible defaults.
+ */
 export interface ExplosionConfig {
-  /** Duration of the explosion in ms (default: 800) */
+  /**
+   * Total duration of the explosion animation in milliseconds.
+   * @default 800
+   */
   duration?: number;
-  /** Particle count (default: 250) */
+
+  /**
+   * Number of particles in the burst effect.
+   * @default 250
+   */
   particleCount?: number;
-  /** Enable bloom effect (default: true) */
+
+  /**
+   * Enable post-processing bloom effect for bright glow.
+   * @default true
+   */
   enableBloom?: boolean;
-  /** Bloom intensity at peak (default: 2) */
+
+  /**
+   * Peak bloom intensity multiplier during explosion.
+   * @default 2
+   */
   bloomIntensity?: number;
-  /** Enable camera shake (default: true) */
+
+  /**
+   * Enable camera shake micro-animation on explosion.
+   * @default true
+   */
   enableCameraShake?: boolean;
-  /** Camera shake duration in ms (default: 80) */
+
+  /**
+   * Duration of camera shake effect in milliseconds.
+   * @default 80
+   */
   cameraShakeDuration?: number;
-  /** Camera shake intensity (default: 0.02) */
+
+  /**
+   * Camera shake offset intensity in world units.
+   * @default 0.02
+   */
   cameraShakeIntensity?: number;
-  /** Shockwave duration in ms (default: 600) */
+
+  /**
+   * Duration of the shockwave expansion in milliseconds.
+   * @default 600
+   */
   shockwaveDuration?: number;
-  /** Callback when explosion completes */
+
+  /** Callback fired when explosion animation completes */
   onComplete?: () => void;
-  /** Callback when explosion starts */
+
+  /** Callback fired when explosion is triggered */
   onStart?: () => void;
 }
 
+/**
+ * Current state of the explosion animation.
+ */
 export interface ExplosionState {
-  /** Whether the explosion is currently active */
+  /** Whether the explosion is currently animating */
   isExploding: boolean;
-  /** Progress of the explosion (0-1) */
+
+  /** Animation progress from 0 (start) to 1 (complete) */
   progress: number;
-  /** Config for the current explosion */
+
+  /** Active configuration with all defaults resolved */
   config: Required<ExplosionConfig>;
 }
 
+/**
+ * Return type of the useExplosion hook.
+ */
 export interface UseExplosionReturn extends ExplosionState {
-  /** Trigger an explosion */
+  /**
+   * Trigger an explosion with optional config overrides.
+   * @param overrideConfig - Partial config to merge with defaults
+   */
   explode: (overrideConfig?: Partial<ExplosionConfig>) => void;
-  /** Cancel the current explosion */
+
+  /** Cancel the current explosion and reset state */
   cancel: () => void;
-  /** Reset state (useful for re-mounting) */
+
+  /** Reset hook state to initial values */
   reset: () => void;
 }
 
+// =============================================================================
+// CONSTANTS
+// =============================================================================
+
+/** Default explosion configuration values */
 const DEFAULT_CONFIG: Required<ExplosionConfig> = {
   duration: 800,
   particleCount: 250,
@@ -64,9 +139,20 @@ const DEFAULT_CONFIG: Required<ExplosionConfig> = {
   shockwaveDuration: 600,
   onComplete: () => {},
   onStart: () => {},
-};
+} as const;
 
+// =============================================================================
+// HOOK
+// =============================================================================
+
+/**
+ * Hook for managing explosion animation state and lifecycle.
+ *
+ * @param defaultConfig - Optional base configuration merged with defaults
+ * @returns Explosion state and control functions
+ */
 export function useExplosion(defaultConfig?: Partial<ExplosionConfig>): UseExplosionReturn {
+  // Animation state
   const [isExploding, setIsExploding] = useState(false);
   const [progress, setProgress] = useState(0);
   const [config, setConfig] = useState<Required<ExplosionConfig>>({
@@ -74,9 +160,10 @@ export function useExplosion(defaultConfig?: Partial<ExplosionConfig>): UseExplo
     ...defaultConfig,
   });
 
+  // Refs for animation frame management
   const animationFrameRef = useRef<number | null>(null);
   const startTimeRef = useRef<number | null>(null);
-  const isExplodingRef = useRef(false);
+  const isExplodingRef = useRef(false); // Ref for sync access in RAF callback
 
   // Cleanup animation frame on unmount
   useEffect(() => {
@@ -157,51 +244,62 @@ export function useExplosion(defaultConfig?: Partial<ExplosionConfig>): UseExplo
   };
 }
 
+// =============================================================================
+// PRESETS
+// =============================================================================
+
 /**
- * Pre-configured explosion presets
+ * Pre-configured explosion presets for common use cases.
+ *
+ * @example
+ * ```tsx
+ * const { explode } = useExplosion(explosionPresets.intense);
+ * // Or override at trigger time:
+ * explode(explosionPresets.subtle);
+ * ```
  */
 export const explosionPresets = {
-  /** Standard explosion - balanced settings */
+  /** Standard explosion - balanced for general use */
   standard: {
     duration: 800,
     particleCount: 250,
     bloomIntensity: 2,
     cameraShakeDuration: 80,
-  } as Partial<ExplosionConfig>,
+  } satisfies Partial<ExplosionConfig>,
 
-  /** Subtle explosion - less intense */
+  /** Subtle explosion - reduced intensity for minor celebrations */
   subtle: {
     duration: 600,
     particleCount: 150,
     bloomIntensity: 1,
     cameraShakeDuration: 50,
     cameraShakeIntensity: 0.01,
-  } as Partial<ExplosionConfig>,
+  } satisfies Partial<ExplosionConfig>,
 
-  /** Intense explosion - maximum drama */
+  /** Intense explosion - maximum visual impact for major events */
   intense: {
     duration: 1000,
     particleCount: 300,
     bloomIntensity: 3,
     cameraShakeDuration: 100,
     cameraShakeIntensity: 0.03,
-  } as Partial<ExplosionConfig>,
+  } satisfies Partial<ExplosionConfig>,
 
-  /** Quick explosion - fast feedback */
+  /** Quick explosion - fast feedback for snappy interactions */
   quick: {
     duration: 400,
     particleCount: 200,
     bloomIntensity: 1.5,
     shockwaveDuration: 300,
     cameraShakeDuration: 40,
-  } as Partial<ExplosionConfig>,
+  } satisfies Partial<ExplosionConfig>,
 
-  /** No shake - explosion without camera movement */
+  /** No shake - explosion without camera movement (accessibility) */
   noShake: {
     duration: 800,
     particleCount: 250,
     enableCameraShake: false,
-  } as Partial<ExplosionConfig>,
-};
+  } satisfies Partial<ExplosionConfig>,
+} as const;
 
 export default useExplosion;

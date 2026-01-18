@@ -205,9 +205,10 @@ export function RealtimeTelemetryChart({
       },
       tooltip: {
         trigger: 'axis',
-        backgroundColor: 'rgba(12, 12, 18, 0.95)',
+        backgroundColor: 'rgba(12, 12, 18, 0.85)',
         borderColor: 'rgba(255, 255, 255, 0.1)',
         borderWidth: 1,
+        extraCssText: 'backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);',
         textStyle: {
           color: '#fafafa',
           fontSize: 12,
@@ -349,7 +350,7 @@ export function RealtimeTelemetryChart({
       className={cn(
         // Glass effect container
         'relative overflow-hidden rounded-xl',
-        'bg-[#05030a]/80 backdrop-blur-xl',
+        'glass',
         'border border-white/[0.06]',
         // Inner specular highlight
         'before:absolute before:inset-x-0 before:top-0 before:h-px',

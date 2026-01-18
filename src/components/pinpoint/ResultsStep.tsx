@@ -46,7 +46,7 @@ export function ResultsStep({ game, goal, recommendations, onStartNew }: Results
         className={cn(
           "w-24 h-24 mx-auto mb-6 rounded-2xl flex items-center justify-center",
           // Obsidian glass with success energy
-          "bg-[#05030a]/80 backdrop-blur-xl",
+          "glass",
           "border border-success/30",
           "shadow-[0_0_30px_-8px_rgba(34,197,94,0.4)]"
         )}
@@ -88,7 +88,7 @@ export function ResultsStep({ game, goal, recommendations, onStartNew }: Results
         className={cn(
           "relative rounded-xl p-6 mb-6 text-left overflow-hidden",
           // Obsidian glass material
-          "bg-[#05030a]/80 backdrop-blur-xl",
+          "glass",
           "border border-white/[0.06]",
           // Inner specular highlight
           "before:absolute before:inset-x-0 before:top-0 before:h-px before:z-10",

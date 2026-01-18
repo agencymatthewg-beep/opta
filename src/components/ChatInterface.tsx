@@ -121,7 +121,7 @@ function RoutingModeSelector({
           <ChevronDown className="w-3 h-3 opacity-50" strokeWidth={2} />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56 bg-[#05030a]/90 backdrop-blur-xl border-white/[0.06]">
+      <DropdownMenuContent align="end" className="w-56 glass-strong border-white/[0.06]">
         {(Object.keys(labels) as RoutingPreference[]).map((pref) => (
           <DropdownMenuItem
             key={pref}

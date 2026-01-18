@@ -102,21 +102,22 @@ const containerVariants = {
 
 /**
  * Item animation variants
+ * Note: Parent container handles stagger timing via staggerChildren,
+ * so no delay needed here to avoid double-stagger stuttering
  */
 const itemVariants = {
   hidden: {
     scale: 0,
     opacity: 0,
   },
-  visible: (index: number) => ({
+  visible: {
     scale: 1,
     opacity: 1,
     transition: {
-      delay: index * 0.04,
       duration: 0.4,
       ease: smoothOut,
     },
-  }),
+  },
 };
 
 export function RadialNavMobile({ activePage, onNavigate }: RadialNavMobileProps) {
@@ -242,7 +243,7 @@ export function RadialNavMobile({ activePage, onNavigate }: RadialNavMobileProps
               className={cn(
                 'absolute flex flex-col items-center gap-0.5',
                 'p-2.5 rounded-xl',
-                'bg-[#05030a]/60 backdrop-blur-lg',
+                'glass-subtle',
                 'border border-white/[0.05]',
                 'transition-colors duration-300',
                 isActive && 'border-primary/40 bg-[#0a0514]/80'
@@ -251,7 +252,6 @@ export function RadialNavMobile({ activePage, onNavigate }: RadialNavMobileProps
                 transform: `translate(${pos.x}px, ${pos.y}px)`,
               }}
               variants={itemVariants}
-              custom={index}
               onClick={() => handleNavigate(item.id)}
               onTouchStart={() => setHoveredItem(item.id)}
               onTouchEnd={() => setHoveredItem(null)}

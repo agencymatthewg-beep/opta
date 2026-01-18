@@ -106,7 +106,7 @@ function GameSessionTracker({
         transition={{ type: 'spring', damping: 20, stiffness: 300 }}
         className={cn(
           'fixed bottom-6 right-6 z-50',
-          'bg-[#05030a]/90 backdrop-blur-2xl rounded-2xl border border-primary/30',
+          'glass-strong rounded-2xl border border-primary/30',
           'shadow-[0_0_32px_-8px_rgba(168,85,247,0.4)]',
           'overflow-hidden'
         )}

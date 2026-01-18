@@ -48,7 +48,7 @@ const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
             'peer-disabled:cursor-not-allowed peer-disabled:opacity-50',
             // Unchecked state (0% - dormant obsidian)
             !checked && [
-              'bg-[#05030a]/80 backdrop-blur-lg',
+              'glass',
               'border border-white/[0.08]',
               'shadow-[inset_0_1px_0_0_rgba(255,255,255,0.03)]',
             ],

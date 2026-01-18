@@ -139,7 +139,7 @@ function StealthMode({ onComplete }: StealthModeProps) {
         className={cn(
           'relative w-full flex flex-col items-center justify-center',
           'py-8 px-8 rounded-2xl',
-          'bg-[#05030a]/80 backdrop-blur-xl border border-white/[0.06] overflow-hidden group',
+          'glass border border-white/[0.06] overflow-hidden group',
           'border-2 border-success/40',
           'transition-all duration-300 ease-out',
           'hover:border-success/60',
@@ -210,7 +210,7 @@ function StealthMode({ onComplete }: StealthModeProps) {
 
       {/* Confirmation / Loading / Results Dialog */}
       <Dialog open={modalState !== 'closed'} onOpenChange={(open) => !open && handleClose()}>
-        <DialogContent className="sm:max-w-[480px] bg-[#05030a]/90 backdrop-blur-2xl border-white/[0.08] shadow-[0_0_48px_-12px_hsl(var(--success)/0.3)]">
+        <DialogContent className="sm:max-w-[480px] glass-strong border-white/[0.08] shadow-[0_0_48px_-12px_hsl(var(--success)/0.3)]">
           <AnimatePresence mode="wait">
             {/* Confirmation State */}
             {modalState === 'confirm' && (

@@ -2,6 +2,7 @@ import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { motion, type HTMLMotionProps } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useAnimationVisibilityWithRef } from "@/hooks/useAnimationVisibility";
 
 /**
  * ObsidianPanel - The Living Artifact Surface
@@ -105,6 +106,16 @@ const ObsidianPanel = React.forwardRef<HTMLDivElement, ObsidianPanelProps>(
     },
     ref
   ) => {
+    // Use internal ref for visibility detection
+    const internalRef = React.useRef<HTMLDivElement>(null);
+    const { isVisible } = useAnimationVisibilityWithRef(internalRef, { rootMargin: '100px' });
+
+    // Combine refs
+    React.useImperativeHandle(ref, () => internalRef.current as HTMLDivElement);
+
+    // When not visible, disable infinite pulse animation by falling back to active state
+    const effectiveEnergyState = energyState === "pulse" && !isVisible ? "active" : energyState;
+
     const baseClassName = cn(
       obsidianPanelVariants({ variant, interactive, glow }),
       className
@@ -175,7 +186,7 @@ const ObsidianPanel = React.forwardRef<HTMLDivElement, ObsidianPanelProps>(
             y: 0,
             scale: 1,
             filter: "brightness(1) blur(0px)",
-            ...energyVariants[energyState],
+            ...energyVariants[effectiveEnergyState],
           },
           transition: {
             duration: 0.6,
@@ -184,19 +195,19 @@ const ObsidianPanel = React.forwardRef<HTMLDivElement, ObsidianPanelProps>(
           },
         }
       : {
-          animate: energyVariants[energyState],
+          animate: energyVariants[effectiveEnergyState],
         };
 
     return (
       <motion.div
-        ref={ref}
+        ref={internalRef}
         className={baseClassName}
         {...mountAnimation}
         {...interactiveVariants}
         {...props}
       >
         {/* Inner glow layer for active state */}
-        {energyState === "active" && (
+        {effectiveEnergyState === "active" && (
           <motion.div
             className="absolute inset-0 rounded-xl pointer-events-none"
             initial={{ opacity: 0 }}

@@ -69,7 +69,7 @@ export function SwipeIndicator({
               'flex items-center justify-center',
               'w-12 h-12 rounded-full',
               // Obsidian glass material
-              'bg-[#05030a]/90 backdrop-blur-xl',
+              'glass-strong',
               'border border-white/[0.1]',
               // Glow effect when near threshold
               isNearThreshold && [
@@ -102,7 +102,7 @@ export function SwipeIndicator({
               'absolute left-14 top-1/2 -translate-y-1/2',
               'text-xs font-medium whitespace-nowrap',
               'px-2 py-1 rounded-md',
-              'bg-[#05030a]/80 backdrop-blur-lg',
+              'glass',
               'border border-white/[0.06]',
               isNearThreshold ? 'text-primary' : 'text-muted-foreground'
             )}
@@ -136,7 +136,7 @@ export function SwipeIndicator({
               'flex items-center justify-center',
               'w-12 h-12 rounded-full',
               // Obsidian glass material
-              'bg-[#05030a]/90 backdrop-blur-xl',
+              'glass-strong',
               'border border-white/[0.1]',
               // Glow effect when near threshold
               isNearThreshold && [
@@ -169,7 +169,7 @@ export function SwipeIndicator({
               'absolute right-14 top-1/2 -translate-y-1/2',
               'text-xs font-medium whitespace-nowrap',
               'px-2 py-1 rounded-md',
-              'bg-[#05030a]/80 backdrop-blur-lg',
+              'glass',
               'border border-white/[0.06]',
               isNearThreshold ? 'text-primary' : 'text-muted-foreground'
             )}

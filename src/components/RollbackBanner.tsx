@@ -102,7 +102,7 @@ function RollbackBanner({
             'fixed top-4 right-4 z-50',
             'relative rounded-xl p-4 max-w-sm overflow-hidden',
             // Obsidian glass material
-            'bg-[#05030a]/90 backdrop-blur-2xl',
+            'glass-strong',
             'border',
             rollbackSuccess
               ? 'border-success/30 shadow-[inset_0_0_20px_rgba(34,197,94,0.05),0_0_20px_-8px_rgba(34,197,94,0.3)]'

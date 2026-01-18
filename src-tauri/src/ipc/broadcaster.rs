@@ -100,8 +100,11 @@ impl MetricsBroadcaster {
         }
 
         // Serialize to FlatBuffer
+        // Handle poisoned mutex gracefully - recover and continue
         let data = {
-            let mut serializer = SERIALIZER.lock().unwrap();
+            let mut serializer = SERIALIZER
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner());
             serializer.serialize(metrics)
         };
 
@@ -118,8 +121,11 @@ impl MetricsBroadcaster {
     ///
     /// Use sparingly - only for critical updates that must be delivered.
     pub fn broadcast_force(&mut self, metrics: &SystemMetricsData) {
+        // Handle poisoned mutex gracefully - recover and continue
         let data = {
-            let mut serializer = SERIALIZER.lock().unwrap();
+            let mut serializer = SERIALIZER
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner());
             serializer.serialize(metrics)
         };
 

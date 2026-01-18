@@ -86,6 +86,24 @@ Structure your findings as:
 5. **Optimization Opportunities** - What Opta can actually influence
 6. **Cross-Reference Matrix** - CPU interactions with GPU/Memory/Thermals
 
+## Already Established (Do Not Duplicate)
+
+We already have documented knowledge for these topics - focus on **gaps below**:
+
+- **P/E Core Architecture**: Heterogeneous design, M4 E-cores match older P-core performance
+- **Core Counts**: All M1/M2/M3/M4 P-core and E-core counts documented
+- **macOS Game Mode**: P-core pinning for games, E-core offload for background tasks
+- **Grand Central Dispatch**: QoS classes, automatic thread management
+- **SME Transition**: M4 moved from AMX to ARM standard Scalable Matrix Extensions
+
+### GAPS TO PRIORITIZE
+
+1. **QoS class to core mapping** - Which QoS levels trigger P-core vs E-core assignment?
+2. **Thread count thresholds** - At what thread count do E-cores start being utilized?
+3. **Rosetta 2 overhead quantified** - What's the typical % CPU overhead for x86 translation?
+4. **CPU-limited games list** - Which popular games are CPU-bound on Apple Silicon?
+5. **P-core throttle vs E-core throttle** - Do they throttle at different temperatures?
+
 ## Research Depth Guidance
 
 - Prioritize real benchmark data over theoretical specifications

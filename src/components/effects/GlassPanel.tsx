@@ -125,7 +125,7 @@ function CSSGlassFallback({ className, blurAmount }: CSSGlassFallbackProps) {
     <div
       className={cn(
         'absolute inset-0 rounded-inherit',
-        'bg-[#05030a]/80 backdrop-blur-xl',
+        'glass',
         'border border-white/5',
         className
       )}

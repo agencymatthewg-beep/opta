@@ -1,5 +1,47 @@
 use serde::{Deserialize, Serialize};
-use std::process::Command;
+use std::time::Duration;
+use tokio::process::Command;
+use tokio::time::timeout;
+
+/// Default timeout for Python subprocess calls (30 seconds).
+const SUBPROCESS_TIMEOUT: Duration = Duration::from_secs(30);
+
+/// Run a Python command with timeout protection.
+async fn run_python_with_timeout(
+    script: &str,
+    args: &[&str],
+) -> Result<String, String> {
+    let python_cmd = if cfg!(target_os = "windows") {
+        "python"
+    } else {
+        "python3"
+    };
+
+    let cwd = std::env::current_dir().map_err(|e| e.to_string())?;
+
+    let mut cmd = Command::new(python_cmd);
+    cmd.current_dir(&cwd).arg("-c").arg(script);
+    for arg in args {
+        cmd.arg(arg);
+    }
+
+    let output_future = cmd.output();
+
+    match timeout(SUBPROCESS_TIMEOUT, output_future).await {
+        Ok(Ok(output)) => {
+            if !output.status.success() {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                return Err(format!("Python script failed: {}", stderr));
+            }
+            Ok(String::from_utf8_lossy(&output.stdout).to_string())
+        }
+        Ok(Err(e)) => Err(format!("Failed to execute Python: {}", e)),
+        Err(_) => Err(format!(
+            "Python subprocess timed out after {} seconds",
+            SUBPROCESS_TIMEOUT.as_secs()
+        )),
+    }
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct OptimizationResult {
@@ -10,6 +52,7 @@ pub struct OptimizationResult {
     pub details: Vec<serde_json::Value>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Serialize, Deserialize)]
 pub struct OptimizationHistoryEntry {
     pub action_id: String,
@@ -122,60 +165,25 @@ print(json.dumps(result))
 
 #[tauri::command]
 pub async fn apply_optimization(game_id: String) -> Result<OptimizationResult, String> {
-    let output = Command::new("python3")
-        .arg("-c")
-        .arg(APPLY_OPTIMIZATION_SCRIPT)
-        .arg(&game_id)
-        .current_dir(std::env::current_dir().map_err(|e| e.to_string())?)
-        .output()
-        .map_err(|e| format!("Failed to execute Python: {}", e))?;
+    let stdout = run_python_with_timeout(APPLY_OPTIMIZATION_SCRIPT, &[&game_id]).await?;
 
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("Python script failed: {}", stderr));
-    }
-
-    let stdout = String::from_utf8_lossy(&output.stdout);
     serde_json::from_str(&stdout)
         .map_err(|e| format!("Failed to parse result: {} - Output: {}", e, stdout))
 }
 
 #[tauri::command]
 pub async fn revert_optimization(game_id: String) -> Result<OptimizationResult, String> {
-    let output = Command::new("python3")
-        .arg("-c")
-        .arg(REVERT_OPTIMIZATION_SCRIPT)
-        .arg(&game_id)
-        .current_dir(std::env::current_dir().map_err(|e| e.to_string())?)
-        .output()
-        .map_err(|e| format!("Failed to execute Python: {}", e))?;
+    let stdout = run_python_with_timeout(REVERT_OPTIMIZATION_SCRIPT, &[&game_id]).await?;
 
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("Python script failed: {}", stderr));
-    }
-
-    let stdout = String::from_utf8_lossy(&output.stdout);
     serde_json::from_str(&stdout)
         .map_err(|e| format!("Failed to parse result: {} - Output: {}", e, stdout))
 }
 
 #[tauri::command]
 pub async fn get_optimization_history(game_id: Option<String>) -> Result<Vec<serde_json::Value>, String> {
-    let output = Command::new("python3")
-        .arg("-c")
-        .arg(GET_HISTORY_SCRIPT)
-        .arg(game_id.unwrap_or_default())
-        .current_dir(std::env::current_dir().map_err(|e| e.to_string())?)
-        .output()
-        .map_err(|e| format!("Failed to execute Python: {}", e))?;
+    let game_id_str = game_id.unwrap_or_default();
+    let stdout = run_python_with_timeout(GET_HISTORY_SCRIPT, &[&game_id_str]).await?;
 
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("Python script failed: {}", stderr));
-    }
-
-    let stdout = String::from_utf8_lossy(&output.stdout);
     serde_json::from_str(&stdout)
         .map_err(|e| format!("Failed to parse result: {} - Output: {}", e, stdout))
 }
@@ -197,58 +205,24 @@ pub async fn record_optimization_choice(args: RecordChoiceArgs) -> Result<serde_
     let args_json = serde_json::to_string(&args)
         .map_err(|e| format!("Failed to serialize args: {}", e))?;
 
-    let output = Command::new("python3")
-        .arg("-c")
-        .arg(RECORD_CHOICE_SCRIPT)
-        .arg(&args_json)
-        .current_dir(std::env::current_dir().map_err(|e| e.to_string())?)
-        .output()
-        .map_err(|e| format!("Failed to execute Python: {}", e))?;
+    let stdout = run_python_with_timeout(RECORD_CHOICE_SCRIPT, &[&args_json]).await?;
 
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("Python script failed: {}", stderr));
-    }
-
-    let stdout = String::from_utf8_lossy(&output.stdout);
     serde_json::from_str(&stdout)
         .map_err(|e| format!("Failed to parse result: {} - Output: {}", e, stdout))
 }
 
 #[tauri::command]
 pub async fn get_user_patterns() -> Result<Vec<serde_json::Value>, String> {
-    let output = Command::new("python3")
-        .arg("-c")
-        .arg(GET_PATTERNS_SCRIPT)
-        .current_dir(std::env::current_dir().map_err(|e| e.to_string())?)
-        .output()
-        .map_err(|e| format!("Failed to execute Python: {}", e))?;
+    let stdout = run_python_with_timeout(GET_PATTERNS_SCRIPT, &[]).await?;
 
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("Python script failed: {}", stderr));
-    }
-
-    let stdout = String::from_utf8_lossy(&output.stdout);
     serde_json::from_str(&stdout)
         .map_err(|e| format!("Failed to parse result: {} - Output: {}", e, stdout))
 }
 
 #[tauri::command]
 pub async fn get_choice_stats() -> Result<serde_json::Value, String> {
-    let output = Command::new("python3")
-        .arg("-c")
-        .arg(GET_CHOICE_STATS_SCRIPT)
-        .current_dir(std::env::current_dir().map_err(|e| e.to_string())?)
-        .output()
-        .map_err(|e| format!("Failed to execute Python: {}", e))?;
+    let stdout = run_python_with_timeout(GET_CHOICE_STATS_SCRIPT, &[]).await?;
 
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("Python script failed: {}", stderr));
-    }
-
-    let stdout = String::from_utf8_lossy(&output.stdout);
     serde_json::from_str(&stdout)
         .map_err(|e| format!("Failed to parse result: {} - Output: {}", e, stdout))
 }
@@ -265,20 +239,8 @@ pub async fn get_recommendations(args: GetRecommendationsArgs) -> Result<serde_j
     let args_json = serde_json::to_string(&args)
         .map_err(|e| format!("Failed to serialize args: {}", e))?;
 
-    let output = Command::new("python3")
-        .arg("-c")
-        .arg(GET_RECOMMENDATIONS_SCRIPT)
-        .arg(&args_json)
-        .current_dir(std::env::current_dir().map_err(|e| e.to_string())?)
-        .output()
-        .map_err(|e| format!("Failed to execute Python: {}", e))?;
+    let stdout = run_python_with_timeout(GET_RECOMMENDATIONS_SCRIPT, &[&args_json]).await?;
 
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("Python script failed: {}", stderr));
-    }
-
-    let stdout = String::from_utf8_lossy(&output.stdout);
     serde_json::from_str(&stdout)
         .map_err(|e| format!("Failed to parse result: {} - Output: {}", e, stdout))
 }

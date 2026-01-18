@@ -138,7 +138,7 @@ export function GestureHints({
             positionClasses[position],
             'w-72 p-4 rounded-xl',
             // Obsidian glass styling
-            'bg-[#05030a]/90 backdrop-blur-2xl',
+            'glass-strong',
             'border border-white/10',
             'shadow-[0_0_40px_-10px_rgba(168,85,247,0.3)]',
             className

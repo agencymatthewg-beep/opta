@@ -62,7 +62,9 @@ export interface UseOptaWakeUpOptions {
   trackScroll?: boolean;
   /** Whether to track click/touch activity */
   trackClick?: boolean;
-  /** Throttle interval for activity detection (ms) - default 100ms */
+  /** Whether to track global mousemove (expensive - disabled by default) */
+  trackGlobalMouse?: boolean;
+  /** Throttle interval for activity detection (ms) - default 300ms */
   throttleMs?: number;
   /** Delay before sleeping (ms) - default 3000ms */
   sleepDelay?: number;
@@ -85,7 +87,7 @@ export interface WakeUpActions {
 }
 
 // Default timing constants from spec
-const DEFAULT_THROTTLE_MS = 100; // 100ms throttle
+const DEFAULT_THROTTLE_MS = 300; // 300ms throttle (was 100ms - reduced for performance)
 const DEFAULT_SLEEP_DELAY = 3000; // 3s before sleep
 const ENERGY_TRANSITION_DURATION = 800; // 800ms spring transition
 
@@ -125,6 +127,7 @@ export function useOptaWakeUp(options: UseOptaWakeUpOptions = {}): WakeUpState &
     trackKeyboard = true,
     trackScroll = true,
     trackClick = true,
+    trackGlobalMouse = false, // Disabled by default - very expensive
     throttleMs = DEFAULT_THROTTLE_MS,
     sleepDelay = DEFAULT_SLEEP_DELAY,
     enabled = true,
@@ -376,8 +379,8 @@ export function useOptaWakeUp(options: UseOptaWakeUpOptions = {}): WakeUpState &
       if (trackClick) {
         window.addEventListener('mousedown', handleInteraction, { passive: true });
       }
-      // Global mouse movement (optional - can be very frequent)
-      if (!element) {
+      // Global mouse movement (opt-in only - very expensive)
+      if (trackGlobalMouse) {
         window.addEventListener('mousemove', handleInteraction, { passive: true });
       }
     }
@@ -403,7 +406,7 @@ export function useOptaWakeUp(options: UseOptaWakeUpOptions = {}): WakeUpState &
         if (trackClick) {
           window.removeEventListener('mousedown', handleInteraction);
         }
-        if (!element) {
+        if (trackGlobalMouse) {
           window.removeEventListener('mousemove', handleInteraction);
         }
       }
@@ -413,6 +416,7 @@ export function useOptaWakeUp(options: UseOptaWakeUpOptions = {}): WakeUpState &
     enabled,
     elementRef,
     trackGlobal,
+    trackGlobalMouse,
     trackKeyboard,
     trackScroll,
     trackClick,

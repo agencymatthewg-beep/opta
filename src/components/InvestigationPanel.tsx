@@ -2,7 +2,7 @@
  * InvestigationPanel - Full transparency view for power users.
  * Shows exact registry keys, config files, commands, dependencies, and rollback info.
  */
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -33,6 +33,16 @@ interface InvestigationPanelProps {
 export function InvestigationPanel({ report, onClose }: InvestigationPanelProps) {
   const [expandedChanges, setExpandedChanges] = useState<Set<string>>(new Set());
   const [copied, setCopied] = useState<string | null>(null);
+  const clipboardTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (clipboardTimeoutRef.current) {
+        clearTimeout(clipboardTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const toggleChange = (id: string) => {
     const next = new Set(expandedChanges);
@@ -45,9 +55,16 @@ export function InvestigationPanel({ report, onClose }: InvestigationPanelProps)
   };
 
   const copyToClipboard = (text: string, id: string) => {
-    navigator.clipboard.writeText(text);
+    // Clear any existing timeout
+    if (clipboardTimeoutRef.current) {
+      clearTimeout(clipboardTimeoutRef.current);
+    }
+
+    navigator.clipboard.writeText(text).catch(() => {
+      // Silently handle clipboard errors
+    });
     setCopied(id);
-    setTimeout(() => setCopied(null), 2000);
+    clipboardTimeoutRef.current = setTimeout(() => setCopied(null), 2000);
   };
 
   const changeTypeIcons: Record<ChangeType, typeof FileCode> = {
@@ -63,10 +80,10 @@ export function InvestigationPanel({ report, onClose }: InvestigationPanelProps)
       initial={{ opacity: 0, x: 300 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 300 }}
-      className="fixed right-0 top-0 bottom-0 w-[480px] bg-[#05030a]/95 backdrop-blur-2xl border-l border-white/[0.06] z-50 overflow-y-auto"
+      className="fixed right-0 top-0 bottom-0 w-[480px] glass-overlay border-l border-white/[0.06] z-50 overflow-y-auto"
     >
       {/* Header */}
-      <div className="p-4 border-b border-white/[0.06] sticky top-0 bg-[#05030a]/90 backdrop-blur-xl z-10">
+      <div className="p-4 border-b border-white/[0.06] sticky top-0 glass-strong z-10">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="p-1.5 rounded-lg bg-primary/10">
@@ -123,9 +140,9 @@ export function InvestigationPanel({ report, onClose }: InvestigationPanelProps)
                   <AnimatePresence>
                     {isExpanded && (
                       <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
+                        initial={{ maxHeight: 0, opacity: 0 }}
+                        animate={{ maxHeight: 500, opacity: 1 }}
+                        exit={{ maxHeight: 0, opacity: 0 }}
                         transition={{ duration: 0.2 }}
                         className="overflow-hidden"
                       >

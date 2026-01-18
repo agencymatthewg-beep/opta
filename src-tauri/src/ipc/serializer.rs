@@ -166,6 +166,7 @@ impl MetricsSerializer {
         self.buffer.push(value);
     }
 
+    #[allow(dead_code)]
     fn write_u16(&mut self, value: u16) {
         self.buffer.extend_from_slice(&value.to_le_bytes());
     }
@@ -321,34 +322,63 @@ impl<'a> MetricsDeserializer<'a> {
         })
     }
 
+    /// Check if we have enough bytes remaining to read `count` bytes.
+    fn has_bytes(&self, count: usize) -> bool {
+        self.pos + count <= self.data.len()
+    }
+
     fn read_u8(&mut self) -> u8 {
+        if !self.has_bytes(1) {
+            return 0; // Safe default for malformed data
+        }
         let value = self.data[self.pos];
         self.pos += 1;
         value
     }
 
     fn read_u16(&mut self) -> u16 {
+        if !self.has_bytes(2) {
+            return 0; // Safe default for malformed data
+        }
         let value = u16::from_le_bytes([self.data[self.pos], self.data[self.pos + 1]]);
         self.pos += 2;
         value
     }
 
     fn read_u32(&mut self) -> u32 {
-        let bytes: [u8; 4] = self.data[self.pos..self.pos + 4].try_into().unwrap();
+        if !self.has_bytes(4) {
+            return 0; // Safe default for malformed data
+        }
+        // Safe: we just verified we have 4 bytes
+        let bytes: [u8; 4] = self.data[self.pos..self.pos + 4]
+            .try_into()
+            .unwrap_or([0; 4]);
         let value = u32::from_le_bytes(bytes);
         self.pos += 4;
         value
     }
 
     fn read_u64(&mut self) -> u64 {
-        let bytes: [u8; 8] = self.data[self.pos..self.pos + 8].try_into().unwrap();
+        if !self.has_bytes(8) {
+            return 0; // Safe default for malformed data
+        }
+        // Safe: we just verified we have 8 bytes
+        let bytes: [u8; 8] = self.data[self.pos..self.pos + 8]
+            .try_into()
+            .unwrap_or([0; 8]);
         let value = u64::from_le_bytes(bytes);
         self.pos += 8;
         value
     }
 
     fn read_f32(&mut self) -> f32 {
-        let bytes: [u8; 4] = self.data[self.pos..self.pos + 4].try_into().unwrap();
+        if !self.has_bytes(4) {
+            return 0.0; // Safe default for malformed data
+        }
+        // Safe: we just verified we have 4 bytes
+        let bytes: [u8; 4] = self.data[self.pos..self.pos + 4]
+            .try_into()
+            .unwrap_or([0; 4]);
         let value = f32::from_le_bytes(bytes);
         self.pos += 4;
         value
@@ -356,6 +386,9 @@ impl<'a> MetricsDeserializer<'a> {
 
     fn read_string(&mut self) -> String {
         let len = self.read_u8() as usize;
+        if !self.has_bytes(len) {
+            return String::new(); // Safe default for malformed data
+        }
         let bytes = &self.data[self.pos..self.pos + len];
         self.pos += len;
         String::from_utf8_lossy(bytes).to_string()

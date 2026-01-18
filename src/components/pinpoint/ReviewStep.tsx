@@ -164,7 +164,7 @@ export function ReviewStep({ recommendations, onApprove, onSkip }: ReviewStepPro
         className={cn(
           "relative rounded-xl p-4 mb-6 overflow-hidden",
           // Obsidian glass with success energy
-          "bg-[#05030a]/80 backdrop-blur-xl",
+          "glass",
           "border border-success/30",
           "shadow-[inset_0_0_20px_rgba(34,197,94,0.05),0_0_15px_-5px_rgba(34,197,94,0.2)]"
         )}

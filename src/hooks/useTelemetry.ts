@@ -64,15 +64,27 @@ export function useTelemetry(pollingIntervalMs: number = 2000): UseTelemetryResu
       const data = await invoke<SystemSnapshot>('get_system_telemetry');
 
       if (mountedRef.current) {
-        setTelemetry(data);
-        setError(null);
-        setLastUpdated(new Date());
+        // Check if Python returned an error in the response (fallback path)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const errorInData = (data as any)?.error;
+        if (errorInData) {
+          // Don't clear existing telemetry - keep last known good data
+          setError(String(errorInData));
+          console.warn('Telemetry returned with error:', errorInData);
+        } else {
+          // Valid data - update state
+          setTelemetry(data);
+          setError(null);
+          setLastUpdated(new Date());
+        }
       }
     } catch (e) {
+      // Network/invoke error - keep last known telemetry data
       if (mountedRef.current) {
         const errorMessage = e instanceof Error ? e.message : String(e);
         setError(errorMessage);
         console.error('Telemetry fetch error:', errorMessage);
+        // Note: We intentionally don't clear telemetry here to preserve last good data
       }
     } finally {
       if (mountedRef.current) {

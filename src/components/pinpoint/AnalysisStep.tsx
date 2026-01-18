@@ -221,7 +221,7 @@ export function AnalysisStep({ game, goal, onComplete }: AnalysisStepProps) {
     >
       {/* Spinner */}
       <motion.div
-        className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-[#05030a]/80 backdrop-blur-xl border border-primary/30 flex items-center justify-center"
+        className="w-20 h-20 mx-auto mb-6 rounded-2xl glass border border-primary/30 flex items-center justify-center"
         animate={analyzing ? { boxShadow: ['0 0 0px hsl(var(--glow-primary)/0)', '0 0 24px hsl(var(--glow-primary)/0.4)', '0 0 0px hsl(var(--glow-primary)/0)'] } : {}}
         transition={{ duration: 2, repeat: analyzing ? Infinity : 0 }}
       >

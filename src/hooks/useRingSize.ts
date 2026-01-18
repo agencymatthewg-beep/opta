@@ -105,7 +105,9 @@ export function useRingSize(options: UseRingSizeOptions = {}): UseRingSizeReturn
   } = options;
 
   // Get ring context if available (for coordination with global state)
+  // Destructure setSize to avoid infinite loop in useEffect
   const ringContext = useOptaRingOptional();
+  const ringSetSize = ringContext?.setSize;
 
   // Local state
   const [isHovered, setIsHovered] = useState(false);
@@ -163,16 +165,19 @@ export function useRingSize(options: UseRingSizeOptions = {}): UseRingSizeReturn
 
   /**
    * Sync with global ring context size if available
+   * Uses destructured ringSetSize to avoid infinite loop from context object changes
    */
   useEffect(() => {
-    if (ringContext && mode === 'hero') {
-      ringContext.setSize('xl');
-    } else if (ringContext && mode === 'mini') {
-      ringContext.setSize('xs');
-    } else if (ringContext) {
-      ringContext.setSize('sm');
+    if (ringSetSize) {
+      if (mode === 'hero') {
+        ringSetSize('xl');
+      } else if (mode === 'mini') {
+        ringSetSize('xs');
+      } else {
+        ringSetSize('sm');
+      }
     }
-  }, [mode, ringContext]);
+  }, [mode, ringSetSize]);
 
   /**
    * Set hover state handler

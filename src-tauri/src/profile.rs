@@ -43,6 +43,7 @@ pub struct UserProfile {
 }
 
 /// Profile update payload.
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProfileUpdate {

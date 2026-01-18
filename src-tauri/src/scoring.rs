@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::process::Command;
 
+#[allow(dead_code)]
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ScoreBreakdown {
     pub total: u32,
@@ -19,6 +20,7 @@ pub struct ScoreBreakdown {
     pub success_rate: f64,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GameScore {
     pub game_id: String,
@@ -30,6 +32,7 @@ pub struct GameScore {
     pub benchmark_timestamp: Option<f64>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GlobalStats {
     pub total_games_optimized: u32,

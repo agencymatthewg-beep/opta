@@ -84,7 +84,7 @@ export function UtilityIsland() {
         <>
           {/* Backdrop */}
           <motion.div
-            className="fixed inset-0 z-40 bg-[#05030a]/60 backdrop-blur-sm"
+            className="fixed inset-0 z-40 glass-subtle"
             variants={backdropVariants}
             initial="hidden"
             animate="visible"

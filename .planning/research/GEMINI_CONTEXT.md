@@ -29,6 +29,20 @@ Opta is an AI-powered PC/Gaming optimization orchestrator — a desktop applicat
 
 v6.0 transforms Opta from a visual optimizer into a **true optimization intelligence system**. The goal is not just understanding hardware — it's **calculating optimal configurations** where all settings work in perfect synergy.
 
+### Knowledge Architecture (Phase 41.1 - COMPLETE)
+
+We've established a **5-tier knowledge hierarchy** stored in `.planning/research/knowledge/`:
+
+| Tier | Name | Stability | Storage |
+|------|------|-----------|---------|
+| T1 | Physics/Math | Immutable | `t1-physics/` |
+| T2 | Architecture | Decade-stable | `t2-architecture/` |
+| T3 | Hardware Specs | Generation-stable | `t3-specs/` |
+| T4 | Benchmarks | Year-stable | `t4-benchmarks/` |
+| T5 | Rankings/Trends | Month-stable | `t5-dynamic/` |
+
+**Your research feeds directly into these tiers.** Provide data that maps to these categories.
+
 ### The Vision
 
 Instead of generic "turn shadows to medium" advice, Opta will:
@@ -206,6 +220,41 @@ Your research directly enables Opta to say:
 | **M3 Max** | 10-12P+4E | 30-40 | 36-128GB | More P-cores |
 | **M4** | 4P+6E | 10 | 16-32GB | Latest efficiency |
 | **M4 Pro** | 10P+4E | 20 | 24-64GB | Pro performance |
+
+---
+
+---
+
+## Already Established Knowledge (Do Not Duplicate)
+
+We have extracted extensive knowledge from prior research. Focus on **gaps and deeper data**, not these topics:
+
+### Architecture (T2) - Already Documented
+- **UMA**: Zero-copy pipelines, CPU/GPU/Neural Engine shared memory pool
+- **TBDR**: Apple's Tile-Based Deferred Rendering, tile binning, deferred shading
+- **P/E Cores**: Heterogeneous design, E-cores matching older P-core performance (M4)
+- **Dynamic Caching**: M3+ GPU memory allocation on-demand
+- **MetalFX**: Temporal upscaling via ML reconstruction
+- **Game Mode**: P-core pinning, E-core background offload, 2x Bluetooth polling
+- **High Power Mode**: Aggressive fan curve, sustained boost clocks
+- **UltraFusion**: Two Max dies fused via silicon interposer
+
+### Specs (T3) - Already Documented
+- M1/M2/M3/M4 core counts, GPU cores, memory configurations
+- Memory bandwidth by variant (68GB/s to 800GB/s)
+- Neural Engine TOPS (M3: 18, M4: 38)
+
+### Benchmarks (T4) - Partial Data
+- Game FPS on M3/M4 (Cyberpunk, Resident Evil, Valheim, etc.)
+- Geekbench scores by variant
+- Some thermal throttle observations
+
+### GAPS TO FILL (Focus Your Research Here)
+1. **Quantified Settings Impact**: FPS cost of shadow/AA/RT quality tiers
+2. **Memory Pressure Curves**: Performance at 70/80/90/95% utilization
+3. **Thermal Throttle Timing**: Minutes to throttle by form factor
+4. **Cross-Domain Interactions**: GPU load vs thermal headroom tables
+5. **Game-Specific Bottlenecks**: CPU vs GPU limited games list
 
 ---
 

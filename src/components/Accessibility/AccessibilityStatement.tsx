@@ -54,7 +54,7 @@ function FeatureSection({ icon: Icon, title, description, features }: FeatureSec
       variants={itemVariants}
       className={cn(
         'p-4 rounded-xl',
-        'bg-[#05030a]/50 backdrop-blur-lg',
+        'glass-subtle',
         'border border-white/[0.06]'
       )}
     >
@@ -226,7 +226,7 @@ export function AccessibilityStatement({ className }: AccessibilityStatementProp
         variants={itemVariants}
         className={cn(
           'p-4 rounded-xl',
-          'bg-[#05030a]/50 backdrop-blur-lg',
+          'glass-subtle',
           'border border-white/[0.06]'
         )}
       >

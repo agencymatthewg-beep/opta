@@ -129,7 +129,7 @@ export function CommandPalette({ navigate, actions }: CommandPaletteProps) {
               className={cn(
                 'w-full max-w-lg mx-4',
                 // Obsidian strong glass
-                'bg-[#05030a]/95 backdrop-blur-2xl',
+                'glass-overlay',
                 'border border-white/10 rounded-xl',
                 'shadow-2xl overflow-hidden'
               )}

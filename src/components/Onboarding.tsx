@@ -217,7 +217,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
         className={cn(
           "relative p-8 rounded-2xl max-w-md w-full mx-4 overflow-hidden",
           // Obsidian glass material
-          "bg-[#05030a]/90 backdrop-blur-2xl",
+          "glass-strong",
           "border border-white/[0.08]",
           // Inner specular highlight
           "before:absolute before:inset-x-0 before:top-0 before:h-px before:z-10",

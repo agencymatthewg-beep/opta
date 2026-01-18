@@ -50,7 +50,7 @@ export function TelemetryCardSkeleton({
       className={cn(
         "relative rounded-xl overflow-hidden",
         // Obsidian glass material
-        "bg-[#05030a]/80 backdrop-blur-xl",
+        "glass",
         "border border-white/[0.06]",
         className
       )}
@@ -108,7 +108,7 @@ export function ProcessListSkeleton() {
   return (
     <div className={cn(
       "relative rounded-xl overflow-hidden",
-      "bg-[#05030a]/80 backdrop-blur-xl",
+      "glass",
       "border border-white/[0.06]"
     )}>
       {/* Header */}
@@ -142,7 +142,7 @@ export function GameCardSkeleton({ delay = 0 }: { delay?: number }) {
       transition={{ delay, ease: smoothOut }}
       className={cn(
         "relative rounded-xl overflow-hidden",
-        "bg-[#05030a]/80 backdrop-blur-xl",
+        "glass",
         "border border-white/[0.06]"
       )}
     >
@@ -166,7 +166,7 @@ export function ScoreCardSkeleton() {
     <motion.div
       className={cn(
         "relative rounded-2xl p-8 overflow-hidden",
-        "bg-[#05030a]/90 backdrop-blur-2xl",
+        "glass-strong",
         "border border-white/[0.08]"
       )}
       initial={{ opacity: 0, scale: 0.98, filter: 'brightness(0.5)' }}

@@ -4,8 +4,50 @@
 //! the Python MCP server. Follows the same pattern as telemetry.rs.
 
 use serde::{Deserialize, Serialize};
-use std::process::Command;
+use std::time::Duration;
 use tauri::command;
+use tokio::process::Command;
+use tokio::time::timeout;
+
+/// Default timeout for Python subprocess calls (30 seconds).
+const SUBPROCESS_TIMEOUT: Duration = Duration::from_secs(30);
+
+/// Run a Python command with timeout protection.
+/// Returns (stdout, stderr) on success, or error message on failure/timeout.
+async fn run_python_with_timeout(
+    python_cmd: &str,
+    script: &str,
+    args: &[&str],
+) -> Result<String, String> {
+    let mut cmd = Command::new(python_cmd);
+    cmd.arg("-c").arg(script);
+    for arg in args {
+        cmd.arg(arg);
+    }
+
+    // Add PYTHONPATH for opta_mcp module
+    let pythonpath = std::env::current_dir()
+        .map(|p| p.join("../mcp-server/src").to_string_lossy().to_string())
+        .unwrap_or_else(|_| "./mcp-server/src".to_string());
+    cmd.env("PYTHONPATH", &pythonpath);
+
+    let output_future = cmd.output();
+
+    match timeout(SUBPROCESS_TIMEOUT, output_future).await {
+        Ok(Ok(output)) => {
+            if !output.status.success() {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                return Err(format!("Python error: {}", stderr));
+            }
+            Ok(String::from_utf8_lossy(&output.stdout).to_string())
+        }
+        Ok(Err(e)) => Err(format!("Failed to spawn Python: {}", e)),
+        Err(_) => Err(format!(
+            "Python subprocess timed out after {} seconds",
+            SUBPROCESS_TIMEOUT.as_secs()
+        )),
+    }
+}
 
 /// Process information with resource usage and categorization.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -85,25 +127,13 @@ except Exception as e:
 /// Returns an error string if Python execution fails or JSON parsing fails.
 #[command]
 pub async fn get_processes() -> Result<Vec<ProcessInfo>, String> {
-    // Try python3 first, fall back to python
     let python_cmd = if cfg!(target_os = "windows") {
         "python"
     } else {
         "python3"
     };
 
-    let output = Command::new(python_cmd)
-        .arg("-c")
-        .arg(PYTHON_SCRIPT)
-        .output()
-        .map_err(|e| format!("Failed to spawn Python: {}", e))?;
-
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("Python error: {}", stderr));
-    }
-
-    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stdout = run_python_with_timeout(python_cmd, PYTHON_SCRIPT, &[]).await?;
 
     // Check if the response is an error object
     if stdout.contains("\"error\"") {
@@ -155,19 +185,9 @@ pub async fn terminate_process(pid: u32) -> Result<TerminateResult, String> {
         "python3"
     };
 
-    let output = Command::new(python_cmd)
-        .arg("-c")
-        .arg(TERMINATE_PYTHON_SCRIPT)
-        .arg(pid.to_string())
-        .output()
-        .map_err(|e| format!("Failed to spawn Python: {}", e))?;
-
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("Python error: {}", stderr));
-    }
-
-    let stdout = String::from_utf8_lossy(&output.stdout);
+    let pid_str = pid.to_string();
+    let stdout =
+        run_python_with_timeout(python_cmd, TERMINATE_PYTHON_SCRIPT, &[&pid_str]).await?;
 
     let result: TerminateResult = serde_json::from_str(&stdout)
         .map_err(|e| format!("JSON parse error: {} (raw: {})", e, stdout))?;
@@ -205,18 +225,7 @@ pub async fn stealth_mode() -> Result<StealthModeResult, String> {
         "python3"
     };
 
-    let output = Command::new(python_cmd)
-        .arg("-c")
-        .arg(STEALTH_MODE_PYTHON_SCRIPT)
-        .output()
-        .map_err(|e| format!("Failed to spawn Python: {}", e))?;
-
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("Python error: {}", stderr));
-    }
-
-    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stdout = run_python_with_timeout(python_cmd, STEALTH_MODE_PYTHON_SCRIPT, &[]).await?;
 
     let result: StealthModeResult = serde_json::from_str(&stdout)
         .map_err(|e| format!("JSON parse error: {} (raw: {})", e, stdout))?;

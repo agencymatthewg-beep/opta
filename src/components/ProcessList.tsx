@@ -202,7 +202,7 @@ function ProcessListSkeleton() {
     <motion.div
       className={cn(
         'relative overflow-hidden rounded-xl',
-        'bg-[#05030a]/80 backdrop-blur-xl',
+        'glass',
         'border border-white/[0.06]'
       )}
       initial={{ opacity: 0, y: 12 }}
@@ -318,7 +318,7 @@ function ProcessList() {
       <motion.div
         className={cn(
           'relative overflow-hidden rounded-xl',
-          'bg-[#05030a]/80 backdrop-blur-xl',
+          'glass',
           'border border-white/[0.06]'
         )}
         initial={{ opacity: 0, scale: 0.95 }}
@@ -372,7 +372,7 @@ function ProcessList() {
         className={cn(
           'relative overflow-hidden rounded-xl group',
           // Obsidian glass material
-          'bg-[#05030a]/80 backdrop-blur-xl',
+          'glass',
           'border border-white/[0.06]',
           // Inner specular highlight
           'before:absolute before:inset-x-0 before:top-0 before:h-px before:z-10',
@@ -434,7 +434,7 @@ function ProcessList() {
                 Drag non-system processes to the quarantine zone to terminate them.
               </caption>
               <TableHeader className="sticky top-0 z-10">
-                <TableRow className="hover:bg-transparent border-b border-white/[0.05] bg-[#05030a]/90 backdrop-blur-sm">
+                <TableRow className="hover:bg-transparent border-b border-white/[0.05] glass-strong">
                   <TableHead className="w-[40%] text-primary/70 text-[10px] uppercase tracking-widest font-semibold">
                     Name
                   </TableHead>
@@ -476,10 +476,10 @@ function ProcessList() {
         <AnimatePresence>
           {showQuarantine && (
             <motion.div
-              className="px-3 pb-3"
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
+              className="px-3 pb-3 overflow-hidden"
+              initial={{ opacity: 0, maxHeight: 0 }}
+              animate={{ opacity: 1, maxHeight: 200 }}
+              exit={{ opacity: 0, maxHeight: 0 }}
               transition={{ duration: 0.2, ease: smoothOut }}
             >
               <DroppableZone

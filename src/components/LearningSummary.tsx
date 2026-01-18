@@ -46,7 +46,7 @@ function EmptyLearningState() {
       <motion.div
         className={cn(
           'w-14 h-14 mx-auto flex items-center justify-center rounded-full mb-4',
-          'bg-[#05030a]/60 backdrop-blur-xl border border-white/[0.06]'
+          'glass-subtle border border-white/[0.06]'
         )}
         animate={{ rotate: [0, 5, -5, 0] }}
         transition={{ duration: 3, repeat: Infinity }}
@@ -72,7 +72,7 @@ export function LearningSummary({ className }: LearningSummaryProps) {
 
   if (loading) {
     return (
-      <div className={cn('rounded-xl p-6 bg-[#05030a]/80 backdrop-blur-xl border border-white/[0.06]', className)}>
+      <div className={cn('rounded-xl p-6 glass border border-white/[0.06]', className)}>
         <div className="flex items-center gap-2 mb-4">
           <div className="h-5 w-5 rounded bg-muted/30 animate-shimmer" />
           <div className="h-4 w-48 rounded bg-muted/30 animate-shimmer" />
@@ -92,7 +92,7 @@ export function LearningSummary({ className }: LearningSummaryProps) {
   // Show empty state if no patterns
   if (learnedPreferences.length === 0) {
     return (
-      <div className={cn('rounded-xl p-6 bg-[#05030a]/80 backdrop-blur-xl border border-white/[0.06]', className)}>
+      <div className={cn('rounded-xl p-6 glass border border-white/[0.06]', className)}>
         <div className="flex items-center gap-2 mb-4">
           <Brain className="w-5 h-5 text-primary" strokeWidth={1.75} />
           <h3 className="font-semibold">What Opta Learned This Month</h3>
@@ -104,7 +104,7 @@ export function LearningSummary({ className }: LearningSummaryProps) {
 
   return (
     <motion.div
-      className={cn('rounded-xl p-6 bg-[#05030a]/80 backdrop-blur-xl border border-white/[0.06]', className)}
+      className={cn('rounded-xl p-6 glass border border-white/[0.06]', className)}
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
     >

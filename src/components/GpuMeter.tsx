@@ -75,7 +75,7 @@ const GpuMeter = memo(function GpuMeter({
         <div
           className={cn(
             'w-32 h-32 rounded-full flex items-center justify-center',
-            'bg-[#05030a]/60 backdrop-blur-lg',
+            'glass-subtle',
             'border-2 border-dashed border-white/[0.08]'
           )}
         >
@@ -302,7 +302,7 @@ const GpuMeter = memo(function GpuMeter({
         <div
           className={cn(
             'absolute inset-4 flex flex-col items-center justify-center rounded-full',
-            'bg-[#05030a]/60 backdrop-blur-lg',
+            'glass-subtle',
             'border border-white/[0.06]'
           )}
         >

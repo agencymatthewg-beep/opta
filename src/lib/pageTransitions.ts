@@ -95,13 +95,14 @@ export const pageQuickVariants: Variants = {
 
 /**
  * Hero section variant (dramatic entrance)
+ * Duration capped at 500ms for responsive feel
  */
 export const pageHeroVariants: Variants = {
   initial: {
     opacity: 0,
-    scale: 0.95,
-    y: 30,
-    filter: 'brightness(0) blur(10px)',
+    scale: 0.96,
+    y: 24,
+    filter: 'brightness(0.3) blur(8px)',
   },
   animate: {
     opacity: 1,
@@ -109,7 +110,7 @@ export const pageHeroVariants: Variants = {
     y: 0,
     filter: 'brightness(1) blur(0px)',
     transition: {
-      duration: 1,
+      duration: 0.5,
       ease: cinematic,
       delay: (RING_IGNITE_DURATION + RING_HOLD_DURATION) / 1000,
     },

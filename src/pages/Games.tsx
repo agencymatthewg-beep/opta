@@ -220,7 +220,7 @@ function GameDetailPanel({
             transition={{ delay: 0.15 }}
           >
             {loadingRecommendations ? (
-              <div className="rounded-xl p-4 bg-[#05030a]/80 backdrop-blur-xl border border-white/[0.06]">
+              <div className="rounded-xl p-4 glass border border-white/[0.06]">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="h-5 w-5 rounded bg-muted/30 animate-shimmer" />
                   <div className="h-4 w-32 rounded bg-muted/30 animate-shimmer" />
@@ -301,7 +301,7 @@ function EmptyDetailPanel() {
       <motion.div
         className={cn(
           'w-20 h-20 flex items-center justify-center rounded-full mb-6',
-          'bg-[#05030a]/60 backdrop-blur-xl border border-white/[0.06]'
+          'glass-subtle border border-white/[0.06]'
         )}
         animate={{ rotate: [0, 5, -5, 0] }}
         transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
@@ -613,7 +613,7 @@ function Games() {
           </span>
         </motion.h1>
         <motion.div
-          className="mt-6 flex flex-col items-center justify-center min-h-[300px] p-12 rounded-xl bg-[#05030a]/80 backdrop-blur-xl border border-white/[0.06]"
+          className="mt-6 flex flex-col items-center justify-center min-h-[300px] p-12 rounded-xl glass border border-white/[0.06]"
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
         >
@@ -734,7 +734,7 @@ function Games() {
         {/* Detail Panel (Right Panel) */}
         <motion.div
           className={cn(
-            'rounded-xl overflow-hidden bg-[#05030a]/80 backdrop-blur-xl',
+            'rounded-xl overflow-hidden glass',
             'border border-white/[0.06]',
             'lg:flex-1 lg:max-w-md',
             (selectedGame || closingGame) ? 'flex flex-col w-full lg:w-auto' : 'hidden lg:flex lg:flex-col'

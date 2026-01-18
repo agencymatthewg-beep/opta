@@ -82,7 +82,7 @@ export function BadgeCard({ badge, onClick }: BadgeCardProps) {
       className={cn(
         'relative p-4 rounded-xl border text-center group',
         // Obsidian glass material
-        'bg-[#05030a]/80 backdrop-blur-xl',
+        'glass',
         // Inner specular highlight
         'before:absolute before:inset-x-0 before:top-0 before:h-px before:z-10',
         'before:bg-gradient-to-r before:from-transparent before:via-white/10 before:to-transparent',
@@ -120,7 +120,7 @@ export function BadgeCard({ badge, onClick }: BadgeCardProps) {
       <div className={cn(
         'relative w-12 h-12 mx-auto mb-2 rounded-full flex items-center justify-center',
         // Obsidian glass for icon container
-        'bg-[#05030a]/60 backdrop-blur-lg',
+        'glass-subtle',
         'border border-white/[0.06]',
         isUnlocked && 'border-' + (badge.rarity === 'common' ? 'white/[0.08]' : badge.rarity === 'rare' ? 'primary/30' : badge.rarity === 'epic' ? 'accent/30' : 'warning/30')
       )}>

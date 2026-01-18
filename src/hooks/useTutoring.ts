@@ -172,7 +172,17 @@ export function useTutoring(): UseTutoringReturn {
   const engine = useMemo(() => getTutoringEngine(), []);
 
   // Ring lesson context for state synchronization
-  const ringLesson = useRingLesson();
+  // Destructure stable callbacks to avoid infinite loop in useEffect
+  const {
+    triggerCelebration: ringTriggerCelebration,
+    setRingActive: ringSetRingActive,
+    resetRing: ringResetRing,
+    setRingTeaching: ringSetRingTeaching,
+    startLesson: ringStartLesson,
+    nextStep: ringNextStep,
+    previousStep: ringPreviousStep,
+    endLesson: ringEndLesson,
+  } = useRingLesson();
 
   // Local state synced with engine
   const [session, setSession] = useState<TutoringSession>(() => engine.getSession());
@@ -190,14 +200,14 @@ export function useTutoring(): UseTutoringReturn {
     if (session.currentLesson) {
       // Sync to ring context
       if (session.ringState === 'exploding') {
-        ringLesson.triggerCelebration();
+        ringTriggerCelebration();
       } else if (session.ringState === 'active') {
-        ringLesson.setRingActive();
+        ringSetRingActive();
       } else if (session.ringState === 'dormant') {
-        ringLesson.resetRing();
+        ringResetRing();
       }
     }
-  }, [session.ringState, session.currentLesson, ringLesson]);
+  }, [session.ringState, session.currentLesson, ringTriggerCelebration, ringSetRingActive, ringResetRing]);
 
   // ==========================================================================
   // PROGRESS STATE
@@ -234,27 +244,27 @@ export function useTutoring(): UseTutoringReturn {
       // Sync to ring context
       const lesson = engine.getLesson(lessonId);
       if (lesson) {
-        ringLesson.startLesson(lesson);
+        ringStartLesson(lesson);
       }
     } finally {
       setIsLoading(false);
     }
-  }, [engine, syncState, ringLesson]);
+  }, [engine, syncState, ringStartLesson]);
 
   const nextStep = useCallback(() => {
     if (!progress.isPracticeStep) {
       // For non-practice steps, just advance
       engine.completeStep(0);
       syncState();
-      ringLesson.nextStep();
+      ringNextStep();
     }
-  }, [engine, syncState, progress.isPracticeStep, ringLesson]);
+  }, [engine, syncState, progress.isPracticeStep, ringNextStep]);
 
   const previousStep = useCallback(() => {
-    ringLesson.previousStep();
+    ringPreviousStep();
     // Note: TutoringEngine doesn't support going back, but RingLessonContext does
     // This is a UI-only feature for reviewing previous explanations
-  }, [ringLesson]);
+  }, [ringPreviousStep]);
 
   const completeStep = useCallback((correct: boolean) => {
     engine.recordAttempt(correct);
@@ -269,20 +279,20 @@ export function useTutoring(): UseTutoringReturn {
   const skipStep = useCallback(() => {
     engine.skipStep();
     syncState();
-    ringLesson.nextStep();
-  }, [engine, syncState, ringLesson]);
+    ringNextStep();
+  }, [engine, syncState, ringNextStep]);
 
   const useHint = useCallback((): string | null => {
     const hint = engine.useHint();
-    ringLesson.setRingTeaching();
+    ringSetRingTeaching();
     return hint;
-  }, [engine, ringLesson]);
+  }, [engine, ringSetRingTeaching]);
 
   const endLesson = useCallback((abandon: boolean = false) => {
     engine.endLesson(abandon);
     syncState();
-    ringLesson.endLesson();
-  }, [engine, syncState, ringLesson]);
+    ringEndLesson();
+  }, [engine, syncState, ringEndLesson]);
 
   const togglePause = useCallback(() => {
     engine.togglePause();

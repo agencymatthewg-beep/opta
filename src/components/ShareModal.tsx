@@ -9,6 +9,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { ModalErrorBoundary } from '@/components/ModalErrorBoundary';
 
 // Easing curve for smooth energy transitions
 const smoothOut: [number, number, number, number] = [0.22, 1, 0.36, 1];
@@ -95,18 +96,18 @@ export function ShareModal({ score, isOpen, onClose }: ShareModalProps) {
             onClick={onClose}
           />
 
-          {/* Modal */}
+          {/* Modal - Framer Motion handles y centering to avoid CSS transform conflict */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20, filter: 'brightness(0.5)' }}
-            animate={{ opacity: 1, scale: 1, y: 0, filter: 'brightness(1)' }}
-            exit={{ opacity: 0, scale: 0.95, y: 20, filter: 'brightness(0.5)' }}
+            initial={{ opacity: 0, scale: 0.95, y: '-40%', filter: 'brightness(0.5)' }}
+            animate={{ opacity: 1, scale: 1, y: '-50%', filter: 'brightness(1)' }}
+            exit={{ opacity: 0, scale: 0.95, y: '-40%', filter: 'brightness(0.5)' }}
             transition={{ ease: smoothOut }}
-            className="fixed inset-x-4 top-1/2 -translate-y-1/2 z-50 mx-auto max-w-lg"
+            className="fixed inset-x-4 top-1/2 z-50 mx-auto max-w-lg"
           >
             <div className={cn(
                 "relative rounded-2xl overflow-hidden",
                 // Obsidian glass material
-                "bg-[#05030a]/90 backdrop-blur-2xl",
+                "glass-strong",
                 "border border-white/[0.08]",
                 // Inner specular highlight
                 "before:absolute before:inset-x-0 before:top-0 before:h-px before:z-10",
@@ -128,56 +129,58 @@ export function ShareModal({ score, isOpen, onClose }: ShareModalProps) {
               </div>
 
               {/* Content */}
-              <div className="p-4 space-y-4">
-                {/* Share Options */}
-                <div className="grid grid-cols-2 gap-3">
-                  {/* Twitter/X */}
-                  <ShareOption
-                    icon={Twitter}
-                    label="Share on X"
-                    description="Post your score"
-                    onClick={handleTwitterShare}
-                    colorClass="primary"
-                  />
-
-                  {/* Copy Text */}
-                  <ShareOption
-                    icon={copyTextState === 'copied' ? Check : MessageSquare}
-                    label={copyTextState === 'copied' ? 'Copied!' : 'Copy for Discord'}
-                    description="Copy formatted text"
-                    onClick={handleCopyText}
-                    colorClass="accent"
-                    disabled={copyTextState === 'copying'}
-                  />
-
-                  {/* Copy Image */}
-                  {supportsImageClipboard() && (
+              <ModalErrorBoundary onClose={onClose}>
+                <div className="p-4 space-y-4">
+                  {/* Share Options */}
+                  <div className="grid grid-cols-2 gap-3">
+                    {/* Twitter/X */}
                     <ShareOption
-                      icon={copyImageState === 'copied' ? Check : Image}
-                      label={copyImageState === 'copied' ? 'Copied!' : 'Copy Image'}
-                      description="Copy score card"
-                      onClick={handleCopyImage}
-                      colorClass="success"
-                      disabled={copyImageState === 'copying'}
+                      icon={Twitter}
+                      label="Share on X"
+                      description="Post your score"
+                      onClick={handleTwitterShare}
+                      colorClass="primary"
                     />
-                  )}
 
-                  {/* Download */}
-                  <ShareOption
-                    icon={Download}
-                    label="Download"
-                    description="Save as PNG"
-                    onClick={handleExport}
-                    colorClass="warning"
-                    disabled={isExporting}
-                  />
+                    {/* Copy Text */}
+                    <ShareOption
+                      icon={copyTextState === 'copied' ? Check : MessageSquare}
+                      label={copyTextState === 'copied' ? 'Copied!' : 'Copy for Discord'}
+                      description="Copy formatted text"
+                      onClick={handleCopyText}
+                      colorClass="accent"
+                      disabled={copyTextState === 'copying'}
+                    />
+
+                    {/* Copy Image */}
+                    {supportsImageClipboard() && (
+                      <ShareOption
+                        icon={copyImageState === 'copied' ? Check : Image}
+                        label={copyImageState === 'copied' ? 'Copied!' : 'Copy Image'}
+                        description="Copy score card"
+                        onClick={handleCopyImage}
+                        colorClass="success"
+                        disabled={copyImageState === 'copying'}
+                      />
+                    )}
+
+                    {/* Download */}
+                    <ShareOption
+                      icon={Download}
+                      label="Download"
+                      description="Save as PNG"
+                      onClick={handleExport}
+                      colorClass="warning"
+                      disabled={isExporting}
+                    />
+                  </div>
+
+                  {/* Preview Note */}
+                  <p className="text-xs text-muted-foreground text-center">
+                    Your score card will be exported as a shareable image
+                  </p>
                 </div>
-
-                {/* Preview Note */}
-                <p className="text-xs text-muted-foreground text-center">
-                  Your score card will be exported as a shareable image
-                </p>
-              </div>
+              </ModalErrorBoundary>
             </div>
           </motion.div>
 

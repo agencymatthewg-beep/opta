@@ -27,9 +27,15 @@ CAPTURE
 /learn         Log pattern/correction to training data
 /bug           Capture bug/issue to deferred issues
 
+QUALITY
+───────────────────────────────────────────────────────────────
+/perfect       Deep code audit - meticulous review via perfectionist agent
+/build         Run build + type check + cargo check
+/improve       Iterative refinement of recent changes
+/Optamize      Perfectionist loop - fix ALL issues (max 30 iterations)
+
 WORKFLOW
 ───────────────────────────────────────────────────────────────
-/build         Run build + type check + cargo check
 /commit        Guided commit with conventional format
 /phase-done    Complete phase - create SUMMARY, update STATE
 

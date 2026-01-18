@@ -74,7 +74,7 @@ interface PresetConfig {
   dataStream: boolean;
   dataStreamDensity: number;
   dataStreamOpacity: number;
-  background: string;
+  // Note: Background is handled by glass class, not inline styles
 }
 
 const PRESETS: Record<LoadingPreset, PresetConfig> = {
@@ -88,7 +88,6 @@ const PRESETS: Record<LoadingPreset, PresetConfig> = {
     dataStream: false,
     dataStreamDensity: 0,
     dataStreamOpacity: 0,
-    background: 'rgba(9, 9, 11, 0.9)',
   },
   minimal: {
     chromatic: false,
@@ -100,7 +99,6 @@ const PRESETS: Record<LoadingPreset, PresetConfig> = {
     dataStream: false,
     dataStreamDensity: 0,
     dataStreamOpacity: 0,
-    background: 'rgba(9, 9, 11, 0.8)',
   },
   cinematic: {
     chromatic: true,
@@ -112,7 +110,6 @@ const PRESETS: Record<LoadingPreset, PresetConfig> = {
     dataStream: true,
     dataStreamDensity: 0.2,
     dataStreamOpacity: 0.4,
-    background: 'rgba(9, 9, 11, 0.95)',
   },
   matrix: {
     chromatic: true,
@@ -124,7 +121,6 @@ const PRESETS: Record<LoadingPreset, PresetConfig> = {
     dataStream: true,
     dataStreamDensity: 0.4,
     dataStreamOpacity: 0.7,
-    background: 'rgba(9, 9, 11, 0.95)',
   },
   retro: {
     chromatic: true,
@@ -136,7 +132,6 @@ const PRESETS: Record<LoadingPreset, PresetConfig> = {
     dataStream: false,
     dataStreamDensity: 0,
     dataStreamOpacity: 0,
-    background: 'rgba(9, 9, 11, 0.9)',
   },
   holographic: {
     chromatic: false,
@@ -148,7 +143,6 @@ const PRESETS: Record<LoadingPreset, PresetConfig> = {
     dataStream: false,
     dataStreamDensity: 0,
     dataStreamOpacity: 0,
-    background: 'rgba(9, 9, 11, 0.85)',
   },
 };
 
@@ -276,6 +270,7 @@ export function LoadingOverlay({
           <motion.div
             className={cn(
               'flex flex-col items-center justify-center',
+              'glass backdrop-blur-xl bg-background/80 border-0',
               SIZE_CLASSES[size],
               size === 'fullscreen' ? '' : 'absolute inset-0 rounded-inherit'
             )}
@@ -283,7 +278,6 @@ export function LoadingOverlay({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            style={{ backgroundColor: config.background }}
           >
             {/* Data stream background */}
             {config.dataStream && !prefersReducedMotion && (

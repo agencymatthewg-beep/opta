@@ -5,8 +5,51 @@
 //! as conflicts.rs by invoking the Python MCP server.
 
 use serde::{Deserialize, Serialize};
-use std::process::Command;
+use std::time::Duration;
 use tauri::command;
+use tokio::process::Command;
+use tokio::time::timeout;
+
+/// Default timeout for Python subprocess calls (30 seconds).
+const SUBPROCESS_TIMEOUT: Duration = Duration::from_secs(30);
+
+/// Get Python command for the current platform.
+fn python_cmd() -> &'static str {
+    if cfg!(target_os = "windows") {
+        "python"
+    } else {
+        "python3"
+    }
+}
+
+/// Run a Python command with timeout protection.
+async fn run_python_with_timeout(
+    script: &str,
+    args: &[&str],
+) -> Result<String, String> {
+    let mut cmd = Command::new(python_cmd());
+    cmd.arg("-c").arg(script);
+    for arg in args {
+        cmd.arg(arg);
+    }
+
+    let output_future = cmd.output();
+
+    match timeout(SUBPROCESS_TIMEOUT, output_future).await {
+        Ok(Ok(output)) => {
+            if !output.status.success() {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                return Err(format!("Python error: {}", stderr));
+            }
+            Ok(String::from_utf8_lossy(&output.stdout).to_string())
+        }
+        Ok(Err(e)) => Err(format!("Failed to spawn Python: {}", e)),
+        Err(_) => Err(format!(
+            "Python subprocess timed out after {} seconds",
+            SUBPROCESS_TIMEOUT.as_secs()
+        )),
+    }
+}
 
 /// Information about a detected game.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -164,25 +207,7 @@ except Exception as e:
 /// Returns an error string if Python execution fails or JSON parsing fails.
 #[command]
 pub async fn detect_games() -> Result<GameDetectionResult, String> {
-    // Try python3 first, fall back to python
-    let python_cmd = if cfg!(target_os = "windows") {
-        "python"
-    } else {
-        "python3"
-    };
-
-    let output = Command::new(python_cmd)
-        .arg("-c")
-        .arg(DETECT_GAMES_SCRIPT)
-        .output()
-        .map_err(|e| format!("Failed to spawn Python: {}", e))?;
-
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("Python error: {}", stderr));
-    }
-
-    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stdout = run_python_with_timeout(DETECT_GAMES_SCRIPT, &[]).await?;
 
     // Check if the response contains an error field
     if stdout.contains("\"error\"") {
@@ -215,26 +240,7 @@ pub async fn detect_games() -> Result<GameDetectionResult, String> {
 /// Returns an error string if Python execution fails or JSON parsing fails.
 #[command]
 pub async fn get_game_info(game_id: String) -> Result<GameInfoResult, String> {
-    // Try python3 first, fall back to python
-    let python_cmd = if cfg!(target_os = "windows") {
-        "python"
-    } else {
-        "python3"
-    };
-
-    let output = Command::new(python_cmd)
-        .arg("-c")
-        .arg(GET_GAME_INFO_SCRIPT)
-        .arg(&game_id)
-        .output()
-        .map_err(|e| format!("Failed to spawn Python: {}", e))?;
-
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("Python error: {}", stderr));
-    }
-
-    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stdout = run_python_with_timeout(GET_GAME_INFO_SCRIPT, &[&game_id]).await?;
 
     let result: GameInfoResult = serde_json::from_str(&stdout)
         .map_err(|e| format!("JSON parse error: {} (raw: {})", e, stdout))?;
@@ -260,26 +266,7 @@ pub async fn get_game_info(game_id: String) -> Result<GameInfoResult, String> {
 /// Returns an error string if Python execution fails or JSON parsing fails.
 #[command]
 pub async fn get_game_optimization(game_id: String) -> Result<GameOptimization, String> {
-    // Try python3 first, fall back to python
-    let python_cmd = if cfg!(target_os = "windows") {
-        "python"
-    } else {
-        "python3"
-    };
-
-    let output = Command::new(python_cmd)
-        .arg("-c")
-        .arg(GET_GAME_OPTIMIZATION_SCRIPT)
-        .arg(&game_id)
-        .output()
-        .map_err(|e| format!("Failed to spawn Python: {}", e))?;
-
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("Python error: {}", stderr));
-    }
-
-    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stdout = run_python_with_timeout(GET_GAME_OPTIMIZATION_SCRIPT, &[&game_id]).await?;
 
     let result: GameOptimization = serde_json::from_str(&stdout)
         .map_err(|e| format!("JSON parse error: {} (raw: {})", e, stdout))?;

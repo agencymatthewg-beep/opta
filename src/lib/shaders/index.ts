@@ -142,3 +142,24 @@ export {
 } from './DeepGlowShader';
 
 export type { DeepGlowUniforms, DeepGlowConfig } from './DeepGlowShader';
+
+// =============================================================================
+// ENHANCED GLASS SHADER (Chrome System)
+// =============================================================================
+
+export {
+  createEnhancedGlassUniforms,
+  createEnhancedGlassShader,
+  updateEnhancedGlassShader,
+  setEnhancedGlassEnergy,
+  disposeEnhancedGlassShader,
+  ENERGY_VALUES,
+  ENERGY_COLORS,
+} from './EnhancedGlassShader';
+
+export type {
+  GlassEnergyState,
+  GlassQualityTier,
+  EnhancedGlassUniforms,
+  EnhancedGlassConfig,
+} from './EnhancedGlassShader';

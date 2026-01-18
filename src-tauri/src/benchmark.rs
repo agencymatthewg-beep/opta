@@ -10,6 +10,7 @@ pub struct BenchmarkSession {
     pub status: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Serialize, Deserialize)]
 pub struct BenchmarkMetrics {
     pub cpu_avg: f64,

@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::process::Command;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use tokio::time::timeout;
 
 /// Result of a game launch attempt
 #[derive(Debug, Serialize, Deserialize)]
@@ -104,30 +105,51 @@ pub async fn launch_game(launcher: String, game_id: String) -> Result<LaunchResu
 }
 
 /// Open a URL using the platform-specific method
+/// Uses .status() instead of .spawn() to wait for the launcher to complete
+/// and avoid creating zombie processes.
 #[cfg(target_os = "macos")]
 fn open_url(url: &str) -> Result<(), String> {
-    Command::new("open")
+    let mut child = Command::new("open")
         .arg(url)
         .spawn()
         .map_err(|e| format!("Failed to open URL: {}", e))?;
+
+    // Wait for the 'open' command to complete (it spawns the actual handler and exits quickly)
+    // This prevents zombie processes while not blocking on the launched app
+    std::thread::spawn(move || {
+        let _ = child.wait();
+    });
+
     Ok(())
 }
 
 #[cfg(target_os = "windows")]
 fn open_url(url: &str) -> Result<(), String> {
-    Command::new("cmd")
+    let mut child = Command::new("cmd")
         .args(["/C", "start", "", url])
         .spawn()
         .map_err(|e| format!("Failed to open URL: {}", e))?;
+
+    // Wait for cmd to complete in background
+    std::thread::spawn(move || {
+        let _ = child.wait();
+    });
+
     Ok(())
 }
 
 #[cfg(target_os = "linux")]
 fn open_url(url: &str) -> Result<(), String> {
-    Command::new("xdg-open")
+    let mut child = Command::new("xdg-open")
         .arg(url)
         .spawn()
         .map_err(|e| format!("Failed to open URL: {}", e))?;
+
+    // Wait for xdg-open to complete in background
+    std::thread::spawn(move || {
+        let _ = child.wait();
+    });
+
     Ok(())
 }
 
@@ -172,6 +194,9 @@ if __name__ == '__main__':
     print(json.dumps(result))
 "#;
 
+/// Default timeout for Python subprocess calls (30 seconds).
+const SUBPROCESS_TIMEOUT: Duration = Duration::from_secs(30);
+
 /// Check if a game is currently running by looking for its process
 ///
 /// # Arguments
@@ -201,12 +226,21 @@ pub async fn check_game_running(process_names: Vec<String>) -> Result<GameRunnin
     let names_json = serde_json::to_string(&process_names)
         .map_err(|e| format!("Failed to serialize process names: {}", e))?;
 
-    let output = Command::new(python_cmd)
-        .arg("-c")
+    let mut cmd = tokio::process::Command::new(python_cmd);
+    cmd.arg("-c")
         .arg(CHECK_PROCESS_SCRIPT)
-        .arg(&names_json)
-        .output()
-        .map_err(|e| format!("Failed to spawn Python: {}", e))?;
+        .arg(&names_json);
+
+    let output_future = cmd.output();
+
+    let output = match timeout(SUBPROCESS_TIMEOUT, output_future).await {
+        Ok(Ok(output)) => output,
+        Ok(Err(e)) => return Err(format!("Failed to spawn Python: {}", e)),
+        Err(_) => return Err(format!(
+            "Python subprocess timed out after {} seconds",
+            SUBPROCESS_TIMEOUT.as_secs()
+        )),
+    };
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);

@@ -102,7 +102,7 @@ function Sidebar({ activePage, onNavigate }: SidebarProps) {
       className={cn(
         'w-64 min-w-64 h-screen flex flex-col',
         // Obsidian glass material
-        'bg-[#05030a]/90 backdrop-blur-2xl',
+        'glass-strong',
         'border-r border-white/[0.05]',
         // Inner specular highlight
         'shadow-[inset_1px_0_0_0_rgba(255,255,255,0.03)]'
@@ -282,7 +282,7 @@ function Sidebar({ activePage, onNavigate }: SidebarProps) {
         <motion.div
           className={cn(
             'rounded-xl p-3 mb-4',
-            'bg-[#05030a]/60 backdrop-blur-lg',
+            'glass-subtle',
             'border border-white/[0.05]',
             'shadow-[inset_0_1px_0_0_rgba(255,255,255,0.03)]'
           )}

@@ -105,20 +105,21 @@ export const ignitionQuick: Variants = {
 
 /**
  * Hero ignition - dramatic version for large elements
+ * Duration capped at 500ms for responsive feel while maintaining drama
  */
 export const ignitionHero: Variants = {
   hidden: {
     opacity: 0,
-    scale: 0.9,
-    y: 20,
-    filter: "brightness(0) blur(10px)",
+    scale: 0.92,
+    y: 16,
+    filter: "brightness(0.3) blur(8px)",
   },
   visible: {
     opacity: 1,
     scale: 1,
     y: 0,
     filter: "brightness(1) blur(0px)",
-    transition: { duration: 1.2, ease: cinematic },
+    transition: { duration: 0.5, ease: cinematic },
   },
 };
 

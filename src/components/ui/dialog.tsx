@@ -30,7 +30,7 @@ const DialogOverlay = React.forwardRef<
     className={cn(
       "fixed inset-0 z-50",
       // Deep void with purple atmospheric tint
-      "bg-[#05030a]/90 backdrop-blur-md",
+      "glass-strong",
       // Radial gradient for depth
       "data-[state=open]:animate-in data-[state=closed]:animate-out",
       "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
@@ -56,7 +56,7 @@ const DialogContent = React.forwardRef<
       className={cn(
         "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 p-6",
         // Obsidian glass material
-        "bg-[#05030a]/95 backdrop-blur-2xl",
+        "glass-overlay",
         "border border-white/[0.08]",
         "rounded-2xl",
         // Inner specular highlight

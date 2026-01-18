@@ -147,7 +147,7 @@ function ConflictWarning({ onViewDetails }: ConflictWarningProps) {
       className={cn(
         'relative mb-6 rounded-xl overflow-hidden',
         // Obsidian glass material
-        'bg-[#05030a]/80 backdrop-blur-xl border',
+        'glass border',
         // Inner specular highlight
         'before:absolute before:inset-x-0 before:top-0 before:h-px before:z-10',
         'before:bg-gradient-to-r before:from-transparent before:via-white/10 before:to-transparent',

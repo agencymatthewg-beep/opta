@@ -58,7 +58,7 @@ const DropdownMenuSubContent = React.forwardRef<
     className={cn(
       "z-50 min-w-[8rem] overflow-hidden rounded-xl p-1",
       // Obsidian glass material
-      "bg-[#05030a]/95 backdrop-blur-xl",
+      "glass-overlay",
       "border border-white/[0.08]",
       // Energy glow shadow
       "shadow-[0_4px_30px_-4px_rgba(0,0,0,0.5),0_0_20px_-5px_rgba(168,85,247,0.15)]",
@@ -87,7 +87,7 @@ const DropdownMenuContent = React.forwardRef<
       className={cn(
         "z-50 min-w-[8rem] overflow-hidden rounded-xl p-1",
         // Obsidian glass material
-        "bg-[#05030a]/95 backdrop-blur-xl",
+        "glass-overlay",
         "border border-white/[0.08]",
         // Energy glow shadow
         "shadow-[0_4px_30px_-4px_rgba(0,0,0,0.5),0_0_20px_-5px_rgba(168,85,247,0.15)]",

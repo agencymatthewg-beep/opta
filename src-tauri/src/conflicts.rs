@@ -12,6 +12,7 @@ use tauri::command;
 /// - "high": Significant conflict, likely to cause issues
 /// - "medium": Partial conflict, may cause some issues
 /// - "low": Minor conflict, minimal impact
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum ConflictSeverity {

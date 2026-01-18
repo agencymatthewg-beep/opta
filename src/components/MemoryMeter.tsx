@@ -170,7 +170,7 @@ const MemoryMeter = memo(function MemoryMeter({ usedGb, totalGb, percent }: Memo
       <div
         className={cn(
           'relative h-24 w-full rounded-xl overflow-hidden',
-          'bg-[#05030a]/60 backdrop-blur-lg',
+          'glass-subtle',
           'border border-white/[0.06]'
         )}
       >

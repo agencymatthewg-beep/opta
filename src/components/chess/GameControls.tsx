@@ -77,7 +77,7 @@ export function GameControls({
       className={cn(
         'rounded-xl p-4',
         // Obsidian glass material
-        'bg-[#05030a]/80 backdrop-blur-xl',
+        'glass',
         'border border-white/[0.06]',
         // Inner specular highlight
         'shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]'
@@ -136,7 +136,7 @@ export function GameControls({
             <DropdownMenuContent
               className={cn(
                 'min-w-[200px]',
-                'bg-[#05030a]/95 backdrop-blur-xl',
+                'glass-overlay',
                 'border border-white/[0.1]'
               )}
               align="start"

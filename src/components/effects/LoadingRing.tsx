@@ -176,22 +176,26 @@ function IndeterminatePulse({ size, frequency, reducedMotion }: IndeterminatePul
 
   return (
     <motion.div
-      className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full pointer-events-none"
+      className="absolute rounded-full pointer-events-none"
       style={{
         width: size * 1.2,
         height: size * 1.2,
+        left: '50%',
+        top: '50%',
       }}
-      initial={{ opacity: 0, scale: 0.8 }}
+      initial={{ opacity: 0, scale: 0.8, x: '-50%', y: '-50%' }}
       animate={{
         opacity: [0.2, 0.5, 0.2],
         scale: [0.95, 1.05, 0.95],
+        x: '-50%',
+        y: '-50%',
         boxShadow: [
           '0 0 20px rgba(147, 51, 234, 0.2)',
           '0 0 50px rgba(147, 51, 234, 0.5)',
           '0 0 20px rgba(147, 51, 234, 0.2)',
         ],
       }}
-      exit={{ opacity: 0, scale: 0.8 }}
+      exit={{ opacity: 0, scale: 0.8, x: '-50%', y: '-50%' }}
       transition={{
         duration,
         repeat: Infinity,
@@ -213,16 +217,20 @@ interface CompletionFlashProps {
 function CompletionFlash({ size, onComplete }: CompletionFlashProps) {
   return (
     <motion.div
-      className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full pointer-events-none"
+      className="absolute rounded-full pointer-events-none"
       style={{
         width: size * 1.5,
         height: size * 1.5,
         backgroundColor: 'rgba(147, 51, 234, 0.3)',
+        left: '50%',
+        top: '50%',
       }}
-      initial={{ opacity: 0, scale: 0.5 }}
+      initial={{ opacity: 0, scale: 0.5, x: '-50%', y: '-50%' }}
       animate={{
         opacity: [0, 0.8, 0],
         scale: [0.8, 1.3, 1.5],
+        x: '-50%',
+        y: '-50%',
       }}
       transition={{
         duration: 0.6,

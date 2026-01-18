@@ -56,8 +56,8 @@ export function GpuPipelineViz({ resolution, quality, showComparison = false }: 
             <div className="text-xs text-muted-foreground">{stage.desc}</div>
             {i < stages.length - 1 && (
               <motion.div
-                className="absolute right-0 top-3 text-muted-foreground transform translate-x-1/2"
-                animate={{ x: [0, 4, 0] }}
+                className="absolute right-0 top-3 text-muted-foreground"
+                animate={{ x: ['50%', 'calc(50% + 4px)', '50%'] }}
                 transition={{ repeat: Infinity, duration: 1 }}
               >
                 <span className="text-xs">→</span>

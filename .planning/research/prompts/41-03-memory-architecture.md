@@ -93,6 +93,24 @@ Structure your findings as:
 5. **Optimization Guidelines** - What users can actually control
 6. **Cross-Reference Matrix** - Memory interactions with GPU/CPU/Thermals
 
+## Already Established (Do Not Duplicate)
+
+We already have documented knowledge for these topics - focus on **gaps below**:
+
+- **UMA Fundamentals**: CPU/GPU/Neural Engine shared memory, zero-copy pipelines
+- **Memory Bandwidth**: All M-series bandwidth figures (68GB/s to 800GB/s)
+- **Non-Upgradable**: Soldered memory, "buy once cry once" rule
+- **Swap Behavior**: macOS uses high-speed SSD aggressively, often imperceptible
+- **Media Engine Zero-Copy**: Decoded video frames directly to GPU via shared memory
+
+### GAPS TO PRIORITIZE
+
+1. **Memory pressure curves** - FPS degradation at 70/80/90/95% utilization
+2. **VRAM equivalence formula** - How much unified memory = X GB dedicated VRAM?
+3. **8GB gaming viability** - Which games work, which don't, at what settings?
+4. **Texture quality thresholds** - At what texture quality does 16GB/24GB/32GB become necessary?
+5. **Memory pressure recovery** - How quickly does performance restore after pressure drops?
+
 ## Research Depth Guidance
 
 - Focus on gaming-relevant scenarios, not general computing

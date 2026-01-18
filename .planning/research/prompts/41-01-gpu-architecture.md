@@ -64,6 +64,24 @@ Structure your findings as:
 4. **Optimization Decision Trees** - "If X, then optimize Y"
 5. **Cross-Reference Matrix** - How GPU settings interact with CPU/Memory/Thermals
 
+## Already Established (Do Not Duplicate)
+
+We already have documented knowledge for these topics - focus on **gaps below**:
+
+- **TBDR Architecture**: Tile-based deferred rendering, tile binning, deferred pixel shading
+- **Dynamic Caching**: M3+ GPU on-demand memory allocation (not fixed blocks)
+- **MetalFX**: Temporal upscaling via ML reconstruction, required for high-refresh gaming
+- **GPU Core Counts**: All M1/M2/M3/M4 variants documented in T3 specs
+- **Fractional Scaling Penalty**: macOS renders at higher res then downsamples, GPU overhead
+
+### GAPS TO PRIORITIZE
+
+1. **Tile sizes by generation** - What are the actual tile dimensions for M1/M2/M3/M4?
+2. **Settings impact tables** - Quantified FPS cost per quality tier (shadows, AA, RT)
+3. **Ray tracing overhead** - M3+ RT performance penalty as % of baseline
+4. **Bottleneck identification** - At what GPU load % does each chip become limited?
+5. **DirectX-to-Metal translation patterns** - Which DX patterns hurt Metal performance?
+
 ## Research Depth Guidance
 
 - Prioritize real benchmark data over theoretical specifications

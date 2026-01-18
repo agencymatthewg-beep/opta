@@ -7,8 +7,46 @@
 //! NOTE: Phase 10 can optimize this to use persistent MCP connection.
 
 use serde::{Deserialize, Serialize};
-use std::process::Command;
+use std::time::Duration;
 use tauri::command;
+use tokio::process::Command;
+use tokio::time::timeout;
+
+/// Default timeout for Python subprocess calls (30 seconds).
+const SUBPROCESS_TIMEOUT: Duration = Duration::from_secs(30);
+
+/// Run a Python command with timeout protection.
+async fn run_python_with_timeout(
+    python_cmd: &str,
+    script: &str,
+    args: &[&str],
+    pythonpath: &str,
+) -> Result<String, String> {
+    let mut cmd = Command::new(python_cmd);
+    cmd.env("PYTHONPATH", pythonpath)
+        .arg("-c")
+        .arg(script);
+    for arg in args {
+        cmd.arg(arg);
+    }
+
+    let output_future = cmd.output();
+
+    match timeout(SUBPROCESS_TIMEOUT, output_future).await {
+        Ok(Ok(output)) => {
+            if !output.status.success() {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                return Err(format!("Python error: {}", stderr));
+            }
+            Ok(String::from_utf8_lossy(&output.stdout).to_string())
+        }
+        Ok(Err(e)) => Err(format!("Failed to spawn Python: {}", e)),
+        Err(_) => Err(format!(
+            "Python subprocess timed out after {} seconds",
+            SUBPROCESS_TIMEOUT.as_secs()
+        )),
+    }
+}
 
 /// CPU telemetry information.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -115,25 +153,18 @@ except Exception as e:
 /// Returns an error string if Python execution fails or JSON parsing fails.
 #[command]
 pub async fn get_system_telemetry() -> Result<SystemSnapshot, String> {
-    // Try python3 first, fall back to python
     let python_cmd = if cfg!(target_os = "windows") {
         "python"
     } else {
         "python3"
     };
 
-    let output = Command::new(python_cmd)
-        .arg("-c")
-        .arg(PYTHON_SCRIPT)
-        .output()
-        .map_err(|e| format!("Failed to spawn Python: {}", e))?;
+    let pythonpath = std::env::current_dir()
+        .map(|p| p.join("../mcp-server/src").to_string_lossy().to_string())
+        .unwrap_or_else(|_| "./mcp-server/src".to_string());
 
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("Python error: {}", stderr));
-    }
+    let stdout = run_python_with_timeout(python_cmd, PYTHON_SCRIPT, &[], &pythonpath).await?;
 
-    let stdout = String::from_utf8_lossy(&output.stdout);
     let snapshot: SystemSnapshot =
         serde_json::from_str(&stdout).map_err(|e| format!("JSON parse error: {} (raw: {})", e, stdout))?;
 
@@ -179,6 +210,7 @@ except Exception as e:
 pub async fn get_disk_analysis(path: Option<String>, max_depth: Option<u32>) -> Result<DiskAnalysisNode, String> {
     let path = path.unwrap_or_else(|| "/".to_string());
     let max_depth = max_depth.unwrap_or(2);
+    let max_depth_str = max_depth.to_string();
 
     let python_cmd = if cfg!(target_os = "windows") {
         "python"
@@ -186,20 +218,18 @@ pub async fn get_disk_analysis(path: Option<String>, max_depth: Option<u32>) -> 
         "python3"
     };
 
-    let output = Command::new(python_cmd)
-        .arg("-c")
-        .arg(PYTHON_DISK_ANALYSIS_SCRIPT)
-        .arg(&path)
-        .arg(max_depth.to_string())
-        .output()
-        .map_err(|e| format!("Failed to spawn Python: {}", e))?;
+    let pythonpath = std::env::current_dir()
+        .map(|p| p.join("../mcp-server/src").to_string_lossy().to_string())
+        .unwrap_or_else(|_| "./mcp-server/src".to_string());
 
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("Python error: {}", stderr));
-    }
+    let stdout = run_python_with_timeout(
+        python_cmd,
+        PYTHON_DISK_ANALYSIS_SCRIPT,
+        &[&path, &max_depth_str],
+        &pythonpath,
+    )
+    .await?;
 
-    let stdout = String::from_utf8_lossy(&output.stdout);
     let node: DiskAnalysisNode =
         serde_json::from_str(&stdout).map_err(|e| format!("JSON parse error: {} (raw: {})", e, stdout))?;
 

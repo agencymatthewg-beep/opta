@@ -76,7 +76,7 @@ export function RadialNavItem({
         'absolute flex flex-col items-center gap-2',
         'p-4 rounded-2xl',
         // Obsidian glass base
-        'bg-[#05030a]/80 backdrop-blur-xl',
+        'glass',
         'border border-white/[0.05]',
         'shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]',
         // Transition for non-animated properties

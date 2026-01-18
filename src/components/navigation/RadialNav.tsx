@@ -116,7 +116,7 @@ function HaloCenter() {
     <motion.div
       className={cn(
         'w-20 h-20 rounded-full',
-        'bg-[#05030a]/90 backdrop-blur-2xl',
+        'glass-strong',
         'border border-white/[0.08]',
         'shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]',
         'flex flex-col items-center justify-center'

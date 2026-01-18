@@ -66,7 +66,7 @@ export function ApplyStep({ recommendations, onComplete }: ApplyStepProps) {
     >
       {/* Spinner */}
       <motion.div
-        className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-[#05030a]/80 backdrop-blur-xl border border-primary/30 flex items-center justify-center"
+        className="w-20 h-20 mx-auto mb-6 rounded-2xl glass border border-primary/30 flex items-center justify-center"
         animate={{
           boxShadow: [
             '0 0 0px hsl(var(--glow-primary)/0)',

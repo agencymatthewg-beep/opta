@@ -5,6 +5,55 @@ All notable changes to Opta will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.0.0] - 2026-01-18
+
+### Added
+
+**Optimization Intelligence System**
+- Dynamic Profile Engine with Gaming, Productivity, Battery Saver, and Auto modes
+- Profile auto-detection based on active process and hardware context
+- Per-game optimization overrides with hardware-specific tuning
+- Profile persistence with scheduling support
+
+**Configuration Calculator**
+- Mathematical constraint solver for conflicting settings
+- SynergyScorer calculating positive/negative setting interactions
+- OptimalConfigGenerator producing best configs per hardware profile
+- SettingsImpactAnalyzer projecting change impacts
+
+**Knowledge Graph**
+- Visual knowledge graph UI for optimization relationships
+- GraphQueryEngine for optimization path lookups
+- GraphValidation for consistency checks
+- Integration with settings synergies and conflicts
+
+**Real-Time Adaptation**
+- AdaptationEngine monitoring system metrics in real-time
+- TelemetryThresholds defining trigger points for optimization
+- AdaptationStrategies for thermal, memory, and FPS scenarios
+- Automatic profile adjustments based on live telemetry
+
+**Platform Optimization Backends**
+- macOS: Process priority via nice/renice, memory pressure via vm_stat, Apple Silicon P/E core awareness, GPU Metal states, thermal throttling detection, energy saver integration
+- Windows: SetPriorityClass API, SetProcessWorkingSetSize, CPU affinity, DirectX/Vulkan power states, power plan switching, Windows Game Mode integration
+
+**Knowledge Base**
+- 24 JSON knowledge files across 5 tiers (physics, architecture, specs, benchmarks, dynamic)
+- Settings synergy and conflict rules
+- Hardware recommendation solver rules
+- Thermal, power, and bottleneck relationship data
+
+### Technical
+- useProfile hook for profile state management
+- useConfigCalculator hook for optimization calculations
+- useAdaptation hook for real-time metric adaptation
+- useKnowledgeGraph hook for graph visualization
+- ProfileEngine, ProfileMatcher, ProfileStore services
+- AdaptationEngine service with strategy patterns
+- ConfigCalculator, SynergyScorer, OptimalConfigGenerator services
+
+---
+
 ## [5.0.0] - 2026-01-17
 
 ### Added

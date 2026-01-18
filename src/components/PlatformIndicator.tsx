@@ -134,7 +134,7 @@ function CapabilitiesTooltip({
       className={cn(
         'absolute bottom-full left-0 mb-2 z-50',
         'w-56 p-3 rounded-xl',
-        'bg-[#05030a]/90 backdrop-blur-xl border border-white/[0.06]',
+        'glass-strong border border-white/[0.06]',
         'shadow-lg shadow-black/20'
       )}
     >

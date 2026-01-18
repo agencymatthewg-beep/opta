@@ -67,75 +67,117 @@ export type { RingState } from './types';
 // GEOMETRY CONSTANTS (Phase 24 - Premium Quality)
 // =============================================================================
 
-const MAJOR_RADIUS = 1;        // Ring radius
-const TUBE_RADIUS = 0.35;      // Tube thickness (0.35 for premium look)
-const RADIAL_SEGMENTS = 96;    // Segments around the tube (smooth curves)
-const TUBULAR_SEGMENTS = 64;   // Segments around the ring
+/** Ring major radius (center to tube center) in world units */
+const TORUS_MAJOR_RADIUS = 1;
+
+/** Tube cross-section radius (ring thickness) - 0.35 provides premium proportions */
+const TORUS_TUBE_RADIUS = 0.35;
+
+/** Radial segments around the tube cross-section (higher = smoother curves) */
+const TORUS_RADIAL_SEGMENTS = 96;
+
+/** Tubular segments around the ring circumference */
+const TORUS_TUBULAR_SEGMENTS = 64;
 
 // =============================================================================
 // ANIMATION CONSTANTS (Phase 26)
 // =============================================================================
 
-/** Dormant state: 15 degrees tilted (Math.PI * 15/180 = Math.PI * 0.083) */
-const DORMANT_TILT = Math.PI * 0.083;
+/** Dormant state X-axis tilt: approximately 15 degrees in radians */
+const DORMANT_TILT_RADIANS = Math.PI * 0.083;
 
-/** Active state: directly facing camera */
-const ACTIVE_TILT = 0;
+/** Active state X-axis tilt: facing camera directly */
+const ACTIVE_TILT_RADIANS = 0;
 
-/** Bob animation amplitude (subtle sine wave on Y position) */
-const BOB_AMPLITUDE = 0.02;
+/** Bob animation Y-position amplitude (world units) */
+const BOB_AMPLITUDE_UNITS = 0.02;
 
-/** Bob animation frequency (Hz) */
-const BOB_FREQUENCY = 0.5;
+/** Bob animation frequency in Hz (cycles per second) */
+const BOB_FREQUENCY_HZ = 0.5;
+
+/** Bob fade threshold - reduces bob as energy approaches this value */
+const BOB_ENERGY_FADE_THRESHOLD = 2;
+
+/** Position smoothing factor when transitioning from dormant to active */
+const POSITION_SMOOTHING_FACTOR = 0.9;
+
+/** Minimum position threshold for snapping to zero */
+const POSITION_SNAP_THRESHOLD = 0.001;
 
 // =============================================================================
 // SPRING CONFIGURATIONS (Phase 26)
 // =============================================================================
 
 /**
- * Spring config for ring wake-up animation.
- * Based on spec: { stiffness: 150, damping: 20, mass: 1 }
+ * Spring configuration for wake-up animation.
+ * Provides bouncy, energetic feel when ring engages.
  *
- * In react-spring:
- * - tension ~= stiffness
- * - friction ~= damping
+ * react-spring mapping:
+ * - tension ~= stiffness (150)
+ * - friction ~= damping (20)
  */
 const WAKE_SPRING_CONFIG = {
   mass: 1,
   tension: 150,
   friction: 20,
-};
+} as const;
 
 /**
- * Ease-out config for sleep transition (less bouncy, more sleepy feel)
+ * Spring configuration for sleep transition.
+ * Higher friction provides smooth deceleration without bounce.
  */
 const SLEEP_SPRING_CONFIG = {
   mass: 1,
   tension: 120,
   friction: 26, // Higher friction = less oscillation
-};
+} as const;
 
 /**
- * Instant config for reduced motion
+ * Instant transition config for reduced motion accessibility.
+ * Skips animation entirely.
  */
-const INSTANT_CONFIG = {
+const INSTANT_SPRING_CONFIG = {
   duration: 0,
-};
+} as const;
 
 // =============================================================================
 // TYPES
 // =============================================================================
 
+/**
+ * Props for the RingMesh Three.js component.
+ */
 export interface RingMeshProps {
-  /** Current state of the ring */
+  /**
+   * Current state of the ring from the 7-state machine.
+   * Controls rotation, spin speed, and shader parameters.
+   */
   state: RingState;
-  /** Energy level 0-1 (controls glow intensity) */
+
+  /**
+   * Energy level (0-1) controlling glow intensity and fresnel power.
+   * @default 0.5
+   */
   energyLevel?: number;
-  /** Inner glow intensity 0-1 (subsurface scattering) - Phase 25 */
+
+  /**
+   * Inner glow intensity (0-1) for subsurface scattering simulation.
+   * Higher values create more internal light scattering effect.
+   */
   innerGlow?: number;
-  /** Whether spring animations are enabled (for reduced motion support) */
+
+  /**
+   * Enable spring physics for tilt transitions.
+   * Set to false for reduced-motion accessibility support.
+   * @default true
+   */
   springEnabled?: boolean;
-  /** Use glassmorphism shader (default: true) - Phase 25 */
+
+  /**
+   * Use glassmorphism shader material (Phase 25).
+   * When false, falls back to standard MeshStandardMaterial.
+   * @default true
+   */
   useShader?: boolean;
 }
 
@@ -165,13 +207,13 @@ export function RingMesh({
   // Track accumulated time for bob animation
   const timeRef = useRef(0);
 
-  // Memoize geometry for performance - premium quality settings
+  // Memoize torus geometry for performance - created once, reused across renders
   const geometry = useMemo(() => {
     return new THREE.TorusGeometry(
-      MAJOR_RADIUS,
-      TUBE_RADIUS,
-      RADIAL_SEGMENTS,
-      TUBULAR_SEGMENTS
+      TORUS_MAJOR_RADIUS,
+      TORUS_TUBE_RADIUS,
+      TORUS_RADIAL_SEGMENTS,
+      TORUS_TUBULAR_SEGMENTS
     );
   }, []);
 
@@ -188,25 +230,23 @@ export function RingMesh({
     return material;
   }, [useShader]); // Only recreate if useShader changes
 
-  // Determine if we're in an engaged state (facing camera)
-  const isEngaged = useMemo(() => {
-    return state === 'active' ||
-      state === 'waking' ||
-      state === 'processing' ||
-      state === 'exploding' ||
-      state === 'recovering';
+  // Determine if ring is in an engaged state (facing camera directly)
+  const isEngagedState = useMemo(() => {
+    const ENGAGED_STATES: RingState[] = ['active', 'waking', 'processing', 'exploding', 'recovering'];
+    return ENGAGED_STATES.includes(state);
   }, [state]);
 
-  // Determine target rotation based on engagement
-  const targetRotationX = isEngaged ? ACTIVE_TILT : DORMANT_TILT;
+  // Target X rotation: engaged states face camera, others are tilted
+  const targetRotationX = isEngagedState ? ACTIVE_TILT_RADIANS : DORMANT_TILT_RADIANS;
 
-  // Choose spring config based on direction of transition
+  // Select spring configuration based on transition direction
   const springConfig = useMemo(() => {
-    if (!springEnabled) return INSTANT_CONFIG;
-    if (state === 'sleeping' || state === 'dormant') {
-      return SLEEP_SPRING_CONFIG; // Ease-out for sleeping
+    if (!springEnabled) {
+      return INSTANT_SPRING_CONFIG;
     }
-    return WAKE_SPRING_CONFIG; // Bouncy spring for waking
+    // Disengagement transitions use smoother ease-out
+    const isDisengaging = state === 'sleeping' || state === 'dormant';
+    return isDisengaging ? SLEEP_SPRING_CONFIG : WAKE_SPRING_CONFIG;
   }, [state, springEnabled]);
 
   // Spring animation for X rotation (tilt) using react-spring
@@ -252,42 +292,48 @@ export function RingMesh({
     };
   }, []);
 
-  // Animation loop
+  // Animation frame loop - runs every frame for continuous animations
   useFrame((_, delta) => {
     if (!meshRef.current) return;
 
-    // Update time for bob animation
+    // Accumulate time for bob animation phase
     timeRef.current += delta;
 
-    // Update shader time for animations (Phase 25)
+    // Update shader time uniform for animated effects (Phase 25)
     if (shaderMaterialRef.current && useShader) {
       updateRingShader(shaderMaterialRef.current, delta);
     }
 
-    // Apply Y rotation speed (continuous spin)
+    // Continuous Y-axis spin at state-defined speed
     meshRef.current.rotation.y += delta * visualProps.rotationSpeedY;
 
-    // Apply subtle bob animation only in dormant/sleeping states
-    if (state === 'dormant' || state === 'sleeping') {
-      // Reduce bob amplitude as energy increases (bob fades during wake)
-      const bobMultiplier = Math.max(0, 1 - energyLevel * 2);
-      const bobOffset =
-        Math.sin(timeRef.current * BOB_FREQUENCY * Math.PI * 2) *
-        BOB_AMPLITUDE *
-        bobMultiplier;
+    // Bob animation: subtle Y-position oscillation in dormant/sleeping states
+    const shouldBob = state === 'dormant' || state === 'sleeping';
+
+    if (shouldBob) {
+      // Reduce bob amplitude as energy increases (fades during wake transition)
+      const energyFade = Math.max(0, 1 - energyLevel * BOB_ENERGY_FADE_THRESHOLD);
+      const bobPhase = timeRef.current * BOB_FREQUENCY_HZ * Math.PI * 2;
+      const bobOffset = Math.sin(bobPhase) * BOB_AMPLITUDE_UNITS * energyFade;
       meshRef.current.position.y = bobOffset;
     } else {
-      // Smoothly return to center when active
-      meshRef.current.position.y *= 0.9;
-      if (Math.abs(meshRef.current.position.y) < 0.001) {
+      // Smoothly interpolate back to center position when active
+      meshRef.current.position.y *= POSITION_SMOOTHING_FACTOR;
+
+      // Snap to zero when close enough to avoid floating-point drift
+      if (Math.abs(meshRef.current.position.y) < POSITION_SNAP_THRESHOLD) {
         meshRef.current.position.y = 0;
       }
     }
   });
 
-  // Determine colors based on state (for fallback material)
-  const baseColor = visualProps.baseColor;
-  const emissiveColor = visualProps.emissiveColor;
+  // Extract colors for fallback material
+  const { baseColor, emissiveColor, emissiveIntensity } = visualProps;
+
+  // Fallback material PBR settings for premium look
+  const FALLBACK_METALNESS = 0.85;
+  const FALLBACK_ROUGHNESS = 0.15;
+  const FALLBACK_ENV_MAP_INTENSITY = 1;
 
   return (
     <AnimatedMesh
@@ -298,17 +344,17 @@ export function RingMesh({
       geometry={geometry}
     >
       {useShader && shaderMaterial ? (
-        // Phase 25: Glassmorphism shader material with fresnel rim lighting
+        // Phase 25: Glassmorphism shader with fresnel rim lighting
         <primitive object={shaderMaterial} attach="material" />
       ) : (
-        // Fallback: Premium standard material (Phase 24)
+        // Phase 24 Fallback: Premium MeshStandardMaterial
         <meshStandardMaterial
           color={baseColor}
-          metalness={0.85}
-          roughness={0.15}
+          metalness={FALLBACK_METALNESS}
+          roughness={FALLBACK_ROUGHNESS}
           emissive={emissiveColor}
-          emissiveIntensity={visualProps.emissiveIntensity}
-          envMapIntensity={1}
+          emissiveIntensity={emissiveIntensity}
+          envMapIntensity={FALLBACK_ENV_MAP_INTENSITY}
         />
       )}
     </AnimatedMesh>

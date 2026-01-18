@@ -293,6 +293,10 @@ export function PersistentRing({
         >
           {/* Size animation wrapper */}
           <motion.div
+            initial={{
+              width: config.size,
+              height: config.size,
+            }}
             animate={{
               width: config.size,
               height: config.size,

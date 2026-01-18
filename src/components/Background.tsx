@@ -1,6 +1,7 @@
 import { motion, useReducedMotion } from 'framer-motion';
 import { AtmosphericFog } from './AtmosphericFog';
 import { useFogOptional } from '@/contexts/FogContext';
+import { useAnimationVisibility } from '@/hooks/useAnimationVisibility';
 
 /**
  * Background - The Living Void
@@ -19,13 +20,14 @@ import { useFogOptional } from '@/contexts/FogContext';
 export function Background() {
   const prefersReducedMotion = useReducedMotion();
   const fog = useFogOptional();
+  const { ref, isVisible } = useAnimationVisibility({ rootMargin: '0px', initiallyVisible: true });
 
   // Use fog context if available, otherwise default to idle
   const fogIntensity = fog?.intensity ?? 'idle';
   const fogEnabled = fog?.enabled ?? true;
 
   return (
-    <div className="fixed inset-0 -z-10 overflow-hidden" aria-hidden="true">
+    <div ref={ref} className="fixed inset-0 -z-10 overflow-hidden" aria-hidden="true">
       {/* The Void - Base Layer */}
       <div
         className="absolute inset-0"
@@ -62,15 +64,15 @@ export function Background() {
               bottom: '-20%',
               willChange: 'transform',
             }}
-            animate={{
+            animate={isVisible ? {
               x: [0, 30, 0],
               y: [0, -20, 0],
-            }}
-            transition={{
+            } : { x: 0, y: 0 }}
+            transition={isVisible ? {
               duration: 30,
               repeat: Infinity,
               ease: 'easeInOut',
-            }}
+            } : { duration: 0.3 }}
           />
 
           {/* Deep violet orb - top right */}
@@ -83,15 +85,15 @@ export function Background() {
               top: '-10%',
               willChange: 'transform',
             }}
-            animate={{
+            animate={isVisible ? {
               x: [0, -20, 0],
               y: [0, 15, 0],
-            }}
-            transition={{
+            } : { x: 0, y: 0 }}
+            transition={isVisible ? {
               duration: 25,
               repeat: Infinity,
               ease: 'easeInOut',
-            }}
+            } : { duration: 0.3 }}
           />
 
           {/* Central subtle glow - reacts to activity */}

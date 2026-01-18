@@ -124,7 +124,7 @@ function QuickActions({
               className={cn(
                 'group relative flex items-center gap-2 px-3 py-2.5 rounded-xl',
                 // Obsidian glass material
-                'bg-[#05030a]/60 backdrop-blur-lg',
+                'glass-subtle',
                 'border border-white/[0.06]',
                 // Transition
                 'transition-all duration-300',

@@ -66,7 +66,7 @@ export function Leaderboard({
           className={cn(
             "relative rounded-xl p-4 overflow-hidden",
             // Obsidian glass with energy border
-            "bg-[#05030a]/80 backdrop-blur-xl",
+            "glass",
             "border-2 border-primary/50",
             // Energy glow
             "shadow-[inset_0_0_20px_rgba(168,85,247,0.1),0_0_20px_-5px_rgba(168,85,247,0.3)]",
@@ -103,7 +103,7 @@ export function Leaderboard({
       <div className={cn(
         "relative rounded-xl overflow-hidden",
         // Obsidian glass material
-        "bg-[#05030a]/80 backdrop-blur-xl",
+        "glass",
         "border border-white/[0.06]",
         // Inner specular highlight
         "before:absolute before:inset-x-0 before:top-0 before:h-px before:z-10",
@@ -203,13 +203,13 @@ function LeaderboardSkeleton() {
     <div className="space-y-4">
       <div className={cn(
         "h-32 rounded-xl",
-        "bg-[#05030a]/80 backdrop-blur-xl",
+        "glass",
         "border border-white/[0.06]",
         "animate-pulse"
       )} />
       <div className={cn(
         "rounded-xl overflow-hidden",
-        "bg-[#05030a]/80 backdrop-blur-xl",
+        "glass",
         "border border-white/[0.06]",
         "divide-y divide-white/[0.04]"
       )}>

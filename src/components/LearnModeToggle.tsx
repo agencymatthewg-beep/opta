@@ -17,7 +17,7 @@ export function LearnModeToggle() {
     <motion.button
       className={cn(
         'fixed bottom-4 left-4 z-50 flex items-center gap-2 px-4 py-2 rounded-full',
-        'bg-[#05030a]/80 backdrop-blur-xl border border-white/[0.06] shadow-lg',
+        'glass border border-white/[0.06] shadow-lg',
         'transition-all duration-200',
         isLearnMode && 'bg-primary/20 border-primary/50 shadow-[0_0_16px_-4px_rgba(168,85,247,0.4)]'
       )}

@@ -68,7 +68,7 @@ const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
           'disabled:cursor-not-allowed disabled:opacity-50',
           // Off state (0% - dormant)
           !checked && [
-            'bg-[#05030a]/80 backdrop-blur-lg',
+            'glass',
             'shadow-[inset_0_1px_0_0_rgba(255,255,255,0.03)]',
           ],
           // On state (50% - active energy)

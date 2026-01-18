@@ -114,6 +114,24 @@ Structure your findings as:
 5. **Optimization Recommendations** - What users can actually control
 6. **Cross-Reference Matrix** - Thermal interactions with CPU/GPU/Memory
 
+## Already Established (Do Not Duplicate)
+
+We already have documented knowledge for these topics - focus on **gaps below**:
+
+- **Fanless Thermal Design**: Chassis as heatsink, ~45 minute thermal soak before throttle
+- **High Power Mode**: Aggressive fan curve, spins fans before thermal limit reached
+- **Form Factor Impact**: MacBook Air (fanless) vs Pro (active) vs Studio (excellent)
+- **Geekbench Thermal Observations**: Some throttle data in T4 benchmarks
+
+### GAPS TO PRIORITIZE
+
+1. **Exact throttle temperatures** - CPU junction temp, GPU temp, skin temp thresholds by device
+2. **Throttled performance %** - What % of peak do devices sustain when throttled?
+3. **Recovery timing** - How long after load reduction does performance fully recover?
+4. **Form factor timing tables** - Minutes to throttle: Air vs Pro 14" vs Pro 16" vs Mini vs Studio
+5. **Ambient temperature impact** - Performance delta at 20°C vs 30°C vs 35°C ambient
+6. **Clamshell mode thermals** - Does running closed affect thermal capacity?
+
 ## Research Depth Guidance
 
 - Focus on gaming-relevant sustained workloads, not burst scenarios

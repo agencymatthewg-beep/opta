@@ -10,6 +10,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { ModalErrorBoundary } from '@/components/ModalErrorBoundary';
 import { CheckCircle, XCircle, X, Sparkles, RotateCcw, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -59,7 +60,7 @@ function OptimizationResultModal({
           >
             <motion.div
               className={cn(
-                'w-full max-w-lg bg-[#05030a]/90 backdrop-blur-2xl rounded-2xl border overflow-hidden',
+                'w-full max-w-lg glass-strong rounded-2xl border overflow-hidden',
                 isSuccess ? 'border-success/30' : 'border-danger/30'
               )}
               initial={{ scale: 0.95, y: 20 }}
@@ -110,8 +111,9 @@ function OptimizationResultModal({
               </div>
 
               {/* Content */}
-              <ScrollArea className="max-h-[60vh]">
-                <div className="p-6 space-y-4">
+              <ModalErrorBoundary onClose={onClose}>
+                <ScrollArea className="max-h-[60vh]">
+                  <div className="p-6 space-y-4">
                   {/* Summary */}
                   <div className="flex items-center justify-between p-4 rounded-xl bg-white/[0.02] border border-white/[0.04]">
                     <div>
@@ -189,8 +191,9 @@ function OptimizationResultModal({
                       <li>Revert if you experience any issues</li>
                     </ul>
                   </div>
-                </div>
-              </ScrollArea>
+                  </div>
+                </ScrollArea>
+              </ModalErrorBoundary>
 
               {/* Footer */}
               <div className="px-6 py-4 border-t border-border/20 flex items-center justify-end gap-3">

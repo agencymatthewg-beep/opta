@@ -10,6 +10,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { ModalErrorBoundary } from '@/components/ModalErrorBoundary';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -61,7 +62,7 @@ export function DataDeletionModal({
       <DialogContent className={cn(
           "relative rounded-xl sm:max-w-md overflow-hidden",
           // Obsidian glass with danger energy
-          "bg-[#05030a]/90 backdrop-blur-2xl",
+          "glass-strong",
           "border border-danger/30",
           // Inner specular highlight
           "before:absolute before:inset-x-0 before:top-0 before:h-px before:z-10",
@@ -69,7 +70,8 @@ export function DataDeletionModal({
           // Danger energy glow
           "shadow-[inset_0_0_20px_rgba(239,68,68,0.05),0_0_30px_-10px_rgba(239,68,68,0.3)]"
         )}>
-        <DialogHeader>
+        <ModalErrorBoundary onClose={() => onOpenChange(false)}>
+          <DialogHeader>
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -181,7 +183,8 @@ export function DataDeletionModal({
               )}
             </Button>
           </motion.div>
-        </DialogFooter>
+          </DialogFooter>
+        </ModalErrorBoundary>
       </DialogContent>
     </Dialog>
   );

@@ -182,7 +182,7 @@ function LoadingSkeleton() {
   return (
     <div className={cn(
       "rounded-xl p-4",
-      "bg-[#05030a]/80 backdrop-blur-xl",
+      "glass",
       "border border-white/[0.06]"
     )}>
       <div className="flex items-center gap-2 mb-3">
@@ -232,7 +232,7 @@ export function PersonalizedRecommendations({
       className={cn(
         "relative rounded-xl overflow-hidden",
         // Obsidian glass material
-        "bg-[#05030a]/80 backdrop-blur-xl",
+        "glass",
         "border border-white/[0.06]",
         // Inner specular highlight
         "before:absolute before:inset-x-0 before:top-0 before:h-px before:z-10",
@@ -275,9 +275,9 @@ export function PersonalizedRecommendations({
       <AnimatePresence>
         {expanded && (
           <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
+            initial={{ maxHeight: 0, opacity: 0 }}
+            animate={{ maxHeight: 800, opacity: 1 }}
+            exit={{ maxHeight: 0, opacity: 0 }}
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >

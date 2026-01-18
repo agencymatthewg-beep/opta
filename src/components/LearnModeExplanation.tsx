@@ -228,10 +228,10 @@ export function LearnModeExplanation({
   return (
     <AnimatePresence>
       <motion.div
-        initial={{ opacity: 0, y: -8, height: 0 }}
-        animate={{ opacity: 1, y: 0, height: 'auto' }}
-        exit={{ opacity: 0, y: -8, height: 0 }}
-        className={cn('rounded-lg border p-3 my-2', colors, className)}
+        initial={{ opacity: 0, y: -8, maxHeight: 0 }}
+        animate={{ opacity: 1, y: 0, maxHeight: 600 }}
+        exit={{ opacity: 0, y: -8, maxHeight: 0 }}
+        className={cn('rounded-lg border p-3 my-2 overflow-hidden', colors, className)}
       >
         <div className="flex items-start gap-2">
           <Icon className="w-4 h-4 mt-0.5 flex-shrink-0" strokeWidth={1.75} />
@@ -255,9 +255,9 @@ export function LearnModeExplanation({
             {/* Technical details - expandable for simple/standard, always visible for power */}
             {showTechnicalDetails && details && (
               <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                className="mt-2 pt-2 border-t border-current/20"
+                initial={{ opacity: 0, maxHeight: 0 }}
+                animate={{ opacity: 1, maxHeight: 200 }}
+                className="mt-2 pt-2 border-t border-current/20 overflow-hidden"
               >
                 <p className="text-xs font-mono opacity-70 leading-relaxed">
                   <span className="font-semibold">Advanced: </span>
@@ -279,7 +279,7 @@ export function LearnModeExplanation({
             )}
 
             {hasExpandableDetails && expanded && (
-              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}>
+              <motion.div initial={{ opacity: 0, maxHeight: 0 }} animate={{ opacity: 1, maxHeight: 300 }} className="overflow-hidden">
                 <motion.button
                   onClick={() => setExpanded(false)}
                   className="mt-2 text-xs cursor-pointer flex items-center gap-1 opacity-70 hover:opacity-100 transition-opacity"
@@ -429,10 +429,10 @@ export function LearnModeSection({ title, children, type = 'info', className }: 
       <AnimatePresence>
         {isLearnMode && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="flex items-center gap-2 mb-2"
+            initial={{ opacity: 0, maxHeight: 0 }}
+            animate={{ opacity: 1, maxHeight: 100 }}
+            exit={{ opacity: 0, maxHeight: 0 }}
+            className="flex items-center gap-2 mb-2 overflow-hidden"
           >
             <div className={cn('p-1 rounded-md', iconColors)}>
               <Icon className="w-3.5 h-3.5" strokeWidth={1.75} />

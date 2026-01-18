@@ -1,0 +1,540 @@
+{
+  "$schema": "settings-schema.json",
+  "domain": "general-graphics",
+  "subDomain": "quality-profiles",
+  "lastUpdated": "2026-01-18",
+  "lastVerified": "2026-01-18",
+  "confidence": "high",
+  "sources": [
+    {
+      "name": "Gemini Deep Research - Gaming Performance Optimization",
+      "type": "gemini-research",
+      "date": "2026-01"
+    },
+    {
+      "name": "Digital Foundry Optimized Settings Guides",
+      "type": "benchmark",
+      "date": "2025"
+    },
+    {
+      "name": "Hardware Unboxed Quality Preset Analysis",
+      "type": "benchmark",
+      "date": "2025"
+    }
+  ],
+  "settings": [
+    {
+      "id": "low-profile-minimal-impact-disable",
+      "type": "synergy",
+      "direction": "enhances",
+      "settings": [
+        { "category": "graphics", "setting": "ambient-occlusion", "value": "off" },
+        { "category": "graphics", "setting": "motion-blur", "value": "off" },
+        { "category": "graphics", "setting": "depth-of-field", "value": "off" },
+        { "category": "graphics", "setting": "film-grain", "value": "off" }
+      ],
+      "relationship": "These effects have minimal visual impact at Low preset and should be disabled first for FPS gains",
+      "impact": {
+        "performance": { "value": 20, "min": 15, "max": 25 },
+        "quality": { "value": -5, "min": -10, "max": 0 }
+      },
+      "confidence": "high",
+      "platforms": ["all"],
+      "tags": ["low-profile", "disable-first", "minimal-impact", "fps-gain"],
+      "source": "Digital Foundry Settings Analysis",
+      "sourceDate": "2025",
+      "recommendations": [
+        "AO at Low is barely visible - disable for free FPS",
+        "Motion blur is personal preference and costs GPU time",
+        "DoF and film grain add no gameplay value at Low"
+      ]
+    },
+    {
+      "id": "low-profile-scale-down-order",
+      "type": "synergy",
+      "direction": "enhances",
+      "settings": [
+        { "category": "graphics", "setting": "shadows", "value": "low" },
+        { "category": "graphics", "setting": "volumetrics", "value": "off" },
+        { "category": "graphics", "setting": "reflections", "value": "low" }
+      ],
+      "relationship": "Optimal order for scaling down expensive effects: volumetrics first, then shadows, then reflections",
+      "impact": {
+        "performance": { "value": 45, "min": 35, "max": 55 },
+        "quality": { "value": -25, "min": -35, "max": -20 }
+      },
+      "confidence": "high",
+      "platforms": ["all"],
+      "tags": ["low-profile", "scale-order", "expensive-effects"],
+      "source": "Performance Optimization Guide",
+      "sourceDate": "2025",
+      "recommendations": [
+        "Volumetrics (god rays, fog) are extremely expensive",
+        "Shadow quality has logarithmic returns (Low is 80% as good)",
+        "Screen-space reflections at Low still provide key visual cues"
+      ]
+    },
+    {
+      "id": "low-profile-texture-streaming-priority",
+      "type": "synergy",
+      "direction": "enhances",
+      "settings": [
+        { "category": "graphics", "setting": "textures", "value": "medium" },
+        { "category": "graphics", "setting": "texture-streaming", "value": "on" },
+        { "category": "graphics", "setting": "texture-filtering", "value": "low" }
+      ],
+      "relationship": "Keep textures at Medium even at Low preset - they use VRAM not GPU compute",
+      "impact": {
+        "quality": { "value": 15, "min": 10, "max": 20 },
+        "vram": { "value": -15, "min": -25, "max": -10 }
+      },
+      "confidence": "high",
+      "platforms": ["all"],
+      "tags": ["low-profile", "textures", "vram", "exception"],
+      "source": "Texture Quality Analysis",
+      "sourceDate": "2025",
+      "recommendations": [
+        "Texture quality is nearly free if VRAM allows",
+        "Enable streaming to prevent VRAM exhaustion",
+        "Low filtering saves minor GPU but visible on close surfaces"
+      ]
+    },
+    {
+      "id": "medium-profile-sweet-spot-combo",
+      "type": "synergy",
+      "direction": "enhances",
+      "settings": [
+        { "category": "graphics", "setting": "shadows", "value": "medium" },
+        { "category": "graphics", "setting": "lighting", "value": "medium" },
+        { "category": "graphics", "setting": "effects", "value": "medium" },
+        { "category": "graphics", "setting": "textures", "value": "high" }
+      ],
+      "relationship": "Medium preset sweet spot: uniform medium quality with high textures provides best value",
+      "impact": {
+        "quality": { "value": 25, "min": 20, "max": 30 },
+        "performance": { "value": -15, "min": -20, "max": -10 }
+      },
+      "confidence": "high",
+      "platforms": ["all"],
+      "tags": ["medium-profile", "sweet-spot", "balanced", "value"],
+      "source": "Hardware Unboxed Quality Analysis",
+      "sourceDate": "2025",
+      "recommendations": [
+        "Medium shadows are 90% as good as High visually",
+        "Medium lighting captures most indirect light bounce",
+        "High textures are cheap if you have 8GB+ VRAM"
+      ]
+    },
+    {
+      "id": "medium-profile-upscaling-efficient",
+      "type": "synergy",
+      "direction": "enhances",
+      "settings": [
+        { "category": "upscaling", "setting": "fsr", "value": "balanced" },
+        { "category": "graphics", "setting": "shadows", "value": "medium" },
+        { "category": "graphics", "setting": "aa", "value": "off" }
+      ],
+      "relationship": "FSR Balanced with medium shadows and no AA - FSR provides anti-aliasing through reconstruction",
+      "impact": {
+        "performance": { "value": 45, "min": 35, "max": 55 },
+        "quality": { "value": -8, "min": -15, "max": -5 }
+      },
+      "confidence": "high",
+      "platforms": ["all"],
+      "tags": ["medium-profile", "fsr", "efficient", "upscaling"],
+      "source": "FSR Optimization Guide",
+      "sourceDate": "2025",
+      "recommendations": [
+        "Disable native AA when using FSR (redundant)",
+        "FSR Balanced provides good quality/performance ratio",
+        "Medium shadows complement upscaled image well"
+      ]
+    },
+    {
+      "id": "medium-profile-keep-vs-reduce",
+      "type": "synergy",
+      "direction": "enhances",
+      "settings": [
+        { "category": "graphics", "setting": "draw-distance", "value": "high" },
+        { "category": "graphics", "setting": "lod-bias", "value": "medium" },
+        { "category": "graphics", "setting": "foliage-density", "value": "medium" }
+      ],
+      "relationship": "Keep draw distance high, reduce LOD and foliage - maintains world scale while saving GPU",
+      "impact": {
+        "performance": { "value": 20, "min": 15, "max": 25 },
+        "quality": { "value": -10, "min": -15, "max": -5 }
+      },
+      "confidence": "high",
+      "platforms": ["all"],
+      "tags": ["medium-profile", "draw-distance", "lod", "foliage"],
+      "source": "Open World Optimization",
+      "sourceDate": "2025",
+      "recommendations": [
+        "Low draw distance breaks open world immersion",
+        "LOD at medium is invisible in motion",
+        "Foliage density at medium maintains environment feel"
+      ]
+    },
+    {
+      "id": "high-profile-worth-increasing-together",
+      "type": "synergy",
+      "direction": "enhances",
+      "settings": [
+        { "category": "graphics", "setting": "shadows", "value": "high" },
+        { "category": "graphics", "setting": "lighting", "value": "high" },
+        { "category": "graphics", "setting": "ambient-occlusion", "value": "hbao+" }
+      ],
+      "relationship": "High shadows + lighting + HBAO+ create coherent high-quality lighting model",
+      "impact": {
+        "quality": { "value": 40, "min": 30, "max": 50 },
+        "performance": { "value": -30, "min": -40, "max": -25 }
+      },
+      "confidence": "high",
+      "platforms": ["all"],
+      "tags": ["high-profile", "lighting", "coherent", "quality"],
+      "source": "Visual Quality Analysis",
+      "sourceDate": "2025",
+      "recommendations": [
+        "High shadows need high lighting to look correct",
+        "HBAO+ completes the lighting with contact shadows",
+        "Mixing quality levels creates visual inconsistency"
+      ]
+    },
+    {
+      "id": "high-profile-rt-complement-raster",
+      "type": "synergy",
+      "direction": "enhances",
+      "settings": [
+        { "category": "rt", "setting": "shadows", "value": "on" },
+        { "category": "graphics", "setting": "shadows", "value": "high" },
+        { "category": "graphics", "setting": "ambient-occlusion", "value": "medium" }
+      ],
+      "relationship": "RT shadows complement high rasterized shadows - can reduce AO when RT shadows active",
+      "impact": {
+        "quality": { "value": 25, "min": 20, "max": 30 },
+        "performance": { "value": -20, "min": -30, "max": -15 }
+      },
+      "confidence": "high",
+      "platforms": ["windows"],
+      "tags": ["high-profile", "ray-tracing", "shadows", "complement"],
+      "source": "RT Shadow Analysis",
+      "sourceDate": "2025",
+      "recommendations": [
+        "RT shadows provide accurate contact shadows",
+        "AO can be reduced when RT shadows handle contacts",
+        "Keep rasterized shadows high for long-range shadows"
+      ]
+    },
+    {
+      "id": "high-profile-expensive-skip",
+      "type": "synergy",
+      "direction": "enhances",
+      "settings": [
+        { "category": "graphics", "setting": "subsurface-scattering", "value": "off" },
+        { "category": "graphics", "setting": "tessellation", "value": "off" },
+        { "category": "graphics", "setting": "volumetrics", "value": "medium" }
+      ],
+      "relationship": "Skip expensive effects with minimal visual return even at High preset",
+      "impact": {
+        "performance": { "value": 15, "min": 10, "max": 20 },
+        "quality": { "value": -5, "min": -10, "max": 0 }
+      },
+      "confidence": "high",
+      "platforms": ["all"],
+      "tags": ["high-profile", "expensive", "skip", "diminishing-returns"],
+      "source": "Performance Value Analysis",
+      "sourceDate": "2025",
+      "recommendations": [
+        "SSS only affects skin in close-ups - skip in most games",
+        "Tessellation is rarely used well in modern games",
+        "Volumetrics at High vs Medium is minimal difference"
+      ]
+    },
+    {
+      "id": "ultra-profile-stack-well",
+      "type": "synergy",
+      "direction": "enhances",
+      "settings": [
+        { "category": "rt", "setting": "reflections", "value": "ultra" },
+        { "category": "rt", "setting": "global-illumination", "value": "ultra" },
+        { "category": "graphics", "setting": "textures", "value": "ultra" }
+      ],
+      "relationship": "Ultra RT effects stack well with ultra textures for maximum visual fidelity",
+      "impact": {
+        "quality": { "value": 60, "min": 50, "max": 70 },
+        "performance": { "value": -60, "min": -75, "max": -50 }
+      },
+      "confidence": "high",
+      "platforms": ["windows"],
+      "tags": ["ultra-profile", "ray-tracing", "maximum-quality", "stack"],
+      "source": "Ultra Quality Analysis",
+      "sourceDate": "2025",
+      "recommendations": [
+        "Ultra RT requires RTX 4080+ or similar",
+        "Use DLSS Quality to make Ultra RT playable",
+        "Ultra textures require 12GB+ VRAM"
+      ]
+    },
+    {
+      "id": "ultra-profile-diminishing-returns",
+      "type": "synergy",
+      "direction": "enhances",
+      "settings": [
+        { "category": "graphics", "setting": "shadows", "value": "high" },
+        { "category": "graphics", "setting": "ambient-occlusion", "value": "hbao+" },
+        { "category": "graphics", "setting": "effects", "value": "high" }
+      ],
+      "relationship": "Even at Ultra preset, keep shadows/AO/effects at High - Ultra versions are diminishing returns",
+      "impact": {
+        "performance": { "value": 15, "min": 10, "max": 20 },
+        "quality": { "value": -3, "min": -5, "max": 0 }
+      },
+      "confidence": "high",
+      "platforms": ["all"],
+      "tags": ["ultra-profile", "diminishing-returns", "optimization"],
+      "source": "Ultra vs High Comparison",
+      "sourceDate": "2025",
+      "recommendations": [
+        "Ultra shadows are 5% better visually but 30% slower",
+        "RTAO (Ultra) vs HBAO+ is marginal improvement",
+        "Save GPU budget for RT effects instead"
+      ]
+    },
+    {
+      "id": "ultra-profile-path-tracing-exception",
+      "type": "synergy",
+      "direction": "enhances",
+      "settings": [
+        { "category": "rt", "setting": "path-tracing", "value": "on" },
+        { "category": "graphics", "setting": "rasterized-lighting", "value": "off" },
+        { "category": "upscaling", "setting": "dlss", "value": "performance" }
+      ],
+      "relationship": "Path tracing replaces all rasterized lighting - pair with DLSS Performance for playability",
+      "impact": {
+        "quality": { "value": 80, "min": 70, "max": 90 },
+        "performance": { "value": -80, "min": -90, "max": -70 }
+      },
+      "confidence": "high",
+      "platforms": ["windows"],
+      "tags": ["ultra-profile", "path-tracing", "future", "extreme"],
+      "source": "Path Tracing Analysis",
+      "sourceDate": "2025",
+      "recommendations": [
+        "Path tracing is the ultimate visual quality",
+        "Requires RTX 40 series minimum",
+        "DLSS Performance/Ultra Performance required for playable FPS"
+      ]
+    },
+    {
+      "id": "custom-high-textures-medium-rest",
+      "type": "synergy",
+      "direction": "enhances",
+      "settings": [
+        { "category": "graphics", "setting": "textures", "value": "high" },
+        { "category": "graphics", "setting": "shadows", "value": "medium" },
+        { "category": "graphics", "setting": "effects", "value": "medium" },
+        { "category": "graphics", "setting": "post-processing", "value": "low" }
+      ],
+      "relationship": "Classic custom profile: high textures + medium everything else for best visual per FPS",
+      "impact": {
+        "quality": { "value": 20, "min": 15, "max": 25 },
+        "performance": { "value": 25, "min": 20, "max": 30 }
+      },
+      "confidence": "high",
+      "platforms": ["all"],
+      "tags": ["custom-profile", "efficient", "balanced", "common-pattern"],
+      "source": "Community Optimization Patterns",
+      "sourceDate": "2025",
+      "recommendations": [
+        "Textures define surface detail - most noticeable setting",
+        "Shadows and effects at medium are barely distinguishable",
+        "Low post-processing removes expensive blur effects"
+      ]
+    },
+    {
+      "id": "custom-matching-settings",
+      "type": "synergy",
+      "direction": "enhances",
+      "settings": [
+        { "category": "graphics", "setting": "shadows", "value": "medium" },
+        { "category": "graphics", "setting": "lighting", "value": "medium" },
+        { "category": "graphics", "setting": "reflections", "value": "medium" }
+      ],
+      "relationship": "Shadows, lighting, and reflections should match - mismatched levels create visual inconsistency",
+      "impact": {
+        "quality": { "value": 10, "min": 5, "max": 15 }
+      },
+      "confidence": "high",
+      "platforms": ["all"],
+      "tags": ["custom-profile", "matching", "consistency", "rule"],
+      "source": "Visual Consistency Analysis",
+      "sourceDate": "2025",
+      "recommendations": [
+        "High shadows + low lighting looks broken",
+        "Keep lighting-related settings at same tier",
+        "Reflections should match shadow quality"
+      ]
+    },
+    {
+      "id": "custom-resolution-first-quality-second",
+      "type": "synergy",
+      "direction": "enhances",
+      "settings": [
+        { "category": "graphics", "setting": "render-resolution", "value": "native" },
+        { "category": "quality", "setting": "preset", "value": "medium" }
+      ],
+      "relationship": "Native resolution at Medium looks better than Low resolution at Ultra in most cases",
+      "impact": {
+        "quality": { "value": 15, "min": 10, "max": 20 }
+      },
+      "confidence": "high",
+      "platforms": ["all"],
+      "tags": ["custom-profile", "resolution-priority", "quality-rule"],
+      "source": "Resolution vs Quality Analysis",
+      "sourceDate": "2025",
+      "recommendations": [
+        "Resolution clarity affects everything on screen",
+        "Upscaling artifacts can be more jarring than lower settings",
+        "Prioritize native resolution if performance allows"
+      ]
+    },
+    {
+      "id": "custom-apple-silicon-balanced",
+      "type": "synergy",
+      "direction": "enhances",
+      "settings": [
+        { "category": "graphics", "setting": "textures", "value": "medium" },
+        { "category": "graphics", "setting": "shadows", "value": "medium" },
+        { "category": "upscaling", "setting": "metalfx", "value": "temporal" },
+        { "category": "display", "setting": "frame-cap", "value": "60" }
+      ],
+      "relationship": "Optimal Apple Silicon balanced profile respects unified memory limits while using MetalFX",
+      "impact": {
+        "quality": { "value": 20, "min": 15, "max": 25 },
+        "performance": { "value": 30, "min": 25, "max": 35 }
+      },
+      "confidence": "high",
+      "platforms": ["macos"],
+      "hardware": ["M1", "M2", "M3", "M4"],
+      "tags": ["custom-profile", "apple-silicon", "balanced", "metalfx"],
+      "source": "Apple Silicon Gaming Guide",
+      "sourceDate": "2025",
+      "recommendations": [
+        "Medium textures prevent memory pressure on 8GB Macs",
+        "MetalFX Temporal provides quality upscaling",
+        "60fps cap ensures consistent frame pacing"
+      ]
+    },
+    {
+      "id": "custom-apple-silicon-performance",
+      "type": "synergy",
+      "direction": "enhances",
+      "settings": [
+        { "category": "graphics", "setting": "textures", "value": "low" },
+        { "category": "graphics", "setting": "shadows", "value": "low" },
+        { "category": "upscaling", "setting": "metalfx", "value": "performance" },
+        { "category": "display", "setting": "frame-cap", "value": "120" }
+      ],
+      "relationship": "Apple Silicon performance profile maximizes frame rate for competitive play",
+      "impact": {
+        "performance": { "value": 60, "min": 50, "max": 70 },
+        "quality": { "value": -35, "min": -45, "max": -30 }
+      },
+      "confidence": "high",
+      "platforms": ["macos"],
+      "hardware": ["M1 Pro", "M1 Max", "M2 Pro", "M2 Max", "M3", "M3 Pro", "M3 Max", "M4", "M4 Pro", "M4 Max"],
+      "tags": ["custom-profile", "apple-silicon", "performance", "competitive"],
+      "source": "Apple Silicon Performance Guide",
+      "sourceDate": "2025",
+      "recommendations": [
+        "Low everything with MetalFX Performance for max FPS",
+        "Target 120fps on ProMotion displays",
+        "Only viable on M1 Pro or higher chips"
+      ]
+    },
+    {
+      "id": "hardware-tier-entry-gpu",
+      "type": "synergy",
+      "direction": "enhances",
+      "settings": [
+        { "category": "quality", "setting": "preset", "value": "low" },
+        { "category": "upscaling", "setting": "fsr", "value": "performance" },
+        { "category": "display", "setting": "frame-cap", "value": "60" }
+      ],
+      "relationship": "Entry-level GPU profile (GTX 1650, RX 570, M1): Low + FSR Performance for stable 60fps",
+      "impact": {
+        "performance": { "value": 70, "min": 60, "max": 80 }
+      },
+      "confidence": "high",
+      "platforms": ["all"],
+      "conditions": [
+        { "parameter": "gpu_tier", "operator": "eq", "value": "entry" }
+      ],
+      "tags": ["hardware-tier", "entry-gpu", "budget", "stable-fps"],
+      "source": "Budget GPU Optimization",
+      "sourceDate": "2025",
+      "recommendations": [
+        "FSR Performance provides significant FPS boost",
+        "60fps target is realistic for entry GPUs",
+        "Low preset still looks good at 1080p"
+      ]
+    },
+    {
+      "id": "hardware-tier-mid-gpu",
+      "type": "synergy",
+      "direction": "enhances",
+      "settings": [
+        { "category": "quality", "setting": "preset", "value": "high" },
+        { "category": "upscaling", "setting": "dlss", "value": "balanced" },
+        { "category": "display", "setting": "resolution", "value": "1440p" }
+      ],
+      "relationship": "Mid-range GPU profile (RTX 3060, RX 6700, M3 Pro): High + DLSS Balanced at 1440p",
+      "impact": {
+        "quality": { "value": 35, "min": 30, "max": 40 },
+        "performance": { "value": 25, "min": 20, "max": 30 }
+      },
+      "confidence": "high",
+      "platforms": ["all"],
+      "conditions": [
+        { "parameter": "gpu_tier", "operator": "eq", "value": "mid" }
+      ],
+      "tags": ["hardware-tier", "mid-gpu", "balanced", "1440p"],
+      "source": "Mid-Range Optimization Guide",
+      "sourceDate": "2025",
+      "recommendations": [
+        "1440p is the sweet spot for mid-range GPUs",
+        "High preset at 1440p with DLSS is excellent",
+        "DLSS Balanced provides best quality/performance"
+      ]
+    },
+    {
+      "id": "hardware-tier-high-end-gpu",
+      "type": "synergy",
+      "direction": "enhances",
+      "settings": [
+        { "category": "quality", "setting": "preset", "value": "ultra" },
+        { "category": "rt", "setting": "reflections", "value": "on" },
+        { "category": "upscaling", "setting": "dlss", "value": "quality" },
+        { "category": "display", "setting": "resolution", "value": "4k" }
+      ],
+      "relationship": "High-end GPU profile (RTX 4080+, RX 7900, M3 Max): Ultra + RT + DLSS Quality at 4K",
+      "impact": {
+        "quality": { "value": 55, "min": 50, "max": 60 },
+        "performance": { "value": -25, "min": -35, "max": -20 }
+      },
+      "confidence": "high",
+      "platforms": ["all"],
+      "conditions": [
+        { "parameter": "gpu_tier", "operator": "eq", "value": "high" }
+      ],
+      "tags": ["hardware-tier", "high-end-gpu", "4k", "ray-tracing"],
+      "source": "High-End Optimization Guide",
+      "sourceDate": "2025",
+      "recommendations": [
+        "4K with Ultra and RT is achievable",
+        "DLSS Quality maintains visual fidelity",
+        "Enable RT reflections for showcase visuals"
+      ]
+    }
+  ]
+}

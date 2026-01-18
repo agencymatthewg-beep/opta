@@ -111,7 +111,7 @@ function NoOptimizationState({
       <motion.div
         className={cn(
           'w-14 h-14 mx-auto flex items-center justify-center rounded-full mb-4',
-          'bg-[#05030a]/60 backdrop-blur-xl border border-white/[0.06]'
+          'glass-subtle border border-white/[0.06]'
         )}
         animate={{ rotate: [0, 5, -5, 0] }}
         transition={{ duration: 3, repeat: Infinity }}

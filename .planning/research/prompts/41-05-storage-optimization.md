@@ -111,6 +111,24 @@ Structure your findings as:
 5. **External Storage Guide** - When and how to use external drives
 6. **Cross-Reference Matrix** - Storage interactions with Memory/CPU/Thermals
 
+## Already Established (Do Not Duplicate)
+
+We already have documented knowledge for these topics - focus on **gaps below**:
+
+- **SSD Encryption**: All data encrypted via Secure Enclave AES engine, transparent to performance
+- **Swap Behavior**: macOS uses SSD as fast swap, degrades SSD lifespan over time
+- **Rosetta 2 Caching**: ~2GB cache per translated app mentioned
+- **APFS Features**: Compression, snapshots, cloning documented
+
+### GAPS TO PRIORITIZE
+
+1. **256GB vs 1TB speed difference** - Quantified sequential/random read/write numbers
+2. **Loading time formulas** - File size / read speed + decompression + init estimates
+3. **Asset streaming minimums** - GB/s required to avoid pop-in in different game types
+4. **External storage viability** - TB4 vs USB-C performance for running games
+5. **Free space impact** - At what % full does write performance degrade significantly?
+6. **Rosetta cache warmup** - How much faster is second run vs first run?
+
 ## Research Depth Guidance
 
 - Focus on gaming-relevant I/O patterns, not general file operations

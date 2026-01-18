@@ -66,7 +66,7 @@ export function HardwareTierFilter({
       className={cn(
         "relative rounded-xl p-4 overflow-hidden",
         // Obsidian glass material
-        "bg-[#05030a]/80 backdrop-blur-xl",
+        "glass",
         "border border-white/[0.06]",
         // Inner specular highlight
         "before:absolute before:inset-x-0 before:top-0 before:h-px before:z-10",

@@ -178,7 +178,7 @@ const NetworkMeter = memo(function NetworkMeter({
         <div
           className={cn(
             'w-20 h-20 rounded-full flex items-center justify-center',
-            'bg-[#05030a]/60 backdrop-blur-lg',
+            'glass-subtle',
             'border-2 border-dashed border-white/[0.08]'
           )}
         >
@@ -244,7 +244,7 @@ const NetworkMeter = memo(function NetworkMeter({
       <div
         className={cn(
           'relative h-32 w-full rounded-xl overflow-hidden',
-          'bg-[#05030a]/60 backdrop-blur-lg',
+          'glass-subtle',
           'border border-white/[0.06]'
         )}
       >

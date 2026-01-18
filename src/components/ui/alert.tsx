@@ -15,7 +15,7 @@ const alertVariants = cva(
   [
     "relative w-full rounded-xl px-4 py-3 text-sm",
     // Obsidian glass base
-    "bg-[#05030a]/80 backdrop-blur-xl",
+    "glass",
     "border",
     // Inner specular highlight
     "before:absolute before:inset-x-0 before:top-0 before:h-px before:z-10",

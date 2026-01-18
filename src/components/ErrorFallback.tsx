@@ -41,7 +41,7 @@ function ErrorFallback({ error, onReset }: ErrorFallbackProps) {
       <motion.div
         className={cn(
           'relative w-full max-w-lg p-8 rounded-2xl',
-          'bg-[#05030a]/90 backdrop-blur-2xl',
+          'glass-strong',
           'border border-danger/30',
           'before:absolute before:inset-x-0 before:top-0 before:h-px before:z-10',
           'before:bg-gradient-to-r before:from-transparent before:via-danger/20 before:to-transparent',

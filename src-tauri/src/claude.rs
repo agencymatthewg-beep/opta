@@ -8,8 +8,42 @@
 //! functions from the opta_mcp package.
 
 use serde::{Deserialize, Serialize};
-use std::process::Command;
+use std::time::Duration;
 use tauri::command;
+use tokio::process::Command;
+use tokio::time::timeout;
+
+/// Default timeout for Python subprocess calls (30 seconds).
+const SUBPROCESS_TIMEOUT: Duration = Duration::from_secs(30);
+
+/// Run a Python command with timeout protection.
+async fn run_python_with_timeout(script: &str) -> Result<String, String> {
+    let python_cmd = if cfg!(target_os = "windows") {
+        "python"
+    } else {
+        "python3"
+    };
+
+    let mut cmd = Command::new(python_cmd);
+    cmd.arg("-c").arg(script);
+
+    let output_future = cmd.output();
+
+    match timeout(SUBPROCESS_TIMEOUT, output_future).await {
+        Ok(Ok(output)) => {
+            if !output.status.success() {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                return Err(format!("Python error: {}", stderr));
+            }
+            Ok(String::from_utf8_lossy(&output.stdout).to_string())
+        }
+        Ok(Err(e)) => Err(format!("Failed to spawn Python: {}", e)),
+        Err(_) => Err(format!(
+            "Python subprocess timed out after {} seconds",
+            SUBPROCESS_TIMEOUT.as_secs()
+        )),
+    }
+}
 
 /// Claude API status response.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -93,15 +127,6 @@ except Exception as e:
     sys.exit(0)
 "#;
 
-/// Get Python command for the current platform.
-fn python_cmd() -> &'static str {
-    if cfg!(target_os = "windows") {
-        "python"
-    } else {
-        "python3"
-    }
-}
-
 /// Check Claude API status.
 ///
 /// Returns whether the Claude API is configured and available.
@@ -116,18 +141,8 @@ fn python_cmd() -> &'static str {
 /// Returns an error string if Python execution fails or JSON parsing fails.
 #[command]
 pub async fn claude_status() -> Result<ClaudeStatus, String> {
-    let output = Command::new(python_cmd())
-        .arg("-c")
-        .arg(CLAUDE_STATUS_SCRIPT)
-        .output()
-        .map_err(|e| format!("Failed to spawn Python: {}", e))?;
+    let stdout = run_python_with_timeout(CLAUDE_STATUS_SCRIPT).await?;
 
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("Python error: {}", stderr));
-    }
-
-    let stdout = String::from_utf8_lossy(&output.stdout);
     let result: ClaudeStatus = serde_json::from_str(&stdout)
         .map_err(|e| format!("JSON parse error: {} (raw: {})", e, stdout))?;
 
@@ -171,18 +186,8 @@ pub async fn claude_chat(
         .replace("%MESSAGES%", &messages_json)
         .replace("%SYSTEM_PROMPT%", &system_prompt_str);
 
-    let output = Command::new(python_cmd())
-        .arg("-c")
-        .arg(&script)
-        .output()
-        .map_err(|e| format!("Failed to spawn Python: {}", e))?;
+    let stdout = run_python_with_timeout(&script).await?;
 
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("Python error: {}", stderr));
-    }
-
-    let stdout = String::from_utf8_lossy(&output.stdout);
     let result: ClaudeResponse = serde_json::from_str(&stdout)
         .map_err(|e| format!("JSON parse error: {} (raw: {})", e, stdout))?;
 

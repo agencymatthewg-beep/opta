@@ -83,7 +83,7 @@ function OptaRing3DTest() {
 
   return (
     <motion.div
-      className="mb-6 p-6 rounded-xl bg-[#05030a]/80 backdrop-blur-xl border border-primary/30"
+      className="mb-6 p-6 rounded-xl glass border border-primary/30"
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
     >
@@ -200,7 +200,7 @@ function Dashboard({ onNavigate }: DashboardProps) {
           {[1, 2, 3, 4].map((i) => (
             <motion.div
               key={i}
-              className="rounded-xl overflow-hidden bg-[#05030a]/80 backdrop-blur-xl border border-white/[0.06]"
+              className="rounded-xl overflow-hidden glass border border-white/[0.06]"
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.1 }}
@@ -231,7 +231,7 @@ function Dashboard({ onNavigate }: DashboardProps) {
           </span>
         </motion.h1>
         <motion.div
-          className="mt-6 flex flex-col items-center justify-center min-h-[300px] p-12 rounded-xl bg-[#05030a]/80 backdrop-blur-xl border border-white/[0.06]"
+          className="mt-6 flex flex-col items-center justify-center min-h-[300px] p-12 rounded-xl glass border border-white/[0.06]"
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
         >
@@ -281,7 +281,7 @@ function Dashboard({ onNavigate }: DashboardProps) {
 
       {/* Telemetry Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <TelemetryCard title="CPU" icon="cpu" delay={0.05}>
+        <TelemetryCard title="CPU" icon="cpu">
           {telemetry && (
             <CpuMeter
               percent={telemetry.cpu.percent ?? 0}
@@ -291,7 +291,7 @@ function Dashboard({ onNavigate }: DashboardProps) {
           )}
         </TelemetryCard>
 
-        <TelemetryCard title="Memory" icon="memory" delay={0.1}>
+        <TelemetryCard title="Memory" icon="memory">
           {telemetry && (
             <>
               <MemoryMeter
@@ -307,7 +307,7 @@ function Dashboard({ onNavigate }: DashboardProps) {
           )}
         </TelemetryCard>
 
-        <TelemetryCard title="GPU" icon="gpu" delay={0.15}>
+        <TelemetryCard title="GPU" icon="gpu">
           {telemetry && (
             <>
               <GpuMeter
@@ -325,7 +325,7 @@ function Dashboard({ onNavigate }: DashboardProps) {
           )}
         </TelemetryCard>
 
-        <TelemetryCard title="Disk" icon="disk" delay={0.2}>
+        <TelemetryCard title="Disk" icon="disk">
           {telemetry && (
             <DiskMeter
               usedGb={telemetry.disk.used_gb ?? 0}
@@ -359,7 +359,7 @@ function Dashboard({ onNavigate }: DashboardProps) {
       {/* Additional Cards Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <motion.div
-          className="rounded-xl overflow-hidden group bg-[#05030a]/80 backdrop-blur-xl border border-white/[0.06]"
+          className="rounded-xl overflow-hidden group glass border border-white/[0.06]"
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.35 }}
@@ -383,7 +383,7 @@ function Dashboard({ onNavigate }: DashboardProps) {
         </motion.div>
 
         <motion.div
-          className="rounded-xl overflow-hidden group bg-[#05030a]/80 backdrop-blur-xl border border-white/[0.06]"
+          className="rounded-xl overflow-hidden group glass border border-white/[0.06]"
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
@@ -422,7 +422,7 @@ function Dashboard({ onNavigate }: DashboardProps) {
             <motion.div
               className={cn(
                 'fixed top-0 right-0 h-full w-[400px] z-40',
-                'bg-[#05030a]/90 backdrop-blur-2xl border-l border-white/[0.06] rounded-l-2xl shadow-2xl'
+                'glass-strong border-l border-white/[0.06] rounded-l-2xl shadow-2xl'
               )}
               initial={{ x: "100%", opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}

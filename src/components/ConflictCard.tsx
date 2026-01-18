@@ -8,6 +8,7 @@
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Lightbulb, ExternalLink, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { ConflictInfo, ConflictSeverity } from '../types/conflicts';
 
@@ -39,69 +40,6 @@ function getSeverityConfig(severity: ConflictSeverity) {
         iconColor: 'text-muted-foreground',
       };
   }
-}
-
-/**
- * Lightbulb icon for recommendations.
- */
-function LightbulbIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={cn('w-4 h-4', className)}
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-      />
-    </svg>
-  );
-}
-
-/**
- * External link icon.
- */
-function ExternalLinkIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={cn('w-4 h-4', className)}
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-      />
-    </svg>
-  );
-}
-
-/**
- * Check circle icon for acknowledged state.
- */
-function CheckCircleIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={cn('w-4 h-4', className)}
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-      />
-    </svg>
-  );
 }
 
 interface ConflictCardProps {
@@ -154,7 +92,7 @@ function ConflictCard({
               </Badge>
               {acknowledged && (
                 <Badge variant="outline" className="text-xs text-success border-success/50">
-                  <CheckCircleIcon className="w-3 h-3 mr-1" />
+                  <CheckCircle className="w-3 h-3 mr-1" strokeWidth={2} />
                   Acknowledged
                 </Badge>
               )}
@@ -170,7 +108,7 @@ function ConflictCard({
         {/* Recommendation box */}
         <div className={cn('rounded-lg p-3 border', config.accentBg, config.borderClass)}>
           <div className="flex items-start gap-2">
-            <LightbulbIcon className={cn('mt-0.5 flex-shrink-0', config.iconColor)} />
+            <Lightbulb className={cn('w-4 h-4 mt-0.5 flex-shrink-0', config.iconColor)} strokeWidth={2} />
             <div>
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Recommendation
@@ -208,7 +146,7 @@ function ConflictCard({
               className="h-8 text-muted-foreground hover:text-primary"
               onClick={() => onLearnMore(conflict.tool_id)}
             >
-              <ExternalLinkIcon className="w-4 h-4 mr-1.5" />
+              <ExternalLink className="w-4 h-4 mr-1.5" strokeWidth={2} />
               Learn More
             </Button>
           )}
@@ -219,7 +157,7 @@ function ConflictCard({
               className="h-8 text-muted-foreground hover:text-success"
               onClick={() => onDismiss(conflict.tool_id)}
             >
-              <CheckCircleIcon className="w-4 h-4 mr-1.5" />
+              <CheckCircle className="w-4 h-4 mr-1.5" strokeWidth={2} />
               Dismiss
             </Button>
           )}

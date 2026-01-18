@@ -18,10 +18,18 @@ Quick reference for all custom slash commands available in this project.
 | `/100` | Capture must-have idea | Capture |
 | `/learn` | Log training data | Capture |
 | `/bug` | Capture bug/issue | Capture |
+| `/perfect` | Deep perfectionist code audit | Quality |
+| `/Optamize` | Perfectionist loop - fix ALL issues | Quality |
 | `/build` | Build + type check | Workflow |
 | `/commit` | Guided commit | Workflow |
 | `/phase-done` | Complete phase | Workflow |
 | `/help` | Show all commands | Utility |
+| `/improve` | Iterative code polish | Quality |
+| `/cone` | Wild creative brainstorm | Ideation |
+| `/ideas` | Context brainstorm | Ideation |
+| `/runidea` | Full idea pipeline | Ideation |
+| `/aideas` | Advanced ideas (power-user) | Ideation |
+| `/arunidea` | Advanced idea pipeline | Ideation |
 | `/ralph` | Run Ralph agent loop | Automation |
 | `/ralph-task` | Add task to scratchpad | Automation |
 | `/ralph-plan` | Start planning session | Automation |
@@ -233,6 +241,129 @@ Clear Ralph state:
 
 ---
 
+## Quality Commands
+
+### `/perfect`
+**File:** `.claude/commands/perfect.md`
+
+Launch perfectionist-code-auditor agent for comprehensive review:
+```
+/perfect              # Audit recent changes (git diff)
+/perfect staged       # Audit staged changes only
+/perfect branch       # Audit all changes on current branch
+/perfect file:path    # Audit specific file or directory
+/perfect full         # Complete codebase audit
+```
+
+Features:
+- 6-phase systematic methodology (structure, quality, performance, security, standards, maintainability)
+- Design system compliance verification
+- Issues categorized by severity (Critical, Important, Minor)
+- Every finding has file:line references
+- Quality score (0-10) and prioritized action plan
+- Option to automatically fix issues after audit
+
+### `/improve`
+**File:** `.claude/commands/improve.md`
+
+Launch iterative-improver agent for systematic refinements:
+- Analyzes recent changes (git diff or conversation)
+- Applies 20-50+ small improvements
+- Categories: naming, comments, formatting, type safety, performance
+- Outputs GenUI HTML report to `/tmp/`
+- Non-breaking: no logic changes
+
+### `/Optamize`
+**File:** `.claude/commands/optamize.md`
+
+Perfectionist codebase optimization loop (Atpo-Opta Cycle):
+```
+/Optamize                    # Full codebase optimization
+/Optamize src/components/    # Optimize specific scope
+/Optamize --max-iterations 15  # Custom iteration limit
+```
+
+Features:
+- Runs up to **30 iterations** until codebase is perfected
+- **Atpo Phase**: Comprehensive analysis (TypeScript errors, design violations, code quality)
+- **Opta Phase**: Systematic fixes for all identified issues
+- **Validation Phase**: Build + type check after each iteration
+- Tracks progress in `.agent/optamize-state.md`
+- Exits when: perfection achieved OR max iterations OR user cancelled
+
+Issue Categories Addressed:
+- Build & TypeScript errors
+- Design system compliance
+- Code quality (dead code, duplication, missing error handling)
+- Performance issues
+- Security vulnerabilities
+- TODO/FIXME completeness
+- Consistency violations
+
+Exit Conditions:
+1. **PERFECTION_ACHIEVED**: Zero issues found
+2. **MAX_ITERATIONS**: Reached 30 iterations
+3. **USER_CANCELLED**: Interrupted by user
+4. **CRITICAL_FAILURE**: Unrecoverable error
+
+Integration: Pairs with `/build`, `/perfect` (final verification), `/commit`
+
+---
+
+## Ideation Commands
+
+### `/cone`
+**File:** `.claude/commands/cone.md`
+
+Creative brainstorm with cereal-milk-creative agent:
+- Unconventional, abstract, wildly creative ideas
+- 3-7 ideas from "spicy but doable" to "unhinged"
+- For breaking creative blocks
+- Stream-of-consciousness style with grounded versions
+
+### `/ideas`
+**File:** `.claude/commands/ideas.md`
+
+Quick context brainstorm:
+- Analyzes current conversation
+- Generates relevant ideas
+- Prioritizes by feasibility and impact
+- Quick wins + worth exploring lists
+
+### `/runidea`
+**File:** `.claude/commands/runidea.md`
+
+Full 3-stage idea pipeline:
+```
+/runidea [topic or problem]
+```
+1. **Ideation**: 15-25+ ideas, shortlist top candidates
+2. **Critique**: Risk assessment, feasibility analysis
+3. **Compare**: Matrix comparison, use case examples
+
+### `/aideas`
+**File:** `.claude/commands/aideas.md`
+
+Advanced ideas for power users:
+- Deep customization options
+- AI/LLM integration possibilities
+- Automation and scripting hooks
+- API extensibility
+- Elevates basic ideas to power-user level
+
+### `/arunidea`
+**File:** `.claude/commands/arunidea.md`
+
+Advanced idea pipeline (power-user focus):
+```
+/arunidea [topic or problem]
+```
+1. **Advanced Ideation**: 15-25+ ideas with extensibility focus
+2. **Power-User Critique**: Scores for extensibility, AI, automation
+3. **Compare & Architect**: Architecture sketches, extension points
+
+---
+
 ## Adding New Commands
 
 1. Create `.claude/commands/[name].md`
@@ -241,4 +372,4 @@ Clear Ralph state:
 
 ---
 
-*Last updated: 2026-01-17*
+*Last updated: 2026-01-18*

@@ -223,7 +223,7 @@ function EmptyState({
       >
         <div className={cn(
           'w-16 h-16 flex items-center justify-center rounded-full mb-6',
-          'bg-[#05030a]/60 backdrop-blur-xl',
+          'glass-subtle',
           'border border-white/[0.06]'
         )}>
           <Search className="w-7 h-7 text-muted-foreground/40" strokeWidth={1.5} />
@@ -246,7 +246,7 @@ function EmptyState({
       >
         <div className={cn(
           'w-16 h-16 flex items-center justify-center rounded-full mb-6',
-          'bg-[#05030a]/60 backdrop-blur-xl',
+          'glass-subtle',
           'border border-white/[0.06]'
         )}>
           <Search className="w-7 h-7 text-muted-foreground/40" strokeWidth={1.5} />
@@ -273,7 +273,7 @@ function EmptyState({
     >
       <div className={cn(
         'w-16 h-16 flex items-center justify-center rounded-full mb-6',
-        'bg-[#05030a]/60 backdrop-blur-xl',
+        'glass-subtle',
         'border border-white/[0.06]'
       )}>
         <Search className="w-7 h-7 text-muted-foreground/40" strokeWidth={1.5} />
@@ -297,7 +297,7 @@ function GameCardSkeleton({ delay = 0 }: { delay?: number }) {
       transition={{ delay, ease: smoothOut }}
       className={cn(
         "rounded-xl overflow-hidden",
-        "bg-[#05030a]/80 backdrop-blur-xl",
+        "glass",
         "border border-white/[0.06]"
       )}
     >

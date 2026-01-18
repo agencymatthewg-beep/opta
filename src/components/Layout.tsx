@@ -17,6 +17,8 @@ import { useNavigationHistory } from '@/hooks/useNavigationHistory';
 import { SwipeIndicator } from './SwipeIndicator';
 import { GestureHints } from './Gestures';
 import { ParticleField } from '@/components/effects/ParticleField';
+import { PersistentRing } from '@/components/OptaRing3D';
+import { ChromeCanvas } from '@/components/chrome';
 
 /**
  * Layout - The Living Artifact Container
@@ -147,6 +149,10 @@ function LayoutInner({ activePage, onNavigate, children }: LayoutProps) {
       {/* The Living Void - Background with integrated fog */}
       <Background />
 
+      {/* Chrome Canvas - GPU-rendered glass panels and borders */}
+      {/* Renders at z-index 0, between background (-10) and content (10+) */}
+      <ChromeCanvas />
+
       {/* Ambient Particle Environment - Phase 32 */}
       {/* Subtle floating dust motes with ring attraction during processing */}
       <ParticleField
@@ -173,17 +179,18 @@ function LayoutInner({ activePage, onNavigate, children }: LayoutProps) {
       </a>
 
       {/* Radial Navigation - Centered in home view, top in page view */}
-      <motion.nav
+      {/* Pure CSS positioning - no Framer animate prop to avoid transform conflicts */}
+      <nav
         aria-label="Main navigation"
         className={cn(
-          'fixed left-1/2 -translate-x-1/2 z-30',
+          'fixed inset-x-0 z-30 flex justify-center pointer-events-none',
           isHomeView ? 'top-1/2 -translate-y-1/2' : 'top-8'
         )}
-        layout
-        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
       >
-        <RadialNav activePage={activePage} onNavigate={onNavigate} />
-      </motion.nav>
+        <div className="pointer-events-auto">
+          <RadialNav activePage={activePage} onNavigate={onNavigate} />
+        </div>
+      </nav>
 
       {/* Utility Island - Quick access modal (rendered via portal-like behavior) */}
       <UtilityIsland />
@@ -233,6 +240,18 @@ function LayoutInner({ activePage, onNavigate, children }: LayoutProps) {
 
       {/* Floating Ring Overlay - Appears during page transitions */}
       <FloatingRingOverlay />
+
+      {/* Persistent 3D Ring - Contextual position based on view */}
+      {/* Centered in home view, bottom-right when viewing pages */}
+      <PersistentRing
+        currentPage={activePage}
+        position={isHomeView ? 'center' : 'bottom-right'}
+        sizeMode={isHomeView ? 'hero' : 'ambient'}
+        interactive
+        onClick={() => {
+          console.log('[Opta] Ring clicked');
+        }}
+      />
 
       {/* Swipe Navigation Indicator - Shows during trackpad swipe gestures */}
       <SwipeIndicator

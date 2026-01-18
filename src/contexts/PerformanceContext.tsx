@@ -126,6 +126,8 @@ export interface PerformanceHelpers {
   getTierInfo: () => { name: string; description: string };
   /** Get quality display info */
   getQualityInfo: () => { name: string; level: QualityLevel };
+  /** Get current FPS metrics (non-reactive, call when needed) */
+  getFPSMetrics: () => FPSMetrics;
 }
 
 export interface PerformanceContextValue {
@@ -200,11 +202,13 @@ export function PerformanceProvider({
   const [qualitySettings, setQualitySettings] = useState<QualitySettings>(
     initialQuality ? getQualityPreset(initialQuality) : DEFAULT_QUALITY_SETTINGS
   );
-  const [fps, setFps] = useState<FPSMetrics>(DEFAULT_FPS_METRICS);
   const [device, setDevice] = useState<PerformanceState['device']>(DEFAULT_DEVICE);
 
   // Quality manager ref
   const qualityManagerRef = useRef<QualityManager | null>(null);
+
+  // FPS metrics stored in ref to avoid re-renders (read via getFPSMetrics)
+  const fpsRef = useRef<FPSMetrics>(DEFAULT_FPS_METRICS);
 
   // Compute LOD based on current state
   const lod = useMemo(() => {
@@ -260,10 +264,10 @@ export function PerformanceProvider({
           setQualityLevelState(settings.level);
         });
 
-        // Subscribe to FPS updates
+        // Update FPS ref (no state = no re-renders)
         const fpsInterval = setInterval(() => {
           if (!mounted || !qualityManagerRef.current) return;
-          setFps(qualityManagerRef.current.getFPS());
+          fpsRef.current = qualityManagerRef.current.getFPS();
         }, 1000);
 
         // Start monitoring if auto-scale is enabled
@@ -411,6 +415,8 @@ export function PerformanceProvider({
         name: getQualityDisplayName(qualityLevel),
         level: qualityLevel,
       }),
+
+      getFPSMetrics: () => fpsRef.current,
     }),
     [tier, qualityLevel, qualitySettings, lod, prefersReducedMotion, webglSupported]
   );
@@ -427,7 +433,7 @@ export function PerformanceProvider({
       qualityLevel,
       qualitySettings,
       lod,
-      fps,
+      fps: fpsRef.current, // Non-reactive snapshot; use helpers.getFPSMetrics() for current value
       webglSupported,
       reducedMotion: prefersReducedMotion,
       reducedMotionSettings,
@@ -440,7 +446,6 @@ export function PerformanceProvider({
       qualityLevel,
       qualitySettings,
       lod,
-      fps,
       webglSupported,
       prefersReducedMotion,
       reducedMotionSettings,
@@ -539,10 +544,11 @@ export function useLOD(): LODConfiguration {
 
 /**
  * Hook to get FPS metrics
+ * Note: Returns current snapshot; for reactive updates, set up your own interval
  */
 export function useFPSMetrics(): FPSMetrics {
   const context = usePerformance();
-  return context.state.fps;
+  return context.helpers.getFPSMetrics();
 }
 
 export default PerformanceContext;

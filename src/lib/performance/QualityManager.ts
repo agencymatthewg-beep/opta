@@ -279,6 +279,11 @@ export class QualityManager {
   private callbacks: QualityChangeCallback[] = [];
   private isRunning = false;
 
+  // Auto-pause optimization: stop monitoring after quality stabilizes
+  private stableFrameCount = 0;
+  private readonly STABLE_THRESHOLD = 1800; // 30 seconds at 60fps
+  private isPaused = false;
+
   constructor(tier: HardwareTier, customConfig?: Partial<QualityConfig>) {
     this.config = { ...TIER_CONFIGS[tier], ...customConfig };
 
@@ -323,10 +328,47 @@ export class QualityManager {
    */
   stop(): void {
     this.isRunning = false;
+    this.isPaused = false;
     if (this.frameId !== null) {
       cancelAnimationFrame(this.frameId);
       this.frameId = null;
     }
+  }
+
+  /**
+   * Pause monitoring (auto-triggered after quality stabilizes)
+   */
+  pause(): void {
+    if (!this.isRunning || this.isPaused) return;
+    this.isPaused = true;
+    if (this.frameId !== null) {
+      cancelAnimationFrame(this.frameId);
+      this.frameId = null;
+    }
+    if (import.meta.env.DEV) {
+      console.log('[QualityManager] Paused - quality stable');
+    }
+  }
+
+  /**
+   * Resume monitoring (e.g., when window regains focus)
+   */
+  resume(): void {
+    if (!this.isRunning || !this.isPaused) return;
+    this.isPaused = false;
+    this.stableFrameCount = 0;
+    this.lastFrameTime = performance.now();
+    this.tick();
+    if (import.meta.env.DEV) {
+      console.log('[QualityManager] Resumed monitoring');
+    }
+  }
+
+  /**
+   * Check if monitoring is paused
+   */
+  isPausedState(): boolean {
+    return this.isPaused;
   }
 
   /**
@@ -427,7 +469,7 @@ export class QualityManager {
   // ---------------------------------------------------------------------------
 
   private tick = (): void => {
-    if (!this.isRunning) return;
+    if (!this.isRunning || this.isPaused) return;
 
     const now = performance.now();
     const delta = now - this.lastFrameTime;
@@ -448,6 +490,18 @@ export class QualityManager {
     // Auto-scale quality if enabled
     if (this.state.autoScaleEnabled) {
       this.evaluateQualityChange(delta);
+    }
+
+    // Auto-pause after quality stabilizes (FPS > 55 for 30 seconds)
+    const { average } = this.state.fps;
+    if (this.state.autoScaleEnabled && average > 55) {
+      this.stableFrameCount++;
+      if (this.stableFrameCount > this.STABLE_THRESHOLD) {
+        this.pause();
+        return;
+      }
+    } else {
+      this.stableFrameCount = 0;
     }
 
     // Schedule next frame

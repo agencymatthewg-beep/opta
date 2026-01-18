@@ -297,7 +297,7 @@ function PlatformOnboarding({ onComplete, onSkip }: PlatformOnboardingProps) {
       <motion.div
         className={cn(
           'relative w-full max-w-md',
-          'bg-[#05030a]/90 backdrop-blur-2xl rounded-2xl border border-white/[0.06]',
+          'glass-strong rounded-2xl border border-white/[0.06]',
           'shadow-2xl shadow-black/30'
         )}
         initial={{ scale: 0.9, y: 20 }}

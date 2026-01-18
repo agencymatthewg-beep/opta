@@ -74,7 +74,7 @@ export function MoveHistory({
       className={cn(
         'rounded-xl overflow-hidden',
         // Obsidian glass material
-        'bg-[#05030a]/80 backdrop-blur-xl',
+        'glass',
         'border border-white/[0.06]',
         // Inner specular highlight
         'shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]'

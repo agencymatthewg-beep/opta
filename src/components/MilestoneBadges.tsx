@@ -46,7 +46,7 @@ export function MilestoneBadges({ compact, category }: MilestoneBadgesProps) {
       className={cn(
         "relative rounded-xl p-4 overflow-hidden",
         // Obsidian glass material
-        "bg-[#05030a]/80 backdrop-blur-xl",
+        "glass",
         "border border-white/[0.06]",
         // Inner specular highlight
         "before:absolute before:inset-x-0 before:top-0 before:h-px before:z-10",
@@ -68,10 +68,10 @@ export function MilestoneBadges({ compact, category }: MilestoneBadgesProps) {
       <AnimatePresence>
         {newUnlocks.length > 0 && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="mb-4 p-3 rounded-lg bg-success/10 border border-success/30"
+            initial={{ opacity: 0, maxHeight: 0 }}
+            animate={{ opacity: 1, maxHeight: 150 }}
+            exit={{ opacity: 0, maxHeight: 0 }}
+            className="mb-4 p-3 rounded-lg bg-success/10 border border-success/30 overflow-hidden"
           >
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-success" strokeWidth={1.75} />
@@ -111,7 +111,7 @@ function BadgesSkeleton({ compact }: { compact?: boolean }) {
   return (
     <div className={cn(
       "rounded-xl p-4",
-      "bg-[#05030a]/80 backdrop-blur-xl",
+      "glass",
       "border border-white/[0.06]"
     )}>
       <div className="h-6 w-32 rounded bg-white/[0.04] animate-pulse mb-4" />

@@ -104,9 +104,10 @@ export function useSwipeNavigation({
   const velocityRef = useRef(0);
   const lastDeltaRef = useRef(0);
 
-  // Reset timeout ref
+  // Reset timeout refs
   const resetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const rubberBandTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const nestedResetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /**
    * Reset swipe state after gesture ends.
@@ -124,27 +125,41 @@ export function useSwipeNavigation({
 
   /**
    * Animate rubber band back to zero.
+   * Uses a ref to track current value and avoid setState-inside-animation issues.
    */
+  const rubberBandValueRef = useRef(0);
+  const animationFrameRef = useRef<number | null>(null);
+
   const resetRubberBand = useCallback(() => {
     if (prefersReducedMotion) {
       setRubberBandOffset(0);
       setIsAtBoundary(false);
+      rubberBandValueRef.current = 0;
       return;
+    }
+
+    // Cancel any existing animation
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
     }
 
     // Animate back with spring-like motion
     const animate = () => {
-      setRubberBandOffset((current) => {
-        const next = current * 0.85; // Decay factor
-        if (Math.abs(next) < 0.5) {
-          setIsAtBoundary(false);
-          return 0;
-        }
-        requestAnimationFrame(animate);
-        return next;
-      });
+      rubberBandValueRef.current *= 0.85; // Decay factor
+
+      if (Math.abs(rubberBandValueRef.current) < 0.5) {
+        rubberBandValueRef.current = 0;
+        setRubberBandOffset(0);
+        setIsAtBoundary(false);
+        animationFrameRef.current = null;
+        return;
+      }
+
+      setRubberBandOffset(rubberBandValueRef.current);
+      animationFrameRef.current = requestAnimationFrame(animate);
     };
-    requestAnimationFrame(animate);
+
+    animationFrameRef.current = requestAnimationFrame(animate);
   }, [prefersReducedMotion]);
 
   /**
@@ -200,6 +215,7 @@ export function useSwipeNavigation({
         // Apply rubber band effect at boundary
         setIsAtBoundary(true);
         const rubberOffset = rubberBandEasing(delta, maxRubberBand);
+        rubberBandValueRef.current = rubberOffset; // Sync ref for animation
         setRubberBandOffset(rubberOffset);
 
         // Apply strong resistance to accumulated delta
@@ -218,6 +234,7 @@ export function useSwipeNavigation({
         setSwipeProgress(resistedProgress);
       } else {
         setIsAtBoundary(false);
+        rubberBandValueRef.current = 0; // Sync ref
         setRubberBandOffset(0);
 
         // Calculate progress (clamped -1 to 1)
@@ -245,8 +262,8 @@ export function useSwipeNavigation({
           onSwipeRight();
         }
 
-        // Reset after navigation
-        setTimeout(resetSwipe, 100);
+        // Reset after navigation (tracked to prevent leaks)
+        nestedResetTimeoutRef.current = setTimeout(resetSwipe, 100);
       }
 
       // Clear existing reset timeout
@@ -259,7 +276,8 @@ export function useSwipeNavigation({
         if (!hasTriggeredRef.current) {
           // Animate back to zero
           setSwipeProgress(0);
-          setTimeout(resetSwipe, 200);
+          // Track nested timeout to prevent leaks
+          nestedResetTimeoutRef.current = setTimeout(resetSwipe, 200);
         }
       }, 150);
 
@@ -297,6 +315,12 @@ export function useSwipeNavigation({
       }
       if (rubberBandTimeoutRef.current) {
         clearTimeout(rubberBandTimeoutRef.current);
+      }
+      if (nestedResetTimeoutRef.current) {
+        clearTimeout(nestedResetTimeoutRef.current);
+      }
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
       }
     };
   }, [enabled, prefersReducedMotion, handleWheel]);

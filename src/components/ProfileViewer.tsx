@@ -70,7 +70,7 @@ function EmptyProfileState() {
       <motion.div
         className={cn(
           "w-16 h-16 flex items-center justify-center rounded-full mb-6",
-          "bg-[#05030a]/60 backdrop-blur-xl",
+          "glass-subtle",
           "border border-white/[0.06]"
         )}
         animate={{ rotate: [0, 5, -5, 0] }}
@@ -274,7 +274,7 @@ export function ProfileViewer({
       <div className={cn(
         "relative rounded-xl p-4 overflow-hidden",
         // Obsidian glass material
-        "bg-[#05030a]/80 backdrop-blur-xl",
+        "glass",
         "border border-white/[0.06]",
         // Inner specular highlight
         "before:absolute before:inset-x-0 before:top-0 before:h-px before:z-10",
@@ -387,7 +387,7 @@ export function ProfileViewer({
       <div className={cn(
         "relative rounded-xl p-4 overflow-hidden",
         // Obsidian glass material
-        "bg-[#05030a]/80 backdrop-blur-xl",
+        "glass",
         "border border-white/[0.06]",
         // Inner specular highlight
         "before:absolute before:inset-x-0 before:top-0 before:h-px before:z-10",
@@ -420,7 +420,7 @@ export function ProfileViewer({
       <div className={cn(
         "relative rounded-xl p-4 overflow-hidden",
         // Obsidian glass material
-        "bg-[#05030a]/80 backdrop-blur-xl",
+        "glass",
         "border border-white/[0.06]",
         // Inner specular highlight
         "before:absolute before:inset-x-0 before:top-0 before:h-px before:z-10",
@@ -445,7 +445,7 @@ export function ProfileViewer({
       {/* Delete Data Section */}
       <div className={cn(
         "relative rounded-xl p-4 overflow-hidden",
-        "bg-[#05030a]/80 backdrop-blur-xl",
+        "glass",
         "border border-danger/30",
         "shadow-[inset_0_0_20px_rgba(239,68,68,0.05)]"
       )}>

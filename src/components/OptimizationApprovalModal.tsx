@@ -10,6 +10,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { ModalErrorBoundary } from '@/components/ModalErrorBoundary';
 import {
   Shield,
   AlertTriangle,
@@ -147,7 +148,7 @@ function OptimizationApprovalModal({
             exit={{ opacity: 0 }}
           >
             <motion.div
-              className="w-full max-w-lg bg-[#05030a]/90 backdrop-blur-2xl rounded-2xl border border-warning/30 overflow-hidden"
+              className="w-full max-w-lg glass-strong rounded-2xl border border-warning/30 overflow-hidden"
               initial={{ scale: 0.95, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.95, y: 20 }}
@@ -187,8 +188,9 @@ function OptimizationApprovalModal({
               </div>
 
               {/* Content */}
-              <ScrollArea className="max-h-[50vh]">
-                <div className="p-6 space-y-4">
+              <ModalErrorBoundary onClose={handleClose}>
+                <ScrollArea className="max-h-[50vh]">
+                  <div className="p-6 space-y-4">
                   {/* Warning Notice */}
                   <div className="flex items-start gap-3 p-4 rounded-xl bg-white/[0.02] border border-warning/20">
                     <AlertTriangle className="w-5 h-5 text-warning shrink-0 mt-0.5" strokeWidth={2} />
@@ -248,8 +250,9 @@ function OptimizationApprovalModal({
                       I understand these changes will modify my game settings and I can revert them if needed.
                     </span>
                   </label>
-                </div>
-              </ScrollArea>
+                  </div>
+                </ScrollArea>
+              </ModalErrorBoundary>
 
               {/* Footer */}
               <div className="px-6 py-4 border-t border-border/20 flex items-center justify-end gap-3">

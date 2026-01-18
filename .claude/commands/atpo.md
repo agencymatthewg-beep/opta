@@ -50,29 +50,26 @@ Systematically evaluate these dimensions:
 
 ## Output Format
 
-Structure findings for Opta and the development team:
+**Uses GenUI** - Generates an HTML report saved to `/tmp/genui_atpo_{timestamp}.html` and opens in browser.
+
+The GenUI report includes:
+- **Analysis Summary Card**: Brief overview with severity distribution chart
+- **Critical Issues Section**: Red alert cards with file:line, problem, impact, severity
+- **High Priority Section**: Orange cards for significant inefficiencies
+- **Medium Priority Section**: Yellow cards for quality/consistency issues
+- **Minor Section**: Blue cards for polish items
+- **Patterns Observed Card**: Recurring issues table with frequency counts
+- **Handoff to Opta**: Prioritized optimization targets in table format
+
+After generating the HTML report, output a brief console summary:
 
 ```
-## Analysis Summary
-[Brief overview and overall assessment]
+Atpo analysis complete. Report: /tmp/genui_atpo_{timestamp}.html
 
-## Critical Issues (Must Fix)
-[Issues causing failures, security problems, or significant degradation]
+Found: X critical, Y high, Z medium, W minor issues
+Patterns: [list top 3 recurring patterns]
 
-## High Priority Improvements
-[Significant inefficiencies or maintainability concerns]
-
-## Medium Priority Refinements
-[Code quality and consistency issues]
-
-## Minor Optimizations
-[Small improvements for polish]
-
-## Patterns Observed
-[Recurring issues indicating broader concerns]
-
-## Handoff to Opta
-[Summary of what Opta should optimize, prioritized]
+Ready for Opta optimization phase.
 ```
 
 For each issue:

@@ -58,12 +58,12 @@ const buttonVariants = cva(
 
         // Obsidian Button - Secondary with glass surface
         obsidian: [
-          "bg-[#05030a]/80 backdrop-blur-xl",
+          "glass",
           "text-foreground",
           "border border-white/[0.08]",
           "shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]",
           // Hover: awakens with energy
-          "hover:border-primary/40 hover:bg-[#0a0514]/90",
+          "hover:border-primary/40",
           "hover:shadow-[inset_0_0_20px_rgba(168,85,247,0.08),0_0_15px_-3px_rgba(168,85,247,0.25)]",
           "hover:scale-[1.01]",
           "active:scale-[0.99]",

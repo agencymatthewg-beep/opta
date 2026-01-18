@@ -95,10 +95,10 @@ function PreferenceCard({
       {/* Priority slider for priority-type preferences */}
       {preference.type === 'priority' && preference.enabled && preference.value !== undefined && (
         <motion.div
-          className="mt-4 pt-3 border-t border-border/20"
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: 'auto' }}
-          exit={{ opacity: 0, height: 0 }}
+          className="mt-4 pt-3 border-t border-border/20 overflow-hidden"
+          initial={{ opacity: 0, maxHeight: 0 }}
+          animate={{ opacity: 1, maxHeight: 150 }}
+          exit={{ opacity: 0, maxHeight: 0 }}
         >
           <div className="flex items-center justify-between mb-2">
             <label className="text-xs text-muted-foreground/70">
@@ -149,7 +149,7 @@ function EmptyPreferencesState() {
       <motion.div
         className={cn(
           'w-14 h-14 mx-auto flex items-center justify-center rounded-full mb-4',
-          'bg-[#05030a]/60 backdrop-blur-xl border border-white/[0.06]'
+          'glass-subtle border border-white/[0.06]'
         )}
         animate={{ rotate: [0, 5, -5, 0] }}
         transition={{ duration: 3, repeat: Infinity }}

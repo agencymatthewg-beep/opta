@@ -81,7 +81,7 @@ export function RadialNavCenter({ onClick }: RadialNavCenterProps) {
       className={cn(
         'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2',
         'w-28 h-28 rounded-full',
-        'bg-[#05030a]/90 backdrop-blur-2xl',
+        'glass-strong',
         'border border-white/[0.08]',
         'shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]',
         'flex flex-col items-center justify-center',

@@ -129,7 +129,7 @@ function SessionSummaryModal({
               className={cn(
                 "relative w-full max-w-md rounded-2xl overflow-hidden",
                 // Obsidian glass material
-                "bg-[#05030a]/90 backdrop-blur-2xl",
+                "glass-strong",
                 "border border-primary/30",
                 // Inner specular highlight
                 "before:absolute before:inset-x-0 before:top-0 before:h-px before:z-10",
@@ -187,7 +187,7 @@ function SessionSummaryModal({
                   className={cn(
                     "rounded-xl p-4 text-center",
                     // Obsidian with success energy
-                    "bg-[#05030a]/60 backdrop-blur-xl",
+                    "glass-subtle",
                     "border border-success/30",
                     "shadow-[inset_0_0_20px_rgba(34,197,94,0.05),0_0_15px_-5px_rgba(34,197,94,0.2)]"
                   )}

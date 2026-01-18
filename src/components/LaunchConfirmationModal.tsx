@@ -184,7 +184,7 @@ function LaunchConfirmationModal({
             <motion.div
               className={cn(
                 "relative w-full max-w-lg rounded-2xl overflow-hidden",
-                "bg-[#05030a]/90 backdrop-blur-2xl",
+                "glass-strong",
                 "border border-primary/30",
                 "before:absolute before:inset-x-0 before:top-0 before:h-px before:z-10",
                 "before:bg-gradient-to-r before:from-transparent before:via-white/15 before:to-transparent",

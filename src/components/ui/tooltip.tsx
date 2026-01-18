@@ -28,7 +28,7 @@ const TooltipContent = React.forwardRef<
       className={cn(
         "z-50 overflow-hidden rounded-lg px-3 py-1.5 text-xs text-foreground",
         // Obsidian glass material
-        "bg-[#05030a]/95 backdrop-blur-xl",
+        "glass-overlay",
         "border border-white/[0.08]",
         // Subtle energy glow
         "shadow-[0_4px_20px_-4px_rgba(0,0,0,0.5),0_0_15px_-5px_rgba(168,85,247,0.15)]",

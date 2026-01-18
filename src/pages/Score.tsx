@@ -197,7 +197,7 @@ interface StatCardProps {
 function StatCard({ label, value }: StatCardProps) {
   return (
     <motion.div
-      className="rounded-xl p-4 text-center bg-[#05030a]/80 backdrop-blur-xl border border-white/[0.06]"
+      className="rounded-xl p-4 text-center glass border border-white/[0.06]"
       whileHover={{ y: -2 }}
     >
       <p className="text-xs text-muted-foreground mb-1">{label}</p>
@@ -229,7 +229,7 @@ function ScoreEmptyState({ onRefresh }: ScoreEmptyStateProps) {
         animate={{ opacity: 1, scale: 1 }}
       >
         <motion.div
-          className="w-20 h-20 flex items-center justify-center rounded-full bg-[#05030a]/60 backdrop-blur-xl border border-white/[0.06] mb-6"
+          className="w-20 h-20 flex items-center justify-center rounded-full glass-subtle border border-white/[0.06] mb-6"
           animate={{ rotate: [0, 5, -5, 0] }}
           transition={{ duration: 4, repeat: Infinity }}
         >

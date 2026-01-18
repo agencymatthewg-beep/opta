@@ -56,10 +56,13 @@ const smoothOut: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
 /**
  * Tooltip styles matching the design system.
+ * Uses glass effect (backdrop-blur) per DESIGN_SYSTEM.md.
  */
 const tooltipStyles = {
   ...defaultStyles,
-  backgroundColor: 'rgba(5, 3, 10, 0.95)',
+  backgroundColor: 'rgba(5, 3, 10, 0.85)',
+  backdropFilter: 'blur(12px)',
+  WebkitBackdropFilter: 'blur(12px)',
   border: '1px solid rgba(255, 255, 255, 0.1)',
   borderRadius: '8px',
   color: '#fafafa',
@@ -428,7 +431,7 @@ export function CpuFlameGraph({
       className={cn(
         'relative overflow-hidden rounded-xl',
         // Obsidian glass material
-        'bg-[#05030a]/80 backdrop-blur-xl',
+        'glass',
         'border border-white/[0.06]',
         // Inner specular highlight
         'before:absolute before:inset-x-0 before:top-0 before:h-px before:z-10',

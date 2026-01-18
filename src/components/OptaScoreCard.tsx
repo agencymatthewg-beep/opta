@@ -68,7 +68,7 @@ export function OptaScoreCard({
       className={cn(
         'relative overflow-hidden rounded-2xl',
         // Obsidian glass material
-        'bg-[#05030a]/90 backdrop-blur-2xl',
+        'glass-strong',
         'border border-white/[0.08]',
         // Inner specular highlight
         'before:absolute before:inset-x-0 before:top-0 before:h-px before:z-10',
@@ -219,7 +219,7 @@ export function OptaScoreCard({
       <div
         className={cn(
           'flex items-center justify-center gap-2 py-3',
-          'bg-[#05030a]/60 border-t border-white/[0.03]'
+          'glass-subtle border-t border-white/[0.03]'
         )}
       >
         <OptaRing state="dormant" size="xs" breathe={false} />

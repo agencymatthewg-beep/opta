@@ -214,7 +214,7 @@ function Settings() {
           </div>
 
           {loading ? (
-            <div className="rounded-xl p-6 bg-[#05030a]/80 backdrop-blur-xl border border-white/[0.06]">
+            <div className="rounded-xl p-6 glass border border-white/[0.06]">
               <div className="flex items-center justify-center gap-3">
                 <Loader2 className="w-5 h-5 animate-spin text-primary" />
                 <span className="text-sm text-muted-foreground/70">Scanning for conflicts...</span>
@@ -223,7 +223,7 @@ function Settings() {
           ) : conflicts.length === 0 ? (
             <motion.div
               className={cn(
-                'rounded-xl p-5 bg-[#05030a]/80 backdrop-blur-xl border border-success/30',
+                'rounded-xl p-5 glass border border-success/30',
                 'shadow-[0_0_24px_-8px_hsl(var(--success)/0.3)]'
               )}
               initial={{ opacity: 0, scale: 0.98 }}
@@ -274,7 +274,7 @@ function Settings() {
           </h2>
 
           {claudeLoading ? (
-            <div className="rounded-xl p-6 bg-[#05030a]/80 backdrop-blur-xl border border-white/[0.06]">
+            <div className="rounded-xl p-6 glass border border-white/[0.06]">
               <div className="flex items-center justify-center gap-3">
                 <Loader2 className="w-5 h-5 animate-spin text-primary" />
                 <span className="text-sm text-muted-foreground/70">Checking Claude API status...</span>
@@ -283,7 +283,7 @@ function Settings() {
           ) : claudeStatus?.available ? (
             <motion.div
               className={cn(
-                'rounded-xl overflow-hidden bg-[#05030a]/80 backdrop-blur-xl border border-success/30',
+                'rounded-xl overflow-hidden glass border border-success/30',
                 'shadow-[0_0_24px_-8px_hsl(var(--success)/0.3)]'
               )}
               initial={{ opacity: 0, scale: 0.98 }}
@@ -339,7 +339,7 @@ function Settings() {
           ) : (
             <motion.div
               className={cn(
-                'rounded-xl overflow-hidden bg-[#05030a]/80 backdrop-blur-xl border border-warning/30',
+                'rounded-xl overflow-hidden glass border border-warning/30',
                 'shadow-[0_0_24px_-8px_hsl(var(--warning)/0.3)]'
               )}
               initial={{ opacity: 0, scale: 0.98 }}
@@ -534,7 +534,7 @@ function Settings() {
               className={cn(
                 'px-4 py-2 rounded-lg text-sm font-medium',
                 learningTab === 'summary'
-                  ? 'bg-[#05030a]/80 backdrop-blur-xl border border-primary/30 text-primary'
+                  ? 'glass border border-primary/30 text-primary'
                   : 'bg-white/[0.02] border border-white/[0.04] text-muted-foreground'
               )}
               whileHover={{ y: -1 }}
@@ -547,7 +547,7 @@ function Settings() {
               className={cn(
                 'px-4 py-2 rounded-lg text-sm font-medium',
                 learningTab === 'preferences'
-                  ? 'bg-[#05030a]/80 backdrop-blur-xl border border-primary/30 text-primary'
+                  ? 'glass border border-primary/30 text-primary'
                   : 'bg-white/[0.02] border border-white/[0.04] text-muted-foreground'
               )}
               whileHover={{ y: -1 }}
@@ -561,7 +561,7 @@ function Settings() {
           {learningTab === 'summary' ? (
             <LearningSummary />
           ) : (
-            <div className="rounded-xl p-4 bg-[#05030a]/80 backdrop-blur-xl border border-white/[0.06]">
+            <div className="rounded-xl p-4 glass border border-white/[0.06]">
               <EditablePreferences />
             </div>
           )}
@@ -600,7 +600,7 @@ function Settings() {
             Global shortcuts work even when Opta is in the background.
           </p>
 
-          <div className="rounded-xl overflow-hidden bg-[#05030a]/80 backdrop-blur-xl border border-white/[0.06]">
+          <div className="rounded-xl overflow-hidden glass border border-white/[0.06]">
             <div className="p-5 space-y-4">
               {/* Quick Optimization Shortcut */}
               <div className="flex justify-between items-center gap-4">
@@ -680,7 +680,7 @@ function Settings() {
               Tactile feedback on Force Touch trackpad.
             </p>
 
-            <div className="rounded-xl overflow-hidden bg-[#05030a]/80 backdrop-blur-xl border border-white/[0.06]">
+            <div className="rounded-xl overflow-hidden glass border border-white/[0.06]">
               <div className="p-5">
                 <div className="flex justify-between items-center gap-4">
                   <div className="flex items-start gap-3">
@@ -727,7 +727,7 @@ function Settings() {
               Audio feedback for UI interactions and ring state changes.
             </p>
 
-            <div className="rounded-xl overflow-hidden bg-[#05030a]/80 backdrop-blur-xl border border-white/[0.06]">
+            <div className="rounded-xl overflow-hidden glass border border-white/[0.06]">
               <div className="p-5 space-y-5">
                 {/* Master sound toggle */}
                 <div className="flex justify-between items-center gap-4">
@@ -856,7 +856,7 @@ function Settings() {
 
           <motion.div
             className={cn(
-              'rounded-xl p-5 bg-[#05030a]/80 backdrop-blur-xl border border-success/30',
+              'rounded-xl p-5 glass border border-success/30',
               'shadow-[0_0_24px_-8px_hsl(var(--success)/0.3)]'
             )}
             initial={{ opacity: 0, scale: 0.98 }}
@@ -878,7 +878,7 @@ function Settings() {
             </div>
           </motion.div>
 
-          <div className="rounded-xl overflow-hidden bg-[#05030a]/80 backdrop-blur-xl border border-white/[0.06]">
+          <div className="rounded-xl overflow-hidden glass border border-white/[0.06]">
             <div className="p-5 space-y-5">
               {/* Privacy model explanation */}
               <div>
@@ -1016,7 +1016,7 @@ function Settings() {
           <h2 className="text-xs font-semibold text-muted-foreground/60 uppercase tracking-widest">
             Appearance
           </h2>
-          <div className="rounded-xl p-5 bg-[#05030a]/80 backdrop-blur-xl border border-white/[0.06]">
+          <div className="rounded-xl p-5 glass border border-white/[0.06]">
             <div className="flex justify-between items-center gap-4">
               <div className="flex items-center gap-3">
                 <div className={cn(
@@ -1070,7 +1070,7 @@ function Settings() {
 
           <PlatformIndicator expanded className="w-full" />
 
-          <div className="rounded-xl p-5 bg-[#05030a]/80 backdrop-blur-xl border border-white/[0.06]">
+          <div className="rounded-xl p-5 glass border border-white/[0.06]">
             <div className="text-sm text-muted-foreground/70">
               <p className="mb-3">
                 Opta automatically detects and optimizes for your platform, providing native integration
@@ -1094,7 +1094,7 @@ function Settings() {
           <h2 className="text-xs font-semibold text-muted-foreground/60 uppercase tracking-widest">
             About
           </h2>
-          <div className="rounded-xl overflow-hidden bg-[#05030a]/80 backdrop-blur-xl border border-white/[0.06]">
+          <div className="rounded-xl overflow-hidden glass border border-white/[0.06]">
             <div className="p-5">
               <div className="flex items-center gap-3 mb-5">
                 <div className={cn(

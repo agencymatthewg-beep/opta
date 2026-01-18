@@ -62,7 +62,7 @@ function PerformanceDropAlert({
           className={cn(
             "relative rounded-2xl p-6 max-w-md w-full overflow-hidden",
             // Obsidian glass with warning energy
-            "bg-[#05030a]/90 backdrop-blur-2xl",
+            "glass-strong",
             "border border-warning/30",
             // Inner specular highlight
             "before:absolute before:inset-x-0 before:top-0 before:h-px before:z-10",
