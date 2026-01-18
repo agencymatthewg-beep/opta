@@ -19,6 +19,7 @@ import { cn } from '@/lib/utils';
 import { ChessWidgetStatus } from './ChessWidgetStatus';
 import { ChessWidgetTabs, type ChessWidgetTab } from './ChessWidgetTabs';
 import { MiniChessBoard } from './MiniChessBoard';
+import { usePuzzle } from '@/hooks/usePuzzle';
 
 // LocalStorage keys
 const WIDGET_POSITION_KEY = 'opta_chess_widget_position';
@@ -108,8 +109,13 @@ export function ChessWidget({
 
   // Chess game state (for status display)
   const [isYourTurn, setIsYourTurn] = useState(true);
-  const [hasPendingPuzzle] = useState(true); // Placeholder for Phase 52
-  const [puzzleStreak] = useState(3); // Placeholder for Phase 52
+
+  // Puzzle state from usePuzzle hook
+  const { stats: puzzleStats, dailyPuzzleCompleted, hasDailyPuzzle } = usePuzzle({
+    autoFetchDaily: true,
+  });
+  const hasPendingPuzzle = hasDailyPuzzle && !dailyPuzzleCompleted;
+  const puzzleStreak = puzzleStats.currentStreak;
 
   // Drag controls
   const dragControls = useDragControls();

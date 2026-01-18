@@ -3,7 +3,7 @@
  *
  * Tabs:
  * - Play: Mini chess board + quick controls
- * - Puzzles: Coming in Phase 52 placeholder
+ * - Puzzles: Tactical puzzle training (Phase 52)
  * - Tutor: Coming in Phase 55 placeholder
  *
  * Uses AnimatePresence with mode="wait" for smooth tab transitions.
@@ -15,6 +15,7 @@ import { ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Crown, Puzzle, Brain, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { PuzzleBoard } from './puzzles';
 
 // Easing curve for smooth animations
 const smoothOut: [number, number, number, number] = [0.22, 1, 0.36, 1];
@@ -30,7 +31,7 @@ interface TabConfig {
 
 const tabs: TabConfig[] = [
   { id: 'play', label: 'Play', icon: Crown, available: true },
-  { id: 'puzzles', label: 'Puzzles', icon: Puzzle, available: false },
+  { id: 'puzzles', label: 'Puzzles', icon: Puzzle, available: true },
   { id: 'tutor', label: 'Tutor', icon: Brain, available: false },
 ];
 
@@ -46,13 +47,8 @@ export interface ChessWidgetTabsProps {
 /**
  * Coming soon placeholder for unavailable tabs.
  */
-function ComingSoonPlaceholder({ tab }: { tab: 'puzzles' | 'tutor' }) {
+function ComingSoonPlaceholder({ tab }: { tab: 'tutor' }) {
   const config = {
-    puzzles: {
-      title: 'Tactical Puzzles',
-      description: 'Sharpen your tactics with daily challenges',
-      phase: '52',
-    },
     tutor: {
       title: 'Opta Tutor',
       description: 'Learn with personalized AI coaching',
@@ -61,7 +57,7 @@ function ComingSoonPlaceholder({ tab }: { tab: 'puzzles' | 'tutor' }) {
   };
 
   const { title, description, phase } = config[tab];
-  const Icon = tab === 'puzzles' ? Puzzle : Brain;
+  const Icon = Brain;
 
   return (
     <motion.div
@@ -162,7 +158,15 @@ export function ChessWidgetTabs({
             </motion.div>
           )}
           {activeTab === 'puzzles' && (
-            <ComingSoonPlaceholder key="puzzles" tab="puzzles" />
+            <motion.div
+              key="puzzles"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2, ease: smoothOut }}
+            >
+              <PuzzleBoard />
+            </motion.div>
           )}
           {activeTab === 'tutor' && (
             <ComingSoonPlaceholder key="tutor" tab="tutor" />
