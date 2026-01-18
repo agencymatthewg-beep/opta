@@ -1,5 +1,6 @@
 import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { useAnimationVisibility } from '@/hooks/useAnimationVisibility';
 
 /**
  * AtmosphericFog - The reactive fog layer of the Living Artifact
@@ -16,6 +17,7 @@ import { cn } from '@/lib/utils';
  */
 
 export type FogIntensity = 'idle' | 'active' | 'storm';
+export type ColorTemperature = 'cool' | 'warm' | 'neutral';
 
 interface AtmosphericFogProps {
   /** Fog intensity level */
@@ -26,6 +28,12 @@ interface AtmosphericFogProps {
   className?: string;
   /** Whether to enable the fog */
   enabled?: boolean;
+  /** Ring energy level (0-1) for dynamic intensity coupling */
+  ringEnergy?: number;
+  /** Whether fog is billowing (activation animation) */
+  isBillowing?: boolean;
+  /** Color temperature for ring state coupling */
+  colorTemperature?: ColorTemperature;
 }
 
 // Intensity to opacity mapping
@@ -40,6 +48,25 @@ const intensityDuration: Record<FogIntensity, number> = {
   idle: 30,
   active: 15,
   storm: 8,
+};
+
+// Color temperature palettes (RGB values for fog gradients)
+const colorTemperaturePalettes: Record<ColorTemperature, { primary: string; secondary: string; tertiary: string }> = {
+  cool: {
+    primary: 'rgba(124, 58, 237',    // Deep violet (dormant)
+    secondary: 'rgba(99, 102, 241',  // Indigo tint
+    tertiary: 'rgba(79, 70, 229',    // Blue-violet
+  },
+  warm: {
+    primary: 'rgba(168, 85, 247',    // Electric violet (active)
+    secondary: 'rgba(192, 132, 252', // Plasma purple
+    tertiary: 'rgba(139, 92, 246',   // Warm violet
+  },
+  neutral: {
+    primary: 'rgba(168, 85, 247',    // Default violet
+    secondary: 'rgba(139, 92, 246',  // Mid violet
+    tertiary: 'rgba(124, 58, 237',   // Deep violet
+  },
 };
 
 // Fog layer configurations
@@ -75,16 +102,25 @@ export function AtmosphericFog({
   opacity: customOpacity,
   className,
   enabled = true,
+  ringEnergy = 0,
+  isBillowing = false,
+  colorTemperature = 'neutral',
 }: AtmosphericFogProps) {
   const prefersReducedMotion = useReducedMotion();
+  const { ref, isVisible } = useAnimationVisibility({ rootMargin: '200px' });
 
   if (!enabled) return null;
 
-  const baseOpacity = customOpacity ?? intensityOpacity[intensity];
+  // Calculate dynamic opacity based on ring energy
+  // Ring energy 0 = minimal fog (0.1), energy 1 = dense fog (0.55)
+  const energyOpacity = 0.1 + ringEnergy * 0.45;
+  const baseOpacity = customOpacity ?? Math.max(intensityOpacity[intensity], energyOpacity);
   const baseDuration = intensityDuration[intensity];
+  const colorPalette = colorTemperaturePalettes[colorTemperature];
 
   return (
     <div
+      ref={ref}
       className={cn(
         'fixed inset-0 pointer-events-none overflow-hidden',
         className
@@ -100,24 +136,27 @@ export function AtmosphericFog({
           baseOpacity={baseOpacity}
           baseDuration={baseDuration}
           reducedMotion={prefersReducedMotion ?? false}
+          isVisible={isVisible}
+          isBillowing={isBillowing}
+          colorPalette={colorPalette}
         />
       ))}
 
-      {/* Central glow that intensifies with activity */}
+      {/* Central glow that intensifies with activity - paused when not visible */}
       <motion.div
         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full"
         style={{
           background: 'radial-gradient(circle, rgba(168, 85, 247, 0.15) 0%, transparent 70%)',
         }}
-        animate={{
+        animate={isVisible ? {
           opacity: intensity === 'storm' ? [0.4, 0.7, 0.4] : intensity === 'active' ? [0.2, 0.4, 0.2] : 0.1,
           scale: intensity === 'storm' ? [1, 1.2, 1] : 1,
-        }}
-        transition={{
+        } : { opacity: 0.1, scale: 1 }}
+        transition={isVisible ? {
           duration: intensity === 'storm' ? 2 : 4,
           repeat: Infinity,
           ease: 'easeInOut',
-        }}
+        } : { duration: 0.3 }}
       />
     </div>
   );
@@ -129,6 +168,9 @@ interface FogLayerProps {
   baseOpacity: number;
   baseDuration: number;
   reducedMotion: boolean;
+  isVisible: boolean;
+  isBillowing: boolean;
+  colorPalette: { primary: string; secondary: string; tertiary: string };
 }
 
 function FogLayer({
@@ -137,23 +179,31 @@ function FogLayer({
   baseOpacity,
   baseDuration,
   reducedMotion,
+  isVisible,
+  isBillowing,
+  colorPalette,
 }: FogLayerProps) {
   const duration = baseDuration * layer.durationMultiplier;
   const opacity = baseOpacity * layer.baseOpacity;
 
-  // Movement patterns based on intensity
+  // Movement patterns based on intensity - returns static position when not visible
   const getMovementPattern = () => {
-    if (reducedMotion) {
+    if (reducedMotion || !isVisible) {
       return { x: 0, y: 0 };
     }
 
-    const baseMovement = intensity === 'storm' ? 60 : intensity === 'active' ? 40 : 20;
+    // Billowing adds extra turbulent movement
+    const billowMultiplier = isBillowing ? 1.8 : 1;
+    const baseMovement = (intensity === 'storm' ? 60 : intensity === 'active' ? 40 : 20) * billowMultiplier;
 
     return {
       x: [0, baseMovement, -baseMovement / 2, baseMovement / 3, 0],
       y: [0, -baseMovement / 2, baseMovement, -baseMovement / 3, 0],
     };
   };
+
+  // Billowing scale animation
+  const billowScale = isBillowing ? 1.15 : 1;
 
   return (
     <motion.div
@@ -164,33 +214,35 @@ function FogLayer({
       }}
       initial={{ opacity: 0 }}
       animate={{
-        opacity,
+        opacity: isBillowing ? opacity * 1.3 : opacity,
+        scale: billowScale,
         ...getMovementPattern(),
       }}
-      transition={{
-        opacity: { duration: 1 },
-        x: { duration, repeat: Infinity, ease: 'easeInOut' },
-        y: { duration: duration * 0.8, repeat: Infinity, ease: 'easeInOut' },
-      }}
+      transition={isVisible ? {
+        opacity: { duration: isBillowing ? 0.3 : 1 },
+        scale: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
+        x: { duration: isBillowing ? duration * 0.5 : duration, repeat: Infinity, ease: 'easeInOut' },
+        y: { duration: isBillowing ? duration * 0.4 : duration * 0.8, repeat: Infinity, ease: 'easeInOut' },
+      } : { opacity: { duration: 0.3 } }}
     >
-      {/* Fog gradient */}
+      {/* Fog gradient - uses color palette */}
       <div
         className="absolute inset-0"
         style={{
           background: `
             radial-gradient(
               ellipse 80% 60% at 30% 40%,
-              rgba(168, 85, 247, ${opacity * 0.8}) 0%,
+              ${colorPalette.primary}, ${opacity * 0.8}) 0%,
               transparent 60%
             ),
             radial-gradient(
               ellipse 60% 80% at 70% 60%,
-              rgba(139, 92, 246, ${opacity * 0.6}) 0%,
+              ${colorPalette.secondary}, ${opacity * 0.6}) 0%,
               transparent 50%
             ),
             radial-gradient(
               ellipse 100% 100% at 50% 50%,
-              rgba(124, 58, 237, ${opacity * 0.4}) 0%,
+              ${colorPalette.tertiary}, ${opacity * 0.4}) 0%,
               transparent 70%
             )
           `,

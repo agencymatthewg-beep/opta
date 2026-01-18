@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
-import type { FogIntensity } from '@/components/AtmosphericFog';
+import type { FogIntensity, ColorTemperature } from '@/components/AtmosphericFog';
 
 /**
  * FogContext - Global state for the atmospheric fog system
@@ -22,7 +22,17 @@ interface FogState {
   enabled: boolean;
   /** Whether fog is currently transitioning */
   isTransitioning: boolean;
+  /** Whether to use WebGL fog (when chrome system is active) */
+  useWebGL: boolean;
+  /** Ring energy level (0-1) for dynamic fog coupling */
+  ringEnergy: number;
+  /** Whether fog is billowing (activation animation) */
+  isBillowing: boolean;
+  /** Color temperature shift for ring state coupling */
+  colorTemperature: ColorTemperature;
 }
+
+export type { FogIntensity };
 
 interface FogContextValue extends FogState {
   /** Set fog intensity directly */
@@ -41,6 +51,14 @@ interface FogContextValue extends FogState {
   idle: () => void;
   /** Sync fog with OptaRing state */
   syncWithRing: (ringState: 'dormant' | 'active' | 'processing') => void;
+  /** Enable/disable WebGL mode */
+  setUseWebGL: (useWebGL: boolean) => void;
+  /** Set ring energy level (0-1) for dynamic fog coupling */
+  setRingEnergy: (energy: number) => void;
+  /** Trigger billowing animation on ring activation */
+  billow: () => void;
+  /** Set color temperature for ring state coupling */
+  setColorTemperature: (temp: ColorTemperature) => void;
 }
 
 const FogContext = createContext<FogContextValue | null>(null);
@@ -50,24 +68,31 @@ const DEFAULT_STATE: FogState = {
   customOpacity: null,
   enabled: true,
   isTransitioning: false,
+  useWebGL: false,
+  ringEnergy: 0,
+  isBillowing: false,
+  colorTemperature: 'neutral',
 };
 
 // Durations in ms
 const PULSE_DURATION = 400;
 const DEFAULT_STORM_DURATION = 3000;
 const TRANSITION_DURATION = 300;
+const BILLOW_DURATION = 600;
 
 export function FogProvider({ children }: { children: React.ReactNode }) {
   const [fogState, setFogState] = useState<FogState>(DEFAULT_STATE);
   const previousIntensityRef = useRef<FogIntensity>('idle');
   const stormTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pulseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const billowTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Cleanup timeouts on unmount
   useEffect(() => {
     return () => {
       if (stormTimeoutRef.current) clearTimeout(stormTimeoutRef.current);
       if (pulseTimeoutRef.current) clearTimeout(pulseTimeoutRef.current);
+      if (billowTimeoutRef.current) clearTimeout(billowTimeoutRef.current);
     };
   }, []);
 
@@ -174,16 +199,66 @@ export function FogProvider({ children }: { children: React.ReactNode }) {
     switch (ringState) {
       case 'dormant':
         setIntensity('idle');
+        setFogState((prev) => ({ ...prev, colorTemperature: 'cool' }));
         break;
       case 'active':
         setIntensity('active');
+        setFogState((prev) => ({ ...prev, colorTemperature: 'warm' }));
         break;
       case 'processing':
         // Processing triggers a subtle active state
         setIntensity('active');
+        setFogState((prev) => ({ ...prev, colorTemperature: 'warm' }));
         break;
     }
   }, [setIntensity]);
+
+  // Set ring energy level for dynamic fog coupling
+  const setRingEnergy = useCallback((energy: number) => {
+    const clampedEnergy = Math.max(0, Math.min(1, energy));
+    setFogState((prev) => ({
+      ...prev,
+      ringEnergy: clampedEnergy,
+    }));
+  }, []);
+
+  // Trigger billowing animation on ring activation
+  const billow = useCallback(() => {
+    // Clear any existing billow timeout
+    if (billowTimeoutRef.current) {
+      clearTimeout(billowTimeoutRef.current);
+    }
+
+    // Start billowing
+    setFogState((prev) => ({
+      ...prev,
+      isBillowing: true,
+    }));
+
+    // End billowing after duration
+    billowTimeoutRef.current = setTimeout(() => {
+      setFogState((prev) => ({
+        ...prev,
+        isBillowing: false,
+      }));
+    }, BILLOW_DURATION);
+  }, []);
+
+  // Set color temperature
+  const setColorTemperature = useCallback((temp: ColorTemperature) => {
+    setFogState((prev) => ({
+      ...prev,
+      colorTemperature: temp,
+    }));
+  }, []);
+
+  // Enable/disable WebGL mode
+  const setUseWebGL = useCallback((useWebGL: boolean) => {
+    setFogState((prev) => ({
+      ...prev,
+      useWebGL,
+    }));
+  }, []);
 
   const value: FogContextValue = {
     ...fogState,
@@ -195,6 +270,10 @@ export function FogProvider({ children }: { children: React.ReactNode }) {
     activate,
     idle,
     syncWithRing,
+    setUseWebGL,
+    setRingEnergy,
+    billow,
+    setColorTemperature,
   };
 
   return (
