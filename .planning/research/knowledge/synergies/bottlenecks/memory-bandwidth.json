@@ -1,0 +1,628 @@
+{
+  "$schema": "synergy-schema.json",
+  "domain": "memory",
+  "subDomain": "unified-memory-bandwidth",
+  "lastUpdated": "2026-01-18",
+  "lastVerified": "2026-01-18",
+  "confidence": "high",
+  "sources": [
+    {
+      "name": "Gemini Deep Research - Memory Architecture",
+      "type": "gemini-research",
+      "date": "2026-01-18"
+    },
+    {
+      "name": "Apple Official Specifications",
+      "type": "official-docs",
+      "date": "2024"
+    },
+    {
+      "name": "Gemini Deep Research - Apple Mac Capabilities",
+      "type": "gemini-research",
+      "date": "2026-01-18"
+    }
+  ],
+  "interactions": [
+    {
+      "id": "uma-zero-copy-gpu-texture",
+      "type": "synergy",
+      "components": ["memory:unified", "gpu:apple-silicon-gpu", "cpu:apple-silicon"],
+      "relationship": "GPU can access CPU-prepared textures directly without data copying, eliminating PCIe transfer bottleneck found in discrete GPU systems",
+      "conditions": [
+        {
+          "parameter": "workload_type",
+          "operator": "in",
+          "value": ["gaming", "rendering", "video-editing"]
+        }
+      ],
+      "impact": {
+        "performance": { "value": 25, "min": 15, "max": 35 },
+        "thermal": { "value": -10 },
+        "power": { "value": -15 }
+      },
+      "confidence": "high",
+      "applicableTo": ["M1", "M1 Pro", "M1 Max", "M1 Ultra", "M2", "M2 Pro", "M2 Max", "M2 Ultra", "M3", "M3 Pro", "M3 Max", "M4", "M4 Pro", "M4 Max"],
+      "tags": ["uma", "zero-copy", "gpu", "synergy"],
+      "source": "Apple Silicon Architecture",
+      "sourceDate": "2024"
+    },
+    {
+      "id": "uma-shared-pool-efficiency",
+      "type": "synergy",
+      "components": ["memory:unified", "cpu:apple-silicon", "gpu:apple-silicon-gpu"],
+      "relationship": "Single memory pool eliminates dedicated VRAM allocation waste; all memory available to whichever processor needs it",
+      "conditions": [
+        {
+          "parameter": "memory_usage",
+          "operator": "lt",
+          "value": 80,
+          "unit": "percent"
+        }
+      ],
+      "impact": {
+        "performance": { "value": 15, "min": 10, "max": 20 },
+        "thermal": { "value": 0 },
+        "power": { "value": -5 }
+      },
+      "confidence": "high",
+      "applicableTo": ["M1", "M1 Pro", "M1 Max", "M1 Ultra", "M2", "M2 Pro", "M2 Max", "M2 Ultra", "M3", "M3 Pro", "M3 Max", "M4", "M4 Pro", "M4 Max"],
+      "tags": ["uma", "memory-efficiency", "dynamic-allocation"],
+      "source": "Gemini Deep Research",
+      "sourceDate": "2026"
+    },
+    {
+      "id": "uma-no-pcie-overhead",
+      "type": "synergy",
+      "components": ["memory:unified", "gpu:apple-silicon-gpu"],
+      "relationship": "No PCIe bus transfer latency or bandwidth limitation for GPU memory access",
+      "formula": {
+        "expression": "(pcie_gen4_bandwidth - uma_bandwidth) / pcie_gen4_bandwidth * 100",
+        "variables": {
+          "pcie_gen4_bandwidth": "Typical PCIe 4.0 x16 bandwidth (~32 GB/s)",
+          "uma_bandwidth": "UMA bandwidth for chip (68-800 GB/s)"
+        },
+        "outputUnit": "percent_improvement"
+      },
+      "conditions": [
+        {
+          "parameter": "data_transfer_size",
+          "operator": "gt",
+          "value": 100,
+          "unit": "MB"
+        }
+      ],
+      "impact": {
+        "performance": { "value": 30, "min": 20, "max": 50 },
+        "thermal": { "value": -5 },
+        "power": { "value": -10 }
+      },
+      "confidence": "high",
+      "applicableTo": ["M1", "M1 Pro", "M1 Max", "M1 Ultra", "M2", "M2 Pro", "M2 Max", "M2 Ultra", "M3", "M3 Pro", "M3 Max", "M4", "M4 Pro", "M4 Max"],
+      "tags": ["uma", "pcie", "latency", "bandwidth"],
+      "source": "Apple Silicon Architecture",
+      "sourceDate": "2024"
+    },
+    {
+      "id": "media-engine-zero-copy-decode",
+      "type": "synergy",
+      "components": ["memory:unified", "media-engine:hardware-decoder", "gpu:apple-silicon-gpu"],
+      "relationship": "Hardware video decoder writes decoded frames directly to unified memory accessible by GPU for real-time color grading and effects",
+      "conditions": [
+        {
+          "parameter": "video_codec",
+          "operator": "in",
+          "value": ["H.264", "HEVC", "ProRes", "AV1"]
+        }
+      ],
+      "impact": {
+        "performance": { "value": 40, "min": 30, "max": 50 },
+        "thermal": { "value": -20 },
+        "power": { "value": -25 }
+      },
+      "confidence": "high",
+      "applicableTo": ["M1", "M1 Pro", "M1 Max", "M1 Ultra", "M2", "M2 Pro", "M2 Max", "M2 Ultra", "M3", "M3 Pro", "M3 Max", "M4", "M4 Pro", "M4 Max"],
+      "tags": ["media-engine", "video", "zero-copy", "decode"],
+      "source": "Apple Silicon Architecture",
+      "sourceDate": "2024"
+    },
+    {
+      "id": "vram-pressure-insufficient-memory",
+      "type": "bottleneck",
+      "components": ["memory:unified", "gpu:apple-silicon-gpu"],
+      "relationship": "When unified memory is insufficient for game's VRAM requirements, texture quality must be reduced or streaming artifacts appear",
+      "conditions": [
+        {
+          "parameter": "vram_required",
+          "operator": "gt",
+          "value": 8,
+          "unit": "GB"
+        },
+        {
+          "parameter": "unified_memory",
+          "operator": "lte",
+          "value": 8,
+          "unit": "GB"
+        }
+      ],
+      "impact": {
+        "performance": { "value": -35, "min": -20, "max": -50 },
+        "thermal": { "value": 0 },
+        "power": { "value": 0 }
+      },
+      "confidence": "high",
+      "applicableTo": ["M1", "M2", "M3"],
+      "tags": ["vram", "memory-pressure", "gaming", "bottleneck"],
+      "source": "User Reports and Benchmarks",
+      "sourceDate": "2024",
+      "mitigations": [
+        "Reduce texture quality to Medium or Low",
+        "Lower resolution to reduce VRAM requirements",
+        "Close memory-intensive background applications",
+        "Use games with smaller VRAM footprint"
+      ]
+    },
+    {
+      "id": "bandwidth-saturation-4k-textures",
+      "type": "bottleneck",
+      "components": ["memory:unified", "gpu:apple-silicon-gpu"],
+      "relationship": "High-resolution 4K textures can saturate memory bandwidth on base chips, causing frame drops during texture streaming",
+      "conditions": [
+        {
+          "parameter": "texture_resolution",
+          "operator": "eq",
+          "value": "4K"
+        },
+        {
+          "parameter": "memory_bandwidth",
+          "operator": "lte",
+          "value": 120,
+          "unit": "GB/s"
+        }
+      ],
+      "impact": {
+        "performance": { "value": -25, "min": -15, "max": -40 },
+        "thermal": { "value": 5 },
+        "power": { "value": 10 }
+      },
+      "confidence": "medium",
+      "applicableTo": ["M1", "M2", "M3", "M4"],
+      "tags": ["bandwidth", "4k", "textures", "streaming"],
+      "source": "Benchmark Analysis",
+      "sourceDate": "2024",
+      "mitigations": [
+        "Use texture quality below Ultra/Epic",
+        "Enable texture streaming if available",
+        "Reduce render resolution and use MetalFX upscaling"
+      ]
+    },
+    {
+      "id": "memory-swap-gaming-stutter",
+      "type": "bottleneck",
+      "components": ["memory:unified", "storage:ssd", "gpu:apple-silicon-gpu"],
+      "relationship": "When memory pressure forces swapping during gaming, SSD access introduces frame time spikes and stuttering",
+      "conditions": [
+        {
+          "parameter": "memory_pressure",
+          "operator": "eq",
+          "value": "high"
+        },
+        {
+          "parameter": "swap_usage",
+          "operator": "gt",
+          "value": 0,
+          "unit": "GB"
+        }
+      ],
+      "impact": {
+        "performance": { "value": -40, "min": -20, "max": -60 },
+        "thermal": { "value": 5 },
+        "power": { "value": 15 }
+      },
+      "confidence": "high",
+      "applicableTo": ["M1", "M1 Pro", "M1 Max", "M2", "M2 Pro", "M2 Max", "M3", "M3 Pro", "M3 Max", "M4", "M4 Pro", "M4 Max"],
+      "tags": ["swap", "memory-pressure", "stutter", "gaming"],
+      "source": "User Reports",
+      "sourceDate": "2025",
+      "mitigations": [
+        "Close browser tabs and Electron apps (Slack, Discord, VS Code)",
+        "Quit unused applications before gaming",
+        "Consider upgrading to higher memory configuration",
+        "Reduce game memory footprint via settings"
+      ]
+    },
+    {
+      "id": "multi-app-memory-contention",
+      "type": "bottleneck",
+      "components": ["memory:unified", "cpu:apple-silicon", "gpu:apple-silicon-gpu"],
+      "relationship": "Multiple memory-intensive applications compete for unified memory bandwidth, degrading performance across all workloads",
+      "conditions": [
+        {
+          "parameter": "memory_usage",
+          "operator": "gte",
+          "value": 85,
+          "unit": "percent"
+        },
+        {
+          "parameter": "active_memory_intensive_apps",
+          "operator": "gte",
+          "value": 3
+        }
+      ],
+      "impact": {
+        "performance": { "value": -30, "min": -15, "max": -45 },
+        "thermal": { "value": 10 },
+        "power": { "value": 15 }
+      },
+      "confidence": "medium",
+      "applicableTo": ["M1", "M1 Pro", "M1 Max", "M2", "M2 Pro", "M2 Max", "M3", "M3 Pro", "M3 Max", "M4", "M4 Pro", "M4 Max"],
+      "tags": ["contention", "multi-app", "memory-pressure"],
+      "source": "Derived from Architecture",
+      "sourceDate": "2026",
+      "mitigations": [
+        "Close unnecessary applications during gaming",
+        "Disable browser auto-refresh features",
+        "Quit background updaters and sync services"
+      ]
+    },
+    {
+      "id": "bandwidth-tier-base-68-120",
+      "type": "neutral",
+      "components": ["memory:unified-base-tier", "cpu:apple-silicon"],
+      "relationship": "Base chips (M1/M2/M3/M4) have 68-120 GB/s bandwidth, suitable for 1080p gaming and light 1440p",
+      "conditions": [
+        {
+          "parameter": "chip_tier",
+          "operator": "eq",
+          "value": "base"
+        }
+      ],
+      "impact": {
+        "performance": { "value": 0 },
+        "thermal": { "value": 0 },
+        "power": { "value": 0 }
+      },
+      "confidence": "high",
+      "applicableTo": ["M1", "M2", "M3", "M4"],
+      "tags": ["bandwidth", "specs", "base-tier"],
+      "source": "Apple Specs",
+      "sourceDate": "2024"
+    },
+    {
+      "id": "bandwidth-tier-pro-200-273",
+      "type": "neutral",
+      "components": ["memory:unified-pro-tier", "cpu:apple-silicon"],
+      "relationship": "Pro chips have 150-273 GB/s bandwidth, comfortable for 1440p gaming and 4K video editing",
+      "conditions": [
+        {
+          "parameter": "chip_tier",
+          "operator": "eq",
+          "value": "pro"
+        }
+      ],
+      "impact": {
+        "performance": { "value": 0 },
+        "thermal": { "value": 0 },
+        "power": { "value": 0 }
+      },
+      "confidence": "high",
+      "applicableTo": ["M1 Pro", "M2 Pro", "M3 Pro", "M4 Pro"],
+      "tags": ["bandwidth", "specs", "pro-tier"],
+      "source": "Apple Specs",
+      "sourceDate": "2024"
+    },
+    {
+      "id": "bandwidth-tier-max-300-400",
+      "type": "neutral",
+      "components": ["memory:unified-max-tier", "cpu:apple-silicon"],
+      "relationship": "Max chips have 300-400 GB/s bandwidth, suitable for 4K gaming and professional 8K video workflows",
+      "conditions": [
+        {
+          "parameter": "chip_tier",
+          "operator": "eq",
+          "value": "max"
+        }
+      ],
+      "impact": {
+        "performance": { "value": 0 },
+        "thermal": { "value": 0 },
+        "power": { "value": 0 }
+      },
+      "confidence": "high",
+      "applicableTo": ["M1 Max", "M2 Max", "M3 Max", "M4 Max"],
+      "tags": ["bandwidth", "specs", "max-tier"],
+      "source": "Apple Specs",
+      "sourceDate": "2024"
+    },
+    {
+      "id": "bandwidth-tier-ultra-800",
+      "type": "neutral",
+      "components": ["memory:unified-ultra-tier", "cpu:apple-silicon"],
+      "relationship": "Ultra chips have 800 GB/s bandwidth via UltraFusion, suitable for large ML models and multi-stream 8K",
+      "conditions": [
+        {
+          "parameter": "chip_tier",
+          "operator": "eq",
+          "value": "ultra"
+        }
+      ],
+      "impact": {
+        "performance": { "value": 0 },
+        "thermal": { "value": 0 },
+        "power": { "value": 0 }
+      },
+      "confidence": "high",
+      "applicableTo": ["M1 Ultra", "M2 Ultra"],
+      "tags": ["bandwidth", "specs", "ultra-tier", "ultrafusion"],
+      "source": "Apple Specs",
+      "sourceDate": "2024"
+    },
+    {
+      "id": "gaming-1080p-bandwidth-requirement",
+      "type": "neutral",
+      "components": ["memory:unified", "gpu:apple-silicon-gpu"],
+      "relationship": "1080p gaming typically requires 50-80 GB/s effective bandwidth, well within base chip capabilities",
+      "conditions": [
+        {
+          "parameter": "resolution",
+          "operator": "eq",
+          "value": "1080p"
+        },
+        {
+          "parameter": "workload_type",
+          "operator": "eq",
+          "value": "gaming"
+        }
+      ],
+      "impact": {
+        "performance": { "value": 0 },
+        "thermal": { "value": 0 },
+        "power": { "value": 0 }
+      },
+      "confidence": "medium",
+      "applicableTo": ["M1", "M2", "M3", "M4"],
+      "tags": ["gaming", "1080p", "bandwidth-requirement"],
+      "source": "Benchmark Analysis",
+      "sourceDate": "2024"
+    },
+    {
+      "id": "gaming-1440p-bandwidth-requirement",
+      "type": "bottleneck",
+      "components": ["memory:unified", "gpu:apple-silicon-gpu"],
+      "relationship": "1440p gaming requires 100-150 GB/s bandwidth; base chips may encounter occasional bottlenecks in demanding titles",
+      "conditions": [
+        {
+          "parameter": "resolution",
+          "operator": "eq",
+          "value": "1440p"
+        },
+        {
+          "parameter": "memory_bandwidth",
+          "operator": "lte",
+          "value": 120,
+          "unit": "GB/s"
+        },
+        {
+          "parameter": "workload_type",
+          "operator": "eq",
+          "value": "gaming"
+        }
+      ],
+      "impact": {
+        "performance": { "value": -15, "min": -5, "max": -25 },
+        "thermal": { "value": 5 },
+        "power": { "value": 5 }
+      },
+      "confidence": "medium",
+      "applicableTo": ["M1", "M2", "M3", "M4"],
+      "tags": ["gaming", "1440p", "bandwidth-bottleneck"],
+      "source": "Benchmark Analysis",
+      "sourceDate": "2024",
+      "mitigations": [
+        "Enable MetalFX upscaling to render at lower internal resolution",
+        "Reduce texture quality settings",
+        "Consider Pro-tier chip for consistent 1440p performance"
+      ]
+    },
+    {
+      "id": "gaming-4k-bandwidth-requirement",
+      "type": "bottleneck",
+      "components": ["memory:unified", "gpu:apple-silicon-gpu"],
+      "relationship": "Native 4K gaming requires 200-400 GB/s bandwidth; only Max/Ultra chips can sustain without MetalFX",
+      "conditions": [
+        {
+          "parameter": "resolution",
+          "operator": "eq",
+          "value": "4K"
+        },
+        {
+          "parameter": "memory_bandwidth",
+          "operator": "lt",
+          "value": 200,
+          "unit": "GB/s"
+        },
+        {
+          "parameter": "workload_type",
+          "operator": "eq",
+          "value": "gaming"
+        }
+      ],
+      "impact": {
+        "performance": { "value": -40, "min": -25, "max": -55 },
+        "thermal": { "value": 10 },
+        "power": { "value": 15 }
+      },
+      "confidence": "medium",
+      "applicableTo": ["M1", "M1 Pro", "M2", "M2 Pro", "M3", "M3 Pro", "M4", "M4 Pro"],
+      "tags": ["gaming", "4k", "bandwidth-bottleneck"],
+      "source": "Benchmark Analysis",
+      "sourceDate": "2024",
+      "mitigations": [
+        "Use MetalFX Temporal upscaling (essential for 4K)",
+        "Render at 1440p or 1080p with upscaling",
+        "Max/Ultra chips recommended for native 4K"
+      ]
+    },
+    {
+      "id": "video-editing-prores-bandwidth",
+      "type": "synergy",
+      "components": ["memory:unified", "media-engine:hardware-decoder", "cpu:apple-silicon"],
+      "relationship": "ProRes codec optimized for Apple Silicon achieves zero-copy decode with minimal bandwidth overhead",
+      "conditions": [
+        {
+          "parameter": "video_codec",
+          "operator": "eq",
+          "value": "ProRes"
+        },
+        {
+          "parameter": "workload_type",
+          "operator": "eq",
+          "value": "video-editing"
+        }
+      ],
+      "impact": {
+        "performance": { "value": 35, "min": 25, "max": 45 },
+        "thermal": { "value": -15 },
+        "power": { "value": -20 }
+      },
+      "confidence": "high",
+      "applicableTo": ["M1 Pro", "M1 Max", "M1 Ultra", "M2 Pro", "M2 Max", "M2 Ultra", "M3 Pro", "M3 Max", "M4 Pro", "M4 Max"],
+      "tags": ["prores", "video-editing", "media-engine", "synergy"],
+      "source": "Apple Silicon Architecture",
+      "sourceDate": "2024"
+    },
+    {
+      "id": "8k-video-bandwidth-bottleneck",
+      "type": "bottleneck",
+      "components": ["memory:unified", "gpu:apple-silicon-gpu", "media-engine:hardware-decoder"],
+      "relationship": "8K video editing with effects requires massive bandwidth; only Max/Ultra chips maintain real-time playback",
+      "conditions": [
+        {
+          "parameter": "video_resolution",
+          "operator": "eq",
+          "value": "8K"
+        },
+        {
+          "parameter": "memory_bandwidth",
+          "operator": "lt",
+          "value": 300,
+          "unit": "GB/s"
+        }
+      ],
+      "impact": {
+        "performance": { "value": -45, "min": -30, "max": -60 },
+        "thermal": { "value": 15 },
+        "power": { "value": 20 }
+      },
+      "confidence": "medium",
+      "applicableTo": ["M1", "M1 Pro", "M2", "M2 Pro", "M3", "M3 Pro", "M4", "M4 Pro"],
+      "tags": ["8k", "video-editing", "bandwidth-bottleneck"],
+      "source": "Professional Workflow Analysis",
+      "sourceDate": "2025",
+      "mitigations": [
+        "Create proxy media for editing, conform at export",
+        "Use Max or Ultra chips for native 8K workflows",
+        "Reduce timeline effects complexity during editing"
+      ]
+    },
+    {
+      "id": "3d-rendering-large-scenes",
+      "type": "bottleneck",
+      "components": ["memory:unified", "gpu:apple-silicon-gpu", "cpu:apple-silicon"],
+      "relationship": "3D scenes exceeding unified memory capacity cause severe performance degradation or crashes",
+      "conditions": [
+        {
+          "parameter": "scene_memory_requirement",
+          "operator": "gt",
+          "value": 32,
+          "unit": "GB"
+        },
+        {
+          "parameter": "unified_memory",
+          "operator": "lte",
+          "value": 32,
+          "unit": "GB"
+        }
+      ],
+      "impact": {
+        "performance": { "value": -60, "min": -40, "max": -80 },
+        "thermal": { "value": 10 },
+        "power": { "value": 15 }
+      },
+      "confidence": "medium",
+      "applicableTo": ["M1", "M1 Pro", "M2", "M2 Pro", "M3", "M3 Pro", "M4", "M4 Pro"],
+      "tags": ["3d-rendering", "memory-capacity", "blender", "c4d"],
+      "source": "Professional Workflow Analysis",
+      "sourceDate": "2025",
+      "mitigations": [
+        "Optimize scene geometry and textures",
+        "Use instancing for repeated objects",
+        "Render in passes rather than final frame",
+        "Consider 64GB+ Max/Ultra configurations"
+      ]
+    },
+    {
+      "id": "ml-training-large-models",
+      "type": "bottleneck",
+      "components": ["memory:unified", "gpu:apple-silicon-gpu", "neural-engine:apple-neural-engine"],
+      "relationship": "Large language models exceeding available unified memory cannot be loaded or train extremely slowly",
+      "conditions": [
+        {
+          "parameter": "model_size",
+          "operator": "gt",
+          "value": 16,
+          "unit": "GB"
+        },
+        {
+          "parameter": "unified_memory",
+          "operator": "lte",
+          "value": 16,
+          "unit": "GB"
+        }
+      ],
+      "impact": {
+        "performance": { "value": -70, "min": -50, "max": -90 },
+        "thermal": { "value": 15 },
+        "power": { "value": 20 }
+      },
+      "confidence": "medium",
+      "applicableTo": ["M1", "M2", "M3", "M4"],
+      "tags": ["ml", "training", "large-models", "memory-capacity"],
+      "source": "ML Workflow Analysis",
+      "sourceDate": "2025",
+      "mitigations": [
+        "Use quantized model versions (4-bit, 8-bit)",
+        "Employ gradient checkpointing",
+        "Consider 64GB+ configurations for serious ML work",
+        "Use cloud resources for training, local for inference"
+      ]
+    },
+    {
+      "id": "dynamic-caching-efficiency",
+      "type": "synergy",
+      "components": ["memory:unified", "gpu:m3-m4-gpu"],
+      "relationship": "M3/M4 Dynamic Caching allocates GPU local memory on-demand, reducing bandwidth waste from pre-allocation",
+      "conditions": [
+        {
+          "parameter": "chip_generation",
+          "operator": "in",
+          "value": ["M3", "M4"]
+        },
+        {
+          "parameter": "gpu_workload_variability",
+          "operator": "eq",
+          "value": "high"
+        }
+      ],
+      "impact": {
+        "performance": { "value": 20, "min": 10, "max": 30 },
+        "thermal": { "value": -5 },
+        "power": { "value": -10 }
+      },
+      "confidence": "high",
+      "applicableTo": ["M3", "M3 Pro", "M3 Max", "M4", "M4 Pro", "M4 Max"],
+      "tags": ["dynamic-caching", "gpu-efficiency", "m3", "m4"],
+      "source": "Apple Silicon Architecture",
+      "sourceDate": "2024"
+    }
+  ]
+}
