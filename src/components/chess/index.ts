@@ -18,3 +18,8 @@ export { ChessWidget, type ChessWidgetProps } from './ChessWidget';
 export { ChessWidgetStatus, type ChessWidgetStatusProps } from './ChessWidgetStatus';
 export { ChessWidgetTabs, type ChessWidgetTabsProps, type ChessWidgetTab } from './ChessWidgetTabs';
 export { MiniChessBoard, type MiniChessBoardProps } from './MiniChessBoard';
+
+// Game archive components (Phase 53)
+export { GameCard } from './games/GameCard';
+export { GameBrowser, type GameBrowserProps } from './games/GameBrowser';
+export { GameReview, type GameReviewProps } from './games/GameReview';
