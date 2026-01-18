@@ -80,7 +80,20 @@ pub fn run() {
             // Expertise Detection
             expertise::get_expertise_profile,
             expertise::record_expertise_signal,
-            expertise::set_expertise_override
+            expertise::set_expertise_override,
+            // Phase 44: macOS Optimization Core
+            #[cfg(target_os = "macos")]
+            platform::macos::macos_get_optimization_status,
+            #[cfg(target_os = "macos")]
+            platform::macos::macos_set_process_priority,
+            #[cfg(target_os = "macos")]
+            platform::macos::macos_get_memory_pressure,
+            #[cfg(target_os = "macos")]
+            platform::macos::macos_get_thermal_state,
+            #[cfg(target_os = "macos")]
+            platform::macos::macos_get_gpu_state,
+            #[cfg(target_os = "macos")]
+            platform::macos::macos_configure_gaming_mode
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
