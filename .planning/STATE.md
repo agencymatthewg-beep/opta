@@ -10,12 +10,12 @@ See: .planning/PROJECT.md (updated 2026-01-15)
 ## Current Position
 
 Phase: 42 of 50 (Hardware Synergy Database)
-Plan: 0 of 5 in current phase
-Status: Phase 41.1 COMPLETE — Ready to start Phase 42
-Last activity: 2026-01-18 — Completed 5-tier knowledge architecture, extracted 200+ entries from 9 Gemini reports
+Plan: 1 of 5 in current phase
+Status: In progress — Plan 42-01 complete
+Last activity: 2026-01-18 — Completed 42-01 (Component Interaction Matrix Schema)
 
 Progress: ██████████ 100% of v5.0 (17 phases complete)
-v6.0 Progress: ██████░░░░ 60% (Phase 41 + 41.1 complete)
+v6.0 Progress: ██████░░░░ 62% (Phase 41 + 41.1 + 42-01 complete)
 
 ### v5.0 Phase Completion Summary
 | Phase | Name | Status |
@@ -43,7 +43,7 @@ v6.0 Progress: ██████░░░░ 60% (Phase 41 + 41.1 complete)
 |-------|------|--------|
 | 41 | Knowledge Research Foundation | ✅ Complete |
 | 41.1 | Knowledge Architecture System | ✅ COMPLETE |
-| 42 | Hardware Synergy Database | ⏳ Not started |
+| 42 | Hardware Synergy Database | 🔄 In progress (1/5 plans) |
 | 43 | Settings Interaction Engine | ⏳ Not started |
 | 44 | macOS Optimization Core | ⏳ Not started |
 | 45 | Windows Optimization Core | ⏳ Not started |
@@ -76,6 +76,15 @@ v6.0 Progress: ██████░░░░ 60% (Phase 41 + 41.1 complete)
 - Architecture files: apple-silicon.json, optimization-software.json
 - Benchmarks: game-performance.json with 23 entries
 - Reports archived to `.planning/research/archive/`
+
+### Phase 42 Plans (IN PROGRESS)
+| Plan | Status | Description |
+|------|--------|-------------|
+| 42-01 | ✅ Complete | Component Interaction Matrix Schema |
+| 42-02 | ⏳ Pending | GPU-CPU Bottleneck Data |
+| 42-03 | ⏳ Pending | Thermal Interaction Profiles |
+| 42-04 | ⏳ Pending | Power Efficiency Data |
+| 42-05 | ⏳ Pending | Synergy Calculation Engine |
 
 ### v7.0 Chess Mastery (Planned)
 | Phase | Name | Status |
@@ -340,6 +349,9 @@ v6.0 Progress: ██████░░░░ 60% (Phase 41 + 41.1 complete)
 | 21-03 | 10-second timeout for disk analysis | Prevents hanging on large filesystems |
 | 21-03 | 30-second cache TTL for disk analysis | Balances freshness with performance |
 | 21-03 | MAX_VISIBLE_NODES=100 | Performance optimization for SVG rendering |
+| 42-01 | Impact scale -100 to +100 | Symmetric scale for degradation (negative) and improvement (positive) |
+| 42-01 | Component reference format category:identifier | Parseable format for different component types (cpu:m4-pro, gpu:m4-pro-gpu) |
+| 42-01 | Three synergy subdirectories (bottlenecks, thermal, power) | Clean separation matching major hardware interaction domains |
 
 ### Deferred Issues
 
@@ -367,6 +379,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-18
-Stopped at: Completed Phase 41 (Knowledge Research Foundation) - all 5 plans complete
+Stopped at: Completed 42-01-PLAN.md (Component Interaction Matrix Schema)
 Resume file: None
-Next action: Plan Phase 42 (Hardware Synergy Database) or run Gemini Deep Research prompts offline
+Next action: Execute 42-02-PLAN.md (GPU-CPU Bottleneck Data)
