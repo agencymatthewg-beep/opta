@@ -47,6 +47,12 @@
  * - uColorSaturation: energy-driven saturation (0=grayscale, 1=full color)
  * - uColorWarmth: color temperature shift (0=cold/neutral, 1=warm/vibrant)
  *
+ * Phase 41.8: Reference Image Parity
+ * - Dormant state tuned to match 0%Opta.png: near-black obsidian with faint purple rim
+ * - Active state tuned to match 50%Opta.png: vibrant purple plasma with magenta hotspots
+ * - Plasma colors shifted toward magenta-violet for reference intensity
+ * - Fresnel and rim values calibrated for visual parity
+ *
  * The shader creates a premium obsidian glass look that responds
  * dynamically to the ring's state and energy level, with internal
  * plasma that tells the energy story at a glance.
@@ -175,16 +181,16 @@ export interface RingShaderConfig {
 // =============================================================================
 
 /**
- * Ring colors from design system
- * Dormant: deep purple #3B1D5A (cool)
- * Active: electric violet #9333EA (warm)
+ * Ring colors from design system - Phase 41.8: Tuned for reference image parity
+ * Dormant: near-black obsidian with subtle purple tint (matching 0%Opta.png)
+ * Active: vibrant magenta-violet (matching 50%Opta.png intensity)
  * Exploding: white-hot with purple edge
  */
 export const RING_COLORS = {
-  dormant: '#3B1D5A',      // Deep purple (cool) - hsl(265, 50%, 23%)
-  active: '#9333EA',       // Electric violet (warm) - hsl(265, 90%, 55%)
+  dormant: '#1A0D28',      // Near-black obsidian (matching reference - very dark purple-black)
+  active: '#A855F7',       // Bright violet-magenta (matching 50%Opta.png intensity)
   explode: '#FFFFFF',      // White-hot core
-  rim: '#A855F7',          // Purple rim for explosion - hsl(270, 91%, 65%)
+  rim: '#C084FC',          // Brighter purple rim (matching reference intensity)
 } as const;
 
 // =============================================================================
@@ -415,24 +421,40 @@ float plasma(vec3 p, float energy) {
 
 /**
  * Calculate plasma color based on energy level with color temperature mastery
- * Dormant: dark smoldering obsidian (desaturated, cold gray-black)
- * Active: vibrant purple plasma (fully saturated, warm violet)
- * Max: bright violet glow (intense, hot)
+ * Phase 41.8: Tuned for reference image parity
+ *
+ * Dormant (0%Opta.png): near-black obsidian with barely visible purple tint
+ * Active (50%Opta.png): vibrant magenta-purple plasma with bright hotspots
+ * Max: bright violet-white glow (intense, hot)
  *
  * Phase 41.7: Uses energy-driven saturation and warmth
  */
 vec3 getPlasmaColor(float energy) {
-  // Base colors (fully saturated reference)
-  vec3 dormantBase = vec3(0.06, 0.05, 0.08);   // Near-black (will be desaturated)
-  vec3 activeBase = vec3(0.55, 0.1, 0.75);     // Vibrant purple
-  vec3 maxBase = vec3(0.85, 0.65, 1.0);        // Bright violet-white
+  // Phase 41.8: Base colors tuned to match reference images
+  // 0%Opta.png: Nearly pure black obsidian - extremely dark
+  vec3 dormantBase = vec3(0.02, 0.015, 0.03);   // Near-black obsidian (darker than before)
 
-  // Interpolate base color
+  // 50%Opta.png: Vibrant magenta-purple plasma with visible swirls
+  vec3 activeBase = vec3(0.5, 0.1, 0.85);       // Shifted toward magenta-violet
+
+  // Maximum energy: bright violet-white hotspots
+  vec3 maxBase = vec3(0.9, 0.6, 1.0);           // Bright magenta-white
+
+  // Interpolate base color with enhanced curve for reference parity
   vec3 baseColor;
-  if (energy < 0.5) {
-    baseColor = mix(dormantBase, activeBase, energy * 2.0);
+  if (energy < 0.4) {
+    // Dormant to early active: slow transition, stay dark longer
+    float t = energy / 0.4;
+    t = t * t; // Quadratic ease-in to stay dark longer
+    baseColor = mix(dormantBase, activeBase * 0.5, t);
+  } else if (energy < 0.7) {
+    // Mid-active: rapid color emergence (matching 50%Opta.png)
+    float t = (energy - 0.4) / 0.3;
+    baseColor = mix(activeBase * 0.5, activeBase, t);
   } else {
-    baseColor = mix(activeBase, maxBase, (energy - 0.5) * 2.0);
+    // High energy to max: transition to bright violet
+    float t = (energy - 0.7) / 0.3;
+    baseColor = mix(activeBase, maxBase, t);
   }
 
   // Apply color temperature transformation based on energy
@@ -1042,22 +1064,24 @@ void main() {
   vec3 sssColor = uColorActive * sss * 0.8; // Use active color for inner glow
 
   // ==========================================================================
-  // INTERNAL PLASMA CORE (41.2 + 41.6 Transitions)
+  // INTERNAL PLASMA CORE (41.2 + 41.6 Transitions + 41.8 Reference Parity)
   // ==========================================================================
 
   // Animated position: UV + slow time offset based on energy
   // Slow churning (dormant) -> rapid movement (max energy)
   // Phase 41.6: Use effectiveEnergy for smooth transition-aware flow
-  float flowSpeed = mix(0.02, 0.12, effectiveEnergy);
+  // Phase 41.8: Enhanced flow for more visible plasma swirls
+  float flowSpeed = mix(0.015, 0.15, effectiveEnergy);
   vec3 plasmaPos = vec3(
-    vUv.x * 4.0,                              // Scale UV for detail
-    vUv.y * 4.0,
+    vUv.x * 3.5,                              // Slightly larger scale for visible swirls
+    vUv.y * 3.5,
     uTime * flowSpeed                          // Animate through Z
   );
 
   // Add circular flow for torus-appropriate swirl
-  float angle = uTime * flowSpeed * 0.5;
-  plasmaPos.xy += vec2(sin(angle), cos(angle)) * 0.2;
+  // Phase 41.8: Enhanced swirl motion matching reference
+  float angle = uTime * flowSpeed * 0.6;
+  plasmaPos.xy += vec2(sin(angle), cos(angle)) * 0.25;
 
   // Calculate plasma intensity - use effectiveEnergy for transition awareness
   float plasmaValue = plasma(plasmaPos, effectiveEnergy);
@@ -1071,10 +1095,13 @@ void main() {
   float plasmaDepth = 1.0 - fresnel;
 
   // Energy-driven plasma intensity
-  // Even at 0% energy, subtle plasma is visible (sleeping, not dead)
-  // Phase 41.6: Use effectiveEnergy and add afterglow warmth
-  float plasmaIntensity = mix(0.15, 0.85, effectiveEnergy);
-  plasmaIntensity += afterglow * 0.2; // Afterglow warms the plasma during power-down
+  // Phase 41.8: Dormant plasma nearly invisible (0%Opta.png is very dark)
+  // Active plasma much more visible (50%Opta.png shows bright swirls)
+  float plasmaIntensity = mix(0.03, 0.95, effectiveEnergy);
+  plasmaIntensity += afterglow * 0.25; // Afterglow warms the plasma during power-down
+
+  // Phase 41.8: Enhanced plasma contrast - quadratic curve for more punch
+  plasmaIntensity *= plasmaIntensity * 0.5 + plasmaIntensity * 0.5;
 
   // Final plasma contribution
   vec3 plasmaContribution = plasmaColor * plasmaValue * plasmaDepth * plasmaIntensity;
@@ -1127,38 +1154,40 @@ void main() {
   float ao = 1.0 - fresnel * 0.3;
 
   // ==========================================================================
-  // COMBINE ALL EFFECTS (41.6: use effectiveEnergy for transition awareness)
+  // COMBINE ALL EFFECTS (41.6 + 41.8: reference parity tuning)
   // ==========================================================================
 
-  // Surface contribution - darker base for obsidian look
-  vec3 surfaceColor = baseColor * diffuse * ao * 0.7;
+  // Surface contribution - Phase 41.8: darker base for true obsidian look
+  // 0%Opta.png shows near-black surface with subtle shading
+  float dormantDarkening = mix(0.35, 0.75, effectiveEnergy);
+  vec3 surfaceColor = baseColor * diffuse * ao * dormantDarkening;
 
   // Add obsidian mirror reflection (41.3)
   // Reflection is more visible when energy is low (dormant obsidian look)
-  // Phase 41.6: Use effectiveEnergy for smooth transition
-  float reflectionWeight = mix(1.0, 0.6, effectiveEnergy);
+  // Phase 41.8: Enhanced reflection contrast
+  float reflectionWeight = mix(1.2, 0.5, effectiveEnergy);
   surfaceColor += obsidianReflection * reflectionWeight;
 
   // Add mirror specular highlights (41.3)
   // Sharp specular creates polished glass appearance
-  // Phase 41.6: Use effectiveEnergy for smooth transition
-  float specWeight = mix(0.8, 1.2, effectiveEnergy); // Brighter when active
+  // Phase 41.8: More pronounced specular for polished obsidian
+  float specWeight = mix(0.9, 1.4, effectiveEnergy); // Brighter when active
   surfaceColor += mirrorSpecContribution * specWeight * uMirrorReflectivity;
 
   // Add standard specular (reduced, mirror specular dominates)
-  // Phase 41.6: Use effectiveEnergy for smooth transition
-  surfaceColor += vec3(1.0) * specular * 0.2 * (1.0 + effectiveEnergy);
+  // Phase 41.8: Slightly reduced to keep dormant darker
+  surfaceColor += vec3(1.0) * specular * 0.15 * (0.8 + effectiveEnergy);
 
   // Add rim emissive (fresnel glow)
   surfaceColor += rimEmissive;
 
-  // Add subsurface scattering
-  surfaceColor += sssColor;
+  // Add subsurface scattering - Phase 41.8: reduced for darker dormant
+  surfaceColor += sssColor * mix(0.4, 1.0, effectiveEnergy);
 
   // Add internal plasma core (41.2)
   // Plasma blends underneath the glass surface for depth
-  // Plasma shows through the obsidian glass
-  surfaceColor += plasmaContribution;
+  // Phase 41.8: Plasma contribution enhanced for 50%Opta.png vibrancy
+  surfaceColor += plasmaContribution * (1.0 + effectiveEnergy * 0.3);
 
   // Explosion boost: additional additive glow
   if (uExploding > 0.0) {
@@ -1186,21 +1215,22 @@ void main() {
 
 /**
  * Default ring shader configuration
+ * Phase 41.8: Values tuned for reference image parity
  */
 const defaultRingConfig: Required<RingShaderConfig> = {
   energyLevel: 0,
-  innerGlow: 0.3,
+  innerGlow: 0.25,             // Slightly reduced for darker dormant
   fresnelPower: 3.0,
   state: 'dormant',
-  // Phase 41.3: Obsidian Mirror defaults
-  mirrorReflectivity: 0.7,      // High reflectivity for obsidian glass
-  envReflectionIntensity: 0.5, // Subtle environment reflections
-  specularSharpness: 128.0,    // Sharp mirror-like specular highlights
-  // Phase 41.4: Energy Contrast System defaults
-  dormantFresnelPower: 8.0,    // High = tight, minimal rim when dormant
-  activeFresnelPower: 1.5,     // Low = wide, dramatic rim when active
-  dormantRimIntensity: 0.15,   // Very low = nearly invisible when dormant
-  activeRimIntensity: 2.5,     // High = bright energetic glow when active
+  // Phase 41.3: Obsidian Mirror defaults - Phase 41.8: enhanced for darker dormant
+  mirrorReflectivity: 0.75,    // High reflectivity for obsidian glass
+  envReflectionIntensity: 0.4, // Subtle environment reflections (reduced for darker dormant)
+  specularSharpness: 160.0,    // Sharper for more polished obsidian look
+  // Phase 41.4: Energy Contrast System - Phase 41.8: tuned for reference parity
+  dormantFresnelPower: 10.0,   // Higher = tighter rim for near-invisible dormant (was 8.0)
+  activeFresnelPower: 1.3,     // Lower = wider dramatic rim when active (was 1.5)
+  dormantRimIntensity: 0.08,   // Even lower = darker dormant matching 0%Opta.png (was 0.15)
+  activeRimIntensity: 3.0,     // Higher = brighter glow matching 50%Opta.png (was 2.5)
   // Phase 41.6: Suspenseful Transitions defaults
   anticipationIntensity: 0.6,  // Moderate anticipation pulse during power-up
   // Phase 41.7: Color Temperature Mastery defaults
@@ -1820,46 +1850,53 @@ export function setRingColorTemperature(
 
 /**
  * Shader presets for common ring states
+ * Phase 41.8: Tuned for reference image parity (0%Opta.png, 50%Opta.png)
  * Updated with Phase 41.3 obsidian mirror settings
  * Updated with Phase 41.4 energy contrast system settings
  * Updated with Phase 41.6 suspenseful transition settings
  * Updated with Phase 41.7 color temperature mastery settings
  */
 export const ringShaderPresets = {
-  /** Default dormant state - colorless obsidian, nearly invisible rim */
+  /**
+   * Dormant state - Phase 41.8: Tuned to match 0%Opta.png
+   * Near-black obsidian with faint purple rim, highly reflective surface
+   */
   dormant: {
     energyLevel: 0,
-    innerGlow: 0.2,
-    fresnelPower: 3.5,
+    innerGlow: 0.15,              // Very low - obsidian is near-black inside
+    fresnelPower: 4.0,
     state: 'dormant' as const,
-    mirrorReflectivity: 0.8,       // High reflectivity when dormant
-    envReflectionIntensity: 0.6,  // Visible environment reflections
-    specularSharpness: 128.0,     // Sharp polished look
-    // Phase 41.4: Maximum contrast - nearly invisible
-    dormantFresnelPower: 8.0,     // Tight rim
-    activeFresnelPower: 1.5,      // (not used at 0 energy)
-    dormantRimIntensity: 0.15,    // Nearly invisible
-    activeRimIntensity: 2.5,      // (not used at 0 energy)
+    mirrorReflectivity: 0.85,     // Very high reflectivity - polished obsidian
+    envReflectionIntensity: 0.35, // Subtle reflections visible in reference
+    specularSharpness: 180.0,     // Very sharp for polished glass look
+    // Phase 41.4 + 41.8: Near-invisible rim for dark obsidian
+    dormantFresnelPower: 12.0,    // Very tight rim (matching dark reference)
+    activeFresnelPower: 1.3,      // (not used at 0 energy)
+    dormantRimIntensity: 0.05,    // Extremely faint (0%Opta.png is very dark)
+    activeRimIntensity: 3.0,      // (not used at 0 energy)
     // Phase 41.6: Subtle anticipation when waking from dormant
     anticipationIntensity: 0.5,
     // Phase 41.7: Fully desaturated cold obsidian
     colorSaturation: 1.0,         // Base saturation (energy-driven desaturation)
     colorWarmth: 1.0,             // Base warmth (energy-driven temperature)
   },
-  /** Active state - vibrant purple plasma, bright energetic rim glow */
+  /**
+   * Active state - Phase 41.8: Tuned to match 50%Opta.png
+   * Vibrant magenta-purple plasma with bright rim glow
+   */
   active: {
-    energyLevel: 0.6,
-    innerGlow: 0.5,
-    fresnelPower: 2.5,
+    energyLevel: 0.55,            // Match ~50% energy in reference
+    innerGlow: 0.6,               // More visible plasma interior
+    fresnelPower: 2.0,
     state: 'active' as const,
-    mirrorReflectivity: 0.6,       // Reduced - plasma dominates
-    envReflectionIntensity: 0.4,  // Subtler reflections
-    specularSharpness: 96.0,      // Slightly softer
-    // Phase 41.4: Energetic glow
-    dormantFresnelPower: 8.0,
-    activeFresnelPower: 1.5,      // Wide dramatic rim
-    dormantRimIntensity: 0.15,
-    activeRimIntensity: 2.5,      // Bright glow
+    mirrorReflectivity: 0.55,     // Reduced - plasma dominates
+    envReflectionIntensity: 0.3,  // Subtler reflections
+    specularSharpness: 100.0,     // Slightly softer
+    // Phase 41.4 + 41.8: Bright energetic glow matching reference
+    dormantFresnelPower: 12.0,
+    activeFresnelPower: 1.2,      // Wide dramatic rim
+    dormantRimIntensity: 0.05,
+    activeRimIntensity: 3.2,      // Bright glow matching 50%Opta.png
     // Phase 41.6: Strong anticipation for dramatic activation
     anticipationIntensity: 0.7,
     // Phase 41.7: Vibrant warm purple
@@ -1869,17 +1906,17 @@ export const ringShaderPresets = {
   /** Processing state - pulsing between cold and warm */
   processing: {
     energyLevel: 0.4,
-    innerGlow: 0.4,
-    fresnelPower: 3.0,
+    innerGlow: 0.45,
+    fresnelPower: 2.5,
     state: 'processing' as const,
-    mirrorReflectivity: 0.7,
-    envReflectionIntensity: 0.5,
-    specularSharpness: 112.0,
-    // Phase 41.4: Mid-range contrast during pulse
-    dormantFresnelPower: 8.0,
-    activeFresnelPower: 1.5,
-    dormantRimIntensity: 0.15,
-    activeRimIntensity: 2.5,
+    mirrorReflectivity: 0.65,
+    envReflectionIntensity: 0.35,
+    specularSharpness: 130.0,
+    // Phase 41.4 + 41.8: Mid-range contrast during pulse
+    dormantFresnelPower: 12.0,
+    activeFresnelPower: 1.3,
+    dormantRimIntensity: 0.05,
+    activeRimIntensity: 3.0,
     // Phase 41.6: Moderate anticipation
     anticipationIntensity: 0.6,
     // Phase 41.7: Mid-range color temperature
@@ -1890,16 +1927,16 @@ export const ringShaderPresets = {
   exploding: {
     energyLevel: 1.0,
     innerGlow: 1.0,
-    fresnelPower: 2.0,
+    fresnelPower: 1.5,
     state: 'exploding' as const,
-    mirrorReflectivity: 0.5,       // Minimal - energy overwhelms
-    envReflectionIntensity: 0.3,  // Almost hidden by glow
-    specularSharpness: 64.0,      // Broader hot glow
-    // Phase 41.4: Maximum intensity - full energy
-    dormantFresnelPower: 8.0,
-    activeFresnelPower: 1.2,      // Extra wide for explosion
-    dormantRimIntensity: 0.15,
-    activeRimIntensity: 3.5,      // Extra bright for explosion
+    mirrorReflectivity: 0.4,      // Minimal - energy overwhelms
+    envReflectionIntensity: 0.2,  // Almost hidden by glow
+    specularSharpness: 60.0,      // Broader hot glow
+    // Phase 41.4 + 41.8: Maximum intensity - full energy
+    dormantFresnelPower: 12.0,
+    activeFresnelPower: 1.0,      // Extra wide for explosion
+    dormantRimIntensity: 0.05,
+    activeRimIntensity: 4.0,      // Extra bright for explosion
     // Phase 41.6: Maximum anticipation for explosion buildup
     anticipationIntensity: 0.9,
     // Phase 41.7: Maximum saturation and warmth for bright violet
