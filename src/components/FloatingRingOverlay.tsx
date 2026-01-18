@@ -8,7 +8,68 @@ import {
 } from '@/lib/pageTransitions';
 
 /**
- * Maps extended 3D ring state to 2D ring state
+ * FloatingRingOverlay - The Protagonist During Page Transitions
+ *
+ * A full-screen overlay that displays the OptaRing during navigation transitions.
+ * The ring appears centered, ignites to 50% state, then dissolves as the new
+ * page content fades in.
+ *
+ * ## Transition Sequence
+ * 1. Overlay appears with ring at center (dormant state)
+ * 2. Ring ignites to active state (0% -> 50% brightness)
+ * 3. Brief hold at 50% while new content prepares
+ * 4. Ring dissolves with bloom effect and scale expansion
+ * 5. Overlay fades out, revealing new page
+ *
+ * ## Visual Effects
+ * - **Backdrop**: Subtle darkening (40% opacity) for focus
+ * - **Ambient Glow**: Radial gradient that expands during active state
+ * - **Radial Lines**: 8 energy lines radiating outward when active
+ * - **Vignette**: Edge glow that intensifies during transition
+ *
+ * This creates a "warp" effect where the ring acts as a portal
+ * between pages, making navigation feel like traveling through
+ * the Living Artifact.
+ *
+ * @see DESIGN_SYSTEM.md - Part 7: The Opta Ring
+ * @see pageTransitions.ts - Transition orchestration
+ */
+
+// =============================================================================
+// CONSTANTS
+// =============================================================================
+
+/** Easing curve for smooth deceleration (ease-out-expo approximation) */
+const SMOOTH_OUT_EASING: [number, number, number, number] = [0.22, 1, 0.36, 1];
+
+/** Number of radial energy lines in the active state effect */
+const RADIAL_LINE_COUNT = 8;
+
+/** Rotation angle between radial lines in degrees */
+const RADIAL_LINE_ANGLE_DEG = 45;
+
+/** Stagger delay between radial line animations in seconds */
+const RADIAL_LINE_STAGGER_S = 0.02;
+
+/** Backdrop opacity for focus effect */
+const BACKDROP_OPACITY = 0.4;
+
+/** Active state glow scale multiplier */
+const ACTIVE_GLOW_SCALE = 1.5;
+
+/** Exit glow scale multiplier */
+const EXIT_GLOW_SCALE = 2;
+
+// =============================================================================
+// HELPERS
+// =============================================================================
+
+/**
+ * Maps extended 3D ring state to 2D ring state.
+ * Reduces 7 states to 3 visual representations for the PNG-based OptaRing.
+ *
+ * @param state - The current 3D RingState
+ * @returns The mapped 2D OptaRing state
  */
 function mapTo2DState(state: RingState): OptaRing2DState {
   switch (state) {
@@ -23,33 +84,15 @@ function mapTo2DState(state: RingState): OptaRing2DState {
   }
 }
 
-/**
- * FloatingRingOverlay - The Protagonist During Transitions
- *
- * A full-screen overlay that displays the OptaRing during page transitions.
- * The ring appears centered, ignites to 50% state, then dissolves as the
- * new page content fades in.
- *
- * Sequence:
- * 1. Overlay appears with ring at center (dormant)
- * 2. Ring ignites to active state (0% → 50%)
- * 3. Brief hold at 50% while new content prepares
- * 4. Ring dissolves with bloom effect
- * 5. Overlay fades out
- *
- * This creates a "warp" effect where the ring acts as a portal
- * between pages, making navigation feel like traveling through
- * the Living Artifact.
- *
- * @see DESIGN_SYSTEM.md - Part 7: The Opta Ring
- * @see pageTransitions.ts - Transition orchestration
- */
+// =============================================================================
+// COMPONENT
+// =============================================================================
 
-// Easing curve for smooth transitions
-const smoothOut: [number, number, number, number] = [0.22, 1, 0.36, 1];
-
-export function FloatingRingOverlay() {
+export function FloatingRingOverlay(): React.ReactNode {
   const { isTransitioning, state } = useOptaRing();
+
+  // Determine if ring is in active state for conditional effects
+  const isActiveState = state === 'active';
 
   return (
     <AnimatePresence>
@@ -59,13 +102,13 @@ export function FloatingRingOverlay() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.2, ease: smoothOut }}
+          transition={{ duration: 0.2, ease: SMOOTH_OUT_EASING }}
         >
           {/* Backdrop - Subtle darkening for focus */}
           <motion.div
-            className="absolute inset-0 bg-[#05030a]/40"
+            className="absolute inset-0 bg-background/40"
             initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            animate={{ opacity: BACKDROP_OPACITY }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
           />
@@ -87,16 +130,16 @@ export function FloatingRingOverlay() {
               }}
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{
-                scale: state === 'active' ? 1.5 : 1,
-                opacity: state === 'active' ? 1 : 0.3,
+                scale: isActiveState ? ACTIVE_GLOW_SCALE : 1,
+                opacity: isActiveState ? 1 : 0.3,
               }}
               exit={{
-                scale: 2,
+                scale: EXIT_GLOW_SCALE,
                 opacity: 0,
               }}
               transition={{
                 duration: 0.6,
-                ease: smoothOut,
+                ease: SMOOTH_OUT_EASING,
               }}
             />
 
@@ -111,7 +154,7 @@ export function FloatingRingOverlay() {
               }}
               transition={{
                 duration: RING_DISSOLVE_DURATION / 1000,
-                ease: smoothOut,
+                ease: SMOOTH_OUT_EASING,
               }}
             >
               <OptaRing
@@ -122,28 +165,28 @@ export function FloatingRingOverlay() {
               />
             </motion.div>
 
-            {/* Radial Lines - Energy expansion effect */}
-            {state === 'active' && (
+            {/* Radial Lines - Energy expansion effect during active state */}
+            {isActiveState && (
               <motion.div
                 className="absolute inset-0 flex items-center justify-center"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
               >
-                {[...Array(8)].map((_, i) => (
+                {Array.from({ length: RADIAL_LINE_COUNT }, (_, index) => (
                   <motion.div
-                    key={i}
+                    key={index}
                     className="absolute w-px h-32 bg-gradient-to-t from-primary/40 to-transparent origin-bottom"
                     style={{
-                      transform: `rotate(${i * 45}deg) translateY(-80px)`,
+                      transform: `rotate(${index * RADIAL_LINE_ANGLE_DEG}deg) translateY(-80px)`,
                     }}
                     initial={{ scaleY: 0, opacity: 0 }}
                     animate={{ scaleY: 1, opacity: 1 }}
                     exit={{ scaleY: 0, opacity: 0 }}
                     transition={{
-                      delay: i * 0.02,
+                      delay: index * RADIAL_LINE_STAGGER_S,
                       duration: 0.4,
-                      ease: smoothOut,
+                      ease: SMOOTH_OUT_EASING,
                     }}
                   />
                 ))}
@@ -159,7 +202,7 @@ export function FloatingRingOverlay() {
                 'radial-gradient(ellipse at 50% 50%, transparent 30%, rgba(168, 85, 247, 0.15) 100%)',
             }}
             initial={{ opacity: 0 }}
-            animate={{ opacity: state === 'active' ? 1 : 0.5 }}
+            animate={{ opacity: isActiveState ? 1 : 0.5 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.4 }}
           />

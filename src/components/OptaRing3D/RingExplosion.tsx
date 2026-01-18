@@ -4,70 +4,117 @@ import { ExplosionEffects } from './ExplosionEffects';
 import type { ExplosionConfig } from './useExplosion';
 
 /**
- * RingExplosion - Combined explosion effect component
+ * RingExplosion - Orchestrator Component for Explosion Visual Effects
  *
- * Orchestrates all explosion sub-components:
- * - Particle emitter (200+ particles)
- * - Shockwave ring expansion
- * - Bloom post-processing
- * - Camera shake
+ * Combines and coordinates all explosion sub-components into a unified effect:
+ * - **ExplosionParticles**: 200-300 particles radiating from ring
+ * - **Shockwave**: Expanding ring geometry
+ * - **ExplosionEffects**: Post-processing bloom and camera shake
  *
- * Usage:
+ * ## Usage
  * ```tsx
+ * import { RingExplosion, useExplosion } from '@/components/OptaRing3D';
+ *
  * const { isExploding, explode, config } = useExplosion();
  *
+ * // In Three.js scene:
  * <RingExplosion
  *   active={isExploding}
  *   config={config}
  *   onComplete={() => console.log('Explosion complete')}
  * />
  *
- * <button onClick={explode}>Explode!</button>
+ * // Trigger:
+ * <button onClick={explode}>Celebrate!</button>
  * ```
  *
+ * ## Component Coordination
+ * - Particles have longest duration (main timing driver)
+ * - Shockwave starts simultaneously, completes faster
+ * - Bloom ramps up quickly, fades over full duration
+ * - Camera shake is brief initial burst only
+ *
  * @see Phase 27: Ring Explosion Effect
+ * @see useExplosion for state management
  */
 
+// =============================================================================
+// TYPES
+// =============================================================================
+
+/**
+ * Props for the RingExplosion orchestrator component.
+ */
 interface RingExplosionProps {
-  /** Whether the explosion is active */
+  /** Whether the explosion effect is currently active */
   active: boolean;
-  /** Explosion configuration */
+
+  /**
+   * Explosion configuration overrides.
+   * Merged with defaults for unspecified values.
+   */
   config?: Partial<ExplosionConfig>;
-  /** Ring radius for positioning effects */
+
+  /**
+   * Ring radius for positioning particle origins and shockwave.
+   * @default 1
+   */
   ringRadius?: number;
-  /** Callback when all effects complete */
+
+  /** Callback fired when all explosion effects have completed */
   onComplete?: () => void;
 }
 
-// Default config values
-const DEFAULT_DURATION = 800;
+// =============================================================================
+// DEFAULT CONFIGURATION
+// =============================================================================
+
+/** Default explosion duration in milliseconds */
+const DEFAULT_DURATION_MS = 800;
+
+/** Default particle count for visual density */
 const DEFAULT_PARTICLE_COUNT = 250;
+
+/** Default bloom intensity multiplier */
 const DEFAULT_BLOOM_INTENSITY = 2;
-const DEFAULT_SHOCKWAVE_DURATION = 600;
-const DEFAULT_CAMERA_SHAKE_DURATION = 80;
+
+/** Default shockwave expansion duration in milliseconds */
+const DEFAULT_SHOCKWAVE_DURATION_MS = 600;
+
+/** Default camera shake duration in milliseconds */
+const DEFAULT_CAMERA_SHAKE_DURATION_MS = 80;
+
+/** Default camera shake offset in world units */
 const DEFAULT_CAMERA_SHAKE_INTENSITY = 0.02;
+
+// =============================================================================
+// COMPONENT
+// =============================================================================
 
 export function RingExplosion({
   active,
   config = {},
   ringRadius = 1,
   onComplete,
-}: RingExplosionProps) {
-  // Extract config values with defaults
+}: RingExplosionProps): React.ReactNode {
+  // Merge config with defaults
   const {
-    duration = DEFAULT_DURATION,
+    duration = DEFAULT_DURATION_MS,
     particleCount = DEFAULT_PARTICLE_COUNT,
     enableBloom = true,
     bloomIntensity = DEFAULT_BLOOM_INTENSITY,
     enableCameraShake = true,
-    cameraShakeDuration = DEFAULT_CAMERA_SHAKE_DURATION,
+    cameraShakeDuration = DEFAULT_CAMERA_SHAKE_DURATION_MS,
     cameraShakeIntensity = DEFAULT_CAMERA_SHAKE_INTENSITY,
-    shockwaveDuration = DEFAULT_SHOCKWAVE_DURATION,
+    shockwaveDuration = DEFAULT_SHOCKWAVE_DURATION_MS,
   } = config;
 
-  // Track completion of sub-effects
-  // The main explosion is considered complete when particles finish
-  // (they have the longest duration)
+  // Shockwave expansion target (3x ring radius)
+  const SHOCKWAVE_EXPANSION_MULT = 3;
+  const shockwaveEndRadius = ringRadius * SHOCKWAVE_EXPANSION_MULT;
+
+  // Note: Particles drive the main completion callback since they have
+  // the longest animation duration
 
   return (
     <>
@@ -80,11 +127,11 @@ export function RingExplosion({
         onComplete={onComplete}
       />
 
-      {/* Shockwave ring - expanding ring geometry */}
+      {/* Shockwave ring - expanding circular geometry */}
       <Shockwave
         active={active}
         startRadius={ringRadius}
-        endRadius={ringRadius * 3}
+        endRadius={shockwaveEndRadius}
         duration={shockwaveDuration}
       />
 
