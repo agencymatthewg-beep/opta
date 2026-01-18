@@ -13,11 +13,11 @@
 
 import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Settings, Palette, Sparkles, Eye, Check, Volume2, VolumeX, Zap } from 'lucide-react';
+import { Settings, Palette, Sparkles, Eye, Check, Volume2, VolumeX, Zap, Monitor } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ThemeSelector } from '../premium/ThemeSelector';
 import type { BoardThemeId } from '@/types/boardTheme';
-import type { ChessSettings, ChessSoundSettings, ChessAnimationSettings, AnimationSpeed } from '@/types/chess';
+import type { ChessSettings, ChessSoundSettings, ChessAnimationSettings, ChessDisplaySettings, AnimationSpeed } from '@/types/chess';
 import { ANIMATION_SPEED_MS } from '@/types/chess';
 
 /**
@@ -617,6 +617,55 @@ function AnimationSettings({
 }
 
 /**
+ * Display settings section component
+ */
+function DisplaySettings({
+  display,
+  onChange,
+  compact,
+}: {
+  display: ChessDisplaySettings;
+  onChange: (updates: Partial<ChessDisplaySettings>) => void;
+  compact?: boolean;
+}) {
+  return (
+    <div className="space-y-0">
+      <ToggleOption
+        label="Show Coordinates"
+        description="Display rank and file labels (a-h, 1-8)"
+        enabled={display.showCoordinates}
+        onChange={(v) => onChange({ showCoordinates: v })}
+        compact={compact}
+      />
+      <div className="h-px bg-white/[0.04]" />
+      <ToggleOption
+        label="Move Confirmation"
+        description="Require click confirmation before executing moves"
+        enabled={display.moveConfirmation}
+        onChange={(v) => onChange({ moveConfirmation: v })}
+        compact={compact}
+      />
+      <div className="h-px bg-white/[0.04]" />
+      <ToggleOption
+        label="Legal Move Hints"
+        description="Show possible moves when selecting a piece"
+        enabled={display.showLegalMoves}
+        onChange={(v) => onChange({ showLegalMoves: v })}
+        compact={compact}
+      />
+      <div className="h-px bg-white/[0.04]" />
+      <ToggleOption
+        label="Last Move Highlight"
+        description="Highlight squares of the most recent move"
+        enabled={display.showLastMove}
+        onChange={(v) => onChange({ showLastMove: v })}
+        compact={compact}
+      />
+    </div>
+  );
+}
+
+/**
  * Chess Settings Panel - Main Component
  *
  * Provides board theme selection, preset themes, and display options.
@@ -693,6 +742,20 @@ export function ChessSettingsPanel({
     [onSettingsChange, settings.animation]
   );
 
+  // Handle display settings changes
+  const handleDisplayChange = useCallback(
+    (updates: Partial<ChessDisplaySettings>) => {
+      // Sync showCoordinates with display.showCoordinates for backward compatibility
+      const newDisplay = { ...settings.display, ...updates };
+      onSettingsChange({
+        display: newDisplay,
+        // Keep root-level showCoordinates in sync
+        ...(updates.showCoordinates !== undefined && { showCoordinates: updates.showCoordinates }),
+      });
+    },
+    [onSettingsChange, settings.display]
+  );
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
@@ -745,7 +808,7 @@ export function ChessSettingsPanel({
       {/* Display Options Section (unless themeOnly) */}
       {!themeOnly && (
         <div>
-          <SectionHeader icon={Eye} title="Display Options" compact={compact} />
+          <SectionHeader icon={Monitor} title="Display Options" compact={compact} />
           <div
             className={cn(
               'rounded-xl overflow-hidden',
@@ -753,14 +816,26 @@ export function ChessSettingsPanel({
               'border border-white/[0.06]'
             )}
           >
-            <ToggleOption
-              label="Show Coordinates"
-              description="Display rank and file labels"
-              enabled={settings.showCoordinates}
-              onChange={(v) => handleToggleChange('showCoordinates', v)}
+            <DisplaySettings
+              display={settings.display}
+              onChange={handleDisplayChange}
               compact={compact}
             />
-            <div className="h-px bg-white/[0.04]" />
+          </div>
+        </div>
+      )}
+
+      {/* Board Lighting Section (unless themeOnly) */}
+      {!themeOnly && (
+        <div>
+          <SectionHeader icon={Eye} title="Lighting" compact={compact} />
+          <div
+            className={cn(
+              'rounded-xl overflow-hidden',
+              'glass',
+              'border border-white/[0.06]'
+            )}
+          >
             <ToggleOption
               label="Board Lighting"
               description="Enhanced specular and reflection effects"

@@ -149,6 +149,20 @@ export interface ChessAnimationSettings {
 }
 
 /**
+ * Chess display settings for board visualization options
+ */
+export interface ChessDisplaySettings {
+  /** Show board coordinates (a-h, 1-8) */
+  showCoordinates: boolean;
+  /** Require click confirmation before executing moves */
+  moveConfirmation: boolean;
+  /** Show legal move indicators when selecting a piece */
+  showLegalMoves: boolean;
+  /** Highlight the last move made */
+  showLastMove: boolean;
+}
+
+/**
  * User settings for the chess feature.
  */
 export interface ChessSettings {
@@ -166,7 +180,7 @@ export interface ChessSettings {
   autoSave: boolean;
   /** Board theme ID (obsidian, wood, marble, glass) */
   boardTheme: BoardThemeId;
-  /** Whether to show board coordinates */
+  /** Whether to show board coordinates @deprecated Use display.showCoordinates */
   showCoordinates: boolean;
   /** Whether to show board lighting effects */
   showLighting: boolean;
@@ -174,6 +188,8 @@ export interface ChessSettings {
   sound: ChessSoundSettings;
   /** Animation settings */
   animation: ChessAnimationSettings;
+  /** Display settings for board visualization */
+  display: ChessDisplaySettings;
 }
 
 /**
@@ -208,6 +224,16 @@ export const DEFAULT_CHESS_ANIMATION_SETTINGS: ChessAnimationSettings = {
 };
 
 /**
+ * Default chess display settings
+ */
+export const DEFAULT_CHESS_DISPLAY_SETTINGS: ChessDisplaySettings = {
+  showCoordinates: true,
+  moveConfirmation: false,
+  showLegalMoves: true,
+  showLastMove: true,
+};
+
+/**
  * Default chess settings for new users.
  */
 export const DEFAULT_CHESS_SETTINGS: ChessSettings = {
@@ -222,6 +248,7 @@ export const DEFAULT_CHESS_SETTINGS: ChessSettings = {
   showLighting: true,
   sound: DEFAULT_CHESS_SOUND_SETTINGS,
   animation: DEFAULT_CHESS_ANIMATION_SETTINGS,
+  display: DEFAULT_CHESS_DISPLAY_SETTINGS,
 };
 
 /**
