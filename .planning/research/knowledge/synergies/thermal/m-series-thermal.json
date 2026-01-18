@@ -607,5 +607,193 @@
       "source": "Stress Testing",
       "sourceDate": "2024"
     }
-  ]
+  ],
+  "heuristics": [
+    {
+      "id": "thermal-throttling-detection",
+      "name": "Thermal Throttling Detection",
+      "description": "How to detect when thermal limits are affecting performance",
+      "indicators": [
+        "CPU/GPU temperature > 95C sustained",
+        "Clock speeds dropping from base frequency",
+        "Performance degradation after 10-15 minutes of load",
+        "Fan noise at maximum (on models with fans)",
+        "Frame rate drops during gaming without GPU reaching 100%",
+        "SMC thermal state changes visible in monitoring tools"
+      ],
+      "remediation": [
+        "Improve ambient airflow around the device",
+        "Use laptop stand to elevate device for better chassis cooling",
+        "Check for dust in vents (MacBook Pro, Mac Studio)",
+        "Reduce workload (lower settings, close background apps)",
+        "Consider Low Power Mode for less aggressive clocks",
+        "Enable High Power Mode on MacBook Pro for better fan response"
+      ],
+      "applicableTo": ["all"],
+      "confidence": "high"
+    },
+    {
+      "id": "fanless-mac-optimization",
+      "name": "Fanless Mac Optimization",
+      "description": "Best practices for optimizing performance on MacBook Air (fanless design)",
+      "indicators": [
+        "Chassis becoming warm to touch during extended use",
+        "Performance drops after 10-15 minutes of heavy load",
+        "UI stuttering during sustained intensive tasks"
+      ],
+      "remediation": [
+        "Take 5-10 minute breaks every 30-45 minutes during intensive tasks",
+        "Use laptop stand to improve passive airflow under chassis",
+        "Avoid direct sunlight or warm ambient environments",
+        "Reduce workload intensity for longer sustained sessions",
+        "For gaming: Lower graphics settings to reduce heat generation",
+        "Position in air-conditioned or well-ventilated room",
+        "Avoid placing on soft surfaces (beds, couches) that block ventilation"
+      ],
+      "applicableTo": ["MacBook Air M1", "MacBook Air M2", "MacBook Air M3", "MacBook Air M4"],
+      "confidence": "high"
+    },
+    {
+      "id": "long-gaming-session-management",
+      "name": "Long Gaming Session Management",
+      "description": "Strategies for maintaining performance during extended gaming sessions",
+      "indicators": [
+        "Frame rates declining after first 15-20 minutes",
+        "Fan noise increasing to maximum",
+        "Game stuttering or micro-freezes appearing"
+      ],
+      "remediation": [
+        "Enable High Power Mode before starting game (MacBook Pro)",
+        "Use frame rate limiter to cap at 60fps for sustained performance",
+        "Lower graphics settings proactively to prevent thermal limit",
+        "Take periodic 5-minute breaks to allow thermal recovery",
+        "Use external monitor to keep laptop lid open for keyboard venting",
+        "Position laptop with clear airflow at exhaust ports",
+        "Consider external cooling solution for marathon sessions"
+      ],
+      "applicableTo": ["MacBook Air M2", "MacBook Air M3", "MacBook Air M4", "MacBook Pro 14", "MacBook Pro 16"],
+      "confidence": "high"
+    },
+    {
+      "id": "ambient-temperature-recommendations",
+      "name": "Ambient Temperature Recommendations",
+      "description": "Environmental conditions for optimal thermal performance",
+      "indicators": [
+        "Room temperature above 25C/77F",
+        "Device in direct sunlight",
+        "Poor room ventilation",
+        "Device near heat-producing equipment"
+      ],
+      "remediation": [
+        "Ideal ambient temperature: 18-24C (64-75F)",
+        "Maximum recommended: 30C (86F) before significant impact",
+        "Use air conditioning during summer months for intensive work",
+        "Position device away from windows with direct sunlight",
+        "Avoid placing near other heat-producing devices (monitors, gaming consoles)",
+        "Ensure room has adequate ventilation",
+        "Consider desk fan for localized airflow improvement"
+      ],
+      "applicableTo": ["all"],
+      "confidence": "high"
+    },
+    {
+      "id": "external-cooling-effectiveness",
+      "name": "External Cooling Effectiveness",
+      "description": "Guide to external cooling solutions and their effectiveness",
+      "indicators": [
+        "Frequent thermal throttling even in good ambient conditions",
+        "Need for sustained performance beyond device thermal limits"
+      ],
+      "remediation": [
+        "Laptop stands: Most effective simple solution, 3-8C reduction",
+        "Active cooling pads: Variable effectiveness (5-12C), dependent on design",
+        "Avoid cooling pads that blow air at bottom (Apple laptops vent at hinge)",
+        "Metal laptop stands conduct heat better than plastic",
+        "Vertical docks can improve MacBook Pro cooling by exposing vents",
+        "For MacBook Air: Stand with open bottom for chassis heat dissipation",
+        "Consider desktop Mac for workloads requiring sustained high performance"
+      ],
+      "applicableTo": ["MacBook Air", "MacBook Pro 14", "MacBook Pro 16"],
+      "confidence": "medium"
+    }
+  ],
+  "formFactorProfiles": {
+    "macbook-air": {
+      "cooling": "passive",
+      "coolingDetails": "Fanless design using aluminum chassis as heatsink",
+      "sustainedLoad": "10-15 minutes before throttling begins",
+      "throttleSeverity": "moderate-to-severe",
+      "bestFor": ["Light gaming", "Productivity", "Web browsing", "Video streaming", "Burst workloads"],
+      "notIdealFor": ["Extended gaming sessions", "Sustained video export", "Long compile jobs"],
+      "thermalAdvice": "Take breaks during intensive tasks, ensure airflow under device, avoid warm environments",
+      "maxRecommendedAmbient": "25C",
+      "generations": ["M1", "M2", "M3", "M4"]
+    },
+    "macbook-pro-14": {
+      "cooling": "active",
+      "coolingDetails": "Dual-fan system with heat pipes, good thermal mass for size",
+      "sustainedLoad": "Sustained with minor throttle after 30+ minutes under extreme load",
+      "throttleSeverity": "mild",
+      "bestFor": ["Gaming", "Video editing", "Development", "Creative work", "Sustained workloads"],
+      "notIdealFor": ["Tasks requiring absolute sustained maximum performance"],
+      "thermalAdvice": "Keep vents clear, elevate if possible, use High Power Mode for gaming",
+      "maxRecommendedAmbient": "28C",
+      "generations": ["M1 Pro", "M1 Max", "M2 Pro", "M2 Max", "M3 Pro", "M3 Max", "M4 Pro", "M4 Max"]
+    },
+    "macbook-pro-16": {
+      "cooling": "active",
+      "coolingDetails": "Larger dual-fan system with greater thermal mass than 14-inch",
+      "sustainedLoad": "Best laptop sustained performance, minimal throttling",
+      "throttleSeverity": "minimal",
+      "bestFor": ["Extended gaming", "Professional video work", "3D rendering", "Development", "All sustained workloads"],
+      "notIdealFor": [],
+      "thermalAdvice": "Best laptop for sustained performance, keep vents clear, High Power Mode optional",
+      "maxRecommendedAmbient": "30C",
+      "generations": ["M1 Pro", "M1 Max", "M2 Pro", "M2 Max", "M3 Pro", "M3 Max", "M4 Pro", "M4 Max"]
+    },
+    "mac-mini": {
+      "cooling": "active-compact",
+      "coolingDetails": "Single fan in compact enclosure, adequate for most workloads",
+      "sustainedLoad": "Occasional throttling under sustained 100% load",
+      "throttleSeverity": "mild",
+      "bestFor": ["Desktop workstation", "Development", "Home server", "Productivity"],
+      "notIdealFor": ["Sustained maximum CPU utilization for hours"],
+      "thermalAdvice": "Position with clearance around device, avoid enclosed spaces, dust periodically",
+      "maxRecommendedAmbient": "30C",
+      "generations": ["M1", "M2", "M2 Pro", "M4", "M4 Pro"]
+    },
+    "mac-studio": {
+      "cooling": "desktop-class",
+      "coolingDetails": "Large fan array with substantial thermal mass, rarely throttles",
+      "sustainedLoad": "Maintains boost clocks indefinitely under normal conditions",
+      "throttleSeverity": "none-to-minimal",
+      "bestFor": ["Professional workstation", "Video production", "3D rendering", "Development", "AI/ML work"],
+      "notIdealFor": [],
+      "thermalAdvice": "Ensure adequate ventilation, clean dust intake periodically",
+      "maxRecommendedAmbient": "32C",
+      "generations": ["M1 Max", "M1 Ultra", "M2 Max", "M2 Ultra", "M4 Max"]
+    },
+    "mac-pro": {
+      "cooling": "tower-class",
+      "coolingDetails": "Maximum cooling capacity with large fans and extensive thermal headroom",
+      "sustainedLoad": "Maintains maximum performance indefinitely",
+      "throttleSeverity": "none",
+      "bestFor": ["Enterprise workloads", "Maximum sustained performance", "8K video production", "Scientific computing"],
+      "notIdealFor": [],
+      "thermalAdvice": "Standard data center or office environment sufficient",
+      "maxRecommendedAmbient": "35C",
+      "generations": ["M2 Ultra"]
+    },
+    "imac": {
+      "cooling": "active-integrated",
+      "coolingDetails": "Integrated fan system within display enclosure",
+      "sustainedLoad": "Good sustained performance with quiet operation",
+      "throttleSeverity": "mild",
+      "bestFor": ["Desktop productivity", "Creative work", "Consumer workloads"],
+      "notIdealFor": ["Maximum sustained performance workloads"],
+      "thermalAdvice": "Ensure rear ventilation is unobstructed",
+      "maxRecommendedAmbient": "30C",
+      "generations": ["M1", "M3", "M4"]
+    }
+  }
 }
