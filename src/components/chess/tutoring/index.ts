@@ -13,3 +13,11 @@ export type { LessonOverlayProps } from './LessonOverlay';
 
 export { CongratulationBurst, useCongratulationBurst } from './CongratulationBurst';
 export type { CongratulationBurstProps } from './CongratulationBurst';
+
+// Phase 55.5: Lesson-specific components
+export { OpeningLesson, TacticLesson, EndgameLesson } from './lessons';
+export type {
+  OpeningLessonProps,
+  TacticLessonProps,
+  EndgameLessonProps,
+} from './lessons';
