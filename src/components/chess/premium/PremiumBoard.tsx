@@ -11,7 +11,7 @@
  * @see DESIGN_SYSTEM.md - Glass effects, Framer Motion
  */
 
-import { useState, useCallback, useMemo, useRef } from 'react';
+import { useState, useCallback, useMemo, useRef, useContext } from 'react';
 import { Chessboard, type ChessboardOptions } from 'react-chessboard';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Crown, Castle, Cross, Sword } from 'lucide-react';
@@ -21,6 +21,8 @@ import {
   type BoardThemeId,
   getBoardTheme,
 } from '@/types/boardTheme';
+import ChessSettingsContext from '@/contexts/ChessSettingsContext';
+import { ANIMATION_SPEED_MS } from '@/types/chess';
 
 // Smooth easing for transitions
 const smoothOut: [number, number, number, number] = [0.22, 1, 0.36, 1];
@@ -166,17 +168,31 @@ export function PremiumBoard({
   fen,
   onMove,
   orientation = 'white',
-  showLegalMoves = true,
+  showLegalMoves: showLegalMovesProp,
   getLegalMoves,
   disabled = false,
   lastMove,
-  themeId = 'obsidian',
+  themeId: themeIdProp,
   theme: customTheme,
-  showCoordinates = true,
-  showLighting = true,
+  showCoordinates: showCoordinatesProp,
+  showLighting: showLightingProp,
   size,
-  animationDurationMs = 200,
+  animationDurationMs: animationDurationMsProp,
 }: PremiumBoardProps) {
+  // Get settings from context (if available)
+  const settingsContext = useContext(ChessSettingsContext);
+  const contextSettings = settingsContext?.settings;
+
+  // Merge props with context settings (props take precedence)
+  const themeId = themeIdProp ?? contextSettings?.boardTheme ?? 'obsidian';
+  const showCoordinates = showCoordinatesProp ?? contextSettings?.display?.showCoordinates ?? true;
+  const showLighting = showLightingProp ?? contextSettings?.showLighting ?? true;
+  const showLegalMoves = showLegalMovesProp ?? contextSettings?.display?.showLegalMoves ?? true;
+  const animationDurationMs = animationDurationMsProp ??
+    (contextSettings?.animation?.moveAnimationSpeed
+      ? ANIMATION_SPEED_MS[contextSettings.animation.moveAnimationSpeed]
+      : 200);
+
   // Get theme (custom or by ID)
   const theme = customTheme ?? getBoardTheme(themeId);
 

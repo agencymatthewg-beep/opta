@@ -12,14 +12,16 @@
  * @see DESIGN_SYSTEM.md - Glass styling, Framer Motion
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useContext } from 'react';
 import { motion } from 'framer-motion';
 import { Chessboard, type ChessboardOptions } from 'react-chessboard';
 import { RotateCcw, Plus, Maximize2, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useChessGame } from '@/hooks/useChessGame';
 import { useStockfish } from '@/hooks/useStockfish';
-import { DIFFICULTY_TO_SKILL_LEVEL, DEFAULT_CHESS_SETTINGS, type ChessSettings } from '@/types/chess';
+import { useChessSound } from '@/hooks/useChessSound';
+import { DIFFICULTY_TO_SKILL_LEVEL, DEFAULT_CHESS_SETTINGS, ANIMATION_SPEED_MS, type ChessSettings } from '@/types/chess';
+import ChessSettingsContext from '@/contexts/ChessSettingsContext';
 
 // LocalStorage keys (shared with Chess page)
 const CHESS_SETTINGS_KEY = 'opta_chess_settings';
@@ -45,8 +47,9 @@ export function MiniChessBoard({
   // Track last move for highlighting
   const [lastMove, setLastMove] = useState<{ from: string; to: string } | null>(null);
 
-  // Load settings from localStorage (shared with Chess page)
-  const [settings] = useState<ChessSettings>(() => {
+  // Get settings from context (if available), or load from localStorage
+  const settingsContext = useContext(ChessSettingsContext);
+  const [localSettings] = useState<ChessSettings>(() => {
     try {
       const saved = localStorage.getItem(CHESS_SETTINGS_KEY);
       if (saved) {
@@ -57,6 +60,12 @@ export function MiniChessBoard({
     }
     return DEFAULT_CHESS_SETTINGS;
   });
+
+  // Use context settings if available, otherwise localStorage
+  const settings = settingsContext?.settings ?? localSettings;
+
+  // Sound hooks
+  const { playMoveTypeSound, playGameOverSound } = useChessSound(settings.sound);
 
   // Initialize chess game
   const {
@@ -102,17 +111,23 @@ export function MiniChessBoard({
 
   // Handle player move
   const handleMove = useCallback(
-    (move: { from: string; to: string; promotion?: string }): boolean => {
+    (move: { from: string; to: string; promotion?: string }, moveInfo?: { captured?: boolean; isCheck?: boolean }): boolean => {
       if (turn !== 'w' || isThinking) return false;
 
       const madeMove = makeMove(move);
       if (madeMove) {
         setLastMove({ from: move.from, to: move.to });
+        // Play sound based on move type
+        playMoveTypeSound({
+          captured: moveInfo?.captured,
+          isCheck: moveInfo?.isCheck,
+          isPromotion: !!move.promotion,
+        });
         return true;
       }
       return false;
     },
-    [turn, isThinking, makeMove]
+    [turn, isThinking, makeMove, playMoveTypeSound]
   );
 
   // Trigger AI move when it's AI's turn
@@ -128,12 +143,23 @@ export function MiniChessBoard({
           const madeMove = makeMove({ from, to, promotion });
           if (madeMove) {
             setLastMove({ from, to });
+            // Play sound for AI move
+            playMoveTypeSound({
+              isPromotion: !!promotion,
+            });
           }
         }
       };
       makeAIMove();
     }
-  }, [turn, aiReady, isGameOver, isThinking, fen, getBestMove, makeMove]);
+  }, [turn, aiReady, isGameOver, isThinking, fen, getBestMove, makeMove, playMoveTypeSound]);
+
+  // Play game over sound
+  useEffect(() => {
+    if (isGameOver) {
+      playGameOverSound();
+    }
+  }, [isGameOver, playGameOverSound]);
 
   // Handle new game
   const handleNewGame = useCallback(() => {
@@ -216,12 +242,18 @@ export function MiniChessBoard({
     };
   });
 
-  // Highlight last move
-  if (lastMove) {
+  // Derive display settings from context
+  const showLastMoveHighlight = settings.display?.showLastMove ?? true;
+
+  // Highlight last move (respects settings)
+  if (lastMove && showLastMoveHighlight) {
     const lastMoveHighlight = { backgroundColor: 'rgba(168, 85, 247, 0.2)' };
     squareStyles[lastMove.from] = { ...squareStyles[lastMove.from], ...lastMoveHighlight };
     squareStyles[lastMove.to] = { ...squareStyles[lastMove.to], ...lastMoveHighlight };
   }
+  const animationDurationMs = settings.animation?.moveAnimationSpeed
+    ? ANIMATION_SPEED_MS[settings.animation.moveAnimationSpeed]
+    : 150;
 
   // Chessboard options
   const chessboardOptions: ChessboardOptions = {
@@ -239,7 +271,7 @@ export function MiniChessBoard({
     },
     allowDragging: turn === 'w' && !isThinking && !isGameOver,
     showNotation: false,
-    animationDurationInMs: 150,
+    animationDurationInMs: animationDurationMs,
     onSquareClick: handleSquareClick,
     onPieceDrop: handlePieceDrop,
   };

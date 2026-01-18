@@ -12,11 +12,13 @@
  * @see DESIGN_SYSTEM.md - Part 4: The Obsidian Glass Material System
  */
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useContext } from 'react';
 import { Chessboard, type ChessboardOptions } from 'react-chessboard';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Crown, Castle, Cross, Sword } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import ChessSettingsContext from '@/contexts/ChessSettingsContext';
+import { ANIMATION_SPEED_MS } from '@/types/chess';
 
 // Easing curve for smooth animations
 const smoothOut: [number, number, number, number] = [0.22, 1, 0.36, 1];
@@ -53,11 +55,23 @@ export function ChessBoard({
   fen,
   onMove,
   orientation = 'white',
-  showLegalMoves = true,
+  showLegalMoves: showLegalMovesProp,
   getLegalMoves,
   disabled = false,
   lastMove,
 }: ChessBoardProps) {
+  // Get settings from context (if available)
+  const settingsContext = useContext(ChessSettingsContext);
+  const contextSettings = settingsContext?.settings;
+
+  // Merge props with context settings (props take precedence when explicitly set)
+  const showLegalMoves = showLegalMovesProp ?? contextSettings?.display?.showLegalMoves ?? true;
+  const showCoordinates = contextSettings?.display?.showCoordinates ?? true;
+  const showLastMoveHighlight = contextSettings?.display?.showLastMove ?? true;
+  const animationDurationMs = contextSettings?.animation?.moveAnimationSpeed
+    ? ANIMATION_SPEED_MS[contextSettings.animation.moveAnimationSpeed]
+    : 200;
+
   // Track selected square for legal move highlights
   const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
   const [legalMoves, setLegalMoves] = useState<string[]>([]);
@@ -242,8 +256,8 @@ export function ChessBoard({
       });
     }
 
-    // Highlight last move
-    if (lastMove) {
+    // Highlight last move (respects settings)
+    if (lastMove && showLastMoveHighlight) {
       const lastMoveHighlight = {
         backgroundColor: 'rgba(168, 85, 247, 0.2)',
       };
@@ -260,7 +274,7 @@ export function ChessBoard({
     }
 
     return styles;
-  }, [selectedSquare, legalMoves, lastMove, dropFeedback, showLegalMoves]);
+  }, [selectedSquare, legalMoves, lastMove, dropFeedback, showLegalMoves, showLastMoveHighlight]);
 
   /**
    * Chessboard options for react-chessboard v5.
@@ -281,13 +295,13 @@ export function ChessBoard({
         backgroundColor: 'hsl(270, 20%, 18%)',
       },
       allowDragging: !disabled,
-      showNotation: true,
-      animationDurationInMs: 200,
+      showNotation: showCoordinates,
+      animationDurationInMs: animationDurationMs,
       onSquareClick: handleSquareClick,
       onPieceDrag: handlePieceDrag,
       onPieceDrop: handlePieceDrop,
     }),
-    [fen, orientation, squareStyles, disabled, handleSquareClick, handlePieceDrag, handlePieceDrop]
+    [fen, orientation, squareStyles, disabled, showCoordinates, animationDurationMs, handleSquareClick, handlePieceDrag, handlePieceDrop]
   );
 
   return (
@@ -300,7 +314,7 @@ export function ChessBoard({
         className={cn(
           'relative rounded-xl overflow-hidden',
           // Obsidian glass container
-          'bg-[#05030a]/80 backdrop-blur-xl',
+          'glass',
           'border border-white/[0.08]',
           // Inner glow
           'shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]',
@@ -343,7 +357,7 @@ export function ChessBoard({
               transition={{ duration: 0.2, ease: smoothOut }}
               className={cn(
                 'relative z-20 flex gap-2 p-4 rounded-xl',
-                'bg-[#05030a]/95 backdrop-blur-xl',
+                'glass-overlay',
                 'border border-primary/30',
                 'shadow-[0_0_30px_-5px_rgba(168,85,247,0.5)]'
               )}

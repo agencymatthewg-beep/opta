@@ -10,6 +10,9 @@
 export {
   ChessSettingsPanel,
   type ChessSettingsPanelProps,
+} from './ChessSettingsPanel';
+
+export {
   type PresetTheme,
   presetThemes,
-} from './ChessSettingsPanel';
+} from './presetThemes';

@@ -20,11 +20,12 @@ import { ChessWidgetStatus } from './ChessWidgetStatus';
 import { ChessWidgetTabs, type ChessWidgetTab } from './ChessWidgetTabs';
 import { MiniChessBoard } from './MiniChessBoard';
 import { usePuzzle } from '@/hooks/usePuzzle';
+import { ChessSettingsPanel } from './settings/ChessSettingsPanel';
+import { useChessSettingsOptional } from '@/contexts/ChessSettingsContext';
 
 // LocalStorage keys
 const WIDGET_POSITION_KEY = 'opta_chess_widget_position';
 const WIDGET_EXPANDED_KEY = 'opta_chess_widget_expanded';
-const WIDGET_EXPANSION_MODE_KEY = 'opta_chess_widget_expansion_mode';
 
 // Easing curve for smooth animations
 const smoothOut: [number, number, number, number] = [0.22, 1, 0.36, 1];
@@ -40,8 +41,6 @@ export interface ChessWidgetProps {
   /** Callback to navigate to full chess page */
   onNavigateToChess?: () => void;
 }
-
-type ExpansionMode = 'inline' | 'modal';
 
 /**
  * Load position from localStorage.
@@ -78,21 +77,6 @@ function loadExpanded(): boolean {
 }
 
 /**
- * Load expansion mode from localStorage.
- */
-function loadExpansionMode(): ExpansionMode {
-  try {
-    const saved = localStorage.getItem(WIDGET_EXPANSION_MODE_KEY);
-    if (saved === 'modal' || saved === 'inline') {
-      return saved;
-    }
-  } catch {
-    // Ignore errors
-  }
-  return 'inline';
-}
-
-/**
  * Floating chess widget component.
  */
 export function ChessWidget({
@@ -104,8 +88,10 @@ export function ChessWidget({
   const [isExpanded, setIsExpanded] = useState(loadExpanded);
   const [activeTab, setActiveTab] = useState<ChessWidgetTab>('play');
   const [position, setPosition] = useState(loadPosition);
-  const [expansionMode, setExpansionMode] = useState<ExpansionMode>(loadExpansionMode);
-  const [showSettings, setShowSettings] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+
+  // Chess settings from context (with fallback)
+  const { settings, updateSettings } = useChessSettingsOptional();
 
   // Chess game state (for status display)
   const [isYourTurn, setIsYourTurn] = useState(true);
@@ -124,11 +110,6 @@ export function ChessWidget({
   useEffect(() => {
     localStorage.setItem(WIDGET_EXPANDED_KEY, String(isExpanded));
   }, [isExpanded]);
-
-  // Save expansion mode
-  useEffect(() => {
-    localStorage.setItem(WIDGET_EXPANSION_MODE_KEY, expansionMode);
-  }, [expansionMode]);
 
   // Handle drag end - save position
   const handleDragEnd = useCallback(
@@ -239,18 +220,18 @@ export function ChessWidget({
 
           {/* Controls */}
           <div className="flex items-center gap-1">
-            {/* Settings (only when expanded) */}
+            {/* Chess Settings (opens full settings modal) */}
             {isExpanded && (
               <motion.button
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                onClick={() => setShowSettings(!showSettings)}
+                onClick={() => setShowSettingsModal(true)}
                 className={cn(
                   'p-1 rounded-md',
-                  'text-muted-foreground/40 hover:text-muted-foreground/60',
-                  'hover:bg-white/5 transition-colors'
+                  'text-muted-foreground/40 hover:text-primary/70',
+                  'hover:bg-primary/10 transition-colors'
                 )}
-                title="Widget settings"
+                title="Chess settings"
               >
                 <Settings className="w-3.5 h-3.5" strokeWidth={1.75} />
               </motion.button>
@@ -316,49 +297,6 @@ export function ChessWidget({
           transition={{ duration: 0.25, ease: smoothOut }}
           className="overflow-hidden"
         >
-          {/* Settings Panel (slides down when open) */}
-          <AnimatePresence>
-            {showSettings && isExpanded && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.2, ease: smoothOut }}
-                className="overflow-hidden border-b border-white/[0.06]"
-              >
-                <div className="p-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">Expansion mode</span>
-                    <div className="flex rounded-md overflow-hidden border border-white/10">
-                      <button
-                        onClick={() => setExpansionMode('inline')}
-                        className={cn(
-                          'px-2 py-1 text-[10px] font-medium transition-colors',
-                          expansionMode === 'inline'
-                            ? 'bg-primary/20 text-primary'
-                            : 'text-muted-foreground/60 hover:bg-white/5'
-                        )}
-                      >
-                        Inline
-                      </button>
-                      <button
-                        onClick={() => setExpansionMode('modal')}
-                        className={cn(
-                          'px-2 py-1 text-[10px] font-medium transition-colors',
-                          expansionMode === 'modal'
-                            ? 'bg-primary/20 text-primary'
-                            : 'text-muted-foreground/60 hover:bg-white/5'
-                        )}
-                      >
-                        Modal
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
           {/* Collapsed: Glanceable Status */}
           {!isExpanded && (
             <div className="p-2">
@@ -383,6 +321,72 @@ export function ChessWidget({
           )}
         </motion.div>
       </motion.div>
+
+      {/* Chess Settings Modal */}
+      <AnimatePresence>
+        {showSettingsModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+            onClick={() => setShowSettingsModal(false)}
+          >
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            />
+
+            {/* Modal content */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ duration: 0.25, ease: smoothOut }}
+              onClick={(e) => e.stopPropagation()}
+              className={cn(
+                'relative z-10 w-full max-w-md max-h-[85vh] overflow-y-auto',
+                'rounded-2xl p-5',
+                'glass-strong',
+                'border border-white/[0.1]',
+                'shadow-[0_8px_64px_-16px_rgba(168,85,247,0.4)]'
+              )}
+            >
+              {/* Modal header */}
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 rounded-lg bg-primary/10">
+                    <Settings className="w-4 h-4 text-primary" strokeWidth={1.75} />
+                  </div>
+                  <h2 className="text-base font-semibold text-foreground">Chess Settings</h2>
+                </div>
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => setShowSettingsModal(false)}
+                  className={cn(
+                    'p-1.5 rounded-lg',
+                    'text-muted-foreground/50 hover:text-foreground',
+                    'hover:bg-white/5 transition-colors'
+                  )}
+                >
+                  <X className="w-4 h-4" strokeWidth={2} />
+                </motion.button>
+              </div>
+
+              {/* Settings panel */}
+              <ChessSettingsPanel
+                settings={settings}
+                onSettingsChange={updateSettings}
+                compact
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </AnimatePresence>
   );
 }
