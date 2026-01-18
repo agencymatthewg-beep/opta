@@ -120,6 +120,35 @@ export interface ChessSoundSettings {
 }
 
 /**
+ * Animation speed preset names
+ */
+export type AnimationSpeed = 'instant' | 'fast' | 'normal' | 'slow';
+
+/**
+ * Animation speed values in milliseconds
+ */
+export const ANIMATION_SPEED_MS: Record<AnimationSpeed, number> = {
+  instant: 0,
+  fast: 100,
+  normal: 200,
+  slow: 400,
+} as const;
+
+/**
+ * Chess animation settings for movement and visual effects
+ */
+export interface ChessAnimationSettings {
+  /** Piece movement animation speed */
+  moveAnimationSpeed: AnimationSpeed;
+  /** Duration of move highlight effect (ms) */
+  highlightDuration: number;
+  /** Enable board flip animation when changing orientation */
+  boardFlipAnimation: boolean;
+  /** Enable piece drop bounce effect */
+  pieceDropBounce: boolean;
+}
+
+/**
  * User settings for the chess feature.
  */
 export interface ChessSettings {
@@ -143,6 +172,8 @@ export interface ChessSettings {
   showLighting: boolean;
   /** Sound settings */
   sound: ChessSoundSettings;
+  /** Animation settings */
+  animation: ChessAnimationSettings;
 }
 
 /**
@@ -167,6 +198,16 @@ export const DEFAULT_CHESS_SOUND_SETTINGS: ChessSoundSettings = {
 };
 
 /**
+ * Default chess animation settings
+ */
+export const DEFAULT_CHESS_ANIMATION_SETTINGS: ChessAnimationSettings = {
+  moveAnimationSpeed: 'normal',
+  highlightDuration: 300,
+  boardFlipAnimation: true,
+  pieceDropBounce: true,
+};
+
+/**
  * Default chess settings for new users.
  */
 export const DEFAULT_CHESS_SETTINGS: ChessSettings = {
@@ -180,6 +221,7 @@ export const DEFAULT_CHESS_SETTINGS: ChessSettings = {
   showCoordinates: true,
   showLighting: true,
   sound: DEFAULT_CHESS_SOUND_SETTINGS,
+  animation: DEFAULT_CHESS_ANIMATION_SETTINGS,
 };
 
 /**

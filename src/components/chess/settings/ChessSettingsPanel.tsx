@@ -13,11 +13,12 @@
 
 import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Settings, Palette, Sparkles, Eye, Check, Volume2, VolumeX } from 'lucide-react';
+import { Settings, Palette, Sparkles, Eye, Check, Volume2, VolumeX, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ThemeSelector } from '../premium/ThemeSelector';
 import type { BoardThemeId } from '@/types/boardTheme';
-import type { ChessSettings, ChessSoundSettings } from '@/types/chess';
+import type { ChessSettings, ChessSoundSettings, ChessAnimationSettings, AnimationSpeed } from '@/types/chess';
+import { ANIMATION_SPEED_MS } from '@/types/chess';
 
 /**
  * Preset theme configuration
@@ -484,6 +485,138 @@ function SoundSettings({
 }
 
 /**
+ * Animation speed option configuration
+ */
+interface AnimationSpeedOption {
+  id: AnimationSpeed;
+  name: string;
+  description: string;
+  ms: number;
+}
+
+/**
+ * Available animation speed options
+ */
+const animationSpeedOptions: AnimationSpeedOption[] = [
+  { id: 'instant', name: 'Instant', description: 'No animation', ms: ANIMATION_SPEED_MS.instant },
+  { id: 'fast', name: 'Fast', description: '100ms', ms: ANIMATION_SPEED_MS.fast },
+  { id: 'normal', name: 'Normal', description: '200ms', ms: ANIMATION_SPEED_MS.normal },
+  { id: 'slow', name: 'Slow', description: '400ms', ms: ANIMATION_SPEED_MS.slow },
+];
+
+/**
+ * Animation speed selector component
+ */
+function SpeedSelector({
+  value,
+  onChange,
+  compact,
+}: {
+  value: AnimationSpeed;
+  onChange: (speed: AnimationSpeed) => void;
+  compact?: boolean;
+}) {
+  return (
+    <div className={cn('flex gap-1', compact ? 'px-2' : 'px-3')}>
+      {animationSpeedOptions.map((option) => (
+        <motion.button
+          key={option.id}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={() => onChange(option.id)}
+          className={cn(
+            'flex-1 rounded-lg transition-all',
+            compact ? 'py-1.5 px-2' : 'py-2 px-3',
+            value === option.id
+              ? 'bg-primary/20 border border-primary/50 shadow-[0_0_10px_-3px_rgba(168,85,247,0.4)]'
+              : 'bg-white/[0.03] border border-white/[0.06] hover:border-white/15'
+          )}
+        >
+          <span
+            className={cn(
+              'block font-medium',
+              compact ? 'text-[10px]' : 'text-xs',
+              value === option.id ? 'text-primary' : 'text-foreground/80'
+            )}
+          >
+            {option.name}
+          </span>
+          {!compact && (
+            <span className="block text-[9px] text-muted-foreground/50 mt-0.5">
+              {option.description}
+            </span>
+          )}
+        </motion.button>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Animation settings section component
+ */
+function AnimationSettings({
+  animation,
+  onChange,
+  compact,
+}: {
+  animation: ChessAnimationSettings;
+  onChange: (updates: Partial<ChessAnimationSettings>) => void;
+  compact?: boolean;
+}) {
+  const handleSpeedChange = useCallback(
+    (speed: AnimationSpeed) => {
+      onChange({ moveAnimationSpeed: speed });
+    },
+    [onChange]
+  );
+
+  return (
+    <div className="space-y-2">
+      {/* Speed selector label */}
+      <div className={cn('flex items-center justify-between', compact ? 'px-2' : 'px-3', 'pt-2')}>
+        <span
+          className={cn(
+            'font-medium',
+            compact ? 'text-xs' : 'text-sm',
+            'text-foreground/90'
+          )}
+        >
+          Animation Speed
+        </span>
+      </div>
+
+      {/* Speed selector */}
+      <SpeedSelector
+        value={animation.moveAnimationSpeed}
+        onChange={handleSpeedChange}
+        compact={compact}
+      />
+
+      {/* Divider */}
+      <div className={cn('h-px bg-white/[0.04]', compact ? 'mx-2' : 'mx-3')} />
+
+      {/* Animation toggles */}
+      <ToggleOption
+        label="Board Flip Animation"
+        description="Animate when rotating the board"
+        enabled={animation.boardFlipAnimation}
+        onChange={(v) => onChange({ boardFlipAnimation: v })}
+        compact={compact}
+      />
+      <div className="h-px bg-white/[0.04]" />
+      <ToggleOption
+        label="Piece Drop Bounce"
+        description="Bounce effect when placing pieces"
+        enabled={animation.pieceDropBounce}
+        onChange={(v) => onChange({ pieceDropBounce: v })}
+        compact={compact}
+      />
+    </div>
+  );
+}
+
+/**
  * Chess Settings Panel - Main Component
  *
  * Provides board theme selection, preset themes, and display options.
@@ -548,6 +681,16 @@ export function ChessSettingsPanel({
       });
     },
     [onSettingsChange, settings.sound]
+  );
+
+  // Handle animation settings changes
+  const handleAnimationChange = useCallback(
+    (updates: Partial<ChessAnimationSettings>) => {
+      onSettingsChange({
+        animation: { ...settings.animation, ...updates },
+      });
+    },
+    [onSettingsChange, settings.animation]
   );
 
   return (
@@ -643,6 +786,26 @@ export function ChessSettingsPanel({
             <SoundSettings
               sound={settings.sound}
               onChange={handleSoundChange}
+              compact={compact}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Animation Settings Section (unless themeOnly) */}
+      {!themeOnly && (
+        <div>
+          <SectionHeader icon={Zap} title="Animation" compact={compact} />
+          <div
+            className={cn(
+              'rounded-xl overflow-hidden',
+              'glass',
+              'border border-white/[0.06]'
+            )}
+          >
+            <AnimationSettings
+              animation={settings.animation}
+              onChange={handleAnimationChange}
               compact={compact}
             />
           </div>

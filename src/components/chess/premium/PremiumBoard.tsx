@@ -50,6 +50,8 @@ export interface PremiumBoardProps {
   showLighting?: boolean;
   /** Board size in pixels (default auto-sizes to container) */
   size?: number;
+  /** Animation duration for piece moves in milliseconds */
+  animationDurationMs?: number;
 }
 
 // Promotion piece icons
@@ -173,6 +175,7 @@ export function PremiumBoard({
   showCoordinates = true,
   showLighting = true,
   size,
+  animationDurationMs = 200,
 }: PremiumBoardProps) {
   // Get theme (custom or by ID)
   const theme = customTheme ?? getBoardTheme(themeId);
@@ -400,12 +403,12 @@ export function PremiumBoard({
       },
       allowDragging: !disabled,
       showNotation: false, // We render our own coordinates
-      animationDurationInMs: 200,
+      animationDurationInMs: animationDurationMs,
       onSquareClick: handleSquareClick,
       onPieceDrag: handlePieceDrag,
       onPieceDrop: handlePieceDrop,
     }),
-    [fen, orientation, squareStyles, theme, disabled, handleSquareClick, handlePieceDrag, handlePieceDrop]
+    [fen, orientation, squareStyles, theme, disabled, animationDurationMs, handleSquareClick, handlePieceDrag, handlePieceDrop]
   );
 
   return (
