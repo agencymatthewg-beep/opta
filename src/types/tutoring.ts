@@ -291,3 +291,84 @@ export function getDifficultyColor(difficulty: LessonDifficulty): string {
 export function formatCategory(category: LessonCategory): string {
   return category.charAt(0).toUpperCase() + category.slice(1);
 }
+
+// =============================================================================
+// Ring Lesson State Types (Phase 55.2)
+// =============================================================================
+
+/**
+ * Ring lesson state for tutoring integration.
+ * Maps teaching moments to ring visual states.
+ *
+ * | State       | Ring Behavior                    | Energy |
+ * |-------------|----------------------------------|--------|
+ * | dormant     | Waiting for lesson to start      | 0.1    |
+ * | active      | Showing hint or teaching         | 0.5-0.8|
+ * | teaching    | Actively demonstrating           | 0.8    |
+ * | celebration | Success explosion                | 1.0    |
+ */
+export type RingLessonState = 'dormant' | 'active' | 'teaching' | 'celebration';
+
+/**
+ * Energy levels for ring lesson states.
+ */
+export const RING_LESSON_ENERGY: Record<RingLessonState, number> = {
+  dormant: 0.1,
+  active: 0.5,
+  teaching: 0.8,
+  celebration: 1.0,
+} as const;
+
+/**
+ * Context value for RingLessonContext.
+ */
+export interface RingLessonContextValue {
+  /** Current lesson (if any) */
+  currentLesson: LessonPlan | null;
+  /** Current step within the lesson */
+  currentStep: LessonStep | null;
+  /** Current step index */
+  currentStepIndex: number;
+  /** Ring state for tutoring */
+  ringState: RingLessonState;
+  /** Energy level derived from ring state */
+  energyLevel: number;
+  /** Whether a lesson is active */
+  isLessonActive: boolean;
+  /** Set ring to teaching mode (showing hint/demonstration) */
+  setRingTeaching: () => void;
+  /** Set ring to active mode (practicing) */
+  setRingActive: () => void;
+  /** Trigger celebration explosion for success */
+  triggerCelebration: () => Promise<void>;
+  /** Reset ring to dormant state */
+  resetRing: () => void;
+  /** Start a lesson */
+  startLesson: (lesson: LessonPlan) => void;
+  /** Advance to next step */
+  nextStep: () => void;
+  /** Go to previous step */
+  previousStep: () => void;
+  /** End the current lesson */
+  endLesson: () => void;
+}
+
+/**
+ * Default ring lesson context value.
+ */
+export const DEFAULT_RING_LESSON_CONTEXT: RingLessonContextValue = {
+  currentLesson: null,
+  currentStep: null,
+  currentStepIndex: 0,
+  ringState: 'dormant',
+  energyLevel: RING_LESSON_ENERGY.dormant,
+  isLessonActive: false,
+  setRingTeaching: () => {},
+  setRingActive: () => {},
+  triggerCelebration: async () => {},
+  resetRing: () => {},
+  startLesson: () => {},
+  nextStep: () => {},
+  previousStep: () => {},
+  endLesson: () => {},
+};
