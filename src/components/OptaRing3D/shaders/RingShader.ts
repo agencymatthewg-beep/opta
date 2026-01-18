@@ -39,6 +39,14 @@
  * - uPreviousEnergy: energy level at start of transition (for afterglow)
  * - uAnticipationIntensity: controls pre-activation pulse strength
  *
+ * Phase 41.7: Color Temperature Mastery
+ * - Dormant state is colorless dark obsidian (grayscale/desaturated)
+ * - Active state has vibrant purple plasma with warm color temperature
+ * - Smooth color interpolation from cold/gray to warm/purple based on energy
+ * - Plasma interior shifts from dark smoldering to bright violet glow
+ * - uColorSaturation: energy-driven saturation (0=grayscale, 1=full color)
+ * - uColorWarmth: color temperature shift (0=cold/neutral, 1=warm/vibrant)
+ *
  * The shader creates a premium obsidian glass look that responds
  * dynamically to the ring's state and energy level, with internal
  * plasma that tells the energy story at a glance.
@@ -122,6 +130,10 @@ export interface RingShaderUniforms {
   uPreviousEnergy: Uniform<number>;
   /** Anticipation pulse intensity 0-1 (41.6) */
   uAnticipationIntensity: Uniform<number>;
+  /** Color saturation 0-1: 0=grayscale, 1=full vibrant color (41.7) */
+  uColorSaturation: Uniform<number>;
+  /** Color warmth/temperature 0-1: 0=cold/neutral, 1=warm/vibrant (41.7) */
+  uColorWarmth: Uniform<number>;
 }
 
 /**
@@ -152,6 +164,10 @@ export interface RingShaderConfig {
   activeRimIntensity?: number;
   /** Anticipation pulse intensity for power-up transitions 0-1 (41.6) */
   anticipationIntensity?: number;
+  /** Base color saturation at full energy 0-1 (41.7) */
+  colorSaturation?: number;
+  /** Base color warmth/temperature at full energy 0-1 (41.7) */
+  colorWarmth?: number;
 }
 
 // =============================================================================
@@ -248,6 +264,9 @@ uniform float uTransitionProgress;
 uniform float uTransitionType;     // 0=none, 1=power-up, 2=power-down
 uniform float uPreviousEnergy;
 uniform float uAnticipationIntensity;
+// Phase 41.7: Color Temperature Mastery
+uniform float uColorSaturation;    // 0=grayscale, 1=full color
+uniform float uColorWarmth;        // 0=cold/neutral, 1=warm/vibrant
 
 // Varyings from vertex shader
 varying vec3 vNormal;
@@ -395,19 +414,33 @@ float plasma(vec3 p, float energy) {
 }
 
 /**
- * Calculate plasma color based on energy level
- * Dark purple (dormant) -> vibrant purple (active) -> bright violet/white (max)
+ * Calculate plasma color based on energy level with color temperature mastery
+ * Dormant: dark smoldering obsidian (desaturated, cold gray-black)
+ * Active: vibrant purple plasma (fully saturated, warm violet)
+ * Max: bright violet glow (intense, hot)
+ *
+ * Phase 41.7: Uses energy-driven saturation and warmth
  */
 vec3 getPlasmaColor(float energy) {
-  vec3 dormantColor = vec3(0.08, 0.0, 0.12);   // Near-black purple
-  vec3 activeColor = vec3(0.45, 0.0, 0.65);    // Vibrant purple
-  vec3 maxColor = vec3(0.75, 0.55, 0.95);      // Bright violet-white
+  // Base colors (fully saturated reference)
+  vec3 dormantBase = vec3(0.06, 0.05, 0.08);   // Near-black (will be desaturated)
+  vec3 activeBase = vec3(0.55, 0.1, 0.75);     // Vibrant purple
+  vec3 maxBase = vec3(0.85, 0.65, 1.0);        // Bright violet-white
 
+  // Interpolate base color
+  vec3 baseColor;
   if (energy < 0.5) {
-    return mix(dormantColor, activeColor, energy * 2.0);
+    baseColor = mix(dormantBase, activeBase, energy * 2.0);
   } else {
-    return mix(activeColor, maxColor, (energy - 0.5) * 2.0);
+    baseColor = mix(activeBase, maxBase, (energy - 0.5) * 2.0);
   }
+
+  // Apply color temperature transformation based on energy
+  // Low energy = cold, desaturated obsidian
+  // High energy = warm, vibrant purple
+  vec3 result = applyEnergyColorTemperature(baseColor, energy, uColorSaturation, uColorWarmth);
+
+  return result;
 }
 
 // =============================================================================
@@ -604,6 +637,107 @@ float applyTransitionEasing(float currentEnergy, float previousEnergy, float pro
 }
 
 // =============================================================================
+// COLOR TEMPERATURE MASTERY (41.7)
+// =============================================================================
+
+/**
+ * Convert RGB to grayscale using luminance weights
+ * Preserves perceived brightness when desaturating
+ *
+ * @param color - RGB color to convert
+ * @return Grayscale value (luminance)
+ */
+float rgbToGrayscale(vec3 color) {
+  // ITU-R BT.709 luminance coefficients
+  return dot(color, vec3(0.2126, 0.7152, 0.0722));
+}
+
+/**
+ * Desaturate a color by a given amount
+ * Smoothly blends from full color to grayscale
+ *
+ * @param color - Original RGB color
+ * @param saturation - 0=grayscale, 1=original color
+ * @return Desaturated color
+ */
+vec3 desaturateColor(vec3 color, float saturation) {
+  float gray = rgbToGrayscale(color);
+  return mix(vec3(gray), color, saturation);
+}
+
+/**
+ * Apply color temperature shift
+ * Cold colors shift toward blue-gray, warm toward purple-magenta
+ *
+ * @param color - Original RGB color
+ * @param warmth - 0=cold/neutral, 1=warm/vibrant
+ * @return Temperature-shifted color
+ */
+vec3 applyColorTemperature(vec3 color, float warmth) {
+  // Cold bias: slight blue-gray tint
+  vec3 coldTint = vec3(0.9, 0.92, 1.0);
+  // Warm bias: purple-magenta warmth
+  vec3 warmTint = vec3(1.1, 0.95, 1.15);
+
+  vec3 temperatureTint = mix(coldTint, warmTint, warmth);
+  return color * temperatureTint;
+}
+
+/**
+ * Calculate energy-driven color saturation
+ * Dormant = fully desaturated (obsidian gray)
+ * Active = fully saturated (vibrant purple)
+ *
+ * @param energy - 0-1 energy level
+ * @param baseSaturation - Maximum saturation at full energy
+ * @return Saturation value 0-1
+ */
+float calculateEnergySaturation(float energy, float baseSaturation) {
+  // Use smooth curve for natural transition
+  // Desaturation is more aggressive at low energy
+  float t = smoothstep(0.0, 0.8, energy);
+  return t * baseSaturation;
+}
+
+/**
+ * Calculate energy-driven color warmth
+ * Dormant = cold, neutral gray
+ * Active = warm, vibrant purple
+ *
+ * @param energy - 0-1 energy level
+ * @param baseWarmth - Maximum warmth at full energy
+ * @return Warmth value 0-1
+ */
+float calculateEnergyWarmth(float energy, float baseWarmth) {
+  // Warmth ramps up faster than saturation for dramatic effect
+  float t = smoothstep(0.0, 0.6, energy);
+  return t * baseWarmth;
+}
+
+/**
+ * Apply complete color temperature transformation
+ * Combines desaturation and temperature shift based on energy
+ *
+ * @param color - Original RGB color
+ * @param energy - 0-1 energy level
+ * @param baseSaturation - Maximum saturation at full energy
+ * @param baseWarmth - Maximum warmth at full energy
+ * @return Transformed color
+ */
+vec3 applyEnergyColorTemperature(vec3 color, float energy, float baseSaturation, float baseWarmth) {
+  float saturation = calculateEnergySaturation(energy, baseSaturation);
+  float warmth = calculateEnergyWarmth(energy, baseWarmth);
+
+  // First desaturate based on energy
+  vec3 result = desaturateColor(color, saturation);
+
+  // Then apply temperature shift
+  result = applyColorTemperature(result, warmth);
+
+  return result;
+}
+
+// =============================================================================
 // SUBSURFACE SCATTERING SIMULATION (25-03)
 // =============================================================================
 
@@ -641,20 +775,29 @@ float calculateSSS(vec3 normal, vec3 viewDir, vec3 lightDir, float innerGlow) {
 
 /**
  * Blend between dormant (cool) and active (warm) colors
+ * Phase 41.7: Now applies color temperature mastery
  *
- * @param dormant - Cool/dormant color
- * @param active - Warm/active color
+ * @param dormant - Cool/dormant color (will be desaturated at low energy)
+ * @param active - Warm/active color (vibrant at high energy)
  * @param explode - White-hot explosion color
  * @param stateBlend - 0-1 interpolation (0=dormant, 1=active)
  * @param exploding - 0-1 explosion amount
+ * @param energy - Current energy level for color temperature
  */
-vec3 calculateStateColor(vec3 dormant, vec3 active, vec3 explode, float stateBlend, float exploding) {
+vec3 calculateStateColor(vec3 dormant, vec3 active, vec3 explode, float stateBlend, float exploding, float energy) {
   // Base blend between dormant and active
   vec3 baseColor = mix(dormant, active, stateBlend);
 
+  // Apply color temperature transformation based on energy (41.7)
+  // Low energy = cold, desaturated obsidian gray
+  // High energy = warm, vibrant purple
+  baseColor = applyEnergyColorTemperature(baseColor, energy, uColorSaturation, uColorWarmth);
+
   // For explosion: blend toward white-hot core
+  // Explosions are always fully saturated and hot
   if (exploding > 0.0) {
     // White-hot center, colored edge
+    // Don't desaturate explosion colors
     baseColor = mix(baseColor, explode, exploding * 0.8);
   }
 
@@ -864,13 +1007,14 @@ void main() {
     stateBlend = pulse;
   }
 
-  // Get base color for current state
+  // Get base color for current state (41.7: now includes color temperature)
   vec3 baseColor = calculateStateColor(
     uColorDormant,
     uColorActive,
     uColorExplode,
     stateBlend,
-    uExploding
+    uExploding,
+    effectiveEnergy  // 41.7: Pass energy for color temperature calculation
   );
 
   // ==========================================================================
@@ -1059,6 +1203,9 @@ const defaultRingConfig: Required<RingShaderConfig> = {
   activeRimIntensity: 2.5,     // High = bright energetic glow when active
   // Phase 41.6: Suspenseful Transitions defaults
   anticipationIntensity: 0.6,  // Moderate anticipation pulse during power-up
+  // Phase 41.7: Color Temperature Mastery defaults
+  colorSaturation: 1.0,        // Full saturation at max energy
+  colorWarmth: 1.0,            // Full warmth at max energy
 };
 
 /**
@@ -1125,6 +1272,9 @@ export function createRingShaderUniforms(config: RingShaderConfig = {}): RingSha
     uTransitionType: { value: 0 },                  // 0=none, 1=power-up, 2=power-down
     uPreviousEnergy: { value: mergedConfig.energyLevel }, // Previous = current at init
     uAnticipationIntensity: { value: mergedConfig.anticipationIntensity },
+    // Phase 41.7: Color Temperature Mastery uniforms
+    uColorSaturation: { value: mergedConfig.colorSaturation },
+    uColorWarmth: { value: mergedConfig.colorWarmth },
   };
 }
 
@@ -1610,6 +1760,61 @@ export function disposeRingShader(material: ShaderMaterial): void {
 }
 
 // =============================================================================
+// COLOR TEMPERATURE MASTERY (41.7)
+// =============================================================================
+
+/**
+ * Set color saturation level (41.7)
+ * Controls how vibrant colors appear at full energy
+ *
+ * @param material - The ring shader material
+ * @param saturation - Saturation level 0-1 (0=grayscale, 1=full color)
+ */
+export function setRingColorSaturation(
+  material: ShaderMaterial,
+  saturation: number
+): void {
+  const uniforms = material.uniforms as unknown as RingShaderUniforms;
+  uniforms.uColorSaturation.value = Math.max(0, Math.min(1, saturation));
+}
+
+/**
+ * Set color warmth/temperature level (41.7)
+ * Controls how warm/vibrant colors appear at full energy
+ *
+ * @param material - The ring shader material
+ * @param warmth - Warmth level 0-1 (0=cold/neutral, 1=warm/vibrant)
+ */
+export function setRingColorWarmth(
+  material: ShaderMaterial,
+  warmth: number
+): void {
+  const uniforms = material.uniforms as unknown as RingShaderUniforms;
+  uniforms.uColorWarmth.value = Math.max(0, Math.min(1, warmth));
+}
+
+/**
+ * Configure all color temperature parameters at once (41.7)
+ *
+ * @param material - The ring shader material
+ * @param config - Color temperature configuration
+ */
+export function setRingColorTemperature(
+  material: ShaderMaterial,
+  config: {
+    saturation?: number;
+    warmth?: number;
+  }
+): void {
+  if (config.saturation !== undefined) {
+    setRingColorSaturation(material, config.saturation);
+  }
+  if (config.warmth !== undefined) {
+    setRingColorWarmth(material, config.warmth);
+  }
+}
+
+// =============================================================================
 // PRESETS
 // =============================================================================
 
@@ -1618,9 +1823,10 @@ export function disposeRingShader(material: ShaderMaterial): void {
  * Updated with Phase 41.3 obsidian mirror settings
  * Updated with Phase 41.4 energy contrast system settings
  * Updated with Phase 41.6 suspenseful transition settings
+ * Updated with Phase 41.7 color temperature mastery settings
  */
 export const ringShaderPresets = {
-  /** Default dormant state - nearly invisible rim, maximum obsidian reflection */
+  /** Default dormant state - colorless obsidian, nearly invisible rim */
   dormant: {
     energyLevel: 0,
     innerGlow: 0.2,
@@ -1636,8 +1842,11 @@ export const ringShaderPresets = {
     activeRimIntensity: 2.5,      // (not used at 0 energy)
     // Phase 41.6: Subtle anticipation when waking from dormant
     anticipationIntensity: 0.5,
+    // Phase 41.7: Fully desaturated cold obsidian
+    colorSaturation: 1.0,         // Base saturation (energy-driven desaturation)
+    colorWarmth: 1.0,             // Base warmth (energy-driven temperature)
   },
-  /** Active state - bright energetic rim glow, reduced reflection */
+  /** Active state - vibrant purple plasma, bright energetic rim glow */
   active: {
     energyLevel: 0.6,
     innerGlow: 0.5,
@@ -1653,8 +1862,11 @@ export const ringShaderPresets = {
     activeRimIntensity: 2.5,      // Bright glow
     // Phase 41.6: Strong anticipation for dramatic activation
     anticipationIntensity: 0.7,
+    // Phase 41.7: Vibrant warm purple
+    colorSaturation: 1.0,         // Full saturation at active energy
+    colorWarmth: 1.0,             // Full warmth for vibrant purple
   },
-  /** Processing state - pulsing between states */
+  /** Processing state - pulsing between cold and warm */
   processing: {
     energyLevel: 0.4,
     innerGlow: 0.4,
@@ -1670,8 +1882,11 @@ export const ringShaderPresets = {
     activeRimIntensity: 2.5,
     // Phase 41.6: Moderate anticipation
     anticipationIntensity: 0.6,
+    // Phase 41.7: Mid-range color temperature
+    colorSaturation: 1.0,
+    colorWarmth: 1.0,
   },
-  /** Exploding state - maximum energy, intense rim, plasma-dominated */
+  /** Exploding state - maximum warmth, bright violet glow */
   exploding: {
     energyLevel: 1.0,
     innerGlow: 1.0,
@@ -1687,6 +1902,9 @@ export const ringShaderPresets = {
     activeRimIntensity: 3.5,      // Extra bright for explosion
     // Phase 41.6: Maximum anticipation for explosion buildup
     anticipationIntensity: 0.9,
+    // Phase 41.7: Maximum saturation and warmth for bright violet
+    colorSaturation: 1.0,         // Full vibrant color
+    colorWarmth: 1.0,             // Maximum warmth
   },
 } as const;
 
