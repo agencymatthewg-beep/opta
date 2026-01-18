@@ -12,7 +12,8 @@ Opta transforms from an empty Tauri scaffold into a full-featured AI-powered PC 
 - ✅ **v3.0 Native Platforms** - Phase 19 (shipped 2026-01-17)
 - ✅ **v4.0 Rich Features** - Phases 20-23 (shipped 2026-01-17)
 - 🚧 **v5.0 Premium Visual Experience** - Phases 24-40 (in progress)
-- 📋 **v6.0 Optimization Intelligence Core** - Phases 41-50 (planned)
+- 🚧 **v6.0 Optimization Intelligence Core** - Phases 41-50 (in progress)
+- 📋 **v7.0 Chess Mastery Experience** - Phases 51-58 (planned)
 
 ## Domain Expertise
 
@@ -78,6 +79,14 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 48: Knowledge Graph Integration** - Relationship mapping between all optimization domains (v6.0)
 - [ ] **Phase 49: Real-Time Adaptation Engine** - Dynamic config adjustment based on workload patterns (v6.0)
 - [ ] **Phase 50: Optimization Intelligence Launch** - Testing, validation, knowledge base release (v6.0)
+- [ ] **Phase 51: Quick Access System** - Floating mini-board, command palette shortcut, frictionless entry (v7.0)
+- [ ] **Phase 52: Puzzle System** - Lichess puzzle database, daily puzzles, rating, streaks (v7.0)
+- [ ] **Phase 53: Game Import & Review** - Chess.com/Lichess API, PGN import, game archive (v7.0)
+- [ ] **Phase 54: Personal AI Clone** - ML model trained on your games, "Play as Matthew" mode (v7.0)
+- [ ] **Phase 55: Opta Ring Tutoring** - Interactive lessons with ring animations, visual teaching (v7.0)
+- [ ] **Phase 56: Premium Board UI** - Board/piece themes, glass integration, familiar but premium (v7.0)
+- [ ] **Phase 57: Chess Settings & Customization** - Full preference panel, theme presets, sounds (v7.0)
+- [ ] **Phase 58: Chess Mastery Launch** - Polish, accessibility, documentation, release (v7.0)
 
 ## Phase Details
 
@@ -636,15 +645,35 @@ Plans:
 - Storage I/O optimization (NVMe, SATA, APFS, NTFS)
 
 Plans:
-- [ ] 41-01: GPU architecture deep dive (CUDA cores, RT cores, Tensor cores, Metal shaders)
-- [ ] 41-02: CPU optimization research (core parking, P/E cores, frequency scaling)
-- [ ] 41-03: Memory subsystem research (VRAM, RAM, swap, unified memory)
-- [ ] 41-04: Thermal and power research (TDP, throttling, efficiency curves)
-- [ ] 41-05: Storage optimization research (queue depths, block sizes, caching)
+- [x] 41-01: GPU architecture deep dive (CUDA cores, RT cores, Tensor cores, Metal shaders)
+- [x] 41-02: CPU optimization research (core parking, P/E cores, frequency scaling)
+- [x] 41-03: Memory subsystem research (VRAM, RAM, swap, unified memory)
+- [x] 41-04: Thermal and power research (TDP, throttling, efficiency curves)
+- [x] 41-05: Storage optimization research (queue depths, block sizes, caching)
+
+#### Phase 41.1: Knowledge Architecture System (INSERTED)
+**Goal**: Implement 5-tier hierarchical knowledge storage system for extracted research data
+**Depends on**: Phase 41
+**Research**: Unlikely (building on established JSON patterns)
+
+**Knowledge Tiers:**
+| Tier | Name | Stability | Verification |
+|------|------|-----------|--------------|
+| T1 | Physics/Math | Immutable | Never |
+| T2 | Architecture | Decade-stable | Rare |
+| T3 | Hardware Specs | Generation-stable | Per-release |
+| T4 | Benchmarks | Year-stable | Quarterly |
+| T5 | Rankings/Trends | Month-stable | On-access (LLM) |
+
+Plans:
+- [x] 41.1-01: Directory structure and JSON schema for 5-tier knowledge hierarchy
+- [x] 41.1-02: Initial knowledge population (T1-T5 starter files)
+- [x] 41.1-03: Gemini report extraction and archival
+- [x] 41.1-04: Extraction methodology documentation
 
 #### Phase 42: Hardware Synergy Database
 **Goal**: Build structured database of component interactions and synergies
-**Depends on**: Phase 41
+**Depends on**: Phase 41.1 (Knowledge Architecture)
 **Research**: Likely (validation of interaction patterns)
 
 Plans:
@@ -756,10 +785,147 @@ Plans:
 - [ ] 50-04: Documentation and API reference
 - [ ] 50-05: Release notes and changelog
 
+### 📋 v7.0 Chess Mastery Experience (Planned)
+
+**Milestone Goal:** Transform Opta's chess integration into a complete mastery platform. Quick frictionless access, puzzles for training, import personal games to create an AI clone of yourself, interactive Opta Ring tutoring, and a premium UI that feels familiar to chess.com players but elevated with Opta's glass aesthetic.
+
+**Core Pillars:**
+- ⚡ Frictionless Access — Drop in/out of chess with zero friction
+- 🧩 Puzzles — Sharpen tactics with Lichess's 3M+ puzzle database
+- 🪞 Personal AI Clone — Import your games, play against yourself
+- 🎓 Opta Ring Tutoring — Interactive visual learning with the ring
+- 💎 Premium UI — Simple, familiar board + Opta premium aesthetics
+
+---
+
+#### Phase 51: Quick Access System
+**Goal**: Enable frictionless drop-in/out chess experience from anywhere in Opta
+**Depends on**: Phase 50 (v6.0 complete)
+**Research**: Unlikely (internal patterns)
+
+**Key Features:**
+- Floating mini-board widget (toggleable, draggable)
+- Command palette shortcut (Cmd+Shift+C)
+- Radial nav quick-access entry point
+- Resume game state across sessions
+- Mini-mode for quick puzzles during work breaks
+
+Plans:
+- [ ] 51-01: TBD (run /gsd:plan-phase 51 to break down)
+
+#### Phase 52: Puzzle System
+**Goal**: Full puzzle training system with Lichess integration
+**Depends on**: Phase 51
+**Research**: Likely (Lichess puzzle API)
+**Research topics**: Lichess puzzle database API, puzzle rating system, theme categorization, streak tracking patterns
+
+**Key Features:**
+- Lichess puzzle database (3M+ puzzles)
+- Daily puzzle with streak tracking
+- Themed puzzle sets (pins, forks, back rank mates)
+- Puzzle rating that adapts to skill
+- Hints system with progressive reveal
+
+Plans:
+- [ ] 52-01: TBD
+
+#### Phase 53: Game Import & Review
+**Goal**: Import games from Chess.com/Lichess and review with analysis
+**Depends on**: Phase 52
+**Research**: Likely (Chess.com API, Lichess API)
+**Research topics**: Chess.com public API, Lichess API, PGN parsing, game archive patterns, move annotation format
+
+**Key Features:**
+- Chess.com game import via username
+- Lichess game import via username
+- PGN file upload support
+- Game archive with filters (date, result, opening)
+- Move-by-move review with engine evaluation
+- Opening explorer integration
+
+Plans:
+- [ ] 53-01: TBD
+
+#### Phase 54: Personal AI Clone
+**Goal**: Train AI to play like the user based on imported games
+**Depends on**: Phase 53
+**Research**: Likely (ML embedding patterns)
+**Research topics**: Chess move embedding, style fingerprinting, transformer architectures for chess, Maia Chess inspiration
+
+**Key Features:**
+- Play style fingerprint analysis (aggressive, positional, tactical)
+- "Play as Matthew" AI opponent mode
+- Style comparison with famous players
+- Move prediction based on personal tendencies
+- Training data from imported games
+
+Plans:
+- [ ] 54-01: TBD
+
+#### Phase 55: Opta Ring Tutoring
+**Goal**: Interactive chess lessons that leverage Opta Ring animations and text zone
+**Depends on**: Phase 54
+**Research**: Unlikely (internal patterns from v5.0)
+
+**Key Features:**
+- Opta Ring responds to lesson progress (pulses on correct, dims on error)
+- Visual arrow overlays for teaching moves
+- Step-by-step lesson progression
+- Text zone explanations in user's communication style
+- Engagement tracking and adaptive pacing
+- Lesson topics: openings, endgames, tactics, strategy
+
+Plans:
+- [ ] 55-01: TBD
+
+#### Phase 56: Premium Board UI
+**Goal**: Chess.com-familiar but Opta-premium board and piece design
+**Depends on**: Phase 55
+**Research**: Unlikely (frontend-design plugin)
+
+**Key Features:**
+- Board themes (wood, marble, cosmos-style like chess.com)
+- Piece sets (classic, modern, minimalist)
+- Glass panel integration for controls
+- Move highlighting that doesn't distract
+- Responsive layout (mobile-friendly)
+- Simple, clean aesthetic that preserves pattern recognition
+
+Plans:
+- [ ] 56-01: TBD
+
+#### Phase 57: Chess Settings & Customization
+**Goal**: Full preference panel with theme presets and personalization
+**Depends on**: Phase 56
+**Research**: Unlikely (internal patterns)
+
+**Key Features:**
+- Board & piece theme selector (inspired by chess.com settings)
+- Preset themes (Classic, Nature, Cosmos, Opta Dark)
+- Sound toggle (move sounds, game over)
+- Animation speed preferences
+- Coordinate display options
+- Move confirmation toggle
+
+Plans:
+- [ ] 57-01: TBD
+
+#### Phase 58: Chess Mastery Launch
+**Goal**: Polish, testing, and release of v7.0
+**Depends on**: Phase 57
+**Research**: Unlikely
+
+Plans:
+- [ ] 58-01: Cross-browser testing and edge cases
+- [ ] 58-02: Accessibility audit (keyboard nav, screen readers)
+- [ ] 58-03: Performance optimization for puzzle streaming
+- [ ] 58-04: Documentation and style guide updates
+- [ ] 58-05: Release notes and changelog
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 → 8 → 8.1 → 9 → 10 → 11 → 12 → 13 → 14 → 15 → 16 → 17 → 19 → 20 → 21 → 22 → 23 → 24 → 25 → 26 → 27 → 28 → 29 → 30 → 31 → 32 → 33 → 34 → 35 → 36 → 37 → 38 → 39 → 40 → 41 → 42 → 43 → 44 → 45 → 46 → 47 → 48 → 49 → 50 → (18 deferred)
+Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 → 8 → 8.1 → 9 → 10 → 11 → 12 → 13 → 14 → 15 → 16 → 17 → 19 → 20 → 21 → 22 → 23 → 24 → 25 → 26 → 27 → 28 → 29 → 30 → 31 → 32 → 33 → 34 → 35 → 36 → 37 → 38 → 39 → 40 → 41 → 41.1 → 42 → 43 → 44 → 45 → 46 → 47 → 48 → 49 → 50 → (18 deferred)
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -788,24 +954,25 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 �
 | 21. Advanced Visualizations | v4.0 | 4/4 | Complete | 2026-01-17 |
 | 22. AI/ML Intelligence | v4.0 | 4/4 | Complete | 2026-01-17 |
 | 23. Cross-Device Sync | v4.0 | 4/4 | Complete | 2026-01-17 |
-| 24. 3D Ring Foundation | v5.0 | 0/4 | Not Started | - |
-| 25. Glassmorphism Ring Shader | v5.0 | 0/4 | Not Started | - |
-| 26. Ring Wake-Up Animation | v5.0 | 0/4 | Not Started | - |
-| 27. Ring Explosion Effect | v5.0 | 0/5 | Not Started | - |
-| 28. Ring State Machine & Context | v5.0 | 0/4 | Not Started | - |
-| 29. Persistent Ring (App-Wide) | v5.0 | 0/4 | Not Started | - |
-| 30. Atmospheric Fog System | v5.0 | 0/4 | Not Started | - |
-| 31. Neon Glow Trails | v5.0 | 0/5 | Not Started | - |
-| 32. Particle Environment | v5.0 | 0/5 | Not Started | - |
-| 33. Glass Depth System | v5.0 | 0/5 | Not Started | - |
-| 34. Premium Loading States | v5.0 | 0/5 | Not Started | - |
-| 35. Page Transitions & Micro-Animations | v5.0 | 0/5 | Not Started | - |
-| 36. Telemetry Visualization Upgrade | v5.0 | 0/5 | Not Started | - |
-| 37. Sound Design Integration | v5.0 | 0/5 | Not Started | - |
-| 38. High-End Performance Optimization | v5.0 | 0/5 | Not Started | - |
-| 39. Visual Polish & QA | v5.0 | 0/5 | Not Started | - |
-| 40. Documentation & Launch | v5.0 | 0/5 | Not Started | - |
+| 24. 3D Ring Foundation | v5.0 | 4/4 | Complete | 2026-01-17 |
+| 25. Glassmorphism Ring Shader | v5.0 | 4/4 | Complete | 2026-01-17 |
+| 26. Ring Wake-Up Animation | v5.0 | 4/4 | Complete | 2026-01-17 |
+| 27. Ring Explosion Effect | v5.0 | 5/5 | Complete | 2026-01-17 |
+| 28. Ring State Machine & Context | v5.0 | 4/4 | Complete | 2026-01-17 |
+| 29. Persistent Ring (App-Wide) | v5.0 | 4/4 | Complete | 2026-01-17 |
+| 30. Atmospheric Fog System | v5.0 | 4/4 | Complete | 2026-01-17 |
+| 31. Neon Glow Trails | v5.0 | 5/5 | Complete | 2026-01-17 |
+| 32. Particle Environment | v5.0 | 5/5 | Complete | 2026-01-17 |
+| 33. Glass Depth System | v5.0 | 5/5 | Complete | 2026-01-17 |
+| 34. Premium Loading States | v5.0 | 5/5 | Complete | 2026-01-17 |
+| 35. Page Transitions & Micro-Animations | v5.0 | 5/5 | Complete | 2026-01-17 |
+| 36. Telemetry Visualization Upgrade | v5.0 | 5/5 | Complete | 2026-01-17 |
+| 37. Sound Design Integration | v5.0 | 5/5 | Complete | 2026-01-18 |
+| 38. High-End Performance Optimization | v5.0 | 5/5 | Complete | 2026-01-18 |
+| 39. Visual Polish & QA | v5.0 | 5/5 | Complete | 2026-01-18 |
+| 40. Documentation & Launch | v5.0 | 5/5 | Complete | 2026-01-18 |
 | 41. Knowledge Research Foundation | v6.0 | 5/5 | Complete | 2026-01-18 |
+| 41.1 Knowledge Architecture System | v6.0 | 4/4 | Complete | 2026-01-18 |
 | 42. Hardware Synergy Database | v6.0 | 0/5 | Not Started | - |
 | 43. Settings Interaction Engine | v6.0 | 0/5 | Not Started | - |
 | 44. macOS Optimization Core | v6.0 | 0/5 | Not Started | - |
@@ -815,3 +982,11 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 �
 | 48. Knowledge Graph Integration | v6.0 | 0/5 | Not Started | - |
 | 49. Real-Time Adaptation Engine | v6.0 | 0/5 | Not Started | - |
 | 50. Optimization Intelligence Launch | v6.0 | 0/5 | Not Started | - |
+| 51. Quick Access System | v7.0 | 0/? | Not Started | - |
+| 52. Puzzle System | v7.0 | 0/? | Not Started | - |
+| 53. Game Import & Review | v7.0 | 0/? | Not Started | - |
+| 54. Personal AI Clone | v7.0 | 0/? | Not Started | - |
+| 55. Opta Ring Tutoring | v7.0 | 0/? | Not Started | - |
+| 56. Premium Board UI | v7.0 | 0/? | Not Started | - |
+| 57. Chess Settings & Customization | v7.0 | 0/? | Not Started | - |
+| 58. Chess Mastery Launch | v7.0 | 0/5 | Not Started | - |
