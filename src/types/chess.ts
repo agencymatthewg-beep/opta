@@ -10,6 +10,8 @@
  * - stockfish: AI opponent via WebAssembly
  */
 
+import type { BoardThemeId } from './boardTheme';
+
 /**
  * Available chess game modes.
  * - casual: Relaxed games against AI, no time pressure
@@ -115,6 +117,12 @@ export interface ChessSettings {
   boardOrientation: 'white' | 'black';
   /** Whether to auto-save games */
   autoSave: boolean;
+  /** Board theme ID (obsidian, wood, marble, glass) */
+  boardTheme: BoardThemeId;
+  /** Whether to show board coordinates */
+  showCoordinates: boolean;
+  /** Whether to show board lighting effects */
+  showLighting: boolean;
 }
 
 /**
@@ -136,7 +144,10 @@ export const DEFAULT_CHESS_SETTINGS: ChessSettings = {
   showMoveHistory: true,
   boardOrientation: 'white',
   autoSave: true,
-} as const;
+  boardTheme: 'obsidian',
+  showCoordinates: true,
+  showLighting: true,
+};
 
 /**
  * Starting FEN for a standard chess game.

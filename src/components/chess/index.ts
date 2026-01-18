@@ -23,3 +23,6 @@ export { MiniChessBoard, type MiniChessBoardProps } from './MiniChessBoard';
 export { GameCard } from './games/GameCard';
 export { GameBrowser, type GameBrowserProps } from './games/GameBrowser';
 export { GameReview, type GameReviewProps } from './games/GameReview';
+
+// Premium board components (Phase 56)
+export { PremiumBoard, type PremiumBoardProps, ThemeSelector, type ThemeSelectorProps } from './premium';
