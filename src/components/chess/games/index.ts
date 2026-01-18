@@ -1,7 +1,13 @@
 /**
- * Chess games components - Game import, browsing, and review.
+ * Chess Games Components
+ *
+ * Game import, browsing, and review for Phase 53.
+ *
+ * - GameCard: Game preview card with result and metadata
+ * - GameBrowser: Import games from Chess.com/Lichess, browse archive
+ * - GameReview: Move-by-move analysis with navigation
  */
 
-export { GameCard } from './GameCard';
-export { GameBrowser } from './GameBrowser';
-export { GameReview } from './GameReview';
+export { GameCard, type GameCardProps } from './GameCard';
+export { GameBrowser, type GameBrowserProps } from './GameBrowser';
+export { GameReview, type GameReviewProps } from './GameReview';

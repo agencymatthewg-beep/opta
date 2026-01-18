@@ -1,14 +1,42 @@
 /**
- * Chess components for Opta.
+ * Chess Components - Opta Chess Mastery System
  *
- * Provides UI components for the chess feature:
- * - ChessBoard: Interactive chess board with Opta glass styling
- * - GameControls: Difficulty selector and game actions
- * - MoveHistory: Move history display with scroll
- * - ChessWidget: Floating draggable quick-access widget (Phase 51)
- * - ChessWidgetStatus: Glanceable status for collapsed widget
- * - ChessWidgetTabs: Three-tab navigation (Play/Puzzles/Tutor)
- * - MiniChessBoard: Compact chess board for widget
+ * Complete chess experience with premium visuals and AI tutoring.
+ *
+ * Core Components:
+ * - ChessBoard: Interactive board with Opta glass styling
+ * - GameControls: Difficulty and game actions
+ * - MoveHistory: Move history with scroll
+ * - MiniChessBoard: Compact board for widget
+ *
+ * Quick Access (Phase 51):
+ * - ChessWidget: Floating draggable widget
+ * - ChessWidgetStatus: Glanceable status display
+ * - ChessWidgetTabs: Play/Puzzles/Tutor navigation
+ *
+ * Puzzle System (Phase 52):
+ * - PuzzleBoard: Lichess puzzle integration
+ *
+ * Game Import (Phase 53):
+ * - GameCard: Game preview card
+ * - GameBrowser: Import and browse games
+ * - GameReview: Move-by-move analysis
+ *
+ * Personal AI (Phase 54):
+ * - StyleComparison: Compare with famous players
+ * - CloneSettings: AI behavior tuning
+ *
+ * Ring Tutoring (Phase 55):
+ * - LessonOverlay: Ring-synchronized hints
+ * - CongratulationBurst: Success celebration
+ * - OpeningLesson, TacticLesson, EndgameLesson
+ *
+ * Premium Board (Phase 56):
+ * - PremiumBoard: Material themes
+ * - ThemeSelector: Theme picker
+ *
+ * Settings (Phase 57):
+ * - ChessSettingsPanel: Full customization
  */
 
 export { ChessBoard, type ChessBoardProps } from './ChessBoard';
@@ -34,3 +62,24 @@ export {
   type PresetTheme,
   presetThemes,
 } from './settings';
+
+// Puzzle components (Phase 52)
+export { PuzzleBoard, type PuzzleBoardProps } from './puzzles';
+
+// Tutoring components (Phase 55)
+export {
+  LessonOverlay,
+  CongratulationBurst,
+  useCongratulationBurst,
+  OpeningLesson,
+  TacticLesson,
+  EndgameLesson,
+  type LessonOverlayProps,
+  type CongratulationBurstProps,
+  type OpeningLessonProps,
+  type TacticLessonProps,
+  type EndgameLessonProps,
+} from './tutoring';
+
+// Clone/AI components (Phase 54)
+export { StyleComparison, CloneSettings } from './clone';
