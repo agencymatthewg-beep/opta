@@ -5,17 +5,18 @@
 See: .planning/PROJECT.md (updated 2026-01-15)
 
 **Core value:** One tool to replace them all — eliminates chaos of multiple conflicting optimizers, detects conflicts, explains optimizations, delivers measurable gains.
-**Current focus:** v5.0 COMPLETE — Premium Visual Experience delivered. Ready for v6.0 (Optimization Intelligence Core)
+**Current focus:** v5.1 IN PROGRESS — Ring Visual Enhancement (7 phases). v6.0 paused after Phase 42.
 
 ## Current Position
 
-Phase: 42 of 50 (Hardware Synergy Database)
-Plan: 5 of 5 in current phase
-Status: COMPLETE — All Phase 42 plans done
-Last activity: 2026-01-18 — Completed 42-05 (Power Budget Optimization Tables)
+Phase: 41.2 of 58 (Internal Plasma Core)
+Plan: 0 of ? in current phase
+Status: Ready to plan
+Last activity: 2026-01-18 — Created Milestone v5.1 Ring Visual Enhancement
 
 Progress: ██████████ 100% of v5.0 (17 phases complete)
-v6.0 Progress: ████████░░ 80% (Phase 41 + 41.1 + Phase 42 complete)
+v5.1 Progress: ░░░░░░░░░░ 0% (0 of 7 phases)
+v6.0 Progress: ████████░░ 80% (Phase 41 + 41.1 + Phase 42 complete, paused for v5.1)
 
 ### v5.0 Phase Completion Summary
 | Phase | Name | Status |
@@ -38,7 +39,18 @@ v6.0 Progress: ████████░░ 80% (Phase 41 + 41.1 + Phase 42 co
 | 39 | Visual Polish & QA | ✅ Complete |
 | 40 | Documentation & Launch | ✅ Complete |
 
-### v6.0 Phase Progress
+### v5.1 Ring Visual Enhancement (In Progress)
+| Phase | Name | Status |
+|-------|------|--------|
+| 41.2 | Internal Plasma Core | ⏳ Ready to plan |
+| 41.3 | Obsidian Mirror Effect | ⏳ Not started |
+| 41.4 | Energy Contrast System | ⏳ Not started |
+| 41.5 | Dynamic Fog Coupling | ⏳ Not started |
+| 41.6 | Suspenseful Transitions | ⏳ Not started |
+| 41.7 | Color Temperature Mastery | ⏳ Not started |
+| 41.8 | Reference Image Parity | ⏳ Not started |
+
+### v6.0 Phase Progress (Paused)
 | Phase | Name | Status |
 |-------|------|--------|
 | 41 | Knowledge Research Foundation | ✅ Complete |
@@ -375,10 +387,11 @@ None yet.
 - v5.0 created: Premium Visual Experience - 17 phases covering 3D ring, particles, neon trails, glass depth, sound design, and Apple-level polish (Phases 24-40)
 - v6.0 created: Optimization Intelligence Core - 10 phases (41-50) focusing on deep Gemini research, hardware synergy database, settings interaction engine, macOS/Windows optimization cores, configuration calculator, knowledge graph, and real-time adaptation
 - v7.0 created: Chess Mastery Experience - 8 phases (51-58) covering quick access, puzzles, game import, personal AI clone, Opta Ring tutoring, premium board UI, and customization
+- v5.1 created: Ring Visual Enhancement - 7 phases (41.2-41.8) addressing gaps between current 3D ring and reference images: internal plasma, obsidian depth, fog coupling, suspenseful transitions, color temperature mastery
 
 ## Session Continuity
 
 Last session: 2026-01-18
-Stopped at: Completed 42-04-PLAN.md (M-Series Thermal Profile Database)
+Stopped at: Created Milestone v5.1 Ring Visual Enhancement
 Resume file: None
-Next action: Execute 42-05-PLAN.md (Synergy Calculation Engine)
+Next action: Plan Phase 41.2 (Internal Plasma Core) - GLSL noise research needed
