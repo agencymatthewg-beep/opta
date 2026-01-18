@@ -41,9 +41,11 @@ export {
   type RingShaderUniforms,
   type RingShaderConfig,
   type RingShaderPreset,
+  type TransitionType,
   // Constants
   RING_COLORS,
   ringShaderPresets,
+  TRANSITION_TYPE,
   // Creation functions
   createRingShaderUniforms,
   createRingShader,
@@ -60,6 +62,15 @@ export {
   setRingEnvReflection,
   setRingSpecularSharpness,
   setRingObsidianMirror,
+  // Phase 41.6: Suspenseful Transition functions
+  startPowerUpTransition,
+  startPowerDownTransition,
+  startEnergyTransition,
+  setTransitionProgress,
+  clearTransition,
+  setAnticipationIntensity,
+  isTransitionActive,
+  getTransitionType,
   // Disposal
   disposeRingShader,
 } from './RingShader';

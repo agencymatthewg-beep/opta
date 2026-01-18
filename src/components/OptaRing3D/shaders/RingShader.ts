@@ -29,6 +29,16 @@
  * - uDormantRimIntensity: very low (0.15) for near-invisibility
  * - uActiveRimIntensity: high (2.5) for bright, energetic glow
  *
+ * Phase 41.6: Suspenseful Transitions
+ * - Easing-based transition curves for smooth energy changes
+ * - Suspenseful ramp-up effect before full activation (anticipation pulse)
+ * - Subtle pulsing during transition states building toward climax
+ * - Graceful power-down sequence with lingering afterglow
+ * - uTransitionProgress: 0-1 progress through current transition
+ * - uTransitionType: 0=none, 1=power-up, 2=power-down
+ * - uPreviousEnergy: energy level at start of transition (for afterglow)
+ * - uAnticipationIntensity: controls pre-activation pulse strength
+ *
  * The shader creates a premium obsidian glass look that responds
  * dynamically to the ring's state and energy level, with internal
  * plasma that tells the energy story at a glance.
@@ -104,6 +114,14 @@ export interface RingShaderUniforms {
   uDormantRimIntensity: Uniform<number>;
   /** Rim intensity multiplier for active state - high = bright glow (41.4) */
   uActiveRimIntensity: Uniform<number>;
+  /** Transition progress 0-1 (41.6) */
+  uTransitionProgress: Uniform<number>;
+  /** Transition type: 0=none, 1=power-up, 2=power-down (41.6) */
+  uTransitionType: Uniform<number>;
+  /** Previous energy level at transition start - for afterglow (41.6) */
+  uPreviousEnergy: Uniform<number>;
+  /** Anticipation pulse intensity 0-1 (41.6) */
+  uAnticipationIntensity: Uniform<number>;
 }
 
 /**
@@ -132,6 +150,8 @@ export interface RingShaderConfig {
   dormantRimIntensity?: number;
   /** Rim intensity multiplier for active state - high = bright glow (41.4) */
   activeRimIntensity?: number;
+  /** Anticipation pulse intensity for power-up transitions 0-1 (41.6) */
+  anticipationIntensity?: number;
 }
 
 // =============================================================================
@@ -223,6 +243,11 @@ uniform float uDormantFresnelPower;
 uniform float uActiveFresnelPower;
 uniform float uDormantRimIntensity;
 uniform float uActiveRimIntensity;
+// Phase 41.6: Suspenseful Transitions
+uniform float uTransitionProgress;
+uniform float uTransitionType;     // 0=none, 1=power-up, 2=power-down
+uniform float uPreviousEnergy;
+uniform float uAnticipationIntensity;
 
 // Varyings from vertex shader
 varying vec3 vNormal;
@@ -454,6 +479,131 @@ float calculateEnergyRimIntensity(float dormantIntensity, float activeIntensity,
 }
 
 // =============================================================================
+// SUSPENSEFUL TRANSITIONS (41.6)
+// =============================================================================
+
+/**
+ * Ease-in-out-back curve for dramatic transitions
+ * Creates overshoot effect at end for impactful arrival
+ *
+ * @param t - Input progress 0-1
+ * @return Eased value with slight overshoot
+ */
+float easeInOutBack(float t) {
+  float c1 = 1.70158;
+  float c2 = c1 * 1.525;
+
+  if (t < 0.5) {
+    return (pow(2.0 * t, 2.0) * ((c2 + 1.0) * 2.0 * t - c2)) / 2.0;
+  } else {
+    return (pow(2.0 * t - 2.0, 2.0) * ((c2 + 1.0) * (t * 2.0 - 2.0) + c2) + 2.0) / 2.0;
+  }
+}
+
+/**
+ * Ease-out-expo for graceful power-down deceleration
+ * Energy trails off naturally with lingering afterglow
+ *
+ * @param t - Input progress 0-1
+ * @return Eased value with exponential deceleration
+ */
+float easeOutExpo(float t) {
+  return t >= 1.0 ? 1.0 : 1.0 - pow(2.0, -10.0 * t);
+}
+
+/**
+ * Ease-in-expo for building anticipation
+ * Slow start that accelerates dramatically
+ *
+ * @param t - Input progress 0-1
+ * @return Eased value with exponential acceleration
+ */
+float easeInExpo(float t) {
+  return t <= 0.0 ? 0.0 : pow(2.0, 10.0 * t - 10.0);
+}
+
+/**
+ * Calculate anticipation pulse during power-up ramp
+ * Creates subtle pulsing that builds before full activation
+ * Pulse frequency increases as transition progresses
+ *
+ * @param progress - Transition progress 0-1
+ * @param time - Animation time
+ * @param intensity - Base pulse intensity 0-1
+ * @return Anticipation pulse contribution 0-1
+ */
+float calculateAnticipationPulse(float progress, float time, float intensity) {
+  if (intensity <= 0.0 || progress >= 1.0) return 0.0;
+
+  // Pulse is strongest in the middle of transition (0.3-0.7 range)
+  float pulseWindow = smoothstep(0.1, 0.4, progress) * (1.0 - smoothstep(0.7, 0.95, progress));
+
+  // Frequency increases as we approach activation
+  float baseFreq = 3.0;
+  float freqRamp = 1.0 + progress * 4.0; // 3Hz -> 15Hz
+  float freq = baseFreq * freqRamp;
+
+  // Pulse amplitude with subtle variation
+  float pulse = sin(time * freq * PI * 2.0) * 0.5 + 0.5;
+
+  // Add secondary faster pulse for complexity
+  float pulse2 = sin(time * freq * 1.7 * PI * 2.0) * 0.5 + 0.5;
+  pulse = mix(pulse, pulse2, 0.3);
+
+  // Scale by window and intensity
+  return pulse * pulseWindow * intensity * 0.4;
+}
+
+/**
+ * Calculate afterglow effect during power-down
+ * Creates lingering warmth that fades gracefully
+ *
+ * @param progress - Transition progress 0-1 (0=start of power-down)
+ * @param previousEnergy - Energy level before power-down started
+ * @return Afterglow contribution 0-1
+ */
+float calculateAfterglow(float progress, float previousEnergy) {
+  if (previousEnergy <= 0.0) return 0.0;
+
+  // Afterglow is strongest at the start, fades with exponential decay
+  float decayRate = 3.0; // How quickly afterglow fades
+  float glow = previousEnergy * exp(-progress * decayRate);
+
+  // Add subtle pulsing during decay (dying ember effect)
+  float emberPulse = sin(progress * PI * 4.0) * 0.1 + 0.9;
+  glow *= emberPulse;
+
+  return glow * 0.3; // Scale down to be subtle
+}
+
+/**
+ * Apply transition easing to energy level
+ * Different curves for power-up vs power-down
+ *
+ * @param currentEnergy - Current energy level 0-1
+ * @param previousEnergy - Previous energy level 0-1
+ * @param progress - Transition progress 0-1
+ * @param transitionType - 0=none, 1=power-up, 2=power-down
+ * @return Eased energy value
+ */
+float applyTransitionEasing(float currentEnergy, float previousEnergy, float progress, float transitionType) {
+  if (transitionType < 0.5) {
+    // No transition - return current energy
+    return currentEnergy;
+  }
+
+  if (transitionType < 1.5) {
+    // Power-up: ease-in-out-back for dramatic activation
+    float easedProgress = easeInOutBack(progress);
+    return mix(previousEnergy, currentEnergy, easedProgress);
+  } else {
+    // Power-down: ease-out-expo for graceful deceleration
+    float easedProgress = easeOutExpo(progress);
+    return mix(previousEnergy, currentEnergy, easedProgress);
+  }
+}
+
+// =============================================================================
 // SUBSURFACE SCATTERING SIMULATION (25-03)
 // =============================================================================
 
@@ -648,26 +798,58 @@ void main() {
   vec3 lightDir = normalize(vec3(0.5, 0.5, -0.3));
 
   // ==========================================================================
+  // SUSPENSEFUL TRANSITIONS (41.6)
+  // ==========================================================================
+
+  // Apply transition easing to energy level for smooth, dramatic changes
+  float effectiveEnergy = applyTransitionEasing(
+    uEnergyLevel,
+    uPreviousEnergy,
+    uTransitionProgress,
+    uTransitionType
+  );
+
+  // Calculate anticipation pulse (only during power-up transitions)
+  float anticipation = 0.0;
+  if (uTransitionType > 0.5 && uTransitionType < 1.5) {
+    anticipation = calculateAnticipationPulse(
+      uTransitionProgress,
+      uTime,
+      uAnticipationIntensity
+    );
+    // Add anticipation to effective energy for building tension
+    effectiveEnergy = min(1.0, effectiveEnergy + anticipation);
+  }
+
+  // Calculate afterglow (only during power-down transitions)
+  float afterglow = 0.0;
+  if (uTransitionType > 1.5) {
+    afterglow = calculateAfterglow(uTransitionProgress, uPreviousEnergy);
+  }
+
+  // ==========================================================================
   // FRESNEL CALCULATION (25-01 + 41.4 Energy Contrast System)
   // ==========================================================================
 
   // Phase 41.4: Energy-driven fresnel power interpolation
   // Dormant: high power (8.0) = tight, minimal rim
   // Active: low power (1.5) = wide, dramatic rim
+  // Phase 41.6: Uses eased energy for smooth transitions
   float fresnelPower = calculateEnergyFresnelPower(
     uDormantFresnelPower,
     uActiveFresnelPower,
-    uEnergyLevel
+    effectiveEnergy
   );
   float fresnel = calculateFresnel(normal, viewDir, fresnelPower, uFresnelBias);
 
   // Phase 41.4: Energy-driven rim intensity for dramatic contrast
   // Dormant: very low intensity (0.15) = nearly invisible
   // Active: high intensity (2.5) = bright, energetic glow
+  // Phase 41.6: Uses eased energy for smooth transitions
   float rimIntensityMultiplier = calculateEnergyRimIntensity(
     uDormantRimIntensity,
     uActiveRimIntensity,
-    uEnergyLevel
+    effectiveEnergy
   );
 
   // ==========================================================================
@@ -692,15 +874,21 @@ void main() {
   );
 
   // ==========================================================================
-  // EMISSIVE INTENSITY (25-02 + 41.4 Energy Contrast System)
+  // EMISSIVE INTENSITY (25-02 + 41.4 Energy Contrast System + 41.6 Transitions)
   // ==========================================================================
 
-  float emissiveIntensity = calculateEmissiveIntensity(uEnergyLevel, 1.0);
+  // Phase 41.6: Use effectiveEnergy for smooth transition-aware emissive
+  float emissiveIntensity = calculateEmissiveIntensity(effectiveEnergy, 1.0);
 
   // Fresnel-enhanced emissive (rim glows more)
   // Phase 41.4: Apply rim intensity multiplier for dramatic contrast
   // Dormant: nearly invisible rim | Active: bright energetic glow
   vec3 rimEmissive = baseColor * fresnel * emissiveIntensity * rimIntensityMultiplier;
+
+  // Phase 41.6: Add afterglow contribution during power-down
+  if (afterglow > 0.0) {
+    rimEmissive += uColorActive * fresnel * afterglow * 0.5;
+  }
 
   // ==========================================================================
   // SUBSURFACE SCATTERING (25-03)
@@ -710,12 +898,13 @@ void main() {
   vec3 sssColor = uColorActive * sss * 0.8; // Use active color for inner glow
 
   // ==========================================================================
-  // INTERNAL PLASMA CORE (41.2)
+  // INTERNAL PLASMA CORE (41.2 + 41.6 Transitions)
   // ==========================================================================
 
   // Animated position: UV + slow time offset based on energy
   // Slow churning (dormant) -> rapid movement (max energy)
-  float flowSpeed = mix(0.02, 0.12, uEnergyLevel);
+  // Phase 41.6: Use effectiveEnergy for smooth transition-aware flow
+  float flowSpeed = mix(0.02, 0.12, effectiveEnergy);
   vec3 plasmaPos = vec3(
     vUv.x * 4.0,                              // Scale UV for detail
     vUv.y * 4.0,
@@ -726,11 +915,11 @@ void main() {
   float angle = uTime * flowSpeed * 0.5;
   plasmaPos.xy += vec2(sin(angle), cos(angle)) * 0.2;
 
-  // Calculate plasma intensity
-  float plasmaValue = plasma(plasmaPos, uEnergyLevel);
+  // Calculate plasma intensity - use effectiveEnergy for transition awareness
+  float plasmaValue = plasma(plasmaPos, effectiveEnergy);
 
-  // Get energy-appropriate plasma color
-  vec3 plasmaColor = getPlasmaColor(uEnergyLevel);
+  // Get energy-appropriate plasma color - use effectiveEnergy
+  vec3 plasmaColor = getPlasmaColor(effectiveEnergy);
 
   // Fresnel-based depth illusion: plasma visible when looking at surface,
   // fades at edges where glass rim lighting dominates
@@ -739,7 +928,9 @@ void main() {
 
   // Energy-driven plasma intensity
   // Even at 0% energy, subtle plasma is visible (sleeping, not dead)
-  float plasmaIntensity = mix(0.15, 0.85, uEnergyLevel);
+  // Phase 41.6: Use effectiveEnergy and add afterglow warmth
+  float plasmaIntensity = mix(0.15, 0.85, effectiveEnergy);
+  plasmaIntensity += afterglow * 0.2; // Afterglow warms the plasma during power-down
 
   // Final plasma contribution
   vec3 plasmaContribution = plasmaColor * plasmaValue * plasmaDepth * plasmaIntensity;
@@ -792,7 +983,7 @@ void main() {
   float ao = 1.0 - fresnel * 0.3;
 
   // ==========================================================================
-  // COMBINE ALL EFFECTS
+  // COMBINE ALL EFFECTS (41.6: use effectiveEnergy for transition awareness)
   // ==========================================================================
 
   // Surface contribution - darker base for obsidian look
@@ -800,16 +991,19 @@ void main() {
 
   // Add obsidian mirror reflection (41.3)
   // Reflection is more visible when energy is low (dormant obsidian look)
-  float reflectionWeight = mix(1.0, 0.6, uEnergyLevel);
+  // Phase 41.6: Use effectiveEnergy for smooth transition
+  float reflectionWeight = mix(1.0, 0.6, effectiveEnergy);
   surfaceColor += obsidianReflection * reflectionWeight;
 
   // Add mirror specular highlights (41.3)
   // Sharp specular creates polished glass appearance
-  float specWeight = mix(0.8, 1.2, uEnergyLevel); // Brighter when active
+  // Phase 41.6: Use effectiveEnergy for smooth transition
+  float specWeight = mix(0.8, 1.2, effectiveEnergy); // Brighter when active
   surfaceColor += mirrorSpecContribution * specWeight * uMirrorReflectivity;
 
   // Add standard specular (reduced, mirror specular dominates)
-  surfaceColor += vec3(1.0) * specular * 0.2 * (1.0 + uEnergyLevel);
+  // Phase 41.6: Use effectiveEnergy for smooth transition
+  surfaceColor += vec3(1.0) * specular * 0.2 * (1.0 + effectiveEnergy);
 
   // Add rim emissive (fresnel glow)
   surfaceColor += rimEmissive;
@@ -863,6 +1057,8 @@ const defaultRingConfig: Required<RingShaderConfig> = {
   activeFresnelPower: 1.5,     // Low = wide, dramatic rim when active
   dormantRimIntensity: 0.15,   // Very low = nearly invisible when dormant
   activeRimIntensity: 2.5,     // High = bright energetic glow when active
+  // Phase 41.6: Suspenseful Transitions defaults
+  anticipationIntensity: 0.6,  // Moderate anticipation pulse during power-up
 };
 
 /**
@@ -924,6 +1120,11 @@ export function createRingShaderUniforms(config: RingShaderConfig = {}): RingSha
     uActiveFresnelPower: { value: mergedConfig.activeFresnelPower },
     uDormantRimIntensity: { value: mergedConfig.dormantRimIntensity },
     uActiveRimIntensity: { value: mergedConfig.activeRimIntensity },
+    // Phase 41.6: Suspenseful Transitions uniforms
+    uTransitionProgress: { value: 0 },              // No active transition
+    uTransitionType: { value: 0 },                  // 0=none, 1=power-up, 2=power-down
+    uPreviousEnergy: { value: mergedConfig.energyLevel }, // Previous = current at init
+    uAnticipationIntensity: { value: mergedConfig.anticipationIntensity },
   };
 }
 
@@ -1245,6 +1446,162 @@ export function setRingEnergyContrast(
   }
 }
 
+// =============================================================================
+// SUSPENSEFUL TRANSITIONS (41.6)
+// =============================================================================
+
+/**
+ * Transition type constants for clarity
+ */
+export const TRANSITION_TYPE = {
+  NONE: 0,
+  POWER_UP: 1,
+  POWER_DOWN: 2,
+} as const;
+
+export type TransitionType = typeof TRANSITION_TYPE[keyof typeof TRANSITION_TYPE];
+
+/**
+ * Start a power-up transition with suspenseful anticipation
+ * Captures previous energy and begins dramatic ramp-up
+ *
+ * @param material - The ring shader material
+ * @param targetEnergy - Target energy level (0-1)
+ */
+export function startPowerUpTransition(
+  material: ShaderMaterial,
+  targetEnergy: number
+): void {
+  const uniforms = material.uniforms as unknown as RingShaderUniforms;
+
+  // Capture current energy as previous for transition interpolation
+  uniforms.uPreviousEnergy.value = uniforms.uEnergyLevel.value;
+
+  // Set target energy
+  uniforms.uEnergyLevel.value = Math.max(0, Math.min(1, targetEnergy));
+
+  // Initialize transition
+  uniforms.uTransitionProgress.value = 0;
+  uniforms.uTransitionType.value = TRANSITION_TYPE.POWER_UP;
+}
+
+/**
+ * Start a power-down transition with graceful afterglow
+ * Captures previous energy for lingering warmth effect
+ *
+ * @param material - The ring shader material
+ * @param targetEnergy - Target energy level (0-1)
+ */
+export function startPowerDownTransition(
+  material: ShaderMaterial,
+  targetEnergy: number
+): void {
+  const uniforms = material.uniforms as unknown as RingShaderUniforms;
+
+  // Capture current energy for afterglow calculation
+  uniforms.uPreviousEnergy.value = uniforms.uEnergyLevel.value;
+
+  // Set target energy
+  uniforms.uEnergyLevel.value = Math.max(0, Math.min(1, targetEnergy));
+
+  // Initialize transition
+  uniforms.uTransitionProgress.value = 0;
+  uniforms.uTransitionType.value = TRANSITION_TYPE.POWER_DOWN;
+}
+
+/**
+ * Update transition progress - call each frame during active transitions
+ * Progress should go from 0 to 1 over the desired transition duration
+ *
+ * @param material - The ring shader material
+ * @param progress - Transition progress 0-1
+ */
+export function setTransitionProgress(
+  material: ShaderMaterial,
+  progress: number
+): void {
+  const uniforms = material.uniforms as unknown as RingShaderUniforms;
+  uniforms.uTransitionProgress.value = Math.max(0, Math.min(1, progress));
+
+  // Auto-clear transition when complete
+  if (progress >= 1) {
+    uniforms.uTransitionType.value = TRANSITION_TYPE.NONE;
+    uniforms.uPreviousEnergy.value = uniforms.uEnergyLevel.value;
+  }
+}
+
+/**
+ * Clear any active transition immediately
+ * Useful for interrupting transitions with new state changes
+ *
+ * @param material - The ring shader material
+ */
+export function clearTransition(material: ShaderMaterial): void {
+  const uniforms = material.uniforms as unknown as RingShaderUniforms;
+  uniforms.uTransitionType.value = TRANSITION_TYPE.NONE;
+  uniforms.uTransitionProgress.value = 0;
+  uniforms.uPreviousEnergy.value = uniforms.uEnergyLevel.value;
+}
+
+/**
+ * Set anticipation pulse intensity for power-up transitions
+ *
+ * @param material - The ring shader material
+ * @param intensity - Anticipation intensity 0-1 (0.5-0.8 recommended)
+ */
+export function setAnticipationIntensity(
+  material: ShaderMaterial,
+  intensity: number
+): void {
+  const uniforms = material.uniforms as unknown as RingShaderUniforms;
+  uniforms.uAnticipationIntensity.value = Math.max(0, Math.min(1, intensity));
+}
+
+/**
+ * Check if a transition is currently active
+ *
+ * @param material - The ring shader material
+ * @returns true if a transition is in progress
+ */
+export function isTransitionActive(material: ShaderMaterial): boolean {
+  const uniforms = material.uniforms as unknown as RingShaderUniforms;
+  return uniforms.uTransitionType.value !== TRANSITION_TYPE.NONE &&
+         uniforms.uTransitionProgress.value < 1;
+}
+
+/**
+ * Get current transition type
+ *
+ * @param material - The ring shader material
+ * @returns Current transition type (0=none, 1=power-up, 2=power-down)
+ */
+export function getTransitionType(material: ShaderMaterial): TransitionType {
+  const uniforms = material.uniforms as unknown as RingShaderUniforms;
+  return uniforms.uTransitionType.value as TransitionType;
+}
+
+/**
+ * Convenience function to start appropriate transition based on energy delta
+ * Automatically chooses power-up or power-down based on target vs current
+ *
+ * @param material - The ring shader material
+ * @param targetEnergy - Target energy level (0-1)
+ */
+export function startEnergyTransition(
+  material: ShaderMaterial,
+  targetEnergy: number
+): void {
+  const uniforms = material.uniforms as unknown as RingShaderUniforms;
+  const currentEnergy = uniforms.uEnergyLevel.value;
+
+  if (targetEnergy > currentEnergy) {
+    startPowerUpTransition(material, targetEnergy);
+  } else if (targetEnergy < currentEnergy) {
+    startPowerDownTransition(material, targetEnergy);
+  }
+  // If equal, no transition needed
+}
+
 /**
  * Dispose ring shader material and free GPU resources
  */
@@ -1260,6 +1617,7 @@ export function disposeRingShader(material: ShaderMaterial): void {
  * Shader presets for common ring states
  * Updated with Phase 41.3 obsidian mirror settings
  * Updated with Phase 41.4 energy contrast system settings
+ * Updated with Phase 41.6 suspenseful transition settings
  */
 export const ringShaderPresets = {
   /** Default dormant state - nearly invisible rim, maximum obsidian reflection */
@@ -1276,6 +1634,8 @@ export const ringShaderPresets = {
     activeFresnelPower: 1.5,      // (not used at 0 energy)
     dormantRimIntensity: 0.15,    // Nearly invisible
     activeRimIntensity: 2.5,      // (not used at 0 energy)
+    // Phase 41.6: Subtle anticipation when waking from dormant
+    anticipationIntensity: 0.5,
   },
   /** Active state - bright energetic rim glow, reduced reflection */
   active: {
@@ -1291,6 +1651,8 @@ export const ringShaderPresets = {
     activeFresnelPower: 1.5,      // Wide dramatic rim
     dormantRimIntensity: 0.15,
     activeRimIntensity: 2.5,      // Bright glow
+    // Phase 41.6: Strong anticipation for dramatic activation
+    anticipationIntensity: 0.7,
   },
   /** Processing state - pulsing between states */
   processing: {
@@ -1306,6 +1668,8 @@ export const ringShaderPresets = {
     activeFresnelPower: 1.5,
     dormantRimIntensity: 0.15,
     activeRimIntensity: 2.5,
+    // Phase 41.6: Moderate anticipation
+    anticipationIntensity: 0.6,
   },
   /** Exploding state - maximum energy, intense rim, plasma-dominated */
   exploding: {
@@ -1321,6 +1685,8 @@ export const ringShaderPresets = {
     activeFresnelPower: 1.2,      // Extra wide for explosion
     dormantRimIntensity: 0.15,
     activeRimIntensity: 3.5,      // Extra bright for explosion
+    // Phase 41.6: Maximum anticipation for explosion buildup
+    anticipationIntensity: 0.9,
   },
 } as const;
 
