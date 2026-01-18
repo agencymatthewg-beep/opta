@@ -624,5 +624,203 @@
       "source": "Apple Silicon Architecture",
       "sourceDate": "2024"
     }
-  ]
+  ],
+  "heuristics": [
+    {
+      "id": "memory-pressure-detection",
+      "name": "Memory Pressure Detection",
+      "description": "How to detect when unified memory is limiting performance",
+      "indicators": [
+        "Memory pressure indicator in Activity Monitor shows yellow/red",
+        "Swap usage > 0 during gaming (check Activity Monitor Memory tab)",
+        "Frame time spikes correlating with disk activity",
+        "Texture pop-in visible in games (late texture loading)",
+        "UI stuttering when switching between applications",
+        "Memory Used exceeds 80% of total unified memory"
+      ],
+      "remediation": [
+        "Close background applications (browsers, Electron apps like Slack/Discord)",
+        "Reduce texture quality in game settings",
+        "Lower resolution if memory-bound rather than GPU-bound",
+        "Check for memory leaks in long-running apps",
+        "Restart problematic apps that have grown memory footprint",
+        "Disable browser extensions that consume memory"
+      ],
+      "applicableTo": ["all"]
+    },
+    {
+      "id": "bandwidth-saturation-detection",
+      "name": "Bandwidth Saturation Detection",
+      "description": "How to detect when memory bandwidth is the bottleneck rather than GPU compute",
+      "indicators": [
+        "GPU utilization high (>90%) but frame rate lower than expected",
+        "Performance improves significantly when reducing resolution",
+        "Minimal improvement from lowering graphics quality (shadows, effects)",
+        "Frame rate scales linearly with resolution reduction",
+        "Activity Monitor shows memory pressure but swap usage is minimal"
+      ],
+      "remediation": [
+        "Enable MetalFX upscaling to reduce effective resolution",
+        "Lower internal render resolution in games that support it",
+        "Reduce texture quality and streaming distances",
+        "Consider chip upgrade to Pro/Max tier for bandwidth-heavy workloads",
+        "Use FSR or other temporal upscaling if available"
+      ],
+      "applicableTo": ["M1", "M2", "M3", "M4"]
+    },
+    {
+      "id": "optimal-memory-allocation",
+      "name": "Optimal Memory Allocation by Workload",
+      "description": "Guidance on how unified memory is typically allocated between CPU and GPU tasks",
+      "indicators": [
+        "Gaming: GPU claims 50-70% for textures and buffers, CPU needs rest for game logic",
+        "Video editing: Timeline preview uses GPU memory, source files cached by CPU",
+        "3D rendering: Large scenes need both GPU (viewport) and CPU (geometry) allocations",
+        "ML inference: Model weights reside in shared space, activations use remainder"
+      ],
+      "remediation": [
+        "Gaming: Leave 4-6GB headroom for macOS and background tasks",
+        "Video editing: ProRes previews require less memory than H.264/HEVC",
+        "3D rendering: Simplify viewport to reduce GPU allocation during editing",
+        "ML: Use quantized models to reduce memory footprint significantly"
+      ],
+      "applicableTo": ["all"]
+    },
+    {
+      "id": "vram-estimation-for-games",
+      "name": "VRAM Estimation for Games (UMA Systems)",
+      "description": "How to estimate effective VRAM requirements since UMA doesn't have dedicated VRAM",
+      "indicators": [
+        "Game's minimum/recommended VRAM spec indicates GPU memory needs",
+        "Ultra/Epic textures typically require 8-12GB effective VRAM",
+        "High settings typically require 6-8GB effective VRAM",
+        "Medium settings typically require 4-6GB effective VRAM",
+        "Add 4-6GB for macOS system + background apps"
+      ],
+      "remediation": [
+        "8GB unified: Low-Medium settings, 1080p, minimal background apps",
+        "16GB unified: Medium-High settings, 1080p-1440p, some background apps acceptable",
+        "24GB unified: High-Ultra settings, 1440p native, comfortable multitasking",
+        "32GB+ unified: Ultra settings, 4K with MetalFX, professional workflows alongside gaming"
+      ],
+      "formula": {
+        "expression": "game_vram_requirement + system_overhead + background_apps",
+        "variables": {
+          "game_vram_requirement": "Stated VRAM requirement at desired quality level",
+          "system_overhead": "4GB baseline for macOS",
+          "background_apps": "2-4GB for typical browser, chat apps"
+        }
+      },
+      "applicableTo": ["all"]
+    }
+  ],
+  "memoryTiers": {
+    "casual-gaming-1080p": {
+      "minimum": 8,
+      "recommended": 16,
+      "optimal": 16,
+      "unit": "GB",
+      "notes": "8GB works for older/indie titles; 16GB provides comfortable headroom for modern games"
+    },
+    "serious-gaming-1440p": {
+      "minimum": 16,
+      "recommended": 24,
+      "optimal": 32,
+      "unit": "GB",
+      "notes": "16GB tight for AAA titles; 24GB handles most games with background apps"
+    },
+    "4k-gaming": {
+      "minimum": 24,
+      "recommended": 32,
+      "optimal": 64,
+      "unit": "GB",
+      "notes": "Native 4K is extremely demanding; MetalFX essential for sub-Max chips"
+    },
+    "video-editing-1080p": {
+      "minimum": 8,
+      "recommended": 16,
+      "optimal": 24,
+      "unit": "GB",
+      "notes": "1080p timelines manageable on 8GB; 16GB for multi-layer projects"
+    },
+    "video-editing-4k": {
+      "minimum": 16,
+      "recommended": 32,
+      "optimal": 64,
+      "unit": "GB",
+      "notes": "ProRes workflows more efficient than H.264/HEVC"
+    },
+    "video-editing-8k": {
+      "minimum": 32,
+      "recommended": 64,
+      "optimal": 128,
+      "unit": "GB",
+      "notes": "Max/Ultra chips strongly recommended for 8K workflows"
+    },
+    "3d-rendering-hobby": {
+      "minimum": 16,
+      "recommended": 32,
+      "optimal": 64,
+      "unit": "GB",
+      "notes": "Complex scenes quickly exceed 16GB; 32GB provides comfortable working space"
+    },
+    "3d-rendering-professional": {
+      "minimum": 32,
+      "recommended": 64,
+      "optimal": 128,
+      "unit": "GB",
+      "notes": "Production scenes with assets often exceed 32GB; Max/Ultra recommended"
+    },
+    "ml-inference-small": {
+      "minimum": 8,
+      "recommended": 16,
+      "optimal": 24,
+      "unit": "GB",
+      "notes": "7B parameter quantized models fit in 8GB; 16GB provides headroom"
+    },
+    "ml-inference-large": {
+      "minimum": 32,
+      "recommended": 64,
+      "optimal": 128,
+      "unit": "GB",
+      "notes": "70B+ parameter models require 64GB+; quantization helps but limits quality"
+    },
+    "ml-training": {
+      "minimum": 32,
+      "recommended": 64,
+      "optimal": 192,
+      "unit": "GB",
+      "notes": "Training requires 2-3x inference memory; cloud GPU often more practical"
+    },
+    "software-development": {
+      "minimum": 8,
+      "recommended": 16,
+      "optimal": 32,
+      "unit": "GB",
+      "notes": "IDEs, simulators, containers add up; 16GB minimum for iOS development"
+    },
+    "general-productivity": {
+      "minimum": 8,
+      "recommended": 16,
+      "optimal": 24,
+      "unit": "GB",
+      "notes": "Modern web browsers consume 4-8GB alone; 16GB provides comfortable multitasking"
+    }
+  },
+  "bandwidthSpecs": {
+    "M1": { "bandwidth": 68.25, "unit": "GB/s", "memoryOptions": [8, 16] },
+    "M1 Pro": { "bandwidth": 200, "unit": "GB/s", "memoryOptions": [16, 32] },
+    "M1 Max": { "bandwidth": 400, "unit": "GB/s", "memoryOptions": [32, 64] },
+    "M1 Ultra": { "bandwidth": 800, "unit": "GB/s", "memoryOptions": [64, 128] },
+    "M2": { "bandwidth": 100, "unit": "GB/s", "memoryOptions": [8, 16, 24] },
+    "M2 Pro": { "bandwidth": 200, "unit": "GB/s", "memoryOptions": [16, 32] },
+    "M2 Max": { "bandwidth": 400, "unit": "GB/s", "memoryOptions": [32, 64, 96] },
+    "M2 Ultra": { "bandwidth": 800, "unit": "GB/s", "memoryOptions": [64, 128, 192] },
+    "M3": { "bandwidth": 100, "unit": "GB/s", "memoryOptions": [8, 16, 24] },
+    "M3 Pro": { "bandwidth": 150, "unit": "GB/s", "memoryOptions": [18, 36] },
+    "M3 Max": { "bandwidth": 400, "unit": "GB/s", "memoryOptions": [36, 48, 64, 128] },
+    "M4": { "bandwidth": 120, "unit": "GB/s", "memoryOptions": [16, 24, 32] },
+    "M4 Pro": { "bandwidth": 273, "unit": "GB/s", "memoryOptions": [24, 48, 64] },
+    "M4 Max": { "bandwidth": 546, "unit": "GB/s", "memoryOptions": [36, 64, 128] }
+  }
 }
