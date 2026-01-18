@@ -10,3 +10,6 @@
 
 export { LessonOverlay } from './LessonOverlay';
 export type { LessonOverlayProps } from './LessonOverlay';
+
+export { CongratulationBurst, useCongratulationBurst } from './CongratulationBurst';
+export type { CongratulationBurstProps } from './CongratulationBurst';
