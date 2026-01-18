@@ -11,8 +11,9 @@ Opta transforms from an empty Tauri scaffold into a full-featured AI-powered PC 
 - 📋 **v2.0 Social, Chess & Windows** - Phases 16-18 (planned)
 - ✅ **v3.0 Native Platforms** - Phase 19 (shipped 2026-01-17)
 - ✅ **v4.0 Rich Features** - Phases 20-23 (shipped 2026-01-17)
-- 🚧 **v5.0 Premium Visual Experience** - Phases 24-40 (in progress)
-- 🚧 **v6.0 Optimization Intelligence Core** - Phases 41-50 (in progress)
+- ✅ **v5.0 Premium Visual Experience** - Phases 24-40 (shipped 2026-01-18)
+- 🚧 **v5.1 Ring Visual Enhancement** - Phases 41.2-41.8 (in progress)
+- 🚧 **v6.0 Optimization Intelligence Core** - Phases 41-50 (paused for v5.1)
 - 📋 **v7.0 Chess Mastery Experience** - Phases 51-58 (planned)
 
 ## Domain Expertise
@@ -69,7 +70,15 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 38: High-End Performance Optimization** - Dynamic quality, LOD, 60fps target (v5.0)
 - [ ] **Phase 39: Visual Polish & QA** - Pixel-perfect audit, animation timing, edge cases (v5.0)
 - [ ] **Phase 40: Documentation & Launch** - Style guide, showcase video, release (v5.0)
-- [ ] **Phase 41: Knowledge Research Foundation** - Gemini deep research: GPU architectures, CPU optimization, VRAM management (v6.0)
+- [x] **Phase 41: Knowledge Research Foundation** - Gemini deep research: GPU architectures, CPU optimization, VRAM management (v6.0)
+- [x] **Phase 41.1: Knowledge Architecture System** - INSERTED: 5-tier hierarchical knowledge storage for extracted research data (v6.0)
+- [ ] **Phase 41.2: Internal Plasma Core** - INSERTED: Animated noise/plasma texture swirling inside the glass (v5.1)
+- [ ] **Phase 41.3: Obsidian Mirror Effect** - INSERTED: Deep reflective black quality in dormant state (v5.1)
+- [ ] **Phase 41.4: Energy Contrast System** - INSERTED: Dramatic fresnel contrast, dormant invisible to active bright (v5.1)
+- [ ] **Phase 41.5: Dynamic Fog Coupling** - INSERTED: Fog intensity and color tied to ring energy level (v5.1)
+- [ ] **Phase 41.6: Suspenseful Transitions** - INSERTED: Dramatic lighting shifts, tension buildup, cinematic timing (v5.1)
+- [ ] **Phase 41.7: Color Temperature Mastery** - INSERTED: Dormant colorless obsidian to active vibrant purple plasma (v5.1)
+- [ ] **Phase 41.8: Reference Image Parity** - INSERTED: Side-by-side comparison polish to match vision images (v5.1)
 - [ ] **Phase 42: Hardware Synergy Database** - Component interaction matrices, bottleneck calculations, thermal profiles (v6.0)
 - [ ] **Phase 43: Settings Interaction Engine** - Cross-setting dependencies, conflict detection, synergy calculations (v6.0)
 - [ ] **Phase 44: macOS Optimization Core** - Apple Silicon deep optimization, Metal shader hints, power modes (v6.0)
@@ -671,17 +680,92 @@ Plans:
 - [x] 41.1-03: Gemini report extraction and archival
 - [x] 41.1-04: Extraction methodology documentation
 
+### 🚧 v5.1 Ring Visual Enhancement (In Progress)
+
+**Milestone Goal:** Transform the 3D ring from technically solid to emotionally impactful. Address gaps between current implementation and reference images (0%Opta.png, 50%Opta.png): internal plasma, obsidian depth, fog coupling, and suspenseful transitions.
+
+**Assessment Findings:**
+- Technical foundation: 8/10 (solid WebGL, good state machine)
+- Emotional impact: 5/10 (missing "living artifact" feeling)
+- Reference alignment: 6/10 (needs plasma, obsidian depth, fog coupling)
+
+---
+
+#### Phase 41.2: Internal Plasma Core (INSERTED)
+**Goal**: Animated noise/plasma texture swirling inside the glass - the most critical missing element
+**Depends on**: Phase 41.1
+**Research**: Likely (GLSL noise functions, procedural textures)
+**Research topics**: Simplex noise, fbm (fractal Brownian motion), animated procedural textures in GLSL
+
+Plans:
+- [ ] 41.2-01: TBD (run /gsd:plan-phase 41.2 to break down)
+
+#### Phase 41.3: Obsidian Mirror Effect (INSERTED)
+**Goal**: Deep reflective black quality in dormant state, almost invisible until light catches it
+**Depends on**: Phase 41.2
+**Research**: Likely (environment mapping, reflection shaders)
+**Research topics**: Cube map reflections, environment probes, dark glass material techniques
+
+Plans:
+- [ ] 41.3-01: TBD
+
+#### Phase 41.4: Energy Contrast System (INSERTED)
+**Goal**: Dramatic fresnel contrast - dormant nearly invisible, active with bright rim
+**Depends on**: Phase 41.3
+**Research**: Unlikely (shader uniform tuning)
+
+Plans:
+- [ ] 41.4-01: TBD
+
+#### Phase 41.5: Dynamic Fog Coupling (INSERTED)
+**Goal**: Fog intensity and color directly tied to ring energy level, billowing effect on activation
+**Depends on**: Phase 41.4
+**Research**: Unlikely (connecting existing systems)
+
+Plans:
+- [ ] 41.5-01: TBD
+
+#### Phase 41.6: Suspenseful Transitions (INSERTED)
+**Goal**: Dramatic lighting shifts, tension buildup before release, cinematic timing
+**Depends on**: Phase 41.5
+**Research**: Likely (animation choreography, cinematic timing patterns)
+
+Plans:
+- [ ] 41.6-01: TBD
+
+#### Phase 41.7: Color Temperature Mastery (INSERTED)
+**Goal**: Dormant colorless obsidian → active vibrant purple plasma, proper 0%→50% energy visualization
+**Depends on**: Phase 41.6
+**Research**: Unlikely (shader color tuning)
+
+Plans:
+- [ ] 41.7-01: TBD
+
+#### Phase 41.8: Reference Image Parity (INSERTED)
+**Goal**: Side-by-side comparison polish, pixel-level adjustments to match vision images
+**Depends on**: Phase 41.7
+**Research**: Unlikely (QA and tuning)
+
+Plans:
+- [ ] 41.8-01: TBD
+
+---
+
+### 🚧 v6.0 Optimization Intelligence Core (Paused for v5.1)
+
+**Note:** v6.0 paused at Phase 41.1 complete. Resume with Phase 42 after v5.1 ships.
+
 #### Phase 42: Hardware Synergy Database
 **Goal**: Build structured database of component interactions and synergies
 **Depends on**: Phase 41.1 (Knowledge Architecture)
 **Research**: Likely (validation of interaction patterns)
 
 Plans:
-- [ ] 42-01: Component interaction matrix schema design
-- [ ] 42-02: GPU-CPU bottleneck calculation models
-- [ ] 42-03: Memory bandwidth impact calculations
-- [ ] 42-04: Thermal profile database per hardware generation
-- [ ] 42-05: Power budget optimization tables
+- [x] 42-01: Component interaction matrix schema design
+- [x] 42-02: GPU-CPU bottleneck calculation models
+- [x] 42-03: Memory bandwidth impact calculations
+- [x] 42-04: Thermal profile database per hardware generation
+- [x] 42-05: Power budget optimization tables
 
 #### Phase 43: Settings Interaction Engine
 **Goal**: Model how settings interact and affect each other
@@ -925,7 +1009,7 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 → 8 → 8.1 → 9 → 10 → 11 → 12 → 13 → 14 → 15 → 16 → 17 → 19 → 20 → 21 → 22 → 23 → 24 → 25 → 26 → 27 → 28 → 29 → 30 → 31 → 32 → 33 → 34 → 35 → 36 → 37 → 38 → 39 → 40 → 41 → 41.1 → 42 → 43 → 44 → 45 → 46 → 47 → 48 → 49 → 50 → (18 deferred)
+Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 → 8 → 8.1 → 9 → 10 → 11 → 12 → 13 → 14 → 15 → 16 → 17 → 19 → 20 → 21 → 22 → 23 → 24 → 25 → 26 → 27 → 28 → 29 → 30 → 31 → 32 → 33 → 34 → 35 → 36 → 37 → 38 → 39 → 40 → 41 → 41.1 → 41.2 → 41.3 → 41.4 → 41.5 → 41.6 → 41.7 → 41.8 → 42 → 43 → 44 → 45 → 46 → 47 → 48 → 49 → 50 → 51 → 52 → 53 → 54 → 55 → 56 → 57 → 58 → (18 deferred)
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -973,7 +1057,14 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 �
 | 40. Documentation & Launch | v5.0 | 5/5 | Complete | 2026-01-18 |
 | 41. Knowledge Research Foundation | v6.0 | 5/5 | Complete | 2026-01-18 |
 | 41.1 Knowledge Architecture System | v6.0 | 4/4 | Complete | 2026-01-18 |
-| 42. Hardware Synergy Database | v6.0 | 0/5 | Not Started | - |
+| 41.2 Internal Plasma Core | v5.1 | 0/? | Not Started | - |
+| 41.3 Obsidian Mirror Effect | v5.1 | 0/? | Not Started | - |
+| 41.4 Energy Contrast System | v5.1 | 0/? | Not Started | - |
+| 41.5 Dynamic Fog Coupling | v5.1 | 0/? | Not Started | - |
+| 41.6 Suspenseful Transitions | v5.1 | 0/? | Not Started | - |
+| 41.7 Color Temperature Mastery | v5.1 | 0/? | Not Started | - |
+| 41.8 Reference Image Parity | v5.1 | 0/? | Not Started | - |
+| 42. Hardware Synergy Database | v6.0 | 5/5 | Complete | 2026-01-18 |
 | 43. Settings Interaction Engine | v6.0 | 0/5 | Not Started | - |
 | 44. macOS Optimization Core | v6.0 | 0/5 | Not Started | - |
 | 45. Game-Specific Profiles | v6.0 | 0/5 | Not Started | - |
