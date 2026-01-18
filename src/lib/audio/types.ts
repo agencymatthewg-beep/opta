@@ -32,14 +32,26 @@ export type AmbientSoundName =
   | 'ambient-hum';   // Sci-fi computer hum (looped)
 
 /**
+ * Chess sounds - move and game event feedback
+ */
+export type ChessSoundName =
+  | 'chess-move'     // Soft wooden tap for piece movement (80ms)
+  | 'chess-capture'  // Slightly louder tap with resonance (120ms)
+  | 'chess-check'    // Alert tone, ascending (150ms)
+  | 'chess-castle'   // Two-tap sequence (160ms)
+  | 'chess-promote'  // Celebratory chime (200ms)
+  | 'chess-game-start'   // Opening flourish (300ms)
+  | 'chess-game-over';   // Conclusive tone (400ms)
+
+/**
  * All available sound names
  */
-export type SoundName = RingSoundName | UISoundName | AmbientSoundName;
+export type SoundName = RingSoundName | UISoundName | AmbientSoundName | ChessSoundName;
 
 /**
  * Sound categories for volume control
  */
-export type SoundCategory = 'ring' | 'ui' | 'ambient';
+export type SoundCategory = 'ring' | 'ui' | 'ambient' | 'chess';
 
 /**
  * Audio preferences stored in localStorage
@@ -57,6 +69,10 @@ export interface AudioPreferences {
   ambientEnabled: boolean;
   /** Ambient volume (0-1, typically very low) */
   ambientVolume: number;
+  /** Chess sounds enabled */
+  chessSoundsEnabled: boolean;
+  /** Chess sound volume (0-1) */
+  chessVolume: number;
 }
 
 /**
@@ -69,6 +85,8 @@ export const DEFAULT_AUDIO_PREFERENCES: AudioPreferences = {
   ringSoundsEnabled: true,
   ambientEnabled: false, // Disabled by default
   ambientVolume: 0.08, // Very low (5-10% as per spec)
+  chessSoundsEnabled: true, // Chess sounds enabled by default when unmuted
+  chessVolume: 0.6, // Moderate volume for subtle feedback
 };
 
 /**
@@ -161,6 +179,50 @@ export const SOUND_DEFINITIONS: Record<SoundName, SoundDefinition> = {
     category: 'ambient',
     loop: true,
     baseVolume: 0.08,
+  },
+
+  // Chess sounds
+  'chess-move': {
+    name: 'chess-move',
+    category: 'chess',
+    duration: 80,
+    baseVolume: 0.5,
+  },
+  'chess-capture': {
+    name: 'chess-capture',
+    category: 'chess',
+    duration: 120,
+    baseVolume: 0.6,
+  },
+  'chess-check': {
+    name: 'chess-check',
+    category: 'chess',
+    duration: 150,
+    baseVolume: 0.55,
+  },
+  'chess-castle': {
+    name: 'chess-castle',
+    category: 'chess',
+    duration: 160,
+    baseVolume: 0.5,
+  },
+  'chess-promote': {
+    name: 'chess-promote',
+    category: 'chess',
+    duration: 200,
+    baseVolume: 0.6,
+  },
+  'chess-game-start': {
+    name: 'chess-game-start',
+    category: 'chess',
+    duration: 300,
+    baseVolume: 0.55,
+  },
+  'chess-game-over': {
+    name: 'chess-game-over',
+    category: 'chess',
+    duration: 400,
+    baseVolume: 0.6,
   },
 };
 

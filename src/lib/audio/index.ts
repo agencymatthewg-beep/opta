@@ -42,6 +42,7 @@ export type {
   RingSoundName,
   UISoundName,
   AmbientSoundName,
+  ChessSoundName,
   SoundCategory,
   AudioPreferences,
 } from './types';

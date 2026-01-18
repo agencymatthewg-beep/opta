@@ -102,6 +102,24 @@ export interface ChessGameState {
 }
 
 /**
+ * Chess sound settings for granular control
+ */
+export interface ChessSoundSettings {
+  /** Enable all chess sounds */
+  enabled: boolean;
+  /** Move sound (piece placement) */
+  moveSound: boolean;
+  /** Capture sound (piece taken) */
+  captureSound: boolean;
+  /** Check sound (king in check) */
+  checkSound: boolean;
+  /** Game over sound (checkmate/stalemate/draw) */
+  gameOverSound: boolean;
+  /** Volume level (0-1) */
+  volume: number;
+}
+
+/**
  * User settings for the chess feature.
  */
 export interface ChessSettings {
@@ -123,6 +141,8 @@ export interface ChessSettings {
   showCoordinates: boolean;
   /** Whether to show board lighting effects */
   showLighting: boolean;
+  /** Sound settings */
+  sound: ChessSoundSettings;
 }
 
 /**
@@ -133,6 +153,18 @@ export const DEFAULT_AI_CONFIG: AIConfig = {
   skillLevel: DIFFICULTY_TO_SKILL_LEVEL.casual,
   thinkTimeMs: 1000,
 } as const;
+
+/**
+ * Default chess sound settings
+ */
+export const DEFAULT_CHESS_SOUND_SETTINGS: ChessSoundSettings = {
+  enabled: true,
+  moveSound: true,
+  captureSound: true,
+  checkSound: true,
+  gameOverSound: true,
+  volume: 0.6,
+};
 
 /**
  * Default chess settings for new users.
@@ -147,6 +179,7 @@ export const DEFAULT_CHESS_SETTINGS: ChessSettings = {
   boardTheme: 'obsidian',
   showCoordinates: true,
   showLighting: true,
+  sound: DEFAULT_CHESS_SOUND_SETTINGS,
 };
 
 /**

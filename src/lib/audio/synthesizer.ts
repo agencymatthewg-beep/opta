@@ -586,6 +586,278 @@ export class AudioSynthesizer {
     return osc;
   }
 
+  // ============================================
+  // Chess Sounds
+  // ============================================
+
+  /**
+   * Synthesize chess move sound
+   * Soft wooden tap for piece placement (80ms)
+   */
+  synthesizeChessMove(destination: AudioNode, volume: number): void {
+    const ctx = this.audioContext;
+    const now = ctx.currentTime;
+
+    // Primary tap - warm wooden sound
+    const osc = ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(800, now);
+    osc.frequency.exponentialRampToValueAtTime(200, now + 0.04);
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(volume * 0.5, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+
+    // Resonance for wood character
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.value = 400;
+    filter.Q.value = 3;
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(destination);
+
+    osc.start(now);
+    osc.stop(now + 0.08);
+  }
+
+  /**
+   * Synthesize chess capture sound
+   * Slightly louder tap with resonance (120ms)
+   */
+  synthesizeChessCapture(destination: AudioNode, volume: number): void {
+    const ctx = this.audioContext;
+    const now = ctx.currentTime;
+
+    // Impact transient
+    const osc1 = ctx.createOscillator();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(1000, now);
+    osc1.frequency.exponentialRampToValueAtTime(150, now + 0.05);
+
+    const gain1 = ctx.createGain();
+    gain1.gain.setValueAtTime(volume * 0.6, now);
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+
+    // Secondary resonance for "thunk"
+    const osc2 = ctx.createOscillator();
+    osc2.type = 'sine';
+    osc2.frequency.value = 180;
+
+    const gain2 = ctx.createGain();
+    gain2.gain.setValueAtTime(0, now);
+    gain2.gain.linearRampToValueAtTime(volume * 0.4, now + 0.02);
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+
+    // Filter for warmth
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 800;
+
+    osc1.connect(gain1);
+    osc2.connect(gain2);
+    gain1.connect(filter);
+    gain2.connect(filter);
+    filter.connect(destination);
+
+    osc1.start(now);
+    osc2.start(now);
+    osc1.stop(now + 0.06);
+    osc2.stop(now + 0.12);
+  }
+
+  /**
+   * Synthesize chess check sound
+   * Alert tone, ascending (150ms)
+   */
+  synthesizeChessCheck(destination: AudioNode, volume: number): void {
+    const ctx = this.audioContext;
+    const now = ctx.currentTime;
+
+    // Two-note alert ascending
+    const frequencies = [523.25, 659.25]; // C5, E5
+    const delays = [0, 0.06];
+
+    frequencies.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+
+      const gain = ctx.createGain();
+      const startTime = now + delays[i];
+      gain.gain.setValueAtTime(0, startTime);
+      gain.gain.linearRampToValueAtTime(volume * 0.5, startTime + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.08);
+
+      osc.connect(gain);
+      gain.connect(destination);
+
+      osc.start(startTime);
+      osc.stop(startTime + 0.08);
+    });
+  }
+
+  /**
+   * Synthesize chess castle sound
+   * Two-tap sequence (160ms)
+   */
+  synthesizeChessCastle(destination: AudioNode, volume: number): void {
+    const ctx = this.audioContext;
+    const now = ctx.currentTime;
+
+    // First tap (king move)
+    const osc1 = ctx.createOscillator();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(700, now);
+    osc1.frequency.exponentialRampToValueAtTime(180, now + 0.04);
+
+    const gain1 = ctx.createGain();
+    gain1.gain.setValueAtTime(volume * 0.45, now);
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
+
+    // Second tap (rook move) - slightly higher
+    const osc2 = ctx.createOscillator();
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(850, now + 0.08);
+    osc2.frequency.exponentialRampToValueAtTime(220, now + 0.12);
+
+    const gain2 = ctx.createGain();
+    gain2.gain.setValueAtTime(0, now);
+    gain2.gain.setValueAtTime(volume * 0.5, now + 0.08);
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.value = 350;
+    filter.Q.value = 2;
+
+    osc1.connect(filter);
+    osc2.connect(filter);
+    gain1.connect(destination);
+    gain2.connect(destination);
+    osc1.connect(gain1);
+    osc2.connect(gain2);
+
+    osc1.start(now);
+    osc2.start(now + 0.08);
+    osc1.stop(now + 0.07);
+    osc2.stop(now + 0.16);
+  }
+
+  /**
+   * Synthesize chess promote sound
+   * Celebratory chime (200ms)
+   */
+  synthesizeChessPromote(destination: AudioNode, volume: number): void {
+    const ctx = this.audioContext;
+    const now = ctx.currentTime;
+
+    // Ascending triumphant arpeggio
+    const frequencies = [523.25, 659.25, 783.99, 1046.5]; // C5, E5, G5, C6
+    const delays = [0, 0.04, 0.08, 0.12];
+
+    frequencies.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+
+      const gain = ctx.createGain();
+      const startTime = now + delays[i];
+      gain.gain.setValueAtTime(0, startTime);
+      gain.gain.linearRampToValueAtTime(volume * 0.4, startTime + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.1);
+
+      osc.connect(gain);
+      gain.connect(destination);
+
+      osc.start(startTime);
+      osc.stop(startTime + 0.1);
+    });
+  }
+
+  /**
+   * Synthesize chess game start sound
+   * Opening flourish (300ms)
+   */
+  synthesizeChessGameStart(destination: AudioNode, volume: number): void {
+    const ctx = this.audioContext;
+    const now = ctx.currentTime;
+
+    // Majestic opening chord
+    const frequencies = [261.63, 329.63, 392.0, 523.25]; // C4, E4, G4, C5
+
+    frequencies.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(volume * (0.35 - i * 0.05), now + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+
+      osc.connect(gain);
+      gain.connect(destination);
+
+      osc.start(now);
+      osc.stop(now + 0.3);
+    });
+  }
+
+  /**
+   * Synthesize chess game over sound
+   * Conclusive tone (400ms)
+   */
+  synthesizeChessGameOver(destination: AudioNode, volume: number): void {
+    const ctx = this.audioContext;
+    const now = ctx.currentTime;
+
+    // Descending conclusive tone
+    const osc1 = ctx.createOscillator();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(440, now);
+    osc1.frequency.exponentialRampToValueAtTime(220, now + 0.3);
+
+    const gain1 = ctx.createGain();
+    gain1.gain.setValueAtTime(volume * 0.5, now);
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+    // Harmonic for richness
+    const osc2 = ctx.createOscillator();
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(330, now);
+    osc2.frequency.exponentialRampToValueAtTime(165, now + 0.3);
+
+    const gain2 = ctx.createGain();
+    gain2.gain.setValueAtTime(volume * 0.3, now);
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+
+    // Low bass note for finality
+    const osc3 = ctx.createOscillator();
+    osc3.type = 'sine';
+    osc3.frequency.value = 110;
+
+    const gain3 = ctx.createGain();
+    gain3.gain.setValueAtTime(0, now);
+    gain3.gain.linearRampToValueAtTime(volume * 0.35, now + 0.05);
+    gain3.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+
+    osc1.connect(gain1);
+    osc2.connect(gain2);
+    osc3.connect(gain3);
+    gain1.connect(destination);
+    gain2.connect(destination);
+    gain3.connect(destination);
+
+    osc1.start(now);
+    osc2.start(now);
+    osc3.start(now);
+    osc1.stop(now + 0.35);
+    osc2.stop(now + 0.4);
+    osc3.stop(now + 0.4);
+  }
+
   /**
    * Synthesize a sound by name
    */
@@ -614,6 +886,27 @@ export class AudioSynthesizer {
         break;
       case 'ui-toggle':
         this.synthesizeUIToggle(destination, volume);
+        break;
+      case 'chess-move':
+        this.synthesizeChessMove(destination, volume);
+        break;
+      case 'chess-capture':
+        this.synthesizeChessCapture(destination, volume);
+        break;
+      case 'chess-check':
+        this.synthesizeChessCheck(destination, volume);
+        break;
+      case 'chess-castle':
+        this.synthesizeChessCastle(destination, volume);
+        break;
+      case 'chess-promote':
+        this.synthesizeChessPromote(destination, volume);
+        break;
+      case 'chess-game-start':
+        this.synthesizeChessGameStart(destination, volume);
+        break;
+      case 'chess-game-over':
+        this.synthesizeChessGameOver(destination, volume);
         break;
       default:
         console.warn(`Unknown sound: ${name}`);

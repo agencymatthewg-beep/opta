@@ -228,6 +228,8 @@ class AudioEngineImpl {
         return this.preferences.ringSoundsEnabled;
       case 'ambient':
         return this.preferences.ambientEnabled;
+      case 'chess':
+        return this.preferences.chessSoundsEnabled;
       default:
         return true;
     }
@@ -237,10 +239,14 @@ class AudioEngineImpl {
    * Get volume for a category
    */
   private getCategoryVolume(category: SoundCategory): number {
-    if (category === 'ambient') {
-      return this.preferences.ambientVolume;
+    switch (category) {
+      case 'ambient':
+        return this.preferences.ambientVolume;
+      case 'chess':
+        return this.preferences.chessVolume;
+      default:
+        return 1;
     }
-    return 1;
   }
 
   /**

@@ -13,11 +13,11 @@
 
 import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Settings, Palette, Sparkles, Eye, Check } from 'lucide-react';
+import { Settings, Palette, Sparkles, Eye, Check, Volume2, VolumeX } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ThemeSelector } from '../premium/ThemeSelector';
 import type { BoardThemeId } from '@/types/boardTheme';
-import type { ChessSettings } from '@/types/chess';
+import type { ChessSettings, ChessSoundSettings } from '@/types/chess';
 
 /**
  * Preset theme configuration
@@ -302,6 +302,188 @@ function ToggleOption({
 }
 
 /**
+ * Volume slider component
+ */
+function VolumeSlider({
+  value,
+  onChange,
+  disabled,
+  compact,
+}: {
+  value: number;
+  onChange: (value: number) => void;
+  disabled?: boolean;
+  compact?: boolean;
+}) {
+  return (
+    <div className={cn('flex items-center gap-3', compact ? 'px-2' : 'px-3')}>
+      <VolumeX
+        className={cn(
+          'shrink-0',
+          compact ? 'w-3 h-3' : 'w-4 h-4',
+          disabled ? 'text-muted-foreground/30' : 'text-muted-foreground/60'
+        )}
+        strokeWidth={1.75}
+      />
+      <div className="relative flex-1 h-6 flex items-center">
+        <div
+          className={cn(
+            'absolute inset-y-0 left-0 right-0 my-auto h-1 rounded-full',
+            disabled ? 'bg-white/5' : 'bg-white/10'
+          )}
+        />
+        <motion.div
+          className={cn(
+            'absolute inset-y-0 left-0 my-auto h-1 rounded-full',
+            disabled ? 'bg-primary/30' : 'bg-primary'
+          )}
+          style={{ width: `${value * 100}%` }}
+          animate={{ width: `${value * 100}%` }}
+          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+        />
+        <input
+          type="range"
+          min="0"
+          max="1"
+          step="0.05"
+          value={value}
+          onChange={(e) => onChange(parseFloat(e.target.value))}
+          disabled={disabled}
+          className={cn(
+            'absolute inset-0 w-full h-full opacity-0 cursor-pointer',
+            disabled && 'cursor-not-allowed'
+          )}
+        />
+        <motion.div
+          className={cn(
+            'absolute top-1/2 -translate-y-1/2 rounded-full shadow-md',
+            compact ? 'w-3 h-3' : 'w-4 h-4',
+            disabled ? 'bg-white/50' : 'bg-white'
+          )}
+          style={{ left: `calc(${value * 100}% - ${compact ? 6 : 8}px)` }}
+          animate={{ left: `calc(${value * 100}% - ${compact ? 6 : 8}px)` }}
+          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+        />
+      </div>
+      <Volume2
+        className={cn(
+          'shrink-0',
+          compact ? 'w-3 h-3' : 'w-4 h-4',
+          disabled ? 'text-muted-foreground/30' : 'text-muted-foreground/60'
+        )}
+        strokeWidth={1.75}
+      />
+    </div>
+  );
+}
+
+/**
+ * Sound settings section component
+ */
+function SoundSettings({
+  sound,
+  onChange,
+  compact,
+}: {
+  sound: ChessSoundSettings;
+  onChange: (updates: Partial<ChessSoundSettings>) => void;
+  compact?: boolean;
+}) {
+  const handleMasterToggle = useCallback(
+    (enabled: boolean) => {
+      onChange({ enabled });
+    },
+    [onChange]
+  );
+
+  const handleVolumeChange = useCallback(
+    (volume: number) => {
+      onChange({ volume });
+    },
+    [onChange]
+  );
+
+  const handleSoundToggle = useCallback(
+    (key: keyof ChessSoundSettings, value: boolean) => {
+      onChange({ [key]: value });
+    },
+    [onChange]
+  );
+
+  return (
+    <div className="space-y-2">
+      {/* Master toggle */}
+      <ToggleOption
+        label="Sound Effects"
+        description="Enable all chess sounds"
+        enabled={sound.enabled}
+        onChange={handleMasterToggle}
+        compact={compact}
+      />
+
+      {/* Volume slider */}
+      <motion.div
+        initial={false}
+        animate={{
+          opacity: sound.enabled ? 1 : 0.4,
+          height: 'auto',
+        }}
+        className={cn('py-2', !sound.enabled && 'pointer-events-none')}
+      >
+        <VolumeSlider
+          value={sound.volume}
+          onChange={handleVolumeChange}
+          disabled={!sound.enabled}
+          compact={compact}
+        />
+      </motion.div>
+
+      {/* Divider */}
+      <div className="h-px bg-white/[0.04]" />
+
+      {/* Individual sound toggles */}
+      <motion.div
+        initial={false}
+        animate={{ opacity: sound.enabled ? 1 : 0.4 }}
+        className={cn(!sound.enabled && 'pointer-events-none')}
+      >
+        <ToggleOption
+          label="Move Sounds"
+          description="Play sound on piece movement"
+          enabled={sound.moveSound}
+          onChange={(v) => handleSoundToggle('moveSound', v)}
+          compact={compact}
+        />
+        <div className="h-px bg-white/[0.04]" />
+        <ToggleOption
+          label="Capture Sounds"
+          description="Play sound when capturing pieces"
+          enabled={sound.captureSound}
+          onChange={(v) => handleSoundToggle('captureSound', v)}
+          compact={compact}
+        />
+        <div className="h-px bg-white/[0.04]" />
+        <ToggleOption
+          label="Check Sounds"
+          description="Alert sound when king is in check"
+          enabled={sound.checkSound}
+          onChange={(v) => handleSoundToggle('checkSound', v)}
+          compact={compact}
+        />
+        <div className="h-px bg-white/[0.04]" />
+        <ToggleOption
+          label="Game Over Sounds"
+          description="Sound on checkmate, stalemate, or draw"
+          enabled={sound.gameOverSound}
+          onChange={(v) => handleSoundToggle('gameOverSound', v)}
+          compact={compact}
+        />
+      </motion.div>
+    </div>
+  );
+}
+
+/**
  * Chess Settings Panel - Main Component
  *
  * Provides board theme selection, preset themes, and display options.
@@ -356,6 +538,16 @@ export function ChessSettingsPanel({
       onSettingsChange({ [key]: value });
     },
     [onSettingsChange]
+  );
+
+  // Handle sound settings changes
+  const handleSoundChange = useCallback(
+    (updates: Partial<ChessSoundSettings>) => {
+      onSettingsChange({
+        sound: { ...settings.sound, ...updates },
+      });
+    },
+    [onSettingsChange, settings.sound]
   );
 
   return (
@@ -431,6 +623,26 @@ export function ChessSettingsPanel({
               description="Enhanced specular and reflection effects"
               enabled={settings.showLighting}
               onChange={(v) => handleToggleChange('showLighting', v)}
+              compact={compact}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Sound Settings Section (unless themeOnly) */}
+      {!themeOnly && (
+        <div>
+          <SectionHeader icon={Volume2} title="Sound Settings" compact={compact} />
+          <div
+            className={cn(
+              'rounded-xl overflow-hidden',
+              'glass',
+              'border border-white/[0.06]'
+            )}
+          >
+            <SoundSettings
+              sound={settings.sound}
+              onChange={handleSoundChange}
               compact={compact}
             />
           </div>
