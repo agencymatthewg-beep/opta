@@ -21,6 +21,8 @@ import { ChessBoard, GameControls, MoveHistory } from '@/components/chess';
 import { useChessGame } from '@/hooks/useChessGame';
 import { useStockfish } from '@/hooks/useStockfish';
 import { LearnModeExplanation } from '@/components/LearnModeExplanation';
+import { RingLessonProvider, useRingLessonEnergy } from '@/contexts/RingLessonContext';
+import { LessonOverlay, CongratulationBurst } from '@/components/chess/tutoring';
 import type { ChessMode, AIDifficulty, ChessGameResult, ChessSettings } from '@/types/chess';
 import { DIFFICULTY_TO_SKILL_LEVEL, DEFAULT_CHESS_SETTINGS } from '@/types/chess';
 
@@ -85,7 +87,7 @@ function ComingSoonMode({ mode }: { mode: 'puzzle' | 'analysis' }) {
     >
       <div className={cn(
         'max-w-md w-full p-8 rounded-2xl text-center',
-        'bg-[#05030a]/80 backdrop-blur-xl',
+        'glass',
         'border border-white/[0.06]',
         'shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]'
       )}>
@@ -172,7 +174,7 @@ function GameResultBanner({
         transition={{ delay: 0.1, duration: 0.4, ease: smoothOut }}
         className={cn(
           'p-8 rounded-2xl text-center',
-          'bg-[#05030a]/95 backdrop-blur-xl',
+          'glass-overlay',
           'border border-primary/30',
           'shadow-[0_0_40px_-10px_rgba(168,85,247,0.5)]'
         )}
@@ -492,9 +494,9 @@ function CasualMode({
 }
 
 /**
- * Chess Page - Main component
+ * Chess Page - Inner content with tutoring overlays
  */
-function Chess() {
+function ChessContent() {
   // Load settings from localStorage
   const [settings, setSettings] = useState<ChessSettings>(() => {
     try {
@@ -507,6 +509,9 @@ function Chess() {
     }
     return DEFAULT_CHESS_SETTINGS;
   });
+
+  // Get ring energy from tutoring context for UI integration
+  const ringEnergy = useRingLessonEnergy();
 
   // Save settings to localStorage
   useEffect(() => {
@@ -524,8 +529,8 @@ function Chess() {
   };
 
   return (
-    <div className="page h-full flex flex-col">
-      {/* Header */}
+    <div className="page h-full flex flex-col relative">
+      {/* Header with optional ring energy indicator */}
       <motion.div
         className="shrink-0 mb-6"
         initial={{ opacity: 0, y: -10 }}
@@ -533,7 +538,15 @@ function Chess() {
       >
         <div className="flex items-baseline justify-between mb-1">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10">
+            <div
+              className={cn(
+                'p-2 rounded-lg transition-colors duration-300',
+                ringEnergy > 0.5 ? 'bg-primary/20' : 'bg-primary/10'
+              )}
+              style={{
+                boxShadow: ringEnergy > 0.3 ? `0 0 ${ringEnergy * 15}px rgba(168, 85, 247, ${ringEnergy * 0.4})` : 'none',
+              }}
+            >
               <Crown className="w-5 h-5 text-primary" strokeWidth={1.75} />
             </div>
             <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
@@ -555,7 +568,7 @@ function Chess() {
       >
         <div className={cn(
           'inline-flex p-1 rounded-xl',
-          'bg-[#05030a]/80 backdrop-blur-xl',
+          'glass',
           'border border-white/[0.06]'
         )}>
           {modeTabs.map((tab) => {
@@ -618,7 +631,31 @@ function Chess() {
           <ComingSoonMode key="analysis" mode="analysis" />
         )}
       </AnimatePresence>
+
+      {/* Lesson overlay - shows ring-synchronized hints during tutoring */}
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2">
+        <LessonOverlay position="top" />
+      </div>
+
+      {/* Celebration burst - shows on successful moves during tutoring */}
+      <CongratulationBurst />
     </div>
+  );
+}
+
+/**
+ * Chess Page - Main component wrapped with RingLessonProvider
+ *
+ * The RingLessonProvider enables tutoring features:
+ * - Ring state synchronization with lesson progress
+ * - Celebration effects on correct moves
+ * - Hint overlays during lessons
+ */
+function Chess() {
+  return (
+    <RingLessonProvider>
+      <ChessContent />
+    </RingLessonProvider>
   );
 }
 

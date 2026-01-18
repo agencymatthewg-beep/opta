@@ -11,7 +11,7 @@
  * @see DESIGN_SYSTEM.md - Glass system, Framer Motion, Lucide icons
  */
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { Chessboard } from 'react-chessboard';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePuzzle } from '@/hooks/usePuzzle';
+import { useRingLesson } from '@/contexts/RingLessonContext';
 import {
   ratingToDifficulty,
   getDifficultyColor,
@@ -61,6 +62,9 @@ export function PuzzleBoard({ onOpenFullPuzzles: _onOpenFullPuzzles }: PuzzleBoa
     getPuzzleTurn,
   } = usePuzzle();
 
+  // Ring lesson integration for tutoring celebration
+  const { triggerCelebration, setRingActive, setRingTeaching, resetRing } = useRingLesson();
+
   // Local state for hint display
   const [currentHint, setCurrentHint] = useState<string | null>(null);
   const [hintSquare, setHintSquare] = useState<string | null>(null);
@@ -72,35 +76,51 @@ export function PuzzleBoard({ onOpenFullPuzzles: _onOpenFullPuzzles }: PuzzleBoa
   // Last move feedback
   const [lastMoveResult, setLastMoveResult] = useState<'correct' | 'incorrect' | null>(null);
 
+  // Sync ring state with puzzle state
+  useEffect(() => {
+    if (!currentAttempt) {
+      // No active puzzle - ring dormant
+      resetRing();
+    } else if (currentAttempt.status === 'correct' || currentAttempt.status === 'incorrect') {
+      // Puzzle complete - ring celebration already triggered, will auto-reset
+    }
+  }, [currentAttempt, resetRing]);
+
   /**
    * Handle requesting a hint.
+   * Sets ring to teaching mode while hint is displayed.
    */
   const handleHint = useCallback(() => {
     const hint = getHint();
     if (hint) {
       setCurrentHint(hint.text);
       setHintSquare(hint.highlightSquare || null);
+      setRingTeaching(); // Activate teaching mode on ring
 
-      // Clear hint after 5 seconds
+      // Clear hint after 5 seconds and return ring to active
       setTimeout(() => {
         setCurrentHint(null);
         setHintSquare(null);
+        setRingActive();
       }, 5000);
     }
-  }, [getHint]);
+  }, [getHint, setRingTeaching, setRingActive]);
 
   /**
    * Handle starting a puzzle.
+   * Activates the ring when puzzle begins.
    */
   const handleStartPuzzle = useCallback(async () => {
     setCurrentHint(null);
     setHintSquare(null);
     setLastMoveResult(null);
+    setRingActive(); // Ring awakens for puzzle
     await startDailyPuzzle();
-  }, [startDailyPuzzle]);
+  }, [startDailyPuzzle, setRingActive]);
 
   /**
    * Handle square click.
+   * Triggers ring celebration on correct move completion.
    */
   const handleSquareClick = useCallback(
     ({ square }: { piece: { pieceType: string } | null; square: string }) => {
@@ -112,6 +132,11 @@ export function PuzzleBoard({ onOpenFullPuzzles: _onOpenFullPuzzles }: PuzzleBoa
         setLastMoveResult(success ? 'correct' : 'incorrect');
         setSelectedSquare(null);
         setLegalMoves([]);
+
+        // Trigger ring celebration on correct move
+        if (success) {
+          triggerCelebration();
+        }
 
         // Clear feedback after animation
         setTimeout(() => setLastMoveResult(null), 1500);
@@ -128,11 +153,12 @@ export function PuzzleBoard({ onOpenFullPuzzles: _onOpenFullPuzzles }: PuzzleBoa
         setLegalMoves([]);
       }
     },
-    [currentAttempt, selectedSquare, legalMoves, makeMove, getLegalMoves]
+    [currentAttempt, selectedSquare, legalMoves, makeMove, getLegalMoves, triggerCelebration]
   );
 
   /**
    * Handle piece drop.
+   * Triggers ring celebration on correct move completion.
    */
   const handlePieceDrop = useCallback(
     ({
@@ -152,11 +178,16 @@ export function PuzzleBoard({ onOpenFullPuzzles: _onOpenFullPuzzles }: PuzzleBoa
       setSelectedSquare(null);
       setLegalMoves([]);
 
+      // Trigger ring celebration on correct move
+      if (success) {
+        triggerCelebration();
+      }
+
       // Clear feedback after animation
       setTimeout(() => setLastMoveResult(null), 1500);
       return success;
     },
-    [currentAttempt, makeMove]
+    [currentAttempt, makeMove, triggerCelebration]
   );
 
   /**
