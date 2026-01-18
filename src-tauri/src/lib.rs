@@ -93,7 +93,28 @@ pub fn run() {
             #[cfg(target_os = "macos")]
             platform::macos::macos_get_gpu_state,
             #[cfg(target_os = "macos")]
-            platform::macos::macos_configure_gaming_mode
+            platform::macos::macos_configure_gaming_mode,
+            // Phase 45: Windows Optimization Core
+            #[cfg(target_os = "windows")]
+            platform::windows::windows_get_optimization_status,
+            #[cfg(target_os = "windows")]
+            platform::windows::windows_set_process_priority,
+            #[cfg(target_os = "windows")]
+            platform::windows::windows_get_memory_info,
+            #[cfg(target_os = "windows")]
+            platform::windows::windows_optimize_process_memory,
+            #[cfg(target_os = "windows")]
+            platform::windows::windows_get_gpu_state,
+            #[cfg(target_os = "windows")]
+            platform::windows::windows_get_power_config,
+            #[cfg(target_os = "windows")]
+            platform::windows::windows_switch_power_plan,
+            #[cfg(target_os = "windows")]
+            platform::windows::windows_get_game_mode_status,
+            #[cfg(target_os = "windows")]
+            platform::windows::windows_configure_gaming_mode,
+            #[cfg(target_os = "windows")]
+            platform::windows::windows_set_process_affinity
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
