@@ -55,6 +55,11 @@ export {
   setRingState,
   setRingColors,
   setRingFresnel,
+  // Phase 41.3: Obsidian Mirror functions
+  setRingMirrorReflectivity,
+  setRingEnvReflection,
+  setRingSpecularSharpness,
+  setRingObsidianMirror,
   // Disposal
   disposeRingShader,
 } from './RingShader';

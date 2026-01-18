@@ -13,6 +13,12 @@
  * - Depth illusion via fresnel - plasma appears inside glass
  * - Energy-driven speed and color transformation
  *
+ * Phase 41.3: Obsidian Mirror Effect
+ * - Dark reflective obsidian surface treatment on ring exterior
+ * - Subtle environment reflections using procedural reflection mapping
+ * - Polished mirror quality with sharp, moving specular highlights
+ * - View-angle dependent reflection intensity (fresnel-based reflectivity)
+ *
  * The shader creates a premium obsidian glass look that responds
  * dynamically to the ring's state and energy level, with internal
  * plasma that tells the energy story at a glance.
@@ -74,6 +80,12 @@ export interface RingShaderUniforms {
   uExploding: Uniform<number>;
   /** Processing pulse phase */
   uPulsePhase: Uniform<number>;
+  /** Obsidian mirror reflectivity 0-1 (41.3) */
+  uMirrorReflectivity: Uniform<number>;
+  /** Environment reflection intensity 0-1 (41.3) */
+  uEnvReflectionIntensity: Uniform<number>;
+  /** Specular sharpness for mirror highlights (41.3) */
+  uSpecularSharpness: Uniform<number>;
 }
 
 /**
@@ -88,6 +100,12 @@ export interface RingShaderConfig {
   fresnelPower?: number;
   /** Initial state */
   state?: RingShaderState;
+  /** Obsidian mirror reflectivity 0-1 (41.3) */
+  mirrorReflectivity?: number;
+  /** Environment reflection intensity 0-1 (41.3) */
+  envReflectionIntensity?: number;
+  /** Specular sharpness for mirror highlights (41.3) */
+  specularSharpness?: number;
 }
 
 // =============================================================================
@@ -170,6 +188,10 @@ uniform vec3 uColorExplode;
 uniform float uStateBlend;
 uniform float uExploding;
 uniform float uPulsePhase;
+// Phase 41.3: Obsidian Mirror
+uniform float uMirrorReflectivity;
+uniform float uEnvReflectionIntensity;
+uniform float uSpecularSharpness;
 
 // Varyings from vertex shader
 varying vec3 vNormal;
@@ -448,6 +470,120 @@ float calculatePulse(float phase, float time) {
 }
 
 // =============================================================================
+// OBSIDIAN MIRROR EFFECT (41.3)
+// =============================================================================
+
+/**
+ * Generate procedural environment reflection
+ * Creates fake environment map using view-dependent gradients
+ * Simulates reflections without actual environment cubemap
+ *
+ * @param reflectDir - Reflection direction vector
+ * @param time - Animation time for subtle movement
+ * @return RGB color of fake environment reflection
+ */
+vec3 proceduralEnvReflection(vec3 reflectDir, float time) {
+  // Normalize reflection direction
+  vec3 rd = normalize(reflectDir);
+
+  // Sky gradient (upper hemisphere) - subtle purple-blue gradient
+  float skyGradient = smoothstep(-0.2, 0.8, rd.y);
+  vec3 skyColor = mix(
+    vec3(0.02, 0.01, 0.04),   // Dark purple-black horizon
+    vec3(0.05, 0.02, 0.08)    // Slightly lighter zenith
+  , skyGradient);
+
+  // Ground reflection (lower hemisphere) - dark with subtle variation
+  vec3 groundColor = vec3(0.01, 0.005, 0.015);
+
+  // Blend sky and ground based on reflection Y
+  vec3 envColor = rd.y > 0.0 ? skyColor : groundColor;
+
+  // Add subtle light source reflections
+  // Main light (upper right) - creates highlight streaks
+  vec3 lightDir1 = normalize(vec3(0.6, 0.5, -0.4));
+  float lightReflect1 = pow(max(0.0, dot(rd, lightDir1)), 64.0);
+  envColor += vec3(0.15, 0.08, 0.2) * lightReflect1;
+
+  // Secondary light (upper left) - dimmer accent
+  vec3 lightDir2 = normalize(vec3(-0.5, 0.4, -0.3));
+  float lightReflect2 = pow(max(0.0, dot(rd, lightDir2)), 48.0);
+  envColor += vec3(0.08, 0.04, 0.12) * lightReflect2 * 0.5;
+
+  // Add very subtle animated caustic-like variation
+  float caustic = snoise(rd * 3.0 + vec3(time * 0.05, 0.0, 0.0));
+  caustic = caustic * 0.5 + 0.5;
+  envColor += vec3(0.02, 0.01, 0.03) * caustic * 0.3;
+
+  return envColor;
+}
+
+/**
+ * Calculate obsidian mirror reflection
+ * Combines fresnel-based reflectivity with procedural environment
+ *
+ * @param normal - Surface normal
+ * @param viewDir - View direction
+ * @param reflectivity - Base mirror reflectivity (0-1)
+ * @param envIntensity - Environment reflection strength
+ * @param time - Animation time
+ * @return RGB reflection contribution
+ */
+vec3 calculateObsidianReflection(
+  vec3 normal,
+  vec3 viewDir,
+  float reflectivity,
+  float envIntensity,
+  float time
+) {
+  // Calculate reflection vector
+  vec3 reflectDir = reflect(-viewDir, normal);
+
+  // Fresnel-based reflection intensity (more reflective at glancing angles)
+  float NdotV = max(0.0, dot(normal, viewDir));
+  float fresnelReflect = pow(1.0 - NdotV, 4.0);
+
+  // Combine base reflectivity with fresnel
+  // Obsidian is highly reflective at edges, less so at center
+  float reflectAmount = mix(reflectivity * 0.3, reflectivity, fresnelReflect);
+
+  // Get procedural environment reflection
+  vec3 envReflection = proceduralEnvReflection(reflectDir, time);
+
+  // Apply reflection intensity and amount
+  return envReflection * reflectAmount * envIntensity;
+}
+
+/**
+ * Calculate sharp mirror specular highlight
+ * Creates polished glass-like specular spots
+ *
+ * @param normal - Surface normal
+ * @param viewDir - View direction
+ * @param lightDir - Light direction
+ * @param sharpness - Specular exponent (higher = sharper)
+ * @return Specular intensity
+ */
+float calculateMirrorSpecular(
+  vec3 normal,
+  vec3 viewDir,
+  vec3 lightDir,
+  float sharpness
+) {
+  // Blinn-Phong half vector
+  vec3 halfDir = normalize(lightDir + viewDir);
+
+  // Sharp specular with high exponent for mirror-like reflection
+  float spec = pow(max(0.0, dot(normal, halfDir)), sharpness);
+
+  // Add secondary broader specular for softer falloff
+  float specBroad = pow(max(0.0, dot(normal, halfDir)), sharpness * 0.25);
+
+  // Combine sharp core with soft halo
+  return spec * 0.8 + specBroad * 0.2;
+}
+
+// =============================================================================
 // MAIN SHADER
 // =============================================================================
 
@@ -540,6 +676,38 @@ void main() {
   vec3 plasmaContribution = plasmaColor * plasmaValue * plasmaDepth * plasmaIntensity;
 
   // ==========================================================================
+  // OBSIDIAN MIRROR EFFECT (41.3)
+  // ==========================================================================
+
+  // Calculate environment reflections
+  vec3 obsidianReflection = calculateObsidianReflection(
+    normal,
+    viewDir,
+    uMirrorReflectivity,
+    uEnvReflectionIntensity,
+    uTime
+  );
+
+  // Calculate sharp mirror specular from multiple light sources
+  float mirrorSpec1 = calculateMirrorSpecular(normal, viewDir, lightDir, uSpecularSharpness);
+
+  // Secondary light for rim highlights (coming from behind/side)
+  vec3 rimLightDir = normalize(vec3(-0.3, 0.2, 0.8));
+  float mirrorSpec2 = calculateMirrorSpecular(normal, viewDir, rimLightDir, uSpecularSharpness * 0.8);
+
+  // Tertiary light for bottom rim accent
+  vec3 bottomLightDir = normalize(vec3(0.0, -0.6, 0.4));
+  float mirrorSpec3 = calculateMirrorSpecular(normal, viewDir, bottomLightDir, uSpecularSharpness * 0.6);
+
+  // Combined mirror specular with purple tint
+  vec3 mirrorSpecColor = vec3(0.9, 0.85, 1.0); // Slight purple-white tint
+  vec3 mirrorSpecContribution = mirrorSpecColor * (
+    mirrorSpec1 * 1.0 +
+    mirrorSpec2 * 0.4 +
+    mirrorSpec3 * 0.2
+  );
+
+  // ==========================================================================
   // SURFACE SHADING
   // ==========================================================================
 
@@ -547,7 +715,7 @@ void main() {
   float diffuse = max(0.0, dot(normal, lightDir));
   diffuse = diffuse * 0.5 + 0.5; // Half-lambert wrap for softer falloff
 
-  // Specular highlight (blinn-phong)
+  // Standard specular (kept for compatibility, reduced weight)
   vec3 halfDir = normalize(lightDir + viewDir);
   float specular = pow(max(0.0, dot(normal, halfDir)), 32.0);
 
@@ -558,11 +726,21 @@ void main() {
   // COMBINE ALL EFFECTS
   // ==========================================================================
 
-  // Surface contribution
-  vec3 surfaceColor = baseColor * diffuse * ao;
+  // Surface contribution - darker base for obsidian look
+  vec3 surfaceColor = baseColor * diffuse * ao * 0.7;
 
-  // Add specular
-  surfaceColor += vec3(1.0) * specular * 0.4 * (1.0 + uEnergyLevel);
+  // Add obsidian mirror reflection (41.3)
+  // Reflection is more visible when energy is low (dormant obsidian look)
+  float reflectionWeight = mix(1.0, 0.6, uEnergyLevel);
+  surfaceColor += obsidianReflection * reflectionWeight;
+
+  // Add mirror specular highlights (41.3)
+  // Sharp specular creates polished glass appearance
+  float specWeight = mix(0.8, 1.2, uEnergyLevel); // Brighter when active
+  surfaceColor += mirrorSpecContribution * specWeight * uMirrorReflectivity;
+
+  // Add standard specular (reduced, mirror specular dominates)
+  surfaceColor += vec3(1.0) * specular * 0.2 * (1.0 + uEnergyLevel);
 
   // Add rim emissive (fresnel glow)
   surfaceColor += rimEmissive;
@@ -572,6 +750,7 @@ void main() {
 
   // Add internal plasma core (41.2)
   // Plasma blends underneath the glass surface for depth
+  // Plasma shows through the obsidian glass
   surfaceColor += plasmaContribution;
 
   // Explosion boost: additional additive glow
@@ -580,6 +759,8 @@ void main() {
     surfaceColor += uColorActive * explosionGlow * 2.0;
     // Plasma intensifies during explosion
     surfaceColor += plasmaColor * plasmaValue * uExploding * 0.5;
+    // Mirror specular intensifies during explosion
+    surfaceColor += mirrorSpecContribution * uExploding * 0.5;
   }
 
   // Clamp to prevent over-saturation
@@ -604,6 +785,10 @@ const defaultRingConfig: Required<RingShaderConfig> = {
   innerGlow: 0.3,
   fresnelPower: 3.0,
   state: 'dormant',
+  // Phase 41.3: Obsidian Mirror defaults
+  mirrorReflectivity: 0.7,      // High reflectivity for obsidian glass
+  envReflectionIntensity: 0.5, // Subtle environment reflections
+  specularSharpness: 128.0,    // Sharp mirror-like specular highlights
 };
 
 /**
@@ -656,6 +841,10 @@ export function createRingShaderUniforms(config: RingShaderConfig = {}): RingSha
     uStateBlend: { value: stateBlend },
     uExploding: { value: exploding },
     uPulsePhase: { value: pulsePhase },
+    // Phase 41.3: Obsidian Mirror uniforms
+    uMirrorReflectivity: { value: mergedConfig.mirrorReflectivity },
+    uEnvReflectionIntensity: { value: mergedConfig.envReflectionIntensity },
+    uSpecularSharpness: { value: mergedConfig.specularSharpness },
   };
 }
 
@@ -822,6 +1011,73 @@ export function setRingFresnel(
 }
 
 /**
+ * Set obsidian mirror reflectivity (41.3)
+ *
+ * @param material - The ring shader material
+ * @param reflectivity - Mirror reflectivity 0-1
+ */
+export function setRingMirrorReflectivity(
+  material: ShaderMaterial,
+  reflectivity: number
+): void {
+  const uniforms = material.uniforms as unknown as RingShaderUniforms;
+  uniforms.uMirrorReflectivity.value = Math.max(0, Math.min(1, reflectivity));
+}
+
+/**
+ * Set environment reflection intensity (41.3)
+ *
+ * @param material - The ring shader material
+ * @param intensity - Environment reflection intensity 0-1
+ */
+export function setRingEnvReflection(
+  material: ShaderMaterial,
+  intensity: number
+): void {
+  const uniforms = material.uniforms as unknown as RingShaderUniforms;
+  uniforms.uEnvReflectionIntensity.value = Math.max(0, Math.min(1, intensity));
+}
+
+/**
+ * Set specular sharpness for mirror highlights (41.3)
+ *
+ * @param material - The ring shader material
+ * @param sharpness - Specular exponent (higher = sharper, recommended 64-256)
+ */
+export function setRingSpecularSharpness(
+  material: ShaderMaterial,
+  sharpness: number
+): void {
+  const uniforms = material.uniforms as unknown as RingShaderUniforms;
+  uniforms.uSpecularSharpness.value = Math.max(1, sharpness);
+}
+
+/**
+ * Configure all obsidian mirror parameters at once (41.3)
+ *
+ * @param material - The ring shader material
+ * @param config - Obsidian mirror configuration
+ */
+export function setRingObsidianMirror(
+  material: ShaderMaterial,
+  config: {
+    reflectivity?: number;
+    envReflection?: number;
+    specularSharpness?: number;
+  }
+): void {
+  if (config.reflectivity !== undefined) {
+    setRingMirrorReflectivity(material, config.reflectivity);
+  }
+  if (config.envReflection !== undefined) {
+    setRingEnvReflection(material, config.envReflection);
+  }
+  if (config.specularSharpness !== undefined) {
+    setRingSpecularSharpness(material, config.specularSharpness);
+  }
+}
+
+/**
  * Dispose ring shader material and free GPU resources
  */
 export function disposeRingShader(material: ShaderMaterial): void {
@@ -834,21 +1090,28 @@ export function disposeRingShader(material: ShaderMaterial): void {
 
 /**
  * Shader presets for common ring states
+ * Updated with Phase 41.3 obsidian mirror settings
  */
 export const ringShaderPresets = {
-  /** Default dormant state - cool, minimal glow */
+  /** Default dormant state - cool, minimal glow, maximum obsidian reflection */
   dormant: {
     energyLevel: 0,
     innerGlow: 0.2,
     fresnelPower: 3.5,
     state: 'dormant' as const,
+    mirrorReflectivity: 0.8,       // High reflectivity when dormant
+    envReflectionIntensity: 0.6,  // Visible environment reflections
+    specularSharpness: 128.0,     // Sharp polished look
   },
-  /** Active state - warm, visible energy */
+  /** Active state - warm, visible energy, reduced reflection */
   active: {
     energyLevel: 0.6,
     innerGlow: 0.5,
     fresnelPower: 2.5,
     state: 'active' as const,
+    mirrorReflectivity: 0.6,       // Reduced - plasma dominates
+    envReflectionIntensity: 0.4,  // Subtler reflections
+    specularSharpness: 96.0,      // Slightly softer
   },
   /** Processing state - pulsing between states */
   processing: {
@@ -856,13 +1119,19 @@ export const ringShaderPresets = {
     innerGlow: 0.4,
     fresnelPower: 3.0,
     state: 'processing' as const,
+    mirrorReflectivity: 0.7,
+    envReflectionIntensity: 0.5,
+    specularSharpness: 112.0,
   },
-  /** Exploding state - maximum energy, white-hot */
+  /** Exploding state - maximum energy, intense specular, plasma-dominated */
   exploding: {
     energyLevel: 1.0,
     innerGlow: 1.0,
     fresnelPower: 2.0,
     state: 'exploding' as const,
+    mirrorReflectivity: 0.5,       // Minimal - energy overwhelms
+    envReflectionIntensity: 0.3,  // Almost hidden by glow
+    specularSharpness: 64.0,      // Broader hot glow
   },
 } as const;
 
