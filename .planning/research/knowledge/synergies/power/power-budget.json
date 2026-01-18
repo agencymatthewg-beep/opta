@@ -1,0 +1,669 @@
+{
+  "$schema": "synergy-schema.json",
+  "domain": "power",
+  "subDomain": "power-management",
+  "lastUpdated": "2026-01-18",
+  "lastVerified": "2026-01-18",
+  "confidence": "high",
+  "sources": [
+    {
+      "name": "Apple Official Technical Specifications",
+      "type": "official-docs",
+      "date": "2024"
+    },
+    {
+      "name": "Gemini Deep Research - Thermal Management",
+      "type": "gemini-research",
+      "date": "2026-01-18"
+    },
+    {
+      "name": "Gemini Deep Research - Apple Mac Capabilities",
+      "type": "gemini-research",
+      "date": "2026-01-18"
+    },
+    {
+      "name": "Real-world benchmark measurements",
+      "type": "benchmark",
+      "date": "2024"
+    }
+  ],
+  "interactions": [
+    {
+      "id": "m1-base-tdp",
+      "type": "synergy",
+      "components": ["cpu:m1", "gpu:m1-gpu", "power:system"],
+      "relationship": "M1 base chip operates at ~15W typical, ~20W peak TDP, enabling fanless design in MacBook Air",
+      "conditions": [
+        {
+          "parameter": "workload_intensity",
+          "operator": "range",
+          "value": { "min": 0, "max": 100 },
+          "unit": "percent"
+        }
+      ],
+      "impact": {
+        "performance": { "value": 0, "unit": "baseline" },
+        "thermal": { "value": 0, "unit": "baseline" },
+        "power": { "value": 15, "min": 5, "max": 20, "unit": "watts", "typical": 15 }
+      },
+      "confidence": "high",
+      "applicableTo": ["M1"],
+      "tags": ["tdp", "base-chip", "fanless", "efficiency"],
+      "source": "Apple Official Specs",
+      "sourceDate": "2020"
+    },
+    {
+      "id": "m2-base-tdp",
+      "type": "synergy",
+      "components": ["cpu:m2", "gpu:m2-gpu", "power:system"],
+      "relationship": "M2 base chip operates at ~15-22W typical TDP, slightly higher than M1 due to performance gains",
+      "conditions": [
+        {
+          "parameter": "workload_intensity",
+          "operator": "range",
+          "value": { "min": 0, "max": 100 },
+          "unit": "percent"
+        }
+      ],
+      "impact": {
+        "performance": { "value": 18, "unit": "percent-improvement-over-m1" },
+        "thermal": { "value": 5 },
+        "power": { "value": 18, "min": 5, "max": 22, "unit": "watts", "typical": 18 }
+      },
+      "confidence": "high",
+      "applicableTo": ["M2"],
+      "tags": ["tdp", "base-chip", "efficiency"],
+      "source": "Apple Official Specs",
+      "sourceDate": "2022"
+    },
+    {
+      "id": "m3-base-tdp",
+      "type": "synergy",
+      "components": ["cpu:m3", "gpu:m3-gpu", "power:system"],
+      "relationship": "M3 base chip operates at ~15-22W typical TDP with improved perf/watt from 3nm process",
+      "conditions": [
+        {
+          "parameter": "workload_intensity",
+          "operator": "range",
+          "value": { "min": 0, "max": 100 },
+          "unit": "percent"
+        }
+      ],
+      "impact": {
+        "performance": { "value": 35, "unit": "percent-improvement-over-m1" },
+        "thermal": { "value": -5, "unit": "improved-efficiency" },
+        "power": { "value": 18, "min": 5, "max": 22, "unit": "watts", "typical": 18 }
+      },
+      "confidence": "high",
+      "applicableTo": ["M3"],
+      "tags": ["tdp", "base-chip", "3nm", "efficiency"],
+      "source": "Apple Official Specs",
+      "sourceDate": "2023"
+    },
+    {
+      "id": "m4-base-tdp",
+      "type": "synergy",
+      "components": ["cpu:m4", "gpu:m4-gpu", "power:system"],
+      "relationship": "M4 base chip operates at ~15-25W typical TDP with best-in-class perf/watt from 2nd-gen 3nm",
+      "conditions": [
+        {
+          "parameter": "workload_intensity",
+          "operator": "range",
+          "value": { "min": 0, "max": 100 },
+          "unit": "percent"
+        }
+      ],
+      "impact": {
+        "performance": { "value": 50, "unit": "percent-improvement-over-m1" },
+        "thermal": { "value": -8, "unit": "improved-efficiency" },
+        "power": { "value": 20, "min": 5, "max": 25, "unit": "watts", "typical": 20 }
+      },
+      "confidence": "high",
+      "applicableTo": ["M4"],
+      "tags": ["tdp", "base-chip", "3nm-2nd-gen", "efficiency"],
+      "source": "Apple Official Specs",
+      "sourceDate": "2024"
+    },
+    {
+      "id": "m-pro-tdp-range",
+      "type": "synergy",
+      "components": ["cpu:m-pro-series", "gpu:m-pro-gpu", "power:system"],
+      "relationship": "Pro variants operate at 30-40W TDP, requiring active cooling for sustained workloads",
+      "conditions": [
+        {
+          "parameter": "sustained_workload",
+          "operator": "gt",
+          "value": 50,
+          "unit": "percent"
+        }
+      ],
+      "impact": {
+        "performance": { "value": 40, "unit": "percent-over-base" },
+        "thermal": { "value": 25, "unit": "requires-active-cooling" },
+        "power": { "value": 35, "min": 20, "max": 40, "unit": "watts", "typical": 35 }
+      },
+      "confidence": "high",
+      "applicableTo": ["M1 Pro", "M2 Pro", "M3 Pro", "M4 Pro"],
+      "tags": ["tdp", "pro-chip", "active-cooling"],
+      "source": "Apple Official Specs"
+    },
+    {
+      "id": "m-max-tdp-range",
+      "type": "synergy",
+      "components": ["cpu:m-max-series", "gpu:m-max-gpu", "power:system"],
+      "relationship": "Max variants operate at 60-90W TDP with aggressive thermal management for sustained performance",
+      "conditions": [
+        {
+          "parameter": "gpu_heavy_workload",
+          "operator": "gt",
+          "value": 70,
+          "unit": "percent"
+        }
+      ],
+      "impact": {
+        "performance": { "value": 70, "unit": "percent-over-base" },
+        "thermal": { "value": 45, "unit": "high-heat-output" },
+        "power": { "value": 75, "min": 40, "max": 90, "unit": "watts", "typical": 75 }
+      },
+      "confidence": "high",
+      "applicableTo": ["M1 Max", "M2 Max", "M3 Max", "M4 Max"],
+      "tags": ["tdp", "max-chip", "high-power", "thermal-intensive"],
+      "source": "Apple Official Specs"
+    },
+    {
+      "id": "m-ultra-tdp-range",
+      "type": "synergy",
+      "components": ["cpu:m-ultra-series", "gpu:m-ultra-gpu", "power:system"],
+      "relationship": "Ultra variants operate at 120-180W TDP, effectively two Max dies via UltraFusion requiring desktop-class cooling",
+      "conditions": [
+        {
+          "parameter": "full_utilization",
+          "operator": "gt",
+          "value": 80,
+          "unit": "percent"
+        }
+      ],
+      "impact": {
+        "performance": { "value": 100, "unit": "max-performance-tier" },
+        "thermal": { "value": 75, "unit": "desktop-cooling-required" },
+        "power": { "value": 150, "min": 80, "max": 180, "unit": "watts", "typical": 150 }
+      },
+      "confidence": "high",
+      "applicableTo": ["M1 Ultra", "M2 Ultra", "M3 Ultra", "M4 Ultra"],
+      "tags": ["tdp", "ultra-chip", "ultrafusion", "desktop-class"],
+      "source": "Apple Official Specs"
+    },
+    {
+      "id": "low-power-mode-clock-reduction",
+      "type": "synergy",
+      "components": ["cpu:apple-silicon", "gpu:apple-silicon-gpu", "power:low-power-mode"],
+      "relationship": "Low Power Mode reduces CPU/GPU clocks by 20-30% and limits P-core usage for battery life",
+      "conditions": [
+        {
+          "parameter": "low_power_mode",
+          "operator": "eq",
+          "value": "enabled"
+        }
+      ],
+      "impact": {
+        "performance": { "value": -25, "min": -15, "max": -30 },
+        "thermal": { "value": -30, "unit": "reduced-heat" },
+        "power": { "value": -35, "min": -25, "max": -50, "unit": "power-savings" }
+      },
+      "confidence": "high",
+      "applicableTo": ["MacBook Air M2", "MacBook Air M3", "MacBook Air M4", "MacBook Pro 14", "MacBook Pro 16"],
+      "tags": ["power-mode", "battery", "clock-reduction", "e-core-priority"],
+      "source": "macOS Power Management",
+      "mitigations": [
+        "Disable for gaming sessions requiring full performance",
+        "Enable automatically when battery below 20%"
+      ]
+    },
+    {
+      "id": "automatic-mode-dynamic-scaling",
+      "type": "neutral",
+      "components": ["cpu:apple-silicon", "gpu:apple-silicon-gpu", "power:automatic-mode"],
+      "relationship": "Automatic Mode dynamically scales performance based on workload and power source",
+      "conditions": [
+        {
+          "parameter": "power_mode",
+          "operator": "eq",
+          "value": "automatic"
+        }
+      ],
+      "impact": {
+        "performance": { "value": 0, "unit": "baseline-plugged-in" },
+        "thermal": { "value": 0 },
+        "power": { "value": 0, "unit": "dynamic-scaling" }
+      },
+      "confidence": "high",
+      "applicableTo": ["All Macs"],
+      "tags": ["power-mode", "automatic", "dynamic-scaling"],
+      "source": "macOS Power Management"
+    },
+    {
+      "id": "high-power-mode-sustained",
+      "type": "synergy",
+      "components": ["cpu:apple-silicon", "gpu:apple-silicon-gpu", "power:high-power-mode", "thermal:fan-system"],
+      "relationship": "High Power Mode uses aggressive fan curves to maintain boost clocks before thermal throttling occurs",
+      "conditions": [
+        {
+          "parameter": "high_power_mode",
+          "operator": "eq",
+          "value": "enabled"
+        },
+        {
+          "parameter": "power_source",
+          "operator": "eq",
+          "value": "plugged-in"
+        }
+      ],
+      "impact": {
+        "performance": { "value": 15, "min": 5, "max": 20, "unit": "sustained-performance-gain" },
+        "thermal": { "value": 30, "unit": "higher-fan-speed" },
+        "power": { "value": 20, "unit": "increased-power-draw" }
+      },
+      "confidence": "high",
+      "applicableTo": ["MacBook Pro 14 M3 Pro", "MacBook Pro 14 M3 Max", "MacBook Pro 16 M3 Pro", "MacBook Pro 16 M3 Max", "MacBook Pro M4 Pro", "MacBook Pro M4 Max"],
+      "tags": ["power-mode", "high-power", "fan-curve", "sustained", "boost-clock"],
+      "source": "macOS Power Management",
+      "relatedInteractions": ["high-power-mode-fan-curve"]
+    },
+    {
+      "id": "battery-vs-plugged-performance-delta",
+      "type": "bottleneck",
+      "components": ["cpu:apple-silicon", "gpu:apple-silicon-gpu", "power:battery"],
+      "relationship": "Running on battery causes automatic power management to reduce peak performance by 10-30%",
+      "conditions": [
+        {
+          "parameter": "power_source",
+          "operator": "eq",
+          "value": "battery"
+        },
+        {
+          "parameter": "workload_intensity",
+          "operator": "gt",
+          "value": 70,
+          "unit": "percent"
+        }
+      ],
+      "impact": {
+        "performance": { "value": -20, "min": -10, "max": -30 },
+        "thermal": { "value": -15, "unit": "reduced-heat" },
+        "power": { "value": -25, "unit": "battery-preservation" }
+      },
+      "confidence": "high",
+      "applicableTo": ["MacBook Air", "MacBook Pro 14", "MacBook Pro 16"],
+      "tags": ["battery", "performance-delta", "power-management"],
+      "source": "macOS Power Management"
+    },
+    {
+      "id": "e-core-efficiency-advantage",
+      "type": "synergy",
+      "components": ["cpu:e-cores", "power:efficiency"],
+      "relationship": "E-cores provide 3-4x better performance-per-watt than P-cores for background and light tasks",
+      "conditions": [
+        {
+          "parameter": "task_type",
+          "operator": "in",
+          "value": ["background", "low-intensity", "system-maintenance"]
+        }
+      ],
+      "impact": {
+        "performance": { "value": -40, "unit": "vs-p-core-throughput" },
+        "thermal": { "value": -60, "unit": "significantly-cooler" },
+        "power": { "value": -75, "min": -65, "max": -80, "unit": "power-efficiency" }
+      },
+      "confidence": "high",
+      "applicableTo": ["M1", "M2", "M3", "M4", "M1 Pro", "M2 Pro", "M3 Pro", "M4 Pro"],
+      "tags": ["e-cores", "efficiency", "background-tasks", "power-savings"],
+      "source": "Apple Silicon Architecture"
+    },
+    {
+      "id": "p-core-burst-power",
+      "type": "bottleneck",
+      "components": ["cpu:p-cores", "power:system", "thermal:heat-generation"],
+      "relationship": "P-cores at maximum frequency consume significantly more power with diminishing performance returns",
+      "formula": {
+        "expression": "power_consumption = base_power * (frequency / base_frequency)^2",
+        "variables": {
+          "base_power": "Power at base frequency (watts)",
+          "frequency": "Current operating frequency",
+          "base_frequency": "Base clock frequency"
+        },
+        "outputUnit": "watts"
+      },
+      "conditions": [
+        {
+          "parameter": "p_core_utilization",
+          "operator": "gt",
+          "value": 90,
+          "unit": "percent"
+        }
+      ],
+      "impact": {
+        "performance": { "value": 20, "unit": "burst-performance" },
+        "thermal": { "value": 40, "unit": "heat-spike" },
+        "power": { "value": 60, "unit": "increased-draw" }
+      },
+      "confidence": "medium",
+      "applicableTo": ["M1", "M2", "M3", "M4", "M1 Pro", "M2 Pro", "M3 Pro", "M4 Pro"],
+      "tags": ["p-cores", "burst", "frequency-scaling", "power-efficiency-curve"],
+      "source": "Apple Silicon Architecture"
+    },
+    {
+      "id": "gpu-power-scaling-linear",
+      "type": "synergy",
+      "components": ["gpu:apple-silicon-gpu", "power:system"],
+      "relationship": "Apple GPU power scales roughly linearly with utilization up to 70%, then accelerates",
+      "formula": {
+        "expression": "power = idle_power + (utilization * max_power_delta) * efficiency_factor",
+        "variables": {
+          "idle_power": "GPU idle power (typically 1-3W)",
+          "utilization": "GPU utilization percentage",
+          "max_power_delta": "Power difference at 100% vs idle",
+          "efficiency_factor": "1.0 below 70%, 1.3+ above 70%"
+        },
+        "outputUnit": "watts"
+      },
+      "conditions": [
+        {
+          "parameter": "gpu_utilization",
+          "operator": "range",
+          "value": { "min": 0, "max": 100 },
+          "unit": "percent"
+        }
+      ],
+      "impact": {
+        "performance": { "value": 0, "unit": "scales-with-workload" },
+        "thermal": { "value": 0, "unit": "scales-with-workload" },
+        "power": { "value": 0, "unit": "workload-dependent" }
+      },
+      "confidence": "medium",
+      "applicableTo": ["M1", "M2", "M3", "M4"],
+      "tags": ["gpu", "power-scaling", "efficiency-curve"],
+      "source": "Benchmark analysis"
+    },
+    {
+      "id": "idle-power-consumption-base",
+      "type": "synergy",
+      "components": ["cpu:apple-silicon", "gpu:apple-silicon-gpu", "power:idle"],
+      "relationship": "Apple Silicon base chips idle at 2-5W, critical for battery life during light usage",
+      "conditions": [
+        {
+          "parameter": "workload_state",
+          "operator": "eq",
+          "value": "idle"
+        }
+      ],
+      "impact": {
+        "performance": { "value": 0 },
+        "thermal": { "value": -80, "unit": "minimal-heat" },
+        "power": { "value": 3, "min": 2, "max": 5, "unit": "watts" }
+      },
+      "confidence": "high",
+      "applicableTo": ["M1", "M2", "M3", "M4"],
+      "tags": ["idle", "efficiency", "battery-life"],
+      "source": "Power measurements"
+    },
+    {
+      "id": "gaming-power-light-intensity",
+      "type": "synergy",
+      "components": ["cpu:apple-silicon", "gpu:apple-silicon-gpu", "power:gaming"],
+      "relationship": "Light gaming (30 FPS cap, medium settings) draws 15-25W on base chips",
+      "conditions": [
+        {
+          "parameter": "game_intensity",
+          "operator": "eq",
+          "value": "light"
+        },
+        {
+          "parameter": "frame_rate_cap",
+          "operator": "lte",
+          "value": 30,
+          "unit": "fps"
+        }
+      ],
+      "impact": {
+        "performance": { "value": -30, "unit": "vs-max-performance" },
+        "thermal": { "value": 20 },
+        "power": { "value": 20, "min": 15, "max": 25, "unit": "watts" }
+      },
+      "confidence": "medium",
+      "applicableTo": ["M1", "M2", "M3", "M4"],
+      "tags": ["gaming", "power", "30fps", "light-gaming", "battery-friendly"],
+      "source": "Benchmark analysis"
+    },
+    {
+      "id": "gaming-power-medium-intensity",
+      "type": "synergy",
+      "components": ["cpu:apple-silicon", "gpu:apple-silicon-gpu", "power:gaming"],
+      "relationship": "Medium gaming (60 FPS, high settings) draws 25-40W on base chips, 40-60W on Pro",
+      "conditions": [
+        {
+          "parameter": "game_intensity",
+          "operator": "eq",
+          "value": "medium"
+        },
+        {
+          "parameter": "frame_rate_cap",
+          "operator": "range",
+          "value": { "min": 30, "max": 60 },
+          "unit": "fps"
+        }
+      ],
+      "impact": {
+        "performance": { "value": 0, "unit": "balanced" },
+        "thermal": { "value": 40 },
+        "power": { "value": 35, "min": 25, "max": 60, "unit": "watts" }
+      },
+      "confidence": "medium",
+      "applicableTo": ["M1", "M2", "M3", "M4", "M3 Pro", "M4 Pro"],
+      "tags": ["gaming", "power", "60fps", "medium-intensity"],
+      "source": "Benchmark analysis"
+    },
+    {
+      "id": "gaming-power-high-intensity",
+      "type": "bottleneck",
+      "components": ["cpu:apple-silicon", "gpu:apple-silicon-gpu", "power:gaming", "thermal:heat"],
+      "relationship": "Heavy gaming (120+ FPS, max settings) pushes chips to thermal limits, 60-90W+ on Max variants",
+      "conditions": [
+        {
+          "parameter": "game_intensity",
+          "operator": "eq",
+          "value": "high"
+        },
+        {
+          "parameter": "frame_rate_target",
+          "operator": "gt",
+          "value": 60,
+          "unit": "fps"
+        }
+      ],
+      "impact": {
+        "performance": { "value": 30, "unit": "maximum-performance" },
+        "thermal": { "value": 70, "unit": "near-thermal-limit" },
+        "power": { "value": 75, "min": 60, "max": 90, "unit": "watts" }
+      },
+      "confidence": "medium",
+      "applicableTo": ["M3 Max", "M4 Max", "M2 Ultra", "M3 Ultra"],
+      "tags": ["gaming", "power", "high-fps", "thermal-intensive", "max-performance"],
+      "source": "Benchmark analysis"
+    },
+    {
+      "id": "frame-rate-cap-power-savings",
+      "type": "synergy",
+      "components": ["gpu:apple-silicon-gpu", "power:efficiency"],
+      "relationship": "Capping frame rate to 30 FPS instead of uncapped can save 30-50% power during gaming",
+      "conditions": [
+        {
+          "parameter": "frame_rate_cap",
+          "operator": "eq",
+          "value": 30,
+          "unit": "fps"
+        }
+      ],
+      "impact": {
+        "performance": { "value": -50, "unit": "frame-rate-reduction" },
+        "thermal": { "value": -40, "unit": "reduced-heat" },
+        "power": { "value": -40, "min": -30, "max": -50, "unit": "power-savings" }
+      },
+      "confidence": "high",
+      "applicableTo": ["All Apple Silicon"],
+      "tags": ["frame-cap", "power-efficiency", "battery", "gaming"],
+      "source": "Gaming benchmarks",
+      "mitigations": [
+        "Use 30 FPS cap for battery gaming",
+        "60 FPS cap provides good balance",
+        "Uncapped only when plugged in"
+      ]
+    },
+    {
+      "id": "charging-while-gaming-thermal",
+      "type": "bottleneck",
+      "components": ["power:charger", "thermal:battery-heat", "cpu:apple-silicon", "gpu:apple-silicon-gpu"],
+      "relationship": "Charging while gaming adds 5-15W of heat from battery charging, exacerbating thermal throttling",
+      "conditions": [
+        {
+          "parameter": "charging",
+          "operator": "eq",
+          "value": true
+        },
+        {
+          "parameter": "gaming",
+          "operator": "eq",
+          "value": true
+        }
+      ],
+      "impact": {
+        "performance": { "value": -10, "min": -5, "max": -15, "unit": "thermal-throttle-impact" },
+        "thermal": { "value": 25, "unit": "additional-heat" },
+        "power": { "value": 10, "min": 5, "max": 15, "unit": "charging-overhead" }
+      },
+      "confidence": "medium",
+      "applicableTo": ["MacBook Air", "MacBook Pro"],
+      "tags": ["charging", "gaming", "thermal", "throttling"],
+      "source": "Thermal analysis",
+      "mitigations": [
+        "Charge to 80% before gaming session",
+        "Use lower wattage charger (30W vs 96W) to reduce charging heat",
+        "Enable 'Optimized Battery Charging' in System Settings"
+      ]
+    },
+    {
+      "id": "background-apps-power-drain",
+      "type": "bottleneck",
+      "components": ["cpu:apple-silicon", "power:background-tasks"],
+      "relationship": "Background apps (browsers, Electron apps) can consume 5-15W reducing gaming performance and battery",
+      "conditions": [
+        {
+          "parameter": "background_app_count",
+          "operator": "gt",
+          "value": 5
+        }
+      ],
+      "impact": {
+        "performance": { "value": -15, "min": -5, "max": -20 },
+        "thermal": { "value": 15 },
+        "power": { "value": 10, "min": 5, "max": 15, "unit": "wasted-watts" }
+      },
+      "confidence": "high",
+      "applicableTo": ["All Macs"],
+      "tags": ["background-apps", "power-drain", "optimization"],
+      "source": "Activity Monitor analysis",
+      "mitigations": [
+        "Close browser tabs (each tab uses memory and CPU)",
+        "Quit Electron apps (Slack, Discord, VS Code when not in use)",
+        "Disable unnecessary Login Items in System Settings"
+      ]
+    },
+    {
+      "id": "screen-brightness-power-impact",
+      "type": "bottleneck",
+      "components": ["display:screen", "power:backlight"],
+      "relationship": "Screen backlight at 100% vs 50% can add 3-8W power draw on Retina displays",
+      "conditions": [
+        {
+          "parameter": "screen_brightness",
+          "operator": "gt",
+          "value": 75,
+          "unit": "percent"
+        }
+      ],
+      "impact": {
+        "performance": { "value": 0 },
+        "thermal": { "value": 5 },
+        "power": { "value": 6, "min": 3, "max": 8, "unit": "watts" }
+      },
+      "confidence": "high",
+      "applicableTo": ["MacBook Air", "MacBook Pro 14", "MacBook Pro 16"],
+      "tags": ["display", "brightness", "battery", "power"],
+      "source": "Power measurements",
+      "mitigations": [
+        "Lower brightness to 50-70% for battery gaming",
+        "Use Auto-Brightness in darker environments",
+        "Enable True Tone to reduce eye strain at lower brightness"
+      ]
+    },
+    {
+      "id": "perf-per-watt-sweet-spot",
+      "type": "synergy",
+      "components": ["cpu:apple-silicon", "gpu:apple-silicon-gpu", "power:efficiency"],
+      "relationship": "Optimal performance-per-watt occurs at 60-70% utilization, above this efficiency drops sharply",
+      "formula": {
+        "expression": "efficiency = performance / power; optimal at 60-70% utilization",
+        "variables": {
+          "performance": "Benchmark score or FPS",
+          "power": "Power consumption in watts"
+        },
+        "outputUnit": "perf-per-watt"
+      },
+      "conditions": [
+        {
+          "parameter": "system_utilization",
+          "operator": "range",
+          "value": { "min": 60, "max": 70 },
+          "unit": "percent"
+        }
+      ],
+      "impact": {
+        "performance": { "value": 70, "unit": "percent-of-max" },
+        "thermal": { "value": 40, "unit": "moderate-heat" },
+        "power": { "value": 50, "unit": "percent-of-max" }
+      },
+      "confidence": "medium",
+      "applicableTo": ["All Apple Silicon"],
+      "tags": ["efficiency", "sweet-spot", "optimization", "perf-per-watt"],
+      "source": "Benchmark analysis"
+    },
+    {
+      "id": "high-power-mode-when-beneficial",
+      "type": "synergy",
+      "components": ["power:high-power-mode", "thermal:cooling-headroom"],
+      "relationship": "High Power Mode provides meaningful gains only for sustained workloads that would otherwise thermal throttle",
+      "conditions": [
+        {
+          "parameter": "workload_duration",
+          "operator": "gt",
+          "value": 5,
+          "unit": "minutes"
+        },
+        {
+          "parameter": "workload_intensity",
+          "operator": "gt",
+          "value": 80,
+          "unit": "percent"
+        }
+      ],
+      "impact": {
+        "performance": { "value": 15, "min": 5, "max": 20 },
+        "thermal": { "value": 30, "unit": "increased-fan-noise" },
+        "power": { "value": 20, "unit": "increased-draw" }
+      },
+      "confidence": "high",
+      "applicableTo": ["MacBook Pro M3 Pro", "MacBook Pro M3 Max", "MacBook Pro M4 Pro", "MacBook Pro M4 Max"],
+      "tags": ["high-power-mode", "sustained-workload", "throttle-prevention"],
+      "source": "macOS Power Management"
+    }
+  ]
+}
