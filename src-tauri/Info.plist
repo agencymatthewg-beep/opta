@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Application Identity -->
+    <key>CFBundleName</key>
+    <string>Opta</string>
+    <key>CFBundleDisplayName</key>
+    <string>Opta</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.opta.optimizer</string>
+    <key>CFBundleVersion</key>
+    <string>6.0.0</string>
+    <key>CFBundleShortVersionString</key>
+    <string>6.0.0</string>
+
+    <!-- macOS 12+ Monterey minimum (Apple Silicon optimized) -->
+    <key>LSMinimumSystemVersion</key>
+    <string>12.0</string>
+
+    <!-- High Resolution Support -->
+    <key>NSHighResolutionCapable</key>
+    <true/>
+
+    <!-- Application Category -->
+    <key>LSApplicationCategoryType</key>
+    <string>public.app-category.developer-tools</string>
+
+    <!-- Appearance Support (Light/Dark mode) -->
+    <key>NSRequiresAquaSystemAppearance</key>
+    <false/>
+
+    <!-- Required for transparent windows -->
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <key>NSAllowsLocalNetworking</key>
+        <true/>
+    </dict>
+
+    <!-- Privacy Descriptions (Required for App Store / Notarization) -->
+    <key>NSAppleEventsUsageDescription</key>
+    <string>Opta uses AppleEvents to monitor and optimize running applications.</string>
+
+    <key>NSSystemAdministrationUsageDescription</key>
+    <string>Opta requires administrator access to apply system-level optimizations.</string>
+
+    <!-- GPU/Graphics Description -->
+    <key>NSOpenGLUsageDescription</key>
+    <string>Opta monitors GPU performance to provide optimization recommendations.</string>
+
+    <!-- Network Usage -->
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>Opta connects to local services for AI-powered optimization analysis.</string>
+
+    <!-- Architecture: Apple Silicon only -->
+    <key>LSArchitecturePriority</key>
+    <array>
+        <string>arm64</string>
+    </array>
+
+    <!-- Copyright -->
+    <key>NSHumanReadableCopyright</key>
+    <string>Copyright © 2026 Opta. All rights reserved.</string>
+
+    <!-- Supports Secure State Restoration -->
+    <key>NSSupportsSecureStateRestoration</key>
+    <true/>
+
+    <!-- App Nap Disabled (for real-time monitoring) -->
+    <key>NSAppSleepDisabled</key>
+    <true/>
+
+    <!-- Dock Icon Behavior -->
+    <key>LSUIElement</key>
+    <false/>
+</dict>
+</plist>

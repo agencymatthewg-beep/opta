@@ -56,7 +56,24 @@ interface KnowledgeGraphVizProps {
   className?: string;
 }
 
-// Physics constants for force simulation
+/**
+ * Physics constants for force-directed graph simulation.
+ *
+ * These values are tuned for the knowledge graph visualization to
+ * produce readable layouts with minimal overlap:
+ *
+ * - REPULSION_FORCE: Coulomb-like repulsion between nodes. Higher values
+ *   push nodes further apart. 500 works well for ~20-50 nodes.
+ *
+ * - ATTRACTION_FORCE: Spring-like attraction along edges. Lower values
+ *   create looser graphs. 0.05 keeps connected nodes reasonably close.
+ *
+ * - DAMPING: Velocity damping per frame (0-1). 0.9 = 10% velocity loss
+ *   per frame, providing smooth settling without oscillation.
+ *
+ * - MIN_DISTANCE: Minimum distance for repulsion calculation. Prevents
+ *   division by very small numbers when nodes are nearly overlapping.
+ */
 const REPULSION_FORCE = 500;
 const ATTRACTION_FORCE = 0.05;
 const DAMPING = 0.9;
@@ -77,12 +94,10 @@ export function KnowledgeGraphViz({
   initialFilter,
   options: initialOptions,
   onNodeSelect,
-  onEdgeSelect: _onEdgeSelect,
+  onEdgeSelect,
   showControls = true,
   className,
 }: KnowledgeGraphVizProps) {
-  // Reserved for future use
-  void _onEdgeSelect;
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>(0);
   const isDraggingRef = useRef<string | null>(null);
@@ -101,6 +116,7 @@ export function KnowledgeGraphViz({
     ...initialOptions,
   });
   const [selectedNode, setSelectedNode] = useState<KnowledgeNode | null>(null);
+  const [selectedEdge, setSelectedEdge] = useState<KnowledgeEdge | null>(null);
   const [hoveredNode, setHoveredNode] = useState<KnowledgeNode | null>(null);
   const [showFilterPanel, setShowFilterPanel] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -395,6 +411,39 @@ export function KnowledgeGraphViz({
     return null;
   }, [filteredData.nodes, options.nodeSizeScale]);
 
+  // Find edge at position using point-to-line-segment distance
+  const findEdgeAtPosition = useCallback((pos: { x: number; y: number }) => {
+    const threshold = 8; // Distance threshold in pixels
+
+    for (const edge of filteredData.edges) {
+      const source = filteredData.nodes.find(n => n.id === edge.source);
+      const target = filteredData.nodes.find(n => n.id === edge.target);
+      if (!source || !target) continue;
+
+      // Calculate point-to-line-segment distance
+      const ax = pos.x - source.x;
+      const ay = pos.y - source.y;
+      const bx = target.x - source.x;
+      const by = target.y - source.y;
+
+      const len2 = bx * bx + by * by;
+      if (len2 === 0) continue; // Degenerate edge (same source/target)
+
+      // Project pos onto line segment, clamped to [0, 1]
+      const t = Math.max(0, Math.min(1, (ax * bx + ay * by) / len2));
+
+      // Closest point on segment
+      const closestX = source.x + t * bx;
+      const closestY = source.y + t * by;
+
+      const dist = Math.sqrt((pos.x - closestX) ** 2 + (pos.y - closestY) ** 2);
+      if (dist < threshold) {
+        return edge;
+      }
+    }
+    return null;
+  }, [filteredData.edges, filteredData.nodes]);
+
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     const pos = getMousePos(e);
     const node = findNodeAtPosition(pos);
@@ -454,18 +503,35 @@ export function KnowledgeGraphViz({
     const pos = getMousePos(e);
     const node = findNodeAtPosition(pos);
 
-    setSelectedNode(node);
-    onNodeSelect?.(node);
-
-    // Highlight connected nodes
     if (node) {
+      // Node takes priority over edges
+      setSelectedNode(node);
+      setSelectedEdge(null);
+      onNodeSelect?.(node);
+      onEdgeSelect?.(null);
+
+      // Highlight connected nodes
       const store = getKnowledgeGraphStore();
       store.highlightPath([node.id]);
     } else {
-      const store = getKnowledgeGraphStore();
-      store.resetVisualStates();
+      // Check for edge selection if no node found
+      const edge = findEdgeAtPosition(pos);
+
+      setSelectedNode(null);
+      setSelectedEdge(edge);
+      onNodeSelect?.(null);
+      onEdgeSelect?.(edge);
+
+      if (edge) {
+        // Highlight the edge's endpoints
+        const store = getKnowledgeGraphStore();
+        store.highlightPath([edge.source, edge.target]);
+      } else {
+        const store = getKnowledgeGraphStore();
+        store.resetVisualStates();
+      }
     }
-  }, [getMousePos, findNodeAtPosition, onNodeSelect]);
+  }, [getMousePos, findNodeAtPosition, findEdgeAtPosition, onNodeSelect, onEdgeSelect]);
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault();
@@ -679,6 +745,68 @@ export function KnowledgeGraphViz({
                   This {selectedNode.type} is connected to{' '}
                   {getKnowledgeGraphStore().getEdgesForNode(selectedNode.id).length} other nodes.
                   {selectedNode.weight > 0.8 && ' It has high importance in the optimization graph.'}
+                </p>
+              </div>
+            )}
+          </motion.div>
+        )}
+
+        {/* Selected Edge Info Panel */}
+        {selectedEdge && !selectedNode && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="absolute bottom-4 left-4 glass p-4 rounded-xl w-72"
+          >
+            <div className="flex items-start justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <span
+                  className="w-3 h-0.5 rounded"
+                  style={{ backgroundColor: EDGE_TYPE_COLORS[selectedEdge.type] ?? 'hsl(0, 0%, 40%)' }}
+                />
+                <span className="font-medium capitalize">{selectedEdge.type.replace('_', ' ')}</span>
+              </div>
+              <button onClick={() => setSelectedEdge(null)}>
+                <X className="w-4 h-4" strokeWidth={1.75} />
+              </button>
+            </div>
+            <div className="text-xs text-muted-foreground mb-2">
+              <span className="font-medium">
+                {filteredData.nodes.find(n => n.id === selectedEdge.source)?.label ?? selectedEdge.source}
+              </span>
+              <span className="mx-2">{selectedEdge.bidirectional ? '↔' : '→'}</span>
+              <span className="font-medium">
+                {filteredData.nodes.find(n => n.id === selectedEdge.target)?.label ?? selectedEdge.target}
+              </span>
+            </div>
+            {selectedEdge.description && (
+              <p className="text-sm text-muted-foreground mb-2">
+                {selectedEdge.description}
+              </p>
+            )}
+            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+              <span>Weight: {selectedEdge.weight.toFixed(2)}</span>
+              {selectedEdge.bidirectional && <span>Bidirectional</span>}
+            </div>
+
+            {/* Learn Mode: Edge context */}
+            {isLearnMode && (
+              <div className="mt-3 pt-3 border-t border-border/30">
+                <div className="flex items-center gap-1 text-xs text-primary mb-1">
+                  <Info className="w-3 h-3" strokeWidth={1.75} />
+                  <span>Learn Mode</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  This relationship indicates{' '}
+                  {selectedEdge.type === 'enhances' && 'a positive interaction - these settings work well together.'}
+                  {selectedEdge.type === 'conflicts_with' && 'a negative interaction - these settings may conflict.'}
+                  {selectedEdge.type === 'degrades' && 'a negative impact - the source reduces the target effectiveness.'}
+                  {selectedEdge.type === 'requires' && 'a dependency - the source requires the target to function.'}
+                  {selectedEdge.type === 'supports' && 'hardware support - hardware supports this setting.'}
+                  {selectedEdge.type === 'optimizes' && 'an optimization - the profile optimizes for this target.'}
+                  {selectedEdge.type === 'belongs_to' && 'categorization - the source belongs to this group.'}
+                  {selectedEdge.type === 'recommends' && 'a recommendation - the system recommends this pairing.'}
                 </p>
               </div>
             )}

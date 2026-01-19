@@ -51,14 +51,14 @@ export function Background() {
         }}
       />
 
-      {/* Ambient Orbs - Very subtle, slow-moving depth enhancers */}
+      {/* Ambient Orbs - Very subtle, slow-moving depth enhancers (reduced intensity) */}
       {!prefersReducedMotion && (
         <>
           {/* Deep purple orb - bottom left */}
           <motion.div
             className="absolute w-[600px] h-[600px] rounded-full"
             style={{
-              background: 'radial-gradient(circle, hsl(265 60% 15% / 0.2) 0%, transparent 60%)',
+              background: 'radial-gradient(circle, hsl(265 60% 12% / 0.1) 0%, transparent 60%)',
               filter: 'blur(100px)',
               left: '-10%',
               bottom: '-20%',
@@ -79,7 +79,7 @@ export function Background() {
           <motion.div
             className="absolute w-[500px] h-[500px] rounded-full"
             style={{
-              background: 'radial-gradient(circle, hsl(270 50% 12% / 0.15) 0%, transparent 60%)',
+              background: 'radial-gradient(circle, hsl(270 50% 10% / 0.08) 0%, transparent 60%)',
               filter: 'blur(80px)',
               right: '-5%',
               top: '-10%',
@@ -96,11 +96,11 @@ export function Background() {
             } : { duration: 0.3 }}
           />
 
-          {/* Central subtle glow - reacts to activity */}
+          {/* Central subtle glow - reacts to activity (very subtle to avoid bright purple blob) */}
           <motion.div
             className="absolute w-[800px] h-[800px] rounded-full"
             style={{
-              background: 'radial-gradient(circle, hsl(265 70% 18% / 0.1) 0%, transparent 50%)',
+              background: 'radial-gradient(circle, hsl(265 70% 12% / 0.05) 0%, transparent 50%)',
               filter: 'blur(120px)',
               left: '50%',
               top: '50%',
@@ -108,7 +108,7 @@ export function Background() {
               willChange: 'opacity',
             }}
             animate={{
-              opacity: fogIntensity === 'storm' ? 0.3 : fogIntensity === 'active' ? 0.2 : 0.1,
+              opacity: fogIntensity === 'storm' ? 0.15 : fogIntensity === 'active' ? 0.1 : 0.05,
             }}
             transition={{
               duration: 1,

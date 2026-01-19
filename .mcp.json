@@ -8,6 +8,28 @@
         "CLIENT_ID": "88000480710-ghdb76imcc66g2opbsif3t7s20mkv2q0.apps.googleusercontent.com",
         "CLIENT_SECRET": "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"
       }
+    },
+    "gmail": {
+      "command": "npx",
+      "args": ["@gongrzhe/server-gmail-autoauth-mcp"]
+    },
+    "google-calendar": {
+      "command": "npx",
+      "args": ["@cocal/google-calendar-mcp"],
+      "env": {
+        "GOOGLE_OAUTH_CREDENTIALS": "/Users/matthewbyrden/.calendar-mcp/gcp-oauth.keys.json"
+      }
+    },
+    "youtube": {
+      "command": "npx",
+      "args": ["-y", "@kirbah/mcp-youtube"],
+      "env": {
+        "YOUTUBE_API_KEY": "AIzaSyDa6-K4vJl1lewF9rxw-m8aDU9WDallCB8"
+      }
+    },
+    "gemini": {
+      "command": "npx",
+      "args": ["mcp-gemini-cli", "--allow-npx"]
     }
   }
 }

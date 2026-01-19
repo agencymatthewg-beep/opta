@@ -178,11 +178,16 @@ export function useProfile(autoDetectInterval: number = 10000): UseProfileResult
   useEffect(() => {
     if (autoDetectInterval <= 0 || !storeState.autoSwitchEnabled) return;
 
+    let cancelled = false;
+
     const checkContext = async () => {
-      if (!mountedRef.current || !storeState.autoSwitchEnabled) return;
+      if (!mountedRef.current || !storeState.autoSwitchEnabled || cancelled) return;
 
       try {
         const context = await getCurrentContext();
+        // Check if unmounted after async operation
+        if (!mountedRef.current || cancelled) return;
+
         const profiles = Object.values(storeState.profiles);
         const match = matcher.matchProfile(profiles, context, storeState.schedules);
 
@@ -190,16 +195,24 @@ export function useProfile(autoDetectInterval: number = 10000): UseProfileResult
           const profile = storeState.profiles[match.profileId];
           if (profile) {
             await engine.activateProfile(profile, context);
+            // Check if unmounted after async operation
+            if (!mountedRef.current || cancelled) return;
             store.setActiveProfile(match.profileId, 'auto_game');
           }
         }
       } catch (err) {
-        console.warn('Auto-detection failed:', err);
+        // Only log if still mounted and not cancelled
+        if (mountedRef.current && !cancelled) {
+          console.warn('Auto-detection failed:', err);
+        }
       }
     };
 
     const intervalId = setInterval(checkContext, autoDetectInterval);
-    return () => clearInterval(intervalId);
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
   }, [autoDetectInterval, storeState, matcher, engine, store]);
 
   // Switch to a specific profile

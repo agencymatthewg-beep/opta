@@ -36,4 +36,12 @@ lto = true
 opt-level = "s"
 codegen-units = 1
 strip = true
+panic = "abort"
+
+# Apple Silicon (aarch64-apple-darwin) specific optimizations
+[profile.release.build-override]
+opt-level = 3
+
+# Target-specific configuration for Apple Silicon
+# Note: rustflags moved to .cargo/config.toml for cleaner configuration
 

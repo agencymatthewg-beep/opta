@@ -10,6 +10,57 @@ import { invoke } from '@tauri-apps/api/core';
 import type { SystemSnapshot } from '../types/telemetry';
 
 /**
+ * Check if we're running inside Tauri (vs browser-only mode)
+ */
+const isTauriAvailable = (): boolean => {
+  return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+};
+
+/**
+ * Generate mock telemetry data for browser development mode
+ */
+const generateMockTelemetry = (): SystemSnapshot => {
+  // Add some randomness to simulate real telemetry changes
+  const cpuBase = 25 + Math.random() * 30;
+  const memBase = 45 + Math.random() * 20;
+  const gpuBase = 15 + Math.random() * 25;
+  const usedGb = Math.round((32 * memBase / 100) * 10) / 10;
+  const diskUsedGb = Math.round(450 + Math.random() * 50);
+
+  return {
+    timestamp: new Date().toISOString(),
+    cpu: {
+      percent: Math.round(cpuBase * 10) / 10,
+      cores: 8,
+      threads: 16,
+      per_core_percent: Array.from({ length: 8 }, () => Math.round((cpuBase + (Math.random() - 0.5) * 20) * 10) / 10),
+      frequency_mhz: 3200 + Math.round(Math.random() * 800),
+    },
+    memory: {
+      total_gb: 32,
+      used_gb: usedGb,
+      available_gb: 32 - usedGb,
+      percent: Math.round(memBase * 10) / 10,
+    },
+    gpu: {
+      available: true,
+      name: 'Apple M2 Max (Mock)',
+      utilization_percent: Math.round(gpuBase * 10) / 10,
+      memory_used_gb: Math.round((2 + Math.random()) * 10) / 10,
+      memory_total_gb: 32,
+      memory_percent: Math.round(gpuBase * 10) / 10,
+      temperature_c: Math.round(45 + Math.random() * 15),
+    },
+    disk: {
+      total_gb: 1000,
+      used_gb: diskUsedGb,
+      free_gb: 1000 - diskUsedGb,
+      percent: Math.round(diskUsedGb / 10),
+    },
+  };
+};
+
+/**
  * Return type for useTelemetry hook.
  */
 export interface UseTelemetryResult {
@@ -57,10 +108,29 @@ export function useTelemetry(pollingIntervalMs: number = 2000): UseTelemetryResu
 
   // Track if component is mounted to avoid state updates after unmount
   const mountedRef = useRef(true);
+  // Track if we've logged mock mode message
+  const hasLoggedMockModeRef = useRef(false);
 
   const fetchTelemetry = useCallback(async () => {
     try {
       setRefreshing(true);
+
+      // Use mock data in browser development mode (no Tauri runtime)
+      if (!isTauriAvailable()) {
+        if (mountedRef.current) {
+          const mockData = generateMockTelemetry();
+          setTelemetry(mockData);
+          setError(null);
+          setLastUpdated(new Date());
+          // Log once to indicate mock mode
+          if (!hasLoggedMockModeRef.current) {
+            console.info('[useTelemetry] Running in browser mode - using mock data');
+            hasLoggedMockModeRef.current = true;
+          }
+        }
+        return;
+      }
+
       const data = await invoke<SystemSnapshot>('get_system_telemetry');
 
       if (mountedRef.current) {

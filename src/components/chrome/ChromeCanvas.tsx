@@ -14,7 +14,7 @@
  * @see DESIGN_SYSTEM.md - Glass Effects Guidelines
  */
 
-import { useRef, useEffect, useMemo, useState, Suspense } from 'react';
+import { useRef, useEffect, useMemo, useState, Suspense, Component, type ErrorInfo, type ReactNode } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { motion } from 'framer-motion';
 import * as THREE from 'three';
@@ -28,6 +28,46 @@ import { ChromeBorder } from './ChromeBorder';
 import { EnergyReactor } from './EnergyReactor';
 import { AtmosphericFogWebGL } from './AtmosphericFogWebGL';
 import { ChromePostProcessing } from './ChromePostProcessing';
+
+// =============================================================================
+// ERROR BOUNDARY FOR WEBGL
+// =============================================================================
+
+interface WebGLErrorBoundaryState {
+  hasError: boolean;
+  error?: Error;
+}
+
+/**
+ * Error boundary that catches WebGL/Three.js errors and falls back to CSS glass.
+ * This prevents the entire app from crashing when WebGL context is lost.
+ */
+class WebGLErrorBoundary extends Component<
+  { children: ReactNode; fallback?: ReactNode },
+  WebGLErrorBoundaryState
+> {
+  constructor(props: { children: ReactNode; fallback?: ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error: Error): WebGLErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.warn('[ChromeCanvas] WebGL error caught, falling back to CSS:', error.message);
+    console.debug('Error info:', errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      // Return fallback (CSS glass) or nothing - panels use CSS fallback automatically
+      return this.props.fallback ?? null;
+    }
+    return this.props.children;
+  }
+}
 
 // =============================================================================
 // TYPES
@@ -288,16 +328,25 @@ function ChromeScene({
 }: ChromeSceneProps) {
   const { helpers, state } = useChrome();
   const [panels, setPanels] = useState<ChromePanelRegistration[]>([]);
+  const panelIdsRef = useRef<string>('');
 
-  // Subscribe to panel changes
+  // Subscribe to panel changes with shallow comparison to avoid unnecessary re-renders
   useEffect(() => {
     const registry = helpers.getRegistry();
     const unsubscribe = registry.subscribe((registryState) => {
-      setPanels(Array.from(registryState.panels.values()));
+      const newPanels = Array.from(registryState.panels.values());
+      // Only update if panel IDs have changed (avoids re-render on position updates)
+      const newIds = newPanels.map(p => p.config.id).sort().join(',');
+      if (newIds !== panelIdsRef.current) {
+        panelIdsRef.current = newIds;
+        setPanels(newPanels);
+      }
     });
 
     // Initial load
-    setPanels(helpers.getPanels());
+    const initialPanels = helpers.getPanels();
+    panelIdsRef.current = initialPanels.map(p => p.config.id).sort().join(',');
+    setPanels(initialPanels);
 
     return unsubscribe;
   }, [helpers]);
@@ -403,37 +452,39 @@ export function ChromeCanvas({
       exit={{ opacity: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <Canvas
-        className="absolute inset-0"
-        orthographic
-        camera={{
-          zoom: 1,
-          position: [0, 0, 100],
-          near: 0.1,
-          far: 1000,
-        }}
-        gl={{
-          alpha: true,
-          antialias: perfState.tier === 'high',
-          powerPreference: 'high-performance',
-          preserveDrawingBuffer: false,
-          failIfMajorPerformanceCaveat: true,
-        }}
-        dpr={Math.min(window.devicePixelRatio, perfState.tier === 'high' ? 2 : 1.5)}
-        style={{ background: 'transparent' }}
-        frameloop={prefersReducedMotion ? 'demand' : 'always'}
-      >
-        <Suspense fallback={null}>
-          <ChromeScene
-            debug={debug}
-            enableEnergyReactor={enableEnergyReactor}
-            maxParticles={maxParticles}
-            enableFog={enableFog}
-            fogLayers={fogLayers}
-            enablePostProcessing={enablePostProcessing}
-          />
-        </Suspense>
-      </Canvas>
+      <WebGLErrorBoundary>
+        <Canvas
+          className="absolute inset-0"
+          orthographic
+          camera={{
+            zoom: 1,
+            position: [0, 0, 100],
+            near: 0.1,
+            far: 1000,
+          }}
+          gl={{
+            alpha: true,
+            antialias: perfState.tier === 'high',
+            powerPreference: 'high-performance',
+            preserveDrawingBuffer: false,
+            failIfMajorPerformanceCaveat: true,
+          }}
+          dpr={Math.min(window.devicePixelRatio, perfState.tier === 'high' ? 2 : 1.5)}
+          style={{ background: 'transparent' }}
+          frameloop={prefersReducedMotion ? 'demand' : 'always'}
+        >
+          <Suspense fallback={null}>
+            <ChromeScene
+              debug={debug}
+              enableEnergyReactor={enableEnergyReactor}
+              maxParticles={maxParticles}
+              enableFog={enableFog}
+              fogLayers={fogLayers}
+              enablePostProcessing={enablePostProcessing}
+            />
+          </Suspense>
+        </Canvas>
+      </WebGLErrorBoundary>
 
       {/* Debug overlay */}
       {debug && (

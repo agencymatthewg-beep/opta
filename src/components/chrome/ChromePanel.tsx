@@ -27,6 +27,7 @@ import {
   useEffect,
   useCallback,
   useState,
+  useMemo,
   type ReactNode,
 } from 'react';
 import { motion, type HTMLMotionProps } from 'framer-motion';
@@ -112,16 +113,19 @@ export const ChromePanel = forwardRef<HTMLDivElement, ChromePanelProps>(
     // Merge refs
     const ref = (forwardedRef as React.RefObject<HTMLDivElement>) || internalRef;
 
-    // Build config
-    const config: ChromePanelConfig = {
-      id,
-      glowBorders,
-      borderRadius,
-      blurIntensity,
-      energyState: initialEnergyState,
-      depth,
-      groupId,
-    };
+    // Memoize config to prevent unnecessary re-registrations
+    const config = useMemo<ChromePanelConfig>(
+      () => ({
+        id,
+        glowBorders,
+        borderRadius,
+        blurIntensity,
+        energyState: initialEnergyState,
+        depth,
+        groupId,
+      }),
+      [id, glowBorders, borderRadius, blurIntensity, initialEnergyState, depth, groupId]
+    );
 
     // Register with chrome system
     useEffect(() => {
@@ -240,14 +244,18 @@ export function ChromeRegistration({ id, children, config = {} }: ChromeRegistra
   const chromeContext = useChromeOptional();
   const elementRef = useRef<HTMLElement | null>(null);
 
-  const fullConfig: ChromePanelConfig = {
-    id,
-    glowBorders: false,
-    borderRadius: 12,
-    blurIntensity: 0.5,
-    depth: 0,
-    ...config,
-  };
+  // Memoize config to prevent unnecessary re-registrations
+  const fullConfig = useMemo<ChromePanelConfig>(
+    () => ({
+      id,
+      glowBorders: false,
+      borderRadius: 12,
+      blurIntensity: 0.5,
+      depth: 0,
+      ...config,
+    }),
+    [id, config]
+  );
 
   useEffect(() => {
     const element = elementRef.current;

@@ -35,8 +35,8 @@ export class KnowledgeGraphStore {
   private reverseAdjacencyList: Map<string, Set<string>> = new Map();
 
   constructor() {
-    this.loadFromStorage();
-    if (this.nodes.size === 0) {
+    const loadedSuccessfully = this.loadFromStorage();
+    if (!loadedSuccessfully) {
       this.initializeDefaultGraph();
     }
   }
@@ -537,31 +537,41 @@ export class KnowledgeGraphStore {
 
   /**
    * Load graph from localStorage.
+   * @returns true if graph was successfully loaded with at least one node, false otherwise
    */
-  private loadFromStorage(): void {
+  private loadFromStorage(): boolean {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const data: KnowledgeGraphData = JSON.parse(stored);
-        if (data.metadata.version === GRAPH_VERSION) {
-          for (const node of data.nodes) {
-            this.nodes.set(node.id, node);
-            this.adjacencyList.set(node.id, new Set());
-            this.reverseAdjacencyList.set(node.id, new Set());
-          }
-          for (const edge of data.edges) {
-            this.edges.set(edge.id, edge);
-            this.adjacencyList.get(edge.source)?.add(edge.target);
-            this.reverseAdjacencyList.get(edge.target)?.add(edge.source);
-            if (edge.bidirectional) {
-              this.adjacencyList.get(edge.target)?.add(edge.source);
-              this.reverseAdjacencyList.get(edge.source)?.add(edge.target);
-            }
-          }
+      if (!stored) {
+        return false;
+      }
+
+      const data: KnowledgeGraphData = JSON.parse(stored);
+
+      // Version mismatch or empty data - need to reinitialize
+      if (data.metadata.version !== GRAPH_VERSION || data.nodes.length === 0) {
+        return false;
+      }
+
+      for (const node of data.nodes) {
+        this.nodes.set(node.id, node);
+        this.adjacencyList.set(node.id, new Set());
+        this.reverseAdjacencyList.set(node.id, new Set());
+      }
+      for (const edge of data.edges) {
+        this.edges.set(edge.id, edge);
+        this.adjacencyList.get(edge.source)?.add(edge.target);
+        this.reverseAdjacencyList.get(edge.target)?.add(edge.source);
+        if (edge.bidirectional) {
+          this.adjacencyList.get(edge.target)?.add(edge.source);
+          this.reverseAdjacencyList.get(edge.source)?.add(edge.target);
         }
       }
+
+      return this.nodes.size > 0;
     } catch (e) {
       console.warn('Failed to load knowledge graph from storage:', e);
+      return false;
     }
   }
 }

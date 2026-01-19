@@ -139,6 +139,7 @@ export function useConfigCalculator(
   }, [calculator]);
 
   // Calculate synergy score
+  // Note: scorer is a singleton and stable, included for lint consistency
   const calculateSynergyScore = useCallback(
     (settings: SettingValue[], profile?: HardwareProfile): SynergyScore => {
       try {

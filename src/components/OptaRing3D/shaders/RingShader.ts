@@ -419,52 +419,6 @@ float plasma(vec3 p, float energy) {
   return n * 0.5 + 0.5;
 }
 
-/**
- * Calculate plasma color based on energy level with color temperature mastery
- * Phase 41.8: Tuned for reference image parity
- *
- * Dormant (0%Opta.png): near-black obsidian with barely visible purple tint
- * Active (50%Opta.png): vibrant magenta-purple plasma with bright hotspots
- * Max: bright violet-white glow (intense, hot)
- *
- * Phase 41.7: Uses energy-driven saturation and warmth
- */
-vec3 getPlasmaColor(float energy) {
-  // Phase 41.8: Base colors tuned to match reference images
-  // 0%Opta.png: Nearly pure black obsidian - extremely dark
-  vec3 dormantBase = vec3(0.02, 0.015, 0.03);   // Near-black obsidian (darker than before)
-
-  // 50%Opta.png: Vibrant magenta-purple plasma with visible swirls
-  vec3 activeBase = vec3(0.5, 0.1, 0.85);       // Shifted toward magenta-violet
-
-  // Maximum energy: bright violet-white hotspots
-  vec3 maxBase = vec3(0.9, 0.6, 1.0);           // Bright magenta-white
-
-  // Interpolate base color with enhanced curve for reference parity
-  vec3 baseColor;
-  if (energy < 0.4) {
-    // Dormant to early active: slow transition, stay dark longer
-    float t = energy / 0.4;
-    t = t * t; // Quadratic ease-in to stay dark longer
-    baseColor = mix(dormantBase, activeBase * 0.5, t);
-  } else if (energy < 0.7) {
-    // Mid-active: rapid color emergence (matching 50%Opta.png)
-    float t = (energy - 0.4) / 0.3;
-    baseColor = mix(activeBase * 0.5, activeBase, t);
-  } else {
-    // High energy to max: transition to bright violet
-    float t = (energy - 0.7) / 0.3;
-    baseColor = mix(activeBase, maxBase, t);
-  }
-
-  // Apply color temperature transformation based on energy
-  // Low energy = cold, desaturated obsidian
-  // High energy = warm, vibrant purple
-  vec3 result = applyEnergyColorTemperature(baseColor, energy, uColorSaturation, uColorWarmth);
-
-  return result;
-}
-
 // =============================================================================
 // FRESNEL EFFECT (25-01)
 // =============================================================================
@@ -760,6 +714,56 @@ vec3 applyEnergyColorTemperature(vec3 color, float energy, float baseSaturation,
 }
 
 // =============================================================================
+// PLASMA COLOR (41.2 + 41.7 + 41.8)
+// =============================================================================
+
+/**
+ * Calculate plasma color based on energy level with color temperature mastery
+ * Phase 41.8: Tuned for reference image parity
+ *
+ * Dormant (0%Opta.png): near-black obsidian with barely visible purple tint
+ * Active (50%Opta.png): vibrant magenta-purple plasma with bright hotspots
+ * Max: bright violet-white glow (intense, hot)
+ *
+ * Phase 41.7: Uses energy-driven saturation and warmth
+ */
+vec3 getPlasmaColor(float energy) {
+  // Phase 41.8: Base colors tuned to match reference images
+  // 0%Opta.png: Nearly pure black obsidian - extremely dark
+  vec3 dormantBase = vec3(0.02, 0.015, 0.03);   // Near-black obsidian (darker than before)
+
+  // 50%Opta.png: Vibrant magenta-purple plasma with visible swirls
+  vec3 activeBase = vec3(0.5, 0.1, 0.85);       // Shifted toward magenta-violet
+
+  // Maximum energy: bright violet-white hotspots
+  vec3 maxBase = vec3(0.9, 0.6, 1.0);           // Bright magenta-white
+
+  // Interpolate base color with enhanced curve for reference parity
+  vec3 baseColor;
+  if (energy < 0.4) {
+    // Dormant to early active: slow transition, stay dark longer
+    float t = energy / 0.4;
+    t = t * t; // Quadratic ease-in to stay dark longer
+    baseColor = mix(dormantBase, activeBase * 0.5, t);
+  } else if (energy < 0.7) {
+    // Mid-active: rapid color emergence (matching 50%Opta.png)
+    float t = (energy - 0.4) / 0.3;
+    baseColor = mix(activeBase * 0.5, activeBase, t);
+  } else {
+    // High energy to max: transition to bright violet
+    float t = (energy - 0.7) / 0.3;
+    baseColor = mix(activeBase, maxBase, t);
+  }
+
+  // Apply color temperature transformation based on energy
+  // Low energy = cold, desaturated obsidian
+  // High energy = warm, vibrant purple
+  vec3 result = applyEnergyColorTemperature(baseColor, energy, uColorSaturation, uColorWarmth);
+
+  return result;
+}
+
+// =============================================================================
 // SUBSURFACE SCATTERING SIMULATION (25-03)
 // =============================================================================
 
@@ -799,16 +803,16 @@ float calculateSSS(vec3 normal, vec3 viewDir, vec3 lightDir, float innerGlow) {
  * Blend between dormant (cool) and active (warm) colors
  * Phase 41.7: Now applies color temperature mastery
  *
- * @param dormant - Cool/dormant color (will be desaturated at low energy)
- * @param active - Warm/active color (vibrant at high energy)
- * @param explode - White-hot explosion color
+ * @param dormantColor - Cool/dormant color (will be desaturated at low energy)
+ * @param activeColor - Warm/active color (vibrant at high energy)
+ * @param explodeColor - White-hot explosion color
  * @param stateBlend - 0-1 interpolation (0=dormant, 1=active)
  * @param exploding - 0-1 explosion amount
  * @param energy - Current energy level for color temperature
  */
-vec3 calculateStateColor(vec3 dormant, vec3 active, vec3 explode, float stateBlend, float exploding, float energy) {
+vec3 calculateStateColor(vec3 dormantColor, vec3 activeColor, vec3 explodeColor, float stateBlend, float exploding, float energy) {
   // Base blend between dormant and active
-  vec3 baseColor = mix(dormant, active, stateBlend);
+  vec3 baseColor = mix(dormantColor, activeColor, stateBlend);
 
   // Apply color temperature transformation based on energy (41.7)
   // Low energy = cold, desaturated obsidian gray
@@ -820,7 +824,7 @@ vec3 calculateStateColor(vec3 dormant, vec3 active, vec3 explode, float stateBle
   if (exploding > 0.0) {
     // White-hot center, colored edge
     // Don't desaturate explosion colors
-    baseColor = mix(baseColor, explode, exploding * 0.8);
+    baseColor = mix(baseColor, explodeColor, exploding * 0.8);
   }
 
   return baseColor;

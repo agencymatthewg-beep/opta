@@ -92,6 +92,10 @@ export function useAdaptation(
   config?: Partial<AdaptationEngineConfig>,
   autoStart: boolean = false
 ): UseAdaptationResult {
+  // Intentionally empty dependency array: AdaptationEngine is a singleton.
+  // Config is only applied on first initialization. Subsequent config changes
+  // are ignored by design - use resetAdaptationEngine() if reconfiguration needed.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const engine = useMemo(() => getAdaptationEngine(config), []);
 
   const [state, setState] = useState<AdaptationState>(engine.getState());

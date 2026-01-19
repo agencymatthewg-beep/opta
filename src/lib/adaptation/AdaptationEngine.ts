@@ -610,25 +610,43 @@ export class AdaptationEngine {
 
 // Singleton instance
 let engineInstance: AdaptationEngine | null = null;
+let instanceInitialized = false;
 
 /**
  * Get the AdaptationEngine singleton instance.
+ *
+ * @param config - Optional configuration. Only applied on first call.
+ * @throws Warning if config is provided after initial creation.
+ *
+ * @example
+ * // First initialization with config
+ * const engine = getAdaptationEngine({ pollIntervalMs: 5000 });
+ *
+ * // Subsequent calls (config ignored)
+ * const sameEngine = getAdaptationEngine();
  */
 export function getAdaptationEngine(
   config?: Partial<AdaptationEngineConfig>
 ): AdaptationEngine {
   if (!engineInstance) {
     engineInstance = new AdaptationEngine(config);
+    instanceInitialized = true;
+  } else if (config && instanceInitialized) {
+    console.warn(
+      '[AdaptationEngine] Config provided but singleton already initialized. ' +
+      'Config will be ignored. Call resetAdaptationEngine() first to reinitialize.'
+    );
   }
   return engineInstance;
 }
 
 /**
- * Reset the adaptation engine (for testing).
+ * Reset the adaptation engine (for testing or reconfiguration).
  */
 export function resetAdaptationEngine(): void {
   if (engineInstance) {
     engineInstance.stop();
     engineInstance = null;
+    instanceInitialized = false;
   }
 }

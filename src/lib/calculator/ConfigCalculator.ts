@@ -15,7 +15,25 @@ import type {
 } from './types';
 import { getSynergyScorer } from './SynergyScorer';
 
-// SolverState interface reserved for future advanced constraint solving
+// Type guard for numeric values (handles both numbers and numeric strings)
+function isNumericValue(value: unknown): value is number {
+  return typeof value === 'number' && !isNaN(value);
+}
+
+function parseNumericValue(value: unknown): number | null {
+  if (typeof value === 'number' && !isNaN(value)) {
+    return value;
+  }
+  if (typeof value === 'string') {
+    const parsed = parseFloat(value);
+    if (!isNaN(parsed)) {
+      return parsed;
+    }
+  }
+  return null;
+}
+
+// TODO(Phase 47.1): SolverState interface for advanced constraint solving with backtracking
 
 /**
  * ConfigCalculator - Constraint solver for settings optimization.
@@ -263,12 +281,16 @@ export class ConfigCalculator {
       case 'forbidden':
         return currentSetting?.value !== constraint.value;
 
-      case 'range':
-        if (!currentSetting || typeof currentSetting.value !== 'number') return true;
-        const num = currentSetting.value;
+      case 'range': {
+        if (!currentSetting) return true;
+        const num = isNumericValue(currentSetting.value)
+          ? currentSetting.value
+          : parseNumericValue(currentSetting.value);
+        if (num === null) return true; // Non-numeric values pass range constraints
         const minOk = constraint.minValue === undefined || num >= constraint.minValue;
         const maxOk = constraint.maxValue === undefined || num <= constraint.maxValue;
         return minOk && maxOk;
+      }
 
       case 'depends_on':
         if (!constraint.dependsOn) return true;

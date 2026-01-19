@@ -7,7 +7,6 @@ import { FogProvider, useFog } from '@/contexts/FogContext';
 import { RadialNavProvider, useRadialNav } from '@/contexts/RadialNavContext';
 import { ParticleProvider } from '@/contexts/ParticleContext';
 import { Background } from './Background';
-import { FloatingRingOverlay } from './FloatingRingOverlay';
 import { RadialNav, UtilityIsland, useRadialNavKeyboard } from './navigation';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { pageContentVariants } from '@/lib/pageTransitions';
@@ -238,8 +237,7 @@ function LayoutInner({ activePage, onNavigate, children }: LayoutProps) {
         )}
       </AnimatePresence>
 
-      {/* Floating Ring Overlay - Appears during page transitions */}
-      <FloatingRingOverlay />
+      {/* Floating Ring Overlay removed - user requested no image transitions */}
 
       {/* Persistent 3D Ring - Contextual position based on view */}
       {/* Centered in home view, bottom-right when viewing pages */}

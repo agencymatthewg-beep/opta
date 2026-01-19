@@ -36,11 +36,11 @@ interface AtmosphericFogProps {
   colorTemperature?: ColorTemperature;
 }
 
-// Intensity to opacity mapping
+// Intensity to opacity mapping (kept subtle to avoid overwhelming purple)
 const intensityOpacity: Record<FogIntensity, number> = {
-  idle: 0.15,
-  active: 0.35,
-  storm: 0.55,
+  idle: 0.08,
+  active: 0.18,
+  storm: 0.30,
 };
 
 // Animation durations based on intensity
@@ -69,11 +69,11 @@ const colorTemperaturePalettes: Record<ColorTemperature, { primary: string; seco
   },
 };
 
-// Fog layer configurations
+// Fog layer configurations (reduced opacity for subtler effect)
 const fogLayers = [
   {
     id: 'deep',
-    baseOpacity: 0.4,
+    baseOpacity: 0.25,
     blur: '120px',
     scale: 1.5,
     zIndex: 0,
@@ -81,7 +81,7 @@ const fogLayers = [
   },
   {
     id: 'mid',
-    baseOpacity: 0.3,
+    baseOpacity: 0.18,
     blur: '80px',
     scale: 1.2,
     zIndex: 1,
@@ -89,7 +89,7 @@ const fogLayers = [
   },
   {
     id: 'near',
-    baseOpacity: 0.2,
+    baseOpacity: 0.12,
     blur: '40px',
     scale: 1,
     zIndex: 2,
@@ -111,9 +111,9 @@ export function AtmosphericFog({
 
   if (!enabled) return null;
 
-  // Calculate dynamic opacity based on ring energy
-  // Ring energy 0 = minimal fog (0.1), energy 1 = dense fog (0.55)
-  const energyOpacity = 0.1 + ringEnergy * 0.45;
+  // Calculate dynamic opacity based on ring energy (kept subtle)
+  // Ring energy 0 = minimal fog (0.05), energy 1 = moderate fog (0.25)
+  const energyOpacity = 0.05 + ringEnergy * 0.20;
   const baseOpacity = customOpacity ?? Math.max(intensityOpacity[intensity], energyOpacity);
   const baseDuration = intensityDuration[intensity];
   const colorPalette = colorTemperaturePalettes[colorTemperature];
@@ -142,16 +142,16 @@ export function AtmosphericFog({
         />
       ))}
 
-      {/* Central glow that intensifies with activity - paused when not visible */}
+      {/* Central glow that intensifies with activity - kept subtle to avoid bright purple blob */}
       <motion.div
         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full"
         style={{
-          background: 'radial-gradient(circle, rgba(168, 85, 247, 0.15) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(168, 85, 247, 0.06) 0%, transparent 70%)',
         }}
         animate={isVisible ? {
-          opacity: intensity === 'storm' ? [0.4, 0.7, 0.4] : intensity === 'active' ? [0.2, 0.4, 0.2] : 0.1,
-          scale: intensity === 'storm' ? [1, 1.2, 1] : 1,
-        } : { opacity: 0.1, scale: 1 }}
+          opacity: intensity === 'storm' ? [0.15, 0.25, 0.15] : intensity === 'active' ? [0.08, 0.15, 0.08] : 0.05,
+          scale: intensity === 'storm' ? [1, 1.1, 1] : 1,
+        } : { opacity: 0.05, scale: 1 }}
         transition={isVisible ? {
           duration: intensity === 'storm' ? 2 : 4,
           repeat: Infinity,

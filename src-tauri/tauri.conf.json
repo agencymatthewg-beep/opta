@@ -31,7 +31,10 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": ["dmg", "app"],
+    "category": "DeveloperTool",
+    "shortDescription": "AI-powered PC optimization for gaming performance",
+    "longDescription": "Opta is an AI-powered optimization orchestrator that replaces fragmented optimization tools with ONE unified solution. It scans hardware, detects conflicts, and delivers measurable FPS gains through intelligent, context-aware settings optimization.",
     "externalBin": [
       "binaries/opta-mcp"
     ],
@@ -42,16 +45,27 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
+    "resources": [],
+    "copyright": "© 2026 Opta. All rights reserved.",
     "windows": {
       "certificateThumbprint": null,
       "digestAlgorithm": "sha256",
       "timestampUrl": ""
     },
     "macOS": {
-      "entitlements": null,
+      "entitlements": "./entitlements.plist",
+      "infoPlist": "./Info.plist",
       "exceptionDomain": "",
       "frameworks": [],
-      "minimumSystemVersion": "10.13"
+      "minimumSystemVersion": "12.0",
+      "signingIdentity": "-",
+      "providerShortName": null,
+      "dmg": {
+        "background": "./dmg/background.png",
+        "appPosition": { "x": 180, "y": 170 },
+        "applicationFolderPosition": { "x": 480, "y": 170 },
+        "windowSize": { "width": 660, "height": 400 }
+      }
     },
     "linux": {
       "appimage": {
