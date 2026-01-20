@@ -495,7 +495,7 @@ struct OptimizationResult {
     let rankings: [RankingItem]?
 }
 
-struct RankingItem {
+struct RankingItem: Codable {
     let rank: Int
     let title: String
     let description: String?
