@@ -11,12 +11,18 @@ import SwiftUI
 struct Opta_ScanApp: App {
 
     let persistenceController = PersistenceController.shared
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .preferredColorScheme(.dark) // Opta is always dark mode
-                .environment(\.managedObjectContext, persistenceController.container.viewContext)
+            if hasCompletedOnboarding {
+                ContentView()
+                    .preferredColorScheme(.dark) // Opta is always dark mode
+                    .environment(\.managedObjectContext, persistenceController.container.viewContext)
+            } else {
+                OnboardingView(hasCompletedOnboarding: $hasCompletedOnboarding)
+                    .preferredColorScheme(.dark)
+            }
         }
     }
 }
