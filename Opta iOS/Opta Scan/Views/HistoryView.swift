@@ -26,17 +26,22 @@ struct HistoryView: View {
                     // Scan list
                     ScrollView {
                         LazyVStack(spacing: OptaDesign.Spacing.md) {
-                            ForEach(historyManager.scans) { scan in
+                            ForEach(Array(historyManager.scans.enumerated()), id: \.element.id) { index, scan in
                                 HistoryCard(scan: scan) {
+                                    OptaHaptics.shared.tap()
                                     selectedScan = scan
                                 }
+                                .staggeredAppear(index: index, isVisible: true)
                                 .contextMenu {
                                     Button(role: .destructive) {
+                                        OptaHaptics.shared.warning()
                                         historyManager.deleteScan(scan)
                                     } label: {
                                         Label("Delete", systemImage: "trash")
                                     }
                                 }
+                                .accessibilityLabel("Scan: \(scan.prompt ?? "Untitled")")
+                                .accessibilityHint("Double tap to view scan details")
                             }
                         }
                         .padding(OptaDesign.Spacing.lg)

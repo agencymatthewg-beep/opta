@@ -112,6 +112,7 @@ struct QuestionsView: View {
 
                     if questions.isEmpty || isLastQuestion {
                         Button {
+                            OptaHaptics.shared.doubleTap()
                             onSubmit()
                         } label: {
                             HStack {
@@ -132,6 +133,8 @@ struct QuestionsView: View {
                             )
                             .clipShape(Capsule())
                         }
+                        .accessibilityLabel("Get optimization results")
+                        .accessibilityHint("Submit your answers and receive personalized recommendations")
                         .disabled(!canContinue && !questions.isEmpty)
                         .opacity(canContinue || questions.isEmpty ? 1.0 : 0.5)
                     } else {

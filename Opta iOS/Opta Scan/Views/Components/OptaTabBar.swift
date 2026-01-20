@@ -68,6 +68,7 @@ private struct TabBarButton: View {
                     .font(.system(size: 22, weight: .medium))
                     .symbolRenderingMode(.hierarchical)
                     .foregroundStyle(isSelected ? Color.optaPurple : Color.optaTextMuted)
+                    .symbolEffect(.bounce, value: isSelected)
 
                 // Active indicator dot
                 Circle()
@@ -80,6 +81,8 @@ private struct TabBarButton: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(tab.title)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }
 

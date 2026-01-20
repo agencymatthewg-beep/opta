@@ -148,11 +148,13 @@ struct CaptureFlowView: View {
                     }
                 } else if flowState.capturedImage != nil || cameraService.capturedImage != nil || !flowState.prompt.isEmpty {
                     Button {
+                        OptaHaptics.shared.buttonPress()
                         flowState.startOptimization()
                     } label: {
                         HStack(spacing: OptaDesign.Spacing.sm) {
                             Image(systemName: "sparkles")
                                 .font(.system(size: 18, weight: .semibold))
+                                .symbolEffect(.bounce, value: !flowState.prompt.isEmpty)
                             Text("Optamize")
                                 .font(.optaBody)
                                 .fontWeight(.semibold)
@@ -170,6 +172,8 @@ struct CaptureFlowView: View {
                         .clipShape(Capsule())
                         .opacity(flowState.prompt.isEmpty ? 0.5 : 1.0)
                     }
+                    .accessibilityLabel("Optamize")
+                    .accessibilityHint("Start the optimization process for your image and prompt")
                     .disabled(flowState.prompt.isEmpty)
                     .padding(.bottom, OptaDesign.Spacing.md)
                 }

@@ -16,6 +16,7 @@ struct ResultView: View {
     var onShare: () -> Void
 
     @State private var showShareSheet = false
+    @State private var isVisible = false
 
     var body: some View {
         ZStack {
@@ -26,23 +27,31 @@ struct ResultView: View {
                 VStack(spacing: OptaDesign.Spacing.lg) {
                     // Header
                     ResultHeader(prompt: prompt)
+                        .opacity(isVisible ? 1 : 0)
+                        .offset(y: isVisible ? 0 : 20)
 
                     // Highlights
                     if !result.highlights.isEmpty {
                         HighlightsCard(highlights: result.highlights)
+                            .staggeredAppear(index: 1, isVisible: isVisible)
                     }
 
                     // Rankings
                     if let rankings = result.rankings, !rankings.isEmpty {
                         RankingsCard(rankings: rankings)
+                            .staggeredAppear(index: 2, isVisible: isVisible)
                     }
 
                     // Full analysis
                     AnalysisCard(markdown: result.markdown)
+                        .staggeredAppear(index: 3, isVisible: isVisible)
 
                     // Action buttons
                     HStack(spacing: OptaDesign.Spacing.md) {
-                        Button(action: onShare) {
+                        Button {
+                            OptaHaptics.shared.tap()
+                            onShare()
+                        } label: {
                             HStack {
                                 Image(systemName: "square.and.arrow.up")
                                 Text("Share")
@@ -53,8 +62,13 @@ struct ResultView: View {
                             .padding(.vertical, OptaDesign.Spacing.md)
                             .glassContent()
                         }
+                        .accessibilityLabel("Share results")
+                        .accessibilityHint("Opens sharing options for your optimization results")
 
-                        Button(action: onNewScan) {
+                        Button {
+                            OptaHaptics.shared.buttonPress()
+                            onNewScan()
+                        } label: {
                             HStack {
                                 Image(systemName: "camera.fill")
                                 Text("New Scan")
@@ -73,10 +87,22 @@ struct ResultView: View {
                             )
                             .clipShape(RoundedRectangle(cornerRadius: OptaDesign.CornerRadius.medium, style: .continuous))
                         }
+                        .accessibilityLabel("Start new scan")
+                        .accessibilityHint("Returns to camera to capture a new image")
                     }
                     .padding(.top, OptaDesign.Spacing.md)
+                    .staggeredAppear(index: 4, isVisible: isVisible)
                 }
                 .padding(OptaDesign.Spacing.lg)
+            }
+        }
+        .onAppear {
+            // Success haptic
+            OptaHaptics.shared.success()
+
+            // Stagger in content
+            withAnimation(.optaSpringGentle) {
+                isVisible = true
             }
         }
     }
