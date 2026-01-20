@@ -1,0 +1,52 @@
+   0.065435166s  INFO prepare_target{force=false package_id=opta-core v8.0.0-alpha (/Users/matthewbyrden/Documents/Opta/opta-native/opta-core) target="opta_core"}: cargo::core::compiler::fingerprint: fingerprint error for opta-core v8.0.0-alpha (/Users/matthewbyrden/Documents/Opta/opta-native/opta-core)/Check { test: false }/TargetInner { ..: lib_target("opta_core", ["cdylib", "staticlib", "rlib"], "/Users/matthewbyrden/Documents/Opta/opta-native/opta-core/src/lib.rs", Edition2021) }
+   0.065457041s  INFO prepare_target{force=false package_id=opta-core v8.0.0-alpha (/Users/matthewbyrden/Documents/Opta/opta-native/opta-core) target="opta_core"}: cargo::core::compiler::fingerprint:     err: failed to read `/Users/matthewbyrden/Documents/Opta/opta-native/target/debug/.fingerprint/opta-core-82dc98a4fb30f097/lib-opta_core`
+
+Caused by:
+    No such file or directory (os error 2)
+
+Stack backtrace:
+   0: std::backtrace::Backtrace::create
+   1: std::backtrace::Backtrace::capture
+   2: cargo_util::paths::read_bytes
+   3: cargo_util::paths::read
+   4: cargo::core::compiler::fingerprint::_compare_old_fingerprint
+   5: cargo::core::compiler::fingerprint::prepare_target
+   6: cargo::core::compiler::compile
+   7: <cargo::core::compiler::build_runner::BuildRunner>::compile
+   8: cargo::ops::cargo_compile::compile_ws
+   9: cargo::ops::cargo_compile::compile_with_exec
+  10: cargo::ops::cargo_compile::compile
+  11: cargo::commands::check::exec
+  12: <cargo::cli::Exec>::exec
+  13: cargo::main
+  14: std::sys::backtrace::__rust_begin_short_backtrace::<fn(), ()>
+  15: std::rt::lang_start::<()>::{closure#0}
+  16: std::rt::lang_start_internal
+  17: _main
+   0.079434625s  INFO prepare_target{force=false package_id=opta-core v8.0.0-alpha (/Users/matthewbyrden/Documents/Opta/opta-native/opta-core) target="opta_core"}: cargo::core::compiler::fingerprint: fingerprint error for opta-core v8.0.0-alpha (/Users/matthewbyrden/Documents/Opta/opta-native/opta-core)/Check { test: true }/TargetInner { ..: lib_target("opta_core", ["cdylib", "staticlib", "rlib"], "/Users/matthewbyrden/Documents/Opta/opta-native/opta-core/src/lib.rs", Edition2021) }
+   0.079443875s  INFO prepare_target{force=false package_id=opta-core v8.0.0-alpha (/Users/matthewbyrden/Documents/Opta/opta-native/opta-core) target="opta_core"}: cargo::core::compiler::fingerprint:     err: failed to read `/Users/matthewbyrden/Documents/Opta/opta-native/target/debug/.fingerprint/opta-core-6f3c7d56e0154b06/test-lib-opta_core`
+
+Caused by:
+    No such file or directory (os error 2)
+
+Stack backtrace:
+   0: std::backtrace::Backtrace::create
+   1: std::backtrace::Backtrace::capture
+   2: cargo_util::paths::read_bytes
+   3: cargo_util::paths::read
+   4: cargo::core::compiler::fingerprint::_compare_old_fingerprint
+   5: cargo::core::compiler::fingerprint::prepare_target
+   6: cargo::core::compiler::compile
+   7: <cargo::core::compiler::build_runner::BuildRunner>::compile
+   8: cargo::ops::cargo_compile::compile_ws
+   9: cargo::ops::cargo_compile::compile_with_exec
+  10: cargo::ops::cargo_compile::compile
+  11: cargo::commands::check::exec
+  12: <cargo::cli::Exec>::exec
+  13: cargo::main
+  14: std::sys::backtrace::__rust_begin_short_backtrace::<fn(), ()>
+  15: std::rt::lang_start::<()>::{closure#0}
+  16: std::rt::lang_start_internal
+  17: _main
+    Checking opta-core v8.0.0-alpha (/Users/matthewbyrden/Documents/Opta/opta-native/opta-core)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.77s

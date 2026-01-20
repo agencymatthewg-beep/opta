@@ -1,0 +1,32 @@
+{
+  "source": "/Users/matthewbyrden/Documents/Opta/Opta iOS/Opta Scan/Views/HistoryView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "History",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 35
+        }
+      },
+      {
+        "comment": "",
+        "key": "No scans yet",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 25
+        }
+      },
+      {
+        "comment": "",
+        "key": "Your optimization history will appear here",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 28
+        }
+      }
+    ]
+  },
+  "version": 1
+}

@@ -1,0 +1,10 @@
+// Opta Core - UniFFI Interface Definition
+//
+// This UDL file defines the namespace for the opta-core library.
+// The actual interface is defined using proc-macros (#[uniffi::export])
+// in the Rust source code.
+//
+// This minimal UDL is required for the uniffi::include_scaffolding! macro,
+// but all types are exported via proc-macros for better type safety.
+
+namespace opta {};
