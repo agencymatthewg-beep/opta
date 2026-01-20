@@ -17,6 +17,10 @@
 		A11111110000000000000008 /* OptaTypography.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22222220000000000000008 /* OptaTypography.swift */; };
 		A11111110000000000000009 /* GlassModifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22222220000000000000009 /* GlassModifiers.swift */; };
 		A1111111000000000000000A /* OptaDesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2222222000000000000000A /* OptaDesignSystem.swift */; };
+		A1111111000000000000000B /* CaptureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2222222000000000000000B /* CaptureView.swift */; };
+		A1111111000000000000000C /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2222222000000000000000C /* HistoryView.swift */; };
+		A1111111000000000000000D /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2222222000000000000000D /* SettingsView.swift */; };
+		A1111111000000000000000E /* OptaTabBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2222222000000000000000E /* OptaTabBar.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -30,6 +34,10 @@
 		A22222220000000000000008 /* OptaTypography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptaTypography.swift; sourceTree = "<group>"; };
 		A22222220000000000000009 /* GlassModifiers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassModifiers.swift; sourceTree = "<group>"; };
 		A2222222000000000000000A /* OptaDesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptaDesignSystem.swift; sourceTree = "<group>"; };
+		A2222222000000000000000B /* CaptureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureView.swift; sourceTree = "<group>"; };
+		A2222222000000000000000C /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
+		A2222222000000000000000D /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		A2222222000000000000000E /* OptaTabBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptaTabBar.swift; sourceTree = "<group>"; };
 		A33333330000000000000001 /* Opta Scan.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Opta Scan.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -91,8 +99,20 @@
 		A55555550000000000000005 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				A2222222000000000000000B /* CaptureView.swift */,
+				A2222222000000000000000C /* HistoryView.swift */,
+				A2222222000000000000000D /* SettingsView.swift */,
+				A55555550000000000000009 /* Components */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		A55555550000000000000009 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				A2222222000000000000000E /* OptaTabBar.swift */,
+			);
+			path = Components;
 			sourceTree = "<group>";
 		};
 		A55555550000000000000006 /* Models */ = {
@@ -195,6 +215,10 @@
 				A11111110000000000000008 /* OptaTypography.swift in Sources */,
 				A11111110000000000000009 /* GlassModifiers.swift in Sources */,
 				A1111111000000000000000A /* OptaDesignSystem.swift in Sources */,
+				A1111111000000000000000B /* CaptureView.swift in Sources */,
+				A1111111000000000000000C /* HistoryView.swift in Sources */,
+				A1111111000000000000000D /* SettingsView.swift in Sources */,
+				A1111111000000000000000E /* OptaTabBar.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
