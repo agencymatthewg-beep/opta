@@ -44,11 +44,11 @@ export interface AtmosphericFogWebGLProps {
 // CONSTANTS
 // =============================================================================
 
-/** Intensity to opacity mapping */
+/** Intensity to opacity mapping - reduced for subtler effect */
 const INTENSITY_OPACITY: Record<FogIntensity, number> = {
-  idle: 0.15,
-  active: 0.35,
-  storm: 0.55,
+  idle: 0.03,
+  active: 0.08,
+  storm: 0.15,
 };
 
 /** Intensity to animation speed mapping */

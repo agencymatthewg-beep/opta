@@ -36,11 +36,11 @@ interface AtmosphericFogProps {
   colorTemperature?: ColorTemperature;
 }
 
-// Intensity to opacity mapping (kept subtle to avoid overwhelming purple)
+// Intensity to opacity mapping (kept very subtle to avoid overwhelming purple)
 const intensityOpacity: Record<FogIntensity, number> = {
-  idle: 0.08,
-  active: 0.18,
-  storm: 0.30,
+  idle: 0.02,
+  active: 0.05,
+  storm: 0.10,
 };
 
 // Animation durations based on intensity
@@ -69,11 +69,11 @@ const colorTemperaturePalettes: Record<ColorTemperature, { primary: string; seco
   },
 };
 
-// Fog layer configurations (reduced opacity for subtler effect)
+// Fog layer configurations (very subtle to maintain dark void aesthetic)
 const fogLayers = [
   {
     id: 'deep',
-    baseOpacity: 0.25,
+    baseOpacity: 0.08,
     blur: '120px',
     scale: 1.5,
     zIndex: 0,
@@ -81,7 +81,7 @@ const fogLayers = [
   },
   {
     id: 'mid',
-    baseOpacity: 0.18,
+    baseOpacity: 0.05,
     blur: '80px',
     scale: 1.2,
     zIndex: 1,
@@ -89,7 +89,7 @@ const fogLayers = [
   },
   {
     id: 'near',
-    baseOpacity: 0.12,
+    baseOpacity: 0.03,
     blur: '40px',
     scale: 1,
     zIndex: 2,

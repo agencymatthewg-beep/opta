@@ -36,7 +36,7 @@ export function Background() {
         }}
       />
 
-      {/* Subtle Depth Gradients */}
+      {/* Subtle Depth Gradients - very low opacity to maintain dark void */}
       <motion.div
         className="absolute inset-0"
         initial={{ opacity: 0 }}
@@ -44,21 +44,21 @@ export function Background() {
         transition={{ duration: 1.5 }}
         style={{
           background: `
-            radial-gradient(ellipse 100% 100% at 50% 100%, hsl(265 40% 8% / 0.6) 0%, transparent 50%),
-            radial-gradient(ellipse 80% 50% at 0% 50%, hsl(270 30% 6% / 0.4) 0%, transparent 40%),
-            radial-gradient(ellipse 80% 50% at 100% 50%, hsl(270 30% 6% / 0.4) 0%, transparent 40%)
+            radial-gradient(ellipse 100% 100% at 50% 100%, hsl(265 20% 5% / 0.15) 0%, transparent 50%),
+            radial-gradient(ellipse 80% 50% at 0% 50%, hsl(270 15% 4% / 0.1) 0%, transparent 40%),
+            radial-gradient(ellipse 80% 50% at 100% 50%, hsl(270 15% 4% / 0.1) 0%, transparent 40%)
           `,
         }}
       />
 
-      {/* Ambient Orbs - Very subtle, slow-moving depth enhancers (reduced intensity) */}
+      {/* Ambient Orbs - Extremely subtle depth enhancers */}
       {!prefersReducedMotion && (
         <>
           {/* Deep purple orb - bottom left */}
           <motion.div
             className="absolute w-[600px] h-[600px] rounded-full"
             style={{
-              background: 'radial-gradient(circle, hsl(265 60% 12% / 0.1) 0%, transparent 60%)',
+              background: 'radial-gradient(circle, hsl(265 30% 8% / 0.03) 0%, transparent 60%)',
               filter: 'blur(100px)',
               left: '-10%',
               bottom: '-20%',
@@ -79,7 +79,7 @@ export function Background() {
           <motion.div
             className="absolute w-[500px] h-[500px] rounded-full"
             style={{
-              background: 'radial-gradient(circle, hsl(270 50% 10% / 0.08) 0%, transparent 60%)',
+              background: 'radial-gradient(circle, hsl(270 25% 6% / 0.02) 0%, transparent 60%)',
               filter: 'blur(80px)',
               right: '-5%',
               top: '-10%',
@@ -96,11 +96,11 @@ export function Background() {
             } : { duration: 0.3 }}
           />
 
-          {/* Central subtle glow - reacts to activity (very subtle to avoid bright purple blob) */}
+          {/* Central subtle glow - reacts to activity */}
           <motion.div
             className="absolute w-[800px] h-[800px] rounded-full"
             style={{
-              background: 'radial-gradient(circle, hsl(265 70% 12% / 0.05) 0%, transparent 50%)',
+              background: 'radial-gradient(circle, hsl(265 30% 8% / 0.02) 0%, transparent 50%)',
               filter: 'blur(120px)',
               left: '50%',
               top: '50%',
@@ -108,7 +108,7 @@ export function Background() {
               willChange: 'opacity',
             }}
             animate={{
-              opacity: fogIntensity === 'storm' ? 0.15 : fogIntensity === 'active' ? 0.1 : 0.05,
+              opacity: fogIntensity === 'storm' ? 0.05 : fogIntensity === 'active' ? 0.03 : 0.02,
             }}
             transition={{
               duration: 1,

@@ -3,7 +3,6 @@ import { AnimatePresence, motion, LazyMotion, domAnimation } from 'framer-motion
 import Layout from './components/Layout';
 import Background from './components/Background';
 import ErrorBoundary from './components/ErrorBoundary';
-import { PageSkeleton } from './components/ui/skeleton';
 import { pageVariants } from './lib/animations';
 import { LearnModeProvider } from './components/LearnModeContext';
 import { LearnModeToggle } from './components/LearnModeToggle';
@@ -26,14 +25,15 @@ import { ChromeProvider } from './contexts/ChromeContext';
 // LocalStorage key for chess widget visibility
 const CHESS_WIDGET_VISIBLE_KEY = 'opta_chess_widget_visible';
 
-// Lazy load pages for better initial load performance
-const Dashboard = lazy(() => import('./pages/Dashboard'));
-const Games = lazy(() => import('./pages/Games'));
-const Chess = lazy(() => import('./pages/Chess'));
-const Optimize = lazy(() => import('./pages/Optimize'));
-const PinpointOptimize = lazy(() => import('./pages/PinpointOptimize'));
-const Score = lazy(() => import('./pages/Score'));
-const Settings = lazy(() => import('./pages/Settings'));
+// Direct imports - lazy loading was broken (Suspense never resolving)
+// TODO: Investigate React.lazy + Vite HMR compatibility issue
+import Dashboard from './pages/Dashboard';
+import Games from './pages/Games';
+import Chess from './pages/Chess';
+import Optimize from './pages/Optimize';
+import PinpointOptimize from './pages/PinpointOptimize';
+import Score from './pages/Score';
+import Settings from './pages/Settings';
 
 // Lazy load onboarding components (only needed on first launch)
 const PlatformOnboarding = lazy(() => import('./components/PlatformOnboarding'));
@@ -174,8 +174,8 @@ function App() {
   };
 
   const renderPage = () => {
-    const pageProps = {
-      key: activePage,
+    // Animation props for page transitions (key passed directly to avoid React warning)
+    const animationProps = {
       variants: pageVariants,
       initial: "initial",
       animate: "animate",
@@ -185,66 +185,50 @@ function App() {
     switch (activePage) {
       case 'dashboard':
         return (
-          <motion.div {...pageProps}>
-            <Suspense fallback={<PageSkeleton />}>
-              <Dashboard onNavigate={setActivePage} />
-            </Suspense>
+          <motion.div key={activePage} {...animationProps}>
+            <Dashboard onNavigate={setActivePage} />
           </motion.div>
         );
       case 'games':
         return (
-          <motion.div {...pageProps}>
-            <Suspense fallback={<PageSkeleton />}>
-              <Games />
-            </Suspense>
+          <motion.div key={activePage} {...animationProps}>
+            <Games />
           </motion.div>
         );
       case 'chess':
         return (
-          <motion.div {...pageProps}>
-            <Suspense fallback={<PageSkeleton />}>
-              <Chess />
-            </Suspense>
+          <motion.div key={activePage} {...animationProps}>
+            <Chess />
           </motion.div>
         );
       case 'optimize':
         return (
-          <motion.div {...pageProps}>
-            <Suspense fallback={<PageSkeleton />}>
-              <Optimize onNavigate={setActivePage} />
-            </Suspense>
+          <motion.div key={activePage} {...animationProps}>
+            <Optimize onNavigate={setActivePage} />
           </motion.div>
         );
       case 'pinpoint':
         return (
-          <motion.div {...pageProps}>
-            <Suspense fallback={<PageSkeleton />}>
-              <PinpointOptimize />
-            </Suspense>
+          <motion.div key={activePage} {...animationProps}>
+            <PinpointOptimize />
           </motion.div>
         );
       case 'score':
         return (
-          <motion.div {...pageProps}>
-            <Suspense fallback={<PageSkeleton />}>
-              <Score />
-            </Suspense>
+          <motion.div key={activePage} {...animationProps}>
+            <Score />
           </motion.div>
         );
       case 'settings':
         return (
-          <motion.div {...pageProps}>
-            <Suspense fallback={<PageSkeleton />}>
-              <Settings />
-            </Suspense>
+          <motion.div key={activePage} {...animationProps}>
+            <Settings />
           </motion.div>
         );
       default:
         return (
-          <motion.div {...pageProps}>
-            <Suspense fallback={<PageSkeleton />}>
-              <Dashboard onNavigate={setActivePage} />
-            </Suspense>
+          <motion.div key={activePage} {...animationProps}>
+            <Dashboard onNavigate={setActivePage} />
           </motion.div>
         );
     }
@@ -269,7 +253,7 @@ function App() {
               {/* Main app layout wrapped in error boundary */}
               <ErrorBoundary>
                 <Layout activePage={activePage} onNavigate={setActivePage}>
-                  <AnimatePresence mode="wait">
+                  <AnimatePresence mode="wait" initial={false}>
                     {renderPage()}
                   </AnimatePresence>
                 </Layout>

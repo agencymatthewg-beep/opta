@@ -215,22 +215,15 @@ function LayoutInner({ activePage, onNavigate, children }: LayoutProps) {
                   />
                 </div>
 
-                {/* Page content with ignition animation */}
-                <AnimatePresence mode="wait">
-                  <motion.main
-                    key={activePage}
-                    id="main-content"
-                    className="flex-1 p-8 max-w-6xl mx-auto w-full"
-                    role="main"
-                    tabIndex={-1}
-                    variants={pageContentVariants}
-                    initial="initial"
-                    animate="animate"
-                    exit="exit"
-                  >
-                    {children}
-                  </motion.main>
-                </AnimatePresence>
+                {/* Page content - children handle their own AnimatePresence keying */}
+                <main
+                  id="main-content"
+                  className="flex-1 p-8 max-w-6xl mx-auto w-full"
+                  role="main"
+                  tabIndex={-1}
+                >
+                  {children}
+                </main>
               </div>
             </ScrollArea>
           </motion.div>
