@@ -1073,7 +1073,9 @@ Plans:
 - Cargo workspace with proper feature flags
 
 Plans:
-- [ ] 59-01: TBD (run /gsd:plan-phase 59 to break down)
+- [ ] 59-01: UniFFI Interface Definition (Wave 1) - Create .udl file and build.rs scaffolding
+- [ ] 59-02: Crux App Trait Compliance (Wave 1) - Refactor OptaApp to implement crux_core::App
+- [ ] 59-03: Cross-Compilation Setup (Wave 2) - Configure Cargo and build scripts for iOS/macOS
 
 #### Phase 60: wgpu Render Surface
 **Goal**: Implement GPU abstraction layer with Metal/Vulkan backends and basic rendering pipeline
@@ -1302,7 +1304,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 �
 | 56. Premium Board UI | v7.0 | 1/1 | Complete | 2026-01-18 |
 | 57. Chess Settings & Customization | v7.0 | 5/5 | Complete | 2026-01-18 |
 | 58. Chess Mastery Launch | v7.0 | 1/1 | Complete | 2026-01-18 |
-| 59. Rust Core Foundation | v8.0 | 0/? | Planned | - |
+| 59. Rust Core Foundation | v8.0 | 0/3 | Ready | - |
 | 60. wgpu Render Surface | v8.0 | 0/? | Planned | - |
 | 61. WGSL Shader System | v8.0 | 0/? | Planned | - |
 | 62. Native Shell - macOS | v8.0 | 0/? | Planned | - |
