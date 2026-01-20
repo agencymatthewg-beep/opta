@@ -8,15 +8,24 @@
 
 import SwiftUI
 
+// MARK: - Result View
+
+/// Displays optimization results with highlights, rankings, and full analysis
 struct ResultView: View {
+
+    // MARK: - Properties
 
     let result: OptimizationResult
     let prompt: String
-    var onNewScan: () -> Void
-    var onShare: () -> Void
+    let onNewScan: () -> Void
+    let onShare: () -> Void
+
+    // MARK: - State
 
     @State private var showShareSheet = false
     @State private var isVisible = false
+
+    // MARK: - Body
 
     var body: some View {
         ZStack {
@@ -25,73 +34,31 @@ struct ResultView: View {
 
             ScrollView {
                 VStack(spacing: OptaDesign.Spacing.lg) {
-                    // Header
+                    // Header Section
                     ResultHeader(prompt: prompt)
                         .opacity(isVisible ? 1 : 0)
                         .offset(y: isVisible ? 0 : 20)
 
-                    // Highlights
+                    // Highlights Section
                     if !result.highlights.isEmpty {
                         HighlightsCard(highlights: result.highlights)
                             .staggeredAppear(index: 1, isVisible: isVisible)
                     }
 
-                    // Rankings
+                    // Rankings Section
                     if let rankings = result.rankings, !rankings.isEmpty {
                         RankingsCard(rankings: rankings)
                             .staggeredAppear(index: 2, isVisible: isVisible)
                     }
 
-                    // Full analysis
+                    // Full Analysis Section
                     AnalysisCard(markdown: result.markdown)
                         .staggeredAppear(index: 3, isVisible: isVisible)
 
-                    // Action buttons
-                    HStack(spacing: OptaDesign.Spacing.md) {
-                        Button {
-                            OptaHaptics.shared.tap()
-                            onShare()
-                        } label: {
-                            HStack {
-                                Image(systemName: "square.and.arrow.up")
-                                Text("Share")
-                            }
-                            .font(.optaBody)
-                            .foregroundStyle(Color.optaTextPrimary)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, OptaDesign.Spacing.md)
-                            .glassContent()
-                        }
-                        .accessibilityLabel("Share results")
-                        .accessibilityHint("Opens sharing options for your optimization results")
-
-                        Button {
-                            OptaHaptics.shared.buttonPress()
-                            onNewScan()
-                        } label: {
-                            HStack {
-                                Image(systemName: "camera.fill")
-                                Text("New Scan")
-                            }
-                            .font(.optaBody)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, OptaDesign.Spacing.md)
-                            .background(
-                                LinearGradient(
-                                    colors: [Color.optaPurple, Color.optaBlue],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
-                            .clipShape(RoundedRectangle(cornerRadius: OptaDesign.CornerRadius.medium, style: .continuous))
-                        }
-                        .accessibilityLabel("Start new scan")
-                        .accessibilityHint("Returns to camera to capture a new image")
-                    }
-                    .padding(.top, OptaDesign.Spacing.md)
-                    .staggeredAppear(index: 4, isVisible: isVisible)
+                    // Action Buttons
+                    actionButtons
+                        .padding(.top, OptaDesign.Spacing.md)
+                        .staggeredAppear(index: 4, isVisible: isVisible)
                 }
                 .padding(OptaDesign.Spacing.lg)
             }
@@ -106,17 +73,73 @@ struct ResultView: View {
             }
         }
     }
+
+    // MARK: - Subviews
+
+    private var actionButtons: some View {
+        HStack(spacing: OptaDesign.Spacing.md) {
+            // Share Button
+            Button {
+                OptaHaptics.shared.tap()
+                onShare()
+            } label: {
+                HStack(spacing: OptaDesign.Spacing.xs) {
+                    Image(systemName: "square.and.arrow.up")
+                    Text("Share")
+                }
+                .font(.optaBody)
+                .foregroundStyle(Color.optaTextPrimary)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, OptaDesign.Spacing.md)
+                .glassContent()
+            }
+            .accessibilityLabel("Share results")
+            .accessibilityHint("Opens sharing options for your optimization results")
+
+            // New Scan Button
+            Button {
+                OptaHaptics.shared.buttonPress()
+                onNewScan()
+            } label: {
+                HStack(spacing: OptaDesign.Spacing.xs) {
+                    Image(systemName: "camera.fill")
+                    Text("New Scan")
+                }
+                .font(.optaBody)
+                .fontWeight(.semibold)
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, OptaDesign.Spacing.md)
+                .background(
+                    LinearGradient(
+                        colors: [Color.optaPurple, Color.optaBlue],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .clipShape(RoundedRectangle(cornerRadius: OptaDesign.CornerRadius.medium, style: .continuous))
+            }
+            .accessibilityLabel("Start new scan")
+            .accessibilityHint("Returns to camera to capture a new image")
+        }
+    }
 }
 
 // MARK: - Result Header
 
+/// Header view displaying success icon and prompt
 private struct ResultHeader: View {
+
     let prompt: String
+
+    private enum Layout {
+        static let iconSize: CGFloat = 40
+    }
 
     var body: some View {
         VStack(spacing: OptaDesign.Spacing.sm) {
             Image(systemName: "sparkles")
-                .font(.system(size: 40))
+                .font(.system(size: Layout.iconSize))
                 .foregroundStyle(
                     LinearGradient(
                         colors: [Color.optaPurple, Color.optaBlue],
@@ -124,6 +147,7 @@ private struct ResultHeader: View {
                         endPoint: .bottomTrailing
                     )
                 )
+                .accessibilityHidden(true)
 
             Text("Optimized!")
                 .font(.optaTitle)
@@ -135,17 +159,27 @@ private struct ResultHeader: View {
                 .multilineTextAlignment(.center)
         }
         .padding(.vertical, OptaDesign.Spacing.lg)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Optimization complete for: \(prompt)")
     }
 }
 
 // MARK: - Highlights Card
 
+/// Card displaying key takeaways from the optimization
 private struct HighlightsCard: View {
+
     let highlights: [String]
+
+    private enum Layout {
+        static let bulletSize: CGFloat = 6
+        static let bulletTopPadding: CGFloat = 6
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: OptaDesign.Spacing.md) {
-            HStack {
+            // Header
+            HStack(spacing: OptaDesign.Spacing.xs) {
                 Image(systemName: "star.fill")
                     .foregroundStyle(Color.optaAmber)
                 Text("Key Takeaways")
@@ -153,35 +187,43 @@ private struct HighlightsCard: View {
                     .foregroundStyle(Color.optaTextPrimary)
             }
 
+            // Highlights List
             VStack(alignment: .leading, spacing: OptaDesign.Spacing.sm) {
-                ForEach(highlights, id: \.self) { highlight in
+                ForEach(Array(highlights.enumerated()), id: \.offset) { index, highlight in
                     HStack(alignment: .top, spacing: OptaDesign.Spacing.sm) {
                         Circle()
                             .fill(Color.optaPurple)
-                            .frame(width: 6, height: 6)
-                            .padding(.top, 6)
+                            .frame(width: Layout.bulletSize, height: Layout.bulletSize)
+                            .padding(.top, Layout.bulletTopPadding)
+                            .accessibilityHidden(true)
 
                         Text(highlight)
                             .font(.optaBody)
                             .foregroundStyle(Color.optaTextPrimary)
                     }
+                    .accessibilityLabel("Takeaway \(index + 1): \(highlight)")
                 }
             }
         }
         .padding(OptaDesign.Spacing.lg)
         .frame(maxWidth: .infinity, alignment: .leading)
         .glassContent()
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Key Takeaways section with \(highlights.count) items")
     }
 }
 
 // MARK: - Rankings Card
 
+/// Card displaying ranked recommendations
 private struct RankingsCard: View {
+
     let rankings: [RankingItem]
 
     var body: some View {
         VStack(alignment: .leading, spacing: OptaDesign.Spacing.md) {
-            HStack {
+            // Header
+            HStack(spacing: OptaDesign.Spacing.xs) {
                 Image(systemName: "list.number")
                     .foregroundStyle(Color.optaPurple)
                 Text("Recommendations")
@@ -189,8 +231,9 @@ private struct RankingsCard: View {
                     .foregroundStyle(Color.optaTextPrimary)
             }
 
+            // Rankings List
             VStack(spacing: OptaDesign.Spacing.sm) {
-                ForEach(Array(rankings.enumerated()), id: \.element.rank) { index, item in
+                ForEach(Array(rankings.enumerated()), id: \.offset) { index, item in
                     RankingRow(rank: index + 1, item: item)
                 }
             }
@@ -198,39 +241,54 @@ private struct RankingsCard: View {
         .padding(OptaDesign.Spacing.lg)
         .frame(maxWidth: .infinity, alignment: .leading)
         .glassContent()
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Recommendations section with \(rankings.count) ranked items")
     }
 }
 
 // MARK: - Ranking Row
 
+/// Individual ranking row with medal-style badge
 private struct RankingRow: View {
+
     let rank: Int
     let item: RankingItem
 
+    private enum Layout {
+        static let badgeSize: CGFloat = 32
+        static let topRankHighlightOpacity: Double = 0.05
+    }
+
+    /// Medal color based on rank position
     private var medalColor: Color {
         switch rank {
-        case 1: return Color.optaAmber
-        case 2: return Color.optaTextSecondary
-        case 3: return Color(red: 0.8, green: 0.5, blue: 0.2)
+        case 1: return Color.optaAmber           // Gold
+        case 2: return Color.optaTextSecondary   // Silver
+        case 3: return Color("BronzeMedal", bundle: nil) // Bronze fallback
         default: return Color.optaTextMuted
         }
     }
 
+    /// Whether this is the top-ranked item
+    private var isTopRank: Bool { rank == 1 }
+
     var body: some View {
         HStack(spacing: OptaDesign.Spacing.md) {
-            // Rank badge
+            // Rank Badge
             ZStack {
                 Circle()
                     .fill(medalColor.opacity(0.2))
-                    .frame(width: 32, height: 32)
+                    .frame(width: Layout.badgeSize, height: Layout.badgeSize)
 
                 Text("\(rank)")
                     .font(.optaCaption)
                     .fontWeight(.bold)
                     .foregroundStyle(medalColor)
             }
+            .accessibilityHidden(true)
 
-            VStack(alignment: .leading, spacing: 2) {
+            // Content
+            VStack(alignment: .leading, spacing: OptaDesign.Spacing.xxs) {
                 Text(item.title)
                     .font(.optaBody)
                     .foregroundStyle(Color.optaTextPrimary)
@@ -245,19 +303,28 @@ private struct RankingRow: View {
             Spacer()
         }
         .padding(OptaDesign.Spacing.sm)
-        .background(rank == 1 ? Color.optaAmber.opacity(0.05) : Color.clear)
+        .background(isTopRank ? Color.optaAmber.opacity(Layout.topRankHighlightOpacity) : Color.clear)
         .clipShape(RoundedRectangle(cornerRadius: OptaDesign.CornerRadius.small, style: .continuous))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Rank \(rank): \(item.title). \(item.description ?? "")")
     }
 }
 
 // MARK: - Analysis Card
 
+/// Card displaying the full markdown analysis
 private struct AnalysisCard: View {
+
     let markdown: String
+
+    private enum Layout {
+        static let lineSpacing: CGFloat = 4
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: OptaDesign.Spacing.md) {
-            HStack {
+            // Header
+            HStack(spacing: OptaDesign.Spacing.xs) {
                 Image(systemName: "doc.text")
                     .foregroundStyle(Color.optaBlue)
                 Text("Full Analysis")
@@ -265,15 +332,18 @@ private struct AnalysisCard: View {
                     .foregroundStyle(Color.optaTextPrimary)
             }
 
-            // Simplified markdown rendering
+            // Markdown Content
             Text(markdown)
                 .font(.optaBody)
                 .foregroundStyle(Color.optaTextPrimary)
-                .lineSpacing(4)
+                .lineSpacing(Layout.lineSpacing)
+                .textSelection(.enabled)
         }
         .padding(OptaDesign.Spacing.lg)
         .frame(maxWidth: .infinity, alignment: .leading)
         .glassContent()
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Full Analysis")
     }
 }
 

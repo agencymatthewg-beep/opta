@@ -11,11 +11,21 @@ import SwiftUI
 
 // MARK: - Persistence Controller
 
-class PersistenceController {
+/// Manages Core Data stack and provides shared persistence container for scan history
+final class PersistenceController {
+
+    // MARK: - Shared Instance
+
     static let shared = PersistenceController()
+
+    // MARK: - Properties
 
     let container: NSPersistentContainer
 
+    // MARK: - Initialization
+
+    /// Initialize the persistence controller
+    /// - Parameter inMemory: If true, uses in-memory store (for previews/testing)
     init(inMemory: Bool = false) {
         container = NSPersistentContainer(name: "OptaScan")
 
@@ -23,9 +33,9 @@ class PersistenceController {
             container.persistentStoreDescriptions.first?.url = URL(fileURLWithPath: "/dev/null")
         }
 
-        container.loadPersistentStores { description, error in
-            if let error = error {
-                print("Core Data failed to load: \(error.localizedDescription)")
+        container.loadPersistentStores { _, error in
+            if let error {
+                print("[ScanHistory] Core Data failed to load: \(error.localizedDescription)")
             }
         }
 
@@ -35,43 +45,51 @@ class PersistenceController {
 
     // MARK: - Preview Support
 
+    /// Preview instance with sample data for SwiftUI previews
     static var preview: PersistenceController = {
         let controller = PersistenceController(inMemory: true)
         let context = controller.container.viewContext
 
-        // Create sample data
-        for i in 0..<5 {
+        // Create sample data for previews
+        let sampleCount = 5
+        let secondsPerDay: TimeInterval = 86_400
+
+        for index in 0..<sampleCount {
             let scan = ScanEntity(context: context)
             scan.id = UUID()
-            scan.prompt = "Sample prompt \(i + 1)"
+            scan.prompt = "Sample prompt \(index + 1)"
             scan.understanding = "Understanding of the scan"
             scan.resultMarkdown = "# Result\n\nThis is a sample result."
             scan.highlights = ["Highlight 1", "Highlight 2"]
-            scan.createdAt = Date().addingTimeInterval(Double(-i * 86400))
+            scan.createdAt = Date().addingTimeInterval(-Double(index) * secondsPerDay)
         }
 
         try? context.save()
         return controller
     }()
 
-    // MARK: - Save Context
+    // MARK: - Persistence Operations
 
+    /// Save the view context if there are pending changes
     func save() {
         let context = container.viewContext
-        if context.hasChanges {
-            do {
-                try context.save()
-            } catch {
-                print("Failed to save context: \(error.localizedDescription)")
-            }
+        guard context.hasChanges else { return }
+
+        do {
+            try context.save()
+        } catch {
+            print("[ScanHistory] Failed to save context: \(error.localizedDescription)")
         }
     }
 }
 
 // MARK: - Scan Entity
 
+/// Core Data entity representing a single optimization scan
 @objc(ScanEntity)
 public class ScanEntity: NSManagedObject, Identifiable {
+
+    // MARK: - Managed Properties
 
     @NSManaged public var id: UUID?
     @NSManaged public var prompt: String?
@@ -86,6 +104,7 @@ public class ScanEntity: NSManagedObject, Identifiable {
 
     // MARK: - Computed Properties
 
+    /// Decoded highlights array from JSON data
     var highlights: [String] {
         get {
             guard let data = highlightsData else { return [] }
@@ -96,6 +115,7 @@ public class ScanEntity: NSManagedObject, Identifiable {
         }
     }
 
+    /// Decoded rankings array from JSON string
     var rankings: [RankingItem]? {
         get {
             guard let json = rankingsJSON,
@@ -112,18 +132,21 @@ public class ScanEntity: NSManagedObject, Identifiable {
         }
     }
 
+    /// Decoded UIImage from stored JPEG data
     var image: UIImage? {
         get {
             guard let data = imageData else { return nil }
             return UIImage(data: data)
         }
         set {
-            imageData = newValue?.jpegData(compressionQuality: 0.8)
+            let jpegCompressionQuality: CGFloat = 0.8
+            imageData = newValue?.jpegData(compressionQuality: jpegCompressionQuality)
         }
     }
 
     // MARK: - Fetch Request
 
+    /// Default fetch request sorted by creation date (newest first)
     @nonobjc public class func fetchRequest() -> NSFetchRequest<ScanEntity> {
         let request = NSFetchRequest<ScanEntity>(entityName: "ScanEntity")
         request.sortDescriptors = [NSSortDescriptor(keyPath: \ScanEntity.createdAt, ascending: false)]
@@ -134,21 +157,29 @@ public class ScanEntity: NSManagedObject, Identifiable {
 
 // MARK: - History Manager
 
+/// Observable manager for scan history with search and CRUD operations
 @MainActor
-class HistoryManager: ObservableObject {
+final class HistoryManager: ObservableObject {
+
+    // MARK: - Published Properties
 
     @Published var scans: [ScanEntity] = []
     @Published var searchText = ""
 
+    // MARK: - Private Properties
+
     private let context: NSManagedObjectContext
+
+    // MARK: - Initialization
 
     init(context: NSManagedObjectContext = PersistenceController.shared.container.viewContext) {
         self.context = context
         fetchScans()
     }
 
-    // MARK: - Fetch
+    // MARK: - Fetch Operations
 
+    /// Fetch scans from Core Data, optionally filtered by search text
     func fetchScans() {
         let request = ScanEntity.fetchRequest()
 
@@ -162,12 +193,18 @@ class HistoryManager: ObservableObject {
         do {
             scans = try context.fetch(request)
         } catch {
-            print("Failed to fetch scans: \(error.localizedDescription)")
+            print("[HistoryManager] Failed to fetch scans: \(error.localizedDescription)")
         }
     }
 
-    // MARK: - Save Scan
+    // MARK: - Create Operations
 
+    /// Save a new scan to Core Data
+    /// - Parameters:
+    ///   - prompt: The optimization prompt text
+    ///   - image: Optional captured image
+    ///   - understanding: Claude's understanding of the request
+    ///   - result: The optimization result to persist
     func saveScan(
         prompt: String,
         image: UIImage?,
@@ -188,16 +225,20 @@ class HistoryManager: ObservableObject {
         fetchScans()
     }
 
-    // MARK: - Delete
+    // MARK: - Delete Operations
 
+    /// Delete a single scan
+    /// - Parameter scan: The scan entity to delete
     func deleteScan(_ scan: ScanEntity) {
         context.delete(scan)
         PersistenceController.shared.save()
         fetchScans()
     }
 
+    /// Delete scans at the specified index set
+    /// - Parameter offsets: Index set of scans to delete
     func deleteScans(at offsets: IndexSet) {
-        for index in offsets {
+        offsets.forEach { index in
             context.delete(scans[index])
         }
         PersistenceController.shared.save()
