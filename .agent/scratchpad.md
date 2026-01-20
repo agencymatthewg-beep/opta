@@ -1,43 +1,35 @@
-# Ralph Scratchpad - Ring Debug Session
+# Ralph Scratchpad - Opta Native Performance Debug
 
-## Current Task
+## Current Tasks
 
-**COMPLETED**: Debug and verify Ring Design is complete and working in dashboard ✅
+- [x] **COMPLETED**: Fix opta-mcp sidecar spam
+  - Added try/except to all Python scripts for graceful failure
+  - Added one-time warning flag in conflicts.rs
+  - Scripts now return default values when opta_mcp unavailable
 
-## Task Breakdown
+- [x] **COMPLETED**: Fix Onboarding rendering issue
+  - Added explicit animation transition to AnimatePresence content
+  - Content now properly animates in
 
-- [x] Run the Opta app and verify Ring is rendering
-- [x] Check for console errors related to 3D/WebGL
-- [x] Fix GLSL shader errors:
-  - [x] Fixed function ordering issue (`getPlasmaColor` called before `applyEnergyColorTemperature` was defined)
-  - [x] Fixed reserved word issue (`active` parameter renamed to `activeColor`)
-- [x] Verify all Ring animation phases are working:
-  - [x] Internal Plasma Core (41.2)
-  - [x] Obsidian Mirror Effect (41.3)
-  - [x] Energy Contrast System (41.4)
-  - [x] Dynamic Fog Coupling (41.5)
-  - [x] Suspenseful Transitions (41.6)
-  - [x] Color Temperature Mastery (41.7)
-  - [x] Reference Image Parity (41.8)
-- [x] Confirm stable performance
+- [x] **COMPLETED**: Improve window responsiveness for ultrawide
+  - Updated tauri.conf.json with larger default size (1400x900)
+  - Added explicit resizable/maximizable flags
+  - Removed max width/height restrictions
 
-## Build Status
-- `npm run build` - ✅ PASSED
-- `npm run dev` - ✅ RUNNING (port 1420)
+## Remaining Tasks
 
-## Fixes Applied
+- [x] Test app performance after fixes ✅
+- [ ] Verify 60fps rendering (requires gameplay testing)
+- [ ] Test memory usage and potential leaks (requires extended use)
 
-### 1. GLSL Function Ordering (RingShader.ts)
-- Moved `getPlasmaColor()` function definition AFTER `applyEnergyColorTemperature()`
-- GLSL doesn't support forward declarations like C/C++
+## Previous Session (Ring Debug) - COMPLETED ✅
 
-### 2. GLSL Reserved Word (RingShader.ts:813)
-- Renamed parameter `active` to `activeColor` in `calculateStateColor()` function
-- `active` is a reserved word in GLSL
+- [x] Debug and verify Ring Design is complete and working
+- [x] Fixed GLSL shader errors (function ordering, reserved words)
+- [x] Verified all Ring animation phases working
 
-## Result
-3D Opta Ring now renders correctly with:
-- Glassmorphism shader effect
-- Dark obsidian torus in dormant state
-- Proper 3D geometry and depth
-- No WebGL/shader errors in console
+## Notes
+
+- Production build at `/Applications/Opta.app`
+- Running on Apple Silicon (aarch64-apple-darwin)
+- Version 6.0.0

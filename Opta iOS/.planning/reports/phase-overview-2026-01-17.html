@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Opta Phase Overview - 2026-01-17</title>
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-glass: rgba(18, 18, 26, 0.8);
+            --border: rgba(139, 92, 246, 0.2);
+            --border-glow: rgba(139, 92, 246, 0.4);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-purple: #8b5cf6;
+            --accent-blue: #3b82f6;
+            --accent-green: #22c55e;
+            --accent-yellow: #eab308;
+            --accent-orange: #f97316;
+            --accent-red: #ef4444;
+            --gradient-glow: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(59, 130, 246, 0.2));
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            text-align: center;
+            padding: 3rem 0;
+            background: var(--gradient-glow);
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--bg-glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent-purple);
+        }
+
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin: 2rem 0 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .priority-section {
+            margin-bottom: 3rem;
+        }
+
+        .priority-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .priority-high {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--accent-red);
+            border: 1px solid var(--accent-red);
+        }
+
+        .priority-medium {
+            background: rgba(234, 179, 8, 0.2);
+            color: var(--accent-yellow);
+            border: 1px solid var(--accent-yellow);
+        }
+
+        .priority-low {
+            background: rgba(100, 116, 139, 0.2);
+            color: var(--text-muted);
+            border: 1px solid var(--text-muted);
+        }
+
+        .priority-deferred {
+            background: rgba(100, 116, 139, 0.1);
+            color: var(--text-muted);
+            border: 1px dashed var(--text-muted);
+        }
+
+        .phase-card {
+            background: var(--bg-glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .phase-card:hover {
+            border-color: var(--border-glow);
+            box-shadow: 0 0 30px rgba(139, 92, 246, 0.1);
+        }
+
+        .phase-card.complete {
+            border-left: 4px solid var(--accent-green);
+        }
+
+        .phase-card.in-progress {
+            border-left: 4px solid var(--accent-purple);
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.15);
+        }
+
+        .phase-card.planned {
+            border-left: 4px solid var(--accent-blue);
+        }
+
+        .phase-card.deferred {
+            border-left: 4px solid var(--text-muted);
+            opacity: 0.7;
+        }
+
+        .phase-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .phase-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .phase-number {
+            color: var(--accent-purple);
+            font-family: 'SF Mono', monospace;
+        }
+
+        .phase-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .status-dot.complete { background: var(--accent-green); }
+        .status-dot.in-progress { background: var(--accent-purple); animation: pulse 2s infinite; }
+        .status-dot.planned { background: var(--accent-blue); }
+        .status-dot.deferred { background: var(--text-muted); }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .phase-description {
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+
+        .phase-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .meta-icon {
+            width: 16px;
+            height: 16px;
+            opacity: 0.7;
+        }
+
+        .plans-list {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .plan-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 0;
+            font-size: 0.9rem;
+        }
+
+        .plan-checkbox {
+            width: 18px;
+            height: 18px;
+            border-radius: 4px;
+            border: 2px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .plan-checkbox.checked {
+            background: var(--accent-green);
+            border-color: var(--accent-green);
+        }
+
+        .plan-checkbox.checked::after {
+            content: '✓';
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .milestone-header {
+            background: var(--gradient-glow);
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            margin: 2rem 0 1rem;
+            border: 1px solid var(--border-glow);
+        }
+
+        .milestone-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .milestone-subtitle {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .focus-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(139, 92, 246, 0.15);
+            padding: 0.25rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            color: var(--accent-purple);
+            margin-left: 0.5rem;
+        }
+
+        .timeline {
+            position: relative;
+            padding-left: 2rem;
+            margin-top: 2rem;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 8px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--border);
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+
+        .timeline-dot {
+            position: absolute;
+            left: -2rem;
+            top: 0.5rem;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--accent-purple);
+            border: 3px solid var(--bg-primary);
+        }
+
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            padding: 1rem;
+            background: var(--bg-glass);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            margin-bottom: 2rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            border-top: 1px solid var(--border);
+            margin-top: 3rem;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Opta Phase Overview</h1>
+        <p class="subtitle">AI-Powered PC Optimization Orchestrator | Generated 2026-01-17 16:30</p>
+    </header>
+
+    <div class="container">
+        <!-- Quick Stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value">73</div>
+                <div class="stat-label">Plans Completed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">20/23</div>
+                <div class="stat-label">Phases Complete</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">~9.5h</div>
+                <div class="stat-label">Total Execution Time</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">8 min</div>
+                <div class="stat-label">Avg Plan Duration</div>
+            </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="legend">
+            <div class="legend-item">
+                <span class="status-dot complete"></span>
+                Complete
+            </div>
+            <div class="legend-item">
+                <span class="status-dot in-progress"></span>
+                In Progress
+            </div>
+            <div class="legend-item">
+                <span class="status-dot planned"></span>
+                Planned
+            </div>
+            <div class="legend-item">
+                <span class="status-dot deferred"></span>
+                Deferred
+            </div>
+            <div class="legend-item">
+                <span class="priority-badge priority-high">High Priority</span>
+                Next to execute
+            </div>
+            <div class="legend-item">
+                <span class="focus-indicator">Current Focus</span>
+                macOS + Aesthetics + Native
+            </div>
+        </div>
+
+        <!-- HIGH PRIORITY - Based on recent focus -->
+        <div class="priority-section">
+            <h2 class="section-title">
+                <span class="priority-badge priority-high">High Priority</span>
+                Next Phase to Execute
+            </h2>
+
+            <div class="phase-card in-progress">
+                <div class="phase-header">
+                    <div>
+                        <h3 class="phase-title">
+                            <span class="phase-number">Phase 21:</span> Advanced Visualizations
+                            <span class="focus-indicator">Aesthetic Focus</span>
+                        </h3>
+                    </div>
+                    <div class="phase-status">
+                        <span class="status-dot in-progress"></span>
+                        <span>Ready to Execute</span>
+                    </div>
+                </div>
+                <p class="phase-description">
+                    Real-time ECharts telemetry, flame graphs, treemaps, deep glow effects. Premium data visualization for system monitoring.
+                </p>
+                <div class="phase-meta">
+                    <span class="meta-item">
+                        <svg class="meta-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                        4 plans created
+                    </span>
+                    <span class="meta-item">
+                        <svg class="meta-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        Created: 2026-01-17 16:21
+                    </span>
+                    <span class="meta-item">
+                        <svg class="meta-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>
+                        v4.0 Rich Features
+                    </span>
+                    <span class="meta-item">
+                        <svg class="meta-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Est: ~35 min (4 plans × 8 avg)
+                    </span>
+                </div>
+                <div class="plans-list">
+                    <div class="plan-item">
+                        <span class="plan-checkbox"></span>
+                        21-01: ECharts real-time telemetry (Canvas, 10K+ points)
+                    </div>
+                    <div class="plan-item">
+                        <span class="plan-checkbox"></span>
+                        21-02: CPU attribution flame graph (Visx)
+                    </div>
+                    <div class="plan-item">
+                        <span class="plan-checkbox"></span>
+                        21-03: Disk space treemap (Visx)
+                    </div>
+                    <div class="plan-item">
+                        <span class="plan-checkbox"></span>
+                        21-04: Deep glow microinteractions (2025 design trends)
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MEDIUM PRIORITY - Future planned phases -->
+        <div class="priority-section">
+            <h2 class="section-title">
+                <span class="priority-badge priority-medium">Medium Priority</span>
+                Future Phases (v4.0)
+            </h2>
+
+            <div class="phase-card planned">
+                <div class="phase-header">
+                    <div>
+                        <h3 class="phase-title">
+                            <span class="phase-number">Phase 22:</span> AI/ML Intelligence
+                        </h3>
+                    </div>
+                    <div class="phase-status">
+                        <span class="status-dot planned"></span>
+                        <span>Planned</span>
+                    </div>
+                </div>
+                <p class="phase-description">
+                    Time series forecasting, anomaly detection, smart recommendations, behavior pattern detection.
+                </p>
+                <div class="phase-meta">
+                    <span class="meta-item">
+                        <svg class="meta-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                        4 plans expected
+                    </span>
+                    <span class="meta-item">
+                        <svg class="meta-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>
+                        v4.0 Rich Features
+                    </span>
+                    <span class="meta-item">
+                        <svg class="meta-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                        Depends on: Phase 21
+                    </span>
+                </div>
+                <div class="plans-list">
+                    <div class="plan-item">
+                        <span class="plan-checkbox"></span>
+                        22-01: Time series forecasting (Python MCP + Kats/Darts)
+                    </div>
+                    <div class="plan-item">
+                        <span class="plan-checkbox"></span>
+                        22-02: Anomaly detection (CPU spikes, memory pressure)
+                    </div>
+                    <div class="plan-item">
+                        <span class="plan-checkbox"></span>
+                        22-03: Content-based recommendation engine
+                    </div>
+                    <div class="plan-item">
+                        <span class="plan-checkbox"></span>
+                        22-04: Behavior pattern detection (gaming hours, work hours)
+                    </div>
+                </div>
+            </div>
+
+            <div class="phase-card planned">
+                <div class="phase-header">
+                    <div>
+                        <h3 class="phase-title">
+                            <span class="phase-number">Phase 23:</span> Cross-Device Sync
+                        </h3>
+                    </div>
+                    <div class="phase-status">
+                        <span class="status-dot planned"></span>
+                        <span>Planned</span>
+                    </div>
+                </div>
+                <p class="phase-description">
+                    ElectricSQL cloud sync, P2P LAN sync, offline-first architecture for seamless multi-device experience.
+                </p>
+                <div class="phase-meta">
+                    <span class="meta-item">
+                        <svg class="meta-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                        4 plans expected
+                    </span>
+                    <span class="meta-item">
+                        <svg class="meta-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>
+                        v4.0 Rich Features
+                    </span>
+                    <span class="meta-item">
+                        <svg class="meta-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                        Depends on: Phase 22
+                    </span>
+                </div>
+                <div class="plans-list">
+                    <div class="plan-item">
+                        <span class="plan-checkbox"></span>
+                        23-01: SQLite local storage foundation
+                    </div>
+                    <div class="plan-item">
+                        <span class="plan-checkbox"></span>
+                        23-02: ElectricSQL cloud sync (settings/profiles)
+                    </div>
+                    <div class="plan-item">
+                        <span class="plan-checkbox"></span>
+                        23-03: P2P LAN sync via WebRTC
+                    </div>
+                    <div class="plan-item">
+                        <span class="plan-checkbox"></span>
+                        23-04: Offline-first queue with optimistic updates
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DEFERRED - Windows platform -->
+        <div class="priority-section">
+            <h2 class="section-title">
+                <span class="priority-badge priority-deferred">Deferred</span>
+                Multi-Platform (Until Requested)
+            </h2>
+
+            <div class="phase-card deferred">
+                <div class="phase-header">
+                    <div>
+                        <h3 class="phase-title">
+                            <span class="phase-number">Phase 18:</span> Windows Platform
+                        </h3>
+                    </div>
+                    <div class="phase-status">
+                        <span class="status-dot deferred"></span>
+                        <span>Deferred</span>
+                    </div>
+                </div>
+                <p class="phase-description">
+                    Windows-specific testing, installer improvements, and platform-native conflict detection.
+                    <em>Postponed to focus on macOS improvements, aesthetics, and native integration first.</em>
+                </p>
+                <div class="phase-meta">
+                    <span class="meta-item">
+                        <svg class="meta-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                        3 plans created
+                    </span>
+                    <span class="meta-item">
+                        <svg class="meta-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        Created: 2026-01-17 13:56
+                    </span>
+                    <span class="meta-item">
+                        <svg class="meta-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>
+                        v2.0 Social, Chess & Windows
+                    </span>
+                </div>
+                <div class="plans-list">
+                    <div class="plan-item">
+                        <span class="plan-checkbox"></span>
+                        18-01: Windows installer customization (NSIS hooks and branding)
+                    </div>
+                    <div class="plan-item">
+                        <span class="plan-checkbox"></span>
+                        18-02: Registry-based conflict detection (installed programs)
+                    </div>
+                    <div class="plan-item">
+                        <span class="plan-checkbox"></span>
+                        18-03: Windows build and verification (hardware checkpoint)
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- COMPLETED PHASES - Milestone summaries -->
+        <div class="priority-section">
+            <h2 class="section-title">
+                Completed Milestones
+            </h2>
+
+            <!-- v4.0 Rich Features (Partial) -->
+            <div class="milestone-header">
+                <h3 class="milestone-title">v4.0 Rich Features (In Progress)</h3>
+                <p class="milestone-subtitle">Phase 20 complete | Phase 21-23 remaining</p>
+            </div>
+
+            <div class="phase-card complete">
+                <div class="phase-header">
+                    <div>
+                        <h3 class="phase-title">
+                            <span class="phase-number">Phase 20:</span> Rich Interactions & Premium Visuals
+                            <span class="focus-indicator">Native + Aesthetic</span>
+                        </h3>
+                    </div>
+                    <div class="phase-status">
+                        <span class="status-dot complete"></span>
+                        <span>Complete</span>
+                    </div>
+                </div>
+                <p class="phase-description">
+                    WebGL shaders, premium animations, command palette, drag-drop, gestures, shortcuts, haptics, menu bar extra, accessibility.
+                </p>
+                <div class="phase-meta">
+                    <span class="meta-item">11/11 plans</span>
+                    <span class="meta-item">~90 min total</span>
+                    <span class="meta-item">Modified: 2026-01-17 16:12</span>
+                </div>
+            </div>
+
+            <!-- v3.0 Native Platforms -->
+            <div class="milestone-header">
+                <h3 class="milestone-title">v3.0 Native Platforms</h3>
+                <p class="milestone-subtitle">Shipped 2026-01-17</p>
+            </div>
+
+            <div class="phase-card complete">
+                <div class="phase-header">
+                    <div>
+                        <h3 class="phase-title">
+                            <span class="phase-number">Phase 19:</span> Native macOS
+                            <span class="focus-indicator">Native Integration</span>
+                        </h3>
+                    </div>
+                    <div class="phase-status">
+                        <span class="status-dot complete"></span>
+                        <span>Complete</span>
+                    </div>
+                </div>
+                <p class="phase-description">
+                    Full native Swift/SwiftUI build with direct hardware access for maximum Apple Silicon utilization.
+                </p>
+                <div class="phase-meta">
+                    <span class="meta-item">7/7 plans</span>
+                    <span class="meta-item">45 min total</span>
+                    <span class="meta-item">Modified: 2026-01-17 15:10</span>
+                </div>
+            </div>
+
+            <!-- v2.0 Social, Chess -->
+            <div class="milestone-header">
+                <h3 class="milestone-title">v2.0 Social & Chess</h3>
+                <p class="milestone-subtitle">Shipped 2026-01-17 (Windows deferred)</p>
+            </div>
+
+            <div class="phase-card complete">
+                <div class="phase-header">
+                    <div>
+                        <h3 class="phase-title">
+                            <span class="phase-number">Phase 17:</span> Chess Integration
+                        </h3>
+                    </div>
+                    <div class="phase-status">
+                        <span class="status-dot complete"></span>
+                        <span>Complete</span>
+                    </div>
+                </div>
+                <p class="phase-description">
+                    Ambient chess experience with three modes and AI opponents. Stockfish WASM integration.
+                </p>
+                <div class="phase-meta">
+                    <span class="meta-item">4/4 plans</span>
+                    <span class="meta-item">23 min total</span>
+                    <span class="meta-item">Completed: 2026-01-17</span>
+                </div>
+            </div>
+
+            <div class="phase-card complete">
+                <div class="phase-header">
+                    <div>
+                        <h3 class="phase-title">
+                            <span class="phase-number">Phase 16:</span> Social Features
+                        </h3>
+                    </div>
+                    <div class="phase-status">
+                        <span class="status-dot complete"></span>
+                        <span>Complete</span>
+                    </div>
+                </div>
+                <p class="phase-description">
+                    Score sharing and export - no backend, no accounts. Twitter/Discord integration.
+                </p>
+                <div class="phase-meta">
+                    <span class="meta-item">1/1 plans</span>
+                    <span class="meta-item">8 min total</span>
+                    <span class="meta-item">Completed: 2026-01-16</span>
+                </div>
+            </div>
+
+            <!-- v1.1 macOS Refinement -->
+            <div class="milestone-header">
+                <h3 class="milestone-title">v1.1 macOS Refinement</h3>
+                <p class="milestone-subtitle">Shipped 2026-01-16</p>
+            </div>
+
+            <div class="phase-card complete">
+                <div class="phase-header">
+                    <div>
+                        <h3 class="phase-title">
+                            <span class="phase-number">Phases 11-15:</span> Foundation to Launch
+                        </h3>
+                    </div>
+                    <div class="phase-status">
+                        <span class="status-dot complete"></span>
+                        <span>Complete</span>
+                    </div>
+                </div>
+                <p class="phase-description">
+                    Bug fixes, UX polish, core features (Text Zone, Communication Style, Presets, Pinpoint Mode), educational enhancement, performance optimization.
+                </p>
+                <div class="phase-meta">
+                    <span class="meta-item">16/16 plans</span>
+                    <span class="meta-item">~78 min total</span>
+                    <span class="meta-item">5 phases completed</span>
+                </div>
+            </div>
+
+            <!-- v1.0 MVP -->
+            <div class="milestone-header">
+                <h3 class="milestone-title">v1.0 MVP</h3>
+                <p class="milestone-subtitle">Shipped 2026-01-16</p>
+            </div>
+
+            <div class="phase-card complete">
+                <div class="phase-header">
+                    <div>
+                        <h3 class="phase-title">
+                            <span class="phase-number">Phases 1-10:</span> Full Feature Set
+                        </h3>
+                    </div>
+                    <div class="phase-status">
+                        <span class="status-dot complete"></span>
+                        <span>Complete</span>
+                    </div>
+                </div>
+                <p class="phase-description">
+                    Foundation, Hardware Telemetry, Process Management, Design System, Conflict Detection, Local LLM, Cloud LLM, Game Detection, Optimization Engine, Adaptive Intelligence, Optimization Score, Polish & Education.
+                </p>
+                <div class="phase-meta">
+                    <span class="meta-item">41/41 plans</span>
+                    <span class="meta-item">~6.5 hours total</span>
+                    <span class="meta-item">12 phases (including 3.1, 8.1)</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Priority Analysis -->
+        <div class="priority-section">
+            <h2 class="section-title">Priority Analysis</h2>
+
+            <div class="phase-card">
+                <h3 class="phase-title" style="margin-bottom: 1rem;">Based on Recent Focus Areas</h3>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+                    <div>
+                        <h4 style="color: var(--accent-purple); margin-bottom: 0.5rem;">macOS Improvements</h4>
+                        <p style="color: var(--text-secondary); font-size: 0.9rem;">
+                            Phase 19 (Native macOS) and Phase 20 (Rich Interactions) both heavily focused on macOS-specific features. The menu bar extra, NSVisualEffectView glass effects, and Swift/SwiftUI native builds demonstrate strong macOS commitment.
+                        </p>
+                    </div>
+
+                    <div>
+                        <h4 style="color: var(--accent-blue); margin-bottom: 0.5rem;">Aesthetic & Visual Polish</h4>
+                        <p style="color: var(--text-secondary); font-size: 0.9rem;">
+                            Phase 20 introduced WebGL shaders, premium animations, and "Neon Luminal Glassmorphism". Phase 21's deep glow effects and advanced visualizations continue this aesthetic focus.
+                        </p>
+                    </div>
+
+                    <div>
+                        <h4 style="color: var(--accent-green); margin-bottom: 0.5rem;">Native Integration</h4>
+                        <p style="color: var(--text-secondary); font-size: 0.9rem;">
+                            IOKit for SMC sensor access, privileged helpers for process termination, menu bar integration with FlatBuffers IPC - all demonstrate deep native platform integration priorities.
+                        </p>
+                    </div>
+
+                    <div>
+                        <h4 style="color: var(--text-muted); margin-bottom: 0.5rem;">Windows (Explicitly Low)</h4>
+                        <p style="color: var(--text-secondary); font-size: 0.9rem;">
+                            Phase 18 deferred by explicit user request. Multi-platform testing postponed until macOS experience is polished. Plans exist but are not on the active roadmap.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Execution Timeline -->
+        <div class="priority-section">
+            <h2 class="section-title">Execution Order</h2>
+
+            <div class="phase-card">
+                <div style="font-family: 'SF Mono', monospace; font-size: 0.9rem; color: var(--text-secondary);">
+                    <span style="color: var(--accent-green);">1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 → 8 → 8.1 → 9 → 10 → 11 → 12 → 13 → 14 → 15 → 16 → 17 → 19 → 20</span>
+                    <span style="color: var(--accent-purple);"> → 21</span>
+                    <span style="color: var(--accent-blue);"> → 22 → 23</span>
+                    <span style="color: var(--text-muted);"> → (18 deferred)</span>
+                </div>
+                <div style="margin-top: 1rem; display: flex; gap: 1rem; flex-wrap: wrap;">
+                    <span style="color: var(--accent-green); font-size: 0.8rem;">■ Complete</span>
+                    <span style="color: var(--accent-purple); font-size: 0.8rem;">■ Next</span>
+                    <span style="color: var(--accent-blue); font-size: 0.8rem;">■ Planned</span>
+                    <span style="color: var(--text-muted); font-size: 0.8rem;">■ Deferred</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>Generated by Claude Code for Opta Project</p>
+        <p>Next Action: <code>/gsd:execute-phase 21</code></p>
+    </footer>
+</body>
+</html>

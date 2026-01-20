@@ -1,0 +1,616 @@
+{
+  "$schema": "../schema/settings-schema.json",
+  "domain": "hardware-recommendations",
+  "subDomain": "tier-based-settings",
+  "lastUpdated": "2026-01-18",
+  "lastVerified": "2026-01-18",
+  "confidence": "high",
+  "version": "1.0.0",
+  "description": "Hardware-indexed optimal settings for Phase 47 Configuration Calculator. Defines recommended settings by hardware tier and optimization goal.",
+  "sources": [
+    {
+      "name": "Gemini Deep Research - Apple Silicon Gaming",
+      "type": "gemini-research",
+      "date": "2026-01-18"
+    },
+    {
+      "name": "Apple Developer Documentation",
+      "type": "official-docs",
+      "url": "https://developer.apple.com/documentation/metal",
+      "date": "2025"
+    },
+    {
+      "name": "Digital Foundry Apple Silicon Analysis",
+      "type": "benchmark",
+      "date": "2025"
+    }
+  ],
+  "tiers": [
+    {
+      "tier": "entry",
+      "name": "Entry Tier",
+      "description": "Base Apple Silicon systems with 8GB unified memory",
+      "hardware": [
+        "M1",
+        "M2",
+        "M3",
+        "M4"
+      ],
+      "memoryRange": {
+        "min": 8,
+        "max": 8,
+        "unit": "GB"
+      },
+      "gpuCores": {
+        "min": 7,
+        "max": 10
+      },
+      "capabilities": {
+        "maxNativeResolution": "1920x1080",
+        "rayTracing": false,
+        "metalFX": true,
+        "promotion": false,
+        "hdr": false
+      },
+      "defaultGoal": "balanced",
+      "recommendations": {
+        "maxFps": {
+          "name": "Maximum FPS",
+          "description": "Prioritize frame rate over visual quality for competitive gaming",
+          "settings": {
+            "resolution": { "category": "graphics", "setting": "resolution", "value": "1280x720" },
+            "renderScale": { "category": "graphics", "setting": "render-scale", "value": "75" },
+            "qualityPreset": { "category": "quality", "setting": "preset", "value": "low" },
+            "metalfx": { "category": "upscaling", "setting": "metalfx", "value": "performance" },
+            "shadows": { "category": "graphics", "setting": "shadows", "value": "low" },
+            "textures": { "category": "graphics", "setting": "textures", "value": "medium" },
+            "antiAliasing": { "category": "graphics", "setting": "aa", "value": "fxaa" },
+            "motionBlur": { "category": "graphics", "setting": "motion-blur", "value": "off" },
+            "depthOfField": { "category": "graphics", "setting": "depth-of-field", "value": "off" },
+            "postProcessing": { "category": "graphics", "setting": "post-processing", "value": "low" },
+            "vsync": { "category": "display", "setting": "vsync", "value": "off" },
+            "frameCap": { "category": "display", "setting": "frame-cap", "value": "60" }
+          },
+          "expectedPerformance": {
+            "fps": { "min": 55, "target": 60, "max": 90 },
+            "stability": "high"
+          }
+        },
+        "balanced": {
+          "name": "Balanced",
+          "description": "Balance visual quality and performance for general gaming",
+          "settings": {
+            "resolution": { "category": "graphics", "setting": "resolution", "value": "1920x1080" },
+            "renderScale": { "category": "graphics", "setting": "render-scale", "value": "75" },
+            "qualityPreset": { "category": "quality", "setting": "preset", "value": "medium" },
+            "metalfx": { "category": "upscaling", "setting": "metalfx", "value": "balanced" },
+            "shadows": { "category": "graphics", "setting": "shadows", "value": "medium" },
+            "textures": { "category": "graphics", "setting": "textures", "value": "medium" },
+            "antiAliasing": { "category": "graphics", "setting": "aa", "value": "taa" },
+            "motionBlur": { "category": "graphics", "setting": "motion-blur", "value": "low" },
+            "depthOfField": { "category": "graphics", "setting": "depth-of-field", "value": "low" },
+            "postProcessing": { "category": "graphics", "setting": "post-processing", "value": "medium" },
+            "vsync": { "category": "display", "setting": "vsync", "value": "on" },
+            "frameCap": { "category": "display", "setting": "frame-cap", "value": "60" }
+          },
+          "expectedPerformance": {
+            "fps": { "min": 45, "target": 60, "max": 75 },
+            "stability": "medium"
+          }
+        },
+        "quality": {
+          "name": "Visual Quality",
+          "description": "Maximize visual fidelity with acceptable performance",
+          "settings": {
+            "resolution": { "category": "graphics", "setting": "resolution", "value": "1920x1080" },
+            "renderScale": { "category": "graphics", "setting": "render-scale", "value": "100" },
+            "qualityPreset": { "category": "quality", "setting": "preset", "value": "medium" },
+            "metalfx": { "category": "upscaling", "setting": "metalfx", "value": "off" },
+            "shadows": { "category": "graphics", "setting": "shadows", "value": "medium" },
+            "textures": { "category": "graphics", "setting": "textures", "value": "medium" },
+            "antiAliasing": { "category": "graphics", "setting": "aa", "value": "taa" },
+            "motionBlur": { "category": "graphics", "setting": "motion-blur", "value": "medium" },
+            "depthOfField": { "category": "graphics", "setting": "depth-of-field", "value": "medium" },
+            "postProcessing": { "category": "graphics", "setting": "post-processing", "value": "medium" },
+            "vsync": { "category": "display", "setting": "vsync", "value": "on" },
+            "frameCap": { "category": "display", "setting": "frame-cap", "value": "30" }
+          },
+          "expectedPerformance": {
+            "fps": { "min": 30, "target": 45, "max": 60 },
+            "stability": "medium"
+          }
+        },
+        "battery": {
+          "name": "Battery Life",
+          "description": "Maximize battery life for portable gaming",
+          "settings": {
+            "resolution": { "category": "graphics", "setting": "resolution", "value": "1280x720" },
+            "renderScale": { "category": "graphics", "setting": "render-scale", "value": "75" },
+            "qualityPreset": { "category": "quality", "setting": "preset", "value": "low" },
+            "metalfx": { "category": "upscaling", "setting": "metalfx", "value": "spatial" },
+            "shadows": { "category": "graphics", "setting": "shadows", "value": "low" },
+            "textures": { "category": "graphics", "setting": "textures", "value": "low" },
+            "antiAliasing": { "category": "graphics", "setting": "aa", "value": "off" },
+            "motionBlur": { "category": "graphics", "setting": "motion-blur", "value": "off" },
+            "depthOfField": { "category": "graphics", "setting": "depth-of-field", "value": "off" },
+            "postProcessing": { "category": "graphics", "setting": "post-processing", "value": "off" },
+            "vsync": { "category": "display", "setting": "vsync", "value": "on" },
+            "frameCap": { "category": "display", "setting": "frame-cap", "value": "30" },
+            "lowPowerMode": { "category": "power", "setting": "low-power-mode", "value": "on" }
+          },
+          "expectedPerformance": {
+            "fps": { "min": 30, "target": 30, "max": 45 },
+            "stability": "high",
+            "batteryHours": { "min": 3, "max": 5 }
+          }
+        }
+      },
+      "constraints": [
+        "No ray tracing support (M1/M2) or very limited (M3/M4 base)",
+        "8GB unified memory limits texture quality to Medium",
+        "4K output requires aggressive MetalFX upscaling",
+        "Memory pressure risk with High/Ultra textures",
+        "Sustained performance limited on MacBook Air (fanless)"
+      ],
+      "upgradeImpact": [
+        "16GB memory unlocks High/Ultra textures",
+        "Pro chips unlock ProMotion 120Hz gaming",
+        "M3+ unlocks hardware ray tracing",
+        "More GPU cores enable higher resolutions"
+      ]
+    },
+    {
+      "tier": "mid",
+      "name": "Mid Tier",
+      "description": "Professional Apple Silicon with 16-18GB unified memory",
+      "hardware": [
+        "M1 Pro",
+        "M2 Pro",
+        "M3",
+        "M3 Pro",
+        "M4 Pro"
+      ],
+      "memoryRange": {
+        "min": 16,
+        "max": 18,
+        "unit": "GB"
+      },
+      "gpuCores": {
+        "min": 10,
+        "max": 18
+      },
+      "capabilities": {
+        "maxNativeResolution": "2560x1440",
+        "rayTracing": "m3-plus-only",
+        "metalFX": true,
+        "promotion": true,
+        "hdr": true
+      },
+      "defaultGoal": "balanced",
+      "recommendations": {
+        "maxFps": {
+          "name": "Maximum FPS",
+          "description": "Prioritize 120fps for ProMotion displays",
+          "settings": {
+            "resolution": { "category": "graphics", "setting": "resolution", "value": "1920x1080" },
+            "renderScale": { "category": "graphics", "setting": "render-scale", "value": "75" },
+            "qualityPreset": { "category": "quality", "setting": "preset", "value": "medium" },
+            "metalfx": { "category": "upscaling", "setting": "metalfx", "value": "performance" },
+            "shadows": { "category": "graphics", "setting": "shadows", "value": "low" },
+            "textures": { "category": "graphics", "setting": "textures", "value": "high" },
+            "antiAliasing": { "category": "graphics", "setting": "aa", "value": "fxaa" },
+            "motionBlur": { "category": "graphics", "setting": "motion-blur", "value": "off" },
+            "depthOfField": { "category": "graphics", "setting": "depth-of-field", "value": "off" },
+            "postProcessing": { "category": "graphics", "setting": "post-processing", "value": "low" },
+            "vsync": { "category": "display", "setting": "vsync", "value": "off" },
+            "vrr": { "category": "display", "setting": "vrr", "value": "on" },
+            "frameCap": { "category": "display", "setting": "frame-cap", "value": "120" },
+            "highPowerMode": { "category": "power", "setting": "high-power-mode", "value": "on" }
+          },
+          "expectedPerformance": {
+            "fps": { "min": 90, "target": 120, "max": 144 },
+            "stability": "medium"
+          }
+        },
+        "balanced": {
+          "name": "Balanced",
+          "description": "60fps at 1440p with High settings",
+          "settings": {
+            "resolution": { "category": "graphics", "setting": "resolution", "value": "2560x1440" },
+            "renderScale": { "category": "graphics", "setting": "render-scale", "value": "75" },
+            "qualityPreset": { "category": "quality", "setting": "preset", "value": "high" },
+            "metalfx": { "category": "upscaling", "setting": "metalfx", "value": "quality" },
+            "shadows": { "category": "graphics", "setting": "shadows", "value": "high" },
+            "textures": { "category": "graphics", "setting": "textures", "value": "high" },
+            "antiAliasing": { "category": "graphics", "setting": "aa", "value": "taa" },
+            "motionBlur": { "category": "graphics", "setting": "motion-blur", "value": "medium" },
+            "depthOfField": { "category": "graphics", "setting": "depth-of-field", "value": "medium" },
+            "postProcessing": { "category": "graphics", "setting": "post-processing", "value": "high" },
+            "vsync": { "category": "display", "setting": "vsync", "value": "off" },
+            "vrr": { "category": "display", "setting": "vrr", "value": "on" },
+            "frameCap": { "category": "display", "setting": "frame-cap", "value": "60" },
+            "highPowerMode": { "category": "power", "setting": "high-power-mode", "value": "on" }
+          },
+          "expectedPerformance": {
+            "fps": { "min": 55, "target": 60, "max": 75 },
+            "stability": "high"
+          }
+        },
+        "quality": {
+          "name": "Visual Quality",
+          "description": "4K output with MetalFX upscaling and selective RT",
+          "settings": {
+            "resolution": { "category": "graphics", "setting": "resolution", "value": "3840x2160" },
+            "renderScale": { "category": "graphics", "setting": "render-scale", "value": "66" },
+            "qualityPreset": { "category": "quality", "setting": "preset", "value": "high" },
+            "metalfx": { "category": "upscaling", "setting": "metalfx", "value": "quality" },
+            "shadows": { "category": "graphics", "setting": "shadows", "value": "high" },
+            "textures": { "category": "graphics", "setting": "textures", "value": "high" },
+            "antiAliasing": { "category": "graphics", "setting": "aa", "value": "taa" },
+            "rtReflections": { "category": "rt", "setting": "reflections", "value": "on", "m3PlusOnly": true },
+            "motionBlur": { "category": "graphics", "setting": "motion-blur", "value": "high" },
+            "depthOfField": { "category": "graphics", "setting": "depth-of-field", "value": "high" },
+            "postProcessing": { "category": "graphics", "setting": "post-processing", "value": "high" },
+            "vsync": { "category": "display", "setting": "vsync", "value": "on" },
+            "frameCap": { "category": "display", "setting": "frame-cap", "value": "30" },
+            "highPowerMode": { "category": "power", "setting": "high-power-mode", "value": "on" }
+          },
+          "expectedPerformance": {
+            "fps": { "min": 30, "target": 45, "max": 60 },
+            "stability": "medium"
+          }
+        },
+        "battery": {
+          "name": "Battery Life",
+          "description": "Balanced gaming on battery power",
+          "settings": {
+            "resolution": { "category": "graphics", "setting": "resolution", "value": "1920x1080" },
+            "renderScale": { "category": "graphics", "setting": "render-scale", "value": "75" },
+            "qualityPreset": { "category": "quality", "setting": "preset", "value": "medium" },
+            "metalfx": { "category": "upscaling", "setting": "metalfx", "value": "balanced" },
+            "shadows": { "category": "graphics", "setting": "shadows", "value": "medium" },
+            "textures": { "category": "graphics", "setting": "textures", "value": "medium" },
+            "antiAliasing": { "category": "graphics", "setting": "aa", "value": "fxaa" },
+            "motionBlur": { "category": "graphics", "setting": "motion-blur", "value": "off" },
+            "depthOfField": { "category": "graphics", "setting": "depth-of-field", "value": "off" },
+            "postProcessing": { "category": "graphics", "setting": "post-processing", "value": "low" },
+            "vsync": { "category": "display", "setting": "vsync", "value": "on" },
+            "frameCap": { "category": "display", "setting": "frame-cap", "value": "60" },
+            "refreshRate": { "category": "display", "setting": "refresh-rate", "value": "60" }
+          },
+          "expectedPerformance": {
+            "fps": { "min": 50, "target": 60, "max": 75 },
+            "stability": "high",
+            "batteryHours": { "min": 2, "max": 4 }
+          }
+        }
+      },
+      "constraints": [
+        "RT limited to reflections only on M3/M3 Pro",
+        "Full RT stack not sustainable at high resolutions",
+        "4K requires MetalFX upscaling for 60fps",
+        "120Hz requires reduced settings",
+        "Battery gaming limits to 60fps"
+      ],
+      "upgradeImpact": [
+        "Max chips unlock full RT stack possibility",
+        "32GB+ unlocks Ultra textures + RT",
+        "More GPU cores enable native 4K",
+        "Better sustained performance from cooling"
+      ]
+    },
+    {
+      "tier": "high",
+      "name": "High Tier",
+      "description": "High-end Apple Silicon with 36GB unified memory",
+      "hardware": [
+        "M1 Max",
+        "M2 Max",
+        "M3 Pro",
+        "M3 Max",
+        "M4 Pro",
+        "M4 Max"
+      ],
+      "memoryRange": {
+        "min": 32,
+        "max": 48,
+        "unit": "GB"
+      },
+      "gpuCores": {
+        "min": 24,
+        "max": 40
+      },
+      "capabilities": {
+        "maxNativeResolution": "3840x2160",
+        "rayTracing": true,
+        "metalFX": true,
+        "promotion": true,
+        "hdr": true
+      },
+      "defaultGoal": "balanced",
+      "recommendations": {
+        "maxFps": {
+          "name": "Maximum FPS",
+          "description": "120fps at 1440p with High settings",
+          "settings": {
+            "resolution": { "category": "graphics", "setting": "resolution", "value": "2560x1440" },
+            "renderScale": { "category": "graphics", "setting": "render-scale", "value": "75" },
+            "qualityPreset": { "category": "quality", "setting": "preset", "value": "high" },
+            "metalfx": { "category": "upscaling", "setting": "metalfx", "value": "performance" },
+            "shadows": { "category": "graphics", "setting": "shadows", "value": "medium" },
+            "textures": { "category": "graphics", "setting": "textures", "value": "ultra" },
+            "antiAliasing": { "category": "graphics", "setting": "aa", "value": "taa" },
+            "motionBlur": { "category": "graphics", "setting": "motion-blur", "value": "off" },
+            "depthOfField": { "category": "graphics", "setting": "depth-of-field", "value": "off" },
+            "postProcessing": { "category": "graphics", "setting": "post-processing", "value": "medium" },
+            "vsync": { "category": "display", "setting": "vsync", "value": "off" },
+            "vrr": { "category": "display", "setting": "vrr", "value": "on" },
+            "frameCap": { "category": "display", "setting": "frame-cap", "value": "120" },
+            "highPowerMode": { "category": "power", "setting": "high-power-mode", "value": "on" }
+          },
+          "expectedPerformance": {
+            "fps": { "min": 100, "target": 120, "max": 165 },
+            "stability": "high"
+          }
+        },
+        "balanced": {
+          "name": "Balanced",
+          "description": "4K 60fps with High/Ultra settings and selective RT",
+          "settings": {
+            "resolution": { "category": "graphics", "setting": "resolution", "value": "3840x2160" },
+            "renderScale": { "category": "graphics", "setting": "render-scale", "value": "75" },
+            "qualityPreset": { "category": "quality", "setting": "preset", "value": "high" },
+            "metalfx": { "category": "upscaling", "setting": "metalfx", "value": "quality" },
+            "shadows": { "category": "graphics", "setting": "shadows", "value": "high" },
+            "textures": { "category": "graphics", "setting": "textures", "value": "ultra" },
+            "antiAliasing": { "category": "graphics", "setting": "aa", "value": "taa" },
+            "rtReflections": { "category": "rt", "setting": "reflections", "value": "on" },
+            "rtShadows": { "category": "rt", "setting": "shadows", "value": "on" },
+            "motionBlur": { "category": "graphics", "setting": "motion-blur", "value": "medium" },
+            "depthOfField": { "category": "graphics", "setting": "depth-of-field", "value": "high" },
+            "postProcessing": { "category": "graphics", "setting": "post-processing", "value": "high" },
+            "vsync": { "category": "display", "setting": "vsync", "value": "off" },
+            "vrr": { "category": "display", "setting": "vrr", "value": "on" },
+            "frameCap": { "category": "display", "setting": "frame-cap", "value": "60" },
+            "highPowerMode": { "category": "power", "setting": "high-power-mode", "value": "on" }
+          },
+          "expectedPerformance": {
+            "fps": { "min": 55, "target": 60, "max": 75 },
+            "stability": "high"
+          }
+        },
+        "quality": {
+          "name": "Visual Quality",
+          "description": "4K with full RT stack and Ultra settings",
+          "settings": {
+            "resolution": { "category": "graphics", "setting": "resolution", "value": "3840x2160" },
+            "renderScale": { "category": "graphics", "setting": "render-scale", "value": "100" },
+            "qualityPreset": { "category": "quality", "setting": "preset", "value": "ultra" },
+            "metalfx": { "category": "upscaling", "setting": "metalfx", "value": "off" },
+            "shadows": { "category": "graphics", "setting": "shadows", "value": "ultra" },
+            "textures": { "category": "graphics", "setting": "textures", "value": "ultra" },
+            "antiAliasing": { "category": "graphics", "setting": "aa", "value": "taa" },
+            "rtReflections": { "category": "rt", "setting": "reflections", "value": "on" },
+            "rtShadows": { "category": "rt", "setting": "shadows", "value": "on" },
+            "rtGI": { "category": "rt", "setting": "global-illumination", "value": "on" },
+            "motionBlur": { "category": "graphics", "setting": "motion-blur", "value": "high" },
+            "depthOfField": { "category": "graphics", "setting": "depth-of-field", "value": "high" },
+            "postProcessing": { "category": "graphics", "setting": "post-processing", "value": "ultra" },
+            "vsync": { "category": "display", "setting": "vsync", "value": "on" },
+            "frameCap": { "category": "display", "setting": "frame-cap", "value": "30" },
+            "highPowerMode": { "category": "power", "setting": "high-power-mode", "value": "on" }
+          },
+          "expectedPerformance": {
+            "fps": { "min": 30, "target": 40, "max": 60 },
+            "stability": "medium"
+          }
+        },
+        "battery": {
+          "name": "Battery Life",
+          "description": "High quality gaming on battery",
+          "settings": {
+            "resolution": { "category": "graphics", "setting": "resolution", "value": "2560x1440" },
+            "renderScale": { "category": "graphics", "setting": "render-scale", "value": "75" },
+            "qualityPreset": { "category": "quality", "setting": "preset", "value": "high" },
+            "metalfx": { "category": "upscaling", "setting": "metalfx", "value": "quality" },
+            "shadows": { "category": "graphics", "setting": "shadows", "value": "high" },
+            "textures": { "category": "graphics", "setting": "textures", "value": "high" },
+            "antiAliasing": { "category": "graphics", "setting": "aa", "value": "taa" },
+            "motionBlur": { "category": "graphics", "setting": "motion-blur", "value": "off" },
+            "depthOfField": { "category": "graphics", "setting": "depth-of-field", "value": "medium" },
+            "postProcessing": { "category": "graphics", "setting": "post-processing", "value": "medium" },
+            "vsync": { "category": "display", "setting": "vsync", "value": "on" },
+            "frameCap": { "category": "display", "setting": "frame-cap", "value": "60" },
+            "refreshRate": { "category": "display", "setting": "refresh-rate", "value": "60" }
+          },
+          "expectedPerformance": {
+            "fps": { "min": 50, "target": 60, "max": 75 },
+            "stability": "high",
+            "batteryHours": { "min": 1.5, "max": 3 }
+          }
+        }
+      },
+      "constraints": [
+        "Full RT GI reduces fps to 30-40 at 4K",
+        "120Hz at 4K not achievable even with MetalFX",
+        "Battery life significantly reduced at high settings",
+        "Some games may not utilize all GPU cores efficiently"
+      ],
+      "upgradeImpact": [
+        "Ultra variants unlock 128GB memory option",
+        "More GPU cores enable native 4K 60fps",
+        "Better efficiency in future generations",
+        "Mac Studio/Pro form factor removes all thermal limits"
+      ]
+    },
+    {
+      "tier": "ultra",
+      "name": "Ultra Tier",
+      "description": "Maximum Apple Silicon with 48GB+ unified memory",
+      "hardware": [
+        "M1 Ultra",
+        "M2 Ultra",
+        "M3 Max",
+        "M4 Max"
+      ],
+      "memoryRange": {
+        "min": 48,
+        "max": 192,
+        "unit": "GB"
+      },
+      "gpuCores": {
+        "min": 40,
+        "max": 76
+      },
+      "capabilities": {
+        "maxNativeResolution": "5120x2880",
+        "rayTracing": true,
+        "metalFX": true,
+        "promotion": true,
+        "hdr": true,
+        "multiDisplay": true
+      },
+      "defaultGoal": "quality",
+      "recommendations": {
+        "maxFps": {
+          "name": "Maximum FPS",
+          "description": "4K 120fps with High settings",
+          "settings": {
+            "resolution": { "category": "graphics", "setting": "resolution", "value": "3840x2160" },
+            "renderScale": { "category": "graphics", "setting": "render-scale", "value": "75" },
+            "qualityPreset": { "category": "quality", "setting": "preset", "value": "high" },
+            "metalfx": { "category": "upscaling", "setting": "metalfx", "value": "performance" },
+            "shadows": { "category": "graphics", "setting": "shadows", "value": "high" },
+            "textures": { "category": "graphics", "setting": "textures", "value": "ultra" },
+            "antiAliasing": { "category": "graphics", "setting": "aa", "value": "taa" },
+            "rtReflections": { "category": "rt", "setting": "reflections", "value": "on" },
+            "motionBlur": { "category": "graphics", "setting": "motion-blur", "value": "off" },
+            "depthOfField": { "category": "graphics", "setting": "depth-of-field", "value": "off" },
+            "postProcessing": { "category": "graphics", "setting": "post-processing", "value": "high" },
+            "vsync": { "category": "display", "setting": "vsync", "value": "off" },
+            "vrr": { "category": "display", "setting": "vrr", "value": "on" },
+            "frameCap": { "category": "display", "setting": "frame-cap", "value": "120" }
+          },
+          "expectedPerformance": {
+            "fps": { "min": 100, "target": 120, "max": 165 },
+            "stability": "high"
+          }
+        },
+        "balanced": {
+          "name": "Balanced",
+          "description": "4K 60fps with Ultra settings and full RT",
+          "settings": {
+            "resolution": { "category": "graphics", "setting": "resolution", "value": "3840x2160" },
+            "renderScale": { "category": "graphics", "setting": "render-scale", "value": "100" },
+            "qualityPreset": { "category": "quality", "setting": "preset", "value": "ultra" },
+            "metalfx": { "category": "upscaling", "setting": "metalfx", "value": "off" },
+            "shadows": { "category": "graphics", "setting": "shadows", "value": "ultra" },
+            "textures": { "category": "graphics", "setting": "textures", "value": "ultra" },
+            "antiAliasing": { "category": "graphics", "setting": "aa", "value": "taa" },
+            "rtReflections": { "category": "rt", "setting": "reflections", "value": "on" },
+            "rtShadows": { "category": "rt", "setting": "shadows", "value": "on" },
+            "rtGI": { "category": "rt", "setting": "global-illumination", "value": "on" },
+            "motionBlur": { "category": "graphics", "setting": "motion-blur", "value": "high" },
+            "depthOfField": { "category": "graphics", "setting": "depth-of-field", "value": "high" },
+            "postProcessing": { "category": "graphics", "setting": "post-processing", "value": "ultra" },
+            "vsync": { "category": "display", "setting": "vsync", "value": "off" },
+            "vrr": { "category": "display", "setting": "vrr", "value": "on" },
+            "frameCap": { "category": "display", "setting": "frame-cap", "value": "60" }
+          },
+          "expectedPerformance": {
+            "fps": { "min": 55, "target": 60, "max": 75 },
+            "stability": "high"
+          }
+        },
+        "quality": {
+          "name": "Visual Quality",
+          "description": "No compromises - maximum quality at all settings",
+          "settings": {
+            "resolution": { "category": "graphics", "setting": "resolution", "value": "5120x2880" },
+            "renderScale": { "category": "graphics", "setting": "render-scale", "value": "100" },
+            "qualityPreset": { "category": "quality", "setting": "preset", "value": "ultra" },
+            "metalfx": { "category": "upscaling", "setting": "metalfx", "value": "off" },
+            "shadows": { "category": "graphics", "setting": "shadows", "value": "ultra" },
+            "textures": { "category": "graphics", "setting": "textures", "value": "ultra" },
+            "antiAliasing": { "category": "graphics", "setting": "aa", "value": "taa" },
+            "rtReflections": { "category": "rt", "setting": "reflections", "value": "on" },
+            "rtShadows": { "category": "rt", "setting": "shadows", "value": "on" },
+            "rtGI": { "category": "rt", "setting": "global-illumination", "value": "on" },
+            "motionBlur": { "category": "graphics", "setting": "motion-blur", "value": "high" },
+            "depthOfField": { "category": "graphics", "setting": "depth-of-field", "value": "high" },
+            "postProcessing": { "category": "graphics", "setting": "post-processing", "value": "ultra" },
+            "vsync": { "category": "display", "setting": "vsync", "value": "on" },
+            "frameCap": { "category": "display", "setting": "frame-cap", "value": "none" }
+          },
+          "expectedPerformance": {
+            "fps": { "min": 30, "target": 45, "max": 60 },
+            "stability": "high"
+          }
+        },
+        "battery": {
+          "name": "Battery Life",
+          "description": "Not applicable - Ultra tier is desktop only",
+          "settings": {},
+          "note": "Ultra tier hardware (Mac Studio, Mac Pro) does not run on battery",
+          "expectedPerformance": {
+            "fps": { "min": 0, "target": 0, "max": 0 },
+            "stability": "n/a"
+          }
+        }
+      },
+      "constraints": [
+        "Desktop form factor only (Mac Studio, Mac Pro)",
+        "High power consumption (~200-300W under load)",
+        "Some games may not scale to 60+ GPU cores",
+        "Price-to-performance may favor High tier for gaming"
+      ],
+      "upgradeImpact": [
+        "This is the maximum tier - no further upgrades",
+        "Future generations will bring efficiency improvements",
+        "More games optimized for Apple Silicon expected"
+      ]
+    }
+  ],
+  "tierMapping": {
+    "description": "Quick lookup for hardware to tier mapping",
+    "mapping": {
+      "M1": "entry",
+      "M2": "entry",
+      "M3": "entry",
+      "M4": "entry",
+      "M1 Pro": "mid",
+      "M2 Pro": "mid",
+      "M3 Pro": "mid",
+      "M4 Pro": "mid",
+      "M1 Max": "high",
+      "M2 Max": "high",
+      "M3 Max": "high",
+      "M4 Max": "ultra",
+      "M1 Ultra": "ultra",
+      "M2 Ultra": "ultra"
+    }
+  },
+  "memoryTierOverride": {
+    "description": "Memory configurations can override tier recommendations",
+    "rules": [
+      {
+        "condition": "8GB M3/M4",
+        "note": "Despite newer chip, treat texture settings as entry tier"
+      },
+      {
+        "condition": "32GB M3 Pro",
+        "note": "Can use High tier texture settings despite Mid tier GPU"
+      },
+      {
+        "condition": "128GB M2 Ultra",
+        "note": "Massive texture streaming capability, but GPU still limits RT"
+      }
+    ]
+  },
+  "integrationNotes": {
+    "phase47": "Configuration Calculator should use tierMapping for initial lookup, then apply goal-specific recommendations",
+    "conflictCheck": "Cross-reference recommendations with conflicts/ data to ensure no conflicting settings",
+    "synergyBonus": "Apply synergies/ data to enhance recommendations where applicable",
+    "tradeoffAdjust": "Use tradeoffs/ data to warn users of significant quality/performance tradeoffs"
+  }
+}

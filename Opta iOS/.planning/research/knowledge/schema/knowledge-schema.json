@@ -1,0 +1,151 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://opta.app/schemas/knowledge-schema.json",
+  "title": "Opta Knowledge Entry Schema",
+  "description": "Schema for Opta's 5-tier knowledge hierarchy system",
+  "type": "object",
+  "required": ["$schema", "tier", "domain", "lastUpdated", "entries"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "const": "knowledge-schema.json"
+    },
+    "tier": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5,
+      "description": "Knowledge tier (1=Physics/Math, 2=Architecture, 3=Specs, 4=Benchmarks, 5=Dynamic)"
+    },
+    "tierName": {
+      "type": "string",
+      "enum": ["physics", "architecture", "specs", "benchmarks", "dynamic"]
+    },
+    "domain": {
+      "type": "string",
+      "enum": ["gpu", "cpu", "memory", "thermal", "storage", "general", "macos", "windows", "games"],
+      "description": "Knowledge domain this file covers"
+    },
+    "lastUpdated": {
+      "type": "string",
+      "format": "date",
+      "description": "ISO date of last update"
+    },
+    "lastVerified": {
+      "type": "string",
+      "format": "date",
+      "description": "ISO date of last verification (for T4-T5)"
+    },
+    "confidence": {
+      "type": "string",
+      "enum": ["high", "medium", "low"],
+      "description": "Overall confidence in this knowledge file"
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "type"],
+        "properties": {
+          "name": { "type": "string" },
+          "type": {
+            "type": "string",
+            "enum": ["gemini-research", "official-docs", "benchmark", "user-report", "derived"]
+          },
+          "url": { "type": "string", "format": "uri" },
+          "date": { "type": "string", "format": "date" }
+        }
+      }
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/knowledgeEntry"
+      }
+    }
+  },
+  "$defs": {
+    "knowledgeEntry": {
+      "type": "object",
+      "required": ["id", "fact", "confidence"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9-]+$",
+          "description": "Unique identifier (kebab-case)"
+        },
+        "fact": {
+          "type": "string",
+          "description": "The knowledge statement"
+        },
+        "details": {
+          "type": "string",
+          "description": "Extended explanation if needed"
+        },
+        "confidence": {
+          "type": "string",
+          "enum": ["high", "medium", "low"]
+        },
+        "source": {
+          "type": "string",
+          "description": "Source reference for this specific entry"
+        },
+        "sourceDate": {
+          "type": "string",
+          "description": "Year or date of source"
+        },
+        "verificationRequired": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether this entry needs verification before use"
+        },
+        "lastVerified": {
+          "type": "string",
+          "format": "date"
+        },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Searchable tags"
+        },
+        "relatedEntries": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "IDs of related knowledge entries"
+        },
+        "numericValue": {
+          "type": "object",
+          "description": "For quantifiable facts",
+          "properties": {
+            "value": { "type": "number" },
+            "unit": { "type": "string" },
+            "min": { "type": "number" },
+            "max": { "type": "number" }
+          }
+        },
+        "applicableTo": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Chips/devices this applies to (e.g., ['M3', 'M3 Pro', 'M3 Max'])"
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "tier": { "const": 5 } }
+      },
+      "then": {
+        "properties": {
+          "entries": {
+            "items": {
+              "properties": {
+                "verificationRequired": { "const": true }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}
