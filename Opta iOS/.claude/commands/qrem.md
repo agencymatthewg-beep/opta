@@ -5,7 +5,7 @@ Save the current conversation context for instant recall later.
 ## Execution
 
 1. **Capture the context**: Take the user's last message or the current working context
-2. **Save to quick-memory**: Write to `/.claude/quick-memory/LAST.md`
+2. **Save to quick-memory**: Write to `.claude/quick-memory/LAST.md`
 3. **Confirm**: Brief acknowledgment
 
 ## Storage Location

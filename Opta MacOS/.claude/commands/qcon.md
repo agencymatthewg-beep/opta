@@ -4,7 +4,7 @@ Recall the last saved context from `/qrem` and continue working.
 
 ## Execution
 
-1. **Read quick-memory**: Load `/.claude/quick-memory/LAST.md`
+1. **Read quick-memory**: Load `.claude/quick-memory/LAST.md`
 2. **Present context**: Show what was saved
 3. **Resume work**: Continue from where we left off
 

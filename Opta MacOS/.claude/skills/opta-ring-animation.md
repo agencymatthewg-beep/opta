@@ -30,12 +30,12 @@ Activate this skill when working on:
 
 | File | Purpose |
 |------|---------|
-| `/.planning/phases/20-rich-interactions/ring-animation/OPTA_RING_ANIMATION_SPEC.md` | **Full technical specification** |
-| `/.planning/phases/20-rich-interactions/ring-animation/IMPLEMENTATION_PLAN.md` | Step-by-step implementation guide |
-| `/Opta Vision/animation-frames/` | Visual reference frames |
-| `/src/components/OptaRing.tsx` | Current 2D implementation |
-| `/src/contexts/OptaRingContext.tsx` | Ring state management |
-| `/DESIGN_SYSTEM.md` | Style guide compliance |
+| `.planning/phases/20-rich-interactions/ring-animation/OPTA_RING_ANIMATION_SPEC.md` | **Full technical specification** |
+| `.planning/phases/20-rich-interactions/ring-animation/IMPLEMENTATION_PLAN.md` | Step-by-step implementation guide |
+| `Opta Vision/animation-frames/` | Visual reference frames |
+| `src/components/OptaRing.tsx` | Current 2D implementation |
+| `src/contexts/OptaRingContext.tsx` | Ring state management |
+| `DESIGN_SYSTEM.md` | Style guide compliance |
 
 ---
 
@@ -147,7 +147,7 @@ export function useOptaWakeUp() {
 
 ## Visual Reference Guide
 
-When implementing, reference these frame sequences in `/Opta Vision/animation-frames/`:
+When implementing, reference these frame sequences in `Opta Vision/animation-frames/`:
 
 | Sequence | Frames | What to Match |
 |----------|--------|---------------|
