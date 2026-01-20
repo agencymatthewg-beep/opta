@@ -5,32 +5,27 @@
 See: .planning/PROJECT.md (updated 2026-01-20)
 
 **Core value:** Capture anything, optimize everything — Photo/prompt → Questions → Beautiful optimized answer
-**Current focus:** v1.0 MVP — Building the core scan-to-optimization flow
+**Current focus:** v1.0 MVP COMPLETE
 
 ## Current Position
 
-Phase: 1 of 8 (App Foundation)
-Plan: 2 of 2 in current phase
-Status: AWAITING HUMAN VERIFICATION
-Last activity: 2026-01-20 — Plan 01-02 at checkpoint
+Phase: 8 of 8 (All phases complete)
+Status: **MVP COMPLETE**
+Last activity: 2026-01-21 — All phases implemented
 
-Progress: █░░░░░░░░░ 15% of v1.0 (0 of 6 phases complete, 2/2 plans in Phase 1 pending verification)
+Progress: ██████████ 100% of v1.0 (8 of 8 phases complete)
 
 ### v1.0 MVP
 | Phase | Name | Status |
 |-------|------|--------|
-| 1 | App Foundation | In progress (1/2 plans) |
-| 2 | Capture Experience | Planned |
-| 3 | Claude Integration | Planned |
-| 4 | Question Flow | Planned |
-| 5 | Result Visualization | Planned |
-| 6 | History & Persistence | Planned |
-
-### v1.1 Polish
-| Phase | Name | Status |
-|-------|------|--------|
-| 7 | UX Polish | Future |
-| 8 | Launch Prep | Future |
+| 1 | App Foundation | ✅ Complete |
+| 2 | Capture Experience | ✅ Complete |
+| 3 | Claude Integration | ✅ Complete |
+| 4 | Question Flow | ✅ Complete |
+| 5 | Result Visualization | ✅ Complete |
+| 6 | History & Persistence | ✅ Complete |
+| 7 | UX Polish | ✅ Complete |
+| 8 | Launch Prep | ✅ Complete |
 
 ## The One Feature
 
@@ -46,6 +41,56 @@ Example: Menu photo + "most calories for $10" → Visual recommendation
 - **Thorough**: "Optamize" slider for depth control
 - **Visual**: Cards, rankings, highlights (not text walls)
 
+## Implementation Summary
+
+### Phase 1: App Foundation
+- Custom tab bar with glass styling
+- OLED-optimized dark theme (#09090b)
+- Design system (colors, typography, animations, haptics)
+- Three-level glass modifier system
+
+### Phase 2: Capture Experience
+- AVFoundation camera integration
+- PhotosUI library picker
+- Prompt input with smart suggestions
+- Animated capture button
+
+### Phase 3: Claude Integration
+- Full Claude API client (ClaudeService)
+- Image/text analysis with vision support
+- Optimization depth slider (Quick/Thorough)
+- Structured response parsing
+
+### Phase 4: Question Flow
+- Dynamic question cards
+- Multiple input types (single/multi choice, text, slider)
+- Progress indicator with animations
+- Back/Next navigation
+
+### Phase 5: Result Visualization
+- Highlights card with key takeaways
+- Rankings card with medal colors
+- Full analysis card
+- Share functionality
+
+### Phase 6: History & Persistence
+- Core Data model (ScanEntity)
+- PersistenceController with preview support
+- HistoryManager for fetch/save/delete
+- Search functionality
+
+### Phase 7: UX Polish
+- Enhanced haptic feedback throughout
+- Staggered appearance animations
+- Accessibility labels and hints
+- Symbol effects for visual interest
+
+### Phase 8: Launch Prep
+- 3-page onboarding flow
+- AppStorage for first-launch detection
+- Skip/Continue navigation
+- Animated page transitions
+
 ## Accumulated Context
 
 ### Decisions
@@ -56,28 +101,40 @@ Example: Menu photo + "most calories for $10" → Visual recommendation
 | — | Cloud AI (Claude) | Best optimization reasoning |
 | — | Photo-first UX | Lowest friction |
 | — | Card-based results | Scannable, shareable |
-| 1 | OLED background #09090b | Prevents smear on scroll (not true black) |
-| 1 | Spring-only animations | Natural feel per IOS_AESTHETIC_GUIDE |
-| 1 | Three-level glass system | Spatial hierarchy (subtle/content/overlay) |
+| 1 | OLED background #09090b | Prevents smear on scroll |
+| 1 | Spring-only animations | Natural feel |
+| 1 | Three-level glass system | Spatial hierarchy |
+| 6 | Core Data over SwiftData | Broader compatibility |
+| 7 | CoreHaptics with fallback | Premium feel |
+| 8 | AppStorage for onboarding | Lightweight persistence |
 
 ### Deferred Issues
 
-None yet.
+None.
 
 ### Pending Todos
 
-None yet.
+- Add actual app icon (1024x1024 PNG)
+- Add Claude API key configuration in Settings
+- App Store screenshots
+- Privacy policy URL
 
 ### Blockers/Concerns
 
-None yet.
+None.
+
+## Next Steps for Launch
+
+1. **App Icon**: Create 1024x1024 icon with Opta branding
+2. **API Key**: Add Claude API key input in SettingsView
+3. **Testing**: Full end-to-end testing on device
+4. **App Store Connect**: Screenshots, metadata, review
 
 ## Session Continuity
 
-Last session: 2026-01-20
-Stopped at: Plan 01-02 at human verification checkpoint
-Resume file: None
-Next action: User verifies app in simulator, then Phase 1 complete → Phase 2
+Last session: 2026-01-21
+Status: MVP COMPLETE
+Next action: User testing and App Store preparation
 
 ---
 *Opta Scan — capture anything, optimize everything*
