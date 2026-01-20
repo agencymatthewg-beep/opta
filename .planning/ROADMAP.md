@@ -15,6 +15,7 @@ Opta transforms from an empty Tauri scaffold into a full-featured AI-powered PC 
 - ✅ **v5.1 Ring Visual Enhancement** - Phases 41.2-41.8 (shipped 2026-01-18)
 - ✅ **v6.0 Optimization Intelligence Core** - Phases 44-50 (shipped 2026-01-18)
 - ✅ **v7.0 Chess Mastery Experience** - Phases 51-58 (shipped 2026-01-18)
+- 📋 **v8.0 Rust Native Architecture** - Phases 59-68 (planned)
 
 ## Domain Expertise
 
@@ -96,6 +97,16 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 56: Premium Board UI** - Board/piece themes, glass integration, familiar but premium (v7.0)
 - [x] **Phase 57: Chess Settings & Customization** - Full preference panel, theme presets, sounds (v7.0)
 - [x] **Phase 58: Chess Mastery Launch** - Polish, accessibility, documentation, release (v7.0)
+- [ ] **Phase 59: Rust Core Foundation** - Crux framework setup, core Rust library, UniFFI bindings scaffold (v8.0)
+- [ ] **Phase 60: wgpu Render Surface** - GPU abstraction layer, Metal/Vulkan backends, basic rendering pipeline (v8.0)
+- [ ] **Phase 61: WGSL Shader System** - Custom shader architecture, SDF primitives, glass/plasma effects in Rust (v8.0)
+- [ ] **Phase 62: Native Shell - macOS** - SwiftUI shell, CADisplayLink sync, CoreHaptics integration (v8.0)
+- [ ] **Phase 63: Component Migration** - Port React components to Rust/wgpu render targets (v8.0)
+- [ ] **Phase 64: Animation System** - Rive runtime integration, spring physics in Rust, 120Hz rendering (v8.0)
+- [ ] **Phase 65: State & Data Layer** - Migrate state management to Crux, SQLite via Rust, sync protocols (v8.0)
+- [ ] **Phase 66: Performance Optimization** - Binary size optimization, LTO, ASTC textures, memory management (v8.0)
+- [ ] **Phase 67: Platform Parity** - Android Kotlin shell, Windows DX12 backend, Linux Vulkan (v8.0)
+- [ ] **Phase 68: Rust Native Launch** - Testing, App Store compliance, documentation, release (v8.0)
 
 ## Phase Details
 
@@ -1006,10 +1017,220 @@ Plans:
 - [ ] 58-04: Documentation and style guide updates
 - [ ] 58-05: Release notes and changelog
 
+### 📋 v8.0 Rust Native Architecture (Planned)
+
+**Milestone Goal:** Complete architectural transformation from Tauri+React WebView to a fully Rust-native paradigm. Implement Hybrid Native-Core Architecture with wgpu rendering, UniFFI bindings, and native platform shells. This eliminates the JavaScript runtime overhead, enables true 120Hz rendering, and positions Opta for optimal performance on all platforms.
+
+**Core Architecture (from Gemini Analysis):**
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    Native Shell Layer                    │
+│         SwiftUI (macOS/iOS) │ Kotlin (Android)          │
+│    • App lifecycle  • System integration  • Haptics     │
+├─────────────────────────────────────────────────────────┤
+│                    Rust Core Layer                       │
+│              Crux Framework + UniFFI Bindings            │
+│    • Business logic  • State management  • Sync         │
+├─────────────────────────────────────────────────────────┤
+│                 Rust Render Surface                      │
+│                     wgpu + WGSL                          │
+│    • GPU rendering  • Shaders  • Animations  • 120Hz    │
+└─────────────────────────────────────────────────────────┘
+```
+
+**Design Pillars:**
+- 🦀 **Rust-First** — All business logic, rendering, and animations in Rust
+- 🎮 **GPU-Native** — wgpu for Metal/Vulkan/DX12 with zero WebGL overhead
+- ⚡ **120Hz Native** — CADisplayLink sync for ProMotion displays
+- 🔗 **Clean FFI** — UniFFI for automatic Swift/Kotlin binding generation
+- 📦 **Minimal Binary** — LTO, dead code elimination, ASTC textures
+
+**Key Technologies:**
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| Core Framework | Crux | Headless Rust core with platform-agnostic business logic |
+| FFI Generator | UniFFI | Automatic Swift/Kotlin bindings from Rust |
+| Graphics API | wgpu | Safe, portable GPU abstraction (Metal/Vulkan/DX12) |
+| Shader Language | WGSL | WebGPU Shading Language for all effects |
+| Animation Runtime | Rive (rust) | Vector animations with Rust integration |
+| macOS Shell | SwiftUI | Native Apple experience, CADisplayLink, CoreHaptics |
+| Android Shell | Kotlin/Compose | Native Android experience, Choreographer |
+
+---
+
+#### Phase 59: Rust Core Foundation
+**Goal**: Establish Crux framework with core Rust library and UniFFI bindings scaffold
+**Depends on**: Phase 58 (v7.0 complete)
+**Research**: Required (Crux patterns, UniFFI setup)
+**Research Topics**: Crux framework architecture, UniFFI Swift/Kotlin generation, Rust workspace structure, cross-compilation setup
+
+**Key Deliverables:**
+- Crux-based core library with capability traits
+- UniFFI configuration for Swift and Kotlin
+- Message passing infrastructure (Effects, Events)
+- Initial type definitions shared across platforms
+- Cargo workspace with proper feature flags
+
+Plans:
+- [ ] 59-01: TBD (run /gsd:plan-phase 59 to break down)
+
+#### Phase 60: wgpu Render Surface
+**Goal**: Implement GPU abstraction layer with Metal/Vulkan backends and basic rendering pipeline
+**Depends on**: Phase 59
+**Research**: Required (wgpu initialization, render pipelines)
+**Research Topics**: wgpu Surface creation, render pipeline setup, Metal backend specifics, Vulkan validation layers
+
+**Key Deliverables:**
+- wgpu instance creation with backend selection
+- Render pipeline for basic geometry
+- Texture management system
+- Frame timing infrastructure
+- GPU capability detection
+
+Plans:
+- [ ] 60-01: TBD
+
+#### Phase 61: WGSL Shader System
+**Goal**: Build custom shader architecture with SDF primitives and glass/plasma effects in pure Rust/WGSL
+**Depends on**: Phase 60
+**Research**: Required (WGSL syntax, SDF techniques)
+**Research Topics**: WGSL shader programming, Signed Distance Fields, procedural noise in shaders, glass refraction
+
+**Key Deliverables:**
+- WGSL shader compilation pipeline
+- SDF primitive library (circle, box, torus, etc.)
+- Glass material shader (fresnel, refraction)
+- Plasma/noise shader for ring interior
+- Bloom post-processing shader
+- Hot-reload shader development workflow
+
+Plans:
+- [ ] 61-01: TBD
+
+#### Phase 62: Native Shell - macOS
+**Goal**: SwiftUI shell with CADisplayLink synchronization and CoreHaptics integration
+**Depends on**: Phase 61
+**Research**: Required (SwiftUI+Rust integration)
+**Research Topics**: CADisplayLink 120Hz sync, CoreHaptics API, MTKView integration, SwiftUI hosting
+
+**Key Deliverables:**
+- SwiftUI app shell hosting wgpu surface
+- CADisplayLink-driven render loop (120Hz on ProMotion)
+- CoreHaptics integration for tactile feedback
+- Native menu bar integration
+- App lifecycle management (background/foreground)
+- Sparkle updater integration
+
+Plans:
+- [ ] 62-01: TBD
+
+#### Phase 63: Component Migration
+**Goal**: Port existing React components to Rust/wgpu render targets
+**Depends on**: Phase 62
+**Research**: Unlikely (implementation work)
+
+**Key Deliverables:**
+- OptaRing component in wgpu (all states)
+- Glass panel rendering system
+- Text rendering with wgpu_text
+- Telemetry visualization components
+- Navigation and layout system
+- Component composition patterns
+
+Plans:
+- [ ] 63-01: TBD
+
+#### Phase 64: Animation System
+**Goal**: Rive runtime integration with spring physics and 120Hz rendering
+**Depends on**: Phase 63
+**Research**: Required (Rive Rust runtime)
+**Research Topics**: rive-rs runtime API, spring physics algorithms, frame interpolation, animation state machines
+
+**Key Deliverables:**
+- Rive runtime integration for vector animations
+- Spring physics engine in Rust
+- Animation state machine (dormant → active → exploding)
+- Frame interpolation for 120Hz
+- Particle system in wgpu
+- Animation timeline and sequencing
+
+Plans:
+- [ ] 64-01: TBD
+
+#### Phase 65: State & Data Layer
+**Goal**: Migrate state management to Crux and implement SQLite via Rust with sync protocols
+**Depends on**: Phase 64
+**Research**: Likely (Crux state patterns)
+**Research Topics**: Crux capability patterns, rusqlite integration, CRDT sync algorithms
+
+**Key Deliverables:**
+- Crux-based state management
+- SQLite database via rusqlite
+- User profile persistence
+- Settings synchronization
+- Offline-first data layer
+- Migration from existing SQLite data
+
+Plans:
+- [ ] 65-01: TBD
+
+#### Phase 66: Performance Optimization
+**Goal**: Binary size optimization, LTO configuration, ASTC textures, and memory management
+**Depends on**: Phase 65
+**Research**: Required (Rust optimization techniques)
+**Research Topics**: LTO configuration, panic=abort strategies, ASTC texture compression, memory pool patterns
+
+**Key Deliverables:**
+- LTO and codegen optimization
+- Strip debug symbols for release
+- ASTC texture compression for mobile
+- Memory pool for frequent allocations
+- GPU memory management
+- Binary size < 15MB target
+
+Plans:
+- [ ] 66-01: TBD
+
+#### Phase 67: Platform Parity
+**Goal**: Android Kotlin shell, Windows DX12 backend, Linux Vulkan support
+**Depends on**: Phase 66
+**Research**: Required (Android/Windows specifics)
+**Research Topics**: Kotlin Compose integration, DX12 wgpu backend, Linux Wayland/X11
+
+**Key Deliverables:**
+- Android shell with Kotlin Compose
+- Choreographer-based render loop
+- Windows DX12 backend configuration
+- Linux Vulkan + Wayland support
+- Platform-specific optimizations
+- Cross-platform testing infrastructure
+
+Plans:
+- [ ] 67-01: TBD
+
+#### Phase 68: Rust Native Launch
+**Goal**: Testing, App Store compliance, documentation, and release of v8.0
+**Depends on**: Phase 67
+**Research**: Likely (App Store requirements)
+**Research Topics**: App Store notarization, Privacy Nutrition Labels, TestFlight distribution
+
+**Key Deliverables:**
+- Comprehensive test suite
+- App Store metadata and screenshots
+- Privacy Nutrition Labels compliance
+- Notarization and code signing
+- Migration guide for existing users
+- Performance benchmarks vs v7.0
+- Release notes and documentation
+
+Plans:
+- [ ] 68-01: TBD
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 → 8 → 8.1 → 9 → 10 → 11 → 12 → 13 → 14 → 15 → 16 → 17 → 19 → 20 → 21 → 22 → 23 → 24 → 25 → 26 → 27 → 28 → 29 → 30 → 31 → 32 → 33 → 34 → 35 → 36 → 37 → 38 → 39 → 40 → 41 → 41.1 → 41.2 → 41.3 → 41.4 → 41.5 → 41.6 → 41.7 → 41.8 → 42 → 43 → 44 → 45 → 46 → 47 → 48 → 49 → 50 → 51 → 52 → 53 → 54 → 55 → 56 → 57 → 58 → (18 deferred)
+Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 → 8 → 8.1 → 9 → 10 → 11 → 12 → 13 → 14 → 15 → 16 → 17 → 19 → 20 → 21 → 22 → 23 → 24 → 25 → 26 → 27 → 28 → 29 → 30 → 31 → 32 → 33 → 34 → 35 → 36 → 37 → 38 → 39 → 40 → 41 → 41.1 → 41.2 → 41.3 → 41.4 → 41.5 → 41.6 → 41.7 → 41.8 → 42 → 43 → 44 → 45 → 46 → 47 → 48 → 49 → 50 → 51 → 52 → 53 → 54 → 55 → 56 → 57 → 58 → 59 → 60 → 61 → 62 → 63 → 64 → 65 → 66 → 67 → 68 → (18 deferred)
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -1081,3 +1302,13 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 �
 | 56. Premium Board UI | v7.0 | 1/1 | Complete | 2026-01-18 |
 | 57. Chess Settings & Customization | v7.0 | 5/5 | Complete | 2026-01-18 |
 | 58. Chess Mastery Launch | v7.0 | 1/1 | Complete | 2026-01-18 |
+| 59. Rust Core Foundation | v8.0 | 0/? | Planned | - |
+| 60. wgpu Render Surface | v8.0 | 0/? | Planned | - |
+| 61. WGSL Shader System | v8.0 | 0/? | Planned | - |
+| 62. Native Shell - macOS | v8.0 | 0/? | Planned | - |
+| 63. Component Migration | v8.0 | 0/? | Planned | - |
+| 64. Animation System | v8.0 | 0/? | Planned | - |
+| 65. State & Data Layer | v8.0 | 0/? | Planned | - |
+| 66. Performance Optimization | v8.0 | 0/? | Planned | - |
+| 67. Platform Parity | v8.0 | 0/? | Planned | - |
+| 68. Rust Native Launch | v8.0 | 0/? | Planned | - |
