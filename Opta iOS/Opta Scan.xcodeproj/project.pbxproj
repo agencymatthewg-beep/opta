@@ -26,6 +26,13 @@
 		A11111110000000000000011 /* PhotoPickerButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22222220000000000000011 /* PhotoPickerButton.swift */; };
 		A11111110000000000000012 /* PromptInputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22222220000000000000012 /* PromptInputView.swift */; };
 		A11111110000000000000013 /* CaptureButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22222220000000000000013 /* CaptureButton.swift */; };
+		A11111110000000000000014 /* ClaudeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22222220000000000000014 /* ClaudeService.swift */; };
+		A11111110000000000000015 /* OptamizeSlider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22222220000000000000015 /* OptamizeSlider.swift */; };
+		A11111110000000000000016 /* ProcessingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22222220000000000000016 /* ProcessingView.swift */; };
+		A11111110000000000000017 /* ScanFlow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22222220000000000000017 /* ScanFlow.swift */; };
+		A11111110000000000000018 /* QuestionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22222220000000000000018 /* QuestionsView.swift */; };
+		A11111110000000000000019 /* ResultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22222220000000000000019 /* ResultView.swift */; };
+		A1111111000000000000001A /* ScanFlowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2222222000000000000001A /* ScanFlowView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -48,6 +55,13 @@
 		A22222220000000000000011 /* PhotoPickerButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoPickerButton.swift; sourceTree = "<group>"; };
 		A22222220000000000000012 /* PromptInputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptInputView.swift; sourceTree = "<group>"; };
 		A22222220000000000000013 /* CaptureButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureButton.swift; sourceTree = "<group>"; };
+		A22222220000000000000014 /* ClaudeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeService.swift; sourceTree = "<group>"; };
+		A22222220000000000000015 /* OptamizeSlider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptamizeSlider.swift; sourceTree = "<group>"; };
+		A22222220000000000000016 /* ProcessingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessingView.swift; sourceTree = "<group>"; };
+		A22222220000000000000017 /* ScanFlow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanFlow.swift; sourceTree = "<group>"; };
+		A22222220000000000000018 /* QuestionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuestionsView.swift; sourceTree = "<group>"; };
+		A22222220000000000000019 /* ResultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultView.swift; sourceTree = "<group>"; };
+		A2222222000000000000001A /* ScanFlowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanFlowView.swift; sourceTree = "<group>"; };
 		A33333330000000000000001 /* Opta Scan.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Opta Scan.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -112,6 +126,10 @@
 				A2222222000000000000000B /* CaptureView.swift */,
 				A2222222000000000000000C /* HistoryView.swift */,
 				A2222222000000000000000D /* SettingsView.swift */,
+				A22222220000000000000016 /* ProcessingView.swift */,
+				A22222220000000000000018 /* QuestionsView.swift */,
+				A22222220000000000000019 /* ResultView.swift */,
+				A2222222000000000000001A /* ScanFlowView.swift */,
 				A55555550000000000000009 /* Components */,
 			);
 			path = Views;
@@ -125,6 +143,7 @@
 				A22222220000000000000011 /* PhotoPickerButton.swift */,
 				A22222220000000000000012 /* PromptInputView.swift */,
 				A22222220000000000000013 /* CaptureButton.swift */,
+				A22222220000000000000015 /* OptamizeSlider.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -132,6 +151,7 @@
 		A55555550000000000000006 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				A22222220000000000000017 /* ScanFlow.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -140,6 +160,7 @@
 			isa = PBXGroup;
 			children = (
 				A2222222000000000000000F /* CameraService.swift */,
+				A22222220000000000000014 /* ClaudeService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -239,6 +260,13 @@
 				A11111110000000000000011 /* PhotoPickerButton.swift in Sources */,
 				A11111110000000000000012 /* PromptInputView.swift in Sources */,
 				A11111110000000000000013 /* CaptureButton.swift in Sources */,
+				A11111110000000000000014 /* ClaudeService.swift in Sources */,
+				A11111110000000000000015 /* OptamizeSlider.swift in Sources */,
+				A11111110000000000000016 /* ProcessingView.swift in Sources */,
+				A11111110000000000000017 /* ScanFlow.swift in Sources */,
+				A11111110000000000000018 /* QuestionsView.swift in Sources */,
+				A11111110000000000000019 /* ResultView.swift in Sources */,
+				A1111111000000000000001A /* ScanFlowView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

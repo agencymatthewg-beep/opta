@@ -21,7 +21,7 @@ struct ContentView: View {
             Group {
                 switch selectedTab {
                 case .capture:
-                    CaptureView()
+                    ScanFlowView()
                 case .history:
                     HistoryView()
                 case .settings:
