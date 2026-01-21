@@ -235,6 +235,13 @@ actor MLXService {
         maxTokens: Int,
         onProgress: ((String, Int) -> Void)? = nil
     ) async throws -> String {
+        // Check thermal state before generation to prevent throttled execution
+        #if !targetEnvironment(simulator)
+        if ProcessInfo.processInfo.thermalState == .critical {
+            throw MLXError.thermalThrottled
+        }
+        #endif
+
         guard !isGenerating else {
             throw MLXError.alreadyGenerating
         }
@@ -357,8 +364,16 @@ actor MLXService {
                         return decodedOutput
                     }
                     continuation.resume(returning: result)
+                } catch let error as NSError {
+                    // Map common MLX errors to MLXError types for better user messaging
+                    if error.localizedDescription.lowercased().contains("memory") ||
+                       error.localizedDescription.lowercased().contains("allocation") {
+                        continuation.resume(throwing: MLXError.outOfMemory)
+                    } else {
+                        continuation.resume(throwing: MLXError.generationFailed(error.localizedDescription))
+                    }
                 } catch {
-                    continuation.resume(throwing: error)
+                    continuation.resume(throwing: MLXError.generationFailed(error.localizedDescription))
                 }
             }
         }
