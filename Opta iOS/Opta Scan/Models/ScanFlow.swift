@@ -26,7 +26,7 @@ class ScanFlowState: ObservableObject {
 
     // MARK: - Services
 
-    let claudeService = ClaudeService()
+    private var llmManager: LLMServiceManager { LLMServiceManager.shared }
 
     // MARK: - Navigation
 
@@ -38,9 +38,9 @@ class ScanFlowState: ObservableObject {
         Task {
             do {
                 if let image = capturedImage {
-                    analysisResult = try await claudeService.analyzeImage(image, prompt: prompt, depth: depth)
+                    analysisResult = try await llmManager.analyzeImage(image, prompt: prompt, depth: depth)
                 } else {
-                    analysisResult = try await claudeService.analyzeText(prompt: prompt, depth: depth)
+                    analysisResult = try await llmManager.analyzeText(prompt: prompt, depth: depth)
                 }
                 currentStep = .questions
                 OptaHaptics.shared.success()
@@ -59,7 +59,7 @@ class ScanFlowState: ObservableObject {
 
         Task {
             do {
-                optimizationResult = try await claudeService.continueWithAnswers(questionAnswers, context: analysis)
+                optimizationResult = try await llmManager.continueWithAnswers(questionAnswers, context: analysis)
                 currentStep = .result
                 OptaHaptics.shared.success()
             } catch {

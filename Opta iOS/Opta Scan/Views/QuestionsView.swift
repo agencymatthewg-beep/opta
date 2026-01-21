@@ -2,7 +2,7 @@
 //  QuestionsView.swift
 //  Opta Scan
 //
-//  Dynamic question flow from Claude analysis with multiple input types
+//  Dynamic question flow from on-device AI analysis with multiple input types
 //  Created by Matthew Byrden
 //
 

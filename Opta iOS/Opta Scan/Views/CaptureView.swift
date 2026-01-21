@@ -107,7 +107,7 @@ struct CaptureView: View {
 
     private func startOptimization() {
         guard !prompt.isEmpty else { return }
-        // TODO: Phase 3 - Navigate to Claude processing
+        // TODO: Phase 3 - Navigate to local AI processing
         OptaHaptics.shared.success()
         print("Starting optimization with prompt: \(prompt)")
     }

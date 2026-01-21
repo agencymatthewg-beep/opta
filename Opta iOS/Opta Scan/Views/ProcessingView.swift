@@ -2,7 +2,8 @@
 //  ProcessingView.swift
 //  Opta Scan
 //
-//  Animated processing state while Claude analyzes the user's request
+//  Animated processing state while Opta analyzes the user's request
+//  Local AI processing - no cloud dependencies
 //  Created by Matthew Byrden
 //
 
@@ -10,7 +11,7 @@ import SwiftUI
 
 // MARK: - Processing View
 
-/// Full-screen loading view displayed during Claude analysis
+/// Full-screen loading view displayed during on-device AI analysis
 struct ProcessingView: View {
 
     // MARK: - Properties

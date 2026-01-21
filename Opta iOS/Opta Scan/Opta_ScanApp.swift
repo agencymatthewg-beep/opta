@@ -23,21 +23,16 @@ struct Opta_ScanApp: App {
     /// Tracks whether user has completed first-time onboarding
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
 
-    // MARK: - Initialization
-
-    init() {
-        // Initialize local model on app launch if previously downloaded
-        Task {
-            await initializeLocalModel()
-        }
-    }
-
     // MARK: - Scene
 
     var body: some Scene {
         WindowGroup {
             rootView
                 .preferredColorScheme(.dark) // Opta is always dark mode
+                .task {
+                    // Initialize local model on app launch if previously downloaded
+                    await Self.initializeLocalModel()
+                }
         }
     }
 
@@ -56,7 +51,7 @@ struct Opta_ScanApp: App {
     // MARK: - Model Initialization
 
     /// Check for downloaded model and load if available
-    private func initializeLocalModel() async {
+    private static func initializeLocalModel() async {
         // Check if model was previously downloaded (stored in UserDefaults for quick access)
         guard let modelId = UserDefaults.standard.string(forKey: "opta.downloadedModelId"),
               let config = OptaModelConfiguration.all.first(where: { $0.id == modelId }) else {

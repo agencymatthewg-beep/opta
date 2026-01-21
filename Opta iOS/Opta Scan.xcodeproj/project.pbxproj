@@ -26,7 +26,6 @@
 		A11111110000000000000011 /* PhotoPickerButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22222220000000000000011 /* PhotoPickerButton.swift */; };
 		A11111110000000000000012 /* PromptInputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22222220000000000000012 /* PromptInputView.swift */; };
 		A11111110000000000000013 /* CaptureButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22222220000000000000013 /* CaptureButton.swift */; };
-		A11111110000000000000014 /* ClaudeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22222220000000000000014 /* ClaudeService.swift */; };
 		A11111110000000000000015 /* OptamizeSlider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22222220000000000000015 /* OptamizeSlider.swift */; };
 		A11111110000000000000016 /* ProcessingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22222220000000000000016 /* ProcessingView.swift */; };
 		A11111110000000000000017 /* ScanFlow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22222220000000000000017 /* ScanFlow.swift */; };
@@ -95,7 +94,6 @@
 		A22222220000000000000011 /* PhotoPickerButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoPickerButton.swift; sourceTree = "<group>"; };
 		A22222220000000000000012 /* PromptInputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptInputView.swift; sourceTree = "<group>"; };
 		A22222220000000000000013 /* CaptureButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureButton.swift; sourceTree = "<group>"; };
-		A22222220000000000000014 /* ClaudeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeService.swift; sourceTree = "<group>"; };
 		A22222220000000000000015 /* OptamizeSlider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptamizeSlider.swift; sourceTree = "<group>"; };
 		A22222220000000000000016 /* ProcessingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessingView.swift; sourceTree = "<group>"; };
 		A22222220000000000000017 /* ScanFlow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanFlow.swift; sourceTree = "<group>"; };
@@ -250,7 +248,6 @@
 			isa = PBXGroup;
 			children = (
 				A2222222000000000000000F /* CameraService.swift */,
-				A22222220000000000000014 /* ClaudeService.swift */,
 				A2222222000000000000003E /* KeychainService.swift */,
 				A2222222000000000000003C /* LLMProvider.swift */,
 				A2222222000000000000003B /* MLXService.swift */,
@@ -415,7 +412,6 @@
 				A11111110000000000000012 /* PromptInputView.swift in Sources */,
 				A11111110000000000000013 /* CaptureButton.swift in Sources */,
 				A11111110000000000000099 /* ZoomableImageView.swift in Sources */,
-				A11111110000000000000014 /* ClaudeService.swift in Sources */,
 				A11111110000000000000015 /* OptamizeSlider.swift in Sources */,
 				A11111110000000000000016 /* ProcessingView.swift in Sources */,
 				A11111110000000000000017 /* ScanFlow.swift in Sources */,

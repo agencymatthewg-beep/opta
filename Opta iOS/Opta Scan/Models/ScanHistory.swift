@@ -204,7 +204,7 @@ final class HistoryManager: ObservableObject {
     /// - Parameters:
     ///   - prompt: The optimization prompt text
     ///   - image: Optional captured image
-    ///   - understanding: Claude's understanding of the request
+    ///   - understanding: AI's understanding of the request
     ///   - result: The optimization result to persist
     func saveScan(
         prompt: String,

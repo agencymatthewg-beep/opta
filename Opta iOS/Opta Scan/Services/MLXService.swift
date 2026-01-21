@@ -3,7 +3,7 @@
 //  Opta Scan
 //
 //  MLX Swift service for on-device Llama 3.2 11B Vision inference
-//  Implements LLMProvider protocol for seamless integration
+//  Local-only AI - all processing happens on device
 //
 //  Note: This service requires adaptation to the specific mlx-swift-lm API
 //  once integration testing begins on a physical device.
@@ -20,22 +20,14 @@ import MLXLLM
 // MARK: - MLX Service
 
 /// On-device LLM provider using Apple's MLX framework
-actor MLXService: LLMProvider {
+actor MLXService {
 
-    // MARK: - LLMProvider Properties
+    // MARK: - Properties
 
-    let id: LLMProviderType = .local
     let name = "On-Device (Llama 3.2)"
-    let requiresAPIKey = false
 
     var supportsVision: Bool {
         loadedModelConfig?.supportsVision ?? false
-    }
-
-    var isAvailable: Bool {
-        get async {
-            return isModelLoaded && isDeviceSupported
-        }
     }
 
     // MARK: - State
@@ -59,6 +51,12 @@ actor MLXService: LLMProvider {
         }
         return false
         #endif
+    }
+
+    // MARK: - Public Interface
+
+    var isAvailable: Bool {
+        isModelLoaded && isDeviceSupported
     }
 
     // MARK: - Model Loading
@@ -102,7 +100,7 @@ actor MLXService: LLMProvider {
         isModelLoaded = false
     }
 
-    // MARK: - LLMProvider Methods
+    // MARK: - Analysis Methods
 
     func analyzeImage(_ image: UIImage, prompt: String, depth: OptimizationDepth) async throws -> AnalysisResult {
         guard isModelLoaded else {
