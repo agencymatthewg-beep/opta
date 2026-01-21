@@ -9,16 +9,23 @@ See: .planning/PROJECT.md (updated 2026-01-15)
 
 ## Current Position
 
-Phase: 61 of 68 (WGSL Shader System)
-Plan: Planning phase
-Status: Phase 59 and 60 complete, planning Phase 61
-Last activity: 2026-01-21 — Completed wgpu Render Surface (Phase 60) with 82 tests passing
+Phase: 69 of 74 (opta-core UniFFI Integration)
+Plan: 69-01 COMPLETE, 69-02 Ready
+Status: v9.0 Native macOS App IN PROGRESS
+Last activity: 2026-01-21 — Completed Phase 69-01 Swift bindings setup
 
 Progress: ██████████ 100% of v5.0 (17 phases complete)
 v5.1 Progress: ██████████ 100% (7 of 7 phases complete)
 v6.0 Progress: ██████████ 100% (All phases complete)
 v7.0 Progress: ██████████ 100% (8 of 8 phases complete)
-v8.0 Progress: ██░░░░░░░░ 20% (2 of 10 phases complete)
+v8.0 Progress: ██████████ 100% (10 of 10 phases complete) ✅
+v9.0 Progress: ░░░░░░░░░░ 0% (0 of 6 phases complete)
+
+### Phase 69 Plans (IN PROGRESS)
+| Plan | Status | Description |
+|------|--------|-------------|
+| 69-01 | ✅ Complete | Swift Bindings Setup (UniFFI generation, Xcode integration) |
+| 69-02 | ⏳ Ready | Shell Implementation (processEvent, haptics, sound) |
 
 ### v5.0 Phase Completion Summary
 | Phase | Name | Status |
@@ -126,19 +133,19 @@ v8.0 Progress: ██░░░░░░░░ 20% (2 of 10 phases complete)
 | 57 | Chess Settings & Customization | ✅ Complete |
 | 58 | Chess Mastery Launch | ✅ Complete |
 
-### v8.0 Rust Native Architecture (In Progress)
+### v8.0 Rust Native Architecture (Complete) 🎉
 | Phase | Name | Status |
 |-------|------|--------|
 | 59 | Rust Core Foundation | ✅ Complete (3 plans) |
 | 60 | wgpu Render Surface | ✅ Complete (3 plans, 82 tests) |
-| 61 | WGSL Shader System | 📋 Planning |
-| 62 | Native Shell - macOS | 📋 Planned |
-| 63 | Component Migration | 📋 Planned |
-| 64 | Animation System | 📋 Planned |
-| 65 | State & Data Layer | 📋 Planned |
-| 66 | Performance Optimization | 📋 Planned |
-| 67 | Platform Parity | 📋 Planned |
-| 68 | Rust Native Launch | 📋 Planned |
+| 61 | WGSL Shader System | ✅ Complete (3 plans - shaders, SDF, effects) |
+| 62 | Native Shell - macOS | ✅ Complete (3 plans - SwiftUI, haptics, menu bar) |
+| 63 | Component Migration | ✅ Complete (3 plans - ring, glass panels, telemetry) |
+| 64 | Animation System | ✅ Complete (3 plans - spring, particles, state machine) |
+| 65 | State & Data Layer | ✅ Complete (2 plans) |
+| 66 | Performance Optimization | ✅ Complete (2 plans - debug overlay, memory pool) |
+| 67 | Platform Parity | ✅ Complete (2 plans - Windows DX12, Linux Vulkan stubs) |
+| 68 | Rust Native Launch | ✅ Complete (1 plan - testing & compliance)
 
 **Architecture Overview:**
 ```
@@ -447,6 +454,9 @@ v8.0 Progress: ██░░░░░░░░ 20% (2 of 10 phases complete)
 | 43-05 | 4 hardware tiers: entry/mid/high/ultra | Maps to M1-M4 base/Pro/Max/Ultra memory and GPU cores |
 | 43-05 | 30 solver rules across 5 categories | Constraint, optimization, goal, platform, evaluation |
 | 43-05 | 6-phase execution order | Hardware validation -> conflict -> goal -> platform -> synergy -> runtime |
+| 69-01 | UniFFI 0.28+ library-mode | Generate bindings from compiled dylib, not UDL file |
+| 69-01 | Module import via modulemap | Swift imports optaFFI module for C types |
+| 69-01 | Bridging header includes opta_coreFFI.h | For type availability without module import |
 
 ### Deferred Issues
 
@@ -475,7 +485,14 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-20
-Stopped at: Phase 59 plans created (3 plans in 2 waves)
+Last session: 2026-01-21
+Stopped at: Phase 69-01 Swift Bindings Setup COMPLETE
 Resume file: None
-Next action: Run /gsd:execute-plan 59-01 to start UniFFI interface definition
+Next action: Execute Phase 69-02 Shell Implementation
+
+**v8.0 Final Stats:**
+- 22 plans executed across 10 phases (59-68)
+- 28+ unit tests passing in opta-render
+- 8 doc tests passing in opta-core
+- All platform files fixed (wgpu 24.0 API compatibility)
+- SwiftUI app shell with Metal/wgpu integration ready
