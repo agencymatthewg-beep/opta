@@ -77,6 +77,7 @@ struct HistoryView: View {
                     )
                     .staggeredAppear(index: index, isVisible: true)
                     .contextMenu {
+                        // Primary actions
                         Button {
                             OptaHaptics.shared.success()
                             historyManager.toggleFavorite(scan)
@@ -87,18 +88,43 @@ struct HistoryView: View {
                             )
                         }
 
+                        Button {
+                            OptaHaptics.shared.tap()
+                            shareScan(scan)
+                        } label: {
+                            Label("Share", systemImage: "square.and.arrow.up")
+                        }
+
+                        Button {
+                            OptaHaptics.shared.success()
+                            historyManager.duplicateScan(scan)
+                        } label: {
+                            Label("Duplicate", systemImage: "doc.on.doc")
+                        }
+
+                        Divider()
+
+                        // Destructive action
                         Button(role: .destructive) {
                             OptaHaptics.shared.warning()
                             historyManager.deleteScan(scan)
                         } label: {
                             Label("Delete", systemImage: "trash")
                         }
+                    } preview: {
+                        HistoryCardPreview(scan: scan)
                     }
                     .accessibilityLabel("Scan: \(scan.prompt ?? "Untitled")\(scan.isFavorite ? ", favorited" : "")")
-                    .accessibilityHint("Double tap to view scan details. Swipe right to favorite. Swipe left to delete.")
+                    .accessibilityHint("Double tap to view details. Actions available: favorite, share, duplicate, delete.")
                     .accessibilityActions {
                         Button(scan.isFavorite ? "Remove from favorites" : "Add to favorites") {
                             historyManager.toggleFavorite(scan)
+                        }
+                        Button("Share") {
+                            shareScan(scan)
+                        }
+                        Button("Duplicate") {
+                            historyManager.duplicateScan(scan)
                         }
                         Button("Delete", role: .destructive) {
                             historyManager.deleteScan(scan)
@@ -258,14 +284,14 @@ struct HistoryDetailView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: OptaDesign.Spacing.lg) {
-                    // Image Section
+                    // Image Section with pinch-to-zoom
                     if let image = scan.image {
-                        Image(uiImage: image)
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(maxHeight: Layout.imageMaxHeight)
-                            .clipShape(RoundedRectangle(cornerRadius: OptaDesign.CornerRadius.large, style: .continuous))
-                            .accessibilityLabel("Scan image")
+                        ZoomableImageView(
+                            image: image,
+                            cornerRadius: OptaDesign.CornerRadius.large,
+                            maxHeight: Layout.imageMaxHeight
+                        )
+                        .accessibilityLabel("Scan image, double tap to zoom")
                     }
 
                     // Prompt Section
