@@ -232,21 +232,22 @@ Plans:
 
 **Milestone Goal:** Replace Claude API with on-device Llama 3.2 11B Vision for complete privacy and offline operation. No cloud dependencies — fully local AI.
 
-#### Phase 17: MLX Foundation
+#### Phase 17: MLX Foundation ✅
 **Goal**: Add MLX Swift framework and establish local-only architecture
 **Depends on**: v1.2 complete
-**Research**: Likely (MLX Swift is new, evolving API)
+**Research**: Complete (MLX Swift explored - iOS 17.2+, 11B Vision needs 12GB RAM)
 **Research topics**: MLX Swift package setup, model loading patterns, memory management
-**Status**: Not started
+**Status**: Complete (2026-01-21)
 
-- Add MLX Swift and MLX Swift Examples packages
+- Add MLX Swift and MLX Swift LM packages via SPM
+- Create MLXService with real model loading
 - Remove ClaudeService and cloud dependencies
-- Update LLMProvider protocol for local-only operation
-- Configure build settings for MLX
+- Configure entitlements (increased memory limit, network client)
+- Update iOS deployment target to 17.2
 
 Plans:
-- [ ] 17-01: MLX Package Integration
-- [ ] 17-02: Remove Claude Dependencies
+- [x] 17-01: MLX Package Integration (6 tasks)
+- [x] 17-02: Remove Claude Dependencies (9 tasks)
 
 #### Phase 18: Model Management
 **Goal**: Download, store, and manage Llama 3.2 11B Vision model
@@ -345,11 +346,11 @@ Plans:
 | 14. Motion Design | v1.2 | 2/2 | Complete | 2026-01-21 |
 | 15. Performance Tuning | v1.2 | 2/2 | Complete | 2026-01-21 |
 | 16. Premium Polish Pass | v1.2 | 2/2 | Complete | 2026-01-21 |
-| 17. MLX Foundation | v2.0 | 0/2 | Not started | - |
+| 17. MLX Foundation | v2.0 | 2/2 | Complete | 2026-01-21 |
 | 18. Model Management | v2.0 | 0/2 | Not started | - |
 | 19. Vision Inference | v2.0 | 0/2 | Not started | - |
 | 20. Generation Pipeline | v2.0 | 0/2 | Not started | - |
 | 21. Local-First Polish | v2.0 | 0/2 | Not started | - |
 
 ---
-*Last updated: 2026-01-21 — v2.0 Local Intelligence milestone created (Phases 17-21)*
+*Last updated: 2026-01-21 — Phase 17 MLX Foundation complete (local-only architecture established)*
