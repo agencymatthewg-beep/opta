@@ -85,28 +85,35 @@ Plans:
 - [x] 09-03: Long-Press Context Menus & Haptic Coordination
 
 #### Phase 10: Metal Shaders ✅
-**Goal**: GPU-accelerated custom visual effects
+**Goal**: GPU-accelerated custom visual effects with App Store compliance
 **Depends on**: Phase 9
-**Research**: Likely (Metal shader language, SwiftUI integration)
-**Research topics**: Metal shaders in SwiftUI, CIFilter custom kernels, real-time rendering
+**Research**: Applied (Gemini Deep Research integration)
+**Research sources**: `iOS/Distribution/iOS-App-Store-Compliance-wgpu.md`, `iOS/AI-ML/AI Optimization for iOS Apps.md`
 **Status**: Complete (2026-01-21)
 
+**Core Features**:
 - Custom obsidian glass shader with depth
 - Animated gradient effects
 - Real-time blur with tint
 - GPU-accelerated glow effects
 - Shader parameter animations
 
+**Research-Driven Additions**:
+- Privacy Manifest (PrivacyInfo.xcprivacy) - Required Reason APIs declared
+- ThermalMonitor - Adaptive shader quality based on device temperature
+- Async shader compilation - Watchdog timer compliance (20-second limit)
+- VoiceOver accessibility for custom shader views
+- Reduce Motion compliance for all animations
+
 Plans:
-- [x] 10-01: Metal Shader Foundation
-- [x] 10-02: Obsidian Glass Shader
-- [x] 10-03: Animated Gradient & Glow Effects
+- [x] 10-01: Metal Shader Foundation (+ Privacy Manifest, ThermalMonitor)
+- [x] 10-02: Obsidian Glass Shader (+ Accessibility, Thermal-Adaptive Quality)
+- [x] 10-03: Animated Gradient & Glow Effects (+ Async Compilation, Thermal Frame Rates)
 
 #### Phase 11: Physics Animations
 **Goal**: Natural, physics-based motion throughout
 **Depends on**: Phase 10
 **Research**: Unlikely (SwiftUI animation system)
-**Plans**: TBD
 
 - Spring physics with customizable parameters
 - Momentum-based scrolling effects
@@ -115,7 +122,9 @@ Plans:
 - Interactive drag with physics response
 
 Plans:
-- [ ] 11-01: TBD
+- [ ] 11-01: Spring Physics System
+- [ ] 11-02: Momentum Physics
+- [ ] 11-03: Interactive Physics
 
 #### Phase 12: Visual Effects
 **Goal**: Premium visual polish with blur, vibrancy, particles
@@ -163,34 +172,54 @@ Plans:
 - [ ] 14-01: TBD
 
 #### Phase 15: Performance Tuning
-**Goal**: Buttery smooth 120fps on all devices
+**Goal**: Buttery smooth 120fps with thermal and battery optimization
 **Depends on**: Phase 14
-**Research**: Likely (Instruments, GPU profiling)
-**Research topics**: Xcode Instruments, Metal GPU profiling, animation frame drops
+**Research**: Applied (Gemini Deep Research integration)
+**Research sources**: `iOS/Distribution/iOS-App-Store-Compliance-wgpu.md`, `iOS/AI-ML/AI Optimization for iOS Apps.md`
 
+**Core Features**:
 - GPU profiling and bottleneck identification
 - Animation frame rate optimization
 - Memory usage optimization
 - Battery impact assessment
 - Device-specific optimizations (older iPhones)
 
+**Research-Driven Additions**:
+- Unified PerformanceManager (thermal + battery + quality tiers)
+- Ultra/High/Medium/Low quality levels with automatic switching
+- Low Power Mode detection and response
+- ProMotion (120Hz) optimization for Pro devices
+- Battery profiling utilities
+- Instruments profiling workflow documentation
+
 Plans:
-- [ ] 15-01: TBD
+- [ ] 15-01: Thermal & Battery Optimization (PerformanceManager, Battery Profiling)
+- [ ] 15-02: GPU Profiling & Frame Rate Optimization
 
 #### Phase 16: Premium Polish Pass
-**Goal**: Final consistency and edge case refinement
+**Goal**: App Store compliance verification and final quality assurance
 **Depends on**: Phase 15
-**Research**: Unlikely (internal review)
-**Plans**: TBD
+**Research**: Applied (Gemini Deep Research integration)
+**Research sources**: `iOS/Distribution/iOS-App-Store-Compliance-wgpu.md`
 
+**Core Features**:
 - Animation timing consistency audit
 - Visual hierarchy refinement
 - Edge case handling (interruptions, rotations)
 - Accessibility with animations (reduce motion)
 - Final quality assurance pass
 
+**Research-Driven Additions**:
+- Privacy Manifest audit and verification
+- VoiceOver/Dynamic Type/Reduce Motion accessibility audit
+- App Store Guidelines compliance checklist
+- Metal shader compliance verification
+- Pre-submission checklist with all requirements
+- COMPLIANCE.md documentation
+
 Plans:
-- [ ] 16-01: TBD
+- [ ] 16-01: App Store Compliance & Final Polish (Privacy, Accessibility, Guidelines)
+- [ ] 16-02: Final Visual Consistency Audit
 
 ### 📋 v2.0 Intelligence (Future)
 
@@ -229,8 +258,8 @@ Plans:
 | 12. Visual Effects | v1.2 | 0/? | Not started | - |
 | 13. 3D Transforms | v1.2 | 0/? | Not started | - |
 | 14. Motion Design | v1.2 | 0/? | Not started | - |
-| 15. Performance Tuning | v1.2 | 0/? | Not started | - |
-| 16. Premium Polish Pass | v1.2 | 0/? | Not started | - |
+| 15. Performance Tuning | v1.2 | 1/2 | Planned | - |
+| 16. Premium Polish Pass | v1.2 | 1/2 | Planned | - |
 
 ---
-*Last updated: 2026-01-21 — Phase 10 (Metal Shaders) complete*
+*Last updated: 2026-01-21 — Phase 10 plans updated with research compliance, Phases 15-16 planned*

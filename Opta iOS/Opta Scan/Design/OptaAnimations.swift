@@ -74,6 +74,45 @@ extension View {
     }
 }
 
+// MARK: - Physics Spring Extensions
+
+extension Animation {
+    /// Create animation from PhysicsSpring configuration
+    static func physicsSpring(_ spring: PhysicsSpring) -> Animation {
+        spring.animation
+    }
+
+    /// Snappy spring for immediate feedback
+    static let optaSnappy = PhysicsSpring.snappy.animation
+
+    /// Bouncy spring for playful effects
+    static let optaBouncy = PhysicsSpring.bouncy.animation
+
+    /// Smooth spring with no oscillation
+    static let optaSmooth = PhysicsSpring.smooth.animation
+}
+
+// MARK: - Spring Gesture Modifiers
+
+extension View {
+    /// Apply spring scale effect during press
+    func springScale(isPressed: Bool, scale: CGFloat = 0.95) -> some View {
+        self.scaleEffect(isPressed ? scale : 1.0)
+            .animation(.optaSnappy, value: isPressed)
+    }
+
+    /// Apply spring offset with optional velocity
+    func springOffset(
+        x: CGFloat = 0,
+        y: CGFloat = 0,
+        spring: PhysicsSpring = .natural
+    ) -> some View {
+        self.offset(x: x, y: y)
+            .animation(spring.animation, value: x)
+            .animation(spring.animation, value: y)
+    }
+}
+
 // MARK: - Usage Examples Reference
 /*
  // Button press
@@ -95,4 +134,9 @@ extension View {
          .transition(.move(edge: .bottom).combined(with: .opacity))
  }
  .animation(.optaSpringPage, value: showResults)
+
+ // Physics spring examples
+ .animation(.physicsSpring(.bouncy), value: someValue)
+ .springScale(isPressed: isPressed)
+ .springOffset(x: dragOffset, spring: .snappy)
  */

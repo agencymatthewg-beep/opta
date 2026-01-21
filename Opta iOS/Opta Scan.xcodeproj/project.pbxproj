@@ -7,6 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A11111110000000000000025 /* PhysicsSpring.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22222220000000000000025 /* PhysicsSpring.swift */; };
+		A11111110000000000000026 /* InterruptibleSpring.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22222220000000000000026 /* InterruptibleSpring.swift */; };
+		A11111110000000000000027 /* MomentumPhysics.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22222220000000000000027 /* MomentumPhysics.swift */; };
+		A11111110000000000000028 /* ThrowGestureHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22222220000000000000028 /* ThrowGestureHandler.swift */; };
+		A11111110000000000000029 /* CardPhysics.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22222220000000000000029 /* CardPhysics.swift */; };
+		A1111111000000000000002A /* GravityTransition.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2222222000000000000002A /* GravityTransition.swift */; };
 		A1111111000000000000001F /* OptaShaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = A2222222000000000000001F /* OptaShaders.metal */; };
 		A11111110000000000000020 /* ShaderEffects.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22222220000000000000020 /* ShaderEffects.swift */; };
 		A11111110000000000000021 /* ShaderDemoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22222220000000000000021 /* ShaderDemoView.swift */; };
@@ -47,6 +53,12 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		A22222220000000000000025 /* PhysicsSpring.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhysicsSpring.swift; sourceTree = "<group>"; };
+		A22222220000000000000026 /* InterruptibleSpring.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InterruptibleSpring.swift; sourceTree = "<group>"; };
+		A22222220000000000000027 /* MomentumPhysics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MomentumPhysics.swift; sourceTree = "<group>"; };
+		A22222220000000000000028 /* ThrowGestureHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThrowGestureHandler.swift; sourceTree = "<group>"; };
+		A22222220000000000000029 /* CardPhysics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardPhysics.swift; sourceTree = "<group>"; };
+		A2222222000000000000002A /* GravityTransition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GravityTransition.swift; sourceTree = "<group>"; };
 		A22222220000000000000099 /* ZoomableImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoomableImageView.swift; sourceTree = "<group>"; };
 		A22222220000000000000001 /* Opta_ScanApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Opta_ScanApp.swift; sourceTree = "<group>"; };
 		A22222220000000000000002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -115,6 +127,7 @@
 				A55555550000000000000005 /* Views */,
 				A55555550000000000000006 /* Models */,
 				A55555550000000000000007 /* Services */,
+				A5555555000000000000000C /* Gestures */,
 				A5555555000000000000000A /* Shaders */,
 				A22222220000000000000003 /* Assets.xcassets */,
 				A2222222000000000000001C /* OptaScan.xcdatamodeld */,
@@ -136,6 +149,11 @@
 			children = (
 				A22222220000000000000005 /* OptaColors.swift */,
 				A22222220000000000000006 /* OptaAnimations.swift */,
+				A22222220000000000000025 /* PhysicsSpring.swift */,
+				A22222220000000000000026 /* InterruptibleSpring.swift */,
+				A22222220000000000000027 /* MomentumPhysics.swift */,
+				A22222220000000000000029 /* CardPhysics.swift */,
+				A2222222000000000000002A /* GravityTransition.swift */,
 				A22222220000000000000007 /* OptaHaptics.swift */,
 				A22222220000000000000008 /* OptaTypography.swift */,
 				A22222220000000000000009 /* GlassModifiers.swift */,
@@ -220,6 +238,14 @@
 				A22222220000000000000021 /* ShaderDemoView.swift */,
 			);
 			path = Debug;
+			sourceTree = "<group>";
+		};
+		A5555555000000000000000C /* Gestures */ = {
+			isa = PBXGroup;
+			children = (
+				A22222220000000000000028 /* ThrowGestureHandler.swift */,
+			);
+			path = Gestures;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -327,6 +353,12 @@
 				A11111110000000000000022 /* ObsidianGlassModifiers.swift in Sources */,
 				A11111110000000000000023 /* ProcessingGlowView.swift in Sources */,
 				A11111110000000000000024 /* AmbientGradientView.swift in Sources */,
+				A11111110000000000000025 /* PhysicsSpring.swift in Sources */,
+				A11111110000000000000026 /* InterruptibleSpring.swift in Sources */,
+				A11111110000000000000027 /* MomentumPhysics.swift in Sources */,
+				A11111110000000000000028 /* ThrowGestureHandler.swift in Sources */,
+				A11111110000000000000029 /* CardPhysics.swift in Sources */,
+				A1111111000000000000002A /* GravityTransition.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
