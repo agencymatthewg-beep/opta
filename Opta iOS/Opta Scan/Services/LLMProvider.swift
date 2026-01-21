@@ -82,6 +82,15 @@ final class LLMServiceManager {
         await localService.unloadModel()
     }
 
+    // MARK: - Generation Control
+
+    /// Cancel current generation and reset stream state
+    func cancelGeneration() async {
+        await localService.cancelGeneration()
+        generationStream.reset()
+        isProcessing = false
+    }
+
     // MARK: - Analysis Methods
 
     func analyzeImage(_ image: UIImage, prompt: String, depth: OptimizationDepth) async throws -> AnalysisResult {
