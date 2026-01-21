@@ -37,7 +37,7 @@ actor MLXService {
     private var isGenerating = false
 
     #if canImport(MLX) && canImport(MLXLLM)
-    private var modelContext: Any? = nil // Placeholder for actual model context
+    private var modelContainer: ModelContainer? = nil
     #endif
 
     // MARK: - Device Support
@@ -62,6 +62,7 @@ actor MLXService {
     // MARK: - Model Loading
 
     /// Load a model configuration
+    /// Checks ModelCache first, then downloads if needed
     func loadModel(_ config: OptaModelConfiguration) async throws {
         guard isDeviceSupported else {
             throw MLXError.deviceNotSupported
@@ -71,17 +72,23 @@ actor MLXService {
         // Set GPU cache limit for memory management
         GPU.set(cacheLimit: 20 * 1024 * 1024)
 
-        // TODO: Load model using mlx-swift-lm API
-        // The exact API calls will be adapted during device testing:
-        // - Load model weights from Hugging Face hub
-        // - Configure tokenizer
-        // - Set up generation parameters
-        //
-        // Example structure (API may differ):
-        // let container = try await LLMModelFactory.shared.loadContainer(
-        //     configuration: ModelConfiguration(id: config.name)
-        // )
-        // modelContext = container
+        // Check if model is already in cache
+        if let cached = await ModelCache.shared.retrieve(for: config) {
+            modelContainer = cached
+            loadedModelConfig = config
+            isModelLoaded = true
+            return
+        }
+
+        // Load model from Hugging Face Hub (downloads if not cached)
+        let modelConfig = ModelConfiguration(id: config.name)
+
+        let container = try await LLMModelFactory.shared.loadContainer(
+            configuration: modelConfig
+        )
+
+        modelContainer = container
+        await ModelCache.shared.store(container: container, for: config)
         #endif
 
         loadedModelConfig = config
@@ -91,9 +98,9 @@ actor MLXService {
     /// Unload the current model to free memory
     func unloadModel() {
         #if canImport(MLX) && canImport(MLXLLM)
-        modelContext = nil
-        // Force memory cleanup
-        // GPU.synchronize() - call if available in API
+        modelContainer = nil
+        // Note: Model remains in ModelCache for quick reload
+        // Call ModelCache.shared.remove(for:) to fully remove from memory
         #endif
 
         loadedModelConfig = nil
