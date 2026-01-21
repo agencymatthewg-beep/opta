@@ -593,8 +593,8 @@
 				DEVELOPMENT_TEAM = 77PKS547H5;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_NSCameraUsageDescription = "Opta Scan uses the camera to capture photos for optimization analysis";
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Opta Scan accesses your photo library to select images for optimization";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Opta uses your camera to capture images for on-device optimization analysis. Images are processed locally and never leave your device.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Opta accesses your photos for on-device optimization analysis. All processing happens locally on your device.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -625,8 +625,8 @@
 				DEVELOPMENT_TEAM = 77PKS547H5;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_NSCameraUsageDescription = "Opta Scan uses the camera to capture photos for optimization analysis";
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Opta Scan accesses your photo library to select images for optimization";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Opta uses your camera to capture images for on-device optimization analysis. Images are processed locally and never leave your device.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Opta accesses your photos for on-device optimization analysis. All processing happens locally on your device.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
