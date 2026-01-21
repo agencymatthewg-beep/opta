@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-01-20)
 
 ## Current Position
 
-Phase: 19 of 21 (Vision Inference) - COMPLETE
-Plan: 2 of 2 complete
-Status: Phase 19 complete, ready for Phase 20
-Last activity: 2026-01-22 — Plan 19-02 complete (image preprocessing)
+Phase: 20 of 21 (Generation Pipeline) - IN PROGRESS
+Plan: 1 of 2 complete
+Status: Plan 20-01 complete, ready for 20-02
+Last activity: 2026-01-22 — Completed Plan 20-01 (Streaming Text Generation)
 
-Progress: ██████░░░░ 50% milestone (Phase 19 complete)
+Progress: ███████░░░ 70% milestone (Plan 20-01 complete)
 
 ### v2.0 Local Intelligence
 | Phase | Name | Status |
@@ -22,14 +22,14 @@ Progress: ██████░░░░ 50% milestone (Phase 19 complete)
 | 17 | MLX Foundation | COMPLETE |
 | 18 | Model Management | COMPLETE |
 | 19 | Vision Inference | COMPLETE |
-| 20 | Generation Pipeline | Not started |
+| 20 | Generation Pipeline | In progress |
 | 21 | Local-First Polish | Not started |
 
-### Phase 19 Plans
+### Phase 20 Plans
 | Plan | Name | Status |
 |------|------|--------|
-| 19-01 | Vision Model Loading | COMPLETE |
-| 19-02 | Image Preprocessing Pipeline | COMPLETE |
+| 20-01 | Streaming Text Generation | COMPLETE |
+| 20-02 | Response Parsing and Error Handling | Ready |
 
 ## The One Feature
 
@@ -140,6 +140,9 @@ Example: Menu photo + "most calories for $10" → Visual recommendation
 | 19-02 | JPEG compression 0.9/0.85/0.8 | Quality tier adaptive compression |
 | 19-02 | Max dimension 2048px | Memory safety for large photos |
 | 19-02 | Aspect-fill center crop | Consistent 1:1 model input |
+| 20-01 | GenerationStream @Observable | SwiftUI integration for streaming state |
+| 20-01 | MainActor dispatch for callbacks | UI-safe progress updates |
+| 20-01 | 4096 max tokens for optimization | Consistent max tokens for final results |
 
 ### Deferred Issues
 
@@ -165,8 +168,8 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-22
-Status: Phase 19 complete (Vision Inference)
-Next action: Plan Phase 20 (Generation Pipeline)
+Status: Plan 20-01 (Streaming Text Generation) complete
+Next action: Execute Plan 20-02 (Response Parsing and Error Handling)
 
 ---
 *Opta Scan — capture anything, optimize everything*
