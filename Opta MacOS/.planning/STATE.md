@@ -9,17 +9,17 @@ See: .planning/PROJECT.md (updated 2026-01-15)
 
 ## Current Position
 
-Phase: 73 of 74 (Menu Bar Agent Polish)
-Plan: 73-01 COMPLETE (1 of 1 in phase)
-Status: v9.0 Native macOS App IN PROGRESS - Phase 73 Complete
-Last activity: 2026-01-21 — Completed Phase 73-01 (Menu Bar Agent)
+Phase: 74 of 74 (App Store Preparation) - COMPLETE
+Plan: 74-01 COMPLETE (1 of 1 in phase)
+Status: v9.0 Native macOS App COMPLETE - MILESTONE COMPLETE
+Last activity: 2026-01-22 — Completed Phase 74-01 (App Store Preparation)
 
 Progress: ██████████ 100% of v5.0 (17 phases complete)
 v5.1 Progress: ██████████ 100% (7 of 7 phases complete)
 v6.0 Progress: ██████████ 100% (All phases complete)
 v7.0 Progress: ██████████ 100% (8 of 8 phases complete)
 v8.0 Progress: ██████████ 100% (10 of 10 phases complete) ✅
-v9.0 Progress: █████████░ 83% (5 of 6 phases complete)
+v9.0 Progress: ██████████ 100% (6 of 6 phases complete) ✅
 
 ### Phase 69 Plans (COMPLETE)
 | Plan | Status | Description |
@@ -47,6 +47,11 @@ v9.0 Progress: █████████░ 83% (5 of 6 phases complete)
 | Plan | Status | Description |
 |------|--------|-------------|
 | 73-01 | ✅ Complete | Menu Bar Agent (NotificationService, AgentModeManager, enhanced MenuBar UI) |
+
+### Phase 74 Plans (COMPLETE)
+| Plan | Status | Description |
+|------|--------|-------------|
+| 74-01 | ✅ Complete | App Store Preparation (Assets.xcassets, metadata, archive script) |
 
 ### v5.0 Phase Completion Summary
 | Phase | Name | Status |
@@ -505,6 +510,10 @@ v9.0 Progress: █████████░ 83% (5 of 6 phases complete)
 | 73-01 | @AppStorage for persistence | Agent mode, notifications, and auto-minimize settings persist across launches |
 | 73-01 | SystemStatus enum with 5 states | Clear visual feedback: normal (green), warning (orange), critical (red), agent (purple), paused (gray) |
 | 73-01 | Command+Shift+H shortcut | Industry-standard hide/show toggle pattern, memorable keyboard shortcut |
+| 74-01 | 10 icon sizes in asset catalog | Standard macOS requirement: 16, 32, 128, 256, 512 at 1x and 2x |
+| 74-01 | Utilities category | Better fit than productivity for a system optimizer app |
+| 74-01 | Automatic code signing | Simplifies CI/CD, Team ID from Xcode settings |
+| 74-01 | Copyright 2025-2026 | Covers development period and release year |
 
 ### Deferred Issues
 
@@ -533,19 +542,22 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-21
-Stopped at: Phase 73-01 COMPLETE
+Last session: 2026-01-22
+Stopped at: Phase 74-01 COMPLETE - v9.0 MILESTONE COMPLETE
 Resume file: None
-Next action: Plan Phase 74 (Final phase) or complete v9.0 milestone
+Next action: /gsd:complete-milestone to archive v9.0 and prepare for next version
 
-**v9.0 Stats:**
+**v9.0 Stats (COMPLETE):**
 - Phase 69 complete (2 plans) - UniFFI bindings, OptaCoreManager
 - Phase 70 complete (2 plans) - Dashboard UI components, OptaRing integration
 - Phase 71 complete (1 plan) - Settings system with profiles, shortcuts, themes
 - Phase 72 complete (1 plan) - Games library with detection, cards, detail view
 - Phase 73 complete (1 plan) - Menu Bar Agent with notifications, agent mode
-- 16 SwiftUI components created (TelemetryCard, ScoreDisplay, QuickActions, DashboardView, OptaRingView, ProfileManagerView, KeyboardShortcutsView, ThemeCustomizationView, SettingsRowView, GameCardView, CompactGameCardView, GamesLibraryView, GameDetailView, ProfileEditorSheet, ContextualActionRow, NotificationDelegateHandler)
+- Phase 74 complete (1 plan) - App Store Preparation with assets, metadata, scripts
+- 16 SwiftUI components created
 - 2 new services: NotificationService, AgentModeManager
 - Game detection service operational for Steam, Epic, GOG, and native macOS apps
 - Menu bar agent with 5 status states and contextual actions
-- Ready for Phase 74 or milestone completion
+- Assets.xcassets ready (icons need PNG files added)
+- Archive and upload workflow automated
+- Ready for App Store submission
