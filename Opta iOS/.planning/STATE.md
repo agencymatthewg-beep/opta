@@ -10,17 +10,17 @@ See: .planning/PROJECT.md (updated 2026-01-20)
 ## Current Position
 
 Phase: 18 of 21 (Model Management)
-Plan: 2 plans created
-Status: Ready to execute
-Last activity: 2026-01-22 — Phase 18 planning complete
+Plan: 18-01 complete, 18-02 pending
+Status: Executing Phase 18
+Last activity: 2026-01-22 — Plan 18-01 complete
 
-Progress: ████░░░░░░ 20% milestone (Phase 17 complete, 18 planned)
+Progress: █████░░░░░ 30% milestone (Plan 18-01 complete)
 
 ### v2.0 Local Intelligence
 | Phase | Name | Status |
 |-------|------|--------|
 | 17 | MLX Foundation | COMPLETE |
-| 18 | Model Management | Planning complete |
+| 18 | Model Management | In progress |
 | 19 | Vision Inference | Not started |
 | 20 | Generation Pipeline | Not started |
 | 21 | Local-First Polish | Not started |
@@ -28,7 +28,7 @@ Progress: ████░░░░░░ 20% milestone (Phase 17 complete, 18 pl
 ### Phase 18 Plans
 | Plan | Name | Status |
 |------|------|--------|
-| 18-01 | Model Download System | Not started |
+| 18-01 | Model Download System | COMPLETE |
 | 18-02 | Storage and Cache Management | Not started |
 
 ## The One Feature
@@ -124,6 +124,10 @@ Example: Menu photo + "most calories for $10" → Visual recommendation
 | 17-02 | Remove LLMProvider protocol | Simplified single-provider architecture |
 | 17-02 | Static model init function | SwiftUI App struct is value type |
 | 17-02 | Privacy descriptions emphasize local | Reinforce privacy messaging |
+| 18-01 | !targetEnvironment(simulator) for MLX | Prevents simulator build failures |
+| 18-01 | UserDefaults for download state | Lightweight, non-sensitive data |
+| 18-01 | Auto-select after download | Reduces user friction |
+| 18-01 | 20% storage buffer | Prevents edge-case storage issues |
 
 ### Deferred Issues
 
@@ -149,8 +153,8 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-22
-Status: Phase 18 (Model Management) planned
-Next action: Execute Phase 18 plans
+Status: Plan 18-01 (Model Download System) complete
+Next action: Execute Plan 18-02 (Storage and Cache Management)
 
 ---
 *Opta Scan — capture anything, optimize everything*
