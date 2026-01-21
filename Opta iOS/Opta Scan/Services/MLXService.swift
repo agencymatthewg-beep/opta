@@ -18,6 +18,26 @@ import MLXLLM
 import MLXLMCommon  // Required for generate() API
 #endif
 
+// MARK: - Cancellation Token
+
+/// Thread-safe cancellation token for cross-boundary communication
+private final class CancellationToken: @unchecked Sendable {
+    private let lock = NSLock()
+    private var _isCancelled = false
+
+    var isCancelled: Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return _isCancelled
+    }
+
+    func cancel() {
+        lock.lock()
+        defer { lock.unlock() }
+        _isCancelled = true
+    }
+}
+
 // MARK: - MLX Service
 
 /// On-device LLM provider using Apple's MLX framework
@@ -36,6 +56,7 @@ actor MLXService {
     private var isModelLoaded = false
     private var loadedModelConfig: OptaModelConfiguration?
     private var isGenerating = false
+    private var cancellationToken: CancellationToken?
     private(set) var generationProgress: Int = 0  // Token count for UI feedback
 
     #if canImport(MLX) && canImport(MLXLLM) && !targetEnvironment(simulator)
@@ -50,6 +71,14 @@ actor MLXService {
     /// Whether generation is currently in progress
     var isCurrentlyGenerating: Bool {
         isGenerating
+    }
+
+    // MARK: - Generation Control
+
+    /// Cancel current generation if in progress
+    func cancelGeneration() {
+        guard isGenerating else { return }
+        cancellationToken?.cancel()
     }
 
     // MARK: - Device Support
@@ -195,9 +224,12 @@ actor MLXService {
 
         isGenerating = true
         generationProgress = 0
+        let token = CancellationToken()
+        cancellationToken = token
         defer {
             isGenerating = false
             generationProgress = 0
+            cancellationToken = nil
         }
 
         #if canImport(MLX) && canImport(MLXLLM) && !targetEnvironment(simulator)
@@ -225,26 +257,38 @@ actor MLXService {
 
         // Perform generation within model context
         // Note: Progress updates happen via tokenCount in closure, synced after completion
-        let result = try await container.perform { [input, parameters] context in
+        let result = try await container.perform { [input, parameters, token] context in
             // Prepare input (tokenize prompt + encode image)
             let prepared = try await context.processor.prepare(input: input)
 
-            // Stream generation
+            // Stream generation with cancellation support
             var output = ""
             var tokenCount = 0
+            var wasCancelled = false
 
             try await MLXLMCommon.generate(
                 input: prepared,
                 parameters: parameters,
                 context: context
-            ) { token in
-                output += token
+            ) { generatedToken in
+                // Check for cancellation
+                if token.isCancelled {
+                    wasCancelled = true
+                    return .stop
+                }
+
+                output += generatedToken
                 tokenCount += 1
                 // Continue until maxTokens or natural end
                 return tokenCount < parameters.maxTokens ? .more : .stop
             }
 
-            return (output, tokenCount)
+            return (output, tokenCount, wasCancelled)
+        }
+
+        // Check if generation was cancelled
+        if result.2 {
+            throw MLXError.generationCancelled
         }
 
         // Update final progress count
@@ -428,6 +472,7 @@ enum MLXError: LocalizedError {
     case deviceNotSupported
     case modelNotLoaded
     case alreadyGenerating
+    case generationCancelled
     case visionNotSupported
     case imageProcessingFailed
     case downloadFailed(String)
@@ -440,6 +485,8 @@ enum MLXError: LocalizedError {
             return "Model not loaded. Download in Settings."
         case .alreadyGenerating:
             return "Generation in progress."
+        case .generationCancelled:
+            return "Generation was cancelled."
         case .visionNotSupported:
             return "Vision model not loaded."
         case .imageProcessingFailed:
