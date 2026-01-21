@@ -236,6 +236,26 @@ final class HistoryManager: ObservableObject {
         fetchScans()
     }
 
+    /// Duplicate a scan with a new ID and timestamp
+    /// - Parameter scan: The scan entity to duplicate
+    func duplicateScan(_ scan: ScanEntity) {
+        let duplicate = ScanEntity(context: context)
+        duplicate.id = UUID()
+        duplicate.prompt = scan.prompt
+        duplicate.imageData = scan.imageData
+        duplicate.understanding = scan.understanding
+        duplicate.questionsJSON = scan.questionsJSON
+        duplicate.answersJSON = scan.answersJSON
+        duplicate.resultMarkdown = scan.resultMarkdown
+        duplicate.highlightsData = scan.highlightsData
+        duplicate.rankingsJSON = scan.rankingsJSON
+        duplicate.createdAt = Date()
+        duplicate.isFavorite = false
+
+        PersistenceController.shared.save()
+        fetchScans()
+    }
+
     // MARK: - Delete Operations
 
     /// Delete a single scan

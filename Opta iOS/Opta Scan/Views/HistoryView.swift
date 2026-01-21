@@ -135,6 +135,116 @@ struct HistoryView: View {
             .padding(OptaDesign.Spacing.lg)
         }
     }
+
+    // MARK: - Actions
+
+    /// Share a scan via the system share sheet
+    private func shareScan(_ scan: ScanEntity) {
+        var shareItems: [Any] = []
+
+        // Add prompt text
+        if let prompt = scan.prompt {
+            let shareText = "Opta Scan: \(prompt)"
+            shareItems.append(shareText)
+        }
+
+        // Add highlights if available
+        if !scan.highlights.isEmpty {
+            let highlightsText = "Key Takeaways:\n" + scan.highlights.map { "- \($0)" }.joined(separator: "\n")
+            shareItems.append(highlightsText)
+        }
+
+        // Add image if available
+        if let image = scan.image {
+            shareItems.append(image)
+        }
+
+        guard !shareItems.isEmpty else { return }
+
+        let activityVC = UIActivityViewController(activityItems: shareItems, applicationActivities: nil)
+
+        // Present the share sheet
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let rootVC = windowScene.windows.first?.rootViewController {
+            // Handle iPad presentation
+            activityVC.popoverPresentationController?.sourceView = rootVC.view
+            activityVC.popoverPresentationController?.sourceRect = CGRect(
+                x: rootVC.view.bounds.midX,
+                y: rootVC.view.bounds.midY,
+                width: 0,
+                height: 0
+            )
+            activityVC.popoverPresentationController?.permittedArrowDirections = []
+
+            rootVC.present(activityVC, animated: true)
+        }
+    }
+}
+
+// MARK: - History Card Preview
+
+/// Rich preview shown in context menu for HistoryCard
+private struct HistoryCardPreview: View {
+
+    let scan: ScanEntity
+
+    private enum Layout {
+        static let imageHeight: CGFloat = 180
+        static let bulletSize: CGFloat = 5
+        static let bulletTopPadding: CGFloat = 5
+        static let maxWidth: CGFloat = 280
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: OptaDesign.Spacing.md) {
+            // Image
+            if let image = scan.image {
+                Image(uiImage: image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(height: Layout.imageHeight)
+                    .clipped()
+            }
+
+            VStack(alignment: .leading, spacing: OptaDesign.Spacing.sm) {
+                // Prompt
+                Text(scan.prompt ?? "Untitled")
+                    .font(.optaHeadline)
+                    .foregroundStyle(Color.optaTextPrimary)
+                    .lineLimit(2)
+
+                // Highlights preview
+                if !scan.highlights.isEmpty {
+                    VStack(alignment: .leading, spacing: OptaDesign.Spacing.xs) {
+                        ForEach(scan.highlights.prefix(3), id: \.self) { highlight in
+                            HStack(alignment: .top, spacing: OptaDesign.Spacing.xs) {
+                                Circle()
+                                    .fill(Color.optaPurple)
+                                    .frame(width: Layout.bulletSize, height: Layout.bulletSize)
+                                    .padding(.top, Layout.bulletTopPadding)
+
+                                Text(highlight)
+                                    .font(.optaCaption)
+                                    .foregroundStyle(Color.optaTextSecondary)
+                                    .lineLimit(1)
+                            }
+                        }
+                    }
+                }
+
+                // Date
+                if let date = scan.createdAt {
+                    Text(date, style: .relative)
+                        .font(.optaLabel)
+                        .foregroundStyle(Color.optaTextMuted)
+                }
+            }
+            .padding(.horizontal, OptaDesign.Spacing.md)
+            .padding(.bottom, OptaDesign.Spacing.md)
+        }
+        .frame(width: Layout.maxWidth)
+        .background(Color.optaBackground)
+    }
 }
 
 // MARK: - Empty History View

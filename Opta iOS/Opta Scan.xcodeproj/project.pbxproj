@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A11111110000000000000099 /* ZoomableImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22222220000000000000099 /* ZoomableImageView.swift */; };
 		A11111110000000000000001 /* Opta_ScanApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22222220000000000000001 /* Opta_ScanApp.swift */; };
 		A11111110000000000000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22222220000000000000002 /* ContentView.swift */; };
 		A11111110000000000000003 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A22222220000000000000003 /* Assets.xcassets */; };
@@ -40,6 +41,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		A22222220000000000000099 /* ZoomableImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoomableImageView.swift; sourceTree = "<group>"; };
 		A22222220000000000000001 /* Opta_ScanApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Opta_ScanApp.swift; sourceTree = "<group>"; };
 		A22222220000000000000002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		A22222220000000000000003 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -180,6 +182,7 @@
 				A22222220000000000000011 /* PhotoPickerButton.swift */,
 				A22222220000000000000012 /* PromptInputView.swift */,
 				A22222220000000000000013 /* CaptureButton.swift */,
+				A22222220000000000000099 /* ZoomableImageView.swift */,
 				A22222220000000000000015 /* OptamizeSlider.swift */,
 			);
 			path = Components;
@@ -272,6 +275,7 @@
 				A11111110000000000000011 /* PhotoPickerButton.swift in Sources */,
 				A11111110000000000000012 /* PromptInputView.swift in Sources */,
 				A11111110000000000000013 /* CaptureButton.swift in Sources */,
+				A11111110000000000000099 /* ZoomableImageView.swift in Sources */,
 				A11111110000000000000014 /* ClaudeService.swift in Sources */,
 				A11111110000000000000015 /* OptamizeSlider.swift in Sources */,
 				A11111110000000000000016 /* ProcessingView.swift in Sources */,
