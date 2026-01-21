@@ -425,105 +425,11 @@ actor MLXService {
     // MARK: - Response Parsing
 
     private func parseAnalysisResult(from text: String) -> AnalysisResult {
-        // Try to extract JSON from the response
-        if let jsonStart = text.range(of: "```json"),
-           let jsonEnd = text.range(of: "```", range: jsonStart.upperBound..<text.endIndex) {
-            let jsonString = String(text[jsonStart.upperBound..<jsonEnd.lowerBound])
-            if let data = jsonString.data(using: .utf8),
-               let parsed = try? JSONDecoder().decode(AnalysisResultJSON.self, from: data) {
-                return AnalysisResult(
-                    understanding: parsed.understanding,
-                    questions: parsed.questions.map { q in
-                        OptimizationQuestion(
-                            id: q.id,
-                            text: q.text,
-                            type: QuestionType(rawValue: q.type) ?? .text,
-                            options: q.options,
-                            placeholder: q.placeholder,
-                            min: q.min,
-                            max: q.max,
-                            defaultValue: q.defaultValue
-                        )
-                    },
-                    rawResponse: text
-                )
-            }
-        }
-
-        // Fallback: return raw text as understanding
-        return AnalysisResult(
-            understanding: text,
-            questions: [],
-            rawResponse: text
-        )
+        ResponseParser.parseAnalysisResult(from: text)
     }
 
     private func parseOptimizationResult(from text: String) -> OptimizationResult {
-        OptimizationResult(
-            markdown: text,
-            highlights: extractHighlights(from: text),
-            rankings: extractRankings(from: text)
-        )
-    }
-
-    private func extractHighlights(from text: String) -> [String] {
-        var highlights: [String] = []
-        let lines = text.components(separatedBy: .newlines)
-
-        for line in lines {
-            if line.contains("**") {
-                let pattern = "\\*\\*([^*]+)\\*\\*"
-                if let regex = try? NSRegularExpression(pattern: pattern),
-                   let match = regex.firstMatch(in: line, range: NSRange(line.startIndex..., in: line)),
-                   let range = Range(match.range(at: 1), in: line) {
-                    highlights.append(String(line[range]))
-                }
-            }
-        }
-
-        return Array(highlights.prefix(5))
-    }
-
-    private func extractRankings(from text: String) -> [RankingItem]? {
-        var rankings: [RankingItem] = []
-        let lines = text.components(separatedBy: .newlines)
-
-        for line in lines {
-            let pattern = "^\\s*(\\d+)[.\\)]\\s*(.+)"
-            if let regex = try? NSRegularExpression(pattern: pattern),
-               let match = regex.firstMatch(in: line, range: NSRange(line.startIndex..., in: line)),
-               let rankRange = Range(match.range(at: 1), in: line),
-               let titleRange = Range(match.range(at: 2), in: line) {
-                let rank = Int(line[rankRange]) ?? 0
-                let title = String(line[titleRange])
-                rankings.append(RankingItem(rank: rank, title: title, description: nil))
-            }
-        }
-
-        return rankings.isEmpty ? nil : rankings
-    }
-}
-
-// MARK: - Private Parsing Models
-
-private struct AnalysisResultJSON: Decodable {
-    let understanding: String
-    let questions: [QuestionJSON]
-}
-
-private struct QuestionJSON: Decodable {
-    let id: String
-    let text: String
-    let type: String
-    let options: [String]?
-    let placeholder: String?
-    let min: Double?
-    let max: Double?
-    let defaultValue: Double?
-
-    enum CodingKeys: String, CodingKey {
-        case id, text, type, options, placeholder, min, max
-        case defaultValue = "default"
+        ResponseParser.parseOptimizationResult(from: text)
     }
 }
 
