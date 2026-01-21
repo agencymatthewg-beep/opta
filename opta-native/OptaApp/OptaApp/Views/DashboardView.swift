@@ -13,14 +13,14 @@ import SwiftUI
 /// The main dashboard displaying real-time system health via OptaCoreManager.
 ///
 /// Layout:
-/// - Top: ScoreDisplay (centered)
+/// - Top: OptaRing centerpiece with score overlay
 /// - Middle: 3-column telemetry cards (CPU, Memory, GPU)
 /// - Bottom: QuickActions bar
 ///
 /// # Usage
 ///
 /// ```swift
-/// DashboardView(coreManager: coreManager)
+/// DashboardView(coreManager: coreManager, renderCoordinator: coordinator)
 /// ```
 struct DashboardView: View {
 
@@ -29,6 +29,9 @@ struct DashboardView: View {
     /// The core manager for state and events
     @Bindable var coreManager: OptaCoreManager
 
+    /// The render coordinator for the OptaRing (shared from app level)
+    @ObservedObject var renderCoordinator: RenderCoordinator
+
     /// Reduce motion preference
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -36,6 +39,7 @@ struct DashboardView: View {
 
     private let horizontalPadding: CGFloat = 24
     private let verticalSpacing: CGFloat = 24
+    private let ringSize: CGFloat = 300
 
     // MARK: - Body
 
@@ -43,8 +47,8 @@ struct DashboardView: View {
         GeometryReader { geometry in
             ScrollView(showsIndicators: false) {
                 VStack(spacing: verticalSpacing) {
-                    // Top section: Score display
-                    scoreSection
+                    // Top section: OptaRing with score overlay
+                    ringSection
 
                     // Middle section: Telemetry cards
                     telemetrySection(width: geometry.size.width)
@@ -67,7 +71,54 @@ struct DashboardView: View {
 
     // MARK: - Subviews
 
-    /// Score display section
+    /// OptaRing centerpiece with score overlay
+    private var ringSection: some View {
+        ZStack {
+            // The 3D OptaRing as visual centerpiece
+            OptaRingView(
+                coordinator: renderCoordinator,
+                phase: coreManager.viewModel.ring.phase,
+                intensity: coreManager.viewModel.ring.energy,
+                explodeProgress: coreManager.viewModel.ring.progress,
+                onTap: {
+                    // Toggle ring expanded state on tap
+                    coreManager.dispatch(.toggleRingExpanded)
+                }
+            )
+            .frame(width: ringSize, height: ringSize)
+
+            // Score display overlaid in the center of the ring
+            VStack(spacing: 4) {
+                // Large score number
+                Text("\(coreManager.viewModel.optaScore)")
+                    .font(.system(size: 56, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+                    .contentTransition(.numericText())
+
+                // Grade badge
+                Text(coreManager.viewModel.scoreGrade)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(gradeColor)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 4)
+                    .background(
+                        Capsule()
+                            .fill(gradeColor.opacity(0.15))
+                    )
+
+                // Calculating indicator
+                if coreManager.viewModel.scoreCalculating {
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        .scaleEffect(0.6)
+                        .padding(.top, 4)
+                }
+            }
+        }
+        .padding(.top, 16)
+    }
+
+    /// Legacy score section (for reference, now integrated into ringSection)
     private var scoreSection: some View {
         ScoreDisplay(
             score: coreManager.viewModel.optaScore,
@@ -76,6 +127,26 @@ struct DashboardView: View {
             animation: coreManager.viewModel.scoreAnimation
         )
         .padding(.top, 16)
+    }
+
+    // MARK: - Computed Properties
+
+    /// Color for grade badge based on grade letter
+    private var gradeColor: Color {
+        switch coreManager.viewModel.scoreGrade {
+        case "S":
+            return Color(hex: "F59E0B")  // Gold
+        case "A":
+            return Color(hex: "10B981")  // Emerald
+        case "B":
+            return Color(hex: "3B82F6")  // Blue
+        case "C":
+            return Color(hex: "8B5CF6")  // Purple
+        case "D":
+            return Color(hex: "F97316")  // Orange
+        default:
+            return Color(hex: "EF4444")  // Red for F
+        }
     }
 
     /// Telemetry cards section
