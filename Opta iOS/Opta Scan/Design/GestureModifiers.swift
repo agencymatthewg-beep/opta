@@ -70,6 +70,7 @@ struct SwipeActionsModifier: ViewModifier {
     @State private var offset: CGFloat = 0
     @State private var isDragging = false
     @State private var cardID = UUID()
+    @State private var hasTriggeredThresholdHaptic = false
 
     @ObservedObject private var swipeState = SwipeStateManager.shared
 
@@ -256,6 +257,7 @@ struct SwipeActionsModifier: ViewModifier {
                 if !isDragging {
                     isDragging = true
                     swipeState.beginSwipe(id: cardID)
+                    hasTriggeredThresholdHaptic = false
                 }
 
                 let translation = value.translation.width
@@ -275,9 +277,13 @@ struct SwipeActionsModifier: ViewModifier {
                 } else {
                     offset = translation
                 }
+
+                // Check threshold crossing for haptic feedback
+                handleSwipeThresholdHaptic()
             }
             .onEnded { value in
                 isDragging = false
+                hasTriggeredThresholdHaptic = false
 
                 // Check for full swipe trigger
                 if shouldTriggerLeadingAction, let action = leadingActions.first {
@@ -307,14 +313,36 @@ struct SwipeActionsModifier: ViewModifier {
             }
     }
 
+    /// Handle haptic feedback when swipe crosses trigger threshold
+    private func handleSwipeThresholdHaptic() {
+        let isPastLeadingThreshold = offset > maxLeadingOffset * Layout.triggerThreshold && !leadingActions.isEmpty
+        let isPastTrailingThreshold = offset < maxTrailingOffset * Layout.triggerThreshold && !trailingActions.isEmpty
+
+        // Trigger haptic when crossing threshold
+        if (isPastLeadingThreshold || isPastTrailingThreshold) && !hasTriggeredThresholdHaptic {
+            OptaHaptics.shared.gestureTick()
+            hasTriggeredThresholdHaptic = true
+        }
+
+        // Reset if user pulls back below threshold
+        if !isPastLeadingThreshold && !isPastTrailingThreshold && hasTriggeredThresholdHaptic {
+            hasTriggeredThresholdHaptic = false
+        }
+    }
+
     // MARK: - Actions
 
     private func triggerAction(_ action: SwipeAction) {
-        // Haptic feedback
-        if action.isDestructive {
-            OptaHaptics.shared.warning()
-        } else {
-            OptaHaptics.shared.success()
+        // Commit haptic followed by outcome haptic
+        OptaHaptics.shared.gestureCommit()
+
+        // Additional semantic haptic based on action type
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            if action.isDestructive {
+                OptaHaptics.shared.warning()
+            } else {
+                OptaHaptics.shared.success()
+            }
         }
 
         // Reset offset with animation
@@ -323,6 +351,7 @@ struct SwipeActionsModifier: ViewModifier {
         }
 
         swipeState.endSwipe(id: cardID)
+        hasTriggeredThresholdHaptic = false
 
         // Execute action
         action.action()

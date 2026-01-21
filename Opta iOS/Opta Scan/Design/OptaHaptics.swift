@@ -112,6 +112,22 @@ final class OptaHaptics {
         }
     }
 
+    // MARK: - Gesture Haptics
+
+    /// Gesture threshold crossed - subtle tick feedback
+    /// Use when a swipe gesture crosses a trigger threshold
+    func gestureTick() {
+        let impact = UIImpactFeedbackGenerator(style: .rigid)
+        impact.impactOccurred(intensity: 0.5)
+    }
+
+    /// Gesture committed - action will execute
+    /// Use when a gesture is released past the trigger threshold
+    func gestureCommit() {
+        let impact = UIImpactFeedbackGenerator(style: .medium)
+        impact.impactOccurred()
+    }
+
     // MARK: - Advanced Haptic Patterns
 
     /// Double tap pattern for confirmations
