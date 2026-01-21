@@ -283,11 +283,11 @@ Plans:
 - [x] 19-01: Vision Model Loading (6 tasks)
 - [x] 19-02: Image Preprocessing Pipeline (6 tasks)
 
-#### Phase 20: Generation Pipeline
+#### Phase 20: Generation Pipeline ✅
 **Goal**: Stream text generation and parse optimization responses
 **Depends on**: Phase 19
-**Research**: Unlikely (internal patterns, architecture exists)
-**Status**: Not started
+**Research**: Not needed (building on Phase 19 patterns)
+**Status**: Complete (2026-01-22)
 
 - Async token streaming with MLX generate()
 - JSON response parsing for questions format
@@ -296,8 +296,8 @@ Plans:
 - Cancel/interrupt support for long generations
 
 Plans:
-- [ ] 20-01: Streaming Text Generation
-- [ ] 20-02: Response Parsing and Error Handling
+- [x] 20-01: Streaming Text Generation (6 tasks)
+- [x] 20-02: Response Parsing and Error Handling (6 tasks)
 
 #### Phase 21: Local-First Polish
 **Goal**: Optimize UX for fully local, offline operation
@@ -349,8 +349,8 @@ Plans:
 | 17. MLX Foundation | v2.0 | 2/2 | Complete | 2026-01-21 |
 | 18. Model Management | v2.0 | 2/2 | Complete | 2026-01-22 |
 | 19. Vision Inference | v2.0 | 2/2 | Complete | 2026-01-22 |
-| 20. Generation Pipeline | v2.0 | 0/2 | Not started | - |
+| 20. Generation Pipeline | v2.0 | 2/2 | Complete | 2026-01-22 |
 | 21. Local-First Polish | v2.0 | 0/2 | Not started | - |
 
 ---
-*Last updated: 2026-01-22 — Phase 19 Vision Inference complete (model loading, image preprocessing)*
+*Last updated: 2026-01-22 — Phase 20 Generation Pipeline complete (streaming, parsing, error handling)*

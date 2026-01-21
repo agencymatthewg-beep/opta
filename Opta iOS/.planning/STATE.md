@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-01-20)
 
 ## Current Position
 
-Phase: 20 of 21 (Generation Pipeline) - IN PROGRESS
-Plan: 1 of 2 complete
-Status: Plan 20-01 complete, ready for 20-02
-Last activity: 2026-01-22 — Completed Plan 20-01 (Streaming Text Generation)
+Phase: 20 of 21 (Generation Pipeline) - COMPLETE
+Plan: 2 of 2 complete
+Status: Phase 20 complete, ready for Phase 21
+Last activity: 2026-01-22 — Completed Plan 20-02 (Response Parsing and Error Handling)
 
-Progress: ███████░░░ 70% milestone (Plan 20-01 complete)
+Progress: ████████░░ 80% milestone (Phase 20 complete)
 
 ### v2.0 Local Intelligence
 | Phase | Name | Status |
@@ -22,14 +22,14 @@ Progress: ███████░░░ 70% milestone (Plan 20-01 complete)
 | 17 | MLX Foundation | COMPLETE |
 | 18 | Model Management | COMPLETE |
 | 19 | Vision Inference | COMPLETE |
-| 20 | Generation Pipeline | In progress |
+| 20 | Generation Pipeline | COMPLETE |
 | 21 | Local-First Polish | Not started |
 
 ### Phase 20 Plans
 | Plan | Name | Status |
 |------|------|--------|
 | 20-01 | Streaming Text Generation | COMPLETE |
-| 20-02 | Response Parsing and Error Handling | Ready |
+| 20-02 | Response Parsing and Error Handling | COMPLETE |
 
 ## The One Feature
 
@@ -143,6 +143,10 @@ Example: Menu photo + "most calories for $10" → Visual recommendation
 | 20-01 | GenerationStream @Observable | SwiftUI integration for streaming state |
 | 20-01 | MainActor dispatch for callbacks | UI-safe progress updates |
 | 20-01 | 4096 max tokens for optimization | Consistent max tokens for final results |
+| 20-02 | Multi-strategy JSON extraction | Handle varied LLM output formats |
+| 20-02 | MLXError.isRecoverable property | Enable retry decisions without switch-casing |
+| 20-02 | Thermal critical pre-check | Prevent wasted resources on throttled generation |
+| 20-02 | 500ms retry delay, max 2 attempts | Balance responsiveness and loop prevention |
 
 ### Deferred Issues
 
@@ -168,8 +172,8 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-22
-Status: Plan 20-01 (Streaming Text Generation) complete
-Next action: Execute Plan 20-02 (Response Parsing and Error Handling)
+Status: Phase 20 (Generation Pipeline) complete
+Next action: Plan Phase 21 (Local-First Polish)
 
 ---
 *Opta Scan — capture anything, optimize everything*
