@@ -10,20 +10,26 @@ See: .planning/PROJECT.md (updated 2026-01-20)
 ## Current Position
 
 Phase: 17 of 21 (MLX Foundation)
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-01-21 — Milestone v2.0 Local Intelligence created
+Plan: 17-01 complete, 17-02 pending
+Status: Plan 17-01 executed
+Last activity: 2026-01-21 — MLX Package Integration complete
 
-Progress: ░░░░░░░░░░ 0% milestone (0 of 5 phases complete)
+Progress: ██░░░░░░░░ 10% milestone (Plan 17-01 of Phase 17 complete)
 
 ### v2.0 Local Intelligence
 | Phase | Name | Status |
 |-------|------|--------|
-| 17 | MLX Foundation | Not started |
+| 17 | MLX Foundation | In progress (1/2 plans) |
 | 18 | Model Management | Not started |
 | 19 | Vision Inference | Not started |
 | 20 | Generation Pipeline | Not started |
 | 21 | Local-First Polish | Not started |
+
+### Phase 17 Plans
+| Plan | Name | Status |
+|------|------|--------|
+| 17-01 | MLX Package Integration | Complete |
+| 17-02 | Remove Claude Dependencies | Not started |
 
 ## The One Feature
 
@@ -111,6 +117,10 @@ Example: Menu photo + "most calories for $10" → Visual recommendation
 | 16 | Privacy Manifest CA92.1 | UserDefaults for onboarding/preferences |
 | 16 | Dynamic Type over fixed sizes | Font.system(.textStyle) for accessibility |
 | 16 | 51 VoiceOver labels | All interactive elements covered |
+| 17 | iOS 17.2+ for MLX | MLX Swift requires iOS 17.2 minimum |
+| 17 | Conditional MLX imports | Simulator compatibility with #if canImport |
+| 17 | OptaModelConfiguration naming | Avoids conflict with MLXLLM ModelConfiguration |
+| 17 | UserDefaults for provider pref | Keychain reserved for sensitive data only |
 
 ### Deferred Issues
 
@@ -123,7 +133,8 @@ None.
 
 ### Blockers/Concerns
 
-None.
+- MLX entitlements require provisioning profile update (increased-memory-limit)
+- Model downloading implementation pending (Plan 17-02)
 
 ### Roadmap Evolution
 
@@ -135,8 +146,8 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-21
-Status: Milestone v2.0 Local Intelligence initialized
-Next action: Plan Phase 17 (MLX Foundation)
+Status: Plan 17-01 (MLX Package Integration) executed
+Next action: Execute Plan 17-02 (Remove Claude Dependencies)
 
 ---
 *Opta Scan — capture anything, optimize everything*
