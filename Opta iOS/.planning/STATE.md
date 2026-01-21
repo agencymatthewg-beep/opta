@@ -9,27 +9,27 @@ See: .planning/PROJECT.md (updated 2026-01-20)
 
 ## Current Position
 
-Phase: 17 of 21 (MLX Foundation)
-Plan: 17-02 complete — Phase 17 DONE
-Status: All Phase 17 plans executed
-Last activity: 2026-01-21 — Remove Claude Dependencies complete
+Phase: 18 of 21 (Model Management)
+Plan: 2 plans created
+Status: Ready to execute
+Last activity: 2026-01-22 — Phase 18 planning complete
 
-Progress: ████░░░░░░ 20% milestone (Phase 17 complete)
+Progress: ████░░░░░░ 20% milestone (Phase 17 complete, 18 planned)
 
 ### v2.0 Local Intelligence
 | Phase | Name | Status |
 |-------|------|--------|
 | 17 | MLX Foundation | COMPLETE |
-| 18 | Model Management | Not started |
+| 18 | Model Management | Planning complete |
 | 19 | Vision Inference | Not started |
 | 20 | Generation Pipeline | Not started |
 | 21 | Local-First Polish | Not started |
 
-### Phase 17 Plans
+### Phase 18 Plans
 | Plan | Name | Status |
 |------|------|--------|
-| 17-01 | MLX Package Integration | Complete |
-| 17-02 | Remove Claude Dependencies | Complete |
+| 18-01 | Model Download System | Not started |
+| 18-02 | Storage and Cache Management | Not started |
 
 ## The One Feature
 
@@ -137,7 +137,7 @@ None.
 ### Blockers/Concerns
 
 - MLX entitlements require provisioning profile update (increased-memory-limit)
-- Model download UI not yet implemented (Phase 18)
+- Physical device required for model download/inference testing
 
 ### Roadmap Evolution
 
@@ -148,9 +148,9 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-01-21
-Status: Phase 17 (MLX Foundation) complete
-Next action: Plan Phase 18 (Model Management)
+Last session: 2026-01-22
+Status: Phase 18 (Model Management) planned
+Next action: Execute Phase 18 plans
 
 ---
 *Opta Scan — capture anything, optimize everything*
