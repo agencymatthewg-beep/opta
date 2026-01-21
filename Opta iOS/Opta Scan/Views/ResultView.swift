@@ -189,6 +189,11 @@ private struct HighlightsCard: View {
         static let bulletTopPadding: CGFloat = 6
     }
 
+    /// Combined text of all highlights for copy/share
+    private var combinedHighlightsText: String {
+        highlights.map { "- \($0)" }.joined(separator: "\n")
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: OptaDesign.Spacing.md) {
             // Header
@@ -203,26 +208,75 @@ private struct HighlightsCard: View {
             // Highlights List
             VStack(alignment: .leading, spacing: OptaDesign.Spacing.sm) {
                 ForEach(Array(highlights.enumerated()), id: \.offset) { index, highlight in
-                    HStack(alignment: .top, spacing: OptaDesign.Spacing.sm) {
-                        Circle()
-                            .fill(Color.optaPurple)
-                            .frame(width: Layout.bulletSize, height: Layout.bulletSize)
-                            .padding(.top, Layout.bulletTopPadding)
-                            .accessibilityHidden(true)
-
-                        Text(highlight)
-                            .font(.optaBody)
-                            .foregroundStyle(Color.optaTextPrimary)
-                    }
-                    .accessibilityLabel("Takeaway \(index + 1): \(highlight)")
+                    HighlightRow(highlight: highlight, index: index)
                 }
             }
         }
         .padding(OptaDesign.Spacing.lg)
         .frame(maxWidth: .infinity, alignment: .leading)
         .glassContent()
+        .contextMenu {
+            Button {
+                copyToClipboard(combinedHighlightsText)
+            } label: {
+                Label("Copy All", systemImage: "doc.on.doc")
+            }
+
+            Button {
+                shareText("Key Takeaways:\n\(combinedHighlightsText)")
+            } label: {
+                Label("Share", systemImage: "square.and.arrow.up")
+            }
+        }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Key Takeaways section with \(highlights.count) items")
+    }
+}
+
+// MARK: - Highlight Row
+
+/// Individual highlight row with context menu
+private struct HighlightRow: View {
+
+    let highlight: String
+    let index: Int
+
+    private enum Layout {
+        static let bulletSize: CGFloat = 6
+        static let bulletTopPadding: CGFloat = 6
+    }
+
+    var body: some View {
+        HStack(alignment: .top, spacing: OptaDesign.Spacing.sm) {
+            Circle()
+                .fill(Color.optaPurple)
+                .frame(width: Layout.bulletSize, height: Layout.bulletSize)
+                .padding(.top, Layout.bulletTopPadding)
+                .accessibilityHidden(true)
+
+            Text(highlight)
+                .font(.optaBody)
+                .foregroundStyle(Color.optaTextPrimary)
+        }
+        .contextMenu {
+            Button {
+                copyToClipboard(highlight)
+            } label: {
+                Label("Copy", systemImage: "doc.on.doc")
+            }
+
+            Button {
+                shareText(highlight)
+            } label: {
+                Label("Share", systemImage: "square.and.arrow.up")
+            }
+        }
+        .accessibilityLabel("Takeaway \(index + 1): \(highlight)")
+        .accessibilityActions {
+            Button("Copy") {
+                copyToClipboard(highlight)
+            }
+        }
     }
 }
 
@@ -261,7 +315,7 @@ private struct RankingsCard: View {
 
 // MARK: - Ranking Row
 
-/// Individual ranking row with medal-style badge
+/// Individual ranking row with medal-style badge and context menu
 private struct RankingRow: View {
 
     let rank: Int
@@ -284,6 +338,14 @@ private struct RankingRow: View {
 
     /// Whether this is the top-ranked item
     private var isTopRank: Bool { rank == 1 }
+
+    /// Full text representation for copying
+    private var fullText: String {
+        if let description = item.description {
+            return "\(item.title): \(description)"
+        }
+        return item.title
+    }
 
     var body: some View {
         HStack(spacing: OptaDesign.Spacing.md) {
@@ -318,8 +380,34 @@ private struct RankingRow: View {
         .padding(OptaDesign.Spacing.sm)
         .background(isTopRank ? Color.optaAmber.opacity(Layout.topRankHighlightOpacity) : Color.clear)
         .clipShape(RoundedRectangle(cornerRadius: OptaDesign.CornerRadius.small, style: .continuous))
+        .contextMenu {
+            Button {
+                copyToClipboard(item.title)
+            } label: {
+                Label("Copy Name", systemImage: "doc.on.doc")
+            }
+
+            if item.description != nil {
+                Button {
+                    copyToClipboard(fullText)
+                } label: {
+                    Label("Copy All", systemImage: "doc.on.doc.fill")
+                }
+            }
+
+            Button {
+                shareText("#\(rank) \(fullText)")
+            } label: {
+                Label("Share", systemImage: "square.and.arrow.up")
+            }
+        }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Rank \(rank): \(item.title). \(item.description ?? "")")
+        .accessibilityActions {
+            Button("Copy name") {
+                copyToClipboard(item.title)
+            }
+        }
     }
 }
 
@@ -360,7 +448,7 @@ private struct SourceImageCard: View {
 
 // MARK: - Analysis Card
 
-/// Card displaying the full markdown analysis
+/// Card displaying the full markdown analysis with context menu
 private struct AnalysisCard: View {
 
     let markdown: String
@@ -390,8 +478,56 @@ private struct AnalysisCard: View {
         .padding(OptaDesign.Spacing.lg)
         .frame(maxWidth: .infinity, alignment: .leading)
         .glassContent()
+        .contextMenu {
+            Button {
+                copyToClipboard(markdown)
+            } label: {
+                Label("Copy Analysis", systemImage: "doc.on.doc")
+            }
+
+            Button {
+                shareText("Full Analysis:\n\n\(markdown)")
+            } label: {
+                Label("Share", systemImage: "square.and.arrow.up")
+            }
+        }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Full Analysis")
+        .accessibilityActions {
+            Button("Copy analysis") {
+                copyToClipboard(markdown)
+            }
+        }
+    }
+}
+
+// MARK: - Copy & Share Helpers
+
+/// Copy text to the system clipboard with haptic feedback
+private func copyToClipboard(_ text: String) {
+    UIPasteboard.general.string = text
+    OptaHaptics.shared.success()
+}
+
+/// Share text via the system share sheet
+private func shareText(_ text: String) {
+    OptaHaptics.shared.tap()
+
+    let activityVC = UIActivityViewController(activityItems: [text], applicationActivities: nil)
+
+    if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+       let rootVC = windowScene.windows.first?.rootViewController {
+        // Handle iPad presentation
+        activityVC.popoverPresentationController?.sourceView = rootVC.view
+        activityVC.popoverPresentationController?.sourceRect = CGRect(
+            x: rootVC.view.bounds.midX,
+            y: rootVC.view.bounds.midY,
+            width: 0,
+            height: 0
+        )
+        activityVC.popoverPresentationController?.permittedArrowDirections = []
+
+        rootVC.present(activityVC, animated: true)
     }
 }
 
