@@ -11,9 +11,10 @@
 import Foundation
 import SwiftUI
 
-#if canImport(MLX) && canImport(MLXLLM) && !targetEnvironment(simulator) && !targetEnvironment(simulator)
+#if canImport(MLX) && canImport(MLXLLM) && !targetEnvironment(simulator)
 import MLX
 import MLXLLM
+import MLXLMCommon
 #endif
 
 // MARK: - Model Download Manager

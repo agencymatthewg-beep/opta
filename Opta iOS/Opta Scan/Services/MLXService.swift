@@ -253,14 +253,29 @@ actor MLXService {
         }
 
         // Build UserInput with optional image
+        // Note: UserInput.Image uses .url() for file-based images
+        // For in-memory data, we save to temp file first
+        var tempImageURL: URL? = nil
         let input: UserInput
+
         if let image = image, let imageData = image.jpegData(compressionQuality: 0.9) {
+            // Save image to temporary file for MLX processing
+            tempImageURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".jpg")
+            try imageData.write(to: tempImageURL!)
+
             input = UserInput(
                 prompt: prompt,
-                images: [.data(imageData)]
+                images: [.url(tempImageURL!)]
             )
         } else {
             input = UserInput(prompt: prompt)
+        }
+
+        // Cleanup temp file when done
+        defer {
+            if let tempURL = tempImageURL {
+                try? FileManager.default.removeItem(at: tempURL)
+            }
         }
 
         // Generate parameters
@@ -271,44 +286,47 @@ actor MLXService {
         )
 
         // Perform generation within model context
-        // Note: Progress updates happen via tokenCount in closure, synced after completion
-        let result = try await container.perform { [input, parameters, token] context in
-            // Prepare input (tokenize prompt + encode image)
-            let prepared = try await context.processor.prepare(input: input)
+        // The MLX generate callback receives token IDs, not strings
+        let output = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<String, Error>) in
+            Task {
+                do {
+                    let result = try await container.perform { context in
+                        // Prepare input (tokenize prompt + encode image)
+                        let prepared = try await context.processor.prepare(input: input)
 
-            // Stream generation with cancellation support
-            var output = ""
-            var tokenCount = 0
-            var wasCancelled = false
+                        // Generate tokens
+                        var allTokens: [Int] = []
 
-            try await MLXLMCommon.generate(
-                input: prepared,
-                parameters: parameters,
-                context: context
-            ) { generatedToken in
-                // Check for cancellation
-                if token.isCancelled {
-                    wasCancelled = true
-                    return .stop
+                        // Use the streaming generate API
+                        // Callback receives token IDs (integers), not decoded strings
+                        _ = try await MLXLMCommon.generate(
+                            input: prepared,
+                            parameters: parameters,
+                            context: context
+                        ) { (tokenIds: [Int]) -> GenerateDisposition in
+                            // Check for cancellation
+                            if token.isCancelled {
+                                return .stop
+                            }
+
+                            allTokens.append(contentsOf: tokenIds)
+                            return .more
+                        }
+
+                        // Decode tokens to string using the processor's tokenizer
+                        let decodedOutput = context.tokenizer.decode(tokens: allTokens)
+                        return decodedOutput
+                    }
+                    continuation.resume(returning: result)
+                } catch {
+                    continuation.resume(throwing: error)
                 }
-
-                output += generatedToken
-                tokenCount += 1
-                // Continue until maxTokens or natural end
-                return tokenCount < parameters.maxTokens ? .more : .stop
             }
-
-            return (output, tokenCount, wasCancelled)
         }
 
-        // Check if generation was cancelled
-        if result.2 {
-            throw MLXError.generationCancelled
-        }
-
-        // Update final progress count
-        generationProgress = result.1
-        return result.0
+        // Update progress
+        generationProgress += 1
+        return output
         #else
         throw MLXError.deviceNotSupported
         #endif
