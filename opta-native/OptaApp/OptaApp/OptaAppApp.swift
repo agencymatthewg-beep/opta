@@ -19,6 +19,9 @@ struct OptaAppApp: App {
     /// Core manager for Crux state management (created at app level for sharing)
     @State private var coreManager = OptaCoreManager()
 
+    /// Agent mode manager for minimize-to-menu-bar functionality
+    @State private var agentModeManager = AgentModeManager.shared
+
     /// Application delegate for additional setup
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
@@ -37,6 +40,7 @@ struct OptaAppApp: App {
                 .frame(minWidth: 800, minHeight: 600)
                 .preferredColorScheme(.dark)
                 .environment(\.optaCoreManager, coreManager)
+                .environment(\.agentModeManager, agentModeManager)
         }
         .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 1280, height: 800)
@@ -97,6 +101,13 @@ struct OptaAppApp: App {
                     NSApp.sendAction(#selector(AppDelegate.checkForUpdates), to: nil, from: nil)
                 }
                 .keyboardShortcut("U", modifiers: [.command])
+
+                Divider()
+
+                Button("Toggle Agent Mode") {
+                    agentModeManager.toggleShowHideWindow()
+                }
+                .keyboardShortcut("H", modifiers: [.command, .shift])
             }
         }
 
@@ -110,8 +121,16 @@ struct OptaAppApp: App {
         .defaultSize(width: 450, height: 500)
 
         // Menu Bar Extra (macOS 13+)
-        MenuBarExtra("Opta", systemImage: "waveform.circle.fill", isInserted: $showMenuBarIcon) {
-            MenuBarPopoverView(coordinator: renderCoordinator)
+        MenuBarExtra("Opta", isInserted: $showMenuBarIcon) {
+            MenuBarPopoverView(
+                coordinator: renderCoordinator,
+                agentModeManager: agentModeManager
+            )
+        } label: {
+            MenuBarIcon(
+                coordinator: renderCoordinator,
+                agentModeManager: agentModeManager
+            )
         }
         .menuBarExtraStyle(.window)
     }
