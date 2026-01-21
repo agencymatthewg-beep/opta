@@ -9,19 +9,19 @@ See: .planning/PROJECT.md (updated 2026-01-20)
 
 ## Current Position
 
-Phase: 19 of 21 (Vision Inference) - EXECUTING
-Plan: 19-01 complete, 19-02 ready
-Status: Plan 19-01 executed, proceeding to 19-02
-Last activity: 2026-01-22 — Plan 19-01 complete (vision model generation)
+Phase: 19 of 21 (Vision Inference) - COMPLETE
+Plan: 2 of 2 complete
+Status: Phase 19 complete, ready for Phase 20
+Last activity: 2026-01-22 — Plan 19-02 complete (image preprocessing)
 
-Progress: ██████░░░░ 45% milestone (Plan 19-01 complete)
+Progress: ██████░░░░ 50% milestone (Phase 19 complete)
 
 ### v2.0 Local Intelligence
 | Phase | Name | Status |
 |-------|------|--------|
 | 17 | MLX Foundation | COMPLETE |
 | 18 | Model Management | COMPLETE |
-| 19 | Vision Inference | In Progress (1/2 plans) |
+| 19 | Vision Inference | COMPLETE |
 | 20 | Generation Pipeline | Not started |
 | 21 | Local-First Polish | Not started |
 
@@ -29,7 +29,7 @@ Progress: ██████░░░░ 45% milestone (Plan 19-01 complete)
 | Plan | Name | Status |
 |------|------|--------|
 | 19-01 | Vision Model Loading | COMPLETE |
-| 19-02 | Image Preprocessing Pipeline | Ready |
+| 19-02 | Image Preprocessing Pipeline | COMPLETE |
 
 ## The One Feature
 
@@ -136,6 +136,10 @@ Example: Menu photo + "most calories for $10" → Visual recommendation
 | 19-01 | Token ID callback | MLX generate callback receives [Int], decode after |
 | 19-01 | CancellationToken pattern | Thread-safe cross-boundary cancellation |
 | 19-01 | Dynamic GPU cache 100MB/20MB | Based on model size for 11B vs smaller |
+| 19-02 | Target sizes 560/448/336px | Quality tier adaptive sizing |
+| 19-02 | JPEG compression 0.9/0.85/0.8 | Quality tier adaptive compression |
+| 19-02 | Max dimension 2048px | Memory safety for large photos |
+| 19-02 | Aspect-fill center crop | Consistent 1:1 model input |
 
 ### Deferred Issues
 
@@ -161,8 +165,8 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-22
-Status: Phase 19 Plan 19-01 complete
-Next action: Execute Plan 19-02 (Image Preprocessing Pipeline)
+Status: Phase 19 complete (Vision Inference)
+Next action: Plan Phase 20 (Generation Pipeline)
 
 ---
 *Opta Scan — capture anything, optimize everything*
