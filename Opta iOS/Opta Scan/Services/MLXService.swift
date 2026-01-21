@@ -36,10 +36,21 @@ actor MLXService {
     private var isModelLoaded = false
     private var loadedModelConfig: OptaModelConfiguration?
     private var isGenerating = false
+    private(set) var generationProgress: Int = 0  // Token count for UI feedback
 
     #if canImport(MLX) && canImport(MLXLLM) && !targetEnvironment(simulator)
     private var modelContainer: ModelContainer? = nil
     #endif
+
+    /// Current generation progress (token count) for UI display
+    var currentGenerationProgress: Int {
+        generationProgress
+    }
+
+    /// Whether generation is currently in progress
+    var isCurrentlyGenerating: Bool {
+        isGenerating
+    }
 
     // MARK: - Device Support
 
@@ -183,7 +194,11 @@ actor MLXService {
         }
 
         isGenerating = true
-        defer { isGenerating = false }
+        generationProgress = 0
+        defer {
+            isGenerating = false
+            generationProgress = 0
+        }
 
         #if canImport(MLX) && canImport(MLXLLM) && !targetEnvironment(simulator)
         guard let container = modelContainer else {
@@ -209,6 +224,7 @@ actor MLXService {
         )
 
         // Perform generation within model context
+        // Note: Progress updates happen via tokenCount in closure, synced after completion
         let result = try await container.perform { [input, parameters] context in
             // Prepare input (tokenize prompt + encode image)
             let prepared = try await context.processor.prepare(input: input)
@@ -228,10 +244,12 @@ actor MLXService {
                 return tokenCount < parameters.maxTokens ? .more : .stop
             }
 
-            return output
+            return (output, tokenCount)
         }
 
-        return result
+        // Update final progress count
+        generationProgress = result.1
+        return result.0
         #else
         throw MLXError.deviceNotSupported
         #endif
