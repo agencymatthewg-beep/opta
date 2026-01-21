@@ -40,32 +40,22 @@ protocol LLMProvider: Actor {
 
 // MARK: - Provider Type
 
-/// Available LLM provider types
+/// Available LLM provider types (local-only)
 enum LLMProviderType: String, CaseIterable, Identifiable, Codable {
-    case claude = "claude"
     case local = "local"
 
     var id: String { rawValue }
 
     var displayName: String {
-        switch self {
-        case .claude: return "Claude (Cloud)"
-        case .local: return "On-Device (Local)"
-        }
+        "On-Device AI"
     }
 
     var description: String {
-        switch self {
-        case .claude: return "Anthropic's Claude API - Best quality, requires internet"
-        case .local: return "On-device inference - Private, works offline"
-        }
+        "Private, offline inference using Llama 3.2"
     }
 
     var icon: String {
-        switch self {
-        case .claude: return "cloud"
-        case .local: return "iphone"
-        }
+        "iphone"
     }
 }
 
