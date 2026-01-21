@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import PhotosUI
 
 // MARK: - Image Preprocessor
 
@@ -107,6 +108,24 @@ enum ImagePreprocessor {
         }
 
         return CGRect(origin: origin, size: drawSize)
+    }
+}
+
+// MARK: - Async Loading
+
+extension ImagePreprocessor {
+    /// Load and preprocess from PhotosPickerItem
+    /// - Parameter item: PhotosPicker selection
+    /// - Returns: Preprocessed image or nil
+    @available(iOS 16.0, *)
+    static func load(from item: PhotosPickerItem) async -> UIImage? {
+        guard let data = try? await item.loadTransferable(type: Data.self),
+              let image = UIImage(data: data) else {
+            return nil
+        }
+
+        // Preprocess immediately to release original data
+        return prepare(image)
     }
 }
 
