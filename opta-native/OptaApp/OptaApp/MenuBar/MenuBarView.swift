@@ -2,7 +2,7 @@
 //  MenuBarView.swift
 //  OptaApp
 //
-//  Menu bar popover view with live stats and quick actions
+//  Menu bar popover view with live stats, agent mode, and contextual actions
 //
 
 import SwiftUI
@@ -14,17 +14,27 @@ struct MenuBarPopoverView: View {
     // MARK: - Properties
 
     @ObservedObject var coordinator: RenderCoordinator
+    var agentModeManager: AgentModeManager
     @Environment(\.openWindow) private var openWindow
 
     // MARK: - Body
 
     var body: some View {
         VStack(spacing: 0) {
-            // Header
+            // Header with optimization score
             header
 
             Divider()
                 .background(Color.white.opacity(0.1))
+
+            // Agent Mode Section (when active)
+            if agentModeManager.isAgentMode {
+                agentModeStatusSection
+                    .padding(.vertical, 8)
+
+                Divider()
+                    .background(Color.white.opacity(0.1))
+            }
 
             // Stats Grid
             statsGrid
@@ -33,9 +43,16 @@ struct MenuBarPopoverView: View {
             Divider()
                 .background(Color.white.opacity(0.1))
 
-            // Quick Actions
-            quickActions
+            // Contextual Quick Actions
+            contextualActions
                 .padding(.vertical, 12)
+
+            Divider()
+                .background(Color.white.opacity(0.1))
+
+            // Agent Mode Toggle Row
+            agentModeRow
+                .padding(.vertical, 8)
 
             Divider()
                 .background(Color.white.opacity(0.1))
@@ -71,15 +88,19 @@ struct MenuBarPopoverView: View {
 
             Spacer()
 
-            // FPS Counter
+            // Mini Optimization Score / FPS Counter
             HStack(spacing: 4) {
-                Circle()
-                    .fill(fpsStatusColor)
-                    .frame(width: 6, height: 6)
+                statusIndicator
 
-                Text("\(Int(coordinator.currentFPS)) FPS")
-                    .font(.system(size: 11, weight: .medium, design: .monospaced))
-                    .foregroundColor(.white.opacity(0.8))
+                if agentModeManager.isAgentMode {
+                    Text("Agent")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(Color(hex: "8B5CF6") ?? .purple)
+                } else {
+                    Text("\(Int(coordinator.currentFPS)) FPS")
+                        .font(.system(size: 11, weight: .medium, design: .monospaced))
+                        .foregroundColor(.white.opacity(0.8))
+                }
             }
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
@@ -90,6 +111,59 @@ struct MenuBarPopoverView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
+    }
+
+    private var statusIndicator: some View {
+        Circle()
+            .fill(agentModeManager.systemStatus.color)
+            .frame(width: 6, height: 6)
+    }
+
+    // MARK: - Agent Mode Status Section
+
+    private var agentModeStatusSection: some View {
+        VStack(spacing: 8) {
+            HStack {
+                Image(systemName: agentModeManager.systemStatus.icon)
+                    .foregroundColor(agentModeManager.systemStatus.color)
+
+                Text(statusMessage)
+                    .font(.system(size: 12))
+                    .foregroundColor(.white.opacity(0.8))
+
+                Spacer()
+            }
+
+            // Progress bar for monitoring
+            GeometryReader { geometry in
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .fill(Color.white.opacity(0.1))
+                        .frame(height: 4)
+
+                    Capsule()
+                        .fill(agentModeManager.systemStatus.color)
+                        .frame(width: geometry.size.width * monitoringProgress, height: 4)
+                }
+            }
+            .frame(height: 4)
+        }
+        .padding(.horizontal, 16)
+    }
+
+    private var statusMessage: String {
+        switch agentModeManager.systemStatus {
+        case .normal: return "System healthy - monitoring"
+        case .warning: return "Optimization recommended"
+        case .critical: return "Action needed"
+        case .agent: return "Background monitoring active"
+        case .paused: return "Monitoring paused"
+        }
+    }
+
+    private var monitoringProgress: CGFloat {
+        // Placeholder - would be based on actual monitoring cycle
+        return 0.6
     }
 
     // MARK: - Stats Grid
@@ -130,74 +204,240 @@ struct MenuBarPopoverView: View {
         .padding(.horizontal, 12)
     }
 
-    // MARK: - Quick Actions
+    // MARK: - Contextual Quick Actions
 
-    private var quickActions: some View {
-        HStack(spacing: 12) {
-            QuickActionButton(
-                icon: "bolt.fill",
-                label: "Optimize",
-                color: .blue
-            ) {
-                performOptimize()
+    private var contextualActions: some View {
+        VStack(spacing: 8) {
+            // Show contextual action based on status
+            if agentModeManager.systemStatus == .critical {
+                ContextualActionRow(
+                    icon: "exclamationmark.triangle.fill",
+                    title: "System Running Hot",
+                    subtitle: "Tap to reduce workload",
+                    color: .red
+                ) {
+                    performOptimize()
+                }
+            } else if agentModeManager.systemStatus == .warning {
+                ContextualActionRow(
+                    icon: "bolt.fill",
+                    title: "Optimization Available",
+                    subtitle: "Tap to free up resources",
+                    color: .orange
+                ) {
+                    performOptimize()
+                }
             }
 
-            QuickActionButton(
-                icon: "chart.bar.fill",
-                label: "Stats",
-                color: .green
-            ) {
-                openMainWindow()
-            }
+            // Standard quick actions
+            HStack(spacing: 12) {
+                if agentModeManager.isAgentMode {
+                    QuickActionButton(
+                        icon: "macwindow",
+                        label: "Dashboard",
+                        color: .blue
+                    ) {
+                        openMainWindow()
+                    }
+                } else {
+                    QuickActionButton(
+                        icon: "bolt.fill",
+                        label: "Optimize",
+                        color: .blue
+                    ) {
+                        performOptimize()
+                    }
+                }
 
-            QuickActionButton(
-                icon: "gearshape.fill",
-                label: "Settings",
-                color: .gray
-            ) {
-                openSettings()
+                QuickActionButton(
+                    icon: "chart.bar.fill",
+                    label: "Stats",
+                    color: .green
+                ) {
+                    openMainWindow()
+                }
+
+                QuickActionButton(
+                    icon: "gearshape.fill",
+                    label: "Settings",
+                    color: .gray
+                ) {
+                    openSettings()
+                }
             }
         }
         .padding(.horizontal, 12)
+    }
+
+    // MARK: - Agent Mode Toggle Row
+
+    private var agentModeRow: some View {
+        HStack {
+            Image(systemName: agentModeManager.isAgentMode ? "eye.slash.fill" : "eye.fill")
+                .foregroundColor(agentModeManager.isAgentMode ? Color(hex: "8B5CF6") ?? .purple : .white.opacity(0.6))
+                .frame(width: 20)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(agentModeManager.isAgentMode ? "Agent Mode Active" : "Agent Mode")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.white)
+
+                Text("Minimize to menu bar")
+                    .font(.system(size: 10))
+                    .foregroundColor(.white.opacity(0.5))
+            }
+
+            Spacer()
+
+            Toggle("", isOn: Binding(
+                get: { agentModeManager.isAgentMode },
+                set: { newValue in
+                    if newValue {
+                        agentModeManager.enterAgentMode()
+                    } else {
+                        agentModeManager.exitAgentMode()
+                    }
+                }
+            ))
+            .toggleStyle(.switch)
+            .scaleEffect(0.8)
+        }
+        .padding(.horizontal, 16)
+    }
+
+    // MARK: - Notifications Toggle Row
+
+    private var notificationsRow: some View {
+        HStack {
+            Image(systemName: agentModeManager.showNotifications ? "bell.fill" : "bell.slash.fill")
+                .foregroundColor(agentModeManager.showNotifications ? .blue : .white.opacity(0.6))
+                .frame(width: 20)
+
+            Text("Notifications")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(.white)
+
+            Spacer()
+
+            Toggle("", isOn: Binding(
+                get: { agentModeManager.showNotifications },
+                set: { agentModeManager.showNotifications = $0 }
+            ))
+            .toggleStyle(.switch)
+            .scaleEffect(0.8)
+        }
+        .padding(.horizontal, 16)
     }
 
     // MARK: - Footer
 
     private var footer: some View {
         HStack {
-            Text("v1.0.0")
-                .font(.system(size: 10))
-                .foregroundColor(.white.opacity(0.4))
+            // Version + Agent badge
+            HStack(spacing: 6) {
+                Text("v1.0.0")
+                    .font(.system(size: 10))
+                    .foregroundColor(.white.opacity(0.4))
+
+                if agentModeManager.isAgentMode {
+                    Text("AGENT")
+                        .font(.system(size: 8, weight: .bold))
+                        .foregroundColor(Color(hex: "8B5CF6") ?? .purple)
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 2)
+                        .background(
+                            Capsule()
+                                .fill((Color(hex: "8B5CF6") ?? .purple).opacity(0.2))
+                        )
+                }
+            }
 
             Spacer()
 
-            Button(action: quitApp) {
-                HStack(spacing: 4) {
-                    Image(systemName: "power")
-                        .font(.system(size: 10))
-                    Text("Quit")
-                        .font(.system(size: 11, weight: .medium))
-                }
-                .foregroundColor(.white.opacity(0.6))
+            // Notification bell with badge
+            if agentModeManager.pendingOptimizationCount > 0 {
+                notificationBellButton
             }
-            .buttonStyle(.plain)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(
-                Capsule()
-                    .fill(Color.white.opacity(0.05))
-            )
-            .contentShape(Capsule())
-            .onHover { hovering in
-                if hovering {
-                    NSCursor.pointingHand.push()
-                } else {
-                    NSCursor.pop()
+
+            // Open Dashboard / Quit button
+            if agentModeManager.isAgentMode {
+                Button(action: openMainWindow) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "macwindow")
+                            .font(.system(size: 10))
+                        Text("Open")
+                            .font(.system(size: 11, weight: .medium))
+                    }
+                    .foregroundColor(.white.opacity(0.6))
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(
+                    Capsule()
+                        .fill(Color.white.opacity(0.05))
+                )
+                .contentShape(Capsule())
+                .onHover { hovering in
+                    if hovering {
+                        NSCursor.pointingHand.push()
+                    } else {
+                        NSCursor.pop()
+                    }
+                }
+            } else {
+                Button(action: quitApp) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "power")
+                            .font(.system(size: 10))
+                        Text("Quit")
+                            .font(.system(size: 11, weight: .medium))
+                    }
+                    .foregroundColor(.white.opacity(0.6))
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(
+                    Capsule()
+                        .fill(Color.white.opacity(0.05))
+                )
+                .contentShape(Capsule())
+                .onHover { hovering in
+                    if hovering {
+                        NSCursor.pointingHand.push()
+                    } else {
+                        NSCursor.pop()
+                    }
                 }
             }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
+    }
+
+    private var notificationBellButton: some View {
+        Button {
+            agentModeManager.clearPendingOptimizations()
+        } label: {
+            ZStack(alignment: .topTrailing) {
+                Image(systemName: "bell.fill")
+                    .font(.system(size: 12))
+                    .foregroundColor(.white.opacity(0.6))
+
+                Circle()
+                    .fill(Color.red)
+                    .frame(width: 8, height: 8)
+                    .overlay(
+                        Text("\(agentModeManager.pendingOptimizationCount)")
+                            .font(.system(size: 6, weight: .bold))
+                            .foregroundColor(.white)
+                    )
+                    .offset(x: 4, y: -4)
+            }
+        }
+        .buttonStyle(.plain)
+        .padding(.trailing, 8)
     }
 
     // MARK: - Computed Properties
@@ -258,6 +498,9 @@ struct MenuBarPopoverView: View {
     }
 
     private func openMainWindow() {
+        if agentModeManager.isAgentMode {
+            agentModeManager.exitAgentMode()
+        }
         openWindow(id: "main")
     }
 
@@ -340,6 +583,59 @@ struct QuickActionButton: View {
     }
 }
 
+// MARK: - Contextual Action Row
+
+struct ContextualActionRow: View {
+    let icon: String
+    let title: String
+    let subtitle: String
+    let color: Color
+    let action: () -> Void
+
+    @State private var isHovered = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Image(systemName: icon)
+                    .font(.system(size: 16))
+                    .foregroundColor(color)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(.white)
+
+                    Text(subtitle)
+                        .font(.system(size: 10))
+                        .foregroundColor(.white.opacity(0.6))
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 10))
+                    .foregroundColor(.white.opacity(0.4))
+            }
+            .padding(12)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(isHovered ? color.opacity(0.2) : color.opacity(0.1))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .strokeBorder(color.opacity(0.3), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.15)) {
+                isHovered = hovering
+            }
+        }
+    }
+}
+
 // MARK: - Notifications
 
 extension Notification.Name {
@@ -351,8 +647,11 @@ extension Notification.Name {
 #if DEBUG
 struct MenuBarPopoverView_Previews: PreviewProvider {
     static var previews: some View {
-        MenuBarPopoverView(coordinator: RenderCoordinator())
-            .frame(width: 280, height: 400)
+        MenuBarPopoverView(
+            coordinator: RenderCoordinator(),
+            agentModeManager: AgentModeManager.shared
+        )
+            .frame(width: 280, height: 500)
     }
 }
 #endif
