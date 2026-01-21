@@ -10,16 +10,16 @@ See: .planning/PROJECT.md (updated 2026-01-15)
 ## Current Position
 
 Phase: 70 of 74 (Main Dashboard UI)
-Plan: 70-01 COMPLETE (1 of ? in phase)
-Status: v9.0 Native macOS App IN PROGRESS
-Last activity: 2026-01-21 — Completed Phase 70-01 Dashboard UI Components
+Plan: 70-02 COMPLETE (2 of 2 in phase)
+Status: v9.0 Native macOS App IN PROGRESS - Phase 70 Complete
+Last activity: 2026-01-21 — Completed Phase 70-02 OptaRing Integration
 
 Progress: ██████████ 100% of v5.0 (17 phases complete)
 v5.1 Progress: ██████████ 100% (7 of 7 phases complete)
 v6.0 Progress: ██████████ 100% (All phases complete)
 v7.0 Progress: ██████████ 100% (8 of 8 phases complete)
 v8.0 Progress: ██████████ 100% (10 of 10 phases complete) ✅
-v9.0 Progress: █░░░░░░░░░ 17% (1 of 6 phases in progress)
+v9.0 Progress: ██░░░░░░░░ 33% (2 of 6 phases complete)
 
 ### Phase 69 Plans (COMPLETE)
 | Plan | Status | Description |
@@ -27,10 +27,11 @@ v9.0 Progress: █░░░░░░░░░ 17% (1 of 6 phases in progress)
 | 69-01 | ✅ Complete | Swift Bindings Setup (UniFFI generation, Xcode integration) |
 | 69-02 | ✅ Complete | Shell Implementation (OptaCoreManager, ViewModel, EffectExecutor) |
 
-### Phase 70 Plans (IN PROGRESS)
+### Phase 70 Plans (COMPLETE)
 | Plan | Status | Description |
 |------|--------|-------------|
 | 70-01 | ✅ Complete | Dashboard UI Components (TelemetryCard, ScoreDisplay, QuickActions, DashboardView) |
+| 70-02 | ✅ Complete | OptaRing Integration (OptaRingView wrapper, page-based navigation) |
 
 ### v5.0 Phase Completion Summary
 | Phase | Name | Status |
@@ -469,6 +470,10 @@ v9.0 Progress: █░░░░░░░░░ 17% (1 of 6 phases in progress)
 | 70-01 | Color hex extension | Added Color(hex:) initializer for design system hex colors |
 | 70-01 | SparklineView as separate component | Reusable for future charts beyond telemetry |
 | 70-01 | @Bindable for coreManager | Modern Swift 5.9+ pattern for observable binding in views |
+| 70-02 | Ring state methods as stubs | setRingPhase/Intensity/ExplodeProgress ready for Rust bridge |
+| 70-02 | Score overlay in ring center | Score displayed inside OptaRing for unified visual hierarchy |
+| 70-02 | Page-based navigation | switch on viewModel.currentPage, Crux drives navigation |
+| 70-02 | App-level coreManager | @State at app level enables shared state across all views |
 
 ### Deferred Issues
 
@@ -498,12 +503,13 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-21
-Stopped at: Phase 70-01 Dashboard UI Components COMPLETE
+Stopped at: Phase 70-02 OptaRing Integration COMPLETE
 Resume file: None
-Next action: Continue Phase 70 plans or integrate DashboardView into main app
+Next action: Plan Phase 71 (Settings UI) or continue v9.0 development
 
 **v9.0 Stats:**
-- Phase 69 complete (2 plans)
-- Phase 70 in progress (1 plan complete)
-- 4 SwiftUI components created for dashboard
-- Ready for navigation integration
+- Phase 69 complete (2 plans) - UniFFI bindings, OptaCoreManager
+- Phase 70 complete (2 plans) - Dashboard UI components, OptaRing integration
+- 5 SwiftUI components created (TelemetryCard, ScoreDisplay, QuickActions, DashboardView, OptaRingView)
+- Page-based navigation system operational
+- Ready for Phase 71 (Settings UI)

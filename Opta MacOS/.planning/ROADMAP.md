@@ -15,7 +15,8 @@ Opta transforms from an empty Tauri scaffold into a full-featured AI-powered PC 
 - ✅ **v5.1 Ring Visual Enhancement** - Phases 41.2-41.8 (shipped 2026-01-18)
 - ✅ **v6.0 Optimization Intelligence Core** - Phases 44-50 (shipped 2026-01-18)
 - ✅ **v7.0 Chess Mastery Experience** - Phases 51-58 (shipped 2026-01-18)
-- 📋 **v8.0 Rust Native Architecture** - Phases 59-68 (planned)
+- ✅ **v8.0 Rust Native Architecture** - Phases 59-68 (shipped 2026-01-21)
+- 📋 **v9.0 Native macOS App** - Phases 69-74 (planned)
 
 ## Domain Expertise
 
@@ -1227,7 +1228,118 @@ Plans:
 - Release notes and documentation
 
 Plans:
-- [ ] 68-01: TBD
+- [x] 68-01: Testing & App Store Compliance
+
+### 📋 v9.0 Native macOS App (Planned)
+
+**Milestone Goal:** Complete the SwiftUI macOS app using v8.0 Rust infrastructure. The existing OptaApp has ~2,833 lines of Swift with Metal rendering, RustBridge, and DisplayLink integration. This milestone connects Crux state management, builds the full UI, and ships to the Mac App Store.
+
+**Existing Infrastructure:**
+- SwiftUI app shell with Metal/wgpu rendering
+- RustBridge.swift (446 lines) wrapping Rust FFI
+- DisplayLinkController for 120Hz ProMotion
+- HapticsManager with CoreHaptics integration
+- XCFramework build pipeline ready
+
+**Key Deliverables:**
+- Crux state ↔ SwiftUI binding layer
+- Complete dashboard UI with telemetry + ring
+- Settings, games library, menu bar agent
+- Mac App Store submission
+
+---
+
+#### Phase 69: opta-core UniFFI Integration
+**Goal**: Connect Crux state management to SwiftUI views
+**Depends on**: Phase 68 (v8.0 complete)
+**Research**: Unlikely (UniFFI patterns established)
+
+**Key Deliverables:**
+- Fresh Swift bindings from opta-core
+- OptaCoreManager.swift for SwiftUI @Observable pattern
+- Event dispatch from SwiftUI to Crux
+- ViewModel subscription for reactive updates
+- Effects bridge (haptics, sound, navigation)
+
+Plans:
+- [x] 69-01: UniFFI Swift Bindings Generation
+- [x] 69-02: OptaCoreManager SwiftUI Integration
+
+#### Phase 70: Main Dashboard UI
+**Goal**: Build primary optimization dashboard with telemetry and ring
+**Depends on**: Phase 69
+**Research**: Unlikely (SwiftUI patterns)
+
+**Key Deliverables:**
+- DashboardView with live telemetry
+- OptaRing component (wgpu 3D ring)
+- Opta Score display with animation
+- CPU/GPU/Memory telemetry cards
+- Quick optimization actions
+
+Plans:
+- [x] 70-01: Dashboard View and Telemetry Cards
+- [x] 70-02: OptaRing wgpu Integration
+
+#### Phase 71: Settings & Preferences
+**Goal**: Complete settings UI with full configuration options
+**Depends on**: Phase 70
+**Research**: Unlikely
+
+**Key Deliverables:**
+- Full SettingsView with all options
+- Quality presets (Low/Medium/High/Ultra/Adaptive)
+- Profile management (save/load/export)
+- Keyboard shortcuts configuration
+- Theme customization
+
+Plans:
+- [ ] 71-01: Settings View Expansion
+
+#### Phase 72: Games Library Integration
+**Goal**: Per-game optimization profiles with detection
+**Depends on**: Phase 71
+**Research**: Likely (game detection patterns)
+
+**Key Deliverables:**
+- GamesLibraryView with detected games
+- Game-specific optimization profiles
+- Optimization recommendations per game
+- Performance history tracking
+- One-click optimize
+
+Plans:
+- [ ] 72-01: Game Detection and Library UI
+
+#### Phase 73: Menu Bar Agent Polish
+**Goal**: Background monitoring experience with notifications
+**Depends on**: Phase 72
+**Research**: Unlikely
+
+**Key Deliverables:**
+- Polished MenuBarView with live stats
+- Notification system for optimization opportunities
+- Agent Mode (minimize to menu bar)
+- Contextual menu actions
+- System tray icon states
+
+Plans:
+- [ ] 73-01: Menu Bar Agent Enhancement
+
+#### Phase 74: App Store Preparation
+**Goal**: Ship to Mac App Store
+**Depends on**: Phase 73
+**Research**: Likely (App Store requirements)
+
+**Key Deliverables:**
+- App icon set (all sizes)
+- App Store screenshots
+- Notarization configuration
+- App Store description and keywords
+- Submission for review
+
+Plans:
+- [ ] 74-01: App Store Assets and Submission
 
 ## Progress
 
@@ -1304,13 +1416,19 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 �
 | 56. Premium Board UI | v7.0 | 1/1 | Complete | 2026-01-18 |
 | 57. Chess Settings & Customization | v7.0 | 5/5 | Complete | 2026-01-18 |
 | 58. Chess Mastery Launch | v7.0 | 1/1 | Complete | 2026-01-18 |
-| 59. Rust Core Foundation | v8.0 | 0/3 | Ready | - |
-| 60. wgpu Render Surface | v8.0 | 0/? | Planned | - |
-| 61. WGSL Shader System | v8.0 | 0/? | Planned | - |
-| 62. Native Shell - macOS | v8.0 | 0/? | Planned | - |
-| 63. Component Migration | v8.0 | 0/? | Planned | - |
-| 64. Animation System | v8.0 | 0/? | Planned | - |
-| 65. State & Data Layer | v8.0 | 0/? | Planned | - |
-| 66. Performance Optimization | v8.0 | 0/? | Planned | - |
-| 67. Platform Parity | v8.0 | 0/? | Planned | - |
-| 68. Rust Native Launch | v8.0 | 0/? | Planned | - |
+| 59. Rust Core Foundation | v8.0 | 2/2 | Complete | 2026-01-21 |
+| 60. wgpu Render Surface | v8.0 | 2/2 | Complete | 2026-01-21 |
+| 61. WGSL Shader System | v8.0 | 2/2 | Complete | 2026-01-21 |
+| 62. Native Shell - macOS | v8.0 | 2/2 | Complete | 2026-01-21 |
+| 63. Component Migration | v8.0 | 2/2 | Complete | 2026-01-21 |
+| 64. Animation System | v8.0 | 2/2 | Complete | 2026-01-21 |
+| 65. State & Data Layer | v8.0 | 2/2 | Complete | 2026-01-21 |
+| 66. Performance Optimization | v8.0 | 2/2 | Complete | 2026-01-21 |
+| 67. Platform Parity | v8.0 | 2/2 | Complete | 2026-01-21 |
+| 68. Rust Native Launch | v8.0 | 1/1 | Complete | 2026-01-21 |
+| 69. opta-core UniFFI Integration | v9.0 | 0/2 | Ready | - |
+| 70. Main Dashboard UI | v9.0 | 0/2 | Planned | - |
+| 71. Settings & Preferences | v9.0 | 0/1 | Planned | - |
+| 72. Games Library Integration | v9.0 | 0/1 | Planned | - |
+| 73. Menu Bar Agent Polish | v9.0 | 0/1 | Planned | - |
+| 74. App Store Preparation | v9.0 | 0/1 | Planned | - |
