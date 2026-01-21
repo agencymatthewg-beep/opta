@@ -25,4 +25,11 @@ dist-ssr
 
 # Personal context (not for version control)
 .personal/
-Opta Vision/IdealQualityOfAnimationsInspo.mov
+
+# Large media files
+Opta MacOS/Opta Vision/IdealQualityOfAnimationsInspo.mov
+*.mov
+
+# Rust build artifacts
+target/
+**/target/
