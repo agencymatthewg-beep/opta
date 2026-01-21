@@ -5,27 +5,28 @@
 See: .planning/PROJECT.md (updated 2026-01-20)
 
 **Core value:** Capture anything, optimize everything — Photo/prompt → Questions → Beautiful optimized answer
-**Current focus:** v1.0 MVP COMPLETE
+**Current focus:** v1.2 Premium Polish
 
 ## Current Position
 
-Phase: 8 of 8 (All phases complete)
-Status: **MVP COMPLETE**
-Last activity: 2026-01-21 — All phases implemented
+Phase: 9 of 16 (Advanced Gestures)
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-01-21 — Milestone v1.2 created
 
-Progress: ██████████ 100% of v1.0 (8 of 8 phases complete)
+Progress: ████████░░░░░░░░ 50% overall (8 of 16 phases complete)
 
-### v1.0 MVP
+### v1.2 Premium Polish
 | Phase | Name | Status |
 |-------|------|--------|
-| 1 | App Foundation | ✅ Complete |
-| 2 | Capture Experience | ✅ Complete |
-| 3 | Claude Integration | ✅ Complete |
-| 4 | Question Flow | ✅ Complete |
-| 5 | Result Visualization | ✅ Complete |
-| 6 | History & Persistence | ✅ Complete |
-| 7 | UX Polish | ✅ Complete |
-| 8 | Launch Prep | ✅ Complete |
+| 9 | Advanced Gestures | ⏳ Ready to plan |
+| 10 | Metal Shaders | Not started |
+| 11 | Physics Animations | Not started |
+| 12 | Visual Effects | Not started |
+| 13 | 3D Transforms | Not started |
+| 14 | Motion Design | Not started |
+| 15 | Performance Tuning | Not started |
+| 16 | Premium Polish Pass | Not started |
 
 ## The One Feature
 
@@ -41,55 +42,15 @@ Example: Menu photo + "most calories for $10" → Visual recommendation
 - **Thorough**: "Optamize" slider for depth control
 - **Visual**: Cards, rankings, highlights (not text walls)
 
-## Implementation Summary
+## Completed Milestones
 
-### Phase 1: App Foundation
-- Custom tab bar with glass styling
-- OLED-optimized dark theme (#09090b)
-- Design system (colors, typography, animations, haptics)
-- Three-level glass modifier system
+### v1.0 MVP (Phases 1-6) — Shipped 2026-01-21
+- App Foundation, Capture Experience, Claude Integration
+- Question Flow, Result Visualization, History & Persistence
 
-### Phase 2: Capture Experience
-- AVFoundation camera integration
-- PhotosUI library picker
-- Prompt input with smart suggestions
-- Animated capture button
-
-### Phase 3: Claude Integration
-- Full Claude API client (ClaudeService)
-- Image/text analysis with vision support
-- Optimization depth slider (Quick/Thorough)
-- Structured response parsing
-
-### Phase 4: Question Flow
-- Dynamic question cards
-- Multiple input types (single/multi choice, text, slider)
-- Progress indicator with animations
-- Back/Next navigation
-
-### Phase 5: Result Visualization
-- Highlights card with key takeaways
-- Rankings card with medal colors
-- Full analysis card
-- Share functionality
-
-### Phase 6: History & Persistence
-- Core Data model (ScanEntity)
-- PersistenceController with preview support
-- HistoryManager for fetch/save/delete
-- Search functionality
-
-### Phase 7: UX Polish
-- Enhanced haptic feedback throughout
-- Staggered appearance animations
-- Accessibility labels and hints
-- Symbol effects for visual interest
-
-### Phase 8: Launch Prep
-- 3-page onboarding flow
-- AppStorage for first-launch detection
-- Skip/Continue navigation
-- Animated page transitions
+### v1.1 Polish (Phases 7-8) — Shipped 2026-01-21
+- UX Polish (haptics, animations, accessibility)
+- Launch Prep (onboarding, app icon)
 
 ## Accumulated Context
 
@@ -114,7 +75,6 @@ None.
 
 ### Pending Todos
 
-- Add actual app icon (1024x1024 PNG)
 - Add Claude API key configuration in Settings
 - App Store screenshots
 - Privacy policy URL
@@ -123,18 +83,17 @@ None.
 
 None.
 
-## Next Steps for Launch
+### Roadmap Evolution
 
-1. **App Icon**: Create 1024x1024 icon with Opta branding
-2. **API Key**: Add Claude API key input in SettingsView
-3. **Testing**: Full end-to-end testing on device
-4. **App Store Connect**: Screenshots, metadata, review
+- v1.0 MVP created: Core feature, 6 phases (Phase 1-6) — Shipped 2026-01-21
+- v1.1 Polish created: App Store prep, 2 phases (Phase 7-8) — Shipped 2026-01-21
+- v1.2 Premium Polish created: Gestures + graphics, 8 phases (Phase 9-16)
 
 ## Session Continuity
 
 Last session: 2026-01-21
-Status: MVP COMPLETE
-Next action: User testing and App Store preparation
+Status: Milestone v1.2 initialization
+Next action: Plan Phase 9 (Advanced Gestures)
 
 ---
 *Opta Scan — capture anything, optimize everything*

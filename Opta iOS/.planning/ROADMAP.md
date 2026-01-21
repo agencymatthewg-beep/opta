@@ -6,129 +6,226 @@ Opta Scan is a focused iOS app: **capture anything, optimize everything**. Photo
 
 ## Milestones
 
-- **v1.0 MVP** - Phases 1-6 (core feature complete)
-- **v1.1 Polish** - Phases 7-8 (App Store ready)
-- **v2.0 Intelligence** - Phases 9-10 (future enhancements)
+- ✅ **v1.0 MVP** - Phases 1-6 (core feature complete, shipped 2026-01-21)
+- ✅ **v1.1 Polish** - Phases 7-8 (App Store ready, shipped 2026-01-21)
+- 🚧 **v1.2 Premium Polish** - Phases 9-16 (gestures + graphics, in progress)
+- 📋 **v2.0 Intelligence** - Future (smart features, platform expansion)
 
 ## Phases
 
-### v1.0 MVP - Core Feature
+<details>
+<summary>✅ v1.0 MVP (Phases 1-6) - SHIPPED 2026-01-21</summary>
 
 #### Phase 1: App Foundation
 **Goal**: SwiftUI app shell with navigation and design system
 **Research**: Unlikely (standard SwiftUI patterns)
-
-Plans:
-- [x] 01-01: Xcode project + design system foundation (completed 2026-01-20)
-- [ ] 01-02: Navigation structure + core views
+**Status**: Complete
 
 #### Phase 2: Capture Experience
 **Goal**: Photo capture and text prompt input
 **Research**: Likely (camera best practices)
-**Research topics**: AVFoundation vs PhotosUI, image compression, permission handling
-
-Plans:
-- [ ] 2-01: Camera capture view with real-time preview
-- [ ] 2-02: Photo library picker as alternative
-- [ ] 2-03: Text prompt input with suggestions
-- [ ] 2-04: Unified capture interface (toggle photo/text)
+**Status**: Complete
 
 #### Phase 3: Claude Integration
 **Goal**: Connect to Claude API for optimization intelligence
 **Research**: Required (Anthropic iOS SDK patterns)
-**Research topics**: Claude API, vision capabilities, streaming responses, error handling
-
-Plans:
-- [ ] 3-01: Claude API client setup
-- [ ] 3-02: Image-to-optimization prompt engineering
-- [ ] 3-03: Streaming response handling
-- [ ] 3-04: "Optamize" slider (quick/thorough modes)
+**Status**: Complete
 
 #### Phase 4: Question Flow
 **Goal**: Smart clarifying questions before optimization
 **Research**: Unlikely (UI implementation)
-
-Plans:
-- [ ] 4-01: Question card UI component
-- [ ] 4-02: Dynamic question generation from Claude
-- [ ] 4-03: Answer collection and context building
-- [ ] 4-04: Skip/customize question flow
+**Status**: Complete
 
 #### Phase 5: Result Visualization
 **Goal**: Beautiful, scannable optimization results
 **Research**: Likely (visualization patterns)
-**Research topics**: SwiftUI Charts, card layouts, image annotation
-
-Plans:
-- [ ] 5-01: Result card component system
-- [ ] 5-02: Ranking/comparison visualization
-- [ ] 5-03: Image overlay highlights (for menu/product photos)
-- [ ] 5-04: Expandable detail sections
-- [ ] 5-05: Share sheet integration
+**Status**: Complete
 
 #### Phase 6: History & Persistence
 **Goal**: Save and revisit past optimizations
 **Research**: Unlikely (Core Data patterns)
+**Status**: Complete
 
-Plans:
-- [ ] 6-01: Core Data model for scans
-- [ ] 6-02: History list view
-- [ ] 6-03: Search and filter history
-- [ ] 6-04: Delete/manage saved scans
+</details>
 
-### v1.1 Polish - App Store Ready
+<details>
+<summary>✅ v1.1 Polish (Phases 7-8) - SHIPPED 2026-01-21</summary>
 
 #### Phase 7: UX Polish
 **Goal**: Smooth animations, haptics, accessibility
 **Research**: Unlikely
-
-Plans:
-- [ ] 7-01: Transition animations
-- [ ] 7-02: Haptic feedback integration
-- [ ] 7-03: VoiceOver accessibility
-- [ ] 7-04: Dynamic Type support
-- [ ] 7-05: Error states and empty states
+**Status**: Complete
 
 #### Phase 8: Launch Prep
 **Goal**: App Store submission ready
 **Research**: Unlikely
+**Status**: Complete
+
+</details>
+
+### 🚧 v1.2 Premium Polish (In Progress)
+
+**Milestone Goal:** Elevate the app with advanced gestures, Metal shaders, physics animations, and premium visual effects that match the obsidian aesthetic.
+
+#### Phase 9: Advanced Gestures
+**Goal**: Rich gesture interactions throughout the app
+**Depends on**: v1.1 complete
+**Research**: Unlikely (SwiftUI gesture patterns)
+**Plans**: TBD
+
+- Swipe actions on history cards (delete, share, favorite)
+- Pinch-to-zoom on result images
+- Long-press context menus
+- Custom gesture recognizers for unique interactions
+- Haptic feedback coordination with gestures
 
 Plans:
-- [ ] 8-01: App icon and launch screen
-- [ ] 8-02: Onboarding flow
-- [ ] 8-03: Settings screen (API key management if needed)
-- [ ] 8-04: App Store screenshots and metadata
+- [ ] 09-01: TBD (run /gsd:plan-phase 9 to break down)
 
-### v2.0 Intelligence (Future)
+#### Phase 10: Metal Shaders
+**Goal**: GPU-accelerated custom visual effects
+**Depends on**: Phase 9
+**Research**: Likely (Metal shader language, SwiftUI integration)
+**Research topics**: Metal shaders in SwiftUI, CIFilter custom kernels, real-time rendering
 
-#### Phase 9: Smart Features
+- Custom obsidian glass shader with depth
+- Animated gradient effects
+- Real-time blur with tint
+- GPU-accelerated glow effects
+- Shader parameter animations
+
+Plans:
+- [ ] 10-01: TBD
+
+#### Phase 11: Physics Animations
+**Goal**: Natural, physics-based motion throughout
+**Depends on**: Phase 10
+**Research**: Unlikely (SwiftUI animation system)
+**Plans**: TBD
+
+- Spring physics with customizable parameters
+- Momentum-based scrolling effects
+- Rubber-band bounce animations
+- Gravity and velocity-based transitions
+- Interactive drag with physics response
+
+Plans:
+- [ ] 11-01: TBD
+
+#### Phase 12: Visual Effects
+**Goal**: Premium visual polish with blur, vibrancy, particles
+**Depends on**: Phase 11
+**Research**: Likely (particle systems, advanced compositing)
+**Research topics**: SwiftUI particle effects, CAEmitterLayer, advanced blend modes
+
+- Ambient particle effects (subtle floating particles)
+- Dynamic blur intensity based on scroll
+- Vibrancy overlays for glass effects
+- Glow and bloom effects
+- Animated gradients and color shifts
+
+Plans:
+- [ ] 12-01: TBD
+
+#### Phase 13: 3D Transforms
+**Goal**: Depth and perspective effects
+**Depends on**: Phase 12
+**Research**: Unlikely (SwiftUI 3D transforms)
+**Plans**: TBD
+
+- Card flip animations with perspective
+- Parallax scrolling effects
+- 3D rotation on interaction
+- Depth-based shadows
+- Layer separation effects
+
+Plans:
+- [ ] 13-01: TBD
+
+#### Phase 14: Motion Design
+**Goal**: Choreographed micro-interactions and state transitions
+**Depends on**: Phase 13
+**Research**: Unlikely (animation composition)
+**Plans**: TBD
+
+- Staggered list animations with precise timing
+- State transition choreography
+- Loading state micro-interactions
+- Success/error celebration animations
+- Navigation transition polish
+
+Plans:
+- [ ] 14-01: TBD
+
+#### Phase 15: Performance Tuning
+**Goal**: Buttery smooth 120fps on all devices
+**Depends on**: Phase 14
+**Research**: Likely (Instruments, GPU profiling)
+**Research topics**: Xcode Instruments, Metal GPU profiling, animation frame drops
+
+- GPU profiling and bottleneck identification
+- Animation frame rate optimization
+- Memory usage optimization
+- Battery impact assessment
+- Device-specific optimizations (older iPhones)
+
+Plans:
+- [ ] 15-01: TBD
+
+#### Phase 16: Premium Polish Pass
+**Goal**: Final consistency and edge case refinement
+**Depends on**: Phase 15
+**Research**: Unlikely (internal review)
+**Plans**: TBD
+
+- Animation timing consistency audit
+- Visual hierarchy refinement
+- Edge case handling (interruptions, rotations)
+- Accessibility with animations (reduce motion)
+- Final quality assurance pass
+
+Plans:
+- [ ] 16-01: TBD
+
+### 📋 v2.0 Intelligence (Future)
+
+**Milestone Goal:** Enhanced AI features and platform expansion
+
+#### Phase 17+: Smart Features
 **Goal**: Enhanced intelligence features
 
-Plans:
-- [ ] TBD: Saved preferences (dietary restrictions, budget defaults)
-- [ ] TBD: Template prompts for common scenarios
-- [ ] TBD: Result comparison across scans
+- Saved preferences (dietary restrictions, budget defaults)
+- Template prompts for common scenarios
+- Result comparison across scans
 
-#### Phase 10: Platform Expansion
+#### Phase 18+: Platform Expansion
 **Goal**: Broader platform support
 
-Plans:
-- [ ] TBD: iPad optimization
-- [ ] TBD: Widget for recent scans
-- [ ] TBD: Shortcuts integration
+- iPad optimization with multi-column
+- Widget for recent scans
+- Shortcuts integration
+- Watch companion app
 
 ## Progress
 
 | Phase | Milestone | Plans | Status | Completed |
 |-------|-----------|-------|--------|-----------|
-| 1. App Foundation | v1.0 | 1/2 | In Progress | - |
-| 2. Capture Experience | v1.0 | 0/4 | Not Started | - |
-| 3. Claude Integration | v1.0 | 0/4 | Not Started | - |
-| 4. Question Flow | v1.0 | 0/4 | Not Started | - |
-| 5. Result Visualization | v1.0 | 0/5 | Not Started | - |
-| 6. History & Persistence | v1.0 | 0/4 | Not Started | - |
-| 7. UX Polish | v1.1 | 0/5 | Not Started | - |
-| 8. Launch Prep | v1.1 | 0/4 | Not Started | - |
+| 1. App Foundation | v1.0 | ✓ | Complete | 2026-01-21 |
+| 2. Capture Experience | v1.0 | ✓ | Complete | 2026-01-21 |
+| 3. Claude Integration | v1.0 | ✓ | Complete | 2026-01-21 |
+| 4. Question Flow | v1.0 | ✓ | Complete | 2026-01-21 |
+| 5. Result Visualization | v1.0 | ✓ | Complete | 2026-01-21 |
+| 6. History & Persistence | v1.0 | ✓ | Complete | 2026-01-21 |
+| 7. UX Polish | v1.1 | ✓ | Complete | 2026-01-21 |
+| 8. Launch Prep | v1.1 | ✓ | Complete | 2026-01-21 |
+| 9. Advanced Gestures | v1.2 | 0/? | Not started | - |
+| 10. Metal Shaders | v1.2 | 0/? | Not started | - |
+| 11. Physics Animations | v1.2 | 0/? | Not started | - |
+| 12. Visual Effects | v1.2 | 0/? | Not started | - |
+| 13. 3D Transforms | v1.2 | 0/? | Not started | - |
+| 14. Motion Design | v1.2 | 0/? | Not started | - |
+| 15. Performance Tuning | v1.2 | 0/? | Not started | - |
+| 16. Premium Polish Pass | v1.2 | 0/? | Not started | - |
 
 ---
-*Last updated: 2026-01-20 — Phase 1 Plan 01 complete*
+*Last updated: 2026-01-21 — Milestone v1.2 created*
