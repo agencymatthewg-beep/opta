@@ -8,6 +8,7 @@
 
 import UIKit
 import PhotosUI
+import SwiftUI
 
 // MARK: - Image Preprocessor
 
