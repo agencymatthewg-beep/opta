@@ -9,27 +9,27 @@ See: .planning/PROJECT.md (updated 2026-01-20)
 
 ## Current Position
 
-Phase: 18 of 21 (Model Management) - COMPLETE
-Plan: All plans complete
-Status: Phase 18 complete, ready for Phase 19
-Last activity: 2026-01-22 — Phase 18 complete
+Phase: 19 of 21 (Vision Inference) - EXECUTING
+Plan: 19-01 complete, 19-02 ready
+Status: Plan 19-01 executed, proceeding to 19-02
+Last activity: 2026-01-22 — Plan 19-01 complete (vision model generation)
 
-Progress: ██████░░░░ 40% milestone (Phase 18 complete)
+Progress: ██████░░░░ 45% milestone (Plan 19-01 complete)
 
 ### v2.0 Local Intelligence
 | Phase | Name | Status |
 |-------|------|--------|
 | 17 | MLX Foundation | COMPLETE |
 | 18 | Model Management | COMPLETE |
-| 19 | Vision Inference | Not started |
+| 19 | Vision Inference | In Progress (1/2 plans) |
 | 20 | Generation Pipeline | Not started |
 | 21 | Local-First Polish | Not started |
 
-### Phase 18 Plans
+### Phase 19 Plans
 | Plan | Name | Status |
 |------|------|--------|
-| 18-01 | Model Download System | COMPLETE |
-| 18-02 | Storage and Cache Management | COMPLETE |
+| 19-01 | Vision Model Loading | COMPLETE |
+| 19-02 | Image Preprocessing Pipeline | Ready |
 
 ## The One Feature
 
@@ -132,6 +132,10 @@ Example: Menu photo + "most calories for $10" → Visual recommendation
 | 18-02 | Conditional clear button | Only show when models are downloaded |
 | 18-02 | Swipe-to-delete on model cards | Native iOS deletion pattern |
 | 18-02 | Confirmation dialog for clear all | Prevent accidental data loss |
+| 19-01 | Temp file for image input | UserInput.Image uses .url() not .data() |
+| 19-01 | Token ID callback | MLX generate callback receives [Int], decode after |
+| 19-01 | CancellationToken pattern | Thread-safe cross-boundary cancellation |
+| 19-01 | Dynamic GPU cache 100MB/20MB | Based on model size for 11B vs smaller |
 
 ### Deferred Issues
 
@@ -157,8 +161,8 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-22
-Status: Phase 18 (Model Management) complete
-Next action: Begin Phase 19 (Vision Inference)
+Status: Phase 19 Plan 19-01 complete
+Next action: Execute Plan 19-02 (Image Preprocessing Pipeline)
 
 ---
 *Opta Scan — capture anything, optimize everything*
