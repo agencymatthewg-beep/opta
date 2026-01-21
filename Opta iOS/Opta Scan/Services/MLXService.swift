@@ -252,14 +252,26 @@ actor MLXService {
             GPU.clearCache()
         }
 
+        // Get current quality tier for adaptive preprocessing
+        let tier = await MainActor.run { PerformanceManager.shared.effectiveQuality }
+
         // Build UserInput with optional image
         // Note: UserInput.Image uses .url() for file-based images
         // For in-memory data, we save to temp file first using ImagePreprocessor
         var tempImageURL: URL? = nil
         let input: UserInput
 
-        if let image = image, let imageData = image.visionModelData {
-            // Save preprocessed image to temporary file for MLX processing
+        if let image = image, let imageData = ImagePreprocessor.preprocess(image, tier: tier) {
+            // Save quality-adapted preprocessed image to temporary file for MLX processing
+            tempImageURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".jpg")
+            try imageData.write(to: tempImageURL!)
+
+            input = UserInput(
+                prompt: prompt,
+                images: [.url(tempImageURL!)]
+            )
+        } else if let image = image, let imageData = image.visionModelData {
+            // Fallback to default preprocessing if tier-based fails
             tempImageURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".jpg")
             try imageData.write(to: tempImageURL!)
 
