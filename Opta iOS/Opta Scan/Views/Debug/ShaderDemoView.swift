@@ -18,6 +18,7 @@ struct ShaderDemoView: View {
     @State private var saturation: Double = 1.0
     @State private var glassDepth: Double = 0.5
     @State private var glassGlowIntensity: Double = 0.3
+    @State private var isProcessing = false
 
     var body: some View {
         NavigationStack {
@@ -34,6 +35,9 @@ struct ShaderDemoView: View {
 
                     // Glass shader section
                     glassSection
+
+                    // Animated effects section
+                    animatedSection
                 }
                 .padding(OptaDesign.Spacing.lg)
             }
@@ -164,6 +168,114 @@ struct ShaderDemoView: View {
         .frame(maxWidth: .infinity)
         .padding(OptaDesign.Spacing.md)
         .obsidianGlassStyle(level)
+    }
+
+    // MARK: - Animated Effects Section
+
+    private var animatedSection: some View {
+        VStack(alignment: .leading, spacing: OptaDesign.Spacing.md) {
+            Text("Animated Effects")
+                .font(.optaHeadline)
+                .foregroundStyle(Color.optaTextPrimary)
+
+            // Processing glow demo
+            VStack(spacing: OptaDesign.Spacing.sm) {
+                Text("Processing Glow")
+                    .font(.optaCaption)
+                    .foregroundStyle(Color.optaTextSecondary)
+
+                HStack(spacing: OptaDesign.Spacing.md) {
+                    VStack {
+                        Image(systemName: "brain.head.profile")
+                            .font(.system(size: 32))
+                            .foregroundStyle(Color.optaPurple)
+                        Text("Analyzing...")
+                            .font(.optaCaption)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(OptaDesign.Spacing.lg)
+                    .glassContent()
+                    .optaProcessingGlow(isProcessing)
+
+                    Toggle("", isOn: $isProcessing)
+                        .labelsHidden()
+                        .tint(.optaPurple)
+                }
+            }
+
+            // Gradient flow demo
+            TimelineView(.animation(minimumInterval: 1/30)) { timeline in
+                VStack(spacing: OptaDesign.Spacing.sm) {
+                    Text("Gradient Flow")
+                        .font(.optaCaption)
+                        .foregroundStyle(Color.optaTextSecondary)
+
+                    HStack(spacing: OptaDesign.Spacing.md) {
+                        gradientDemoCard(
+                            time: timeline.date.timeIntervalSinceReferenceDate,
+                            colors: (.optaPurple, .optaBlue),
+                            label: "Purple-Blue"
+                        )
+                        gradientDemoCard(
+                            time: timeline.date.timeIntervalSinceReferenceDate,
+                            colors: (.optaGreen, .optaBlue),
+                            label: "Green-Blue"
+                        )
+                    }
+                }
+            }
+
+            // Shimmer demo
+            TimelineView(.animation(minimumInterval: 1/60)) { timeline in
+                VStack(spacing: OptaDesign.Spacing.sm) {
+                    Text("Shimmer Effect")
+                        .font(.optaCaption)
+                        .foregroundStyle(Color.optaTextSecondary)
+
+                    HStack {
+                        Image(systemName: "sparkle")
+                            .font(.system(size: 24))
+                        Text("Premium Feature")
+                            .font(.optaBody)
+                    }
+                    .foregroundStyle(Color.optaTextPrimary)
+                    .frame(maxWidth: .infinity)
+                    .padding(OptaDesign.Spacing.lg)
+                    .glassContent()
+                    .shimmer(
+                        time: timeline.date.timeIntervalSinceReferenceDate,
+                        width: 0.15,
+                        speed: 0.4,
+                        intensity: 0.6
+                    )
+                }
+            }
+        }
+        .padding(OptaDesign.Spacing.lg)
+        .glassContent()
+    }
+
+    private func gradientDemoCard(
+        time: Double,
+        colors: (Color, Color),
+        label: String
+    ) -> some View {
+        VStack {
+            Circle()
+                .fill(colors.0)
+                .frame(width: 24, height: 24)
+            Text(label)
+                .font(.optaLabel)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(OptaDesign.Spacing.md)
+        .glassContent()
+        .gradientFlow(
+            time: time,
+            color1: colors.0,
+            color2: colors.1,
+            speed: 0.3
+        )
     }
 }
 

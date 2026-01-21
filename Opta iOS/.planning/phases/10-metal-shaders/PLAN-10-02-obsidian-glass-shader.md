@@ -4,20 +4,31 @@
 
 **Phase**: 10 - Metal Shaders
 **Plan**: 02 of 03
-**Goal**: Create custom obsidian glass shader with depth-based effects to enhance the existing glass system
+**Goal**: Create custom obsidian glass shader with depth-based effects, thermal-adaptive quality, and accessibility compliance
 
 ## Context
 
 The current glass system uses SwiftUI's built-in materials (`.ultraThinMaterial`, `.thinMaterial`, `.regularMaterial`). This plan creates a custom Metal shader that adds depth, inner glow, and subtle noise texture to create a more premium "obsidian" glass aesthetic.
 
 **Current state**: Glass effects use standard SwiftUI materials
-**Target state**: Custom obsidian glass shader with depth simulation and inner glow
+**Target state**: Custom obsidian glass shader with depth simulation, inner glow, thermal-aware degradation, and VoiceOver accessibility
+
+## Research Compliance
+
+*Based on: Gemini Deep Research/iOS/Distribution/iOS-App-Store-Compliance-wgpu.md*
+
+| Requirement | Implementation | Priority |
+|-------------|----------------|----------|
+| **Accessibility** | Ensure shader views don't break VoiceOver navigation | High |
+| **Thermal Adaptation** | Use ThermalMonitor to simplify effects when hot | High |
+| **Performance** | Limit noise calculations at lower quality tiers | Medium |
 
 ## Dependencies
 
-- Plan 10-01 complete (shader foundation in place)
+- Plan 10-01 complete (shader foundation, ThermalMonitor, Privacy Manifest)
 - `OptaShaders.metal` exists with basic shaders
 - `ShaderEffects.swift` exists with view extensions
+- `ThermalMonitor.swift` provides shader quality levels
 
 ## Tasks
 
@@ -424,6 +435,108 @@ private func glassLevelCard(_ title: String, level: ObsidianGlassLevel) -> some 
    - Effects are smooth (no frame drops)
    - Effects disabled with Reduce Motion on
 
+### Task 6: Accessibility Compliance for Shader Views
+
+Ensure shader-enhanced views remain accessible:
+
+**In `ObsidianGlassModifiers.swift`, add accessibility support:**
+
+```swift
+// MARK: - Accessibility Support for Shader Views
+
+extension View {
+    /// Apply obsidian glass with accessibility compliance
+    /// Ensures VoiceOver can navigate through shader-enhanced content
+    @ViewBuilder
+    func accessibleObsidianGlass(
+        _ level: ObsidianGlassLevel = .content,
+        glowColor: Color = .optaPurple,
+        accessibilityLabel: String? = nil
+    ) -> some View {
+        self
+            .obsidianGlassStyle(level, glowColor: glowColor)
+            // Ensure shader views remain accessible
+            .accessibilityElement(children: .contain)
+            // Don't let shader effects interfere with VoiceOver
+            .accessibilityAddTraits(.isStaticText)
+    }
+}
+```
+
+**Key accessibility requirements:**
+1. Shader views must not break VoiceOver navigation flow
+2. Content within glass containers must remain accessible
+3. Visual effects should not convey information (color alone)
+4. Glass depth should be indicated through other means (shadow, position) not just visual
+
+**Verification**: Enable VoiceOver, navigate through glass containers, verify all interactive elements are reachable
+
+### Task 7: Thermal-Adaptive Glass Quality
+
+Update `ObsidianGlassModifier` to respect thermal state:
+
+```swift
+@available(iOS 17.0, *)
+struct ObsidianGlassModifier: ViewModifier {
+    let level: ObsidianGlassLevel
+    let glowColor: Color
+    @Environment(\.shaderQuality) private var shaderQuality
+
+    func body(content: Content) -> some View {
+        content
+            // Base material layer
+            .background(materialForLevel)
+            .background(Color.optaSurface.opacity(opacityForLevel))
+            // Metal shader enhancement - ONLY if quality allows
+            .modifier(ConditionalObsidianShader(
+                level: level,
+                glowColor: glowColor,
+                quality: shaderQuality
+            ))
+            // Border and shadow (always applied)
+            .overlay(borderOverlay)
+            .clipShape(RoundedRectangle(cornerRadius: level.cornerRadius, style: .continuous))
+            .shadow(color: .black.opacity(shadowOpacityForLevel), radius: shadowRadiusForLevel, y: shadowYForLevel)
+    }
+
+    // ... existing computed properties ...
+}
+
+/// Conditional shader application based on thermal state
+@available(iOS 17.0, *)
+private struct ConditionalObsidianShader: ViewModifier {
+    let level: ObsidianGlassLevel
+    let glowColor: Color
+    let quality: ShaderQuality
+
+    func body(content: Content) -> some View {
+        switch quality {
+        case .high:
+            // Full shader effects
+            content.obsidianGlass(
+                depth: level.depth,
+                glowColor: glowColor,
+                glowIntensity: level.glowIntensity,
+                noiseAmount: 0.5
+            )
+        case .medium:
+            // Simplified: no noise, reduced glow
+            content.obsidianGlass(
+                depth: level.depth,
+                glowColor: glowColor,
+                glowIntensity: level.glowIntensity * 0.5,
+                noiseAmount: 0.0 // Skip noise calculation
+            )
+        case .minimal:
+            // Skip shader entirely, use only material
+            content
+        }
+    }
+}
+```
+
+**Verification**: Simulate thermal states, verify glass simplifies appropriately
+
 ## Acceptance Criteria
 
 - [ ] `obsidianGlass` shader function added to Metal file
@@ -433,12 +546,15 @@ private func glassLevelCard(_ title: String, level: ObsidianGlassLevel) -> some 
 - [ ] Demo view shows interactive glass controls
 - [ ] Performance: No frame drops on glass-heavy views
 - [ ] Accessibility: Shader effects respect Reduce Motion
+- [ ] **Accessibility: VoiceOver navigates through glass containers correctly**
+- [ ] **Thermal: Glass effects degrade gracefully (high → medium → minimal)**
+- [ ] **Thermal: Noise disabled at medium quality, shader skipped at minimal**
 
 ## Estimated Scope
 
 - **Files created**: 1 (ObsidianGlassModifiers.swift)
 - **Files modified**: 2 (OptaShaders.metal, ShaderEffects.swift)
-- **Complexity**: Medium (shader math, geometry reader)
+- **Complexity**: Medium (shader math, geometry reader, thermal integration)
 - **Risk**: Low (additive, existing glass still works)
 
 ## Notes
@@ -447,3 +563,5 @@ private func glassLevelCard(_ title: String, level: ObsidianGlassLevel) -> some 
 - Noise amount should be subtle (< 0.05 visible effect) to avoid graininess
 - Inner glow uses edge distance calculation for smooth falloff
 - GeometryReader is required to pass view size to shader
+- **VoiceOver must work through all glass containers** (per App Store Guideline 2.5)
+- **Thermal degradation prioritizes battery/heat over visual fidelity**

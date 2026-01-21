@@ -139,3 +139,121 @@ float noise(float2 p) {
 
     return result;
 }
+
+// MARK: - Animated Gradient Flow
+// Creates a flowing gradient effect driven by time
+
+[[ stitchable ]] half4 gradientFlow(
+    float2 position,
+    half4 color,
+    float2 size,
+    float time,            // Time in seconds
+    half4 color1,          // Start gradient color
+    half4 color2,          // End gradient color
+    float speed,           // Flow speed
+    float angle            // Flow direction in radians
+) {
+    float2 uv = position / size;
+
+    // Create flowing pattern
+    float2 dir = float2(cos(angle), sin(angle));
+    float flow = dot(uv, dir) + time * speed;
+
+    // Smooth oscillating gradient
+    float t = sin(flow * 3.14159) * 0.5 + 0.5;
+
+    // Mix gradient colors
+    half4 gradientColor = mix(color1, color2, half(t));
+
+    // Blend with original color
+    half4 result = color;
+    result.rgb = mix(result.rgb, gradientColor.rgb * result.a, half(0.3));
+
+    return result;
+}
+
+// MARK: - Pulsing Glow Effect
+// Creates a pulsing glow effect for processing states
+
+[[ stitchable ]] half4 pulsingGlow(
+    float2 position,
+    half4 color,
+    float2 size,
+    float time,
+    half4 glowColor,
+    float pulseSpeed,      // Pulses per second
+    float minIntensity,    // Minimum glow (0-1)
+    float maxIntensity     // Maximum glow (0-1)
+) {
+    float2 uv = position / size;
+
+    // Calculate edge distance for glow
+    float2 edgeDist = min(uv, 1.0 - uv);
+    float edge = min(edgeDist.x, edgeDist.y);
+
+    // Pulsing intensity
+    float pulse = sin(time * pulseSpeed * 6.28318) * 0.5 + 0.5;
+    float intensity = mix(minIntensity, maxIntensity, pulse);
+
+    // Edge glow with pulse
+    float glowFactor = (1.0 - smoothstep(0.0, 0.12, edge)) * intensity;
+
+    // Apply glow
+    half4 result = color;
+    result.rgb = mix(result.rgb, glowColor.rgb * result.a, half(glowFactor));
+
+    return result;
+}
+
+// MARK: - Shimmer Effect
+// Creates a shimmer/shine sweep across the view
+
+[[ stitchable ]] half4 shimmer(
+    float2 position,
+    half4 color,
+    float2 size,
+    float time,
+    float width,           // Shimmer band width (0-1)
+    float speed,           // Sweep speed
+    float intensity        // Shimmer brightness
+) {
+    float2 uv = position / size;
+
+    // Moving shimmer position (loops every cycle)
+    float shimmerPos = fract(time * speed);
+
+    // Distance from shimmer band (diagonal sweep)
+    float diagPos = (uv.x + uv.y) * 0.5;
+    float dist = abs(diagPos - shimmerPos);
+
+    // Soft shimmer band
+    float shimmerFactor = 1.0 - smoothstep(0.0, width, dist);
+    shimmerFactor *= intensity;
+
+    // Add shimmer highlight
+    half4 result = color;
+    result.rgb += half(shimmerFactor * 0.15);
+
+    return result;
+}
+
+// MARK: - Breathing Glow
+// Smooth, slow pulsing for ambient effects
+
+[[ stitchable ]] half4 breathingGlow(
+    float2 position,
+    half4 color,
+    float time,
+    half4 glowColor,
+    float breathSpeed      // Breath cycles per second
+) {
+    // Smooth sine wave breathing
+    float breath = sin(time * breathSpeed * 6.28318) * 0.5 + 0.5;
+    breath = breath * breath; // Ease in-out
+
+    // Subtle color shift
+    half4 result = color;
+    result.rgb = mix(result.rgb, glowColor.rgb * result.a, half(breath * 0.15));
+
+    return result;
+}
