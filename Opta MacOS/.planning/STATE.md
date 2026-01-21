@@ -9,17 +9,17 @@ See: .planning/PROJECT.md (updated 2026-01-15)
 
 ## Current Position
 
-Phase: 70 of 74 (Main Dashboard UI)
-Plan: 70-02 COMPLETE (2 of 2 in phase)
-Status: v9.0 Native macOS App IN PROGRESS - Phase 70 Complete
-Last activity: 2026-01-21 — Completed Phase 70-02 OptaRing Integration
+Phase: 71 of 74 (Settings & Preferences)
+Plan: 71-01 COMPLETE (1 of 1 in phase)
+Status: v9.0 Native macOS App IN PROGRESS - Phase 71 Complete
+Last activity: 2026-01-21 — Completed Phase 71-01 Settings & Preferences
 
 Progress: ██████████ 100% of v5.0 (17 phases complete)
 v5.1 Progress: ██████████ 100% (7 of 7 phases complete)
 v6.0 Progress: ██████████ 100% (All phases complete)
 v7.0 Progress: ██████████ 100% (8 of 8 phases complete)
 v8.0 Progress: ██████████ 100% (10 of 10 phases complete) ✅
-v9.0 Progress: ██░░░░░░░░ 33% (2 of 6 phases complete)
+v9.0 Progress: █████░░░░░ 50% (3 of 6 phases complete)
 
 ### Phase 69 Plans (COMPLETE)
 | Plan | Status | Description |
@@ -32,6 +32,11 @@ v9.0 Progress: ██░░░░░░░░ 33% (2 of 6 phases complete)
 |------|--------|-------------|
 | 70-01 | ✅ Complete | Dashboard UI Components (TelemetryCard, ScoreDisplay, QuickActions, DashboardView) |
 | 70-02 | ✅ Complete | OptaRing Integration (OptaRingView wrapper, page-based navigation) |
+
+### Phase 71 Plans (COMPLETE)
+| Plan | Status | Description |
+|------|--------|-------------|
+| 71-01 | ✅ Complete | Settings Preferences (Profiles, Shortcuts, Themes, Refactored SettingsView) |
 
 ### v5.0 Phase Completion Summary
 | Phase | Name | Status |
@@ -474,6 +479,11 @@ v9.0 Progress: ██░░░░░░░░ 33% (2 of 6 phases complete)
 | 70-02 | Score overlay in ring center | Score displayed inside OptaRing for unified visual hierarchy |
 | 70-02 | Page-based navigation | switch on viewModel.currentPage, Crux drives navigation |
 | 70-02 | App-level coreManager | @State at app level enables shared state across all views |
+| 71-01 | Profile disk persistence | ~/Library/Application Support/Opta/profiles/ for better file management and export |
+| 71-01 | Shortcut conflict detection | Replace/cancel prompt rather than silent override or blocking |
+| 71-01 | Theme presets | 4 themes (Obsidian, Ocean, Forest, Sunset) covering common preferences |
+| 71-01 | Live theme preview | Real-time preview for immediate feedback without global application |
+| 71-01 | Optional coreManager | SettingsView works standalone and integrated with event dispatch |
 
 ### Deferred Issues
 
@@ -503,13 +513,14 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-21
-Stopped at: Phase 70-02 OptaRing Integration COMPLETE
+Stopped at: Phase 71-01 Settings Preferences COMPLETE
 Resume file: None
-Next action: Plan Phase 71 (Settings UI) or continue v9.0 development
+Next action: Plan Phase 72 (Games UI) or continue v9.0 development
 
 **v9.0 Stats:**
 - Phase 69 complete (2 plans) - UniFFI bindings, OptaCoreManager
 - Phase 70 complete (2 plans) - Dashboard UI components, OptaRing integration
-- 5 SwiftUI components created (TelemetryCard, ScoreDisplay, QuickActions, DashboardView, OptaRingView)
-- Page-based navigation system operational
-- Ready for Phase 71 (Settings UI)
+- Phase 71 complete (1 plan) - Settings system with profiles, shortcuts, themes
+- 9 SwiftUI components created (TelemetryCard, ScoreDisplay, QuickActions, DashboardView, OptaRingView, ProfileManagerView, KeyboardShortcutsView, ThemeCustomizationView, SettingsRowView)
+- Complete settings navigation system operational
+- Ready for Phase 72 (Games UI)
