@@ -60,10 +60,11 @@ pub enum GameLauncher {
     Unknown,
 }
 
-impl GameLauncher {
-    /// Parse from string representation
-    pub fn from_str(s: &str) -> Self {
-        match s.to_lowercase().as_str() {
+impl std::str::FromStr for GameLauncher {
+    type Err = std::convert::Infallible;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s.to_lowercase().as_str() {
             "steam" => Self::Steam,
             "epic" | "epic games" | "epicgames" => Self::EpicGames,
             "gog" | "gog galaxy" => Self::GOG,
@@ -74,8 +75,11 @@ impl GameLauncher {
             "playstation" | "psn" => Self::PlayStation,
             "standalone" => Self::Standalone,
             _ => Self::Unknown,
-        }
+        })
     }
+}
+
+impl GameLauncher {
 
     /// Get display name for the launcher
     pub fn display_name(&self) -> &'static str {

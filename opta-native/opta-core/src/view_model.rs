@@ -6,8 +6,7 @@
 
 use serde::{Deserialize, Serialize};
 use crate::model::{
-    Model, Page, TelemetryState, ProcessState, GameState, ScoringState,
-    SettingsState, UiState, ErrorState, LoadingState, RingPhase, RingState,
+    Model, Page, ErrorState, RingPhase, RingState,
     Toast, ModalState, Theme,
 };
 use opta_shared::{ThermalState, MemoryPressure};

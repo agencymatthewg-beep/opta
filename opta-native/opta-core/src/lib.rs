@@ -1,6 +1,9 @@
 //! Opta Core
 //!
 //! Pure Rust business logic for Opta using Crux architecture (Elm Architecture).
+
+// Allow clippy warnings for auto-generated UniFFI code
+#![allow(clippy::empty_line_after_doc_comments)]
 //!
 //! # Architecture
 //!
@@ -102,9 +105,9 @@ impl OptaCore {
     #[uniffi::constructor]
     pub fn new() -> Self {
         Self {
-            app: OptaApp::default(),
+            app: OptaApp,
             model: Mutex::new(Model::default()),
-            capabilities: Capabilities::default(),
+            capabilities: Capabilities,
             ready: Mutex::new(true),
         }
     }
@@ -139,7 +142,7 @@ impl OptaCore {
         let mut model_guard = self.model.lock().unwrap();
 
         // Process the event using the Crux App trait
-        let effects = self.app.update(event, &mut *model_guard, &self.capabilities);
+        let effects = self.app.update(event, &mut model_guard, &self.capabilities);
 
         // Serialize effects to JSON
         effects
@@ -161,7 +164,7 @@ impl OptaCore {
     /// This is the preferred method for the UI layer.
     pub fn get_view_model_json(&self) -> String {
         let model_guard = self.model.lock().unwrap();
-        let view_model = self.app.view(&*model_guard);
+        let view_model = self.app.view(&model_guard);
         serde_json::to_string(&view_model).unwrap_or_else(|e| {
             tracing::error!("Failed to serialize view model: {}", e);
             "{}".to_string()
@@ -174,7 +177,7 @@ impl OptaCore {
     /// Consider using get_view_model_json() instead for UI rendering.
     pub fn get_model_json(&self) -> String {
         let model_guard = self.model.lock().unwrap();
-        serde_json::to_string(&*model_guard).unwrap_or_else(|e| {
+        serde_json::to_string(&model_guard as &Model).unwrap_or_else(|e| {
             tracing::error!("Failed to serialize model: {}", e);
             "{}".to_string()
         })
@@ -188,7 +191,7 @@ impl OptaCore {
     /// # Arguments
     ///
     /// * `slice_name` - One of: "navigation", "telemetry", "processes",
-    ///                  "games", "scoring", "settings", "ui", "loading", "error"
+    ///   "games", "scoring", "settings", "ui", "loading", "error"
     ///
     /// # Returns
     ///

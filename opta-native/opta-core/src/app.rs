@@ -7,8 +7,6 @@
 //! because our architecture returns effects directly rather than using
 //! Crux's capability-based side effect system.
 
-use serde::Serialize;
-
 use crate::event::Event;
 use crate::effect::{Effect, HapticPattern};
 use crate::model::{

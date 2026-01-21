@@ -3,7 +3,7 @@
 //! Pure business logic for calculating Opta Score and game scores.
 
 use opta_shared::{
-    OptaScore, GameScore, ScoreBreakdown, SystemTelemetry,
+    OptaScore, GameScore, ScoreBreakdown,
 };
 
 /// Calculator for Opta Score

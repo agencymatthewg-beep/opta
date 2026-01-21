@@ -43,17 +43,18 @@ pub enum ProcessStatus {
     Zombie,
 }
 
-impl ProcessStatus {
-    /// Parse from string representation
-    pub fn from_str(s: &str) -> Self {
-        match s.to_lowercase().as_str() {
+impl std::str::FromStr for ProcessStatus {
+    type Err = std::convert::Infallible;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s.to_lowercase().as_str() {
             "running" => Self::Running,
             "sleeping" | "sleep" => Self::Sleeping,
             "idle" => Self::Idle,
             "stopped" | "stop" => Self::Stopped,
             "zombie" => Self::Zombie,
             _ => Self::Unknown,
-        }
+        })
     }
 }
 
@@ -72,16 +73,17 @@ pub enum ProcessCategory {
     Unknown,
 }
 
-impl ProcessCategory {
-    /// Parse from string representation
-    pub fn from_str(s: &str) -> Self {
-        match s.to_lowercase().as_str() {
+impl std::str::FromStr for ProcessCategory {
+    type Err = std::convert::Infallible;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s.to_lowercase().as_str() {
             "system" => Self::System,
             "user" => Self::User,
             "background" => Self::Background,
             "safe-to-kill" | "safetokill" => Self::SafeToKill,
             _ => Self::Unknown,
-        }
+        })
     }
 }
 

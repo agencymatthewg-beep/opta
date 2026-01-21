@@ -13,8 +13,6 @@ use opta_shared::{
     OptaError, OptaResult,
 };
 
-use std::ffi::CStr;
-
 // IOKit types and constants
 type kern_return_t = i32;
 type mach_port_t = u32;
@@ -120,7 +118,7 @@ impl IOKitTelemetry {
         // For now, return a placeholder for Apple Silicon
         if let Some(ref cpu_name) = self.cpu_name {
             if cpu_name.contains("Apple M") {
-                let gpu_name = cpu_name.replace("Apple ", "Apple ").clone() + " GPU";
+                let gpu_name = format!("{} GPU", cpu_name);
                 return Ok(GpuInfo {
                     name: gpu_name,
                     vendor: GpuVendor::Apple,
@@ -142,7 +140,7 @@ impl IOKitTelemetry {
         // Get root volume stats
         let stats = Self::get_statfs("/")?;
 
-        let block_size = stats.f_bsize as u64;
+        let block_size = stats.f_bsize;
         let total_bytes = stats.f_blocks * block_size;
         let free_bytes = stats.f_bfree * block_size;
         let used_bytes = total_bytes - free_bytes;
@@ -261,7 +259,7 @@ impl IOKitTelemetry {
     }
 
     /// Get file system stats
-    fn get_statfs(path: &str) -> OptaResult<StatFs> {
+    fn get_statfs(_path: &str) -> OptaResult<StatFs> {
         // Placeholder - would use libc::statfs
         Ok(StatFs {
             f_bsize: 4096,
