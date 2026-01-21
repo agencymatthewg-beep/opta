@@ -12,8 +12,11 @@ struct OptaAppApp: App {
 
     // MARK: - State
 
-    /// Shared render coordinator
+    /// Shared render coordinator for Metal/wgpu rendering
     @StateObject private var renderCoordinator = RenderCoordinator()
+
+    /// Core manager for Crux state management (created at app level for sharing)
+    @State private var coreManager = OptaCoreManager()
 
     /// Application delegate for additional setup
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
@@ -26,9 +29,10 @@ struct OptaAppApp: App {
     var body: some Scene {
         // Main Window
         WindowGroup(id: "main") {
-            ContentView(coordinator: renderCoordinator)
+            mainContentView
                 .frame(minWidth: 800, minHeight: 600)
                 .preferredColorScheme(.dark)
+                .environment(\.optaCoreManager, coreManager)
         }
         .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 1280, height: 800)
@@ -106,6 +110,120 @@ struct OptaAppApp: App {
             MenuBarPopoverView(coordinator: renderCoordinator)
         }
         .menuBarExtraStyle(.window)
+    }
+
+    // MARK: - Main Content View
+
+    /// Page-based navigation driven by coreManager.viewModel.currentPage
+    @ViewBuilder
+    private var mainContentView: some View {
+        NavigationStack {
+            ZStack {
+                // Background
+                Color(hex: "09090B")
+                    .ignoresSafeArea()
+
+                // Page content based on current navigation state
+                switch coreManager.viewModel.currentPage {
+                case .dashboard:
+                    DashboardView(
+                        coreManager: coreManager,
+                        renderCoordinator: renderCoordinator
+                    )
+
+                case .settings:
+                    SettingsView()
+
+                case .games:
+                    placeholderView(
+                        title: "Games",
+                        subtitle: "Coming in Phase 72",
+                        icon: "gamecontroller"
+                    )
+
+                case .gameDetail:
+                    if let gameId = coreManager.viewModel.selectedGameId {
+                        placeholderView(
+                            title: "Game Detail",
+                            subtitle: "Game: \(gameId)",
+                            icon: "gamecontroller.fill"
+                        )
+                    } else {
+                        placeholderView(
+                            title: "Game Detail",
+                            subtitle: "No game selected",
+                            icon: "gamecontroller"
+                        )
+                    }
+
+                case .optimize:
+                    placeholderView(
+                        title: "Optimize",
+                        subtitle: "Coming in Phase 73",
+                        icon: "bolt"
+                    )
+
+                case .processes:
+                    placeholderView(
+                        title: "Processes",
+                        subtitle: "Coming in Phase 74",
+                        icon: "gearshape.2"
+                    )
+
+                case .chess:
+                    placeholderView(
+                        title: "Chess",
+                        subtitle: "Coming in Phase 75",
+                        icon: "crown"
+                    )
+
+                case .aiChat:
+                    placeholderView(
+                        title: "AI Chat",
+                        subtitle: "Coming in Phase 76",
+                        icon: "message"
+                    )
+                }
+            }
+        }
+    }
+
+    /// Placeholder view for pages not yet implemented
+    private func placeholderView(title: String, subtitle: String, icon: String) -> some View {
+        VStack(spacing: 16) {
+            Image(systemName: icon)
+                .font(.system(size: 48))
+                .foregroundStyle(.white.opacity(0.3))
+
+            Text(title)
+                .font(.system(size: 24, weight: .semibold))
+                .foregroundStyle(.white)
+
+            Text(subtitle)
+                .font(.system(size: 14))
+                .foregroundStyle(.white.opacity(0.5))
+
+            // Back to dashboard button
+            Button {
+                coreManager.navigate(to: .dashboard)
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "arrow.left")
+                    Text("Back to Dashboard")
+                }
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.white.opacity(0.1))
+                )
+            }
+            .buttonStyle(.plain)
+            .padding(.top, 8)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
