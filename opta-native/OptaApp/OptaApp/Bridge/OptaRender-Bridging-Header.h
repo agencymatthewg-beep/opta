@@ -2,7 +2,7 @@
 //  OptaRender-Bridging-Header.h
 //  OptaApp
 //
-//  Bridging header for Rust render engine FFI
+//  Bridging header for Rust FFI (render engine and core)
 //
 
 #ifndef OptaRender_Bridging_Header_h
@@ -10,6 +10,9 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+
+// Include UniFFI-generated header for opta-core
+#include "../Generated/opta_coreFFI.h"
 
 #ifdef __cplusplus
 extern "C" {

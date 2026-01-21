@@ -7,6 +7,7 @@
 
 import Foundation
 import ServiceManagement
+import AppKit
 
 // MARK: - Launch At Login Manager
 

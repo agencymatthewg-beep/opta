@@ -110,10 +110,11 @@ if [ -n "$HEADER_FILE" ] && [ -f "$HEADER_FILE" ]; then
     echo "Copied: $GENERATED_DIR/opta_coreFFI.h"
 fi
 
-# Copy modulemap if it exists
+# Copy and fix modulemap if it exists
 if [ -f "$OUTPUT_DIR/optaFFI.modulemap" ]; then
-    cp "$OUTPUT_DIR/optaFFI.modulemap" "$GENERATED_DIR/opta_coreFFI.modulemap"
-    echo "Copied: $GENERATED_DIR/opta_coreFFI.modulemap"
+    # Fix header reference to match our renamed file
+    sed 's/header "optaFFI.h"/header "opta_coreFFI.h"/' "$OUTPUT_DIR/optaFFI.modulemap" > "$GENERATED_DIR/opta_coreFFI.modulemap"
+    echo "Copied: $GENERATED_DIR/opta_coreFFI.modulemap (with header path fixed)"
 elif [ -f "$OUTPUT_DIR/opta_coreFFI.modulemap" ]; then
     cp "$OUTPUT_DIR/opta_coreFFI.modulemap" "$GENERATED_DIR/opta_coreFFI.modulemap"
     echo "Copied: $GENERATED_DIR/opta_coreFFI.modulemap"

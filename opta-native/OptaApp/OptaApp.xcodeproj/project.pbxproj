@@ -1,0 +1,464 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		5501A0012C5D000100000001 /* OptaAppApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501A0002C5D000100000001 /* OptaAppApp.swift */; };
+		5501A0032C5D000100000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501A0022C5D000100000002 /* ContentView.swift */; };
+		5501A0052C5D000100000003 /* RustBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501A0042C5D000100000003 /* RustBridge.swift */; };
+		5501A0072C5D000100000004 /* MetalRenderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501A0062C5D000100000004 /* MetalRenderView.swift */; };
+		5501A0092C5D000100000005 /* RenderCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501A0082C5D000100000005 /* RenderCoordinator.swift */; };
+		5501A00B2C5D000100000006 /* DisplayLinkController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501A00A2C5D000100000006 /* DisplayLinkController.swift */; };
+		5501A00D2C5D000100000007 /* HapticsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501A00C2C5D000100000007 /* HapticsManager.swift */; };
+		5501A00F2C5D000100000008 /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501A00E2C5D000100000008 /* MenuBarView.swift */; };
+		5501A0112C5D000100000009 /* MenuBarIcon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501A0102C5D000100000009 /* MenuBarIcon.swift */; };
+		5501A0132C5D00010000000A /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501A0122C5D00010000000A /* SettingsView.swift */; };
+		5501A0152C5D00010000000B /* LaunchAtLogin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501A0142C5D00010000000B /* LaunchAtLogin.swift */; };
+		5501A0172C5D00010000000C /* OptaCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501A0162C5D00010000000C /* OptaCore.swift */; };
+		5501A0192C5D00010000000D /* libopta_render.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5501A0182C5D00010000000D /* libopta_render.a */; };
+		5501A01B2C5D000100000099 /* libopta_core.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5501A01A2C5D000100000099 /* libopta_core.a */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		5501A0002C5D000100000001 /* OptaAppApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptaAppApp.swift; sourceTree = "<group>"; };
+		5501A0022C5D000100000002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		5501A0042C5D000100000003 /* RustBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RustBridge.swift; sourceTree = "<group>"; };
+		5501A0062C5D000100000004 /* MetalRenderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetalRenderView.swift; sourceTree = "<group>"; };
+		5501A0082C5D000100000005 /* RenderCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenderCoordinator.swift; sourceTree = "<group>"; };
+		5501A00A2C5D000100000006 /* DisplayLinkController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayLinkController.swift; sourceTree = "<group>"; };
+		5501A00C2C5D000100000007 /* HapticsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticsManager.swift; sourceTree = "<group>"; };
+		5501A00E2C5D000100000008 /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
+		5501A0102C5D000100000009 /* MenuBarIcon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarIcon.swift; sourceTree = "<group>"; };
+		5501A0122C5D00010000000A /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		5501A0142C5D00010000000B /* LaunchAtLogin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAtLogin.swift; sourceTree = "<group>"; };
+		5501A0162C5D00010000000C /* OptaCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptaCore.swift; sourceTree = "<group>"; };
+		5501A0182C5D00010000000D /* libopta_render.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libopta_render.a; sourceTree = "<group>"; };
+		5501A01A2C5D000100000099 /* libopta_core.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libopta_core.a; sourceTree = "<group>"; };
+		5501A01A2C5D00010000000E /* OptaRender-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "OptaRender-Bridging-Header.h"; sourceTree = "<group>"; };
+		5501A01C2C5D00010000000F /* opta_coreFFI.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = opta_coreFFI.h; sourceTree = "<group>"; };
+		5501A01E2C5D000100000010 /* opta_coreFFI.modulemap */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.module-map"; path = opta_coreFFI.modulemap; sourceTree = "<group>"; };
+		5501A0202C5D000100000011 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		5501A0222C5D000100000012 /* OptaApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = OptaApp.entitlements; sourceTree = "<group>"; };
+		5501A0FF2C5D000100000099 /* OptaApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OptaApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		5501A1002C5D00010000009A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5501A0192C5D00010000000D /* libopta_render.a in Frameworks */,
+				5501A01B2C5D000100000099 /* libopta_core.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		5501A1012C5D00010000009B = {
+			isa = PBXGroup;
+			children = (
+				5501A1022C5D00010000009C /* OptaApp */,
+				5501A1032C5D00010000009D /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		5501A1022C5D00010000009C /* OptaApp */ = {
+			isa = PBXGroup;
+			children = (
+				5501A0002C5D000100000001 /* OptaAppApp.swift */,
+				5501A0022C5D000100000002 /* ContentView.swift */,
+				5501A0202C5D000100000011 /* Info.plist */,
+				5501A0222C5D000100000012 /* OptaApp.entitlements */,
+				5501A1042C5D00010000009E /* Bridge */,
+				5501A1052C5D00010000009F /* Views */,
+				5501A1062C5D0001000000A0 /* Rendering */,
+				5501A1072C5D0001000000A1 /* Haptics */,
+				5501A1082C5D0001000000A2 /* MenuBar */,
+				5501A1092C5D0001000000A3 /* Utilities */,
+				5501A10A2C5D0001000000A4 /* Generated */,
+				5501A10B2C5D0001000000A5 /* Libraries */,
+			);
+			path = OptaApp;
+			sourceTree = "<group>";
+		};
+		5501A1032C5D00010000009D /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				5501A0FF2C5D000100000099 /* OptaApp.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		5501A1042C5D00010000009E /* Bridge */ = {
+			isa = PBXGroup;
+			children = (
+				5501A0042C5D000100000003 /* RustBridge.swift */,
+				5501A01A2C5D00010000000E /* OptaRender-Bridging-Header.h */,
+			);
+			path = Bridge;
+			sourceTree = "<group>";
+		};
+		5501A1052C5D00010000009F /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				5501A0062C5D000100000004 /* MetalRenderView.swift */,
+				5501A0122C5D00010000000A /* SettingsView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		5501A1062C5D0001000000A0 /* Rendering */ = {
+			isa = PBXGroup;
+			children = (
+				5501A0082C5D000100000005 /* RenderCoordinator.swift */,
+				5501A00A2C5D000100000006 /* DisplayLinkController.swift */,
+			);
+			path = Rendering;
+			sourceTree = "<group>";
+		};
+		5501A1072C5D0001000000A1 /* Haptics */ = {
+			isa = PBXGroup;
+			children = (
+				5501A00C2C5D000100000007 /* HapticsManager.swift */,
+			);
+			path = Haptics;
+			sourceTree = "<group>";
+		};
+		5501A1082C5D0001000000A2 /* MenuBar */ = {
+			isa = PBXGroup;
+			children = (
+				5501A00E2C5D000100000008 /* MenuBarView.swift */,
+				5501A0102C5D000100000009 /* MenuBarIcon.swift */,
+			);
+			path = MenuBar;
+			sourceTree = "<group>";
+		};
+		5501A1092C5D0001000000A3 /* Utilities */ = {
+			isa = PBXGroup;
+			children = (
+				5501A0142C5D00010000000B /* LaunchAtLogin.swift */,
+			);
+			path = Utilities;
+			sourceTree = "<group>";
+		};
+		5501A10A2C5D0001000000A4 /* Generated */ = {
+			isa = PBXGroup;
+			children = (
+				5501A0162C5D00010000000C /* OptaCore.swift */,
+				5501A01C2C5D00010000000F /* opta_coreFFI.h */,
+				5501A01E2C5D000100000010 /* opta_coreFFI.modulemap */,
+			);
+			path = Generated;
+			sourceTree = "<group>";
+		};
+		5501A10B2C5D0001000000A5 /* Libraries */ = {
+			isa = PBXGroup;
+			children = (
+				5501A0182C5D00010000000D /* libopta_render.a */,
+				5501A01A2C5D000100000099 /* libopta_core.a */,
+			);
+			path = Libraries;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		5501A10C2C5D0001000000A6 /* OptaApp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5501A10D2C5D0001000000A7 /* Build configuration list for PBXNativeTarget "OptaApp" */;
+			buildPhases = (
+				5501A10E2C5D0001000000A8 /* Sources */,
+				5501A1002C5D00010000009A /* Frameworks */,
+				5501A10F2C5D0001000000A9 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = OptaApp;
+			productName = OptaApp;
+			productReference = 5501A0FF2C5D000100000099 /* OptaApp.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		5501A1102C5D0001000000AA /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1540;
+				LastUpgradeCheck = 1540;
+				TargetAttributes = {
+					5501A10C2C5D0001000000A6 = {
+						CreatedOnToolsVersion = 15.4;
+					};
+				};
+			};
+			buildConfigurationList = 5501A1112C5D0001000000AB /* Build configuration list for PBXProject "OptaApp" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 5501A1012C5D00010000009B;
+			productRefGroup = 5501A1032C5D00010000009D /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				5501A10C2C5D0001000000A6 /* OptaApp */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		5501A10F2C5D0001000000A9 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		5501A10E2C5D0001000000A8 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5501A0012C5D000100000001 /* OptaAppApp.swift in Sources */,
+				5501A0032C5D000100000002 /* ContentView.swift in Sources */,
+				5501A0052C5D000100000003 /* RustBridge.swift in Sources */,
+				5501A0072C5D000100000004 /* MetalRenderView.swift in Sources */,
+				5501A0092C5D000100000005 /* RenderCoordinator.swift in Sources */,
+				5501A00B2C5D000100000006 /* DisplayLinkController.swift in Sources */,
+				5501A00D2C5D000100000007 /* HapticsManager.swift in Sources */,
+				5501A00F2C5D000100000008 /* MenuBarView.swift in Sources */,
+				5501A0112C5D000100000009 /* MenuBarIcon.swift in Sources */,
+				5501A0132C5D00010000000A /* SettingsView.swift in Sources */,
+				5501A0152C5D00010000000B /* LaunchAtLogin.swift in Sources */,
+				5501A0172C5D00010000000C /* OptaCore.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		5501A1122C5D0001000000AC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		5501A1132C5D0001000000AD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		5501A1142C5D0001000000AE /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = OptaApp/OptaApp.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = OptaApp/Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright 2024 Opta. All rights reserved.";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/OptaApp/Libraries",
+				);
+				MARKETING_VERSION = 9.0.0;
+				OTHER_LDFLAGS = "-lresolv";
+				PRODUCT_BUNDLE_IDENTIFIER = com.opta.optimizer;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "OptaApp/Bridge/OptaRender-Bridging-Header.h";
+				SWIFT_VERSION = 5.0;
+				SWIFT_INCLUDE_PATHS = "$(PROJECT_DIR)/OptaApp/Generated";
+			};
+			name = Debug;
+		};
+		5501A1152C5D0001000000AF /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = OptaApp/OptaApp.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = OptaApp/Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright 2024 Opta. All rights reserved.";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/OptaApp/Libraries",
+				);
+				MARKETING_VERSION = 9.0.0;
+				OTHER_LDFLAGS = "-lresolv";
+				PRODUCT_BUNDLE_IDENTIFIER = com.opta.optimizer;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "OptaApp/Bridge/OptaRender-Bridging-Header.h";
+				SWIFT_VERSION = 5.0;
+				SWIFT_INCLUDE_PATHS = "$(PROJECT_DIR)/OptaApp/Generated";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		5501A10D2C5D0001000000A7 /* Build configuration list for PBXNativeTarget "OptaApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5501A1142C5D0001000000AE /* Debug */,
+				5501A1152C5D0001000000AF /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		5501A1112C5D0001000000AB /* Build configuration list for PBXProject "OptaApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5501A1122C5D0001000000AC /* Debug */,
+				5501A1132C5D0001000000AD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 5501A1102C5D0001000000AA /* Project object */;
+}
