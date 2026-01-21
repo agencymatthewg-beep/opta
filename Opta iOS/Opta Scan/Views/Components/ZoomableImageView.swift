@@ -108,9 +108,42 @@ struct ZoomableImageView: View {
         .onDisappear {
             resetZoomState()
         }
-        .accessibilityLabel("Zoomable image")
+        .accessibilityLabel(isZoomed ? "Zoomable image, zoomed in" : "Zoomable image")
         .accessibilityHint("Double tap to zoom. Pinch to zoom in or out. Drag to pan when zoomed.")
         .accessibilityAddTraits(.isImage)
+        .accessibilityZoomAction { action in
+            handleAccessibilityZoom(direction: action.direction)
+        }
+        .accessibilityActions {
+            Button(isZoomed ? "Reset zoom" : "Zoom in") {
+                handleDoubleTap()
+            }
+        }
+    }
+
+    // MARK: - Accessibility
+
+    /// Handle zoom action from VoiceOver
+    private func handleAccessibilityZoom(direction: AccessibilityZoomGestureAction.Direction) {
+        OptaHaptics.shared.tap()
+
+        withAnimation(.optaSpring) {
+            switch direction {
+            case .zoomIn:
+                // Increase scale by 0.5, max 4.0
+                finalScale = min(Layout.maxScale, finalScale + 0.5)
+            case .zoomOut:
+                // Decrease scale by 0.5, min 1.0
+                finalScale = max(Layout.minScale, finalScale - 0.5)
+                // Reset offset if zoomed out to 1.0
+                if finalScale <= Layout.minScale {
+                    finalOffset = .zero
+                    offset = .zero
+                }
+            @unknown default:
+                break
+            }
+        }
     }
 
     // MARK: - Gestures

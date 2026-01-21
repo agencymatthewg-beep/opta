@@ -157,14 +157,14 @@ struct SwipeActionsModifier: ViewModifier {
         }
         .accessibilityElement(children: .contain)
         .accessibilityActions {
-            // Add accessibility actions for VoiceOver
+            // Add accessibility actions for VoiceOver with descriptive labels
             ForEach(leadingActions) { action in
-                Button(action.icon) {
+                Button(accessibilityLabelForAction(action)) {
                     action.action()
                 }
             }
             ForEach(trailingActions) { action in
-                Button(action.icon) {
+                Button(accessibilityLabelForAction(action), role: action.isDestructive ? .destructive : nil) {
                     action.action()
                 }
             }
@@ -184,6 +184,30 @@ struct SwipeActionsModifier: ViewModifier {
     }
 
     // MARK: - Helper Methods
+
+    /// Generate an accessible label from an action's SF Symbol icon name
+    private func accessibilityLabelForAction(_ action: SwipeAction) -> String {
+        // Map common SF Symbol names to readable labels
+        let iconMappings: [String: String] = [
+            "star": "Add to favorites",
+            "star.fill": "Remove from favorites",
+            "star.slash": "Remove from favorites",
+            "trash": "Delete",
+            "trash.fill": "Delete",
+            "square.and.arrow.up": "Share",
+            "doc.on.doc": "Duplicate",
+            "archivebox": "Archive",
+            "archivebox.fill": "Archive",
+            "pin": "Pin",
+            "pin.fill": "Unpin",
+            "flag": "Flag",
+            "flag.fill": "Unflag",
+            "bell": "Notifications",
+            "bell.slash": "Mute notifications"
+        ]
+
+        return iconMappings[action.icon] ?? action.icon.replacingOccurrences(of: ".", with: " ")
+    }
 
     /// Reset the swipe state to initial values
     private func resetSwipeState() {
