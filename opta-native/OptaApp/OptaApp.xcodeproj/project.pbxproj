@@ -21,6 +21,7 @@
 		5501A0172C5D00010000000C /* OptaCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501A0162C5D00010000000C /* OptaCore.swift */; };
 		5501A0192C5D00010000000D /* libopta_render.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5501A0182C5D00010000000D /* libopta_render.a */; };
 		5501A01B2C5D000100000099 /* libopta_core.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5501A01A2C5D000100000099 /* libopta_core.a */; };
+		5501A0242C5D0001000000B0 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5501A0232C5D0001000000B0 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -43,6 +44,7 @@
 		5501A01E2C5D000100000010 /* opta_coreFFI.modulemap */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.module-map"; path = opta_coreFFI.modulemap; sourceTree = "<group>"; };
 		5501A0202C5D000100000011 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		5501A0222C5D000100000012 /* OptaApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = OptaApp.entitlements; sourceTree = "<group>"; };
+		5501A0232C5D0001000000B0 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		5501A0FF2C5D000100000099 /* OptaApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OptaApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -72,6 +74,7 @@
 			children = (
 				5501A0002C5D000100000001 /* OptaAppApp.swift */,
 				5501A0022C5D000100000002 /* ContentView.swift */,
+				5501A0232C5D0001000000B0 /* Assets.xcassets */,
 				5501A0202C5D000100000011 /* Info.plist */,
 				5501A0222C5D000100000012 /* OptaApp.entitlements */,
 				5501A1042C5D00010000009E /* Bridge */,
@@ -223,6 +226,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5501A0242C5D0001000000B0 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
