@@ -358,6 +358,51 @@ struct SwipeActionsModifier: ViewModifier {
     }
 }
 
+// MARK: - Long Press Haptic Modifier
+
+/// ViewModifier that adds haptic-enhanced long press gesture with visual feedback
+struct LongPressHapticModifier: ViewModifier {
+
+    // MARK: - Properties
+
+    let minimumDuration: Double
+    let onPressed: () -> Void
+
+    // MARK: - State
+
+    @State private var isPressing = false
+
+    // MARK: - Constants
+
+    private enum Layout {
+        static let pressedScale: CGFloat = 0.97
+        static let normalScale: CGFloat = 1.0
+    }
+
+    // MARK: - Body
+
+    func body(content: Content) -> some View {
+        content
+            .scaleEffect(isPressing ? Layout.pressedScale : Layout.normalScale)
+            .animation(.optaSpring, value: isPressing)
+            .onLongPressGesture(
+                minimumDuration: minimumDuration,
+                pressing: { pressing in
+                    isPressing = pressing
+                    if pressing {
+                        // Initial tap haptic when press begins
+                        OptaHaptics.shared.tap()
+                    }
+                },
+                perform: {
+                    // Button press haptic when action triggers
+                    OptaHaptics.shared.buttonPress()
+                    onPressed()
+                }
+            )
+    }
+}
+
 // MARK: - View Extension
 
 extension View {
@@ -372,6 +417,20 @@ extension View {
         modifier(SwipeActionsModifier(
             leadingActions: leading,
             trailingActions: trailing
+        ))
+    }
+
+    /// Add long press gesture with haptic feedback and visual press state
+    /// - Parameters:
+    ///   - duration: Minimum press duration in seconds (default: 0.5)
+    ///   - action: Closure to execute when long press completes
+    func longPressWithHaptic(
+        duration: Double = 0.5,
+        action: @escaping () -> Void
+    ) -> some View {
+        modifier(LongPressHapticModifier(
+            minimumDuration: duration,
+            onPressed: action
         ))
     }
 }
