@@ -237,6 +237,21 @@ actor MLXService {
             throw MLXError.modelNotLoaded
         }
 
+        // Set GPU cache limit based on model size
+        // 11B Vision model needs more cache than smaller models
+        let cacheLimit: Int
+        if loadedModelConfig?.id == OptaModelConfiguration.llama32_11B_Vision.id {
+            cacheLimit = 100 * 1024 * 1024  // 100MB for 11B
+        } else {
+            cacheLimit = 20 * 1024 * 1024   // 20MB for smaller models
+        }
+        GPU.set(cacheLimit: cacheLimit)
+
+        // Ensure cache is cleared after generation
+        defer {
+            GPU.clearCache()
+        }
+
         // Build UserInput with optional image
         let input: UserInput
         if let image = image, let imageData = image.jpegData(compressionQuality: 0.9) {
