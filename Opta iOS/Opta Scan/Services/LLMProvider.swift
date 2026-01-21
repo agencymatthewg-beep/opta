@@ -91,6 +91,35 @@ final class LLMServiceManager {
         isProcessing = false
     }
 
+    // MARK: - Retry Support
+
+    /// Execute an operation with automatic retry for recoverable errors
+    /// - Parameters:
+    ///   - maxAttempts: Maximum number of attempts (default 2)
+    ///   - operation: The async throwing operation to execute
+    /// - Returns: The result of the operation
+    private func withRetry<T>(
+        maxAttempts: Int = 2,
+        operation: () async throws -> T
+    ) async throws -> T {
+        var lastError: Error?
+
+        for attempt in 1...maxAttempts {
+            do {
+                return try await operation()
+            } catch let error as MLXError where error.isRecoverable && attempt < maxAttempts {
+                lastError = error
+                // Brief pause before retry (0.5 seconds)
+                try await Task.sleep(nanoseconds: 500_000_000)
+                continue
+            } catch {
+                throw error
+            }
+        }
+
+        throw lastError ?? LLMServiceError.localModelNotLoaded
+    }
+
     // MARK: - Analysis Methods
 
     func analyzeImage(_ image: UIImage, prompt: String, depth: OptimizationDepth) async throws -> AnalysisResult {
