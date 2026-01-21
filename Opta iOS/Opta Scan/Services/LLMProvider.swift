@@ -2,41 +2,12 @@
 //  LLMProvider.swift
 //  Opta Scan
 //
-//  Protocol defining LLM provider interface for multi-provider support
-//  Enables both cloud (Claude) and local (MLX/llama.cpp) inference
+//  Local-only LLM service using MLX for on-device inference
+//  All processing happens locally - no cloud APIs
 //
 
 import Foundation
 import UIKit
-
-// MARK: - LLM Provider Protocol
-
-/// Protocol for LLM providers (cloud or local)
-protocol LLMProvider: Actor {
-    /// Provider identifier
-    var id: LLMProviderType { get }
-
-    /// Display name
-    var name: String { get }
-
-    /// Whether the provider is currently available
-    var isAvailable: Bool { get async }
-
-    /// Whether the provider requires an API key
-    var requiresAPIKey: Bool { get }
-
-    /// Whether the provider supports vision (image analysis)
-    var supportsVision: Bool { get }
-
-    /// Analyze an image with a prompt
-    func analyzeImage(_ image: UIImage, prompt: String, depth: OptimizationDepth) async throws -> AnalysisResult
-
-    /// Analyze text-only prompt
-    func analyzeText(prompt: String, depth: OptimizationDepth) async throws -> AnalysisResult
-
-    /// Continue with user answers
-    func continueWithAnswers(_ answers: [String: String], context: AnalysisResult) async throws -> OptimizationResult
-}
 
 // MARK: - Provider Type
 
@@ -61,7 +32,7 @@ enum LLMProviderType: String, CaseIterable, Identifiable, Codable {
 
 // MARK: - LLM Service Manager
 
-/// Manages multiple LLM providers and routes requests
+/// Manages on-device LLM inference (local-only)
 @MainActor
 @Observable
 final class LLMServiceManager {
@@ -69,73 +40,64 @@ final class LLMServiceManager {
 
     // MARK: - State
 
-    private(set) var currentProvider: LLMProviderType = .claude
     private(set) var isProcessing = false
     private(set) var error: Error?
 
-    // MARK: - Providers
+    // MARK: - Provider (Local Only)
 
-    private var providers: [LLMProviderType: any LLMProvider] = [:]
+    private let localService = MLXService()
 
     // MARK: - Initialization
 
     private init() {
-        // Load preferred provider from UserDefaults (Keychain used for API keys only)
-        if let saved = UserDefaults.standard.string(forKey: "opta.preferredProvider"),
-           let type = LLMProviderType(rawValue: saved) {
-            currentProvider = type
-        }
-    }
-
-    // MARK: - Provider Registration
-
-    nonisolated func register(_ provider: any LLMProvider) async {
-        let providerId = await provider.id
-        await MainActor.run {
-            providers[providerId] = provider
-        }
-    }
-
-    func setCurrentProvider(_ type: LLMProviderType) {
-        currentProvider = type
-        UserDefaults.standard.set(type.rawValue, forKey: "opta.preferredProvider")
+        // No provider preference needed - always local
     }
 
     // MARK: - Provider Access
 
-    func provider(for type: LLMProviderType) -> (any LLMProvider)? {
-        providers[type]
+    var provider: MLXService {
+        localService
     }
 
-    var activeProvider: (any LLMProvider)? {
-        providers[currentProvider]
+    var isAvailable: Bool {
+        get async {
+            await localService.isAvailable
+        }
     }
 
-    // MARK: - Availability
+    var supportsVision: Bool {
+        get async {
+            await localService.supportsVision
+        }
+    }
 
-    func isProviderAvailable(_ type: LLMProviderType) async -> Bool {
-        guard let provider = providers[type] else { return false }
-        return await provider.isAvailable
+    // MARK: - Model Management
+
+    func loadModel(_ config: OptaModelConfiguration) async throws {
+        try await localService.loadModel(config)
+    }
+
+    func unloadModel() async {
+        await localService.unloadModel()
     }
 
     // MARK: - Analysis Methods
 
     func analyzeImage(_ image: UIImage, prompt: String, depth: OptimizationDepth) async throws -> AnalysisResult {
-        guard let provider = activeProvider else {
-            throw LLMServiceError.noProviderConfigured
+        guard await localService.isAvailable else {
+            throw LLMServiceError.localModelNotLoaded
         }
 
-        guard await provider.supportsVision else {
+        guard await localService.supportsVision else {
             throw LLMServiceError.visionNotSupported
         }
 
         isProcessing = true
         error = nil
-
         defer { isProcessing = false }
 
         do {
-            return try await provider.analyzeImage(image, prompt: prompt, depth: depth)
+            return try await localService.analyzeImage(image, prompt: prompt, depth: depth)
         } catch {
             self.error = error
             throw error
@@ -143,17 +105,16 @@ final class LLMServiceManager {
     }
 
     func analyzeText(prompt: String, depth: OptimizationDepth) async throws -> AnalysisResult {
-        guard let provider = activeProvider else {
-            throw LLMServiceError.noProviderConfigured
+        guard await localService.isAvailable else {
+            throw LLMServiceError.localModelNotLoaded
         }
 
         isProcessing = true
         error = nil
-
         defer { isProcessing = false }
 
         do {
-            return try await provider.analyzeText(prompt: prompt, depth: depth)
+            return try await localService.analyzeText(prompt: prompt, depth: depth)
         } catch {
             self.error = error
             throw error
@@ -161,17 +122,16 @@ final class LLMServiceManager {
     }
 
     func continueWithAnswers(_ answers: [String: String], context: AnalysisResult) async throws -> OptimizationResult {
-        guard let provider = activeProvider else {
-            throw LLMServiceError.noProviderConfigured
+        guard await localService.isAvailable else {
+            throw LLMServiceError.localModelNotLoaded
         }
 
         isProcessing = true
         error = nil
-
         defer { isProcessing = false }
 
         do {
-            return try await provider.continueWithAnswers(answers, context: context)
+            return try await localService.continueWithAnswers(answers, context: context)
         } catch {
             self.error = error
             throw error
@@ -179,24 +139,78 @@ final class LLMServiceManager {
     }
 }
 
-// MARK: - LLM Service Error
+// MARK: - Simplified Errors
 
 enum LLMServiceError: LocalizedError {
-    case noProviderConfigured
-    case providerNotAvailable
-    case visionNotSupported
     case localModelNotLoaded
+    case visionNotSupported
 
     var errorDescription: String? {
         switch self {
-        case .noProviderConfigured:
-            return "No LLM provider configured. Please select a provider in Settings."
-        case .providerNotAvailable:
-            return "The selected provider is not available."
-        case .visionNotSupported:
-            return "The selected provider does not support image analysis."
         case .localModelNotLoaded:
-            return "Local model is not loaded. Please download a model in Settings."
+            return "Model not loaded. Download a model in Settings."
+        case .visionNotSupported:
+            return "Vision model required for image analysis."
         }
     }
+}
+
+// MARK: - Optimization Depth
+
+/// Defines the analysis depth for optimization queries
+enum OptimizationDepth: String, CaseIterable {
+    case quick = "Quick"
+    case thorough = "Thorough"
+
+    var maxTokens: Int {
+        switch self {
+        case .quick: return 1024
+        case .thorough: return 4096
+        }
+    }
+
+    var description: String {
+        switch self {
+        case .quick: return "Fast analysis, key factors only"
+        case .thorough: return "Deep analysis, all factors considered"
+        }
+    }
+}
+
+// MARK: - Result Models
+
+struct AnalysisResult {
+    let understanding: String
+    let questions: [OptimizationQuestion]
+    let rawResponse: String
+}
+
+struct OptimizationQuestion: Identifiable {
+    let id: String
+    let text: String
+    let type: QuestionType
+    let options: [String]?
+    let placeholder: String?
+    let min: Double?
+    let max: Double?
+    let defaultValue: Double?
+}
+
+enum QuestionType: String {
+    case singleChoice = "single_choice"
+    case multiChoice = "multi_choice"
+    case text
+    case slider
+}
+
+struct OptimizationResult {
+    let markdown: String
+    let highlights: [String]
+    let rankings: [RankingItem]?
+}
+
+struct RankingItem: Codable {
+    let rank: Int
+    let title: String
+    let description: String?
 }
