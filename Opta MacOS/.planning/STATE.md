@@ -9,17 +9,17 @@ See: .planning/PROJECT.md (updated 2026-01-15)
 
 ## Current Position
 
-Phase: 72 of 74 (Games Library)
-Plan: 72-01 COMPLETE (1 of 1 in phase)
-Status: v9.0 Native macOS App IN PROGRESS - Phase 72 Complete
-Last activity: 2026-01-21 — Completed Phase 72-01 Games Library
+Phase: 73 of 74 (Menu Bar Agent Polish)
+Plan: 73-01 COMPLETE (1 of 1 in phase)
+Status: v9.0 Native macOS App IN PROGRESS - Phase 73 Complete
+Last activity: 2026-01-21 — Completed Phase 73-01 (Menu Bar Agent)
 
 Progress: ██████████ 100% of v5.0 (17 phases complete)
 v5.1 Progress: ██████████ 100% (7 of 7 phases complete)
 v6.0 Progress: ██████████ 100% (All phases complete)
 v7.0 Progress: ██████████ 100% (8 of 8 phases complete)
 v8.0 Progress: ██████████ 100% (10 of 10 phases complete) ✅
-v9.0 Progress: ███████░░░ 67% (4 of 6 phases complete)
+v9.0 Progress: █████████░ 83% (5 of 6 phases complete)
 
 ### Phase 69 Plans (COMPLETE)
 | Plan | Status | Description |
@@ -42,6 +42,11 @@ v9.0 Progress: ███████░░░ 67% (4 of 6 phases complete)
 | Plan | Status | Description |
 |------|--------|-------------|
 | 72-01 | ✅ Complete | Games Library (Game detection, GameCardView, GamesLibraryView, GameDetailView) |
+
+### Phase 73 Plans (COMPLETE)
+| Plan | Status | Description |
+|------|--------|-------------|
+| 73-01 | ✅ Complete | Menu Bar Agent (NotificationService, AgentModeManager, enhanced MenuBar UI) |
 
 ### v5.0 Phase Completion Summary
 | Phase | Name | Status |
@@ -494,6 +499,12 @@ v9.0 Progress: ███████░░░ 67% (4 of 6 phases complete)
 | 72-01 | Swift Charts for FPS history | Native Apple framework for smooth, integrated charting |
 | 72-01 | Dynamic recommendations | Generated from CPU/GPU usage patterns (>80%/>90%/<30 FPS) |
 | 72-01 | Selected game state at app level | Allows GameDetailView to use binding for updates |
+| 73-01 | Actor pattern for NotificationService | Thread-safe async notification scheduling without data races |
+| 73-01 | 5-minute debounce per alert type | Prevents notification spam while ensuring important alerts reach user |
+| 73-01 | @Observable singleton for AgentModeManager | Modern Swift observation pattern with shared state across views |
+| 73-01 | @AppStorage for persistence | Agent mode, notifications, and auto-minimize settings persist across launches |
+| 73-01 | SystemStatus enum with 5 states | Clear visual feedback: normal (green), warning (orange), critical (red), agent (purple), paused (gray) |
+| 73-01 | Command+Shift+H shortcut | Industry-standard hide/show toggle pattern, memorable keyboard shortcut |
 
 ### Deferred Issues
 
@@ -523,15 +534,18 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-21
-Stopped at: Phase 72-01 Games Library COMPLETE
+Stopped at: Phase 73-01 COMPLETE
 Resume file: None
-Next action: Plan Phase 73 (Optimize UI) or continue v9.0 development
+Next action: Plan Phase 74 (Final phase) or complete v9.0 milestone
 
 **v9.0 Stats:**
 - Phase 69 complete (2 plans) - UniFFI bindings, OptaCoreManager
 - Phase 70 complete (2 plans) - Dashboard UI components, OptaRing integration
 - Phase 71 complete (1 plan) - Settings system with profiles, shortcuts, themes
 - Phase 72 complete (1 plan) - Games library with detection, cards, detail view
-- 14 SwiftUI components created (TelemetryCard, ScoreDisplay, QuickActions, DashboardView, OptaRingView, ProfileManagerView, KeyboardShortcutsView, ThemeCustomizationView, SettingsRowView, GameCardView, CompactGameCardView, GamesLibraryView, GameDetailView, ProfileEditorSheet)
+- Phase 73 complete (1 plan) - Menu Bar Agent with notifications, agent mode
+- 16 SwiftUI components created (TelemetryCard, ScoreDisplay, QuickActions, DashboardView, OptaRingView, ProfileManagerView, KeyboardShortcutsView, ThemeCustomizationView, SettingsRowView, GameCardView, CompactGameCardView, GamesLibraryView, GameDetailView, ProfileEditorSheet, ContextualActionRow, NotificationDelegateHandler)
+- 2 new services: NotificationService, AgentModeManager
 - Game detection service operational for Steam, Epic, GOG, and native macOS apps
-- Ready for Phase 73 (Optimize UI)
+- Menu bar agent with 5 status states and contextual actions
+- Ready for Phase 74 or milestone completion
