@@ -42,6 +42,7 @@ final class LLMServiceManager {
 
     private(set) var isProcessing = false
     private(set) var error: Error?
+    let generationStream = GenerationStream()
 
     // MARK: - Provider (Local Only)
 
@@ -94,11 +95,22 @@ final class LLMServiceManager {
 
         isProcessing = true
         error = nil
+        generationStream.start(maxTokens: depth.maxTokens)
         defer { isProcessing = false }
 
         do {
-            return try await localService.analyzeImage(image, prompt: prompt, depth: depth)
+            let result = try await localService.analyzeImage(
+                image,
+                prompt: prompt,
+                depth: depth,
+                onProgress: { [generationStream] text, count in
+                    generationStream.update(text: text, tokenCount: count)
+                }
+            )
+            generationStream.complete(finalText: result.rawResponse)
+            return result
         } catch {
+            generationStream.fail(with: error)
             self.error = error
             throw error
         }
@@ -111,11 +123,21 @@ final class LLMServiceManager {
 
         isProcessing = true
         error = nil
+        generationStream.start(maxTokens: depth.maxTokens)
         defer { isProcessing = false }
 
         do {
-            return try await localService.analyzeText(prompt: prompt, depth: depth)
+            let result = try await localService.analyzeText(
+                prompt: prompt,
+                depth: depth,
+                onProgress: { [generationStream] text, count in
+                    generationStream.update(text: text, tokenCount: count)
+                }
+            )
+            generationStream.complete(finalText: result.rawResponse)
+            return result
         } catch {
+            generationStream.fail(with: error)
             self.error = error
             throw error
         }
@@ -128,11 +150,22 @@ final class LLMServiceManager {
 
         isProcessing = true
         error = nil
+        // Use 4096 max tokens for optimization results
+        generationStream.start(maxTokens: 4096)
         defer { isProcessing = false }
 
         do {
-            return try await localService.continueWithAnswers(answers, context: context)
+            let result = try await localService.continueWithAnswers(
+                answers,
+                context: context,
+                onProgress: { [generationStream] text, count in
+                    generationStream.update(text: text, tokenCount: count)
+                }
+            )
+            generationStream.complete(finalText: result.markdown)
+            return result
         } catch {
+            generationStream.fail(with: error)
             self.error = error
             throw error
         }
