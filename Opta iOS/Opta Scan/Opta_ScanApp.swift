@@ -3,6 +3,7 @@
 //  Opta Scan
 //
 //  Main application entry point
+//  Local-only AI - all processing on device
 //  Created by Matthew Byrden
 //
 
@@ -22,6 +23,15 @@ struct Opta_ScanApp: App {
     /// Tracks whether user has completed first-time onboarding
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
 
+    // MARK: - Initialization
+
+    init() {
+        // Initialize local model on app launch if previously downloaded
+        Task {
+            await initializeLocalModel()
+        }
+    }
+
     // MARK: - Scene
 
     var body: some Scene {
@@ -40,6 +50,26 @@ struct Opta_ScanApp: App {
                 .environment(\.managedObjectContext, persistenceController.container.viewContext)
         } else {
             OnboardingView(hasCompletedOnboarding: $hasCompletedOnboarding)
+        }
+    }
+
+    // MARK: - Model Initialization
+
+    /// Check for downloaded model and load if available
+    private func initializeLocalModel() async {
+        // Check if model was previously downloaded (stored in UserDefaults for quick access)
+        guard let modelId = UserDefaults.standard.string(forKey: "opta.downloadedModelId"),
+              let config = OptaModelConfiguration.all.first(where: { $0.id == modelId }) else {
+            // No model downloaded yet - user will download in Settings
+            return
+        }
+
+        do {
+            try await LLMServiceManager.shared.loadModel(config)
+            print("[Opta] Local model loaded: \(config.displayName)")
+        } catch {
+            // Model loading failed - user may need to re-download
+            print("[Opta] Failed to load model: \(error.localizedDescription)")
         }
     }
 }
