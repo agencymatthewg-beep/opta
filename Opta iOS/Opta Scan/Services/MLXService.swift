@@ -186,24 +186,52 @@ actor MLXService {
         defer { isGenerating = false }
 
         #if canImport(MLX) && canImport(MLXLLM) && !targetEnvironment(simulator)
-        // TODO: Implement actual generation using mlx-swift-lm
-        //
-        // The generation flow will include:
-        // 1. Tokenize the prompt
-        // 2. If image provided, encode image and prepend to input
-        // 3. Run inference loop up to maxTokens
-        // 4. Decode output tokens to string
-        //
-        // Example structure (API may differ):
-        // let input = UserInput(prompt: prompt)
-        // if let image = image, let data = image.jpegData(compressionQuality: 0.9) {
-        //     input.images = [data]
-        // }
-        // let result = try await modelContext.generate(input: input, maxTokens: maxTokens)
-        // return result.output
+        guard let container = modelContainer else {
+            throw MLXError.modelNotLoaded
+        }
 
-        // Placeholder for development - will be replaced with actual MLX generation
-        throw MLXError.modelNotLoaded
+        // Build UserInput with optional image
+        let input: UserInput
+        if let image = image, let imageData = image.jpegData(compressionQuality: 0.9) {
+            input = UserInput(
+                prompt: prompt,
+                images: [.data(imageData)]
+            )
+        } else {
+            input = UserInput(prompt: prompt)
+        }
+
+        // Generate parameters
+        let parameters = GenerateParameters(
+            maxTokens: maxTokens,
+            temperature: 0.7,
+            topP: 0.9
+        )
+
+        // Perform generation within model context
+        let result = try await container.perform { [input, parameters] context in
+            // Prepare input (tokenize prompt + encode image)
+            let prepared = try await context.processor.prepare(input: input)
+
+            // Stream generation
+            var output = ""
+            var tokenCount = 0
+
+            try await MLXLMCommon.generate(
+                input: prepared,
+                parameters: parameters,
+                context: context
+            ) { token in
+                output += token
+                tokenCount += 1
+                // Continue until maxTokens or natural end
+                return tokenCount < parameters.maxTokens ? .more : .stop
+            }
+
+            return output
+        }
+
+        return result
         #else
         throw MLXError.deviceNotSupported
         #endif
