@@ -150,7 +150,12 @@ actor MLXService {
 
     // MARK: - Analysis Methods
 
-    func analyzeImage(_ image: UIImage, prompt: String, depth: OptimizationDepth) async throws -> AnalysisResult {
+    func analyzeImage(
+        _ image: UIImage,
+        prompt: String,
+        depth: OptimizationDepth,
+        onProgress: ((String, Int) -> Void)? = nil
+    ) async throws -> AnalysisResult {
         guard isModelLoaded else {
             throw MLXError.modelNotLoaded
         }
@@ -169,13 +174,18 @@ actor MLXService {
         let response = try await generate(
             prompt: fullPrompt,
             image: resizedImage,
-            maxTokens: depth.maxTokens
+            maxTokens: depth.maxTokens,
+            onProgress: onProgress
         )
 
         return parseAnalysisResult(from: response)
     }
 
-    func analyzeText(prompt: String, depth: OptimizationDepth) async throws -> AnalysisResult {
+    func analyzeText(
+        prompt: String,
+        depth: OptimizationDepth,
+        onProgress: ((String, Int) -> Void)? = nil
+    ) async throws -> AnalysisResult {
         guard isModelLoaded else {
             throw MLXError.modelNotLoaded
         }
@@ -186,13 +196,18 @@ actor MLXService {
         let response = try await generate(
             prompt: fullPrompt,
             image: nil,
-            maxTokens: depth.maxTokens
+            maxTokens: depth.maxTokens,
+            onProgress: onProgress
         )
 
         return parseAnalysisResult(from: response)
     }
 
-    func continueWithAnswers(_ answers: [String: String], context: AnalysisResult) async throws -> OptimizationResult {
+    func continueWithAnswers(
+        _ answers: [String: String],
+        context: AnalysisResult,
+        onProgress: ((String, Int) -> Void)? = nil
+    ) async throws -> OptimizationResult {
         guard isModelLoaded else {
             throw MLXError.modelNotLoaded
         }
@@ -205,7 +220,8 @@ actor MLXService {
         let response = try await generate(
             prompt: fullPrompt,
             image: nil,
-            maxTokens: 4096
+            maxTokens: 4096,
+            onProgress: onProgress
         )
 
         return parseOptimizationResult(from: response)
@@ -216,7 +232,8 @@ actor MLXService {
     private func generate(
         prompt: String,
         image: UIImage?,
-        maxTokens: Int
+        maxTokens: Int,
+        onProgress: ((String, Int) -> Void)? = nil
     ) async throws -> String {
         guard !isGenerating else {
             throw MLXError.alreadyGenerating
@@ -322,6 +339,16 @@ actor MLXService {
                             }
 
                             allTokens.append(contentsOf: tokenIds)
+
+                            // Decode partial output for progress callback
+                            if let onProgress = onProgress {
+                                let partialText = context.tokenizer.decode(tokens: allTokens)
+                                // Call on main actor for UI safety
+                                Task { @MainActor in
+                                    onProgress(partialText, allTokens.count)
+                                }
+                            }
+
                             return .more
                         }
 
