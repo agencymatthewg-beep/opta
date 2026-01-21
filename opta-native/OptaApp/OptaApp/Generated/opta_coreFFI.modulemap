@@ -1,0 +1,4 @@
+module optaFFI {
+    header "optaFFI.h"
+    export *
+}
