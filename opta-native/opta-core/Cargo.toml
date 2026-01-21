@@ -10,6 +10,10 @@ description = "Opta core business logic using Crux architecture"
 crate-type = ["cdylib", "staticlib", "rlib"]
 name = "opta_core"
 
+[[bin]]
+name = "uniffi-bindgen"
+path = "src/bin/uniffi-bindgen.rs"
+
 [features]
 default = ["macos"]
 macos = []
