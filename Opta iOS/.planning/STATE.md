@@ -10,16 +10,16 @@ See: .planning/PROJECT.md (updated 2026-01-20)
 ## Current Position
 
 Phase: 9 of 16 (Advanced Gestures)
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-01-21 — Milestone v1.2 created
+Plan: 09-01 complete, 09-02 and 09-03 pending
+Status: Executing Phase 9
+Last activity: 2026-01-21 — Plan 09-01 (Swipe Actions) completed
 
-Progress: ████████░░░░░░░░ 50% overall (8 of 16 phases complete)
+Progress: ████████░░░░░░░░ 53% overall (8.33 of 16 phases complete)
 
 ### v1.2 Premium Polish
 | Phase | Name | Status |
 |-------|------|--------|
-| 9 | Advanced Gestures | ⏳ Ready to plan |
+| 9 | Advanced Gestures | In Progress (1/3) |
 | 10 | Metal Shaders | Not started |
 | 11 | Physics Animations | Not started |
 | 12 | Visual Effects | Not started |
@@ -68,6 +68,8 @@ Example: Menu photo + "most calories for $10" → Visual recommendation
 | 6 | Core Data over SwiftData | Broader compatibility |
 | 7 | CoreHaptics with fallback | Premium feel |
 | 8 | AppStorage for onboarding | Lightweight persistence |
+| 9 | Custom SwipeActionsModifier | Full control over swipe UX |
+| 9 | SwipeStateManager singleton | Single-card swipe enforcement |
 
 ### Deferred Issues
 
@@ -92,8 +94,8 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-21
-Status: Milestone v1.2 initialization
-Next action: Plan Phase 9 (Advanced Gestures)
+Status: Plan 09-01 (Swipe Actions) completed
+Next action: Execute Plan 09-02 (Pinch-to-Zoom) or Plan 09-03 (Context Menus & Haptics)
 
 ---
 *Opta Scan — capture anything, optimize everything*
