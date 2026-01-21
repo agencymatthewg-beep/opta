@@ -74,6 +74,7 @@
 		A11111110000000000000043 /* StorageInfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22222220000000000000043 /* StorageInfoView.swift */; };
 		A11111110000000000000044 /* GenerationStream.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22222220000000000000044 /* GenerationStream.swift */; };
 		A11111110000000000000045 /* ImagePreprocessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22222220000000000000045 /* ImagePreprocessor.swift */; };
+		A11111110000000000000046 /* ResponseParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22222220000000000000046 /* ResponseParser.swift */; };
 		A11111110000000000000099 /* ZoomableImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22222220000000000000099 /* ZoomableImageView.swift */; };
 		D8CA49FD2F20FFD4008380EF /* Algorithms in Frameworks */ = {isa = PBXBuildFile; productRef = D8CA49FC2F20FFD4008380EF /* Algorithms */; };
 		D8CA4A002F21006A008380EF /* MLX in Frameworks */ = {isa = PBXBuildFile; productRef = D8CA4A012F21006A008380EF /* MLX */; };
@@ -149,6 +150,7 @@
 		A22222220000000000000043 /* StorageInfoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageInfoView.swift; sourceTree = "<group>"; };
 		A22222220000000000000044 /* GenerationStream.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerationStream.swift; sourceTree = "<group>"; };
 		A22222220000000000000045 /* ImagePreprocessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImagePreprocessor.swift; sourceTree = "<group>"; };
+		A22222220000000000000046 /* ResponseParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResponseParser.swift; sourceTree = "<group>"; };
 		A22222220000000000000099 /* ZoomableImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoomableImageView.swift; sourceTree = "<group>"; };
 		A33333330000000000000001 /* w.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = w.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -268,6 +270,7 @@
 				A2222222000000000000003C /* LLMProvider.swift */,
 				A2222222000000000000003B /* MLXService.swift */,
 				A2222222000000000000003F /* ModelDownloadManager.swift */,
+				A22222220000000000000046 /* ResponseParser.swift */,
 				A22222220000000000000042 /* StorageManager.swift */,
 				A22222220000000000000036 /* FrameRateManager.swift */,
 				A22222220000000000000037 /* PerformanceManager.swift */,
@@ -480,6 +483,7 @@
 				A11111110000000000000043 /* StorageInfoView.swift in Sources */,
 				A11111110000000000000044 /* GenerationStream.swift in Sources */,
 				A11111110000000000000045 /* ImagePreprocessor.swift in Sources */,
+				A11111110000000000000046 /* ResponseParser.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
