@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-01-20)
 
 ## Current Position
 
-Phase: 20 of 21 (Generation Pipeline) - COMPLETE
-Plan: 2 of 2 complete
-Status: Phase 20 complete, ready for Phase 21
-Last activity: 2026-01-22 — Completed Plan 20-02 (Response Parsing and Error Handling)
+Phase: 21 of 21 (Local-First Polish) - PLANNING COMPLETE
+Plan: 0 of 2 executed
+Status: Phase 21 planned, ready for execution
+Last activity: 2026-01-22 — Created Phase 21 plans (Settings/Model UI, Offline UX/Performance)
 
-Progress: ████████░░ 80% milestone (Phase 20 complete)
+Progress: ████████░░ 80% milestone (Phase 21 planning complete)
 
 ### v2.0 Local Intelligence
 | Phase | Name | Status |
@@ -23,13 +23,13 @@ Progress: ████████░░ 80% milestone (Phase 20 complete)
 | 18 | Model Management | COMPLETE |
 | 19 | Vision Inference | COMPLETE |
 | 20 | Generation Pipeline | COMPLETE |
-| 21 | Local-First Polish | Not started |
+| 21 | Local-First Polish | Planning complete |
 
-### Phase 20 Plans
+### Phase 21 Plans
 | Plan | Name | Status |
 |------|------|--------|
-| 20-01 | Streaming Text Generation | COMPLETE |
-| 20-02 | Response Parsing and Error Handling | COMPLETE |
+| 21-01 | Settings and Model Management UI | Ready |
+| 21-02 | Offline UX and Performance Polish | Ready |
 
 ## The One Feature
 
@@ -172,8 +172,8 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-22
-Status: Phase 20 (Generation Pipeline) complete
-Next action: Plan Phase 21 (Local-First Polish)
+Status: Phase 21 (Local-First Polish) planned
+Next action: Execute Phase 21 plans to complete v2.0 milestone
 
 ---
 *Opta Scan — capture anything, optimize everything*

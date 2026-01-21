@@ -303,18 +303,19 @@ Plans:
 **Goal**: Optimize UX for fully local, offline operation
 **Depends on**: Phase 20
 **Research**: Unlikely (SwiftUI patterns)
-**Status**: Not started
+**Status**: Planning complete (2026-01-22)
 
-- Update SettingsView (remove API key, add model management)
-- Model download progress UI with cancel support
-- Offline indicator and model status badges
-- First-run model download flow
-- Performance optimization for 11B model on various devices
-- Battery usage optimization
+- Update SettingsView with offline indicators and status badges
+- NetworkMonitor service for connectivity awareness
+- First-run model download flow with FirstRunDownloadSheet
+- Real-time ProcessingView with GenerationStream integration
+- Cancel support for generation operations
+- Battery optimization mode (Balanced/Performance/Battery Saver)
+- Inference performance logging
 
 Plans:
-- [ ] 21-01: Settings and Model Management UI
-- [ ] 21-02: Offline UX and Performance Polish
+- [ ] 21-01: Settings and Model Management UI (7 tasks)
+- [ ] 21-02: Offline UX and Performance Polish (7 tasks)
 
 ### 📋 v2.1+ Future
 
@@ -350,7 +351,7 @@ Plans:
 | 18. Model Management | v2.0 | 2/2 | Complete | 2026-01-22 |
 | 19. Vision Inference | v2.0 | 2/2 | Complete | 2026-01-22 |
 | 20. Generation Pipeline | v2.0 | 2/2 | Complete | 2026-01-22 |
-| 21. Local-First Polish | v2.0 | 0/2 | Not started | - |
+| 21. Local-First Polish | v2.0 | 0/2 | Planning complete | - |
 
 ---
-*Last updated: 2026-01-22 — Phase 20 Generation Pipeline complete (streaming, parsing, error handling)*
+*Last updated: 2026-01-22 — Phase 21 Local-First Polish planned (settings UI, offline UX, performance)*
