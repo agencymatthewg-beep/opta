@@ -254,12 +254,12 @@ actor MLXService {
 
         // Build UserInput with optional image
         // Note: UserInput.Image uses .url() for file-based images
-        // For in-memory data, we save to temp file first
+        // For in-memory data, we save to temp file first using ImagePreprocessor
         var tempImageURL: URL? = nil
         let input: UserInput
 
-        if let image = image, let imageData = image.jpegData(compressionQuality: 0.9) {
-            // Save image to temporary file for MLX processing
+        if let image = image, let imageData = image.visionModelData {
+            // Save preprocessed image to temporary file for MLX processing
             tempImageURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".jpg")
             try imageData.write(to: tempImageURL!)
 
@@ -335,18 +335,7 @@ actor MLXService {
     // MARK: - Image Preparation
 
     private func prepareImage(_ image: UIImage) -> UIImage {
-        // Resize to model's expected input size (typically 336x336 or 560x560 for vision models)
-        let targetSize = CGSize(width: 560, height: 560)
-
-        let format = UIGraphicsImageRendererFormat()
-        format.scale = 1.0
-
-        let renderer = UIGraphicsImageRenderer(size: targetSize, format: format)
-        let resized = renderer.image { _ in
-            image.draw(in: CGRect(origin: .zero, size: targetSize))
-        }
-
-        return resized
+        ImagePreprocessor.prepare(image)
     }
 
     // MARK: - Prompt Building
