@@ -440,9 +440,13 @@ enum MLXError: LocalizedError {
     case modelNotLoaded
     case alreadyGenerating
     case generationCancelled
+    case generationFailed(String)
+    case parsingFailed(String)
     case visionNotSupported
     case imageProcessingFailed
     case downloadFailed(String)
+    case outOfMemory
+    case thermalThrottled
 
     var errorDescription: String? {
         switch self {
@@ -454,12 +458,32 @@ enum MLXError: LocalizedError {
             return "Generation in progress."
         case .generationCancelled:
             return "Generation was cancelled."
+        case .generationFailed(let reason):
+            return "Generation failed: \(reason)"
+        case .parsingFailed(let reason):
+            return "Failed to parse response: \(reason)"
         case .visionNotSupported:
             return "Vision model not loaded."
         case .imageProcessingFailed:
             return "Failed to process image."
         case .downloadFailed(let reason):
             return "Download failed: \(reason)"
+        case .outOfMemory:
+            return "Not enough memory. Try closing other apps."
+        case .thermalThrottled:
+            return "Device too hot. Please wait and try again."
+        }
+    }
+
+    /// Whether this error is recoverable by retry
+    var isRecoverable: Bool {
+        switch self {
+        case .generationCancelled, .alreadyGenerating, .thermalThrottled:
+            return true
+        case .outOfMemory:
+            return true // After clearing cache
+        default:
+            return false
         }
     }
 }
