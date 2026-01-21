@@ -249,12 +249,12 @@ Plans:
 - [x] 17-01: MLX Package Integration (6 tasks)
 - [x] 17-02: Remove Claude Dependencies (9 tasks)
 
-#### Phase 18: Model Management
+#### Phase 18: Model Management ✅
 **Goal**: Download, store, and manage Llama 3.2 11B Vision model
 **Depends on**: Phase 17
 **Research**: Complete (LLMModelFactory API, HubApi caching)
 **Research topics**: HF Hub download API, MLX formats, iOS file storage limits
-**Status**: Planning complete
+**Status**: Complete (2026-01-22)
 
 - ModelDownloadManager with progress tracking via LLMModelFactory
 - ModelCache actor for in-memory model containers
@@ -263,8 +263,8 @@ Plans:
 - Storage info UI with clear all option
 
 Plans:
-- [ ] 18-01: Model Download System (6 tasks)
-- [ ] 18-02: Storage and Cache Management (6 tasks)
+- [x] 18-01: Model Download System (6 tasks)
+- [x] 18-02: Storage and Cache Management (6 tasks)
 
 #### Phase 19: Vision Inference
 **Goal**: Load Llama 3.2 11B Vision and process images for optimization
@@ -347,10 +347,10 @@ Plans:
 | 15. Performance Tuning | v1.2 | 2/2 | Complete | 2026-01-21 |
 | 16. Premium Polish Pass | v1.2 | 2/2 | Complete | 2026-01-21 |
 | 17. MLX Foundation | v2.0 | 2/2 | Complete | 2026-01-21 |
-| 18. Model Management | v2.0 | 0/2 | Planning complete | - |
+| 18. Model Management | v2.0 | 2/2 | Complete | 2026-01-22 |
 | 19. Vision Inference | v2.0 | 0/2 | Not started | - |
 | 20. Generation Pipeline | v2.0 | 0/2 | Not started | - |
 | 21. Local-First Polish | v2.0 | 0/2 | Not started | - |
 
 ---
-*Last updated: 2026-01-21 — Phase 17 MLX Foundation complete (local-only architecture established)*
+*Last updated: 2026-01-22 — Phase 18 Model Management complete (download, storage, UI)*
