@@ -69,6 +69,7 @@ struct ScanFlowView: View {
                 ResultView(
                     result: result,
                     prompt: flowState.prompt,
+                    sourceImage: flowState.capturedImage,
                     onNewScan: flowState.reset,
                     onShare: { shareResult(result) }
                 )

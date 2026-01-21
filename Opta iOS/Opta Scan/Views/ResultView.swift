@@ -17,6 +17,7 @@ struct ResultView: View {
 
     let result: OptimizationResult
     let prompt: String
+    let sourceImage: UIImage?
     let onNewScan: () -> Void
     let onShare: () -> Void
 
@@ -24,6 +25,12 @@ struct ResultView: View {
 
     @State private var showShareSheet = false
     @State private var isVisible = false
+
+    // MARK: - Constants
+
+    private enum Layout {
+        static let sourceImageMaxHeight: CGFloat = 200
+    }
 
     // MARK: - Body
 
@@ -39,26 +46,32 @@ struct ResultView: View {
                         .opacity(isVisible ? 1 : 0)
                         .offset(y: isVisible ? 0 : 20)
 
+                    // Source Image Section with pinch-to-zoom
+                    if let image = sourceImage {
+                        SourceImageCard(image: image, maxHeight: Layout.sourceImageMaxHeight)
+                            .staggeredAppear(index: 1, isVisible: isVisible)
+                    }
+
                     // Highlights Section
                     if !result.highlights.isEmpty {
                         HighlightsCard(highlights: result.highlights)
-                            .staggeredAppear(index: 1, isVisible: isVisible)
+                            .staggeredAppear(index: sourceImage != nil ? 2 : 1, isVisible: isVisible)
                     }
 
                     // Rankings Section
                     if let rankings = result.rankings, !rankings.isEmpty {
                         RankingsCard(rankings: rankings)
-                            .staggeredAppear(index: 2, isVisible: isVisible)
+                            .staggeredAppear(index: sourceImage != nil ? 3 : 2, isVisible: isVisible)
                     }
 
                     // Full Analysis Section
                     AnalysisCard(markdown: result.markdown)
-                        .staggeredAppear(index: 3, isVisible: isVisible)
+                        .staggeredAppear(index: sourceImage != nil ? 4 : 3, isVisible: isVisible)
 
                     // Action Buttons
                     actionButtons
                         .padding(.top, OptaDesign.Spacing.md)
-                        .staggeredAppear(index: 4, isVisible: isVisible)
+                        .staggeredAppear(index: sourceImage != nil ? 5 : 4, isVisible: isVisible)
                 }
                 .padding(OptaDesign.Spacing.lg)
             }
@@ -310,6 +323,41 @@ private struct RankingRow: View {
     }
 }
 
+// MARK: - Source Image Card
+
+/// Card displaying the source image with pinch-to-zoom capability
+private struct SourceImageCard: View {
+
+    let image: UIImage
+    let maxHeight: CGFloat
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: OptaDesign.Spacing.md) {
+            // Header
+            HStack(spacing: OptaDesign.Spacing.xs) {
+                Image(systemName: "photo")
+                    .foregroundStyle(Color.optaPurple)
+                Text("Source Image")
+                    .font(.optaHeadline)
+                    .foregroundStyle(Color.optaTextPrimary)
+            }
+
+            // Zoomable Image
+            ZoomableImageView(
+                image: image,
+                cornerRadius: OptaDesign.CornerRadius.medium,
+                maxHeight: maxHeight
+            )
+            .accessibilityLabel("Source image, double tap to zoom")
+        }
+        .padding(OptaDesign.Spacing.lg)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .glassContent()
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Source Image section")
+    }
+}
+
 // MARK: - Analysis Card
 
 /// Card displaying the full markdown analysis
@@ -358,6 +406,7 @@ private struct AnalysisCard: View {
             ]
         ),
         prompt: "best value for money",
+        sourceImage: nil,
         onNewScan: {},
         onShare: {}
     )
