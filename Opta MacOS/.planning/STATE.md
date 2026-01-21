@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-01-15)
 ## Current Position
 
 Phase: 69 of 74 (opta-core UniFFI Integration)
-Plan: 69-01 COMPLETE, 69-02 Ready
+Plan: 69-02 COMPLETE (2 of 2 in phase)
 Status: v9.0 Native macOS App IN PROGRESS
-Last activity: 2026-01-21 — Completed Phase 69-01 Swift bindings setup
+Last activity: 2026-01-21 — Completed Phase 69-02 Shell Implementation
 
 Progress: ██████████ 100% of v5.0 (17 phases complete)
 v5.1 Progress: ██████████ 100% (7 of 7 phases complete)
@@ -21,11 +21,11 @@ v7.0 Progress: ██████████ 100% (8 of 8 phases complete)
 v8.0 Progress: ██████████ 100% (10 of 10 phases complete) ✅
 v9.0 Progress: ░░░░░░░░░░ 0% (0 of 6 phases complete)
 
-### Phase 69 Plans (IN PROGRESS)
+### Phase 69 Plans (COMPLETE)
 | Plan | Status | Description |
 |------|--------|-------------|
 | 69-01 | ✅ Complete | Swift Bindings Setup (UniFFI generation, Xcode integration) |
-| 69-02 | ⏳ Ready | Shell Implementation (processEvent, haptics, sound) |
+| 69-02 | ✅ Complete | Shell Implementation (OptaCoreManager, ViewModel, EffectExecutor) |
 
 ### v5.0 Phase Completion Summary
 | Phase | Name | Status |
@@ -457,6 +457,10 @@ v9.0 Progress: ░░░░░░░░░░ 0% (0 of 6 phases complete)
 | 69-01 | UniFFI 0.28+ library-mode | Generate bindings from compiled dylib, not UDL file |
 | 69-01 | Module import via modulemap | Swift imports optaFFI module for C types |
 | 69-01 | Bridging header includes opta_coreFFI.h | For type availability without module import |
+| 69-02 | @Observable over ObservableObject | Modern macOS 14+ pattern, cleaner SwiftUI integration |
+| 69-02 | JSON-based event dispatch | toJson() methods for FFI-safe enum communication |
+| 69-02 | Effect executor callback pattern | Effects return result events via completion handler |
+| 69-02 | Snake_case JSON decoding | convertFromSnakeCase for Rust compatibility |
 
 ### Deferred Issues
 
@@ -486,9 +490,9 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-21
-Stopped at: Phase 69-01 Swift Bindings Setup COMPLETE
+Stopped at: Phase 69-02 Shell Implementation COMPLETE
 Resume file: None
-Next action: Execute Phase 69-02 Shell Implementation
+Next action: Phase 69 complete; ready for Phase 70 (iOS Shell) or view integration plan
 
 **v8.0 Final Stats:**
 - 22 plans executed across 10 phases (59-68)
