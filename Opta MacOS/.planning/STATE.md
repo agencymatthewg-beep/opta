@@ -9,23 +9,28 @@ See: .planning/PROJECT.md (updated 2026-01-15)
 
 ## Current Position
 
-Phase: 69 of 74 (opta-core UniFFI Integration)
-Plan: 69-02 COMPLETE (2 of 2 in phase)
+Phase: 70 of 74 (Main Dashboard UI)
+Plan: 70-01 COMPLETE (1 of ? in phase)
 Status: v9.0 Native macOS App IN PROGRESS
-Last activity: 2026-01-21 — Completed Phase 69-02 Shell Implementation
+Last activity: 2026-01-21 — Completed Phase 70-01 Dashboard UI Components
 
 Progress: ██████████ 100% of v5.0 (17 phases complete)
 v5.1 Progress: ██████████ 100% (7 of 7 phases complete)
 v6.0 Progress: ██████████ 100% (All phases complete)
 v7.0 Progress: ██████████ 100% (8 of 8 phases complete)
 v8.0 Progress: ██████████ 100% (10 of 10 phases complete) ✅
-v9.0 Progress: ░░░░░░░░░░ 0% (0 of 6 phases complete)
+v9.0 Progress: █░░░░░░░░░ 17% (1 of 6 phases in progress)
 
 ### Phase 69 Plans (COMPLETE)
 | Plan | Status | Description |
 |------|--------|-------------|
 | 69-01 | ✅ Complete | Swift Bindings Setup (UniFFI generation, Xcode integration) |
 | 69-02 | ✅ Complete | Shell Implementation (OptaCoreManager, ViewModel, EffectExecutor) |
+
+### Phase 70 Plans (IN PROGRESS)
+| Plan | Status | Description |
+|------|--------|-------------|
+| 70-01 | ✅ Complete | Dashboard UI Components (TelemetryCard, ScoreDisplay, QuickActions, DashboardView) |
 
 ### v5.0 Phase Completion Summary
 | Phase | Name | Status |
@@ -461,6 +466,9 @@ v9.0 Progress: ░░░░░░░░░░ 0% (0 of 6 phases complete)
 | 69-02 | JSON-based event dispatch | toJson() methods for FFI-safe enum communication |
 | 69-02 | Effect executor callback pattern | Effects return result events via completion handler |
 | 69-02 | Snake_case JSON decoding | convertFromSnakeCase for Rust compatibility |
+| 70-01 | Color hex extension | Added Color(hex:) initializer for design system hex colors |
+| 70-01 | SparklineView as separate component | Reusable for future charts beyond telemetry |
+| 70-01 | @Bindable for coreManager | Modern Swift 5.9+ pattern for observable binding in views |
 
 ### Deferred Issues
 
@@ -490,13 +498,12 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-21
-Stopped at: Phase 69-02 Shell Implementation COMPLETE
+Stopped at: Phase 70-01 Dashboard UI Components COMPLETE
 Resume file: None
-Next action: Phase 69 complete; ready for Phase 70 (iOS Shell) or view integration plan
+Next action: Continue Phase 70 plans or integrate DashboardView into main app
 
-**v8.0 Final Stats:**
-- 22 plans executed across 10 phases (59-68)
-- 28+ unit tests passing in opta-render
-- 8 doc tests passing in opta-core
-- All platform files fixed (wgpu 24.0 API compatibility)
-- SwiftUI app shell with Metal/wgpu integration ready
+**v9.0 Stats:**
+- Phase 69 complete (2 plans)
+- Phase 70 in progress (1 plan complete)
+- 4 SwiftUI components created for dashboard
+- Ready for navigation integration
