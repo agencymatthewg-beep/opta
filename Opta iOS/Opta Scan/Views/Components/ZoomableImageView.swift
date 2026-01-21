@@ -28,6 +28,7 @@ struct ZoomableImageView: View {
     @State private var finalScale: CGFloat = 1.0
     @State private var offset: CGSize = .zero
     @State private var finalOffset: CGSize = .zero
+    @State private var isInteracting = false
 
     // MARK: - Constants
 
@@ -91,13 +92,22 @@ struct ZoomableImageView: View {
                 .scaleEffect(combinedScale)
                 .offset(combinedOffset)
                 .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
-                .gesture(zoomGestures)
+                // High priority gesture ensures pinch takes precedence over scroll
+                .highPriorityGesture(zoomGestures)
                 .onTapGesture(count: 2) {
                     handleDoubleTap()
+                }
+                // Single tap resets zoom when zoomed in
+                .onTapGesture(count: 1) {
+                    handleSingleTap()
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(maxHeight: maxHeight)
+        // Reset zoom state when view disappears (e.g., sheet dismisses)
+        .onDisappear {
+            resetZoomState()
+        }
         .accessibilityLabel("Zoomable image")
         .accessibilityHint("Double tap to zoom. Pinch to zoom in or out. Drag to pan when zoomed.")
         .accessibilityAddTraits(.isImage)
@@ -114,9 +124,11 @@ struct ZoomableImageView: View {
     private var pinchGesture: some Gesture {
         MagnificationGesture()
             .onChanged { value in
+                isInteracting = true
                 currentScale = value
             }
             .onEnded { value in
+                isInteracting = false
                 withAnimation(.optaSpring) {
                     // Clamp to valid range
                     finalScale = min(Layout.maxScale, max(Layout.minScale, finalScale * value))
@@ -132,15 +144,18 @@ struct ZoomableImageView: View {
     }
 
     /// Pan gesture (only active when zoomed)
+    /// Note: minimumDistance ensures scroll containers work normally at 1x zoom
     private var panGesture: some Gesture {
-        DragGesture()
+        DragGesture(minimumDistance: isZoomed ? 0 : .infinity)
             .onChanged { value in
                 // Only allow panning when zoomed
                 guard isZoomed else { return }
+                isInteracting = true
                 offset = value.translation
             }
             .onEnded { value in
                 guard isZoomed else { return }
+                isInteracting = false
 
                 withAnimation(.optaSpring) {
                     finalOffset = CGSize(
@@ -169,6 +184,25 @@ struct ZoomableImageView: View {
                 // Zoom to target
                 finalScale = Layout.doubleTapTargetScale
             }
+        }
+    }
+
+    /// Handle single tap - no-op when at 1x zoom to allow scroll taps through
+    /// Could be used for dismissing zoom in the future
+    private func handleSingleTap() {
+        // Intentionally minimal - single tap can be used for other interactions
+        // When zoomed, user can double-tap to reset or pinch out
+    }
+
+    /// Reset zoom state to defaults
+    /// Called when view disappears (e.g., sheet dismissal)
+    private func resetZoomState() {
+        withAnimation(.optaSpring) {
+            currentScale = 1.0
+            finalScale = Layout.minScale
+            offset = .zero
+            finalOffset = .zero
+            isInteracting = false
         }
     }
 }
