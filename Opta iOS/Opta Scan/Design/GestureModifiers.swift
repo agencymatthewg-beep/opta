@@ -80,6 +80,7 @@ struct SwipeActionsModifier: ViewModifier {
         static let triggerThreshold: CGFloat = 0.6
         static let revealThreshold: CGFloat = 0.4
         static let iconSize: CGFloat = 22
+        static let cornerRadius: CGFloat = 16
     }
 
     // MARK: - Computed Properties
@@ -101,6 +102,21 @@ struct SwipeActionsModifier: ViewModifier {
 
     private var shouldTriggerTrailingAction: Bool {
         offset < maxTrailingOffset * Layout.triggerThreshold && !trailingActions.isEmpty
+    }
+
+    /// Progress of the swipe from 0 to 1
+    private var swipeProgress: CGFloat {
+        if offset > 0 {
+            return min(1, offset / maxLeadingOffset)
+        } else if offset < 0 {
+            return min(1, abs(offset) / abs(maxTrailingOffset))
+        }
+        return 0
+    }
+
+    /// Shadow opacity based on swipe state
+    private var shadowOpacity: Double {
+        isDragging ? 0.4 : 0.3
     }
 
     // MARK: - Body
@@ -127,6 +143,15 @@ struct SwipeActionsModifier: ViewModifier {
                 content
                     .offset(x: offset)
                     .gesture(swipeGesture)
+                    .onTapGesture {
+                        // If swiped open, tap resets; otherwise let tap pass through
+                        if offset != 0 {
+                            withAnimation(.optaSpring) {
+                                offset = 0
+                                swipeState.endSwipe(id: cardID)
+                            }
+                        }
+                    }
             }
         }
         .accessibilityElement(children: .contain)
@@ -143,6 +168,31 @@ struct SwipeActionsModifier: ViewModifier {
                 }
             }
         }
+        .onDisappear {
+            // Reset offset when card leaves view
+            resetSwipeState()
+        }
+        .onChange(of: swipeState.activeSwipeID) { _, newValue in
+            // Reset if another card became active
+            if newValue != nil && newValue != cardID && offset != 0 {
+                withAnimation(.optaSpring) {
+                    offset = 0
+                }
+            }
+        }
+    }
+
+    // MARK: - Helper Methods
+
+    /// Reset the swipe state to initial values
+    private func resetSwipeState() {
+        if offset != 0 {
+            withAnimation(.optaSpring) {
+                offset = 0
+            }
+            swipeState.endSwipe(id: cardID)
+        }
+        isDragging = false
     }
 
     // MARK: - Action Views
@@ -154,7 +204,10 @@ struct SwipeActionsModifier: ViewModifier {
             }
         }
         .frame(width: maxLeadingOffset)
-        .opacity(offset > 0 ? 1 : 0)
+        .clipShape(
+            RoundedRectangle(cornerRadius: Layout.cornerRadius, style: .continuous)
+        )
+        .opacity(offset > 0 ? min(1.0, offset / 20.0) : 0)
     }
 
     private var trailingActionsView: some View {
@@ -164,7 +217,10 @@ struct SwipeActionsModifier: ViewModifier {
             }
         }
         .frame(width: -maxTrailingOffset)
-        .opacity(offset < 0 ? 1 : 0)
+        .clipShape(
+            RoundedRectangle(cornerRadius: Layout.cornerRadius, style: .continuous)
+        )
+        .opacity(offset < 0 ? min(1.0, abs(offset) / 20.0) : 0)
     }
 
     private func actionButton(action: SwipeAction, isLeading: Bool) -> some View {
@@ -172,12 +228,17 @@ struct SwipeActionsModifier: ViewModifier {
             triggerAction(action)
         } label: {
             ZStack {
+                // Background with animated opacity based on swipe progress
                 action.color
+                    .opacity(0.9 + swipeProgress * 0.1)
 
+                // Icon with scale animation
                 Image(systemName: action.icon)
                     .font(.system(size: Layout.iconSize, weight: .semibold))
                     .symbolRenderingMode(.hierarchical)
                     .foregroundStyle(.white)
+                    .scaleEffect(0.8 + swipeProgress * 0.2)
+                    .animation(.optaSpring, value: swipeProgress)
             }
         }
         .frame(width: Layout.actionWidth)
