@@ -1,0 +1,30 @@
+{
+    "Version": 1.0,
+    "Metadata": {
+        "Project": "Opta",
+        "Created": "2026-01-22",
+        "Description": "Double-tap alert - two transients at 0ms and 150ms"
+    },
+    "Pattern": [
+        {
+            "Event": {
+                "Time": 0.0,
+                "EventType": "HapticTransient",
+                "EventParameters": [
+                    { "ParameterID": "HapticIntensity", "ParameterValue": 0.8 },
+                    { "ParameterID": "HapticSharpness", "ParameterValue": 0.7 }
+                ]
+            }
+        },
+        {
+            "Event": {
+                "Time": 0.15,
+                "EventType": "HapticTransient",
+                "EventParameters": [
+                    { "ParameterID": "HapticIntensity", "ParameterValue": 0.8 },
+                    { "ParameterID": "HapticSharpness", "ParameterValue": 0.7 }
+                ]
+            }
+        }
+    ]
+}

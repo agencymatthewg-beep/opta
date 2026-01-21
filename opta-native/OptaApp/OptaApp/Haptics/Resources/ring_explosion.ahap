@@ -1,0 +1,53 @@
+{
+    "Version": 1.0,
+    "Metadata": {
+        "Project": "Opta",
+        "Created": "2026-01-22",
+        "Description": "High-Energy Ring Detonation - transient shatter with decaying rumble"
+    },
+    "Pattern": [
+        {
+            "Event": {
+                "Time": 0.0,
+                "EventType": "HapticTransient",
+                "EventParameters": [
+                    { "ParameterID": "HapticIntensity", "ParameterValue": 1.0 },
+                    { "ParameterID": "HapticSharpness", "ParameterValue": 1.0 }
+                ]
+            }
+        },
+        {
+            "Event": {
+                "Time": 0.02,
+                "EventType": "HapticContinuous",
+                "EventDuration": 0.6,
+                "EventParameters": [
+                    { "ParameterID": "HapticIntensity", "ParameterValue": 0.8 },
+                    { "ParameterID": "HapticSharpness", "ParameterValue": 0.5 }
+                ]
+            }
+        },
+        {
+            "ParameterCurve": {
+                "ParameterID": "HapticIntensityControl",
+                "Time": 0.02,
+                "ParameterCurveControlPoints": [
+                    { "Time": 0.0, "ParameterValue": 1.0 },
+                    { "Time": 0.1, "ParameterValue": 0.4 },
+                    { "Time": 0.5, "ParameterValue": 0.0 }
+                ]
+            }
+        },
+        {
+            "ParameterCurve": {
+                "ParameterID": "HapticSharpnessControl",
+                "Time": 0.02,
+                "ParameterCurveControlPoints": [
+                    { "Time": 0.0, "ParameterValue": 0.6 },
+                    { "Time": 0.3, "ParameterValue": 0.2 },
+                    { "Time": 0.5, "ParameterValue": 0.0 }
+                ]
+            }
+        }
+    ]
+}
