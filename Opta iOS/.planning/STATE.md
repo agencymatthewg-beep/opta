@@ -9,18 +9,18 @@ See: .planning/PROJECT.md (updated 2026-01-20)
 
 ## Current Position
 
-Phase: 18 of 21 (Model Management)
-Plan: 18-01 complete, 18-02 pending
-Status: Executing Phase 18
-Last activity: 2026-01-22 — Plan 18-01 complete
+Phase: 18 of 21 (Model Management) - COMPLETE
+Plan: All plans complete
+Status: Phase 18 complete, ready for Phase 19
+Last activity: 2026-01-22 — Phase 18 complete
 
-Progress: █████░░░░░ 30% milestone (Plan 18-01 complete)
+Progress: ██████░░░░ 40% milestone (Phase 18 complete)
 
 ### v2.0 Local Intelligence
 | Phase | Name | Status |
 |-------|------|--------|
 | 17 | MLX Foundation | COMPLETE |
-| 18 | Model Management | In progress |
+| 18 | Model Management | COMPLETE |
 | 19 | Vision Inference | Not started |
 | 20 | Generation Pipeline | Not started |
 | 21 | Local-First Polish | Not started |
@@ -29,7 +29,7 @@ Progress: █████░░░░░ 30% milestone (Plan 18-01 complete)
 | Plan | Name | Status |
 |------|------|--------|
 | 18-01 | Model Download System | COMPLETE |
-| 18-02 | Storage and Cache Management | Not started |
+| 18-02 | Storage and Cache Management | COMPLETE |
 
 ## The One Feature
 
@@ -128,6 +128,10 @@ Example: Menu photo + "most calories for $10" → Visual recommendation
 | 18-01 | UserDefaults for download state | Lightweight, non-sensitive data |
 | 18-01 | Auto-select after download | Reduces user friction |
 | 18-01 | 20% storage buffer | Prevents edge-case storage issues |
+| 18-02 | StorageManager singleton | Central storage tracking and cleanup |
+| 18-02 | Conditional clear button | Only show when models are downloaded |
+| 18-02 | Swipe-to-delete on model cards | Native iOS deletion pattern |
+| 18-02 | Confirmation dialog for clear all | Prevent accidental data loss |
 
 ### Deferred Issues
 
@@ -153,8 +157,8 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-22
-Status: Plan 18-01 (Model Download System) complete
-Next action: Execute Plan 18-02 (Storage and Cache Management)
+Status: Phase 18 (Model Management) complete
+Next action: Begin Phase 19 (Vision Inference)
 
 ---
 *Opta Scan — capture anything, optimize everything*
