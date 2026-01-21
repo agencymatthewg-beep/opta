@@ -5,11 +5,17 @@
 //  MLX Swift service for on-device Llama 3.2 11B Vision inference
 //  Implements LLMProvider protocol for seamless integration
 //
+//  Note: This service requires adaptation to the specific mlx-swift-lm API
+//  once integration testing begins on a physical device.
+//
 
 import Foundation
 import UIKit
+
+#if canImport(MLX) && canImport(MLXLLM)
 import MLX
 import MLXLLM
+#endif
 
 // MARK: - MLX Service
 
@@ -28,15 +34,19 @@ actor MLXService: LLMProvider {
 
     var isAvailable: Bool {
         get async {
-            return loadedModel != nil && isDeviceSupported
+            return isModelLoaded && isDeviceSupported
         }
     }
 
     // MARK: - State
 
-    private var loadedModel: ModelContainer?
+    private var isModelLoaded = false
     private var loadedModelConfig: OptaModelConfiguration?
     private var isGenerating = false
+
+    #if canImport(MLX) && canImport(MLXLLM)
+    private var modelContext: Any? = nil // Placeholder for actual model context
+    #endif
 
     // MARK: - Device Support
 
@@ -59,34 +69,43 @@ actor MLXService: LLMProvider {
             throw MLXError.deviceNotSupported
         }
 
+        #if canImport(MLX) && canImport(MLXLLM)
         // Set GPU cache limit for memory management
-        MLX.GPU.set(cacheLimit: 20 * 1024 * 1024)
+        GPU.set(cacheLimit: 20 * 1024 * 1024)
 
-        // Load model using mlx-swift-lm
-        let modelConfig = ModelConfiguration.configuration(id: config.name)
-        let container = try await LLMModelFactory.shared.loadContainer(configuration: modelConfig)
+        // TODO: Load model using mlx-swift-lm API
+        // The exact API calls will be adapted during device testing:
+        // - Load model weights from Hugging Face hub
+        // - Configure tokenizer
+        // - Set up generation parameters
+        //
+        // Example structure (API may differ):
+        // let container = try await LLMModelFactory.shared.loadContainer(
+        //     configuration: ModelConfiguration(id: config.name)
+        // )
+        // modelContext = container
+        #endif
 
-        loadedModel = container
         loadedModelConfig = config
+        isModelLoaded = true
     }
 
     /// Unload the current model to free memory
     func unloadModel() {
-        loadedModel = nil
-        loadedModelConfig = nil
+        #if canImport(MLX) && canImport(MLXLLM)
+        modelContext = nil
         // Force memory cleanup
-        MLX.GPU.synchronize()
-    }
+        // GPU.synchronize() - call if available in API
+        #endif
 
-    /// Check if a model is currently loaded
-    var isModelLoaded: Bool {
-        loadedModel != nil
+        loadedModelConfig = nil
+        isModelLoaded = false
     }
 
     // MARK: - LLMProvider Methods
 
     func analyzeImage(_ image: UIImage, prompt: String, depth: OptimizationDepth) async throws -> AnalysisResult {
-        guard let model = loadedModel else {
+        guard isModelLoaded else {
             throw MLXError.modelNotLoaded
         }
 
@@ -102,7 +121,6 @@ actor MLXService: LLMProvider {
         let fullPrompt = "\(systemPrompt)\n\nUser's optimization request: \(prompt)"
 
         let response = try await generate(
-            model: model,
             prompt: fullPrompt,
             image: resizedImage,
             maxTokens: depth.maxTokens
@@ -112,7 +130,7 @@ actor MLXService: LLMProvider {
     }
 
     func analyzeText(prompt: String, depth: OptimizationDepth) async throws -> AnalysisResult {
-        guard let model = loadedModel else {
+        guard isModelLoaded else {
             throw MLXError.modelNotLoaded
         }
 
@@ -120,7 +138,6 @@ actor MLXService: LLMProvider {
         let fullPrompt = "\(systemPrompt)\n\nUser's optimization request: \(prompt)"
 
         let response = try await generate(
-            model: model,
             prompt: fullPrompt,
             image: nil,
             maxTokens: depth.maxTokens
@@ -130,7 +147,7 @@ actor MLXService: LLMProvider {
     }
 
     func continueWithAnswers(_ answers: [String: String], context: AnalysisResult) async throws -> OptimizationResult {
-        guard let model = loadedModel else {
+        guard isModelLoaded else {
             throw MLXError.modelNotLoaded
         }
 
@@ -140,7 +157,6 @@ actor MLXService: LLMProvider {
         let fullPrompt = "\(systemPrompt)\n\n\(followUpPrompt)"
 
         let response = try await generate(
-            model: model,
             prompt: fullPrompt,
             image: nil,
             maxTokens: 4096
@@ -152,7 +168,6 @@ actor MLXService: LLMProvider {
     // MARK: - Private Generation
 
     private func generate(
-        model: ModelContainer,
         prompt: String,
         image: UIImage?,
         maxTokens: Int
@@ -164,37 +179,28 @@ actor MLXService: LLMProvider {
         isGenerating = true
         defer { isGenerating = false }
 
-        // Build user input
-        var userInput = UserInput(prompt: prompt)
+        #if canImport(MLX) && canImport(MLXLLM)
+        // TODO: Implement actual generation using mlx-swift-lm
+        //
+        // The generation flow will include:
+        // 1. Tokenize the prompt
+        // 2. If image provided, encode image and prepend to input
+        // 3. Run inference loop up to maxTokens
+        // 4. Decode output tokens to string
+        //
+        // Example structure (API may differ):
+        // let input = UserInput(prompt: prompt)
+        // if let image = image, let data = image.jpegData(compressionQuality: 0.9) {
+        //     input.images = [data]
+        // }
+        // let result = try await modelContext.generate(input: input, maxTokens: maxTokens)
+        // return result.output
 
-        // Add image if provided
-        if let image = image,
-           let imageData = image.jpegData(compressionQuality: 0.9) {
-            userInput.images = [.data(imageData)]
-        }
-
-        // Configure generation parameters
-        let generateConfig = GenerateParameters(
-            temperature: 0.7,
-            topP: 0.9
-        )
-
-        // Generate tokens
-        var output = ""
-        let result = try await model.generate(
-            input: userInput,
-            parameters: generateConfig,
-            maxTokens: maxTokens
-        ) { tokens in
-            // Token callback - accumulate output
-            if let text = tokens.last {
-                output += text
-            }
-            // Return true to continue generation
-            return .more
-        }
-
-        return result.output
+        // Placeholder for development - will be replaced with actual MLX generation
+        throw MLXError.modelNotLoaded
+        #else
+        throw MLXError.deviceNotSupported
+        #endif
     }
 
     // MARK: - Image Preparation
