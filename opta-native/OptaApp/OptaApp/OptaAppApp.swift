@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Charts
 
 @main
 struct OptaAppApp: App {
@@ -23,6 +24,9 @@ struct OptaAppApp: App {
 
     /// App Storage for menu bar visibility
     @AppStorage("showMenuBarIcon") private var showMenuBarIcon = true
+
+    /// Selected game for detail view (loaded from cache when navigating)
+    @State private var selectedGame: Game?
 
     // MARK: - Body
 
@@ -135,25 +139,14 @@ struct OptaAppApp: App {
                     SettingsView()
 
                 case .games:
-                    placeholderView(
-                        title: "Games",
-                        subtitle: "Coming in Phase 72",
-                        icon: "gamecontroller"
-                    )
+                    GamesLibraryView()
 
                 case .gameDetail:
-                    if let gameId = coreManager.viewModel.selectedGameId {
-                        placeholderView(
-                            title: "Game Detail",
-                            subtitle: "Game: \(gameId)",
-                            icon: "gamecontroller.fill"
-                        )
+                    if let binding = Binding<Game>($selectedGame) {
+                        GameDetailView(game: binding)
                     } else {
-                        placeholderView(
-                            title: "Game Detail",
-                            subtitle: "No game selected",
-                            icon: "gamecontroller"
-                        )
+                        // Loading state while fetching game from cache
+                        gameDetailLoadingView
                     }
 
                 case .optimize:
@@ -184,6 +177,42 @@ struct OptaAppApp: App {
                         icon: "message"
                     )
                 }
+            }
+            .onChange(of: coreManager.viewModel.selectedGameId) { _, newGameId in
+                // Load game from cache when navigating to game detail
+                Task {
+                    if let gameId = newGameId {
+                        selectedGame = await GameDetectionService.shared.getGame(id: gameId)
+                    } else {
+                        selectedGame = nil
+                    }
+                }
+            }
+            .onChange(of: coreManager.viewModel.currentPage) { _, newPage in
+                // Clear selected game when leaving game detail
+                if newPage != .gameDetail {
+                    selectedGame = nil
+                }
+            }
+        }
+    }
+
+    /// Loading view for game detail when fetching from cache
+    private var gameDetailLoadingView: some View {
+        VStack(spacing: 16) {
+            ProgressView()
+                .scaleEffect(1.2)
+
+            Text("Loading game...")
+                .font(.system(size: 14))
+                .foregroundStyle(.white.opacity(0.6))
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(hex: "09090B"))
+        .task {
+            // Load game from cache when showing detail view
+            if let gameId = coreManager.viewModel.selectedGameId {
+                selectedGame = await GameDetectionService.shared.getGame(id: gameId)
             }
         }
     }
