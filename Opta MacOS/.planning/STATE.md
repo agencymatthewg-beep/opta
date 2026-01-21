@@ -9,10 +9,10 @@ See: .planning/PROJECT.md (updated 2026-01-15)
 
 ## Current Position
 
-Phase: 74 of 74 (App Store Preparation) - COMPLETE
-Plan: 74-01 COMPLETE (1 of 1 in phase)
-Status: v9.0 Native macOS App COMPLETE - MILESTONE COMPLETE
-Last activity: 2026-01-22 — Completed Phase 74-01 (App Store Preparation)
+Phase: 75 (Premium Haptics & Audio) COMPLETE
+Plan: 75-01 COMPLETE (1 of 1 in phase)
+Status: v9.1 Premium Polish COMPLETE
+Last activity: 2026-01-22 — Completed Phase 75-01 (AHAP haptics, spatial audio, thermal adaptation)
 
 Progress: ██████████ 100% of v5.0 (17 phases complete)
 v5.1 Progress: ██████████ 100% (7 of 7 phases complete)
@@ -20,6 +20,7 @@ v6.0 Progress: ██████████ 100% (All phases complete)
 v7.0 Progress: ██████████ 100% (8 of 8 phases complete)
 v8.0 Progress: ██████████ 100% (10 of 10 phases complete) ✅
 v9.0 Progress: ██████████ 100% (6 of 6 phases complete) ✅
+v9.1 Progress: ██████████ 100% (1 of 1 phases complete) ✅
 
 ### Phase 69 Plans (COMPLETE)
 | Plan | Status | Description |
@@ -52,6 +53,11 @@ v9.0 Progress: ██████████ 100% (6 of 6 phases complete) ✅
 | Plan | Status | Description |
 |------|--------|-------------|
 | 74-01 | ✅ Complete | App Store Preparation (Assets.xcassets, metadata, archive script) |
+
+### Phase 75 Plans (COMPLETE)
+| Plan | Status | Description |
+|------|--------|-------------|
+| 75-01 | ✅ Complete | Premium Haptics & Audio (AHAP files, SpatialAudioManager, ThermalStateManager, SensoryManager) |
 
 ### v5.0 Phase Completion Summary
 | Phase | Name | Status |
@@ -514,6 +520,12 @@ v9.0 Progress: ██████████ 100% (6 of 6 phases complete) ✅
 | 74-01 | Utilities category | Better fit than productivity for a system optimizer app |
 | 74-01 | Automatic code signing | Simplifies CI/CD, Team ID from Xcode settings |
 | 74-01 | Copyright 2025-2026 | Covers development period and release year |
+| 75-01 | AHAP files over programmatic haptics | Enables iteration without recompilation, better for designers |
+| 75-01 | Pre-created CHHapticPatternPlayer | Avoids allocation overhead during time-critical haptic trigger |
+| 75-01 | Player pool of 4 for audio | Handles concurrent sounds without allocation |
+| 75-01 | 0.01 coordinate scale (1 unit = 1cm) | Assumes visual units are cm, converts to meters for audio |
+| 75-01 | Inverse distance attenuation | Most realistic physics model for sound falloff |
+| 75-01 | Quality reduction levels per thermal state | Mapped to match Gemini research recommendations |
 
 ### Deferred Issues
 
@@ -543,9 +555,9 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-22
-Stopped at: Phase 74-01 COMPLETE - v9.0 MILESTONE COMPLETE
+Stopped at: Phase 75-01 COMPLETE
 Resume file: None
-Next action: /gsd:complete-milestone to archive v9.0 and prepare for next version
+Next action: v9.1 complete - milestone ready for completion or next milestone planning
 
 **v9.0 Stats (COMPLETE):**
 - Phase 69 complete (2 plans) - UniFFI bindings, OptaCoreManager
