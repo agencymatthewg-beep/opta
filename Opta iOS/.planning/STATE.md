@@ -10,16 +10,16 @@ See: .planning/PROJECT.md (updated 2026-01-20)
 ## Current Position
 
 Phase: 17 of 21 (MLX Foundation)
-Plan: 17-01 complete, 17-02 pending
-Status: Plan 17-01 executed
-Last activity: 2026-01-21 — MLX Package Integration complete
+Plan: 17-02 complete — Phase 17 DONE
+Status: All Phase 17 plans executed
+Last activity: 2026-01-21 — Remove Claude Dependencies complete
 
-Progress: ██░░░░░░░░ 10% milestone (Plan 17-01 of Phase 17 complete)
+Progress: ████░░░░░░ 20% milestone (Phase 17 complete)
 
 ### v2.0 Local Intelligence
 | Phase | Name | Status |
 |-------|------|--------|
-| 17 | MLX Foundation | In progress (1/2 plans) |
+| 17 | MLX Foundation | COMPLETE |
 | 18 | Model Management | Not started |
 | 19 | Vision Inference | Not started |
 | 20 | Generation Pipeline | Not started |
@@ -29,7 +29,7 @@ Progress: ██░░░░░░░░ 10% milestone (Plan 17-01 of Phase 17 c
 | Plan | Name | Status |
 |------|------|--------|
 | 17-01 | MLX Package Integration | Complete |
-| 17-02 | Remove Claude Dependencies | Not started |
+| 17-02 | Remove Claude Dependencies | Complete |
 
 ## The One Feature
 
@@ -68,7 +68,7 @@ Example: Menu photo + "most calories for $10" → Visual recommendation
 | Phase | Decision | Rationale |
 |-------|----------|-----------|
 | — | iOS 17+ minimum | Modern SwiftUI features |
-| — | Cloud AI (Claude) | Best optimization reasoning |
+| — | Local AI (MLX) | Privacy-first, offline-capable |
 | — | Photo-first UX | Lowest friction |
 | — | Card-based results | Scannable, shareable |
 | 1 | OLED background #09090b | Prevents smear on scroll |
@@ -121,6 +121,9 @@ Example: Menu photo + "most calories for $10" → Visual recommendation
 | 17 | Conditional MLX imports | Simulator compatibility with #if canImport |
 | 17 | OptaModelConfiguration naming | Avoids conflict with MLXLLM ModelConfiguration |
 | 17 | UserDefaults for provider pref | Keychain reserved for sensitive data only |
+| 17-02 | Remove LLMProvider protocol | Simplified single-provider architecture |
+| 17-02 | Static model init function | SwiftUI App struct is value type |
+| 17-02 | Privacy descriptions emphasize local | Reinforce privacy messaging |
 
 ### Deferred Issues
 
@@ -134,7 +137,7 @@ None.
 ### Blockers/Concerns
 
 - MLX entitlements require provisioning profile update (increased-memory-limit)
-- Model downloading implementation pending (Plan 17-02)
+- Model download UI not yet implemented (Phase 18)
 
 ### Roadmap Evolution
 
@@ -146,8 +149,8 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-21
-Status: Plan 17-01 (MLX Package Integration) executed
-Next action: Execute Plan 17-02 (Remove Claude Dependencies)
+Status: Phase 17 (MLX Foundation) complete
+Next action: Plan Phase 18 (Model Management)
 
 ---
 *Opta Scan — capture anything, optimize everything*
