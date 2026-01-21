@@ -11,7 +11,7 @@
 import Foundation
 import SwiftUI
 
-#if canImport(MLX) && canImport(MLXLLM)
+#if canImport(MLX) && canImport(MLXLLM) && !targetEnvironment(simulator) && !targetEnvironment(simulator)
 import MLX
 import MLXLLM
 #endif
@@ -63,7 +63,7 @@ final class ModelDownloadManager {
         downloadStates[config.id] = .downloading(progress: 0)
 
         do {
-            #if canImport(MLX) && canImport(MLXLLM)
+            #if canImport(MLX) && canImport(MLXLLM) && !targetEnvironment(simulator)
             // Set GPU cache limit
             GPU.set(cacheLimit: 20 * 1024 * 1024)
 
@@ -172,7 +172,7 @@ final class ModelDownloadManager {
 actor ModelCache {
     static let shared = ModelCache()
 
-    #if canImport(MLX) && canImport(MLXLLM)
+    #if canImport(MLX) && canImport(MLXLLM) && !targetEnvironment(simulator)
     private var containers: [String: ModelContainer] = [:]
 
     func store(container: ModelContainer, for config: OptaModelConfiguration) {

@@ -67,6 +67,9 @@
 		A1111111000000000000003C /* LLMProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2222222000000000000003C /* LLMProvider.swift */; };
 		A1111111000000000000003D /* OptaModelConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2222222000000000000003D /* OptaModelConfiguration.swift */; };
 		A1111111000000000000003E /* KeychainService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2222222000000000000003E /* KeychainService.swift */; };
+		A1111111000000000000003F /* ModelDownloadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2222222000000000000003F /* ModelDownloadManager.swift */; };
+		A11111110000000000000040 /* ModelDownloadProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22222220000000000000040 /* ModelDownloadProgressView.swift */; };
+		A11111110000000000000041 /* ModelSelectionCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22222220000000000000041 /* ModelSelectionCard.swift */; };
 		A11111110000000000000099 /* ZoomableImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22222220000000000000099 /* ZoomableImageView.swift */; };
 		D8CA49FD2F20FFD4008380EF /* Algorithms in Frameworks */ = {isa = PBXBuildFile; productRef = D8CA49FC2F20FFD4008380EF /* Algorithms */; };
 		D8CA4A002F21006A008380EF /* MLX in Frameworks */ = {isa = PBXBuildFile; productRef = D8CA4A012F21006A008380EF /* MLX */; };
@@ -135,6 +138,9 @@
 		A2222222000000000000003C /* LLMProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMProvider.swift; sourceTree = "<group>"; };
 		A2222222000000000000003D /* OptaModelConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptaModelConfiguration.swift; sourceTree = "<group>"; };
 		A2222222000000000000003E /* KeychainService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainService.swift; sourceTree = "<group>"; };
+		A2222222000000000000003F /* ModelDownloadManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelDownloadManager.swift; sourceTree = "<group>"; };
+		A22222220000000000000040 /* ModelDownloadProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelDownloadProgressView.swift; sourceTree = "<group>"; };
+		A22222220000000000000041 /* ModelSelectionCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelSelectionCard.swift; sourceTree = "<group>"; };
 		A22222220000000000000099 /* ZoomableImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoomableImageView.swift; sourceTree = "<group>"; };
 		A33333330000000000000001 /* w.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = w.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -251,6 +257,7 @@
 				A2222222000000000000003E /* KeychainService.swift */,
 				A2222222000000000000003C /* LLMProvider.swift */,
 				A2222222000000000000003B /* MLXService.swift */,
+				A2222222000000000000003F /* ModelDownloadManager.swift */,
 				A22222220000000000000036 /* FrameRateManager.swift */,
 				A22222220000000000000037 /* PerformanceManager.swift */,
 			);
@@ -277,6 +284,8 @@
 				A22222220000000000000015 /* OptamizeSlider.swift */,
 				A22222220000000000000023 /* ProcessingGlowView.swift */,
 				A22222220000000000000024 /* AmbientGradientView.swift */,
+				A22222220000000000000040 /* ModelDownloadProgressView.swift */,
+				A22222220000000000000041 /* ModelSelectionCard.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -452,6 +461,9 @@
 				A1111111000000000000003C /* LLMProvider.swift in Sources */,
 				A1111111000000000000003D /* OptaModelConfiguration.swift in Sources */,
 				A1111111000000000000003E /* KeychainService.swift in Sources */,
+				A1111111000000000000003F /* ModelDownloadManager.swift in Sources */,
+				A11111110000000000000040 /* ModelDownloadProgressView.swift in Sources */,
+				A11111110000000000000041 /* ModelSelectionCard.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

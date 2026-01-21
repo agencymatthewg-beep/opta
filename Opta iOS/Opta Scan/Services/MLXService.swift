@@ -12,7 +12,7 @@
 import Foundation
 import UIKit
 
-#if canImport(MLX) && canImport(MLXLLM)
+#if canImport(MLX) && canImport(MLXLLM) && !targetEnvironment(simulator)
 import MLX
 import MLXLLM
 #endif
@@ -36,7 +36,7 @@ actor MLXService {
     private var loadedModelConfig: OptaModelConfiguration?
     private var isGenerating = false
 
-    #if canImport(MLX) && canImport(MLXLLM)
+    #if canImport(MLX) && canImport(MLXLLM) && !targetEnvironment(simulator)
     private var modelContainer: ModelContainer? = nil
     #endif
 
@@ -68,7 +68,7 @@ actor MLXService {
             throw MLXError.deviceNotSupported
         }
 
-        #if canImport(MLX) && canImport(MLXLLM)
+        #if canImport(MLX) && canImport(MLXLLM) && !targetEnvironment(simulator)
         // Set GPU cache limit for memory management
         GPU.set(cacheLimit: 20 * 1024 * 1024)
 
@@ -97,7 +97,7 @@ actor MLXService {
 
     /// Unload the current model to free memory
     func unloadModel() {
-        #if canImport(MLX) && canImport(MLXLLM)
+        #if canImport(MLX) && canImport(MLXLLM) && !targetEnvironment(simulator)
         modelContainer = nil
         // Note: Model remains in ModelCache for quick reload
         // Call ModelCache.shared.remove(for:) to fully remove from memory
@@ -184,7 +184,7 @@ actor MLXService {
         isGenerating = true
         defer { isGenerating = false }
 
-        #if canImport(MLX) && canImport(MLXLLM)
+        #if canImport(MLX) && canImport(MLXLLM) && !targetEnvironment(simulator)
         // TODO: Implement actual generation using mlx-swift-lm
         //
         // The generation flow will include:
