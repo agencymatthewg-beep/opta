@@ -16,6 +16,8 @@ struct ShaderDemoView: View {
     @State private var tintIntensity: Double = 0.3
     @State private var brightness: Double = 0.0
     @State private var saturation: Double = 1.0
+    @State private var glassDepth: Double = 0.5
+    @State private var glassGlowIntensity: Double = 0.3
 
     var body: some View {
         NavigationStack {
@@ -29,6 +31,9 @@ struct ShaderDemoView: View {
 
                     // Controls
                     controlsSection
+
+                    // Glass shader section
+                    glassSection
                 }
                 .padding(OptaDesign.Spacing.lg)
             }
@@ -89,6 +94,76 @@ struct ShaderDemoView: View {
         }
         .padding(OptaDesign.Spacing.lg)
         .glassContent()
+    }
+
+    // MARK: - Obsidian Glass Section
+
+    private var glassSection: some View {
+        VStack(alignment: .leading, spacing: OptaDesign.Spacing.md) {
+            Text("Obsidian Glass")
+                .font(.optaHeadline)
+                .foregroundStyle(Color.optaTextPrimary)
+
+            // Sample cards with different glass levels
+            HStack(spacing: OptaDesign.Spacing.md) {
+                glassLevelCard("Subtle", level: .subtle)
+                glassLevelCard("Content", level: .content)
+                glassLevelCard("Overlay", level: .overlay)
+            }
+
+            VStack(alignment: .leading, spacing: OptaDesign.Spacing.sm) {
+                Text("Custom Glass")
+                    .font(.optaCaption)
+                    .foregroundStyle(Color.optaTextSecondary)
+
+                Text("Depth: \(glassDepth, specifier: "%.2f")")
+                    .font(.optaLabel)
+                    .foregroundStyle(Color.optaTextMuted)
+                Slider(value: $glassDepth, in: 0...1)
+                    .tint(.optaPurple)
+
+                Text("Glow: \(glassGlowIntensity, specifier: "%.2f")")
+                    .font(.optaLabel)
+                    .foregroundStyle(Color.optaTextMuted)
+                Slider(value: $glassGlowIntensity, in: 0...1)
+                    .tint(.optaPurple)
+            }
+
+            // Custom glass preview
+            VStack {
+                Image(systemName: "diamond.fill")
+                    .font(.system(size: 32))
+                    .foregroundStyle(Color.optaPurple)
+                Text("Custom")
+                    .font(.optaCaption)
+                    .foregroundStyle(Color.optaTextPrimary)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(OptaDesign.Spacing.lg)
+            .background(.thinMaterial)
+            .obsidianGlass(
+                depth: glassDepth,
+                glowColor: .optaPurple,
+                glowIntensity: glassGlowIntensity
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+        .padding(OptaDesign.Spacing.lg)
+        .glassContent()
+    }
+
+    private func glassLevelCard(_ title: String, level: ObsidianGlassLevel) -> some View {
+        VStack {
+            Image(systemName: "cube.fill")
+                .font(.system(size: 24))
+                .foregroundStyle(Color.optaPurple)
+            Text(title)
+                .font(.optaLabel)
+                .foregroundStyle(Color.optaTextPrimary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(OptaDesign.Spacing.md)
+        .obsidianGlassStyle(level)
     }
 }
 
