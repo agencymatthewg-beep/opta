@@ -67,11 +67,11 @@ Opta Scan is a focused iOS app: **capture anything, optimize everything**. Photo
 
 **Milestone Goal:** Elevate the app with advanced gestures, Metal shaders, physics animations, and premium visual effects that match the obsidian aesthetic.
 
-#### Phase 9: Advanced Gestures
+#### Phase 9: Advanced Gestures ✅
 **Goal**: Rich gesture interactions throughout the app
 **Depends on**: v1.1 complete
 **Research**: Unlikely (SwiftUI gesture patterns)
-**Plans**: TBD
+**Status**: Complete (2026-01-21)
 
 - Swipe actions on history cards (delete, share, favorite)
 - Pinch-to-zoom on result images
@@ -80,7 +80,9 @@ Opta Scan is a focused iOS app: **capture anything, optimize everything**. Photo
 - Haptic feedback coordination with gestures
 
 Plans:
-- [ ] 09-01: TBD (run /gsd:plan-phase 9 to break down)
+- [x] 09-01: Swipe Actions on History Cards
+- [x] 09-02: Pinch-to-Zoom on Images
+- [x] 09-03: Long-Press Context Menus & Haptic Coordination
 
 #### Phase 10: Metal Shaders
 **Goal**: GPU-accelerated custom visual effects
@@ -218,7 +220,7 @@ Plans:
 | 6. History & Persistence | v1.0 | ✓ | Complete | 2026-01-21 |
 | 7. UX Polish | v1.1 | ✓ | Complete | 2026-01-21 |
 | 8. Launch Prep | v1.1 | ✓ | Complete | 2026-01-21 |
-| 9. Advanced Gestures | v1.2 | 0/? | Not started | - |
+| 9. Advanced Gestures | v1.2 | 3/3 | Complete | 2026-01-21 |
 | 10. Metal Shaders | v1.2 | 0/? | Not started | - |
 | 11. Physics Animations | v1.2 | 0/? | Not started | - |
 | 12. Visual Effects | v1.2 | 0/? | Not started | - |
@@ -228,4 +230,4 @@ Plans:
 | 16. Premium Polish Pass | v1.2 | 0/? | Not started | - |
 
 ---
-*Last updated: 2026-01-21 — Milestone v1.2 created*
+*Last updated: 2026-01-21 — Phase 9 (Advanced Gestures) complete*
