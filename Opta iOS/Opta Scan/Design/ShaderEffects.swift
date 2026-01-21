@@ -9,6 +9,7 @@
 //
 
 import SwiftUI
+import UIKit
 
 // MARK: - Shader Effect Availability
 

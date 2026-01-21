@@ -9,16 +9,16 @@ See: .planning/PROJECT.md (updated 2026-01-15)
 
 ## Current Position
 
-Phase: 59 of 68 (Rust Core Foundation)
+Phase: 61 of 68 (WGSL Shader System)
 Plan: Planning phase
-Status: v8.0 milestone created, phases 59-68 defined
-Last activity: 2026-01-20 — Created v8.0 Rust Native Architecture milestone based on Gemini analysis
+Status: Phase 59 and 60 complete, planning Phase 61
+Last activity: 2026-01-21 — Completed wgpu Render Surface (Phase 60) with 82 tests passing
 
 Progress: ██████████ 100% of v5.0 (17 phases complete)
 v5.1 Progress: ██████████ 100% (7 of 7 phases complete)
 v6.0 Progress: ██████████ 100% (All phases complete)
 v7.0 Progress: ██████████ 100% (8 of 8 phases complete)
-v8.0 Progress: ░░░░░░░░░░ 0% (0 of 10 phases complete)
+v8.0 Progress: ██░░░░░░░░ 20% (2 of 10 phases complete)
 
 ### v5.0 Phase Completion Summary
 | Phase | Name | Status |
@@ -129,9 +129,9 @@ v8.0 Progress: ░░░░░░░░░░ 0% (0 of 10 phases complete)
 ### v8.0 Rust Native Architecture (In Progress)
 | Phase | Name | Status |
 |-------|------|--------|
-| 59 | Rust Core Foundation | ⏳ Ready (3 plans) |
-| 60 | wgpu Render Surface | 📋 Planned |
-| 61 | WGSL Shader System | 📋 Planned |
+| 59 | Rust Core Foundation | ✅ Complete (3 plans) |
+| 60 | wgpu Render Surface | ✅ Complete (3 plans, 82 tests) |
+| 61 | WGSL Shader System | 📋 Planning |
 | 62 | Native Shell - macOS | 📋 Planned |
 | 63 | Component Migration | 📋 Planned |
 | 64 | Animation System | 📋 Planned |
@@ -161,22 +161,30 @@ v8.0 Progress: ░░░░░░░░░░ 0% (0 of 10 phases complete)
 - WGSL (shader language)
 - Rive (animations)
 
-### Phase 59 Plans
+### Phase 59 Plans (COMPLETE)
 | Plan | Wave | Status | Description |
 |------|------|--------|-------------|
-| 59-01 | 1 | ⏳ Ready | UniFFI Interface Definition |
-| 59-02 | 1 | ⏳ Ready | Crux App Trait Compliance |
-| 59-03 | 2 | ⏳ Ready | Cross-Compilation Setup |
+| 59-01 | 1 | ✅ Complete | UniFFI Interface Definition |
+| 59-02 | 1 | ✅ Complete | Crux App Trait Compliance |
+| 59-03 | 2 | ✅ Complete | Cross-Compilation Setup |
 
-**Existing Foundation:**
-- `opta-native/` workspace with opta-core and opta-shared crates
-- Crux-like architecture in place (Event, Effect, Model, OptaApp)
-- UniFFI dependency configured but no .udl file yet
+### Phase 60 Plans (COMPLETE)
+| Plan | Wave | Status | Description |
+|------|------|--------|-------------|
+| 60-01 | 1 | ✅ Complete | wgpu Instance and Surface (GpuContext, RenderSurface) |
+| 60-02 | 1 | ✅ Complete | Render Pipeline Foundation (Pipeline2D, buffers, shaders) |
+| 60-03 | 2 | ✅ Complete | Frame Timing and Quality (FrameTiming, QualitySettings, RenderState) |
 
-**Gaps to Address:**
-- No UniFFI .udl interface definition
-- OptaApp doesn't implement official `crux_core::App` trait
-- No cross-compilation setup for iOS/Android
+**Phase 60 Deliverables:**
+- `opta-render` crate with wgpu v24.0 and Metal backend
+- GPU context initialization with Apple Silicon detection
+- Surface management for SwiftUI/UIKit integration
+- 2D render pipeline with WGSL shader
+- Frame timing with 120Hz ProMotion support
+- Quality auto-detection and settings system
+- Thread-safe RenderState for CVDisplayLink
+- Comprehensive FFI exports for Swift
+- 82 tests passing
 
 ## Performance Metrics
 

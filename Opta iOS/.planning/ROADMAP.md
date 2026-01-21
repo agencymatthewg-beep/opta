@@ -97,7 +97,9 @@ Plans:
 - Shader parameter animations
 
 Plans:
-- [ ] 10-01: TBD
+- [ ] 10-01: Metal Shader Foundation
+- [ ] 10-02: Obsidian Glass Shader
+- [ ] 10-03: Animated Gradient & Glow Effects
 
 #### Phase 11: Physics Animations
 **Goal**: Natural, physics-based motion throughout
@@ -221,7 +223,7 @@ Plans:
 | 7. UX Polish | v1.1 | ✓ | Complete | 2026-01-21 |
 | 8. Launch Prep | v1.1 | ✓ | Complete | 2026-01-21 |
 | 9. Advanced Gestures | v1.2 | 3/3 | Complete | 2026-01-21 |
-| 10. Metal Shaders | v1.2 | 0/? | Not started | - |
+| 10. Metal Shaders | v1.2 | 0/3 | Planned | - |
 | 11. Physics Animations | v1.2 | 0/? | Not started | - |
 | 12. Visual Effects | v1.2 | 0/? | Not started | - |
 | 13. 3D Transforms | v1.2 | 0/? | Not started | - |
@@ -230,4 +232,4 @@ Plans:
 | 16. Premium Polish Pass | v1.2 | 0/? | Not started | - |
 
 ---
-*Last updated: 2026-01-21 — Phase 9 (Advanced Gestures) complete*
+*Last updated: 2026-01-21 — Phase 10 (Metal Shaders) planned with 3 plans*

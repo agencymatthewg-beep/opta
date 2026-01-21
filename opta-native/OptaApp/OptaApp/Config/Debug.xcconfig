@@ -1,0 +1,35 @@
+//
+//  Debug.xcconfig
+//  OptaApp
+//
+//  Configuration for Debug builds
+//
+
+// Include shared settings
+#include "Shared.xcconfig"
+
+// Build settings
+GCC_OPTIMIZATION_LEVEL = 0
+ENABLE_TESTABILITY = YES
+ONLY_ACTIVE_ARCH = YES
+DEBUG_INFORMATION_FORMAT = dwarf
+
+// Preprocessor definitions
+GCC_PREPROCESSOR_DEFINITIONS = $(inherited) DEBUG=1
+
+// Swift flags
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = $(inherited) DEBUG
+SWIFT_OPTIMIZATION_LEVEL = -Onone
+
+// Metal compiler flags
+MTL_ENABLE_DEBUG_INFO = YES
+
+// Code signing (development)
+CODE_SIGN_IDENTITY = Apple Development
+CODE_SIGN_STYLE = Automatic
+
+// Enable address sanitizer for debug
+// ENABLE_ADDRESS_SANITIZER = YES
+
+// Enable thread sanitizer (mutually exclusive with address sanitizer)
+// ENABLE_THREAD_SANITIZER = YES
