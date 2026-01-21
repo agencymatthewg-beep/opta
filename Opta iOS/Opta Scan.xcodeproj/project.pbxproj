@@ -16,6 +16,7 @@
 		A11111110000000000000007 /* OptaHaptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22222220000000000000007 /* OptaHaptics.swift */; };
 		A11111110000000000000008 /* OptaTypography.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22222220000000000000008 /* OptaTypography.swift */; };
 		A11111110000000000000009 /* GlassModifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22222220000000000000009 /* GlassModifiers.swift */; };
+		A1111111000000000000001E /* GestureModifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2222222000000000000001E /* GestureModifiers.swift */; };
 		A1111111000000000000000A /* OptaDesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2222222000000000000000A /* OptaDesignSystem.swift */; };
 		A1111111000000000000000B /* CaptureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2222222000000000000000B /* CaptureView.swift */; };
 		A1111111000000000000000C /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2222222000000000000000C /* HistoryView.swift */; };
@@ -68,7 +69,8 @@
 		A2222222000000000000001B /* ScanHistory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanHistory.swift; sourceTree = "<group>"; };
 		A2222222000000000000001C /* OptaScan.xcdatamodeld */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodeld; path = OptaScan.xcdatamodeld; sourceTree = "<group>"; };
 		A2222222000000000000001D /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
-		A33333330000000000000001 /* Opta Scan.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Opta Scan.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		A2222222000000000000001E /* GestureModifiers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GestureModifiers.swift; sourceTree = "<group>"; };
+		A33333330000000000000001 /* w.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = w.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -109,7 +111,7 @@
 		A55555550000000000000003 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				A33333330000000000000001 /* Opta Scan.app */,
+				A33333330000000000000001 /* w.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -122,6 +124,7 @@
 				A22222220000000000000007 /* OptaHaptics.swift */,
 				A22222220000000000000008 /* OptaTypography.swift */,
 				A22222220000000000000009 /* GlassModifiers.swift */,
+				A2222222000000000000001E /* GestureModifiers.swift */,
 				A2222222000000000000000A /* OptaDesignSystem.swift */,
 			);
 			path = Design;
@@ -141,19 +144,6 @@
 				A55555550000000000000009 /* Components */,
 			);
 			path = Views;
-			sourceTree = "<group>";
-		};
-		A55555550000000000000009 /* Components */ = {
-			isa = PBXGroup;
-			children = (
-				A2222222000000000000000E /* OptaTabBar.swift */,
-				A22222220000000000000010 /* CameraPreviewView.swift */,
-				A22222220000000000000011 /* PhotoPickerButton.swift */,
-				A22222220000000000000012 /* PromptInputView.swift */,
-				A22222220000000000000013 /* CaptureButton.swift */,
-				A22222220000000000000015 /* OptamizeSlider.swift */,
-			);
-			path = Components;
 			sourceTree = "<group>";
 		};
 		A55555550000000000000006 /* Models */ = {
@@ -182,12 +172,25 @@
 			path = "Preview Content";
 			sourceTree = "<group>";
 		};
+		A55555550000000000000009 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				A2222222000000000000000E /* OptaTabBar.swift */,
+				A22222220000000000000010 /* CameraPreviewView.swift */,
+				A22222220000000000000011 /* PhotoPickerButton.swift */,
+				A22222220000000000000012 /* PromptInputView.swift */,
+				A22222220000000000000013 /* CaptureButton.swift */,
+				A22222220000000000000015 /* OptamizeSlider.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		A66666660000000000000001 /* Opta Scan */ = {
+		A66666660000000000000001 /* w */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = A77777770000000000000003 /* Build configuration list for PBXNativeTarget "Opta Scan" */;
+			buildConfigurationList = A77777770000000000000003 /* Build configuration list for PBXNativeTarget "w" */;
 			buildPhases = (
 				A66666660000000000000002 /* Sources */,
 				A44444440000000000000001 /* Frameworks */,
@@ -197,9 +200,9 @@
 			);
 			dependencies = (
 			);
-			name = "Opta Scan";
+			name = w;
 			productName = "Opta Scan";
-			productReference = A33333330000000000000001 /* Opta Scan.app */;
+			productReference = A33333330000000000000001 /* w.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -230,7 +233,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				A66666660000000000000001 /* Opta Scan */,
+				A66666660000000000000001 /* w */,
 			);
 		};
 /* End PBXProject section */
@@ -279,6 +282,7 @@
 				A1111111000000000000001B /* ScanHistory.swift in Sources */,
 				A1111111000000000000001C /* OptaScan.xcdatamodeld in Sources */,
 				A1111111000000000000001D /* OnboardingView.swift in Sources */,
+				A1111111000000000000001E /* GestureModifiers.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -412,6 +416,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"Opta Scan/Preview Content\"";
+				DEVELOPMENT_TEAM = 77PKS547H5;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Opta Scan uses the camera to capture photos for optimization analysis";
@@ -442,6 +447,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"Opta Scan/Preview Content\"";
+				DEVELOPMENT_TEAM = 77PKS547H5;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Opta Scan uses the camera to capture photos for optimization analysis";
@@ -476,7 +482,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		A77777770000000000000003 /* Build configuration list for PBXNativeTarget "Opta Scan" */ = {
+		A77777770000000000000003 /* Build configuration list for PBXNativeTarget "w" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				A99999990000000000000003 /* Debug */,

@@ -58,6 +58,16 @@ struct HistoryView: View {
                         OptaHaptics.shared.tap()
                         selectedScan = scan
                     }
+                    .swipeActions(
+                        trailing: [
+                            SwipeAction(
+                                icon: "trash.fill",
+                                color: .optaRed,
+                                isDestructive: true,
+                                action: { historyManager.deleteScan(scan) }
+                            )
+                        ]
+                    )
                     .staggeredAppear(index: index, isVisible: true)
                     .contextMenu {
                         Button(role: .destructive) {
@@ -68,7 +78,7 @@ struct HistoryView: View {
                         }
                     }
                     .accessibilityLabel("Scan: \(scan.prompt ?? "Untitled")")
-                    .accessibilityHint("Double tap to view scan details")
+                    .accessibilityHint("Double tap to view scan details. Swipe left to delete.")
                     .accessibilityActions {
                         Button("Delete", role: .destructive) {
                             historyManager.deleteScan(scan)
