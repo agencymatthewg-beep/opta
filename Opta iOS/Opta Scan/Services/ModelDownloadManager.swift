@@ -109,6 +109,12 @@ final class ModelDownloadManager {
         downloadProgress = 0
     }
 
+    // MARK: - Remove State
+
+    func removeDownloadState(for config: OptaModelConfiguration) {
+        downloadStates.removeValue(forKey: config.id)
+    }
+
     // MARK: - Delete Model
 
     func deleteModel(_ config: OptaModelConfiguration) async {
