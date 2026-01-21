@@ -28,7 +28,21 @@ class ScanFlowState: ObservableObject {
 
     private var llmManager: LLMServiceManager { LLMServiceManager.shared }
 
+    /// Access generation stream for UI observation
+    var generationStream: GenerationStream {
+        llmManager.generationStream
+    }
+
     // MARK: - Navigation
+
+    /// Cancel current processing and return to capture
+    func cancelProcessing() {
+        Task {
+            await llmManager.cancelGeneration()
+            currentStep = .capture
+            OptaHaptics.shared.tap()
+        }
+    }
 
     func startOptimization() {
         guard !prompt.isEmpty else { return }
