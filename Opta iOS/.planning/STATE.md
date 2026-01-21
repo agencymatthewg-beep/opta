@@ -5,28 +5,25 @@
 See: .planning/PROJECT.md (updated 2026-01-20)
 
 **Core value:** Capture anything, optimize everything — Photo/prompt → Questions → Beautiful optimized answer
-**Current focus:** v1.2 Premium Polish
+**Current focus:** v2.0 Local Intelligence — On-device AI with Llama 3.2 11B Vision
 
 ## Current Position
 
-Phase: 12 of 16 (Visual Effects)
+Phase: 17 of 21 (MLX Foundation)
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-01-21 — Phase 11 complete, 3 plans executed
+Last activity: 2026-01-21 — Milestone v2.0 Local Intelligence created
 
-Progress: ███████████░░░░░ 69% overall (11 of 16 phases complete)
+Progress: ░░░░░░░░░░ 0% milestone (0 of 5 phases complete)
 
-### v1.2 Premium Polish
+### v2.0 Local Intelligence
 | Phase | Name | Status |
 |-------|------|--------|
-| 9 | Advanced Gestures | Complete |
-| 10 | Metal Shaders | Complete |
-| 11 | Physics Animations | Complete |
-| 12 | Visual Effects | Not started |
-| 13 | 3D Transforms | Not started |
-| 14 | Motion Design | Not started |
-| 15 | Performance Tuning | Not started |
-| 16 | Premium Polish Pass | Not started |
+| 17 | MLX Foundation | Not started |
+| 18 | Model Management | Not started |
+| 19 | Vision Inference | Not started |
+| 20 | Generation Pipeline | Not started |
+| 21 | Local-First Polish | Not started |
 
 ## The One Feature
 
@@ -51,6 +48,12 @@ Example: Menu photo + "most calories for $10" → Visual recommendation
 ### v1.1 Polish (Phases 7-8) — Shipped 2026-01-21
 - UX Polish (haptics, animations, accessibility)
 - Launch Prep (onboarding, app icon)
+
+### v1.2 Premium Polish (Phases 9-16) — Shipped 2026-01-21
+- Advanced Gestures, Metal Shaders, Physics Animations
+- Visual Effects, 3D Transforms, Motion Design
+- Performance Tuning, Premium Polish Pass
+- App Store Compliance, Accessibility Audit
 
 ## Accumulated Context
 
@@ -85,6 +88,29 @@ Example: Menu photo + "most calories for $10" → Visual recommendation
 | 11 | RubberBandConfig exponential stretch | Asymptotic approach to max stretch |
 | 11 | CardDismissHandler velocity thresholds | Natural dismiss vs return decisions |
 | 11 | SnapPointConfig with momentum projection | Smart snap point selection |
+| 12 | CAEmitterLayer for particles | GPU-accelerated performance |
+| 12 | ParticleConfig presets | Consistent particle behavior |
+| 12 | ScrollBlurState @Observable | Reactive scroll-driven blur |
+| 12 | Multi-layer GlowConfig | Depth through layered blur |
+| 12 | BlendMode.screen for bloom | Natural HDR-like effect |
+| 13 | PerspectiveConfig presets | Consistent 3D depth feel |
+| 13 | Rotation3DState @Observable | Gesture-driven 3D rotation |
+| 13 | ParallaxConfig speed multipliers | Layer-based scroll depth |
+| 13 | DepthShadowConfig elevation presets | Dynamic shadow scaling |
+| 13 | LayerSeparationConfig | Tap-to-expand layer stacks |
+| 14 | StaggerConfig delay increments | Cascading item animations |
+| 14 | AnimationSequence choreography | Multi-element timing control |
+| 14 | ChoreographyState step tracking | Orchestrated reveal sequences |
+| 14 | LoadingDotsView staggered scale | Polished loading indicators |
+| 14 | ConfettiBurst particles | Celebration feedback effects |
+| 15 | QualityTier quality cascade | Thermal → LowPower → Battery → ReduceMotion |
+| 15 | PerformanceManager singleton | Single source of truth for quality state |
+| 15 | CADisplayLink for FPS monitoring | Accurate frame-by-frame timing |
+| 15 | ProMotion 120Hz detection | UIScreen.maximumFramesPerSecond >= 120 |
+| 15 | Animation duration multiplier | 0.8x at 120Hz, 1.0x at 60Hz, 1.2x at 30Hz |
+| 16 | Privacy Manifest CA92.1 | UserDefaults for onboarding/preferences |
+| 16 | Dynamic Type over fixed sizes | Font.system(.textStyle) for accessibility |
+| 16 | 51 VoiceOver labels | All interactive elements covered |
 
 ### Deferred Issues
 
@@ -92,7 +118,6 @@ None.
 
 ### Pending Todos
 
-- Add Claude API key configuration in Settings
 - App Store screenshots
 - Privacy policy URL
 
@@ -104,13 +129,14 @@ None.
 
 - v1.0 MVP created: Core feature, 6 phases (Phase 1-6) — Shipped 2026-01-21
 - v1.1 Polish created: App Store prep, 2 phases (Phase 7-8) — Shipped 2026-01-21
-- v1.2 Premium Polish created: Gestures + graphics, 8 phases (Phase 9-16)
+- v1.2 Premium Polish created: Gestures + graphics, 8 phases (Phase 9-16) — Shipped 2026-01-21
+- v2.0 Local Intelligence created: On-device Llama 3.2 11B Vision, 5 phases (Phase 17-21)
 
 ## Session Continuity
 
 Last session: 2026-01-21
-Status: Phase 11 (Physics Animations) COMPLETE
-Next action: Plan and execute Phase 12 (Visual Effects)
+Status: Milestone v2.0 Local Intelligence initialized
+Next action: Plan Phase 17 (MLX Foundation)
 
 ---
 *Opta Scan — capture anything, optimize everything*

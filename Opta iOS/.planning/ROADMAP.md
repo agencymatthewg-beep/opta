@@ -8,8 +8,8 @@ Opta Scan is a focused iOS app: **capture anything, optimize everything**. Photo
 
 - ✅ **v1.0 MVP** - Phases 1-6 (core feature complete, shipped 2026-01-21)
 - ✅ **v1.1 Polish** - Phases 7-8 (App Store ready, shipped 2026-01-21)
-- 🚧 **v1.2 Premium Polish** - Phases 9-16 (gestures + graphics, in progress)
-- 📋 **v2.0 Intelligence** - Future (smart features, platform expansion)
+- ✅ **v1.2 Premium Polish** - Phases 9-16 (gestures + graphics, shipped 2026-01-21)
+- 🚧 **v2.0 Local Intelligence** - Phases 17-21 (on-device AI with Llama 3.2 11B Vision)
 
 ## Phases
 
@@ -63,7 +63,7 @@ Opta Scan is a focused iOS app: **capture anything, optimize everything**. Photo
 
 </details>
 
-### 🚧 v1.2 Premium Polish (In Progress)
+### ✅ v1.2 Premium Polish (SHIPPED 2026-01-21)
 
 **Milestone Goal:** Elevate the app with advanced gestures, Metal shaders, physics animations, and premium visual effects that match the obsidian aesthetic.
 
@@ -127,11 +127,12 @@ Plans:
 - [x] 11-02: Momentum Physics
 - [x] 11-03: Interactive Physics
 
-#### Phase 12: Visual Effects
+#### Phase 12: Visual Effects ✅
 **Goal**: Premium visual polish with blur, vibrancy, particles
 **Depends on**: Phase 11
 **Research**: Likely (particle systems, advanced compositing)
 **Research topics**: SwiftUI particle effects, CAEmitterLayer, advanced blend modes
+**Status**: Complete (2026-01-21)
 
 - Ambient particle effects (subtle floating particles)
 - Dynamic blur intensity based on scroll
@@ -140,13 +141,14 @@ Plans:
 - Animated gradients and color shifts
 
 Plans:
-- [ ] 12-01: TBD
+- [x] 12-01: Particle System
+- [x] 12-02: Dynamic Blur and Glow Effects
 
-#### Phase 13: 3D Transforms
+#### Phase 13: 3D Transforms ✅
 **Goal**: Depth and perspective effects
 **Depends on**: Phase 12
 **Research**: Unlikely (SwiftUI 3D transforms)
-**Plans**: TBD
+**Status**: Complete (2026-01-21)
 
 - Card flip animations with perspective
 - Parallax scrolling effects
@@ -155,13 +157,14 @@ Plans:
 - Layer separation effects
 
 Plans:
-- [ ] 13-01: TBD
+- [x] 13-01: 3D Card Transforms (flip, rotation, perspective)
+- [x] 13-02: Parallax and Depth Effects (scrolling, shadows, layers)
 
-#### Phase 14: Motion Design
+#### Phase 14: Motion Design ✅
 **Goal**: Choreographed micro-interactions and state transitions
 **Depends on**: Phase 13
 **Research**: Unlikely (animation composition)
-**Plans**: TBD
+**Status**: Complete (2026-01-21)
 
 - Staggered list animations with precise timing
 - State transition choreography
@@ -170,13 +173,15 @@ Plans:
 - Navigation transition polish
 
 Plans:
-- [ ] 14-01: TBD
+- [x] 14-01: Staggered Animations and Choreography
+- [x] 14-02: State Transitions and Micro-Interactions
 
-#### Phase 15: Performance Tuning
+#### Phase 15: Performance Tuning ✅
 **Goal**: Buttery smooth 120fps with thermal and battery optimization
 **Depends on**: Phase 14
 **Research**: Applied (Gemini Deep Research integration)
 **Research sources**: `iOS/Distribution/iOS-App-Store-Compliance-wgpu.md`, `iOS/AI-ML/AI Optimization for iOS Apps.md`
+**Status**: Complete (2026-01-21)
 
 **Core Features**:
 - GPU profiling and bottleneck identification
@@ -194,14 +199,15 @@ Plans:
 - Instruments profiling workflow documentation
 
 Plans:
-- [ ] 15-01: Thermal & Battery Optimization (PerformanceManager, Battery Profiling)
-- [ ] 15-02: GPU Profiling & Frame Rate Optimization
+- [x] 15-01: Thermal & Battery Optimization (PerformanceManager, Battery Profiling)
+- [x] 15-02: GPU Profiling & Frame Rate Optimization
 
-#### Phase 16: Premium Polish Pass
+#### Phase 16: Premium Polish Pass ✅
 **Goal**: App Store compliance verification and final quality assurance
 **Depends on**: Phase 15
 **Research**: Applied (Gemini Deep Research integration)
 **Research sources**: `iOS/Distribution/iOS-App-Store-Compliance-wgpu.md`
+**Status**: Complete (2026-01-21)
 
 **Core Features**:
 - Animation timing consistency audit
@@ -219,27 +225,105 @@ Plans:
 - COMPLIANCE.md documentation
 
 Plans:
-- [ ] 16-01: App Store Compliance & Final Polish (Privacy, Accessibility, Guidelines)
-- [ ] 16-02: Final Visual Consistency Audit
+- [x] 16-01: App Store Compliance & Final Polish (Privacy, Accessibility, Guidelines)
+- [x] 16-02: Final Visual Consistency Audit
 
-### 📋 v2.0 Intelligence (Future)
+### 🚧 v2.0 Local Intelligence (In Progress)
 
-**Milestone Goal:** Enhanced AI features and platform expansion
+**Milestone Goal:** Replace Claude API with on-device Llama 3.2 11B Vision for complete privacy and offline operation. No cloud dependencies — fully local AI.
 
-#### Phase 17+: Smart Features
-**Goal**: Enhanced intelligence features
+#### Phase 17: MLX Foundation
+**Goal**: Add MLX Swift framework and establish local-only architecture
+**Depends on**: v1.2 complete
+**Research**: Likely (MLX Swift is new, evolving API)
+**Research topics**: MLX Swift package setup, model loading patterns, memory management
+**Status**: Not started
 
+- Add MLX Swift and MLX Swift Examples packages
+- Remove ClaudeService and cloud dependencies
+- Update LLMProvider protocol for local-only operation
+- Configure build settings for MLX
+
+Plans:
+- [ ] 17-01: MLX Package Integration
+- [ ] 17-02: Remove Claude Dependencies
+
+#### Phase 18: Model Management
+**Goal**: Download, store, and manage Llama 3.2 11B Vision model
+**Depends on**: Phase 17
+**Research**: Likely (Hugging Face Hub API, model formats)
+**Research topics**: HF Hub download API, GGUF vs MLX formats, iOS file storage limits
+**Status**: Not started
+
+- Hugging Face Hub model download with progress tracking
+- Local model storage in app cache/documents
+- Model versioning and update checks
+- Cache management and model deletion
+- Storage space validation before download
+
+Plans:
+- [ ] 18-01: Model Download System
+- [ ] 18-02: Storage and Cache Management
+
+#### Phase 19: Vision Inference
+**Goal**: Load Llama 3.2 11B Vision and process images for optimization
+**Depends on**: Phase 18
+**Research**: Likely (multimodal LLM image handling)
+**Research topics**: MLX vision model loading, image preprocessing, token limits
+**Status**: Not started
+
+- Load Llama 3.2 11B Vision model with MLX
+- Image preprocessing pipeline (resize, normalize, encode)
+- Multimodal prompt construction (image + text)
+- Memory management for large model + image
+- Thermal throttling integration
+
+Plans:
+- [ ] 19-01: Vision Model Loading
+- [ ] 19-02: Image Preprocessing Pipeline
+
+#### Phase 20: Generation Pipeline
+**Goal**: Stream text generation and parse optimization responses
+**Depends on**: Phase 19
+**Research**: Unlikely (internal patterns, architecture exists)
+**Status**: Not started
+
+- Async token streaming with MLX generate()
+- JSON response parsing for questions format
+- Optimization result parsing (markdown, highlights, rankings)
+- Error handling and generation recovery
+- Cancel/interrupt support for long generations
+
+Plans:
+- [ ] 20-01: Streaming Text Generation
+- [ ] 20-02: Response Parsing and Error Handling
+
+#### Phase 21: Local-First Polish
+**Goal**: Optimize UX for fully local, offline operation
+**Depends on**: Phase 20
+**Research**: Unlikely (SwiftUI patterns)
+**Status**: Not started
+
+- Update SettingsView (remove API key, add model management)
+- Model download progress UI with cancel support
+- Offline indicator and model status badges
+- First-run model download flow
+- Performance optimization for 11B model on various devices
+- Battery usage optimization
+
+Plans:
+- [ ] 21-01: Settings and Model Management UI
+- [ ] 21-02: Offline UX and Performance Polish
+
+### 📋 v2.1+ Future
+
+**Potential future phases:**
 - Saved preferences (dietary restrictions, budget defaults)
 - Template prompts for common scenarios
 - Result comparison across scans
-
-#### Phase 18+: Platform Expansion
-**Goal**: Broader platform support
-
 - iPad optimization with multi-column
 - Widget for recent scans
 - Shortcuts integration
-- Watch companion app
 
 ## Progress
 
@@ -256,11 +340,16 @@ Plans:
 | 9. Advanced Gestures | v1.2 | 3/3 | Complete | 2026-01-21 |
 | 10. Metal Shaders | v1.2 | 3/3 | Complete | 2026-01-21 |
 | 11. Physics Animations | v1.2 | 3/3 | Complete | 2026-01-21 |
-| 12. Visual Effects | v1.2 | 0/? | Not started | - |
-| 13. 3D Transforms | v1.2 | 0/? | Not started | - |
-| 14. Motion Design | v1.2 | 0/? | Not started | - |
-| 15. Performance Tuning | v1.2 | 1/2 | Planned | - |
-| 16. Premium Polish Pass | v1.2 | 1/2 | Planned | - |
+| 12. Visual Effects | v1.2 | 2/2 | Complete | 2026-01-21 |
+| 13. 3D Transforms | v1.2 | 2/2 | Complete | 2026-01-21 |
+| 14. Motion Design | v1.2 | 2/2 | Complete | 2026-01-21 |
+| 15. Performance Tuning | v1.2 | 2/2 | Complete | 2026-01-21 |
+| 16. Premium Polish Pass | v1.2 | 2/2 | Complete | 2026-01-21 |
+| 17. MLX Foundation | v2.0 | 0/2 | Not started | - |
+| 18. Model Management | v2.0 | 0/2 | Not started | - |
+| 19. Vision Inference | v2.0 | 0/2 | Not started | - |
+| 20. Generation Pipeline | v2.0 | 0/2 | Not started | - |
+| 21. Local-First Polish | v2.0 | 0/2 | Not started | - |
 
 ---
-*Last updated: 2026-01-21 — Phase 10 plans updated with research compliance, Phases 15-16 planned*
+*Last updated: 2026-01-21 — v2.0 Local Intelligence milestone created (Phases 17-21)*

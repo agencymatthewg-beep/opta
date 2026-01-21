@@ -1,760 +1,469 @@
 # Plan 15-01: Thermal & Battery Optimization
 
-## Overview
+## Goal
 
-**Phase**: 15 - Performance Tuning
-**Plan**: 01 of 02
-**Goal**: Comprehensive thermal monitoring, battery optimization, and adaptive performance system
-
-## Research Compliance
-
-This plan is directly informed by Gemini Deep Research documents:
-- `iOS/Distribution/iOS-App-Store-Compliance-wgpu.md` - Thermal state management, power efficiency
-- `iOS/AI-ML/AI Optimization for iOS Apps.md` - Battery impact assessment, A19 Pro optimization
-
-### Critical Requirements Addressed
-
-1. **Thermal Monitoring**: Real-time `ProcessInfo.thermalState` subscription with quality degradation
-2. **Battery Optimization**: Reduce GPU load during charging, low power mode detection
-3. **Adaptive Rendering**: Quality tiers (high/medium/minimal) based on device conditions
-4. **Device Detection**: Optimize for A19 Pro capabilities on iPhone 17 Pro
+Create a unified PerformanceManager with thermal monitoring, battery optimization, and quality tier management.
 
 ## Context
 
-The app uses Metal shaders, animations, and AI processing that impact battery life. This plan creates a unified performance management system that:
-- Monitors thermal state in real-time
-- Detects low power mode and battery level
-- Adapts rendering quality automatically
-- Profiles and optimizes bottlenecks
+Building on all visual effects, this adds:
+- Thermal state monitoring and response
+- Low Power Mode detection
+- Quality tier management (Ultra/High/Medium/Low)
+- Automatic quality switching based on device state
+- Battery-conscious rendering
 
-**Current state**: Basic ThermalMonitor from Phase 10 (shader-focused)
-**Target state**: Comprehensive PerformanceManager for all app systems
+## Implementation
 
-## Dependencies
+### Step 1: Create Performance Manager
 
-- Phase 10 complete (Metal shaders with thermal-aware rendering)
-- Phase 14 complete (all animations implemented)
-- `ThermalMonitor.swift` exists (from Plan 10-01)
-
-## Tasks
-
-### Task 1: Create Unified PerformanceManager
-
-**Purpose**: Single source of truth for all performance-related state.
-
-Create `Opta Scan/Core/PerformanceManager.swift`:
+Create `Opta Scan/Services/PerformanceManager.swift`:
 
 ```swift
 //
 //  PerformanceManager.swift
 //  Opta Scan
 //
-//  Unified performance monitoring and adaptive quality management
-//  Part of Phase 15: Performance Tuning - Research Compliance
-//
-//  Reference: iOS/Distribution/iOS-App-Store-Compliance-wgpu.md
-//  Reference: iOS/AI-ML/AI Optimization for iOS Apps.md
+//  Unified performance management for thermal, battery, and quality
+//  Part of Phase 15: Performance Tuning
 //
 
 import SwiftUI
 import Combine
 
-/// Performance quality tier for adaptive rendering
-enum PerformanceQuality: Int, Comparable, CaseIterable {
-    case ultra = 4     // Maximum quality (A19 Pro, cool, plugged in)
-    case high = 3      // Full quality (60fps, all effects)
-    case medium = 2    // Reduced quality (30fps, simplified effects)
-    case low = 1       // Minimal quality (static, essential only)
+// MARK: - Quality Tier
 
-    static func < (lhs: PerformanceQuality, rhs: PerformanceQuality) -> Bool {
+/// Quality levels for visual effects
+enum QualityTier: Int, Comparable, CaseIterable {
+    case low = 0
+    case medium = 1
+    case high = 2
+    case ultra = 3
+
+    static func < (lhs: QualityTier, rhs: QualityTier) -> Bool {
         lhs.rawValue < rhs.rawValue
     }
 
-    var targetFrameRate: Double {
+    var particleBirthRate: Float {
         switch self {
-        case .ultra: return 120  // ProMotion
-        case .high: return 60
-        case .medium: return 30
-        case .low: return 15
+        case .low: return 1
+        case .medium: return 3
+        case .high: return 6
+        case .ultra: return 10
         }
     }
 
-    var enableShaders: Bool {
+    var blurRadius: CGFloat {
+        switch self {
+        case .low: return 5
+        case .medium: return 10
+        case .high: return 15
+        case .ultra: return 20
+        }
+    }
+
+    var shadowLayers: Int {
+        switch self {
+        case .low: return 1
+        case .medium: return 2
+        case .high: return 3
+        case .ultra: return 4
+        }
+    }
+
+    var animationEnabled: Bool {
         self >= .medium
     }
 
-    var enableAnimations: Bool {
-        self >= .low
+    var particlesEnabled: Bool {
+        self >= .high
     }
 
-    var enableParticles: Bool {
-        self >= .high
+    var metalShadersEnabled: Bool {
+        self >= .medium
     }
 }
 
-/// Centralized performance state and quality management
-@MainActor
-final class PerformanceManager: ObservableObject {
+// MARK: - Thermal State
+
+/// Thermal state levels
+enum ThermalLevel: Int, Comparable {
+    case nominal = 0
+    case fair = 1
+    case serious = 2
+    case critical = 3
+
+    static func < (lhs: ThermalLevel, rhs: ThermalLevel) -> Bool {
+        lhs.rawValue < rhs.rawValue
+    }
+
+    init(from processInfo: ProcessInfo.ThermalState) {
+        switch processInfo {
+        case .nominal: self = .nominal
+        case .fair: self = .fair
+        case .serious: self = .serious
+        case .critical: self = .critical
+        @unknown default: self = .nominal
+        }
+    }
+
+    var maxQualityTier: QualityTier {
+        switch self {
+        case .nominal: return .ultra
+        case .fair: return .high
+        case .serious: return .medium
+        case .critical: return .low
+        }
+    }
+}
+
+// MARK: - Performance Manager
+
+/// Unified performance management singleton
+@Observable
+final class PerformanceManager {
     static let shared = PerformanceManager()
 
-    // MARK: - Published State
+    // MARK: - State
 
-    /// Current recommended quality tier
-    @Published private(set) var quality: PerformanceQuality = .high
+    private(set) var currentQuality: QualityTier = .high
+    private(set) var thermalLevel: ThermalLevel = .nominal
+    private(set) var isLowPowerMode: Bool = false
+    private(set) var batteryLevel: Float = 1.0
+    private(set) var isCharging: Bool = false
 
-    /// Current thermal state
-    @Published private(set) var thermalState: ProcessInfo.ThermalState = .nominal
+    /// User preference for max quality (can be overridden by system)
+    var preferredQuality: QualityTier = .ultra {
+        didSet { updateEffectiveQuality() }
+    }
 
-    /// Whether device is in Low Power Mode
-    @Published private(set) var isLowPowerMode: Bool = false
+    /// Whether to respect system constraints (thermal, battery)
+    var respectSystemConstraints: Bool = true {
+        didSet { updateEffectiveQuality() }
+    }
 
-    /// Current battery level (0-1)
-    @Published private(set) var batteryLevel: Float = 1.0
+    // MARK: - Computed
 
-    /// Whether device is charging
-    @Published private(set) var isCharging: Bool = false
+    /// Effective quality after applying constraints
+    var effectiveQuality: QualityTier {
+        currentQuality
+    }
 
-    /// Whether device supports ProMotion (120Hz)
-    let supportsProMotion: Bool
+    /// Whether reduce motion is enabled
+    var reduceMotionEnabled: Bool {
+        UIAccessibility.isReduceMotionEnabled
+    }
 
-    /// Whether device has A-series Pro chip (A15 Pro, A16 Pro, A17 Pro, A18 Pro, A19 Pro)
-    let hasProChip: Bool
-
-    // MARK: - Private State
+    // MARK: - Private
 
     private var cancellables = Set<AnyCancellable>()
 
-    // MARK: - Initialization
-
     private init() {
-        // Detect device capabilities
-        self.supportsProMotion = Self.detectProMotion()
-        self.hasProChip = Self.detectProChip()
-
-        // Initial battery state
-        UIDevice.current.isBatteryMonitoringEnabled = true
-        updateBatteryState()
-
-        // Subscribe to system notifications
-        setupNotifications()
-
-        // Calculate initial quality
-        updateQuality()
+        setupMonitoring()
+        updateEffectiveQuality()
     }
 
-    // MARK: - Notification Setup
+    // MARK: - Setup
 
-    private func setupNotifications() {
-        // Thermal state changes
+    private func setupMonitoring() {
+        // Thermal state monitoring
         NotificationCenter.default.publisher(for: ProcessInfo.thermalStateDidChangeNotification)
-            .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
-                self?.thermalState = ProcessInfo.processInfo.thermalState
-                self?.updateQuality()
+                self?.updateThermalState()
             }
             .store(in: &cancellables)
 
-        // Low Power Mode changes
+        // Low Power Mode monitoring
         NotificationCenter.default.publisher(for: .NSProcessInfoPowerStateDidChange)
-            .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
-                self?.isLowPowerMode = ProcessInfo.processInfo.isLowPowerModeEnabled
-                self?.updateQuality()
+                self?.updatePowerState()
             }
             .store(in: &cancellables)
 
-        // Battery state changes
-        NotificationCenter.default.publisher(for: UIDevice.batteryStateDidChangeNotification)
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                self?.updateBatteryState()
-                self?.updateQuality()
-            }
-            .store(in: &cancellables)
-
-        // Battery level changes
+        // Battery monitoring
+        UIDevice.current.isBatteryMonitoringEnabled = true
         NotificationCenter.default.publisher(for: UIDevice.batteryLevelDidChangeNotification)
-            .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 self?.updateBatteryState()
-                self?.updateQuality()
             }
             .store(in: &cancellables)
 
-        // Initial thermal state
-        thermalState = ProcessInfo.processInfo.thermalState
+        NotificationCenter.default.publisher(for: UIDevice.batteryStateDidChangeNotification)
+            .sink { [weak self] _ in
+                self?.updateBatteryState()
+            }
+            .store(in: &cancellables)
+
+        // Initial state
+        updateThermalState()
+        updatePowerState()
+        updateBatteryState()
+    }
+
+    // MARK: - State Updates
+
+    private func updateThermalState() {
+        thermalLevel = ThermalLevel(from: ProcessInfo.processInfo.thermalState)
+        updateEffectiveQuality()
+    }
+
+    private func updatePowerState() {
         isLowPowerMode = ProcessInfo.processInfo.isLowPowerModeEnabled
+        updateEffectiveQuality()
     }
 
     private func updateBatteryState() {
         batteryLevel = UIDevice.current.batteryLevel
-        isCharging = UIDevice.current.batteryState == .charging ||
-                     UIDevice.current.batteryState == .full
+        isCharging = UIDevice.current.batteryState == .charging || UIDevice.current.batteryState == .full
+        updateEffectiveQuality()
     }
 
-    // MARK: - Quality Calculation
-
-    private func updateQuality() {
-        let newQuality = calculateQuality()
-        if newQuality != quality {
-            quality = newQuality
+    private func updateEffectiveQuality() {
+        guard respectSystemConstraints else {
+            currentQuality = preferredQuality
+            return
         }
+
+        var quality = preferredQuality
+
+        // Apply thermal constraints
+        if quality > thermalLevel.maxQualityTier {
+            quality = thermalLevel.maxQualityTier
+        }
+
+        // Apply low power mode constraint
+        if isLowPowerMode && quality > .medium {
+            quality = .medium
+        }
+
+        // Apply low battery constraint (below 20% and not charging)
+        if batteryLevel < 0.2 && !isCharging && quality > .medium {
+            quality = .medium
+        }
+
+        // Apply reduce motion constraint
+        if reduceMotionEnabled && quality > .low {
+            quality = .low
+        }
+
+        currentQuality = quality
     }
 
-    private func calculateQuality() -> PerformanceQuality {
-        // Critical thermal: Always minimal
-        if thermalState == .critical {
-            return .low
-        }
+    // MARK: - Public API
 
-        // Low Power Mode: Cap at medium
-        if isLowPowerMode {
-            return thermalState == .serious ? .low : .medium
-        }
-
-        // Serious thermal: Medium
-        if thermalState == .serious {
-            return .medium
-        }
-
-        // Low battery (< 20%): Cap at high
-        if batteryLevel < 0.2 && !isCharging {
-            return .high
-        }
-
-        // Optimal conditions: Ultra if supported
-        if thermalState == .nominal && isCharging && hasProChip && supportsProMotion {
-            return .ultra
-        }
-
-        // Default: High
-        return .high
+    /// Force quality update check
+    func refresh() {
+        updateThermalState()
+        updatePowerState()
+        updateBatteryState()
     }
 
-    // MARK: - Device Detection
-
-    private static func detectProMotion() -> Bool {
-        // Check if device supports adaptive refresh rate
-        // iPhone 13 Pro+, iPad Pro (2017+)
-        return UIScreen.main.maximumFramesPerSecond >= 120
-    }
-
-    private static func detectProChip() -> Bool {
-        // Detect Pro-series iPhone (has ProMotion + advanced Neural Engine)
-        // This is a proxy: Pro iPhones have 120Hz displays
-        return UIScreen.main.maximumFramesPerSecond >= 120
+    /// Get recommended frame rate for current conditions
+    var recommendedFrameRate: Int {
+        switch currentQuality {
+        case .ultra: return 120 // ProMotion
+        case .high: return 60
+        case .medium: return 30
+        case .low: return 30
+        }
     }
 }
 
-// MARK: - SwiftUI Environment Integration
+// MARK: - Environment Key
 
-private struct PerformanceQualityKey: EnvironmentKey {
-    static let defaultValue: PerformanceQuality = .high
+private struct PerformanceManagerKey: EnvironmentKey {
+    static let defaultValue = PerformanceManager.shared
 }
 
 extension EnvironmentValues {
-    var performanceQuality: PerformanceQuality {
-        get { self[PerformanceQualityKey.self] }
-        set { self[PerformanceQualityKey.self] = newValue }
+    var performanceManager: PerformanceManager {
+        get { self[PerformanceManagerKey.self] }
+        set { self[PerformanceManagerKey.self] = newValue }
     }
 }
 
 // MARK: - View Modifier
 
-struct PerformanceAwareModifier: ViewModifier {
-    @ObservedObject var manager = PerformanceManager.shared
+/// Modifier that provides quality-aware rendering
+struct QualityAwareModifier: ViewModifier {
+    @Environment(\.performanceManager) var performance
 
     func body(content: Content) -> some View {
         content
-            .environment(\.performanceQuality, manager.quality)
+            .environment(\.performanceManager, performance)
     }
 }
 
 extension View {
-    /// Inject performance quality into environment
-    func performanceAware() -> some View {
-        modifier(PerformanceAwareModifier())
+    /// Make view quality-aware
+    func qualityAware() -> some View {
+        modifier(QualityAwareModifier())
     }
 }
 ```
 
-**Integration in App**:
+### Step 2: Create Quality-Adaptive Components
 
-```swift
-// In Opta_ScanApp.swift
-@main
-struct Opta_ScanApp: App {
-    var body: some Scene {
-        WindowGroup {
-            ContentView()
-                .performanceAware()      // Inject performance state
-                .precompileShaders()     // Async shader compilation
-        }
-    }
-}
-```
-
-**Verification**:
-- PerformanceManager correctly detects all device states
-- Quality updates automatically when conditions change
-- Environment value propagates to all views
-
-### Task 2: Create Performance Dashboard View
-
-**Purpose**: Debug view for monitoring performance state during development.
-
-Create `Opta Scan/Views/Debug/PerformanceDashboard.swift`:
+Create `Opta Scan/Design/QualityAdaptive.swift`:
 
 ```swift
 //
-//  PerformanceDashboard.swift
+//  QualityAdaptive.swift
 //  Opta Scan
 //
-//  Debug dashboard for monitoring performance metrics
+//  Quality-adaptive view modifiers and components
 //  Part of Phase 15: Performance Tuning
 //
 
 import SwiftUI
 
-struct PerformanceDashboard: View {
-    @ObservedObject var performanceManager = PerformanceManager.shared
-    @State private var frameRate: Double = 0
-    @State private var cpuUsage: Double = 0
+// MARK: - Quality-Adaptive Blur
 
-    var body: some View {
-        NavigationStack {
-            List {
-                Section("Current Quality") {
-                    qualityBadge
-                    targetFrameRateRow
-                }
+/// Blur that adapts to quality tier
+struct AdaptiveBlurModifier: ViewModifier {
+    @Environment(\.performanceManager) var performance
+    let baseRadius: CGFloat
 
-                Section("Device State") {
-                    thermalStateRow
-                    batteryRow
-                    powerModeRow
-                }
-
-                Section("Device Capabilities") {
-                    proMotionRow
-                    proChipRow
-                }
-
-                Section("Feature Availability") {
-                    featureRow("Shaders", enabled: performanceManager.quality.enableShaders)
-                    featureRow("Animations", enabled: performanceManager.quality.enableAnimations)
-                    featureRow("Particles", enabled: performanceManager.quality.enableParticles)
-                }
-            }
-            .navigationTitle("Performance")
-        }
-    }
-
-    private var qualityBadge: some View {
-        HStack {
-            Text("Quality Tier")
-            Spacer()
-            Text(qualityLabel)
-                .font(.headline)
-                .foregroundStyle(qualityColor)
-        }
-    }
-
-    private var qualityLabel: String {
-        switch performanceManager.quality {
-        case .ultra: return "Ultra"
-        case .high: return "High"
-        case .medium: return "Medium"
-        case .low: return "Low"
-        }
-    }
-
-    private var qualityColor: Color {
-        switch performanceManager.quality {
-        case .ultra: return .purple
-        case .high: return .green
-        case .medium: return .orange
-        case .low: return .red
-        }
-    }
-
-    private var targetFrameRateRow: some View {
-        HStack {
-            Text("Target Frame Rate")
-            Spacer()
-            Text("\(Int(performanceManager.quality.targetFrameRate)) fps")
-                .foregroundStyle(.secondary)
-        }
-    }
-
-    private var thermalStateRow: some View {
-        HStack {
-            Text("Thermal State")
-            Spacer()
-            HStack(spacing: 4) {
-                Circle()
-                    .fill(thermalColor)
-                    .frame(width: 8, height: 8)
-                Text(thermalLabel)
-                    .foregroundStyle(.secondary)
-            }
-        }
-    }
-
-    private var thermalLabel: String {
-        switch performanceManager.thermalState {
-        case .nominal: return "Nominal"
-        case .fair: return "Fair"
-        case .serious: return "Serious"
-        case .critical: return "Critical"
-        @unknown default: return "Unknown"
-        }
-    }
-
-    private var thermalColor: Color {
-        switch performanceManager.thermalState {
-        case .nominal: return .green
-        case .fair: return .yellow
-        case .serious: return .orange
-        case .critical: return .red
-        @unknown default: return .gray
-        }
-    }
-
-    private var batteryRow: some View {
-        HStack {
-            Text("Battery")
-            Spacer()
-            HStack(spacing: 8) {
-                Text("\(Int(performanceManager.batteryLevel * 100))%")
-                    .foregroundStyle(.secondary)
-                if performanceManager.isCharging {
-                    Image(systemName: "bolt.fill")
-                        .foregroundStyle(.green)
-                }
-            }
-        }
-    }
-
-    private var powerModeRow: some View {
-        HStack {
-            Text("Low Power Mode")
-            Spacer()
-            Text(performanceManager.isLowPowerMode ? "On" : "Off")
-                .foregroundStyle(performanceManager.isLowPowerMode ? .orange : .secondary)
-        }
-    }
-
-    private var proMotionRow: some View {
-        HStack {
-            Text("ProMotion (120Hz)")
-            Spacer()
-            Image(systemName: performanceManager.supportsProMotion ? "checkmark.circle.fill" : "xmark.circle")
-                .foregroundStyle(performanceManager.supportsProMotion ? .green : .secondary)
-        }
-    }
-
-    private var proChipRow: some View {
-        HStack {
-            Text("Pro Chip (A15+)")
-            Spacer()
-            Image(systemName: performanceManager.hasProChip ? "checkmark.circle.fill" : "xmark.circle")
-                .foregroundStyle(performanceManager.hasProChip ? .green : .secondary)
-        }
-    }
-
-    private func featureRow(_ name: String, enabled: Bool) -> some View {
-        HStack {
-            Text(name)
-            Spacer()
-            Text(enabled ? "Enabled" : "Disabled")
-                .foregroundStyle(enabled ? .green : .red)
-        }
+    func body(content: Content) -> some View {
+        let radius = baseRadius * (CGFloat(performance.currentQuality.rawValue + 1) / 4.0)
+        content
+            .blur(radius: radius)
     }
 }
 
-#Preview {
-    PerformanceDashboard()
-}
-```
-
-**Verification**:
-- Dashboard displays all performance metrics
-- Values update in real-time when state changes
-- Accessible via debug menu
-
-### Task 3: Integrate PerformanceManager with Shaders
-
-**Purpose**: Replace Phase 10's ThermalMonitor with unified PerformanceManager.
-
-Update shader and animation code to use `PerformanceManager.shared.quality`:
-
-```swift
-// Example: Update ThermalAwareAnimatedView to use PerformanceManager
-@available(iOS 17.0, *)
-struct PerformanceAwareAnimatedView<Content: View>: View {
-    @ObservedObject var manager = PerformanceManager.shared
-    @Environment(\.accessibilityReduceMotion) var reduceMotion
-
-    let baseFrameRate: Double
-    @ViewBuilder let content: (Double) -> Content
-
-    var body: some View {
-        if reduceMotion || manager.quality == .low {
-            content(0)
-        } else {
-            TimelineView(.animation(minimumInterval: adaptedInterval, paused: false)) { timeline in
-                content(timeline.date.timeIntervalSinceReferenceDate)
-            }
-        }
-    }
-
-    private var adaptedInterval: TimeInterval {
-        1.0 / manager.quality.targetFrameRate
-    }
-}
-
-// Example: Update obsidianGlass conditional rendering
 extension View {
-    @ViewBuilder
-    func performanceAwareGlass(depth: GlassDepth) -> some View {
-        let quality = PerformanceManager.shared.quality
+    /// Apply quality-adaptive blur
+    func adaptiveBlur(radius: CGFloat = 10) -> some View {
+        modifier(AdaptiveBlurModifier(baseRadius: radius))
+    }
+}
 
-        switch quality {
-        case .ultra, .high:
-            self.obsidianGlass(depth: depth.depth, noiseAmount: 0.5)
-        case .medium:
-            self.obsidianGlass(depth: depth.depth, noiseAmount: 0.0) // Skip noise
-        case .low:
-            self // Skip shader entirely, use standard background
-                .background(Color.optaBackground.opacity(depth.depth))
+// MARK: - Quality-Adaptive Shadow
+
+/// Shadow that adapts to quality tier
+struct AdaptiveShadowModifier: ViewModifier {
+    @Environment(\.performanceManager) var performance
+    let color: Color
+    let baseRadius: CGFloat
+
+    func body(content: Content) -> some View {
+        let layers = performance.currentQuality.shadowLayers
+        let radius = baseRadius * (CGFloat(performance.currentQuality.rawValue + 1) / 4.0)
+
+        content
+            .background {
+                ForEach(0..<layers, id: \.self) { layer in
+                    content
+                        .blur(radius: radius * CGFloat(layer + 1) / CGFloat(layers))
+                        .opacity(0.3 / Double(layer + 1))
+                }
+            }
+    }
+}
+
+extension View {
+    /// Apply quality-adaptive shadow
+    func adaptiveShadow(color: Color = .black, radius: CGFloat = 10) -> some View {
+        modifier(AdaptiveShadowModifier(color: color, baseRadius: radius))
+    }
+}
+
+// MARK: - Quality-Adaptive Animation
+
+/// Animation that respects quality tier and reduce motion
+struct AdaptiveAnimationModifier: ViewModifier {
+    @Environment(\.performanceManager) var performance
+    let animation: Animation
+
+    func body(content: Content) -> some View {
+        content
+            .animation(
+                performance.currentQuality.animationEnabled ? animation : .none,
+                value: performance.currentQuality
+            )
+    }
+}
+
+extension View {
+    /// Apply quality-adaptive animation
+    func adaptiveAnimation(_ animation: Animation = .optaSpring) -> some View {
+        modifier(AdaptiveAnimationModifier(animation: animation))
+    }
+}
+
+// MARK: - Conditional Effect
+
+/// Apply effect only if quality allows
+struct ConditionalEffectModifier<Effect: ViewModifier>: ViewModifier {
+    @Environment(\.performanceManager) var performance
+    let minimumQuality: QualityTier
+    let effect: Effect
+
+    func body(content: Content) -> some View {
+        if performance.currentQuality >= minimumQuality {
+            content.modifier(effect)
+        } else {
+            content
         }
     }
 }
-```
 
-**Verification**:
-- Shaders use PerformanceManager quality level
-- Animations adapt frame rate from PerformanceManager
-- All features respect quality tier
-
-### Task 4: Battery Impact Profiling
-
-**Purpose**: Measure and document power consumption of app features.
-
-Create profiling protocol and documentation:
-
-```swift
-//
-//  BatteryProfiler.swift
-//  Opta Scan
-//
-//  Battery impact measurement utilities
-//  Part of Phase 15: Performance Tuning
-//
-
-import Foundation
-
-/// Battery impact measurement for profiling sessions
-struct BatteryProfileResult {
-    let featureName: String
-    let duration: TimeInterval
-    let batteryDelta: Float
-    let avgThermalState: String
-    let timestamp: Date
-
-    var estimatedHourlyDrain: Float {
-        guard duration > 0 else { return 0 }
-        return batteryDelta * (3600 / Float(duration))
+extension View {
+    /// Apply effect only if quality tier is met
+    func conditionalEffect<Effect: ViewModifier>(
+        _ effect: Effect,
+        minimumQuality: QualityTier
+    ) -> some View {
+        modifier(ConditionalEffectModifier(minimumQuality: minimumQuality, effect: effect))
     }
 }
 
-/// Simple battery profiler for development testing
-final class BatteryProfiler {
-    private var startBattery: Float = 0
-    private var startTime: Date = Date()
-    private var featureName: String = ""
-    private var thermalReadings: [ProcessInfo.ThermalState] = []
+// MARK: - Performance Debug Overlay
 
-    func startProfiling(feature: String) {
-        UIDevice.current.isBatteryMonitoringEnabled = true
-        featureName = feature
-        startBattery = UIDevice.current.batteryLevel
-        startTime = Date()
-        thermalReadings = [ProcessInfo.processInfo.thermalState]
-    }
+/// Debug overlay showing current performance state
+struct PerformanceDebugView: View {
+    @Environment(\.performanceManager) var performance
 
-    func recordThermalState() {
-        thermalReadings.append(ProcessInfo.processinfo.thermalState)
-    }
-
-    func stopProfiling() -> BatteryProfileResult {
-        let endBattery = UIDevice.current.batteryLevel
-        let endTime = Date()
-
-        // Calculate most common thermal state
-        let avgThermal = thermalReadings
-            .map { $0.rawValue }
-            .reduce(0, +) / thermalReadings.count
-
-        let thermalLabel: String = {
-            switch avgThermal {
-            case 0: return "Nominal"
-            case 1: return "Fair"
-            case 2: return "Serious"
-            default: return "Critical"
-            }
-        }()
-
-        return BatteryProfileResult(
-            featureName: featureName,
-            duration: endTime.timeIntervalSince(startTime),
-            batteryDelta: startBattery - endBattery,
-            avgThermalState: thermalLabel,
-            timestamp: startTime
-        )
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Quality: \(String(describing: performance.currentQuality))")
+            Text("Thermal: \(String(describing: performance.thermalLevel))")
+            Text("Low Power: \(performance.isLowPowerMode ? "Yes" : "No")")
+            Text("Battery: \(Int(performance.batteryLevel * 100))%")
+            Text("Charging: \(performance.isCharging ? "Yes" : "No")")
+            Text("Target FPS: \(performance.recommendedFrameRate)")
+        }
+        .font(.caption.monospaced())
+        .padding(8)
+        .background(.ultraThinMaterial)
+        .cornerRadius(8)
     }
 }
 ```
 
-**Profiling Protocol**:
+### Step 3: Add Files to Xcode Project
 
-1. **Baseline Measurement**: App idle for 10 minutes
-2. **Feature Isolation**: Test each feature independently
-3. **Realistic Usage**: Simulate typical user session
-4. **Record Results**: Document in performance benchmark file
+Add:
+- PerformanceManager.swift to Services group (create if needed)
+- QualityAdaptive.swift to Design group
 
-**Verification**:
-- Profiler captures accurate battery delta
-- Results logged for analysis
-- Identify features with highest battery impact
+## Files to Create/Modify
 
-### Task 5: Instruments Profiling Workflow
+| File | Action |
+|------|--------|
+| `Opta Scan/Services/PerformanceManager.swift` | Create |
+| `Opta Scan/Design/QualityAdaptive.swift` | Create |
+| `Opta Scan.xcodeproj/project.pbxproj` | Modify - add new files |
 
-**Purpose**: Document systematic approach to GPU/CPU profiling.
+## Verification
 
-Create `.planning/phases/15-performance-tuning/PROFILING_GUIDE.md`:
+1. Build succeeds
+2. Quality tier responds to thermal state changes
+3. Low Power Mode triggers quality reduction
+4. Battery level affects quality appropriately
 
-```markdown
-# Instruments Profiling Guide
+## Dependencies
 
-## Setup
-
-1. Connect physical device (simulator doesn't reflect real performance)
-2. Disable Low Power Mode and Auto-Lock
-3. Ensure battery > 80% and device is cool
-4. Build for Release configuration (Debug has overhead)
-
-## Core Instruments Templates
-
-### 1. Time Profiler (CPU)
-- Identify expensive functions
-- Look for main thread blocking
-- Target: < 5% CPU during idle, < 30% during active use
-
-### 2. Core Animation (GPU)
-- Measure frame rate and drops
-- Identify off-screen rendering
-- Target: 60fps sustained, no drops below 55fps
-
-### 3. Metal System Trace (Shaders)
-- Profile shader execution time
-- Identify GPU bottlenecks
-- Target: Shader execution < 8ms per frame
-
-### 4. Energy Log (Battery)
-- Measure power consumption by component
-- Identify energy-intensive code paths
-- Target: "Good" energy impact rating
-
-## Profiling Sessions
-
-### Session 1: Launch Performance
-- Profile cold launch
-- Target: < 2 seconds to interactive
-- Watch for: Shader compilation, asset loading
-
-### Session 2: Scroll Performance
-- Profile history list scrolling
-- Target: 60fps, no hitches
-- Watch for: Image loading, cell recycling
-
-### Session 3: Processing State
-- Profile Claude API interaction
-- Target: Smooth animation during wait
-- Watch for: Main thread blocking
-
-### Session 4: Shader Effects
-- Profile glass effect rendering
-- Target: < 8ms per frame
-- Watch for: Overdraw, complex blend modes
-
-## Recording Results
-
-Document findings in:
-`.planning/phases/15-performance-tuning/BENCHMARK_RESULTS.md`
-
-Format:
-| Metric | Target | Actual | Status |
-|--------|--------|--------|--------|
-| Launch time | < 2s | X.Xs | ✅/❌ |
-| Scroll fps | 60 | XX | ✅/❌ |
-```
-
-**Verification**:
-- Guide created and accessible
-- Team can follow profiling workflow
-- Results documented systematically
-
-## Acceptance Criteria
-
-### PerformanceManager
-- [ ] Monitors thermal state, battery, low power mode
-- [ ] Calculates quality tier based on all factors
-- [ ] Environment integration for SwiftUI views
-- [ ] Ultra tier enabled only with optimal conditions
-
-### Integration
-- [ ] All shaders use PerformanceManager quality
-- [ ] All animations adapt frame rate from manager
-- [ ] Particles disabled at medium quality and below
-- [ ] Graceful degradation at each tier
-
-### Profiling
-- [ ] BatteryProfiler captures accurate measurements
-- [ ] Instruments guide documented
-- [ ] Benchmark results file created
-- [ ] Key metrics meet targets:
-  - Launch: < 2 seconds
-  - Scroll: 60fps sustained
-  - Idle CPU: < 5%
-  - Active CPU: < 30%
-
-### Battery Optimization
-- [ ] Low Power Mode caps quality at medium
-- [ ] Critical battery (< 10%) triggers low quality
-- [ ] Charging + cool enables ultra quality
-
-## Estimated Scope
-
-- **Files created**: 3
-  - `PerformanceManager.swift` - Unified performance state
-  - `PerformanceDashboard.swift` - Debug monitoring view
-  - `BatteryProfiler.swift` - Battery measurement utilities
-- **Files modified**: 2-3 (shader/animation files to use PerformanceManager)
-- **Documentation**: 2 (Profiling guide, benchmark results)
-- **Complexity**: Medium (system integration, profiling workflow)
-- **Risk**: Low (additive, existing code continues to work)
-
-## Notes
-
-### Research-Driven Design
-- Thermal state monitoring from Apple's ProcessInfo API
-- Battery optimization best practices from research docs
-- Device capability detection for A-series Pro optimization
-
-### Testing Recommendations
-- Test on multiple devices (iPhone 13, 14, 15, 16, 17 series)
-- Verify thermal degradation with extended use
-- Confirm Low Power Mode behavior
-- Profile on physical device, not simulator
+- Phase 14 complete
+- ProcessInfo thermal notifications
+- UIDevice battery monitoring
