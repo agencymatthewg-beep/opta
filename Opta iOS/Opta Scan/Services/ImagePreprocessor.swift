@@ -129,6 +129,48 @@ extension ImagePreprocessor {
     }
 }
 
+// MARK: - Quality Tiers
+
+extension ImagePreprocessor {
+    /// Target size based on quality tier
+    static func targetSize(for tier: QualityTier) -> CGSize {
+        switch tier {
+        case .ultra, .high:
+            return CGSize(width: 560, height: 560)
+        case .medium:
+            return CGSize(width: 448, height: 448)
+        case .low:
+            return CGSize(width: 336, height: 336)
+        }
+    }
+
+    /// Compression quality based on quality tier
+    static func compressionQuality(for tier: QualityTier) -> CGFloat {
+        switch tier {
+        case .ultra, .high:
+            return 0.9
+        case .medium:
+            return 0.85
+        case .low:
+            return 0.8
+        }
+    }
+
+    /// Prepare image with quality tier adaptation
+    static func prepare(_ image: UIImage, tier: QualityTier) -> UIImage {
+        let safeImage = constrainSize(image, maxDimension: maxDimension)
+        let size = targetSize(for: tier)
+        return resize(safeImage, to: size)
+    }
+
+    /// Full pipeline with quality tier
+    static func preprocess(_ image: UIImage, tier: QualityTier) -> Data? {
+        let prepared = prepare(image, tier: tier)
+        let quality = compressionQuality(for: tier)
+        return prepared.jpegData(compressionQuality: quality)
+    }
+}
+
 // MARK: - UIImage Extension
 
 extension UIImage {
