@@ -1,0 +1,393 @@
+//
+//  MLXService.swift
+//  Opta Scan
+//
+//  MLX Swift service for on-device Llama 3.2 11B Vision inference
+//  Implements LLMProvider protocol for seamless integration
+//
+
+import Foundation
+import UIKit
+import MLX
+import MLXLLM
+
+// MARK: - MLX Service
+
+/// On-device LLM provider using Apple's MLX framework
+actor MLXService: LLMProvider {
+
+    // MARK: - LLMProvider Properties
+
+    let id: LLMProviderType = .local
+    let name = "On-Device (Llama 3.2)"
+    let requiresAPIKey = false
+
+    var supportsVision: Bool {
+        loadedModelConfig?.supportsVision ?? false
+    }
+
+    var isAvailable: Bool {
+        get async {
+            return loadedModel != nil && isDeviceSupported
+        }
+    }
+
+    // MARK: - State
+
+    private var loadedModel: ModelContainer?
+    private var loadedModelConfig: OptaModelConfiguration?
+    private var isGenerating = false
+
+    // MARK: - Device Support
+
+    private var isDeviceSupported: Bool {
+        #if targetEnvironment(simulator)
+        return false
+        #else
+        if #available(iOS 17.2, *) {
+            return true
+        }
+        return false
+        #endif
+    }
+
+    // MARK: - Model Loading
+
+    /// Load a model configuration
+    func loadModel(_ config: OptaModelConfiguration) async throws {
+        guard isDeviceSupported else {
+            throw MLXError.deviceNotSupported
+        }
+
+        // Set GPU cache limit for memory management
+        MLX.GPU.set(cacheLimit: 20 * 1024 * 1024)
+
+        // Load model using mlx-swift-lm
+        let modelConfig = ModelConfiguration.configuration(id: config.name)
+        let container = try await LLMModelFactory.shared.loadContainer(configuration: modelConfig)
+
+        loadedModel = container
+        loadedModelConfig = config
+    }
+
+    /// Unload the current model to free memory
+    func unloadModel() {
+        loadedModel = nil
+        loadedModelConfig = nil
+        // Force memory cleanup
+        MLX.GPU.synchronize()
+    }
+
+    /// Check if a model is currently loaded
+    var isModelLoaded: Bool {
+        loadedModel != nil
+    }
+
+    // MARK: - LLMProvider Methods
+
+    func analyzeImage(_ image: UIImage, prompt: String, depth: OptimizationDepth) async throws -> AnalysisResult {
+        guard let model = loadedModel else {
+            throw MLXError.modelNotLoaded
+        }
+
+        guard loadedModelConfig?.supportsVision == true else {
+            throw MLXError.visionNotSupported
+        }
+
+        // Prepare image for vision model
+        let resizedImage = prepareImage(image)
+
+        // Generate with vision prompt
+        let systemPrompt = buildSystemPrompt(depth: depth)
+        let fullPrompt = "\(systemPrompt)\n\nUser's optimization request: \(prompt)"
+
+        let response = try await generate(
+            model: model,
+            prompt: fullPrompt,
+            image: resizedImage,
+            maxTokens: depth.maxTokens
+        )
+
+        return parseAnalysisResult(from: response)
+    }
+
+    func analyzeText(prompt: String, depth: OptimizationDepth) async throws -> AnalysisResult {
+        guard let model = loadedModel else {
+            throw MLXError.modelNotLoaded
+        }
+
+        let systemPrompt = buildSystemPrompt(depth: depth)
+        let fullPrompt = "\(systemPrompt)\n\nUser's optimization request: \(prompt)"
+
+        let response = try await generate(
+            model: model,
+            prompt: fullPrompt,
+            image: nil,
+            maxTokens: depth.maxTokens
+        )
+
+        return parseAnalysisResult(from: response)
+    }
+
+    func continueWithAnswers(_ answers: [String: String], context: AnalysisResult) async throws -> OptimizationResult {
+        guard let model = loadedModel else {
+            throw MLXError.modelNotLoaded
+        }
+
+        let followUpPrompt = buildFollowUpPrompt(context: context, answers: answers)
+        let systemPrompt = "You are Opta, an optimization assistant. Provide comprehensive recommendations with clear sections, rankings if applicable, and actionable advice. Use markdown formatting."
+
+        let fullPrompt = "\(systemPrompt)\n\n\(followUpPrompt)"
+
+        let response = try await generate(
+            model: model,
+            prompt: fullPrompt,
+            image: nil,
+            maxTokens: 4096
+        )
+
+        return parseOptimizationResult(from: response)
+    }
+
+    // MARK: - Private Generation
+
+    private func generate(
+        model: ModelContainer,
+        prompt: String,
+        image: UIImage?,
+        maxTokens: Int
+    ) async throws -> String {
+        guard !isGenerating else {
+            throw MLXError.alreadyGenerating
+        }
+
+        isGenerating = true
+        defer { isGenerating = false }
+
+        // Build user input
+        var userInput = UserInput(prompt: prompt)
+
+        // Add image if provided
+        if let image = image,
+           let imageData = image.jpegData(compressionQuality: 0.9) {
+            userInput.images = [.data(imageData)]
+        }
+
+        // Configure generation parameters
+        let generateConfig = GenerateParameters(
+            temperature: 0.7,
+            topP: 0.9
+        )
+
+        // Generate tokens
+        var output = ""
+        let result = try await model.generate(
+            input: userInput,
+            parameters: generateConfig,
+            maxTokens: maxTokens
+        ) { tokens in
+            // Token callback - accumulate output
+            if let text = tokens.last {
+                output += text
+            }
+            // Return true to continue generation
+            return .more
+        }
+
+        return result.output
+    }
+
+    // MARK: - Image Preparation
+
+    private func prepareImage(_ image: UIImage) -> UIImage {
+        // Resize to model's expected input size (typically 336x336 or 560x560 for vision models)
+        let targetSize = CGSize(width: 560, height: 560)
+
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1.0
+
+        let renderer = UIGraphicsImageRenderer(size: targetSize, format: format)
+        let resized = renderer.image { _ in
+            image.draw(in: CGRect(origin: .zero, size: targetSize))
+        }
+
+        return resized
+    }
+
+    // MARK: - Prompt Building
+
+    private func buildSystemPrompt(depth: OptimizationDepth) -> String {
+        """
+        You are Opta, an optimization assistant that helps users make the best decisions by analyzing images and prompts. Your goal is to understand what the user wants to optimize and ask clarifying questions to provide the most helpful recommendation.
+
+        Depth level: \(depth.rawValue)
+        \(depth == .quick ? "Be concise and focus on the most important factors." : "Be thorough and consider all relevant factors.")
+
+        Response format - JSON:
+        ```json
+        {
+            "understanding": "Brief summary of what the user wants to optimize",
+            "questions": [
+                {
+                    "id": "q1",
+                    "text": "Question text here?",
+                    "type": "single_choice",
+                    "options": ["Option 1", "Option 2", "Option 3"]
+                },
+                {
+                    "id": "q2",
+                    "text": "Another question?",
+                    "type": "text",
+                    "placeholder": "Enter your answer..."
+                }
+            ]
+        }
+        ```
+
+        Question types: single_choice, multi_choice, text, slider (with min, max, default)
+        """
+    }
+
+    private func buildFollowUpPrompt(context: AnalysisResult, answers: [String: String]) -> String {
+        var prompt = "Original understanding: \(context.understanding)\n\nUser's answers to clarifying questions:\n"
+        for (questionId, answer) in answers {
+            if let question = context.questions.first(where: { $0.id == questionId }) {
+                prompt += "- \(question.text): \(answer)\n"
+            }
+        }
+        prompt += "\nBased on this information, provide your optimization recommendation."
+        return prompt
+    }
+
+    // MARK: - Response Parsing
+
+    private func parseAnalysisResult(from text: String) -> AnalysisResult {
+        // Try to extract JSON from the response
+        if let jsonStart = text.range(of: "```json"),
+           let jsonEnd = text.range(of: "```", range: jsonStart.upperBound..<text.endIndex) {
+            let jsonString = String(text[jsonStart.upperBound..<jsonEnd.lowerBound])
+            if let data = jsonString.data(using: .utf8),
+               let parsed = try? JSONDecoder().decode(AnalysisResultJSON.self, from: data) {
+                return AnalysisResult(
+                    understanding: parsed.understanding,
+                    questions: parsed.questions.map { q in
+                        OptimizationQuestion(
+                            id: q.id,
+                            text: q.text,
+                            type: QuestionType(rawValue: q.type) ?? .text,
+                            options: q.options,
+                            placeholder: q.placeholder,
+                            min: q.min,
+                            max: q.max,
+                            defaultValue: q.defaultValue
+                        )
+                    },
+                    rawResponse: text
+                )
+            }
+        }
+
+        // Fallback: return raw text as understanding
+        return AnalysisResult(
+            understanding: text,
+            questions: [],
+            rawResponse: text
+        )
+    }
+
+    private func parseOptimizationResult(from text: String) -> OptimizationResult {
+        OptimizationResult(
+            markdown: text,
+            highlights: extractHighlights(from: text),
+            rankings: extractRankings(from: text)
+        )
+    }
+
+    private func extractHighlights(from text: String) -> [String] {
+        var highlights: [String] = []
+        let lines = text.components(separatedBy: .newlines)
+
+        for line in lines {
+            if line.contains("**") {
+                let pattern = "\\*\\*([^*]+)\\*\\*"
+                if let regex = try? NSRegularExpression(pattern: pattern),
+                   let match = regex.firstMatch(in: line, range: NSRange(line.startIndex..., in: line)),
+                   let range = Range(match.range(at: 1), in: line) {
+                    highlights.append(String(line[range]))
+                }
+            }
+        }
+
+        return Array(highlights.prefix(5))
+    }
+
+    private func extractRankings(from text: String) -> [RankingItem]? {
+        var rankings: [RankingItem] = []
+        let lines = text.components(separatedBy: .newlines)
+
+        for line in lines {
+            let pattern = "^\\s*(\\d+)[.\\)]\\s*(.+)"
+            if let regex = try? NSRegularExpression(pattern: pattern),
+               let match = regex.firstMatch(in: line, range: NSRange(line.startIndex..., in: line)),
+               let rankRange = Range(match.range(at: 1), in: line),
+               let titleRange = Range(match.range(at: 2), in: line) {
+                let rank = Int(line[rankRange]) ?? 0
+                let title = String(line[titleRange])
+                rankings.append(RankingItem(rank: rank, title: title, description: nil))
+            }
+        }
+
+        return rankings.isEmpty ? nil : rankings
+    }
+}
+
+// MARK: - Private Parsing Models
+
+private struct AnalysisResultJSON: Decodable {
+    let understanding: String
+    let questions: [QuestionJSON]
+}
+
+private struct QuestionJSON: Decodable {
+    let id: String
+    let text: String
+    let type: String
+    let options: [String]?
+    let placeholder: String?
+    let min: Double?
+    let max: Double?
+    let defaultValue: Double?
+
+    enum CodingKeys: String, CodingKey {
+        case id, text, type, options, placeholder, min, max
+        case defaultValue = "default"
+    }
+}
+
+// MARK: - MLX Errors
+
+enum MLXError: LocalizedError {
+    case deviceNotSupported
+    case modelNotLoaded
+    case alreadyGenerating
+    case visionNotSupported
+    case imageProcessingFailed
+    case downloadFailed(String)
+
+    var errorDescription: String? {
+        switch self {
+        case .deviceNotSupported:
+            return "Requires iPhone with A14+ chip running iOS 17.2+"
+        case .modelNotLoaded:
+            return "Model not loaded. Download in Settings."
+        case .alreadyGenerating:
+            return "Generation in progress."
+        case .visionNotSupported:
+            return "Vision model not loaded."
+        case .imageProcessingFailed:
+            return "Failed to process image."
+        case .downloadFailed(let reason):
+            return "Download failed: \(reason)"
+        }
+    }
+}
