@@ -59,6 +59,13 @@ struct HistoryView: View {
                         selectedScan = scan
                     }
                     .swipeActions(
+                        leading: [
+                            SwipeAction(
+                                icon: scan.isFavorite ? "star.fill" : "star",
+                                color: .optaAmber,
+                                action: { historyManager.toggleFavorite(scan) }
+                            )
+                        ],
                         trailing: [
                             SwipeAction(
                                 icon: "trash.fill",
@@ -70,6 +77,16 @@ struct HistoryView: View {
                     )
                     .staggeredAppear(index: index, isVisible: true)
                     .contextMenu {
+                        Button {
+                            OptaHaptics.shared.success()
+                            historyManager.toggleFavorite(scan)
+                        } label: {
+                            Label(
+                                scan.isFavorite ? "Remove from Favorites" : "Add to Favorites",
+                                systemImage: scan.isFavorite ? "star.slash" : "star"
+                            )
+                        }
+
                         Button(role: .destructive) {
                             OptaHaptics.shared.warning()
                             historyManager.deleteScan(scan)
@@ -77,9 +94,12 @@ struct HistoryView: View {
                             Label("Delete", systemImage: "trash")
                         }
                     }
-                    .accessibilityLabel("Scan: \(scan.prompt ?? "Untitled")")
-                    .accessibilityHint("Double tap to view scan details. Swipe left to delete.")
+                    .accessibilityLabel("Scan: \(scan.prompt ?? "Untitled")\(scan.isFavorite ? ", favorited" : "")")
+                    .accessibilityHint("Double tap to view scan details. Swipe right to favorite. Swipe left to delete.")
                     .accessibilityActions {
+                        Button(scan.isFavorite ? "Remove from favorites" : "Add to favorites") {
+                            historyManager.toggleFavorite(scan)
+                        }
                         Button("Delete", role: .destructive) {
                             historyManager.deleteScan(scan)
                         }

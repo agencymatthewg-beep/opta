@@ -101,6 +101,7 @@ public class ScanEntity: NSManagedObject, Identifiable {
     @NSManaged public var highlightsData: Data?
     @NSManaged public var rankingsJSON: String?
     @NSManaged public var createdAt: Date?
+    @NSManaged public var isFavorite: Bool
 
     // MARK: - Computed Properties
 
@@ -221,6 +222,16 @@ final class HistoryManager: ObservableObject {
         scan.rankings = result.rankings
         scan.createdAt = Date()
 
+        PersistenceController.shared.save()
+        fetchScans()
+    }
+
+    // MARK: - Update Operations
+
+    /// Toggle the favorite status of a scan
+    /// - Parameter scan: The scan entity to toggle
+    func toggleFavorite(_ scan: ScanEntity) {
+        scan.isFavorite.toggle()
         PersistenceController.shared.save()
         fetchScans()
     }

@@ -6,6 +6,7 @@
         <attribute name="highlightsData" optional="YES" attributeType="Binary"/>
         <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="imageData" optional="YES" attributeType="Binary" allowsExternalBinaryDataStorage="YES"/>
+        <attribute name="isFavorite" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
         <attribute name="prompt" optional="YES" attributeType="String"/>
         <attribute name="questionsJSON" optional="YES" attributeType="String"/>
         <attribute name="rankingsJSON" optional="YES" attributeType="String"/>
