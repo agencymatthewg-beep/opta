@@ -10,16 +10,16 @@ See: .planning/PROJECT.md (updated 2026-01-20)
 ## Current Position
 
 Phase: 9 of 16 (Advanced Gestures)
-Plan: 09-01 complete, 09-02 and 09-03 pending
+Plan: 09-01 and 09-02 complete, 09-03 pending
 Status: Executing Phase 9
-Last activity: 2026-01-21 — Plan 09-01 (Swipe Actions) completed
+Last activity: 2026-01-21 — Plan 09-02 (Pinch-to-Zoom) completed
 
-Progress: ████████░░░░░░░░ 53% overall (8.33 of 16 phases complete)
+Progress: ████████░░░░░░░░ 55% overall (8.67 of 16 phases complete)
 
 ### v1.2 Premium Polish
 | Phase | Name | Status |
 |-------|------|--------|
-| 9 | Advanced Gestures | In Progress (1/3) |
+| 9 | Advanced Gestures | In Progress (2/3) |
 | 10 | Metal Shaders | Not started |
 | 11 | Physics Animations | Not started |
 | 12 | Visual Effects | Not started |
@@ -70,6 +70,8 @@ Example: Menu photo + "most calories for $10" → Visual recommendation
 | 8 | AppStorage for onboarding | Lightweight persistence |
 | 9 | Custom SwipeActionsModifier | Full control over swipe UX |
 | 9 | SwipeStateManager singleton | Single-card swipe enforcement |
+| 9 | highPriorityGesture for zoom | Pinch takes precedence over scroll |
+| 9 | Dynamic pan minimumDistance | Allows scroll at 1x, pan when zoomed |
 
 ### Deferred Issues
 
@@ -94,8 +96,8 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-21
-Status: Plan 09-01 (Swipe Actions) completed
-Next action: Execute Plan 09-02 (Pinch-to-Zoom) or Plan 09-03 (Context Menus & Haptics)
+Status: Plan 09-02 (Pinch-to-Zoom) completed
+Next action: Execute Plan 09-03 (Context Menus & Haptics) to complete Phase 9
 
 ---
 *Opta Scan — capture anything, optimize everything*
