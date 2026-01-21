@@ -1,0 +1,309 @@
+//
+//  GestureModifiers.swift
+//  Opta Scan
+//
+//  Swipe gesture actions for list cards with haptic feedback
+//  Part of Phase 9: Advanced Gestures
+//
+//  Created by Matthew Byrden
+//
+
+import SwiftUI
+
+// MARK: - Swipe Action Configuration
+
+/// Represents a single action triggered by swiping
+struct SwipeAction: Identifiable {
+    let id = UUID()
+    let icon: String
+    let color: Color
+    let isDestructive: Bool
+    let action: () -> Void
+
+    init(icon: String, color: Color, isDestructive: Bool = false, action: @escaping () -> Void) {
+        self.icon = icon
+        self.color = color
+        self.isDestructive = isDestructive
+        self.action = action
+    }
+}
+
+// MARK: - Swipe State Manager
+
+/// Manages global swipe state to ensure only one card can be swiped at a time
+final class SwipeStateManager: ObservableObject {
+    static let shared = SwipeStateManager()
+
+    @Published var activeSwipeID: UUID?
+
+    private init() {}
+
+    func beginSwipe(id: UUID) {
+        if activeSwipeID != id {
+            activeSwipeID = id
+        }
+    }
+
+    func endSwipe(id: UUID) {
+        if activeSwipeID == id {
+            activeSwipeID = nil
+        }
+    }
+
+    func canSwipe(id: UUID) -> Bool {
+        activeSwipeID == nil || activeSwipeID == id
+    }
+}
+
+// MARK: - Swipe Actions View Modifier
+
+/// ViewModifier that adds swipe gesture actions to any view
+struct SwipeActionsModifier: ViewModifier {
+
+    // MARK: - Properties
+
+    let leadingActions: [SwipeAction]
+    let trailingActions: [SwipeAction]
+
+    // MARK: - State
+
+    @State private var offset: CGFloat = 0
+    @State private var isDragging = false
+    @State private var cardID = UUID()
+
+    @ObservedObject private var swipeState = SwipeStateManager.shared
+
+    // MARK: - Constants
+
+    private enum Layout {
+        static let actionWidth: CGFloat = 72
+        static let triggerThreshold: CGFloat = 0.6
+        static let revealThreshold: CGFloat = 0.4
+        static let iconSize: CGFloat = 22
+    }
+
+    // MARK: - Computed Properties
+
+    /// Maximum offset for leading actions (swipe right reveals leading)
+    private var maxLeadingOffset: CGFloat {
+        CGFloat(leadingActions.count) * Layout.actionWidth
+    }
+
+    /// Maximum offset for trailing actions (swipe left reveals trailing)
+    private var maxTrailingOffset: CGFloat {
+        -CGFloat(trailingActions.count) * Layout.actionWidth
+    }
+
+    /// Whether full swipe triggers action automatically
+    private var shouldTriggerLeadingAction: Bool {
+        offset > maxLeadingOffset * Layout.triggerThreshold && !leadingActions.isEmpty
+    }
+
+    private var shouldTriggerTrailingAction: Bool {
+        offset < maxTrailingOffset * Layout.triggerThreshold && !trailingActions.isEmpty
+    }
+
+    // MARK: - Body
+
+    func body(content: Content) -> some View {
+        GeometryReader { geometry in
+            ZStack {
+                // Action backgrounds
+                HStack(spacing: 0) {
+                    // Leading actions (revealed on swipe right)
+                    if !leadingActions.isEmpty {
+                        leadingActionsView
+                    }
+
+                    Spacer()
+
+                    // Trailing actions (revealed on swipe left)
+                    if !trailingActions.isEmpty {
+                        trailingActionsView
+                    }
+                }
+
+                // Main content
+                content
+                    .offset(x: offset)
+                    .gesture(swipeGesture)
+            }
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityActions {
+            // Add accessibility actions for VoiceOver
+            ForEach(leadingActions) { action in
+                Button(action.icon) {
+                    action.action()
+                }
+            }
+            ForEach(trailingActions) { action in
+                Button(action.icon) {
+                    action.action()
+                }
+            }
+        }
+    }
+
+    // MARK: - Action Views
+
+    private var leadingActionsView: some View {
+        HStack(spacing: 0) {
+            ForEach(leadingActions) { action in
+                actionButton(action: action, isLeading: true)
+            }
+        }
+        .frame(width: maxLeadingOffset)
+        .opacity(offset > 0 ? 1 : 0)
+    }
+
+    private var trailingActionsView: some View {
+        HStack(spacing: 0) {
+            ForEach(trailingActions) { action in
+                actionButton(action: action, isLeading: false)
+            }
+        }
+        .frame(width: -maxTrailingOffset)
+        .opacity(offset < 0 ? 1 : 0)
+    }
+
+    private func actionButton(action: SwipeAction, isLeading: Bool) -> some View {
+        Button {
+            triggerAction(action)
+        } label: {
+            ZStack {
+                action.color
+
+                Image(systemName: action.icon)
+                    .font(.system(size: Layout.iconSize, weight: .semibold))
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(.white)
+            }
+        }
+        .frame(width: Layout.actionWidth)
+        .accessibilityLabel(action.isDestructive ? "Delete" : "Toggle favorite")
+        .accessibilityHint(action.isDestructive ? "Double tap to delete this scan" : "Double tap to toggle favorite")
+    }
+
+    // MARK: - Gesture
+
+    private var swipeGesture: some Gesture {
+        DragGesture(minimumDistance: 10)
+            .onChanged { value in
+                guard swipeState.canSwipe(id: cardID) else { return }
+
+                if !isDragging {
+                    isDragging = true
+                    swipeState.beginSwipe(id: cardID)
+                }
+
+                let translation = value.translation.width
+
+                // Apply resistance at edges
+                if leadingActions.isEmpty && translation > 0 {
+                    offset = translation * 0.2
+                } else if trailingActions.isEmpty && translation < 0 {
+                    offset = translation * 0.2
+                } else if translation > maxLeadingOffset {
+                    // Rubber band effect past max
+                    let excess = translation - maxLeadingOffset
+                    offset = maxLeadingOffset + excess * 0.3
+                } else if translation < maxTrailingOffset {
+                    let excess = translation - maxTrailingOffset
+                    offset = maxTrailingOffset + excess * 0.3
+                } else {
+                    offset = translation
+                }
+            }
+            .onEnded { value in
+                isDragging = false
+
+                // Check for full swipe trigger
+                if shouldTriggerLeadingAction, let action = leadingActions.first {
+                    triggerAction(action)
+                    return
+                }
+
+                if shouldTriggerTrailingAction, let action = trailingActions.first {
+                    triggerAction(action)
+                    return
+                }
+
+                // Snap to reveal position or reset
+                let shouldRevealLeading = offset > maxLeadingOffset * Layout.revealThreshold
+                let shouldRevealTrailing = offset < maxTrailingOffset * Layout.revealThreshold
+
+                withAnimation(.optaSpring) {
+                    if shouldRevealLeading && !leadingActions.isEmpty {
+                        offset = maxLeadingOffset
+                    } else if shouldRevealTrailing && !trailingActions.isEmpty {
+                        offset = maxTrailingOffset
+                    } else {
+                        offset = 0
+                        swipeState.endSwipe(id: cardID)
+                    }
+                }
+            }
+    }
+
+    // MARK: - Actions
+
+    private func triggerAction(_ action: SwipeAction) {
+        // Haptic feedback
+        if action.isDestructive {
+            OptaHaptics.shared.warning()
+        } else {
+            OptaHaptics.shared.success()
+        }
+
+        // Reset offset with animation
+        withAnimation(.optaSpring) {
+            offset = 0
+        }
+
+        swipeState.endSwipe(id: cardID)
+
+        // Execute action
+        action.action()
+    }
+}
+
+// MARK: - View Extension
+
+extension View {
+    /// Add swipe actions to a view
+    /// - Parameters:
+    ///   - leading: Actions revealed when swiping right (e.g., favorite)
+    ///   - trailing: Actions revealed when swiping left (e.g., delete)
+    func swipeActions(
+        leading: [SwipeAction] = [],
+        trailing: [SwipeAction] = []
+    ) -> some View {
+        modifier(SwipeActionsModifier(
+            leadingActions: leading,
+            trailingActions: trailing
+        ))
+    }
+}
+
+// MARK: - Usage Reference
+/*
+ HistoryCard(scan: scan)
+     .swipeActions(
+         leading: [
+             SwipeAction(
+                 icon: "star.fill",
+                 color: .optaAmber,
+                 action: { toggleFavorite(scan) }
+             )
+         ],
+         trailing: [
+             SwipeAction(
+                 icon: "trash.fill",
+                 color: .optaRed,
+                 isDestructive: true,
+                 action: { deleteScan(scan) }
+             )
+         ]
+     )
+ */
