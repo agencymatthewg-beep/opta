@@ -15,6 +15,7 @@ import UIKit
 #if canImport(MLX) && canImport(MLXLLM) && !targetEnvironment(simulator)
 import MLX
 import MLXLLM
+import MLXLMCommon  // Required for generate() API
 #endif
 
 // MARK: - MLX Service
