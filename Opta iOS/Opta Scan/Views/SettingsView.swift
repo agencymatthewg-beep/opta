@@ -13,9 +13,14 @@ struct SettingsView: View {
     @State private var selectedModelId: String? = nil
     @State private var downloadError: String? = nil
     @State private var showDownloadError = false
+    @State private var showingClearConfirmation = false
 
     private var downloadManager: ModelDownloadManager {
         ModelDownloadManager.shared
+    }
+
+    private var storageManager: StorageManager {
+        StorageManager.shared
     }
 
     var body: some View {
@@ -43,11 +48,13 @@ struct SettingsView: View {
                             .padding(.vertical, OptaDesign.Spacing.xs)
                         }
 
-                        // Model selection cards
+                        // Model selection cards with swipe-to-delete
                         ForEach(OptaModelConfiguration.all) { model in
+                            let state = downloadManager.state(for: model)
+
                             ModelSelectionCard(
                                 model: model,
-                                state: downloadManager.state(for: model),
+                                state: state,
                                 isSelected: selectedModelId == model.id,
                                 onSelect: { selectModel(model) },
                                 onDownload: { downloadModel(model) }
@@ -56,6 +63,15 @@ struct SettingsView: View {
                             .listRowInsets(EdgeInsets())
                             .padding(.horizontal, OptaDesign.Spacing.md)
                             .padding(.vertical, OptaDesign.Spacing.xs)
+                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                if state.isDownloaded {
+                                    Button(role: .destructive) {
+                                        deleteModel(model)
+                                    } label: {
+                                        Label("Delete", systemImage: "trash")
+                                    }
+                                }
+                            }
                         }
                     } header: {
                         Text("On-Device AI")
@@ -65,6 +81,21 @@ struct SettingsView: View {
                             Text("No data is sent to any server.")
                         }
                         .optaLabelStyle()
+                    }
+
+                    // Storage Section
+                    Section {
+                        StorageInfoView(
+                            modelStorage: storageManager.modelStorageString,
+                            availableStorage: storageManager.availableStorageString,
+                            onClearAll: {
+                                showingClearConfirmation = true
+                            }
+                        )
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.clear)
+                    } header: {
+                        Text("Storage")
                     }
 
                     // Preferences Section
@@ -125,11 +156,24 @@ struct SettingsView: View {
             .toolbarColorScheme(.dark, for: .navigationBar)
             .task {
                 await loadSettings()
+                await storageManager.refresh()
             }
             .alert("Download Failed", isPresented: $showDownloadError) {
                 Button("OK", role: .cancel) { }
             } message: {
                 Text(downloadError ?? "An error occurred.")
+            }
+            .confirmationDialog(
+                "Clear All Models",
+                isPresented: $showingClearConfirmation,
+                titleVisibility: .visible
+            ) {
+                Button("Clear All", role: .destructive) {
+                    clearAllModels()
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("This will delete all downloaded models. You'll need to re-download them to use Opta.")
             }
         }
     }
@@ -169,6 +213,25 @@ struct SettingsView: View {
                 showDownloadError = true
                 OptaHaptics.shared.error()
             }
+        }
+    }
+
+    private func deleteModel(_ model: OptaModelConfiguration) {
+        Task {
+            try? await storageManager.deleteModel(model)
+            // Clear selection if this was the selected model
+            if selectedModelId == model.id {
+                selectedModelId = nil
+            }
+            OptaHaptics.shared.tap()
+        }
+    }
+
+    private func clearAllModels() {
+        Task {
+            try? await storageManager.clearAllModels()
+            selectedModelId = nil
+            OptaHaptics.shared.success()
         }
     }
 }
