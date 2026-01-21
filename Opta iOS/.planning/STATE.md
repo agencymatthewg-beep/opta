@@ -9,19 +9,19 @@ See: .planning/PROJECT.md (updated 2026-01-20)
 
 ## Current Position
 
-Phase: 11 of 16 (Physics Animations)
+Phase: 12 of 16 (Visual Effects)
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-01-21 — Phase 10 complete, 3 plans executed
+Last activity: 2026-01-21 — Phase 11 complete, 3 plans executed
 
-Progress: ██████████░░░░░░ 63% overall (10 of 16 phases complete)
+Progress: ███████████░░░░░ 69% overall (11 of 16 phases complete)
 
 ### v1.2 Premium Polish
 | Phase | Name | Status |
 |-------|------|--------|
 | 9 | Advanced Gestures | Complete |
 | 10 | Metal Shaders | Complete |
-| 11 | Physics Animations | Not started |
+| 11 | Physics Animations | Complete |
 | 12 | Visual Effects | Not started |
 | 13 | 3D Transforms | Not started |
 | 14 | Motion Design | Not started |
@@ -80,6 +80,11 @@ Example: Menu photo + "most calories for $10" → Visual recommendation
 | 10 | TimelineView for animations | Drive continuous shader updates |
 | 10 | OptaShaderEffects.isEnabled | Respect reduce motion accessibility |
 | 10 | iOS 16 fallbacks | Graceful degradation for older devices |
+| 11 | PhysicsSpring real-world params | Mass/stiffness/damping for natural motion |
+| 11 | MomentumConfig deceleration curves | Projected end positions for throws |
+| 11 | RubberBandConfig exponential stretch | Asymptotic approach to max stretch |
+| 11 | CardDismissHandler velocity thresholds | Natural dismiss vs return decisions |
+| 11 | SnapPointConfig with momentum projection | Smart snap point selection |
 
 ### Deferred Issues
 
@@ -104,8 +109,8 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-21
-Status: Phase 10 (Metal Shaders) COMPLETE
-Next action: Plan and execute Phase 11 (Physics Animations)
+Status: Phase 11 (Physics Animations) COMPLETE
+Next action: Plan and execute Phase 12 (Visual Effects)
 
 ---
 *Opta Scan — capture anything, optimize everything*
