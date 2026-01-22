@@ -23,6 +23,16 @@ struct SettingsView: View {
         StorageManager.shared
     }
 
+    private var networkMonitor: NetworkMonitor {
+        NetworkMonitor.shared
+    }
+
+    private var hasDownloadedModel: Bool {
+        OptaModelConfiguration.all.contains { model in
+            downloadManager.isModelDownloaded(model)
+        }
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -30,6 +40,18 @@ struct SettingsView: View {
                     .ignoresSafeArea()
 
                 List {
+                    // Offline Indicator (when offline)
+                    if !networkMonitor.isConnected {
+                        Section {
+                            OfflineIndicator(
+                                isOffline: true,
+                                hasModel: hasDownloadedModel
+                            )
+                            .listRowInsets(EdgeInsets())
+                            .listRowBackground(Color.clear)
+                        }
+                    }
+
                     // On-Device AI Section (Primary)
                     Section {
                         // Active download progress
