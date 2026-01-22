@@ -250,6 +250,7 @@ actor MLXService {
         generationProgress = 0
         let token = CancellationToken()
         cancellationToken = token
+        let startTime = CFAbsoluteTimeGetCurrent()
         defer {
             isGenerating = false
             generationProgress = 0
@@ -323,7 +324,8 @@ actor MLXService {
 
         // Perform generation within model context
         // The MLX generate callback receives token IDs, not strings
-        let output = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<String, Error>) in
+        // Returns (output, tokenCount) tuple for performance logging
+        let (output, finalTokenCount) = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<(String, Int), Error>) in
             Task {
                 do {
                     let result = try await container.perform { context in
@@ -361,7 +363,7 @@ actor MLXService {
 
                         // Decode tokens to string using the processor's tokenizer
                         let decodedOutput = context.tokenizer.decode(tokens: allTokens)
-                        return decodedOutput
+                        return (decodedOutput, allTokens.count)
                     }
                     continuation.resume(returning: result)
                 } catch let error as NSError {
@@ -378,12 +380,45 @@ actor MLXService {
             }
         }
 
-        // Update progress
-        generationProgress += 1
+        // Log performance metrics
+        let duration = CFAbsoluteTimeGetCurrent() - startTime
+        logInferencePerformance(
+            tokenCount: finalTokenCount,
+            duration: duration,
+            model: loadedModelConfig?.name ?? "Unknown"
+        )
+
         return output
         #else
         throw MLXError.deviceNotSupported
         #endif
+    }
+
+    // MARK: - Performance Logging
+
+    /// Log inference performance for debugging and optimization
+    private func logInferencePerformance(
+        tokenCount: Int,
+        duration: TimeInterval,
+        model: String
+    ) {
+        let tokensPerSecond = duration > 0 ? Double(tokenCount) / duration : 0
+
+        #if DEBUG
+        print("""
+        [MLXService] Inference Complete
+        - Model: \(model)
+        - Tokens: \(tokenCount)
+        - Duration: \(String(format: "%.2f", duration))s
+        - Speed: \(String(format: "%.1f", tokensPerSecond)) tok/s
+        - Thermal: \(ProcessInfo.processInfo.thermalState.rawValue)
+        - Battery: \(String(format: "%.0f", UIDevice.current.batteryLevel * 100))%
+        """)
+        #endif
+
+        // Store for analytics (optional future feature)
+        UserDefaults.standard.set(tokensPerSecond, forKey: "opta.lastInferenceSpeed")
+        UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "opta.lastInferenceTime")
     }
 
     // MARK: - Image Preparation
