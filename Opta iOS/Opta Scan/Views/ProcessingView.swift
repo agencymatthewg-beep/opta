@@ -2,7 +2,7 @@
 //  ProcessingView.swift
 //  Opta Scan
 //
-//  Animated processing state while Opta analyzes the user's request
+//  Real-time processing view with token streaming progress
 //  Local AI processing - no cloud dependencies
 //  Created by Matthew Byrden
 //
@@ -12,27 +12,22 @@ import SwiftUI
 // MARK: - Processing View
 
 /// Full-screen loading view displayed during on-device AI analysis
+/// Shows real-time token progress, text preview, and cancel button
 struct ProcessingView: View {
 
     // MARK: - Properties
 
     let prompt: String
+    let generationStream: GenerationStream
+    let onCancel: () -> Void
 
     // MARK: - Animation State
 
-    @State private var dotCount = 0
     @State private var pulseScale: CGFloat = 1.0
     @State private var rotation: Double = 0
     @State private var isVisible = false
 
     // MARK: - Constants
-
-    private enum Animation {
-        static let dotInterval: TimeInterval = 0.5
-        static let maxDots = 4
-        static let pulseMaxScale: CGFloat = 1.2
-        static let rotationDegrees: Double = 360
-    }
 
     private enum Layout {
         static let glowSize: CGFloat = 120
@@ -42,8 +37,6 @@ struct ProcessingView: View {
         static let innerCircleSize: CGFloat = 80
         static let sparkleSize: CGFloat = 32
     }
-
-    private let timer = Timer.publish(every: Animation.dotInterval, on: .main, in: .common).autoconnect()
 
     // MARK: - Body
 
@@ -55,32 +48,32 @@ struct ProcessingView: View {
             VStack(spacing: OptaDesign.Spacing.xl) {
                 Spacer()
 
-                // Animated Opta Logo
+                // Animated Opta Logo with Progress Ring
                 animatedLogo
                     .opacity(isVisible ? 1 : 0)
                     .scaleEffect(isVisible ? 1 : 0.8)
 
-                // Processing Text
-                processingText
+                // Progress Section
+                progressSection
                     .opacity(isVisible ? 1 : 0)
                     .offset(y: isVisible ? 0 : 20)
 
+                // Text Preview
+                if !generationStream.currentText.isEmpty {
+                    textPreview
+                        .opacity(isVisible ? 1 : 0)
+                }
+
                 Spacer()
 
-                // Tip Text
-                tipText
+                // Cancel Button
+                cancelButton
                     .opacity(isVisible ? 1 : 0)
             }
         }
         .onAppear(perform: startAnimations)
-        .onReceive(timer) { _ in
-            withAnimation(.optaSpring) {
-                dotCount = (dotCount + 1) % Animation.maxDots
-            }
-        }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Processing your optimization request")
-        .accessibilityHint("Please wait while Opta analyzes: \(prompt)")
+        .accessibilityLabel("Processing: \(Int(generationStream.progress * 100))% complete")
     }
 
     // MARK: - Subviews
@@ -107,6 +100,14 @@ struct ProcessingView: View {
                 .frame(width: Layout.ringSize, height: Layout.ringSize)
                 .rotationEffect(.degrees(rotation))
 
+            // Progress Ring
+            Circle()
+                .trim(from: 0, to: generationStream.progress)
+                .stroke(Color.optaGreen, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                .frame(width: Layout.ringSize + 10, height: Layout.ringSize + 10)
+                .rotationEffect(.degrees(-90))
+                .animation(.optaSpring, value: generationStream.progress)
+
             // Inner Circle
             Circle()
                 .fill(
@@ -127,53 +128,95 @@ struct ProcessingView: View {
         .accessibilityHidden(true)
     }
 
-    private var processingText: some View {
+    private var progressSection: some View {
         VStack(spacing: OptaDesign.Spacing.sm) {
-            Text("Optimizing\(String(repeating: ".", count: dotCount))")
-                .font(.optaHeadline)
+            // Progress Percentage
+            Text("\(Int(generationStream.progress * 100))%")
+                .font(.system(size: 48, weight: .bold, design: .rounded))
                 .foregroundStyle(Color.optaTextPrimary)
                 .contentTransition(.numericText())
+                .animation(.optaSpring, value: generationStream.progress)
 
-            Text(prompt)
+            // Token Count
+            Text("\(generationStream.tokenCount) tokens generated")
                 .font(.optaCaption)
                 .foregroundStyle(Color.optaTextSecondary)
+
+            // Prompt
+            Text(prompt)
+                .font(.optaCaption)
+                .foregroundStyle(Color.optaTextMuted)
                 .multilineTextAlignment(.center)
                 .lineLimit(2)
         }
     }
 
-    private var tipText: some View {
-        Text("Opta is analyzing your request and preparing clarifying questions...")
-            .font(.optaLabel)
+    private var textPreview: some View {
+        VStack(alignment: .leading, spacing: OptaDesign.Spacing.xs) {
+            Text("Generating...")
+                .font(.optaLabel)
+                .foregroundStyle(Color.optaTextMuted)
+
+            Text(String(generationStream.currentText.suffix(200)))
+                .font(.optaCaption)
+                .foregroundStyle(Color.optaTextSecondary)
+                .lineLimit(4)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(OptaDesign.Spacing.md)
+        .background(Color.optaSurface)
+        .clipShape(RoundedRectangle(cornerRadius: OptaDesign.CornerRadius.small))
+        .padding(.horizontal, OptaDesign.Spacing.lg)
+    }
+
+    private var cancelButton: some View {
+        Button {
+            OptaHaptics.shared.tap()
+            onCancel()
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "xmark.circle.fill")
+                Text("Cancel")
+            }
+            .font(.optaCaption)
             .foregroundStyle(Color.optaTextMuted)
-            .multilineTextAlignment(.center)
-            .padding(.horizontal, OptaDesign.Spacing.xl)
-            .padding(.bottom, OptaDesign.Spacing.xxl)
+        }
+        .padding(.bottom, OptaDesign.Spacing.xxl)
+        .accessibilityLabel("Cancel generation")
     }
 
     // MARK: - Private Methods
 
     private func startAnimations() {
-        // Haptic feedback on processing start
         OptaHaptics.shared.processingStart()
 
-        // Animate in
         withAnimation(.optaSpringGentle) {
             isVisible = true
         }
 
-        // Pulse animation (using spring-based timing)
         withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
-            pulseScale = Animation.pulseMaxScale
+            pulseScale = 1.2
         }
 
-        // Rotation animation
         withAnimation(.linear(duration: 2).repeatForever(autoreverses: false)) {
-            rotation = Animation.rotationDegrees
+            rotation = 360
         }
     }
 }
 
+// MARK: - Preview
+
 #Preview {
-    ProcessingView(prompt: "best value for money")
+    ProcessingView(
+        prompt: "best value for money",
+        generationStream: {
+            let stream = GenerationStream()
+            Task { @MainActor in
+                stream.start(maxTokens: 100)
+                stream.update(text: "Analyzing your request...", tokenCount: 25)
+            }
+            return stream
+        }(),
+        onCancel: {}
+    )
 }
