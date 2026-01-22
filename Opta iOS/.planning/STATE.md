@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-01-20)
 
 ## Current Position
 
-Phase: 21 of 21 (Local-First Polish) - PLANNING COMPLETE
-Plan: 0 of 2 executed
-Status: Phase 21 planned, ready for execution
-Last activity: 2026-01-22 — Created Phase 21 plans (Settings/Model UI, Offline UX/Performance)
+Phase: 21 of 21 (Local-First Polish) - IN PROGRESS
+Plan: 1 of 2 executed
+Status: Plan 21-01 complete, ready for 21-02
+Last activity: 2026-01-22 — Executed Plan 21-01 (Settings/Model UI)
 
-Progress: ████████░░ 80% milestone (Phase 21 planning complete)
+Progress: █████████░ 90% milestone (Plan 21-01 complete)
 
 ### v2.0 Local Intelligence
 | Phase | Name | Status |
@@ -23,12 +23,12 @@ Progress: ████████░░ 80% milestone (Phase 21 planning comple
 | 18 | Model Management | COMPLETE |
 | 19 | Vision Inference | COMPLETE |
 | 20 | Generation Pipeline | COMPLETE |
-| 21 | Local-First Polish | Planning complete |
+| 21 | Local-First Polish | In progress |
 
 ### Phase 21 Plans
 | Plan | Name | Status |
 |------|------|--------|
-| 21-01 | Settings and Model Management UI | Ready |
+| 21-01 | Settings and Model Management UI | COMPLETE |
 | 21-02 | Offline UX and Performance Polish | Ready |
 
 ## The One Feature
@@ -147,6 +147,9 @@ Example: Menu photo + "most calories for $10" → Visual recommendation
 | 20-02 | MLXError.isRecoverable property | Enable retry decisions without switch-casing |
 | 20-02 | Thermal critical pre-check | Prevent wasted resources on throttled generation |
 | 20-02 | 500ms retry delay, max 2 attempts | Balance responsiveness and loop prevention |
+| 21-01 | NWPathMonitor for network state | System API, no external dependencies |
+| 21-01 | First-run flow after onboarding | Separate concerns, not during onboarding |
+| 21-01 | hasCompletedFirstRun AppStorage | One-time flow gating pattern |
 
 ### Deferred Issues
 
@@ -172,8 +175,8 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-22
-Status: Phase 21 (Local-First Polish) planned
-Next action: Execute Phase 21 plans to complete v2.0 milestone
+Status: Phase 21 Plan 21-01 (Settings/Model UI) complete
+Next action: Execute Plan 21-02 (Offline UX/Performance Polish) to complete v2.0 milestone
 
 ---
 *Opta Scan — capture anything, optimize everything*
