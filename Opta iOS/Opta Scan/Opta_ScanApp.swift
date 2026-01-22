@@ -23,6 +23,12 @@ struct Opta_ScanApp: App {
     /// Tracks whether user has completed first-time onboarding
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
 
+    /// Tracks whether user has been prompted for first-run model download
+    @AppStorage("opta.hasCompletedFirstRun") private var hasCompletedFirstRun = false
+
+    /// Controls display of first-run download sheet
+    @State private var showFirstRunDownload = false
+
     // MARK: - Scene
 
     var body: some Scene {
@@ -33,6 +39,34 @@ struct Opta_ScanApp: App {
                     // Initialize local model on app launch if previously downloaded
                     await Self.initializeLocalModel()
                 }
+                .onAppear {
+                    // Check if model download needed after onboarding
+                    checkFirstRunDownload()
+                }
+                .sheet(isPresented: $showFirstRunDownload, onDismiss: {
+                    // Mark as completed even if skipped
+                    hasCompletedFirstRun = true
+                }) {
+                    FirstRunDownloadSheet()
+                }
+        }
+    }
+
+    // MARK: - First-Run Check
+
+    private func checkFirstRunDownload() {
+        // Only prompt after onboarding is complete
+        guard hasCompletedOnboarding && !hasCompletedFirstRun else { return }
+
+        // Check if any model is already downloaded
+        let hasModel = OptaModelConfiguration.all.contains { model in
+            ModelDownloadManager.shared.isModelDownloaded(model)
+        }
+
+        if !hasModel {
+            showFirstRunDownload = true
+        } else {
+            hasCompletedFirstRun = true
         }
     }
 
