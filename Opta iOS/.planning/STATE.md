@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-01-20)
 
 ## Current Position
 
-Phase: 21 of 21 (Local-First Polish) - IN PROGRESS
-Plan: 1 of 2 executed
-Status: Plan 21-01 complete, ready for 21-02
-Last activity: 2026-01-22 — Executed Plan 21-01 (Settings/Model UI)
+Phase: 21 of 21 (Local-First Polish) - COMPLETE
+Plan: 2 of 2 executed
+Status: All plans complete, milestone ready for completion
+Last activity: 2026-01-22 — Executed Plan 21-02 (Offline UX/Performance Polish)
 
-Progress: █████████░ 90% milestone (Plan 21-01 complete)
+Progress: ██████████ 100% milestone complete
 
 ### v2.0 Local Intelligence
 | Phase | Name | Status |
@@ -23,13 +23,13 @@ Progress: █████████░ 90% milestone (Plan 21-01 complete)
 | 18 | Model Management | COMPLETE |
 | 19 | Vision Inference | COMPLETE |
 | 20 | Generation Pipeline | COMPLETE |
-| 21 | Local-First Polish | In progress |
+| 21 | Local-First Polish | COMPLETE |
 
 ### Phase 21 Plans
 | Plan | Name | Status |
 |------|------|--------|
 | 21-01 | Settings and Model Management UI | COMPLETE |
-| 21-02 | Offline UX and Performance Polish | Ready |
+| 21-02 | Offline UX and Performance Polish | COMPLETE |
 
 ## The One Feature
 
@@ -150,6 +150,10 @@ Example: Menu photo + "most calories for $10" → Visual recommendation
 | 21-01 | NWPathMonitor for network state | System API, no external dependencies |
 | 21-01 | First-run flow after onboarding | Separate concerns, not during onboarding |
 | 21-01 | hasCompletedFirstRun AppStorage | One-time flow gating pattern |
+| 21-02 | Progress ring with optaGreen | Visual distinction from spinner |
+| 21-02 | Text preview suffix(200) | Prevents UI performance issues |
+| 21-02 | BatteryMode UserDefaults wrapper | @Observable class compatibility |
+| 21-02 | Tuple return for token count | Accurate timing for performance logging |
 
 ### Deferred Issues
 
@@ -175,8 +179,8 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-22
-Status: Phase 21 Plan 21-01 (Settings/Model UI) complete
-Next action: Execute Plan 21-02 (Offline UX/Performance Polish) to complete v2.0 milestone
+Status: Phase 21 complete, v2.0 Local Intelligence milestone complete
+Next action: Run /gsd:complete-milestone to archive and prepare for next version
 
 ---
 *Opta Scan — capture anything, optimize everything*

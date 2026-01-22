@@ -9,7 +9,7 @@ Opta Scan is a focused iOS app: **capture anything, optimize everything**. Photo
 - ✅ **v1.0 MVP** - Phases 1-6 (core feature complete, shipped 2026-01-21)
 - ✅ **v1.1 Polish** - Phases 7-8 (App Store ready, shipped 2026-01-21)
 - ✅ **v1.2 Premium Polish** - Phases 9-16 (gestures + graphics, shipped 2026-01-21)
-- 🚧 **v2.0 Local Intelligence** - Phases 17-21 (on-device AI with Llama 3.2 11B Vision)
+- ✅ **v2.0 Local Intelligence** - Phases 17-21 (on-device AI with Llama 3.2 11B Vision, shipped 2026-01-22)
 
 ## Phases
 
@@ -228,7 +228,7 @@ Plans:
 - [x] 16-01: App Store Compliance & Final Polish (Privacy, Accessibility, Guidelines)
 - [x] 16-02: Final Visual Consistency Audit
 
-### 🚧 v2.0 Local Intelligence (In Progress)
+### ✅ v2.0 Local Intelligence (SHIPPED 2026-01-22)
 
 **Milestone Goal:** Replace Claude API with on-device Llama 3.2 11B Vision for complete privacy and offline operation. No cloud dependencies — fully local AI.
 
@@ -299,11 +299,11 @@ Plans:
 - [x] 20-01: Streaming Text Generation (6 tasks)
 - [x] 20-02: Response Parsing and Error Handling (6 tasks)
 
-#### Phase 21: Local-First Polish
+#### Phase 21: Local-First Polish ✅
 **Goal**: Optimize UX for fully local, offline operation
 **Depends on**: Phase 20
 **Research**: Unlikely (SwiftUI patterns)
-**Status**: Planning complete (2026-01-22)
+**Status**: Complete (2026-01-22)
 
 - Update SettingsView with offline indicators and status badges
 - NetworkMonitor service for connectivity awareness
@@ -314,8 +314,8 @@ Plans:
 - Inference performance logging
 
 Plans:
-- [ ] 21-01: Settings and Model Management UI (7 tasks)
-- [ ] 21-02: Offline UX and Performance Polish (7 tasks)
+- [x] 21-01: Settings and Model Management UI (7 tasks)
+- [x] 21-02: Offline UX and Performance Polish (6 tasks)
 
 ### 📋 v2.1+ Future
 
@@ -351,7 +351,7 @@ Plans:
 | 18. Model Management | v2.0 | 2/2 | Complete | 2026-01-22 |
 | 19. Vision Inference | v2.0 | 2/2 | Complete | 2026-01-22 |
 | 20. Generation Pipeline | v2.0 | 2/2 | Complete | 2026-01-22 |
-| 21. Local-First Polish | v2.0 | 0/2 | Planning complete | - |
+| 21. Local-First Polish | v2.0 | 2/2 | Complete | 2026-01-22 |
 
 ---
-*Last updated: 2026-01-22 — Phase 21 Local-First Polish planned (settings UI, offline UX, performance)*
+*Last updated: 2026-01-22 — v2.0 Local Intelligence milestone complete*
