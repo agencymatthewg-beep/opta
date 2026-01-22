@@ -50,8 +50,12 @@ struct ScanFlowView: View {
                 .transition(.opacity)
 
         case .processing:
-            ProcessingView(prompt: flowState.prompt)
-                .transition(.opacity)
+            ProcessingView(
+                prompt: flowState.prompt,
+                generationStream: flowState.generationStream,
+                onCancel: { flowState.cancelProcessing() }
+            )
+            .transition(.opacity)
 
         case .questions:
             if let result = flowState.analysisResult {
