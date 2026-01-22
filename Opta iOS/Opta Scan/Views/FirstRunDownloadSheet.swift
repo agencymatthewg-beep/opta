@@ -13,6 +13,7 @@ struct FirstRunDownloadSheet: View {
 
     @State private var isDownloading = false
     @State private var downloadError: String?
+    @State private var selectedModel: OptaModelConfiguration = .llama32_11B_Vision
 
     private var downloadManager: ModelDownloadManager {
         ModelDownloadManager.shared
@@ -22,9 +23,8 @@ struct FirstRunDownloadSheet: View {
         NetworkMonitor.shared
     }
 
-    // Recommended model for first-time download
-    private var recommendedModel: OptaModelConfiguration {
-        OptaModelConfiguration.default
+    private var availableModels: [OptaModelConfiguration] {
+        OptaModelConfiguration.all
     }
 
     var body: some View {
@@ -60,36 +60,16 @@ struct FirstRunDownloadSheet: View {
                             .padding(.horizontal, OptaDesign.Spacing.lg)
                     }
 
-                    // Model Info Card
-                    VStack(alignment: .leading, spacing: OptaDesign.Spacing.sm) {
-                        HStack {
-                            Text(recommendedModel.displayName)
-                                .font(.optaHeadline)
-                                .foregroundStyle(Color.optaTextPrimary)
-
-                            Spacer()
-
-                            Text(recommendedModel.sizeString)
-                                .font(.optaCaption)
-                                .foregroundStyle(Color.optaTextMuted)
-                        }
-
-                        Text(recommendedModel.description)
-                            .font(.optaCaption)
-                            .foregroundStyle(Color.optaTextSecondary)
-
-                        if recommendedModel.supportsVision {
-                            HStack(spacing: 4) {
-                                Image(systemName: "eye.fill")
-                                Text("Supports image analysis")
-                            }
-                            .font(.optaLabel)
-                            .foregroundStyle(Color.optaGreen)
+                    // Model Selection
+                    VStack(spacing: OptaDesign.Spacing.sm) {
+                        ForEach(availableModels) { model in
+                            ModelOptionCard(
+                                model: model,
+                                isSelected: selectedModel.id == model.id,
+                                onSelect: { selectedModel = model }
+                            )
                         }
                     }
-                    .padding(OptaDesign.Spacing.md)
-                    .background(Color.optaSurface)
-                    .clipShape(RoundedRectangle(cornerRadius: OptaDesign.CornerRadius.medium))
                     .padding(.horizontal, OptaDesign.Spacing.lg)
 
                     // Download Progress
@@ -201,9 +181,9 @@ struct FirstRunDownloadSheet: View {
 
         Task {
             do {
-                try await downloadManager.downloadModel(recommendedModel)
+                try await downloadManager.downloadModel(selectedModel)
                 // Auto-select the model
-                UserDefaults.standard.set(recommendedModel.id, forKey: "opta.selectedModelId")
+                UserDefaults.standard.set(selectedModel.id, forKey: "opta.selectedModelId")
                 OptaHaptics.shared.success()
                 dismiss()
             } catch {
@@ -212,6 +192,78 @@ struct FirstRunDownloadSheet: View {
                 OptaHaptics.shared.error()
             }
         }
+    }
+}
+
+// MARK: - Model Option Card
+
+private struct ModelOptionCard: View {
+    let model: OptaModelConfiguration
+    let isSelected: Bool
+    let onSelect: () -> Void
+
+    private var isCompatible: Bool {
+        model.isCompatibleWithDevice()
+    }
+
+    var body: some View {
+        Button(action: onSelect) {
+            HStack(spacing: OptaDesign.Spacing.md) {
+                // Selection indicator
+                ZStack {
+                    Circle()
+                        .stroke(isSelected ? Color.optaPurple : Color.optaSurface, lineWidth: 2)
+                        .frame(width: 24, height: 24)
+
+                    if isSelected {
+                        Circle()
+                            .fill(Color.optaPurple)
+                            .frame(width: 14, height: 14)
+                    }
+                }
+
+                // Model info
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text(model.displayName)
+                            .font(.optaBody)
+                            .fontWeight(.medium)
+                            .foregroundStyle(Color.optaTextPrimary)
+
+                        if model.supportsVision {
+                            Image(systemName: "eye.fill")
+                                .font(.system(size: 12))
+                                .foregroundStyle(Color.optaGreen)
+                        }
+
+                        Spacer()
+
+                        Text(model.sizeString)
+                            .font(.optaCaption)
+                            .foregroundStyle(Color.optaTextMuted)
+                    }
+
+                    Text(model.description)
+                        .font(.optaCaption)
+                        .foregroundStyle(Color.optaTextSecondary)
+
+                    if !isCompatible {
+                        Text("Requires \(model.ramRequirementString)")
+                            .font(.optaLabel)
+                            .foregroundStyle(.orange)
+                    }
+                }
+            }
+            .padding(OptaDesign.Spacing.md)
+            .background(isSelected ? Color.optaPurple.opacity(0.1) : Color.optaSurface)
+            .clipShape(RoundedRectangle(cornerRadius: OptaDesign.CornerRadius.medium))
+            .overlay(
+                RoundedRectangle(cornerRadius: OptaDesign.CornerRadius.medium)
+                    .stroke(isSelected ? Color.optaPurple : Color.clear, lineWidth: 2)
+            )
+        }
+        .buttonStyle(.plain)
+        .opacity(isCompatible ? 1.0 : 0.6)
     }
 }
 

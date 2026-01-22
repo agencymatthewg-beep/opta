@@ -16,7 +16,7 @@ final class NetworkMonitor {
 
     // MARK: - State
 
-    private(set) var isConnected = false
+    private(set) var isConnected = true  // Default true, updated async
     private(set) var isExpensive = false  // Cellular
     private(set) var connectionType: ConnectionType = .unknown
 
