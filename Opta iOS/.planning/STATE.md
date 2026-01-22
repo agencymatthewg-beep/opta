@@ -5,31 +5,26 @@
 See: .planning/PROJECT.md (updated 2026-01-20)
 
 **Core value:** Capture anything, optimize everything — Photo/prompt → Questions → Beautiful optimized answer
-**Current focus:** v2.0 Local Intelligence — On-device AI with Llama 3.2 11B Vision
+**Current focus:** v2.0 shipped — Planning v2.1+ enhancements
 
 ## Current Position
 
-Phase: 21 of 21 (Local-First Polish) - COMPLETE
-Plan: 2 of 2 executed
-Status: All plans complete, milestone ready for completion
-Last activity: 2026-01-22 — Executed Plan 21-02 (Offline UX/Performance Polish)
+Phase: v2.0 COMPLETE
+Status: Milestone shipped, ready for next version
+Last activity: 2026-01-22 — v2.0 Local Intelligence milestone complete
 
-Progress: ██████████ 100% milestone complete
+Progress: ██████████ 100% v2.0 shipped
 
-### v2.0 Local Intelligence
+### v2.0 Local Intelligence — SHIPPED
 | Phase | Name | Status |
 |-------|------|--------|
-| 17 | MLX Foundation | COMPLETE |
-| 18 | Model Management | COMPLETE |
-| 19 | Vision Inference | COMPLETE |
-| 20 | Generation Pipeline | COMPLETE |
-| 21 | Local-First Polish | COMPLETE |
+| 17 | MLX Foundation | SHIPPED |
+| 18 | Model Management | SHIPPED |
+| 19 | Vision Inference | SHIPPED |
+| 20 | Generation Pipeline | SHIPPED |
+| 21 | Local-First Polish | SHIPPED |
 
-### Phase 21 Plans
-| Plan | Name | Status |
-|------|------|--------|
-| 21-01 | Settings and Model Management UI | COMPLETE |
-| 21-02 | Offline UX and Performance Polish | COMPLETE |
+See: `.planning/milestones/v2.0-local-intelligence.md` for full archive
 
 ## The One Feature
 
@@ -179,8 +174,8 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-22
-Status: Phase 21 complete, v2.0 Local Intelligence milestone complete
-Next action: Run /gsd:complete-milestone to archive and prepare for next version
+Status: v2.0 Local Intelligence milestone SHIPPED
+Next action: Plan v2.1 enhancements or App Store submission prep
 
 ---
 *Opta Scan — capture anything, optimize everything*

@@ -2,11 +2,32 @@
 
 ## What This Is
 
-Opta Scan is a native iOS app with one powerful feature: **capture anything, optimize everything**. Take a photo or write a prompt, answer a few clarifying questions, and get an optimized answer beautifully visualized.
+Opta Scan is a native iOS app with one powerful feature: **capture anything, optimize everything**. Take a photo or write a prompt, answer a few clarifying questions, and get an optimized answer beautifully visualized — all processed locally on your device with Llama 3.2 11B Vision.
 
 ## Core Value
 
-**Optimization in your pocket.** Unlike generic AI chatbots, Opta Scan is purpose-built for optimization decisions. It's easier to use, more thorough when needed, and presents information in a way that makes decisions obvious.
+**Private optimization in your pocket.** Unlike cloud-based AI chatbots, Opta Scan processes everything on-device. Your photos and prompts never leave your phone. It's easier to use, more thorough when needed, and presents information in a way that makes decisions obvious.
+
+## Current State (v2.0 Local Intelligence)
+
+**Shipped:** 2026-01-22
+
+**Tech Stack:**
+- SwiftUI (iOS 17.2+)
+- MLX Swift for on-device AI
+- Llama 3.2 11B Vision model
+- Core Data for history
+- 68 Swift files, 13,132 LOC
+
+**Key Capabilities:**
+- Photo capture with instant local processing
+- Text prompt input as alternative
+- Smart question generation
+- "Optamize" depth slider
+- Visual result cards with rankings
+- History persistence
+- Offline operation (after model download)
+- Battery optimization modes
 
 ## The One Feature
 
@@ -24,62 +45,83 @@ Opta Scan is a native iOS app with one powerful feature: **capture anything, opt
 
 | Aspect | Generic AI | Opta Scan |
 |--------|-----------|-----------|
+| **Privacy** | Cloud processing | 100% on-device |
 | **Ease** | Multi-step prompting | Photo + one sentence |
 | **Thoroughness** | One-size-fits-all | "Optamize" depth slider |
 | **Output** | Text walls | Visual cards, rankings, highlights |
-| **Focus** | Everything | Optimization decisions |
+| **Offline** | Requires internet | Works offline after download |
 
 ## Requirements
 
+### Validated
+
+- Camera capture with instant processing — v1.0
+- Text prompt input as alternative to photo — v1.0
+- Smart question generation based on context — v1.0
+- "Optamize" slider (quick → thorough analysis) — v1.0
+- Beautiful result visualization (cards, rankings, highlights) — v1.0
+- Result history for reference — v1.0
+- Advanced gestures (swipe, pinch, long-press) — v1.2
+- Metal shader effects — v1.2
+- Physics-based animations — v1.2
+- Thermal and battery optimization — v1.2
+- 100% on-device AI processing — v2.0
+- Offline operation — v2.0
+- Real-time generation progress — v2.0
+- Cancel support for generations — v2.0
+
 ### Active
 
-- [ ] Camera capture with instant processing
-- [ ] Text prompt input as alternative to photo
-- [ ] Smart question generation based on context
-- [ ] "Optamize" slider (quick → thorough analysis)
-- [ ] Beautiful result visualization (cards, rankings, highlights)
-- [ ] Result history for reference
 - [ ] Share optimized results
+- [ ] App Store screenshots
+- [ ] Privacy policy URL
+- [ ] TestFlight distribution
+- [ ] iPad-specific layouts
 
-### Out of Scope (v1.0)
+### Out of Scope
 
-- Account system / cloud sync
-- Social features
-- Offline AI processing
-- Apple Watch companion
-- iPad-specific layouts
+- Account system / cloud sync — local-first approach
+- Social features — focused single-user experience
+- Apple Watch companion — mobile-first
+- Android version — iOS exclusive for v2.x
 
 ## Context
 
-**Why this approach?**
-- Mobile-first: optimization decisions happen in the real world
-- Photo capture removes friction of describing things
-- Focused UX beats general-purpose chatbots
-- Visual output makes decisions actionable
+**Why local AI?**
+- Privacy: Photos and prompts never leave device
+- Offline: Works anywhere after model download
+- Speed: No network latency for inference
+- Cost: No per-request API fees
 
 **Technical approach:**
-- SwiftUI for native iOS experience
-- Claude API for optimization intelligence
-- Vision API for image understanding
-- Local history storage (Core Data)
-- iOS 17+ for modern SwiftUI features
+- MLX Swift for Apple Silicon optimization
+- Llama 3.2 11B Vision for multimodal understanding
+- Streaming token generation with progress
+- Thermal-aware quality adaptation
+- Battery mode selection
 
 ## Constraints
 
-- **Privacy-first**: Photos processed via API, not stored on servers
-- **Speed**: Results in under 5 seconds for quick mode
+- **Privacy-first**: All processing on-device
+- **Model size**: ~6GB download required
+- **Device requirements**: iOS 17.2+, sufficient storage
+- **Speed**: Depends on device capability
 - **Simplicity**: Maximum 3 clarifying questions
-- **Visual**: Every result must be scannable, not a text wall
+- **Visual**: Every result must be scannable
 
 ## Key Decisions
 
 | Decision | Rationale | Status |
 |----------|-----------|--------|
-| Cloud AI (Claude) | Best optimization reasoning, no on-device ML complexity | Pending |
-| Photo-first UX | Lowest friction for real-world optimization | Pending |
-| "Optamize" slider | User controls depth vs. speed tradeoff | Pending |
-| Card-based results | Scannable, shareable, beautiful | Pending |
-| iOS 17+ minimum | Modern SwiftUI, simpler codebase | Pending |
+| Local AI (MLX) | Privacy-first, offline-capable | Validated v2.0 |
+| Llama 3.2 11B Vision | Best balance of quality and size | Validated v2.0 |
+| Photo-first UX | Lowest friction for real-world optimization | Validated v1.0 |
+| "Optamize" slider | User controls depth vs. speed tradeoff | Validated v1.0 |
+| Card-based results | Scannable, shareable, beautiful | Validated v1.0 |
+| iOS 17.2+ minimum | MLX Swift requirement | Validated v2.0 |
+| Spring-only animations | Natural, premium feel | Validated v1.2 |
+| OLED background #09090b | Prevents smear on scroll | Validated v1.0 |
+| Battery mode selection | User control over speed vs battery | Validated v2.0 |
 
 ---
-*Last updated: 2026-01-20 — Opta Scan concept*
+*Last updated: 2026-01-22 after v2.0 Local Intelligence milestone*
