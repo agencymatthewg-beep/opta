@@ -16,7 +16,9 @@ Opta transforms from an empty Tauri scaffold into a full-featured AI-powered PC 
 - ✅ **v6.0 Optimization Intelligence Core** - Phases 44-50 (shipped 2026-01-18)
 - ✅ **v7.0 Chess Mastery Experience** - Phases 51-58 (shipped 2026-01-18)
 - ✅ **v8.0 Rust Native Architecture** - Phases 59-68 (shipped 2026-01-21)
-- 📋 **v9.0 Native macOS App** - Phases 69-74 (planned)
+- ✅ **v9.0 Native macOS App** - Phases 69-74 (shipped 2026-01-22)
+- ✅ **v9.1 Premium Polish** - Phase 75 (shipped 2026-01-22)
+- 📋 **v10.0 Visual Experience Reimplementation** - Phases 76-80 (planned)
 
 ## Domain Expertise
 
@@ -1324,7 +1326,7 @@ Plans:
 - System tray icon states
 
 Plans:
-- [ ] 73-01: Menu Bar Agent Enhancement
+- [x] 73-01: Menu Bar Agent Enhancement
 
 #### Phase 74: App Store Preparation
 **Goal**: Ship to Mac App Store
@@ -1339,7 +1341,124 @@ Plans:
 - Submission for review
 
 Plans:
-- [ ] 74-01: App Store Assets and Submission
+- [x] 74-01: App Store Assets and Submission
+
+---
+
+### Milestone: v9.1 Premium Polish
+
+**Focus:** Gemini alignment improvements - premium haptics, spatial audio, thermal adaptation.
+
+#### Phase 75: Premium Haptics & Spatial Audio
+**Goal**: Implement AHAP-based haptics and spatial audio foundation
+**Depends on**: Phase 74
+**Research**: Complete (Gemini Deep Research)
+
+**Key Deliverables:**
+- AHAP haptic pattern files (ring_explosion, wake_up, pulse, warning, tap)
+- HapticsManager refactored to use AHAP files
+- SpatialAudioManager with AVAudioEnvironmentNode
+- ThermalStateManager for graceful degradation
+- SensoryManager as unified orchestrator
+
+Plans:
+- [x] 75-01: Premium Haptics & Spatial Audio Implementation
+
+---
+
+### 📋 v10.0 Visual Experience Reimplementation (Planned)
+
+**Milestone Goal:** Reimagine and rebuild Opta's visual identity for the native macOS app. Re-implement the iconic Opta Text, enhance the Opta Ring to HD quality, establish the premium HD aesthetic system, and create an innovative circular menu for navigation. This milestone brings the visual excellence from the React/WebGL app into the native SwiftUI + wgpu architecture.
+
+**Core Pillars:**
+- 🔤 **Opta Text** — The iconic animated text that defines Opta's brand identity
+- 💍 **HD Ring** — Enhanced wgpu ring with premium visual fidelity
+- ✨ **HD Aesthetic** — Premium visual system with glass, glow, and depth effects
+- 🎯 **Circular Menu** — Innovative radial navigation for quick access
+
+---
+
+#### Phase 76: Opta Text Reimplementation
+**Goal**: Rebuild the animated Opta text system in native SwiftUI with Metal/wgpu rendering
+**Depends on**: Phase 75 (v9.1 complete)
+**Research**: Likely (Metal text rendering, SDF fonts)
+**Research Topics**: Signed distance field fonts, Metal text rendering, glyph animation, SwiftUI text integration
+
+**Key Deliverables:**
+- Opta text rendering with SDF fonts
+- Character-by-character animation system
+- Glow and energy effects around text
+- Integration with ring state (text responds to ring energy)
+- Multiple text styles (hero, ambient, compact)
+
+Plans:
+- [ ] 76-01: TBD (run /gsd:plan-phase 76 to break down)
+
+#### Phase 77: HD Ring Enhancement
+**Goal**: Upgrade the Opta Ring to HD quality with enhanced wgpu shaders and visual fidelity
+**Depends on**: Phase 76
+**Research**: Likely (advanced wgpu effects)
+**Research Topics**: HDR rendering, advanced fresnel, subsurface scattering, bloom post-processing
+
+**Key Deliverables:**
+- Enhanced ring geometry with smoother curves
+- HDR-quality glass material with improved fresnel
+- Premium plasma core with higher fidelity noise
+- Enhanced particle systems around ring
+- 120Hz optimized rendering path
+- Ring state animations with improved physics
+
+Plans:
+- [ ] 77-01: TBD
+
+#### Phase 78: HD Visual System
+**Goal**: Establish the premium HD aesthetic system across the entire app
+**Depends on**: Phase 77
+**Research**: Unlikely (building on existing patterns)
+
+**Key Deliverables:**
+- Glass panel system with depth hierarchy
+- Premium glow and neon effects
+- Consistent color temperature system
+- Motion design language documentation
+- Performance-optimized effect presets
+- Accessibility modes (reduced motion, high contrast)
+
+Plans:
+- [ ] 78-01: TBD
+
+#### Phase 79: Circular Menu
+**Goal**: Create an innovative radial navigation system for quick access to features
+**Depends on**: Phase 78
+**Research**: Likely (radial UI patterns)
+**Research Topics**: Radial menu UX, pie menu interaction, touch/trackpad gestures, accessibility for radial navigation
+
+**Key Deliverables:**
+- Circular menu component with radial sectors
+- Gesture activation (trackpad, mouse, keyboard)
+- Smooth open/close animations
+- Sector highlighting and selection
+- Integration with navigation system
+- Keyboard accessibility
+
+Plans:
+- [ ] 79-01: TBD
+
+#### Phase 80: Visual Integration & Launch
+**Goal**: Polish, integrate all visual systems, and prepare for release
+**Depends on**: Phase 79
+**Research**: Unlikely (integration work)
+
+**Key Deliverables:**
+- Full integration testing of all visual systems
+- Performance optimization pass
+- Visual consistency audit
+- Documentation for visual components
+- Demo/showcase materials
+- Release preparation
+
+Plans:
+- [ ] 80-01: TBD
 
 ## Progress
 
@@ -1426,9 +1545,15 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 �
 | 66. Performance Optimization | v8.0 | 2/2 | Complete | 2026-01-21 |
 | 67. Platform Parity | v8.0 | 2/2 | Complete | 2026-01-21 |
 | 68. Rust Native Launch | v8.0 | 1/1 | Complete | 2026-01-21 |
-| 69. opta-core UniFFI Integration | v9.0 | 0/2 | Ready | - |
-| 70. Main Dashboard UI | v9.0 | 0/2 | Planned | - |
-| 71. Settings & Preferences | v9.0 | 0/1 | Planned | - |
-| 72. Games Library Integration | v9.0 | 0/1 | Planned | - |
-| 73. Menu Bar Agent Polish | v9.0 | 0/1 | Planned | - |
-| 74. App Store Preparation | v9.0 | 0/1 | Planned | - |
+| 69. opta-core UniFFI Integration | v9.0 | 2/2 | Complete | 2026-01-21 |
+| 70. Main Dashboard UI | v9.0 | 2/2 | Complete | 2026-01-21 |
+| 71. Settings & Preferences | v9.0 | 1/1 | Complete | 2026-01-21 |
+| 72. Games Library Integration | v9.0 | 1/1 | Complete | 2026-01-21 |
+| 73. Menu Bar Agent Polish | v9.0 | 1/1 | Complete | 2026-01-21 |
+| 74. App Store Preparation | v9.0 | 1/1 | Complete | 2026-01-22 |
+| 75. Premium Haptics & Audio | v9.1 | 1/1 | Complete | 2026-01-22 |
+| 76. Opta Text Reimplementation | v10.0 | 0/1 | Ready | - |
+| 77. HD Ring Enhancement | v10.0 | 0/1 | Planned | - |
+| 78. HD Visual System | v10.0 | 0/1 | Planned | - |
+| 79. Circular Menu | v10.0 | 0/1 | Planned | - |
+| 80. Visual Integration & Launch | v10.0 | 0/1 | Planned | - |
