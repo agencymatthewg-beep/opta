@@ -122,6 +122,8 @@ struct SettingsView: View {
 
                     // Preferences Section
                     Section {
+                        BatteryModeRow()
+
                         SettingsRow(
                             icon: "wand.and.stars",
                             title: "Optimization Depth",
@@ -255,6 +257,138 @@ struct SettingsView: View {
             selectedModelId = nil
             OptaHaptics.shared.success()
         }
+    }
+}
+
+// MARK: - Battery Mode Row Component
+
+private struct BatteryModeRow: View {
+    private var performanceManager: PerformanceManager { PerformanceManager.shared }
+
+    @State private var showingPicker = false
+
+    var body: some View {
+        Button {
+            showingPicker = true
+            OptaHaptics.shared.tap()
+        } label: {
+            HStack(spacing: OptaDesign.Spacing.md) {
+                Image(systemName: performanceManager.currentBatteryMode.iconName)
+                    .font(.system(size: 20))
+                    .foregroundStyle(Color.optaPurple)
+                    .frame(width: 28)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Battery Mode")
+                        .optaBodyStyle()
+                        .foregroundStyle(Color.optaTextPrimary)
+
+                    Text(performanceManager.currentBatteryMode.description)
+                        .optaLabelStyle()
+                }
+
+                Spacer()
+
+                Text(performanceManager.currentBatteryMode.rawValue)
+                    .optaCaptionStyle()
+                    .foregroundStyle(Color.optaTextSecondary)
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(Color.optaTextMuted)
+            }
+            .padding(.vertical, OptaDesign.Spacing.xxs)
+        }
+        .listRowBackground(Color.optaSurface)
+        .sheet(isPresented: $showingPicker) {
+            BatteryModePickerSheet()
+        }
+    }
+}
+
+// MARK: - Battery Mode Picker Sheet
+
+private struct BatteryModePickerSheet: View {
+    @Environment(\.dismiss) private var dismiss
+
+    private var performanceManager: PerformanceManager { PerformanceManager.shared }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                ForEach(BatteryMode.allCases, id: \.self) { mode in
+                    BatteryModeOption(
+                        mode: mode,
+                        isSelected: performanceManager.currentBatteryMode == mode,
+                        onSelect: {
+                            performanceManager.currentBatteryMode = mode
+                            OptaHaptics.shared.selectionChanged()
+                            dismiss()
+                        }
+                    )
+                }
+            }
+            .scrollContentBackground(.hidden)
+            .background(Color.optaBackground)
+            .navigationTitle("Battery Mode")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                    .foregroundStyle(Color.optaPurple)
+                }
+            }
+            .toolbarBackground(Color.optaBackground, for: .navigationBar)
+            .toolbarColorScheme(.dark, for: .navigationBar)
+        }
+        .presentationDetents([.medium])
+        .presentationDragIndicator(.visible)
+    }
+}
+
+// MARK: - Battery Mode Option
+
+private struct BatteryModeOption: View {
+    let mode: BatteryMode
+    let isSelected: Bool
+    let onSelect: () -> Void
+
+    var body: some View {
+        Button(action: onSelect) {
+            HStack(spacing: OptaDesign.Spacing.md) {
+                Image(systemName: mode.iconName)
+                    .font(.system(size: 24))
+                    .foregroundStyle(isSelected ? Color.optaPurple : Color.optaTextSecondary)
+                    .frame(width: 32)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(mode.rawValue)
+                        .font(.optaBody)
+                        .fontWeight(isSelected ? .semibold : .regular)
+                        .foregroundStyle(Color.optaTextPrimary)
+
+                    Text(mode.description)
+                        .font(.optaCaption)
+                        .foregroundStyle(Color.optaTextSecondary)
+
+                    Text("Target: \(mode.maxTokensPerSecondTarget) tok/s")
+                        .font(.optaLabel)
+                        .foregroundStyle(Color.optaTextMuted)
+                }
+
+                Spacer()
+
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 22))
+                        .foregroundStyle(Color.optaPurple)
+                }
+            }
+            .padding(.vertical, OptaDesign.Spacing.sm)
+        }
+        .listRowBackground(isSelected ? Color.optaSurface : Color.clear)
     }
 }
 
