@@ -23,9 +23,9 @@ struct OfflineIndicator: View {
                 Spacer()
                 Text("Ready")
                     .font(.optaCaption)
-                    .foregroundStyle(.optaGreen)
+                    .foregroundStyle(Color.optaGreen)
             }
-            .foregroundStyle(.optaTextSecondary)
+            .foregroundStyle(Color.optaTextSecondary)
             .padding(.horizontal, OptaDesign.Spacing.md)
             .padding(.vertical, OptaDesign.Spacing.sm)
             .background(Color.optaSurface)
@@ -40,7 +40,7 @@ struct OfflineIndicator: View {
                 Image(systemName: "exclamationmark.triangle.fill")
                     .foregroundStyle(.orange)
             }
-            .foregroundStyle(.optaTextSecondary)
+            .foregroundStyle(Color.optaTextSecondary)
             .padding(.horizontal, OptaDesign.Spacing.md)
             .padding(.vertical, OptaDesign.Spacing.sm)
             .background(Color.orange.opacity(0.1))

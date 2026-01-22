@@ -76,6 +76,10 @@
 		A11111110000000000000045 /* ImagePreprocessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22222220000000000000045 /* ImagePreprocessor.swift */; };
 		A11111110000000000000046 /* ResponseParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22222220000000000000046 /* ResponseParser.swift */; };
 		A11111110000000000000099 /* ZoomableImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22222220000000000000099 /* ZoomableImageView.swift */; };
+		A11111110000000000000047 /* NetworkMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22222220000000000000047 /* NetworkMonitor.swift */; };
+		A11111110000000000000048 /* ModelStatusBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22222220000000000000048 /* ModelStatusBadge.swift */; };
+		A11111110000000000000049 /* OfflineIndicator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22222220000000000000049 /* OfflineIndicator.swift */; };
+		A1111111000000000000004A /* FirstRunDownloadSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2222222000000000000004A /* FirstRunDownloadSheet.swift */; };
 		D8CA49FD2F20FFD4008380EF /* Algorithms in Frameworks */ = {isa = PBXBuildFile; productRef = D8CA49FC2F20FFD4008380EF /* Algorithms */; };
 		D8CA4A002F21006A008380EF /* MLX in Frameworks */ = {isa = PBXBuildFile; productRef = D8CA4A012F21006A008380EF /* MLX */; };
 		D8CA4A022F21006A008380EF /* MLXLLM in Frameworks */ = {isa = PBXBuildFile; productRef = D8CA4A032F21006A008380EF /* MLXLLM */; };
@@ -152,6 +156,10 @@
 		A22222220000000000000045 /* ImagePreprocessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImagePreprocessor.swift; sourceTree = "<group>"; };
 		A22222220000000000000046 /* ResponseParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResponseParser.swift; sourceTree = "<group>"; };
 		A22222220000000000000099 /* ZoomableImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoomableImageView.swift; sourceTree = "<group>"; };
+		A22222220000000000000047 /* NetworkMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkMonitor.swift; sourceTree = "<group>"; };
+		A22222220000000000000048 /* ModelStatusBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelStatusBadge.swift; sourceTree = "<group>"; };
+		A22222220000000000000049 /* OfflineIndicator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfflineIndicator.swift; sourceTree = "<group>"; };
+		A2222222000000000000004A /* FirstRunDownloadSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirstRunDownloadSheet.swift; sourceTree = "<group>"; };
 		A33333330000000000000001 /* w.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = w.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -243,6 +251,7 @@
 				A22222220000000000000019 /* ResultView.swift */,
 				A2222222000000000000001A /* ScanFlowView.swift */,
 				A2222222000000000000001D /* OnboardingView.swift */,
+				A2222222000000000000004A /* FirstRunDownloadSheet.swift */,
 				A55555550000000000000009 /* Components */,
 				A5555555000000000000000D /* Effects */,
 				A5555555000000000000000B /* Debug */,
@@ -270,6 +279,7 @@
 				A2222222000000000000003C /* LLMProvider.swift */,
 				A2222222000000000000003B /* MLXService.swift */,
 				A2222222000000000000003F /* ModelDownloadManager.swift */,
+				A22222220000000000000047 /* NetworkMonitor.swift */,
 				A22222220000000000000046 /* ResponseParser.swift */,
 				A22222220000000000000042 /* StorageManager.swift */,
 				A22222220000000000000036 /* FrameRateManager.swift */,
@@ -300,6 +310,8 @@
 				A22222220000000000000024 /* AmbientGradientView.swift */,
 				A22222220000000000000040 /* ModelDownloadProgressView.swift */,
 				A22222220000000000000041 /* ModelSelectionCard.swift */,
+				A22222220000000000000048 /* ModelStatusBadge.swift */,
+				A22222220000000000000049 /* OfflineIndicator.swift */,
 				A22222220000000000000043 /* StorageInfoView.swift */,
 			);
 			path = Components;
@@ -484,6 +496,10 @@
 				A11111110000000000000044 /* GenerationStream.swift in Sources */,
 				A11111110000000000000045 /* ImagePreprocessor.swift in Sources */,
 				A11111110000000000000046 /* ResponseParser.swift in Sources */,
+				A11111110000000000000047 /* NetworkMonitor.swift in Sources */,
+				A11111110000000000000048 /* ModelStatusBadge.swift in Sources */,
+				A11111110000000000000049 /* OfflineIndicator.swift in Sources */,
+				A1111111000000000000004A /* FirstRunDownloadSheet.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
