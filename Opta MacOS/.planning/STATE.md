@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-01-15)
 ## Current Position
 
 Phase: 85 of 90 (Dashboard Obsidian Refresh)
-Plan: 85-01 COMPLETE
-Status: v11.0 Phase 85 plan 01 complete
-Last activity: 2026-01-23 — Phase 85 plan 01 executed (FFI exports for GlassPanel + Branch components)
+Plan: 85-03 COMPLETE (85-02 parallel)
+Status: v11.0 Phase 85 plans 01+03 complete, 02 in parallel
+Last activity: 2026-01-23 — Completed 85-03-PLAN.md (QuickActions + Dashboard obsidian refresh)
 
 Progress: ██████████ 100% of v5.0 (17 phases complete)
 v5.1 Progress: ██████████ 100% (7 of 7 phases complete)
@@ -79,8 +79,8 @@ v11.0 Progress: █████░░░░░ 50% (5 of 10 phases complete)
 | Plan | Status | Description |
 |------|--------|-------------|
 | 85-01 | ✅ Complete | FFI Panel Exports (GlassPanel 9 functions, BranchMeter 6, BranchIndicator 5, BranchBorder 5) |
-| 85-02 | 📋 Planned | Swift Panel Wrappers |
-| 85-03 | 📋 Planned | Dashboard Integration |
+| 85-02 | 🔄 In Progress | Swift Panel Wrappers (parallel execution) |
+| 85-03 | ✅ Complete | QuickActions + Dashboard Layout Obsidian (obsidian buttons, depth hierarchy, violet palette) |
 
 ### Phase 84 Plans (COMPLETE)
 | Plan | Status | Description |
@@ -660,6 +660,10 @@ v11.0 Progress: █████░░░░░ 50% (5 of 10 phases complete)
 | 85-01 | pub(crate) surface field visibility | Cross-module FFI access without public API exposure |
 | 85-01 | let...else for null-pointer guards | Clippy-compliant idiomatic Rust pattern for FFI safety checks |
 | 85-01 | Module-level cast_precision_loss allow | u32->f32 resolution casts are intentional, suppress per-module |
+| 85-03 | Unified violet palette (8B5CF6/7C3AED/A855F7) | Replaces cyan/green per-button while maintaining subtle distinction |
+| 85-03 | Depth hierarchy via opacity layering | Focal 1.0, content 0.95, context 0.9, ambient 0.85 with reduceMotion bypass |
+| 85-03 | Grade badge preserves functional colors | Obsidian fill + functional color stroke; letter differentiates, color serves function |
+| 85-03 | Loading pulse on border opacity | Repeating easeInOut 0.2-0.5 opacity, 0.8s period for loading state |
 | 85-01 | Flattened config struct fields | position_x/y instead of arrays for simpler C ABI compatibility |
 
 ### Deferred Issues
@@ -691,9 +695,9 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-23
-Stopped at: Phase 85 plan 01 complete (FFI exports for panels + branch components)
+Stopped at: Phase 85 plan 03 complete (QuickActions + Dashboard obsidian refresh)
 Resume file: None
-Next action: Execute Phase 85 plans 02-03 (Swift wrappers + Dashboard integration)
+Next action: Phase 85-02 completing in parallel; once done, Phase 85 complete, proceed to Phase 86
 
 **v9.0 Stats (COMPLETE):**
 - Phase 69 complete (2 plans) - UniFFI bindings, OptaCoreManager
