@@ -108,15 +108,15 @@ struct CircularMenuView: View {
     /// Reduce motion preference
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    /// Color temperature from environment
+    @Environment(\.colorTemperature) private var colorTemp
+
     // MARK: - Constants
 
     private let animationDuration: Double = 0.3
 
     /// Obsidian base color
     private let obsidianBase = Color(hex: "0A0A0F")
-
-    /// Branch energy violet
-    private let branchViolet = Color(hex: "8B5CF6")
 
     // MARK: - Body
 
@@ -128,7 +128,7 @@ struct CircularMenuView: View {
                     ZStack {
                         Color.black
                             .opacity(0.3 * Double(menuState.openProgress))
-                        branchViolet
+                        colorTemp.violetColor
                             .opacity(0.02 * Double(menuState.openProgress))
                     }
                     .ignoresSafeArea()
@@ -231,8 +231,8 @@ struct CircularMenuView: View {
                 .fill(
                     RadialGradient(
                         colors: [
-                            branchViolet.opacity(0.25 * Double(menuState.highlightProgress)),
-                            branchViolet.opacity(0.08 * Double(menuState.highlightProgress)),
+                            colorTemp.violetColor.opacity(0.25 * Double(menuState.highlightProgress)),
+                            colorTemp.violetColor.opacity(0.08 * Double(menuState.highlightProgress)),
                             Color.clear
                         ],
                         center: .center,
@@ -250,7 +250,7 @@ struct CircularMenuView: View {
                     innerRadius: innerRadius,
                     outerRadius: radius
                 )
-                .stroke(branchViolet, lineWidth: 2)
+                .stroke(colorTemp.violetColor, lineWidth: 2)
             }
 
             // Sector arc border
@@ -262,7 +262,7 @@ struct CircularMenuView: View {
             )
             .stroke(
                 isHighlighted
-                    ? branchViolet.opacity(0.5)
+                    ? colorTemp.violetColor.opacity(0.5)
                     : Color.white.opacity(0.08),
                 lineWidth: isHighlighted ? 1.5 : 1
             )
@@ -275,9 +275,9 @@ struct CircularMenuView: View {
                     innerRadius: innerRadius,
                     outerRadius: radius
                 )
-                .stroke(branchViolet, lineWidth: 3)
+                .stroke(colorTemp.violetColor, lineWidth: 3)
                 .blur(radius: 6)
-                .opacity(Double(menuState.highlightProgress) * 0.4)
+                .opacity(Double(menuState.highlightProgress) * colorTemp.glowOpacity * 0.7)
             }
 
             // Keyboard focus indicator: distinct violet shadow glow ring
@@ -288,8 +288,8 @@ struct CircularMenuView: View {
                     innerRadius: innerRadius,
                     outerRadius: radius
                 )
-                .stroke(branchViolet.opacity(0.4), lineWidth: 1.5)
-                .shadow(color: branchViolet.opacity(0.4), radius: 6)
+                .stroke(colorTemp.violetColor.opacity(0.4), lineWidth: 1.5)
+                .shadow(color: colorTemp.violetColor.opacity(0.4), radius: 6)
             }
 
             // Keyboard focus: reduceMotion fallback
@@ -300,7 +300,7 @@ struct CircularMenuView: View {
                     innerRadius: innerRadius,
                     outerRadius: radius
                 )
-                .stroke(branchViolet.opacity(0.6), lineWidth: 2)
+                .stroke(colorTemp.violetColor.opacity(0.6), lineWidth: 2)
             }
 
             // Icon and label — white 0.7 (normal) → white 1.0 (highlighted)
@@ -337,15 +337,15 @@ struct CircularMenuView: View {
             .overlay(
                 Circle()
                     .strokeBorder(
-                        branchViolet.opacity(0.3),
+                        colorTemp.violetColor.opacity(0.3),
                         lineWidth: 1
                     )
             )
             .overlay(
                 Image(systemName: "waveform.circle.fill")
                     .font(.system(size: 24))
-                    .foregroundStyle(branchViolet)
-                    .shadow(color: branchViolet.opacity(0.4), radius: 4)
+                    .foregroundStyle(colorTemp.violetColor)
+                    .shadow(color: colorTemp.violetColor.opacity(colorTemp.glowOpacity * 0.7), radius: 4)
             )
     }
 

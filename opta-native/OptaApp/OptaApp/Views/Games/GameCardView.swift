@@ -38,6 +38,9 @@ struct GameCardView: View {
     /// Accessibility: reduce motion preference
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    /// Color temperature from environment
+    @Environment(\.colorTemperature) private var colorTemp
+
     // MARK: - Body
 
     var body: some View {
@@ -142,11 +145,11 @@ struct GameCardView: View {
         } label: {
             Image(systemName: "bolt.fill")
                 .font(.system(size: 12))
-                .foregroundStyle(Color(hex: "8B5CF6"))
+                .foregroundStyle(colorTemp.tintColor)
                 .frame(width: 32, height: 32)
                 .background(
                     Circle()
-                        .fill(Color(hex: "8B5CF6").opacity(0.15))
+                        .fill(colorTemp.tintColor.opacity(0.15))
                 )
         }
         .buttonStyle(.plain)
@@ -169,8 +172,8 @@ struct GameCardView: View {
                         RoundedRectangle(cornerRadius: 12)
                             .stroke(
                                 isHovering
-                                    ? Color(hex: "8B5CF6").opacity(0.3)
-                                    : Color(hex: "8B5CF6").opacity(0.1),
+                                    ? colorTemp.violetColor.opacity(0.3)
+                                    : colorTemp.violetColor.opacity(0.1),
                                 lineWidth: isHovering ? 2 : 1
                             )
                     } else {
@@ -179,7 +182,7 @@ struct GameCardView: View {
                             .fill(
                                 RadialGradient(
                                     colors: [
-                                        Color(hex: "8B5CF6").opacity(isHovering ? 0.15 : 0),
+                                        colorTemp.violetColor.opacity(isHovering ? colorTemp.glowOpacity * 0.25 : 0),
                                         .clear
                                     ],
                                     center: .center,
@@ -193,12 +196,12 @@ struct GameCardView: View {
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
                     .stroke(
-                        Color(hex: "8B5CF6").opacity(isHovering ? 0.3 : 0.1),
+                        colorTemp.violetColor.opacity(isHovering ? 0.3 : 0.1),
                         lineWidth: 1
                     )
             )
             .shadow(
-                color: isHovering ? Color(hex: "8B5CF6").opacity(0.1) : .clear,
+                color: isHovering ? colorTemp.violetColor.opacity(colorTemp.glowOpacity * 0.15) : .clear,
                 radius: 8,
                 x: 0,
                 y: 4
@@ -216,6 +219,7 @@ struct CompactGameCardView: View {
 
     @State private var isHovering = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.colorTemperature) private var colorTemp
 
     var body: some View {
         Button {
@@ -282,8 +286,8 @@ struct CompactGameCardView: View {
                                 RoundedRectangle(cornerRadius: 12)
                                     .stroke(
                                         isHovering
-                                            ? Color(hex: "8B5CF6").opacity(0.3)
-                                            : Color(hex: "8B5CF6").opacity(0.1),
+                                            ? colorTemp.violetColor.opacity(0.3)
+                                            : colorTemp.violetColor.opacity(0.1),
                                         lineWidth: isHovering ? 2 : 1
                                     )
                             } else {
@@ -291,7 +295,7 @@ struct CompactGameCardView: View {
                                     .fill(
                                         RadialGradient(
                                             colors: [
-                                                Color(hex: "8B5CF6").opacity(isHovering ? 0.15 : 0),
+                                                colorTemp.violetColor.opacity(isHovering ? colorTemp.glowOpacity * 0.25 : 0),
                                                 .clear
                                             ],
                                             center: .center,
@@ -305,7 +309,7 @@ struct CompactGameCardView: View {
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
                             .stroke(
-                                Color(hex: "8B5CF6").opacity(isHovering ? 0.3 : 0.1),
+                                colorTemp.violetColor.opacity(isHovering ? 0.3 : 0.1),
                                 lineWidth: 1
                             )
                     )
