@@ -9,10 +9,10 @@ See: .planning/PROJECT.md (updated 2026-01-15)
 
 ## Current Position
 
-Phase: 87 of 90 (Settings & Library Alignment)
-Plan: 87-01 COMPLETE, 87-02 PLANNED (ready for execution)
-Status: v11.0 Phase 87 in progress — 87-01 complete, 87-02 ready
-Last activity: 2026-01-24 — Executed 87-01 (Settings Views Obsidian Refresh)
+Phase: 87 of 90 (Settings & Library Alignment) COMPLETE
+Plan: 87-01 COMPLETE, 87-02 COMPLETE
+Status: v11.0 Phase 87 complete — All games views migrated to obsidian
+Last activity: 2026-01-24 — Executed 87-02 (Games Views Obsidian Refresh)
 
 Progress: ██████████ 100% of v5.0 (17 phases complete)
 v5.1 Progress: ██████████ 100% (7 of 7 phases complete)
@@ -22,7 +22,7 @@ v8.0 Progress: ██████████ 100% (10 of 10 phases complete) �
 v9.0 Progress: ██████████ 100% (6 of 6 phases complete) ✅
 v9.1 Progress: ██████████ 100% (1 of 1 phases complete) ✅
 v10.0 Progress: ████████░░ 80% (4 of 5 phases complete)
-v11.0 Progress: ███████░░░ 70% (7 of 10 phases complete)
+v11.0 Progress: ████████░░ 80% (8 of 10 phases complete)
 
 ### Phase 69 Plans (COMPLETE)
 | Plan | Status | Description |
@@ -70,16 +70,16 @@ v11.0 Progress: ███████░░░ 70% (7 of 10 phases complete)
 | 84 | Energy Branch Components | ✅ Complete |
 | 85 | Dashboard Obsidian Refresh | ✅ Complete |
 | 86 | Navigation Energy Language | ✅ Complete |
-| 87 | Settings & Library Alignment | 🔄 In Progress |
+| 87 | Settings & Library Alignment | ✅ Complete |
 | 88 | Menu Bar Obsidian | 📋 Planned |
 | 89 | Transitions & Motion | 📋 Planned |
 | 90 | Visual Polish & Launch | 📋 Planned |
 
-### Phase 87 Plans (IN PROGRESS)
+### Phase 87 Plans (COMPLETE)
 | Plan | Status | Description |
 |------|--------|-------------|
 | 87-01 | ✅ Complete | Settings Views Obsidian Refresh (SettingsView, ProfileManagerView, ThemeCustomizationView, KeyboardShortcutsView) |
-| 87-02 | 📋 Planned | Games Views Obsidian Refresh (GamesLibraryView, GameCardView, GameDetailView) |
+| 87-02 | ✅ Complete | Games Views Obsidian Refresh (GamesLibraryView, GameCardView, GameDetailView) |
 
 ### Phase 86 Plans (COMPLETE)
 | Plan | Status | Description |
@@ -694,6 +694,12 @@ v11.0 Progress: ███████░░░ 70% (7 of 10 phases complete)
 | 87-01 | Violet intensity tiers for quality badges (opacity-based) | Single hue progression cleaner than multi-color; communicates level naturally |
 | 87-01 | Remove # prefix from hex strings in Settings views | Consistency with Phase 86 pattern; Color(hex:) handles both formats |
 | 87-01 | Keep .red for destructive actions despite obsidian refresh | Semantic color meaning overrides aesthetic unification |
+| 87-02 | RadialGradient for branch-energy hover (120pt radius) | Covers typical card dimensions with soft violet glow matching Phase 86 |
+| 87-02 | accessibilityReduceMotion drives fallback | System preference replaces gradient with solid 2px violet border |
+| 87-02 | Obsidian replaces ultraThinMaterial in all Games views | Deterministic rendering, no blur cost, matches Phase 86 pattern |
+| 87-02 | 2px violet accent bar on section headers | Visual hierarchy without overwhelming; consistent brand indicator |
+| 87-02 | Edit Profile button: violet text + violet/20% border | Secondary action distinct from primary Optimize Now button |
+| 87-02 | Preserve ALL semantic colors in GameDetailView | 22C55E/F59E0B/EF4444/3B82F6 serve functional meaning, not decoration |
 
 ### Deferred Issues
 
@@ -724,9 +730,9 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-24
-Stopped at: Phase 87-01 complete (Settings Views Obsidian Refresh)
+Stopped at: Phase 87 complete (Settings & Library Alignment — both plans done)
 Resume file: None
-Next action: Execute Phase 87-02 (Games Views Obsidian Refresh)
+Next action: Plan Phase 88 (Menu Bar Obsidian)
 
 **v9.0 Stats (COMPLETE):**
 - Phase 69 complete (2 plans) - UniFFI bindings, OptaCoreManager
