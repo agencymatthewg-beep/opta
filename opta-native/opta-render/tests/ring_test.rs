@@ -11,12 +11,12 @@ fn test_ring_config_defaults() {
     assert!((config.minor_radius - 0.15).abs() < f32::EPSILON, "Minor radius should default to 0.15");
     assert_eq!(config.major_segments, 64, "Major segments should default to 64");
     assert_eq!(config.minor_segments, 32, "Minor segments should default to 32");
-    assert!((config.ior - 1.5).abs() < f32::EPSILON, "IOR should default to 1.5");
-    
-    // Verify tint color
-    assert!((config.tint[0] - 0.4).abs() < f32::EPSILON, "Tint red should be 0.4");
-    assert!((config.tint[1] - 0.6).abs() < f32::EPSILON, "Tint green should be 0.6");
-    assert!((config.tint[2] - 1.0).abs() < f32::EPSILON, "Tint blue should be 1.0");
+    assert!((config.roughness - 0.03).abs() < f32::EPSILON, "Roughness should default to 0.03");
+
+    // Verify obsidian base color
+    assert!((config.base_color[0] - 0.02).abs() < f32::EPSILON, "Base color red should be 0.02");
+    assert!((config.base_color[1] - 0.02).abs() < f32::EPSILON, "Base color green should be 0.02");
+    assert!((config.base_color[2] - 0.03).abs() < f32::EPSILON, "Base color blue should be 0.03");
 }
 
 #[test]
@@ -100,7 +100,7 @@ fn test_ring_uniforms_layout() {
     assert!(uniforms.time == 0.0);
     assert!((uniforms.energy_level - 0.2).abs() < f32::EPSILON);
     assert!((uniforms.fresnel_power - 3.0).abs() < f32::EPSILON);
-    assert!((uniforms.ior - 1.5).abs() < f32::EPSILON);
+    assert!((uniforms.roughness - 0.03).abs() < f32::EPSILON);
 }
 
 #[test]
@@ -110,8 +110,9 @@ fn test_generate_torus_geometry_basic() {
         minor_radius: 0.1,
         major_segments: 8,
         minor_segments: 4,
-        ior: 1.5,
-        tint: [1.0, 1.0, 1.0],
+        roughness: 0.03,
+        base_color: [0.02, 0.02, 0.03],
+        energy_color: [0.545, 0.361, 0.965],
         quality_level: RingQualityLevel::Low,
     };
     
@@ -172,8 +173,9 @@ fn test_generate_torus_geometry_bounds() {
         minor_radius: 0.5,
         major_segments: 16,
         minor_segments: 8,
-        ior: 1.5,
-        tint: [1.0, 1.0, 1.0],
+        roughness: 0.03,
+        base_color: [0.02, 0.02, 0.03],
+        energy_color: [0.545, 0.361, 0.965],
         quality_level: RingQualityLevel::Low,
     };
     
@@ -217,14 +219,15 @@ fn test_ring_config_custom() {
         minor_radius: 0.3,
         major_segments: 128,
         minor_segments: 64,
-        ior: 1.7,
-        tint: [0.2, 0.8, 0.5],
+        roughness: 0.05,
+        base_color: [0.02, 0.02, 0.03],
+        energy_color: [0.545, 0.361, 0.965],
         quality_level: RingQualityLevel::High,
     };
-    
+
     assert!((config.major_radius - 2.5).abs() < f32::EPSILON);
     assert!((config.minor_radius - 0.3).abs() < f32::EPSILON);
     assert_eq!(config.major_segments, 128);
     assert_eq!(config.minor_segments, 64);
-    assert!((config.ior - 1.7).abs() < f32::EPSILON);
+    assert!((config.roughness - 0.05).abs() < f32::EPSILON);
 }
