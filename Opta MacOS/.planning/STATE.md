@@ -680,9 +680,9 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-23
-Stopped at: Phase 84 plan 01 complete (branch energy GPU components)
+Stopped at: Phase 85 planned (3 plans, 2 waves)
 Resume file: None
-Next action: Plan Phase 85 (Dashboard Obsidian Refresh)
+Next action: Execute Phase 85 (Dashboard Obsidian Refresh) — /gsd:execute-phase 85
 
 **v9.0 Stats (COMPLETE):**
 - Phase 69 complete (2 plans) - UniFFI bindings, OptaCoreManager

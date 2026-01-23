@@ -1575,7 +1575,9 @@ Plans:
 - Sparkline charts with branch-energy color palette
 
 Plans:
-- [ ] 85-01: TBD (run /gsd:plan-phase 85 to break down)
+- [ ] 85-01: Panel & Branch FFI Exports (3 tasks, wave 1)
+- [ ] 85-02: Swift Bridge + TelemetryCard Obsidian (3 tasks, wave 2)
+- [ ] 85-03: QuickActions + Dashboard Layout Obsidian (2 tasks, wave 2)
 
 #### Phase 86: Navigation Energy Language
 **Goal**: Update circular menu and navigation elements with obsidian containers and branch-energy highlights
@@ -1758,7 +1760,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 �
 | 82. Branch Energy Shader | v11.0 | 1/1 | ✅ Complete | 2026-01-23 |
 | 83. Obsidian Panel System | v11.0 | 1/1 | ✅ Complete | 2026-01-23 |
 | 84. Energy Branch Components | v11.0 | 1/1 | ✅ Complete | 2026-01-23 |
-| 85. Dashboard Obsidian Refresh | v11.0 | 0/? | Not started | - |
+| 85. Dashboard Obsidian Refresh | v11.0 | 0/3 | Planned | - |
 | 86. Navigation Energy Language | v11.0 | 0/? | Not started | - |
 | 87. Settings & Library Alignment | v11.0 | 0/? | Not started | - |
 | 88. Organic Motion System | v11.0 | 0/? | Not started | - |
