@@ -32,6 +32,9 @@ struct QuickActions: View {
     /// Reduce motion preference
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    /// Color temperature state from environment
+    @Environment(\.colorTemperature) private var colorTemp
+
     // MARK: - Body
 
     var body: some View {
@@ -39,7 +42,7 @@ struct QuickActions: View {
             QuickActionButton(
                 title: "Optimize",
                 icon: "bolt.fill",
-                color: Color(hex: "8B5CF6"),
+                color: colorTemp.violetColor,
                 isLoading: coreManager.viewModel.stealthModeActive
             ) {
                 coreManager.executeStealthMode()
@@ -49,7 +52,7 @@ struct QuickActions: View {
             QuickActionButton(
                 title: "Scan Games",
                 icon: "gamecontroller.fill",
-                color: Color(hex: "7C3AED")
+                color: colorTemp.violetColor
             ) {
                 coreManager.dispatch(.scanGames)
             }
@@ -58,7 +61,7 @@ struct QuickActions: View {
             QuickActionButton(
                 title: "Score",
                 icon: "chart.bar.fill",
-                color: Color(hex: "A855F7")
+                color: colorTemp.violetColor
             ) {
                 coreManager.navigate(to: .optimize)
             }
@@ -101,10 +104,10 @@ struct QuickActionButton: View {
     /// Reduce motion preference
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    // MARK: - Constants
+    /// Color temperature state from environment
+    @Environment(\.colorTemperature) private var colorTemp
 
-    /// Branch energy violet color
-    private let branchViolet = Color(hex: "8B5CF6")
+    // MARK: - Constants
 
     /// Deep obsidian base
     private let obsidianBase = Color(hex: "0A0A0F")
@@ -121,7 +124,7 @@ struct QuickActionButton: View {
                 ZStack {
                     if isLoading {
                         ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: branchViolet))
+                            .progressViewStyle(CircularProgressViewStyle(tint: colorTemp.violetColor))
                             .scaleEffect(0.8)
                     } else {
                         Image(systemName: icon)
@@ -147,7 +150,7 @@ struct QuickActionButton: View {
             )
             .scaleEffect(isPressed ? 0.95 : 1.0)
             .shadow(
-                color: isHovered && !reduceMotion ? branchViolet.opacity(0.15) : .clear,
+                color: isHovered && !reduceMotion ? colorTemp.tintColor.opacity(colorTemp.glowOpacity * 0.25) : .clear,
                 radius: 12,
                 x: 0,
                 y: 4
@@ -209,7 +212,7 @@ struct QuickActionButton: View {
             if isHovered && !reduceMotion {
                 RadialGradient(
                     colors: [
-                        branchViolet.opacity(0.08),
+                        colorTemp.tintColor.opacity(colorTemp.glowOpacity * 0.1),
                         Color.clear
                     ],
                     center: .center,
@@ -246,13 +249,13 @@ struct QuickActionButton: View {
     private var borderColor: Color {
         if isLoading && !reduceMotion {
             // Pulsing violet border during loading
-            return branchViolet.opacity(loadingPulse ? 0.5 : 0.2)
+            return colorTemp.tintColor.opacity(loadingPulse ? colorTemp.glowOpacity * 0.6 : colorTemp.glowOpacity * 0.3)
         }
         if isPressed {
-            return branchViolet.opacity(0.6)
+            return colorTemp.tintColor.opacity(colorTemp.glowOpacity * 0.8)
         }
         if isHovered && !reduceMotion {
-            return branchViolet.opacity(0.4)
+            return colorTemp.tintColor.opacity(colorTemp.glowOpacity * 0.5)
         }
         return Color.white.opacity(0.1)
     }
@@ -282,19 +285,19 @@ struct QuickActions_Previews: PreviewProvider {
                 QuickActionButton(
                     title: "Optimize",
                     icon: "bolt.fill",
-                    color: Color(hex: "8B5CF6")
+                    color: ColorTemperatureState.active.violetColor
                 ) {}
 
                 QuickActionButton(
                     title: "Scan Games",
                     icon: "gamecontroller.fill",
-                    color: Color(hex: "7C3AED")
+                    color: ColorTemperatureState.active.violetColor
                 ) {}
 
                 QuickActionButton(
                     title: "Score",
                     icon: "chart.bar.fill",
-                    color: Color(hex: "A855F7")
+                    color: ColorTemperatureState.active.violetColor
                 ) {}
             }
 
@@ -303,7 +306,7 @@ struct QuickActions_Previews: PreviewProvider {
                 QuickActionButton(
                     title: "Optimizing...",
                     icon: "bolt.fill",
-                    color: Color(hex: "8B5CF6"),
+                    color: ColorTemperatureState.active.violetColor,
                     isLoading: true
                 ) {}
             }

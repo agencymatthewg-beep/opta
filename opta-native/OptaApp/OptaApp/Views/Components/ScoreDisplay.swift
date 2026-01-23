@@ -45,6 +45,9 @@ struct ScoreDisplay: View {
     /// Reduce motion preference
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    /// Color temperature state from environment
+    @Environment(\.colorTemperature) private var colorTemp
+
     /// Animated display score
     @State private var displayScore: Int = 0
 
@@ -97,6 +100,7 @@ struct ScoreDisplay: View {
                 .organicPulse(id: "optaScore", intensity: .medium)
             }
             .frame(width: ringSize, height: ringSize)
+            .shadow(color: colorTemp.tintColor.opacity(colorTemp.glowOpacity * 0.3), radius: 12, x: 0, y: 0)
 
             // Grade badge
             gradeBadge
@@ -137,10 +141,10 @@ struct ScoreDisplay: View {
 
     // MARK: - Computed Properties
 
-    /// Gradient for the score ring
+    /// Gradient for the score ring (temperature-aware)
     private var scoreGradient: LinearGradient {
         LinearGradient(
-            colors: [Color(hex: "8B5CF6"), Color(hex: "A855F7")],
+            colors: [colorTemp.tintColor, colorTemp.tintColor.opacity(colorTemp.glowOpacity)],
             startPoint: .leading,
             endPoint: .trailing
         )
@@ -245,6 +249,9 @@ struct CompactScoreDisplay: View {
     let score: UInt8
     let grade: String
 
+    /// Color temperature state from environment
+    @Environment(\.colorTemperature) private var colorTemp
+
     var body: some View {
         HStack(spacing: 12) {
             // Mini ring
@@ -256,7 +263,7 @@ struct CompactScoreDisplay: View {
                     .trim(from: 0, to: CGFloat(score) / 100.0)
                     .stroke(
                         LinearGradient(
-                            colors: [Color(hex: "8B5CF6"), Color(hex: "A855F7")],
+                            colors: [colorTemp.tintColor, colorTemp.tintColor.opacity(colorTemp.glowOpacity)],
                             startPoint: .leading,
                             endPoint: .trailing
                         ),
