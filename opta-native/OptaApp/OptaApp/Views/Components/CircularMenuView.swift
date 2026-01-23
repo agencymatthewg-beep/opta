@@ -439,19 +439,39 @@ struct CircularMenuView: View {
 
     private func configureMenu(in geometry: GeometryProxy) {
         let center = menuCenter(in: geometry)
-        let glowComponents = glowColor.cgColor?.components ?? [0.4, 0.6, 1.0]
+
+        // Safely extract RGB components (handle grayscale and other color spaces)
+        let glowR: Float
+        let glowG: Float
+        let glowB: Float
+        if let cgColor = glowColor.cgColor,
+           let components = cgColor.components,
+           components.count >= 3 {
+            glowR = Float(components[0])
+            glowG = Float(components[1])
+            glowB = Float(components[2])
+        } else if let cgColor = glowColor.cgColor,
+                  let components = cgColor.components,
+                  components.count >= 1 {
+            // Grayscale color space - use luminance for all channels
+            let gray = Float(components[0])
+            glowR = gray
+            glowG = gray
+            glowB = gray
+        } else {
+            // Fallback blue-purple glow
+            glowR = 0.545
+            glowG = 0.361
+            glowB = 0.965
+        }
 
         var config = CircularMenuConfig()
         config.centerX = Float(center.x)
         config.centerY = Float(center.y)
         config.radius = Float(radius)
         config.innerRadius = Float(innerRadius)
-        config.sectorCount = UInt32(sectors.count)
-        config.glowColor = (
-            Float(glowComponents[0]),
-            Float(glowComponents[1]),
-            Float(glowComponents[2])
-        )
+        config.sectorCount = UInt32(max(1, sectors.count))
+        config.glowColor = (glowR, glowG, glowB)
 
         menuState.configure(config)
     }
@@ -459,6 +479,7 @@ struct CircularMenuView: View {
     private func openMenu() {
         menuState.open()
         keyboardIndex = 0
+        startDisplayLinkIfNeeded()
 
         if !reduceMotion {
             SensoryManager.shared.playInteraction(.menuOpen)
@@ -472,21 +493,33 @@ struct CircularMenuView: View {
         if !reduceMotion {
             SensoryManager.shared.playInteraction(.menuClose)
         }
+
+        // Stop display link after close animation completes
+        DispatchQueue.main.asyncAfter(deadline: .now() + animationDuration + 0.1) { [self] in
+            if !isPresented && menuState.openProgress < 0.01 {
+                stopDisplayLinkIfRunning()
+            }
+        }
     }
 
     // MARK: - Display Link
 
     private func setupDisplayLink() {
         guard !reduceMotion else { return }
+        cleanupDisplayLink()
 
         var link: CVDisplayLink?
         CVDisplayLinkCreateWithActiveCGDisplays(&link)
 
         guard let displayLink = link else { return }
 
+        // Configure for main display (supports ProMotion 120Hz)
+        CVDisplayLinkSetCurrentCGDisplay(displayLink, CGMainDisplayID())
+
         let callback: CVDisplayLinkOutputCallback = { _, _, _, _, _, userInfo -> CVReturn in
             guard let userInfo = userInfo else { return kCVReturnSuccess }
 
+            // Use passRetained/takeRetainedValue pattern for safety
             let state = Unmanaged<CircularMenuState>.fromOpaque(userInfo).takeUnretainedValue()
 
             DispatchQueue.main.async {
@@ -496,7 +529,8 @@ struct CircularMenuView: View {
             return kCVReturnSuccess
         }
 
-        let userInfo = Unmanaged.passUnretained(menuState).toOpaque()
+        // Retain the state object to prevent deallocation while display link is active
+        let userInfo = Unmanaged.passRetained(menuState).toOpaque()
         CVDisplayLinkSetOutputCallback(displayLink, callback, userInfo)
         CVDisplayLinkStart(displayLink)
 
@@ -506,8 +540,25 @@ struct CircularMenuView: View {
     private func cleanupDisplayLink() {
         if let displayLink = displayLink {
             CVDisplayLinkStop(displayLink)
+            // Balance the passRetained call
+            Unmanaged.passUnretained(menuState).release()
         }
         displayLink = nil
+    }
+
+    private func startDisplayLinkIfNeeded() {
+        guard !reduceMotion else { return }
+        if let displayLink = displayLink, !CVDisplayLinkIsRunning(displayLink) {
+            CVDisplayLinkStart(displayLink)
+        } else if displayLink == nil {
+            setupDisplayLink()
+        }
+    }
+
+    private func stopDisplayLinkIfRunning() {
+        if let displayLink = displayLink, CVDisplayLinkIsRunning(displayLink) {
+            CVDisplayLinkStop(displayLink)
+        }
     }
 }
 
@@ -551,19 +602,15 @@ final class CircularMenuState: ObservableObject {
 
         guard dt > 0 && dt < 0.1 else { return }  // Skip unreasonable deltas
 
-        bridge?.update(deltaTime: dt)
+        // Single lock acquisition for update + state read
+        guard let bridge = bridge else { return }
+        let snapshot = bridge.updateAndGetState(deltaTime: dt)
 
-        // Update published properties
-        if let bridge = bridge {
-            let newProgress = bridge.openProgress
-            let newHighlight = bridge.highlightProgress
-
-            if abs(openProgress - newProgress) > 0.001 {
-                openProgress = newProgress
-            }
-            if abs(highlightProgress - newHighlight) > 0.001 {
-                highlightProgress = newHighlight
-            }
+        if abs(openProgress - snapshot.openProgress) > 0.001 {
+            openProgress = snapshot.openProgress
+        }
+        if abs(highlightProgress - snapshot.highlightProgress) > 0.001 {
+            highlightProgress = snapshot.highlightProgress
         }
     }
 }

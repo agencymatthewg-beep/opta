@@ -89,6 +89,7 @@ struct CircularMenuGestureSettings: Codable {
 // MARK: - Gesture Recognizer
 
 /// Centralized gesture recognizer for the circular menu
+@MainActor
 final class CircularMenuGestureRecognizer: ObservableObject {
 
     // MARK: - Singleton
@@ -115,6 +116,9 @@ final class CircularMenuGestureRecognizer: ObservableObject {
 
     /// Global event monitor for keyboard shortcuts
     private var keyboardMonitor: Any?
+
+    /// Local event monitor for keyboard shortcuts (when app is active)
+    private var localKeyboardMonitor: Any?
 
     /// Global event monitor for mouse events
     private var mouseMonitor: Any?
@@ -148,7 +152,19 @@ final class CircularMenuGestureRecognizer: ObservableObject {
     }
 
     deinit {
-        removeMonitors()
+        // Remove monitors directly in deinit (non-isolated context)
+        if let monitor = keyboardMonitor {
+            NSEvent.removeMonitor(monitor)
+        }
+        if let monitor = localKeyboardMonitor {
+            NSEvent.removeMonitor(monitor)
+        }
+        if let monitor = mouseMonitor {
+            NSEvent.removeMonitor(monitor)
+        }
+        if let monitor = gestureMonitor {
+            NSEvent.removeMonitor(monitor)
+        }
     }
 
     // MARK: - Setup
@@ -157,27 +173,35 @@ final class CircularMenuGestureRecognizer: ObservableObject {
     func setupMonitors() {
         removeMonitors()
 
-        // Global keyboard shortcut monitor
+        // Global keyboard shortcut monitor (always fires on main thread)
         keyboardMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            self?.handleKeyboardEvent(event)
+            MainActor.assumeIsolated {
+                self?.handleKeyboardEvent(event)
+            }
         }
 
         // Local keyboard monitor (for when app is active)
-        let localKeyboard = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            if self?.handleKeyboardEvent(event) == true {
-                return nil  // Consume event
+        localKeyboardMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            return MainActor.assumeIsolated {
+                if self?.handleKeyboardEvent(event) == true {
+                    return nil  // Consume event
+                }
+                return event
             }
-            return event
         }
 
         // Mouse event monitors
         mouseMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.rightMouseDown]) { [weak self] event in
-            self?.handleMouseEvent(event)
+            MainActor.assumeIsolated {
+                self?.handleMouseEvent(event)
+            }
         }
 
         // Pressure/Force Touch monitor
         gestureMonitor = NSEvent.addLocalMonitorForEvents(matching: [.pressure, .gesture]) { [weak self] event in
-            self?.handleGestureEvent(event)
+            MainActor.assumeIsolated {
+                self?.handleGestureEvent(event)
+            }
             return event
         }
     }
@@ -185,6 +209,9 @@ final class CircularMenuGestureRecognizer: ObservableObject {
     /// Remove all event monitors
     func removeMonitors() {
         if let monitor = keyboardMonitor {
+            NSEvent.removeMonitor(monitor)
+        }
+        if let monitor = localKeyboardMonitor {
             NSEvent.removeMonitor(monitor)
         }
         if let monitor = mouseMonitor {
@@ -195,6 +222,7 @@ final class CircularMenuGestureRecognizer: ObservableObject {
         }
 
         keyboardMonitor = nil
+        localKeyboardMonitor = nil
         mouseMonitor = nil
         gestureMonitor = nil
     }
@@ -449,7 +477,7 @@ struct TwoFingerTapView: NSViewRepresentable {
 
 // MARK: - Codable Extension for NSEvent.ModifierFlags
 
-extension NSEvent.ModifierFlags: Codable {
+extension NSEvent.ModifierFlags: @retroactive Encodable, @retroactive Decodable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         let rawValue = try container.decode(UInt.self)

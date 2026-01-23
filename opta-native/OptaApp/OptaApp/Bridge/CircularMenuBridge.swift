@@ -73,6 +73,13 @@ struct CircularMenuHitTestResult {
 
 // MARK: - Circular Menu Bridge
 
+/// Snapshot of animation state from a single lock acquisition
+struct CircularMenuAnimationSnapshot {
+    let openProgress: Float
+    let highlightProgress: Float
+    let isAnimating: Bool
+}
+
 /// Swift bridge for the Rust circular menu component
 final class CircularMenuBridge {
 
@@ -84,9 +91,6 @@ final class CircularMenuBridge {
     /// Thread-safe access to menu
     private let menuLock = NSLock()
 
-    /// Whether the bridge has been initialized
-    private(set) var isInitialized = false
-
     /// Configuration used to create the menu
     private(set) var config: CircularMenuConfig
 
@@ -94,17 +98,16 @@ final class CircularMenuBridge {
 
     /// Create a new circular menu bridge
     /// - Parameter config: Configuration for the menu (defaults used if not specified)
-    init(config: CircularMenuConfig = CircularMenuConfig()) {
+    /// - Returns: nil if Rust FFI creation fails
+    init?(config: CircularMenuConfig = CircularMenuConfig()) {
         self.config = config
 
         var ffiConfig = config.ffiConfig
         guard let menuPtr = opta_circular_menu_create(&ffiConfig) else {
-            print("[CircularMenuBridge] Failed to create circular menu")
-            return
+            return nil
         }
 
         self.menu = menuPtr
-        self.isInitialized = true
     }
 
     deinit {
@@ -122,7 +125,6 @@ final class CircularMenuBridge {
             opta_circular_menu_destroy(menu)
             self.menu = nil
         }
-        isInitialized = false
     }
 
     // MARK: - State Control
@@ -192,6 +194,27 @@ final class CircularMenuBridge {
 
         guard let menu = menu else { return }
         _ = opta_circular_menu_update(menu, deltaTime)
+    }
+
+    /// Update animation and return state snapshot in a single lock acquisition.
+    /// Reduces per-frame lock overhead from 3 acquisitions to 1.
+    /// - Parameter deltaTime: Time elapsed since last update in seconds
+    /// - Returns: Snapshot of animation state after update
+    func updateAndGetState(deltaTime: Float) -> CircularMenuAnimationSnapshot {
+        menuLock.lock()
+        defer { menuLock.unlock() }
+
+        guard let menu = menu else {
+            return CircularMenuAnimationSnapshot(openProgress: 0, highlightProgress: 0, isAnimating: false)
+        }
+
+        _ = opta_circular_menu_update(menu, deltaTime)
+
+        return CircularMenuAnimationSnapshot(
+            openProgress: opta_circular_menu_get_open_progress(menu),
+            highlightProgress: opta_circular_menu_get_highlight_progress(menu),
+            isAnimating: opta_circular_menu_is_animating(menu)
+        )
     }
 
     /// Current open progress (0.0 = closed, 1.0 = fully open)
