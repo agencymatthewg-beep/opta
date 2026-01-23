@@ -48,7 +48,7 @@ struct ScoreDisplay: View {
     /// Animated display score
     @State private var displayScore: Int = 0
 
-    /// Pulsing animation state
+    /// Whether organic pulse is active (calculating state)
     @State private var isPulsing: Bool = false
 
     // MARK: - Constants
@@ -78,7 +78,7 @@ struct ScoreDisplay: View {
                         style: StrokeStyle(lineWidth: ringStrokeWidth, lineCap: .round)
                     )
                     .rotationEffect(.degrees(-90))
-                    .animation(reduceMotion ? .none : .spring(response: 0.5, dampingFraction: 0.7), value: displayScore)
+                    .animation(reduceMotion ? .none : OrganicMotion.organicSpring(for: "score-value", intensity: .medium), value: displayScore)
 
                 // Inner content
                 VStack(spacing: 4) {
@@ -94,8 +94,7 @@ struct ScoreDisplay: View {
                         .foregroundStyle(.white.opacity(0.5))
                         .tracking(1.5)
                 }
-                .scaleEffect(isPulsing ? 1.05 : 1.0)
-                .opacity(isPulsing ? 0.8 : 1.0)
+                .organicPulse(id: "optaScore", intensity: .medium)
             }
             .frame(width: ringSize, height: ringSize)
 
@@ -195,18 +194,11 @@ struct ScoreDisplay: View {
     }
 
     /// Handle calculating state changes
+    /// Note: Visual pulse now handled by .organicPulse modifier (always-on ambient breathing).
+    /// The calculating state is retained for future use (e.g. intensity switching).
     private func handleCalculatingState(_ calculating: Bool) {
         guard !reduceMotion else { return }
-
-        if calculating {
-            withAnimation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true)) {
-                isPulsing = true
-            }
-        } else {
-            withAnimation(.easeOut(duration: 0.2)) {
-                isPulsing = false
-            }
-        }
+        isPulsing = calculating
     }
 
     /// Ease out cubic timing function
