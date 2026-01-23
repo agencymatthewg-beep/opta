@@ -1663,7 +1663,8 @@ Plans:
 - Release preparation and demo materials
 
 Plans:
-- [ ] 90-01: TBD (run /gsd:plan-phase 90 to break down)
+- [ ] 90-01: Complete Color Temperature Conversion (3 tasks, wave 1)
+- [ ] 90-02: Visual Consistency Audit & Build Verification (3 tasks, wave 2)
 
 ## Progress
 
@@ -1771,4 +1772,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 �
 | 87. Settings & Library Alignment | v11.0 | 2/2 | ✅ Complete | 2026-01-24 |
 | 88. Organic Motion System | v11.0 | 3/3 | ✅ Complete | 2026-01-24 |
 | 89. Color Temperature Refinement | v11.0 | 3/3 | ✅ Complete | 2026-01-24 |
-| 90. Visual Cohesion Launch | v11.0 | 0/? | Not started | - |
+| 90. Visual Cohesion Launch | v11.0 | 0/2 | Planned | - |
