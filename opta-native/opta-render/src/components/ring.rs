@@ -395,6 +395,332 @@ fn lerp(a: f32, b: f32, t: f32) -> f32 {
     a + (b - a) * t
 }
 
+// =============================================================================
+// Spring Physics System
+// =============================================================================
+
+/// Spring physics configuration for natural motion.
+///
+/// Based on damped harmonic oscillator model for smooth, responsive animations.
+#[derive(Debug, Clone, Copy)]
+pub struct SpringConfig {
+    /// Stiffness coefficient (higher = faster response).
+    /// Typical range: 100-500 for UI animations.
+    pub stiffness: f32,
+    /// Damping coefficient (higher = less oscillation).
+    /// Critical damping = 2 * sqrt(stiffness * mass).
+    pub damping: f32,
+    /// Mass of the simulated object (affects momentum).
+    pub mass: f32,
+}
+
+impl Default for SpringConfig {
+    fn default() -> Self {
+        Self {
+            stiffness: 200.0,
+            damping: 20.0,
+            mass: 1.0,
+        }
+    }
+}
+
+impl SpringConfig {
+    /// Create a snappy spring (quick response, minimal overshoot).
+    pub fn snappy() -> Self {
+        Self {
+            stiffness: 400.0,
+            damping: 30.0,
+            mass: 1.0,
+        }
+    }
+
+    /// Create a bouncy spring (slower, more oscillation).
+    pub fn bouncy() -> Self {
+        Self {
+            stiffness: 150.0,
+            damping: 10.0,
+            mass: 1.0,
+        }
+    }
+
+    /// Create a gentle spring (slow, smooth motion).
+    pub fn gentle() -> Self {
+        Self {
+            stiffness: 100.0,
+            damping: 15.0,
+            mass: 1.0,
+        }
+    }
+
+    /// Create a critically damped spring (no overshoot).
+    pub fn critically_damped(stiffness: f32) -> Self {
+        let mass = 1.0;
+        let critical_damping = 2.0 * (stiffness * mass).sqrt();
+        Self {
+            stiffness,
+            damping: critical_damping,
+            mass,
+        }
+    }
+
+    /// Calculate the angular frequency (omega).
+    ///
+    /// Used internally for spring dynamics calculations.
+    #[inline]
+    #[allow(dead_code)]
+    pub fn omega(&self) -> f32 {
+        (self.stiffness / self.mass).sqrt()
+    }
+
+    /// Calculate the damping ratio (zeta).
+    ///
+    /// - < 1.0: Under-damped (oscillates)
+    /// - = 1.0: Critically damped (fastest without oscillation)
+    /// - > 1.0: Over-damped (slow, no oscillation)
+    #[inline]
+    pub fn damping_ratio(&self) -> f32 {
+        self.damping / (2.0 * (self.stiffness * self.mass).sqrt())
+    }
+}
+
+/// A single spring-animated value with velocity tracking.
+#[derive(Debug, Clone, Copy)]
+pub struct SpringValue {
+    /// Current position.
+    pub value: f32,
+    /// Current velocity.
+    pub velocity: f32,
+    /// Target position.
+    pub target: f32,
+}
+
+impl SpringValue {
+    /// Create a new spring value at rest.
+    pub fn new(initial: f32) -> Self {
+        Self {
+            value: initial,
+            velocity: 0.0,
+            target: initial,
+        }
+    }
+
+    /// Set a new target with optional velocity impulse.
+    pub fn set_target(&mut self, target: f32) {
+        self.target = target;
+    }
+
+    /// Set target and add velocity impulse for snappier response.
+    pub fn set_target_with_impulse(&mut self, target: f32, impulse: f32) {
+        self.target = target;
+        self.velocity += impulse;
+    }
+
+    /// Update the spring simulation.
+    ///
+    /// Uses semi-implicit Euler integration for stability.
+    pub fn update(&mut self, config: &SpringConfig, dt: f32) {
+        // Calculate spring force: F = -k * x - c * v
+        let displacement = self.value - self.target;
+        let spring_force = -config.stiffness * displacement;
+        let damping_force = -config.damping * self.velocity;
+        let total_force = spring_force + damping_force;
+
+        // Apply acceleration: a = F / m
+        let acceleration = total_force / config.mass;
+
+        // Semi-implicit Euler: update velocity first, then position
+        self.velocity += acceleration * dt;
+        self.value += self.velocity * dt;
+    }
+
+    /// Check if the spring is at rest (within tolerance).
+    pub fn is_at_rest(&self, tolerance: f32) -> bool {
+        (self.value - self.target).abs() < tolerance && self.velocity.abs() < tolerance
+    }
+
+    /// Snap to target immediately.
+    pub fn snap_to_target(&mut self) {
+        self.value = self.target;
+        self.velocity = 0.0;
+    }
+}
+
+/// Spring-animated 3D vector.
+#[derive(Debug, Clone, Copy)]
+pub struct SpringVec3 {
+    /// X component spring.
+    pub x: SpringValue,
+    /// Y component spring.
+    pub y: SpringValue,
+    /// Z component spring.
+    pub z: SpringValue,
+}
+
+impl SpringVec3 {
+    /// Create a new spring vector at the given position.
+    pub fn new(x: f32, y: f32, z: f32) -> Self {
+        Self {
+            x: SpringValue::new(x),
+            y: SpringValue::new(y),
+            z: SpringValue::new(z),
+        }
+    }
+
+    /// Set target for all components.
+    pub fn set_target(&mut self, x: f32, y: f32, z: f32) {
+        self.x.set_target(x);
+        self.y.set_target(y);
+        self.z.set_target(z);
+    }
+
+    /// Update all components.
+    pub fn update(&mut self, config: &SpringConfig, dt: f32) {
+        self.x.update(config, dt);
+        self.y.update(config, dt);
+        self.z.update(config, dt);
+    }
+
+    /// Get current values as array.
+    pub fn values(&self) -> [f32; 3] {
+        [self.x.value, self.y.value, self.z.value]
+    }
+
+    /// Check if all components are at rest.
+    pub fn is_at_rest(&self, tolerance: f32) -> bool {
+        self.x.is_at_rest(tolerance) && self.y.is_at_rest(tolerance) && self.z.is_at_rest(tolerance)
+    }
+}
+
+/// Complete spring animation state for the ring.
+#[derive(Debug, Clone)]
+pub struct RingSpringState {
+    /// Spring for rotation speed (not angle - we animate speed).
+    pub rotation_speed: SpringValue,
+    /// Spring for tilt angle.
+    pub tilt: SpringValue,
+    /// Spring for energy level.
+    pub energy: SpringValue,
+    /// Spring for plasma intensity.
+    pub plasma: SpringValue,
+    /// Spring for scale (used during explosions).
+    pub scale: SpringValue,
+    /// Spring configuration for fast properties (rotation, energy).
+    pub fast_config: SpringConfig,
+    /// Spring configuration for slow properties (tilt).
+    pub slow_config: SpringConfig,
+    /// Spring configuration for bouncy effects (explosion).
+    pub bounce_config: SpringConfig,
+}
+
+impl Default for RingSpringState {
+    fn default() -> Self {
+        let state = RingState::default();
+        Self {
+            rotation_speed: SpringValue::new(state.rotation_speed()),
+            tilt: SpringValue::new(state.tilt_angle()),
+            energy: SpringValue::new(state.energy_level()),
+            plasma: SpringValue::new(0.0),
+            scale: SpringValue::new(1.0),
+            fast_config: SpringConfig::snappy(),
+            slow_config: SpringConfig::gentle(),
+            bounce_config: SpringConfig::bouncy(),
+        }
+    }
+}
+
+impl RingSpringState {
+    /// Create spring state initialized for a specific ring state.
+    pub fn for_state(state: RingState) -> Self {
+        Self {
+            rotation_speed: SpringValue::new(state.rotation_speed()),
+            tilt: SpringValue::new(state.tilt_angle()),
+            energy: SpringValue::new(state.energy_level()),
+            plasma: SpringValue::new(if matches!(state, RingState::Processing | RingState::Exploding) { 1.0 } else { 0.0 }),
+            scale: SpringValue::new(1.0),
+            fast_config: SpringConfig::snappy(),
+            slow_config: SpringConfig::gentle(),
+            bounce_config: SpringConfig::bouncy(),
+        }
+    }
+
+    /// Transition to a new state with appropriate spring dynamics.
+    pub fn transition_to(&mut self, state: RingState) {
+        // Set targets for all springs
+        self.rotation_speed.set_target(state.rotation_speed());
+        self.tilt.set_target(state.tilt_angle());
+        self.energy.set_target(state.energy_level());
+
+        // Plasma and scale depend on state
+        match state {
+            RingState::Processing => {
+                self.plasma.set_target(1.0);
+                self.scale.set_target(1.0);
+            }
+            RingState::Exploding => {
+                self.plasma.set_target_with_impulse(1.0, 2.0);
+                self.scale.set_target_with_impulse(1.3, 5.0); // Expand with impulse
+            }
+            RingState::Recovering => {
+                self.plasma.set_target(0.3);
+                self.scale.set_target(1.0);
+            }
+            _ => {
+                self.plasma.set_target(0.0);
+                self.scale.set_target(1.0);
+            }
+        }
+    }
+
+    /// Update all springs with delta time.
+    pub fn update(&mut self, dt: f32) {
+        // Fast springs for responsive properties
+        self.rotation_speed.update(&self.fast_config, dt);
+        self.energy.update(&self.fast_config, dt);
+        self.plasma.update(&self.fast_config, dt);
+
+        // Slow spring for tilt (smooth, gradual)
+        self.tilt.update(&self.slow_config, dt);
+
+        // Bouncy spring for scale (explosive effects)
+        self.scale.update(&self.bounce_config, dt);
+    }
+
+    /// Check if all springs are at rest.
+    pub fn is_at_rest(&self) -> bool {
+        let tolerance = 0.001;
+        self.rotation_speed.is_at_rest(tolerance)
+            && self.tilt.is_at_rest(tolerance)
+            && self.energy.is_at_rest(tolerance)
+            && self.plasma.is_at_rest(tolerance)
+            && self.scale.is_at_rest(tolerance)
+    }
+
+    /// Get current rotation speed.
+    pub fn current_rotation_speed(&self) -> f32 {
+        self.rotation_speed.value
+    }
+
+    /// Get current tilt angle.
+    pub fn current_tilt(&self) -> f32 {
+        self.tilt.value
+    }
+
+    /// Get current energy level.
+    pub fn current_energy(&self) -> f32 {
+        self.energy.value.clamp(0.0, 1.0)
+    }
+
+    /// Get current plasma intensity.
+    pub fn current_plasma(&self) -> f32 {
+        self.plasma.value.clamp(0.0, 1.0)
+    }
+
+    /// Get current scale.
+    pub fn current_scale(&self) -> f32 {
+        self.scale.value.max(0.1)
+    }
+}
+
 /// The main Opta Ring component.
 ///
 /// Manages the ring's geometry, state, and rendering.
@@ -409,8 +735,13 @@ pub struct OptaRing {
     config: RingConfig,
     state: RingState,
     quality_level: RingQualityLevel,
-    // Animation state
+    // Animation state - accumulated rotation angle
     current_rotation: f32,
+    // Spring physics state
+    spring_state: RingSpringState,
+    // Whether to use spring physics (true) or legacy lerp (false)
+    use_spring_physics: bool,
+    // Legacy animation state (for compatibility)
     current_tilt: f32,
     current_energy: f32,
     current_plasma: f32,
@@ -558,6 +889,7 @@ impl OptaRing {
 
         let state = RingState::default();
         let quality_level = config.quality_level;
+        let spring_state = RingSpringState::for_state(state);
         Self {
             vertex_buffer,
             index_buffer,
@@ -570,6 +902,8 @@ impl OptaRing {
             state,
             quality_level,
             current_rotation: 0.0,
+            spring_state,
+            use_spring_physics: true, // Enable spring physics by default
             current_tilt: state.tilt_angle(),
             current_energy: state.energy_level(),
             current_plasma: 0.0,
@@ -586,6 +920,11 @@ impl OptaRing {
     pub fn set_state(&mut self, state: RingState) {
         if self.state != state {
             self.state = state;
+
+            // Update spring physics targets
+            self.spring_state.transition_to(state);
+
+            // Update legacy targets for compatibility
             self.target_rotation_speed = state.rotation_speed();
             self.target_tilt = state.tilt_angle();
             self.target_energy = state.energy_level();
@@ -594,6 +933,38 @@ impl OptaRing {
                 _ => 0.0,
             };
             self.transition_progress = 0.0;
+        }
+    }
+
+    /// Enable or disable spring physics.
+    ///
+    /// When enabled, transitions use spring-based physics for natural motion.
+    /// When disabled, uses simple lerp-based interpolation (legacy mode).
+    pub fn set_spring_physics_enabled(&mut self, enabled: bool) {
+        self.use_spring_physics = enabled;
+    }
+
+    /// Check if spring physics is enabled.
+    pub fn is_spring_physics_enabled(&self) -> bool {
+        self.use_spring_physics
+    }
+
+    /// Get the spring state for advanced customization.
+    pub fn spring_state(&self) -> &RingSpringState {
+        &self.spring_state
+    }
+
+    /// Get mutable spring state for customization.
+    pub fn spring_state_mut(&mut self) -> &mut RingSpringState {
+        &mut self.spring_state
+    }
+
+    /// Check if all spring animations have settled.
+    pub fn is_animation_complete(&self) -> bool {
+        if self.use_spring_physics {
+            self.spring_state.is_at_rest()
+        } else {
+            self.transition_progress >= 1.0
         }
     }
 
@@ -613,36 +984,59 @@ impl OptaRing {
     pub fn update(&mut self, delta_time: f32) {
         self.time += delta_time;
 
-        // Calculate transition factor (ease-in-out)
-        let duration = self.state.transition_duration();
-        if self.transition_progress < 1.0 {
-            self.transition_progress += delta_time / duration;
-            self.transition_progress = self.transition_progress.min(1.0);
+        if self.use_spring_physics {
+            // Spring physics update
+            self.spring_state.update(delta_time);
+
+            // Update rotation based on spring-driven speed
+            self.current_rotation += self.spring_state.current_rotation_speed() * delta_time;
+            if self.current_rotation > TAU {
+                self.current_rotation -= TAU;
+            }
+
+            // Sync spring values to legacy fields for render()
+            self.current_tilt = self.spring_state.current_tilt();
+            self.current_energy = self.spring_state.current_energy();
+            self.current_plasma = self.spring_state.current_plasma();
+        } else {
+            // Legacy lerp-based animation
+            let duration = self.state.transition_duration();
+            if self.transition_progress < 1.0 {
+                self.transition_progress += delta_time / duration;
+                self.transition_progress = self.transition_progress.min(1.0);
+            }
+
+            // Smooth step for easing
+            let t = self.transition_progress;
+            let ease = t * t * (3.0 - 2.0 * t);
+
+            // Update rotation (accumulate based on current speed)
+            let current_speed = lerp(
+                self.target_rotation_speed * 0.5,
+                self.target_rotation_speed,
+                ease,
+            );
+            self.current_rotation += current_speed * delta_time;
+            if self.current_rotation > TAU {
+                self.current_rotation -= TAU;
+            }
+
+            // Interpolate other values
+            self.current_tilt = lerp(self.current_tilt, self.target_tilt, ease * 0.1);
+            self.current_energy = lerp(self.current_energy, self.target_energy, ease * 0.1);
+            self.current_plasma = lerp(self.current_plasma, self.target_plasma, ease * 0.15);
         }
-
-        // Smooth step for easing
-        let t = self.transition_progress;
-        let ease = t * t * (3.0 - 2.0 * t);
-
-        // Update rotation (accumulate based on current speed)
-        let current_speed = lerp(
-            self.target_rotation_speed * 0.5,
-            self.target_rotation_speed,
-            ease,
-        );
-        self.current_rotation += current_speed * delta_time;
-        if self.current_rotation > TAU {
-            self.current_rotation -= TAU;
-        }
-
-        // Interpolate other values
-        self.current_tilt = lerp(self.current_tilt, self.target_tilt, ease * 0.1);
-        self.current_energy = lerp(self.current_energy, self.target_energy, ease * 0.1);
-        self.current_plasma = lerp(self.current_plasma, self.target_plasma, ease * 0.15);
     }
 
-    /// Build the model matrix from current rotation and tilt.
+    /// Build the model matrix from current rotation, tilt, and scale.
     fn build_model_matrix(&self) -> [[f32; 4]; 4] {
+        // Get scale from spring state if using spring physics
+        let scale = if self.use_spring_physics {
+            self.spring_state.current_scale()
+        } else {
+            1.0
+        };
+
         // Y-axis rotation matrix
         let cos_r = self.current_rotation.cos();
         let sin_r = self.current_rotation.sin();
@@ -664,16 +1058,34 @@ impl OptaRing {
         ];
 
         // Multiply tilt * rotation
-        let mut result = [[0.0f32; 4]; 4];
+        let mut temp = [[0.0f32; 4]; 4];
         for i in 0..4 {
             for j in 0..4 {
-                result[i][j] = tilt_x[i][0] * rotation_y[0][j]
+                temp[i][j] = tilt_x[i][0] * rotation_y[0][j]
                     + tilt_x[i][1] * rotation_y[1][j]
                     + tilt_x[i][2] * rotation_y[2][j]
                     + tilt_x[i][3] * rotation_y[3][j];
             }
         }
+
+        // Apply scale to the result
+        let mut result = temp;
+        for i in 0..3 {
+            for j in 0..4 {
+                result[i][j] *= scale;
+            }
+        }
+
         result
+    }
+
+    /// Get the current scale factor (from spring physics).
+    pub fn current_scale(&self) -> f32 {
+        if self.use_spring_physics {
+            self.spring_state.current_scale()
+        } else {
+            1.0
+        }
     }
 
     /// Render the ring.
@@ -1003,5 +1415,169 @@ mod tests {
         assert_eq!(config.quality_level, RingQualityLevel::Ultra);
         assert_eq!(config.major_segments, 256);
         assert_eq!(config.minor_segments, 128);
+    }
+
+    // Spring Physics Tests
+
+    #[test]
+    fn test_spring_config_default() {
+        let config = SpringConfig::default();
+        assert!((config.stiffness - 200.0).abs() < f32::EPSILON);
+        assert!((config.damping - 20.0).abs() < f32::EPSILON);
+        assert!((config.mass - 1.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_spring_config_presets() {
+        let snappy = SpringConfig::snappy();
+        let bouncy = SpringConfig::bouncy();
+        let gentle = SpringConfig::gentle();
+
+        // Snappy should have high stiffness
+        assert!(snappy.stiffness > gentle.stiffness);
+        // Bouncy should have low damping
+        assert!(bouncy.damping < snappy.damping);
+    }
+
+    #[test]
+    fn test_spring_config_critically_damped() {
+        let config = SpringConfig::critically_damped(200.0);
+        let damping_ratio = config.damping_ratio();
+        // Critical damping ratio should be ~1.0
+        assert!((damping_ratio - 1.0).abs() < 0.01, "Damping ratio: {}", damping_ratio);
+    }
+
+    #[test]
+    fn test_spring_value_new() {
+        let spring = SpringValue::new(5.0);
+        assert!((spring.value - 5.0).abs() < f32::EPSILON);
+        assert!((spring.velocity - 0.0).abs() < f32::EPSILON);
+        assert!((spring.target - 5.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_spring_value_set_target() {
+        let mut spring = SpringValue::new(0.0);
+        spring.set_target(10.0);
+        assert!((spring.target - 10.0).abs() < f32::EPSILON);
+        assert!((spring.value - 0.0).abs() < f32::EPSILON); // Value unchanged
+    }
+
+    #[test]
+    fn test_spring_value_update_moves_toward_target() {
+        let mut spring = SpringValue::new(0.0);
+        spring.set_target(10.0);
+        let config = SpringConfig::default();
+
+        // Update several times
+        for _ in 0..100 {
+            spring.update(&config, 0.016); // ~60fps
+        }
+
+        // Should have moved toward target
+        assert!(spring.value > 5.0, "Spring value should increase: {}", spring.value);
+    }
+
+    #[test]
+    fn test_spring_value_settles_at_target() {
+        let mut spring = SpringValue::new(0.0);
+        spring.set_target(10.0);
+        let config = SpringConfig::critically_damped(200.0);
+
+        // Update many times to ensure settling
+        for _ in 0..500 {
+            spring.update(&config, 0.016);
+        }
+
+        // Should be at target within tolerance
+        assert!((spring.value - 10.0).abs() < 0.01, "Spring should settle at target: {}", spring.value);
+        assert!(spring.is_at_rest(0.01), "Spring should be at rest");
+    }
+
+    #[test]
+    fn test_spring_value_snap_to_target() {
+        let mut spring = SpringValue::new(0.0);
+        spring.set_target(10.0);
+        spring.snap_to_target();
+
+        assert!((spring.value - 10.0).abs() < f32::EPSILON);
+        assert!((spring.velocity - 0.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_spring_vec3() {
+        let mut vec = SpringVec3::new(0.0, 0.0, 0.0);
+        vec.set_target(1.0, 2.0, 3.0);
+
+        let config = SpringConfig::default();
+        for _ in 0..200 {
+            vec.update(&config, 0.016);
+        }
+
+        let values = vec.values();
+        assert!(values[0] > 0.5, "X should move toward 1.0");
+        assert!(values[1] > 1.0, "Y should move toward 2.0");
+        assert!(values[2] > 1.5, "Z should move toward 3.0");
+    }
+
+    #[test]
+    fn test_ring_spring_state_default() {
+        let state = RingSpringState::default();
+        let ring_state = RingState::default();
+
+        assert!((state.current_rotation_speed() - ring_state.rotation_speed()).abs() < f32::EPSILON);
+        assert!((state.current_tilt() - ring_state.tilt_angle()).abs() < f32::EPSILON);
+        assert!((state.current_energy() - ring_state.energy_level()).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_ring_spring_state_transition() {
+        let mut spring_state = RingSpringState::for_state(RingState::Dormant);
+
+        // Transition to Processing
+        spring_state.transition_to(RingState::Processing);
+
+        // Targets should be set
+        assert!((spring_state.rotation_speed.target - RingState::Processing.rotation_speed()).abs() < f32::EPSILON);
+        assert!((spring_state.energy.target - RingState::Processing.energy_level()).abs() < f32::EPSILON);
+        assert!((spring_state.plasma.target - 1.0).abs() < f32::EPSILON);
+
+        // Update to move values
+        for _ in 0..100 {
+            spring_state.update(0.016);
+        }
+
+        // Values should have moved toward targets
+        assert!(spring_state.current_rotation_speed() > RingState::Dormant.rotation_speed());
+        assert!(spring_state.current_energy() > RingState::Dormant.energy_level());
+    }
+
+    #[test]
+    fn test_ring_spring_state_explosion() {
+        let mut spring_state = RingSpringState::for_state(RingState::Active);
+
+        // Explode!
+        spring_state.transition_to(RingState::Exploding);
+
+        // Scale target should be > 1.0
+        assert!(spring_state.scale.target > 1.0, "Explosion should expand");
+
+        // Velocity should have impulse
+        assert!(spring_state.scale.velocity > 0.0, "Should have positive velocity impulse");
+    }
+
+    #[test]
+    fn test_ring_spring_state_is_at_rest() {
+        let mut spring_state = RingSpringState::for_state(RingState::Active);
+
+        // Initially at rest (already at target)
+        assert!(spring_state.is_at_rest(), "Should be at rest initially");
+
+        // Transition triggers motion
+        spring_state.transition_to(RingState::Processing);
+        spring_state.update(0.001); // Small update to start motion
+
+        // Not at rest while transitioning
+        assert!(!spring_state.is_at_rest(), "Should not be at rest while transitioning");
     }
 }

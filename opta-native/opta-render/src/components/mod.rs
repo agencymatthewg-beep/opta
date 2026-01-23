@@ -53,8 +53,8 @@ pub use cpu_meter::{CpuMeter, CpuMeterConfig, CpuMeterUniforms, MeterVertex};
 pub use glass_panel::{GlassPanel, GlassPanelConfig, GlassPanelUniforms, PanelVertex};
 pub use memory_meter::{MemoryMeter, MemoryMeterConfig, MemoryMeterUniforms, MemoryMeterVertex};
 pub use ring::{
-    generate_torus_geometry, OptaRing, RingConfig, RingQualityLevel, RingState, RingUniforms,
-    RingVertex,
+    generate_torus_geometry, OptaRing, RingConfig, RingQualityLevel, RingSpringState, RingState,
+    RingUniforms, RingVertex, SpringConfig, SpringValue, SpringVec3,
 };
 pub use telemetry::{
     CpuTelemetry, GpuTelemetry, MemoryTelemetry, SystemTelemetry, MAX_CPU_CORES,
