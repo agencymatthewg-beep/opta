@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-01-15)
 ## Current Position
 
 Phase: 87 of 90 (Settings & Library Alignment)
-Plan: 87-01 + 87-02 PLANNED (ready for execution)
-Status: v11.0 Phase 87 planned — 2 parallel plans ready
-Last activity: 2026-01-24 — Planned 87-01 (Settings Obsidian) + 87-02 (Games Obsidian)
+Plan: 87-01 COMPLETE, 87-02 PLANNED (ready for execution)
+Status: v11.0 Phase 87 in progress — 87-01 complete, 87-02 ready
+Last activity: 2026-01-24 — Executed 87-01 (Settings Views Obsidian Refresh)
 
 Progress: ██████████ 100% of v5.0 (17 phases complete)
 v5.1 Progress: ██████████ 100% (7 of 7 phases complete)
@@ -70,15 +70,15 @@ v11.0 Progress: ███████░░░ 70% (7 of 10 phases complete)
 | 84 | Energy Branch Components | ✅ Complete |
 | 85 | Dashboard Obsidian Refresh | ✅ Complete |
 | 86 | Navigation Energy Language | ✅ Complete |
-| 87 | Games Library Obsidian | 📋 Planned |
+| 87 | Settings & Library Alignment | 🔄 In Progress |
 | 88 | Menu Bar Obsidian | 📋 Planned |
 | 89 | Transitions & Motion | 📋 Planned |
 | 90 | Visual Polish & Launch | 📋 Planned |
 
-### Phase 87 Plans (PLANNED)
+### Phase 87 Plans (IN PROGRESS)
 | Plan | Status | Description |
 |------|--------|-------------|
-| 87-01 | 📋 Planned | Settings Views Obsidian Refresh (SettingsView, ProfileManagerView, ThemeCustomizationView, KeyboardShortcutsView) |
+| 87-01 | ✅ Complete | Settings Views Obsidian Refresh (SettingsView, ProfileManagerView, ThemeCustomizationView, KeyboardShortcutsView) |
 | 87-02 | 📋 Planned | Games Views Obsidian Refresh (GamesLibraryView, GameCardView, GameDetailView) |
 
 ### Phase 86 Plans (COMPLETE)
@@ -691,6 +691,9 @@ v11.0 Progress: ███████░░░ 70% (7 of 10 phases complete)
 | 86-02 | Removed glowColor property from CircularMenuView | Color is intrinsic (branchViolet constant), simplifies API |
 | 86-02 | Distinct keyboard focus ring (violet shadow glow) | Separate from mouse highlight effect for accessibility clarity |
 | 86-02 | Branch-energy terminology in Swift bridge aligned with Rust FFI | Consistent naming across full stack (Rust + C header + Swift) |
+| 87-01 | Violet intensity tiers for quality badges (opacity-based) | Single hue progression cleaner than multi-color; communicates level naturally |
+| 87-01 | Remove # prefix from hex strings in Settings views | Consistency with Phase 86 pattern; Color(hex:) handles both formats |
+| 87-01 | Keep .red for destructive actions despite obsidian refresh | Semantic color meaning overrides aesthetic unification |
 
 ### Deferred Issues
 
@@ -720,10 +723,10 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-23
-Stopped at: Phase 86-01 complete (Obsidian menu shader + branch energy + FFI)
+Last session: 2026-01-24
+Stopped at: Phase 87-01 complete (Settings Views Obsidian Refresh)
 Resume file: None
-Next action: Execute Phase 86-02 (Swift Circular Menu Obsidian Integration)
+Next action: Execute Phase 87-02 (Games Views Obsidian Refresh)
 
 **v9.0 Stats (COMPLETE):**
 - Phase 69 complete (2 plans) - UniFFI bindings, OptaCoreManager
