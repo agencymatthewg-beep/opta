@@ -22,6 +22,40 @@
 		5501A0192C5D00010000000D /* libopta_render.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5501A0182C5D00010000000D /* libopta_render.a */; };
 		5501A01B2C5D000100000099 /* libopta_core.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5501A01A2C5D000100000099 /* libopta_core.a */; };
 		5501A0242C5D0001000000B0 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5501A0232C5D0001000000B0 /* Assets.xcassets */; };
+		/* Phase 69-75 additions */
+		5501B0012C5D000100000101 /* EffectExecutor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B0002C5D000100000101 /* EffectExecutor.swift */; };
+		5501B0032C5D000100000102 /* OptaCoreManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B0022C5D000100000102 /* OptaCoreManager.swift */; };
+		5501B0052C5D000100000103 /* OptaViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B0042C5D000100000103 /* OptaViewModel.swift */; };
+		5501B0072C5D000100000104 /* Game.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B0062C5D000100000104 /* Game.swift */; };
+		5501B0092C5D000100000105 /* OptimizationProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B0082C5D000100000105 /* OptimizationProfile.swift */; };
+		5501B00B2C5D000100000106 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B00A2C5D000100000106 /* DashboardView.swift */; };
+		5501B00D2C5D000100000107 /* OptaRingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B00C2C5D000100000107 /* OptaRingView.swift */; };
+		5501B00F2C5D000100000108 /* QuickActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B00E2C5D000100000108 /* QuickActions.swift */; };
+		5501B0112C5D000100000109 /* ScoreDisplay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B0102C5D000100000109 /* ScoreDisplay.swift */; };
+		5501B0132C5D00010000010A /* TelemetryCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B0122C5D00010000010A /* TelemetryCard.swift */; };
+		5501B0152C5D00010000010B /* ProfileManagerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B0142C5D00010000010B /* ProfileManagerView.swift */; };
+		5501B0172C5D00010000010C /* KeyboardShortcutsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B0162C5D00010000010C /* KeyboardShortcutsView.swift */; };
+		5501B0192C5D00010000010D /* ThemeCustomizationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B0182C5D00010000010D /* ThemeCustomizationView.swift */; };
+		5501B01B2C5D00010000010E /* GameCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B01A2C5D00010000010E /* GameCardView.swift */; };
+		5501B01D2C5D00010000010F /* GameDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B01C2C5D00010000010F /* GameDetailView.swift */; };
+		5501B01F2C5D000100000110 /* GamesLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B01E2C5D000100000110 /* GamesLibraryView.swift */; };
+		5501B0212C5D000100000111 /* GameDetectionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B0202C5D000100000111 /* GameDetectionService.swift */; };
+		5501B0232C5D000100000112 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B0222C5D000100000112 /* NotificationService.swift */; };
+		5501B0252C5D000100000113 /* AgentModeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B0242C5D000100000113 /* AgentModeManager.swift */; };
+		5501B0272C5D000100000114 /* SpatialAudioManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B0262C5D000100000114 /* SpatialAudioManager.swift */; };
+		5501B0292C5D000100000115 /* ThermalStateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B0282C5D000100000115 /* ThermalStateManager.swift */; };
+		5501B02B2C5D000100000116 /* SensoryManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B02A2C5D000100000116 /* SensoryManager.swift */; };
+		/* AHAP Resources */
+		5501B02D2C5D000100000117 /* ring_explosion.ahap in Resources */ = {isa = PBXBuildFile; fileRef = 5501B02C2C5D000100000117 /* ring_explosion.ahap */; };
+		5501B02F2C5D000100000118 /* optimization_pulse.ahap in Resources */ = {isa = PBXBuildFile; fileRef = 5501B02E2C5D000100000118 /* optimization_pulse.ahap */; };
+		5501B0312C5D000100000119 /* wake_up.ahap in Resources */ = {isa = PBXBuildFile; fileRef = 5501B0302C5D000100000119 /* wake_up.ahap */; };
+		5501B0332C5D00010000011A /* warning.ahap in Resources */ = {isa = PBXBuildFile; fileRef = 5501B0322C5D00010000011A /* warning.ahap */; };
+		5501B0352C5D00010000011B /* tap.ahap in Resources */ = {isa = PBXBuildFile; fileRef = 5501B0342C5D00010000011B /* tap.ahap */; };
+		/* Phase 76 additions - Text Reimplementation */
+		5501B0502C5D000100000130 /* OptaTextStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B04F2C5D000100000130 /* OptaTextStyle.swift */; };
+		5501B0522C5D000100000131 /* CharacterAnimator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B0512C5D000100000131 /* CharacterAnimator.swift */; };
+		5501B0542C5D000100000132 /* OptaTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B0532C5D000100000132 /* OptaTextView.swift */; };
+		5501B0562C5D000100000133 /* OptaTextZone.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B0552C5D000100000133 /* OptaTextZone.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -46,6 +80,40 @@
 		5501A0222C5D000100000012 /* OptaApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = OptaApp.entitlements; sourceTree = "<group>"; };
 		5501A0232C5D0001000000B0 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		5501A0FF2C5D000100000099 /* OptaApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OptaApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		/* Phase 69-75 additions */
+		5501B0002C5D000100000101 /* EffectExecutor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EffectExecutor.swift; sourceTree = "<group>"; };
+		5501B0022C5D000100000102 /* OptaCoreManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptaCoreManager.swift; sourceTree = "<group>"; };
+		5501B0042C5D000100000103 /* OptaViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptaViewModel.swift; sourceTree = "<group>"; };
+		5501B0062C5D000100000104 /* Game.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Game.swift; sourceTree = "<group>"; };
+		5501B0082C5D000100000105 /* OptimizationProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptimizationProfile.swift; sourceTree = "<group>"; };
+		5501B00A2C5D000100000106 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
+		5501B00C2C5D000100000107 /* OptaRingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptaRingView.swift; sourceTree = "<group>"; };
+		5501B00E2C5D000100000108 /* QuickActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickActions.swift; sourceTree = "<group>"; };
+		5501B0102C5D000100000109 /* ScoreDisplay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoreDisplay.swift; sourceTree = "<group>"; };
+		5501B0122C5D00010000010A /* TelemetryCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelemetryCard.swift; sourceTree = "<group>"; };
+		5501B0142C5D00010000010B /* ProfileManagerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileManagerView.swift; sourceTree = "<group>"; };
+		5501B0162C5D00010000010C /* KeyboardShortcutsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardShortcutsView.swift; sourceTree = "<group>"; };
+		5501B0182C5D00010000010D /* ThemeCustomizationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeCustomizationView.swift; sourceTree = "<group>"; };
+		5501B01A2C5D00010000010E /* GameCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameCardView.swift; sourceTree = "<group>"; };
+		5501B01C2C5D00010000010F /* GameDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameDetailView.swift; sourceTree = "<group>"; };
+		5501B01E2C5D000100000110 /* GamesLibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GamesLibraryView.swift; sourceTree = "<group>"; };
+		5501B0202C5D000100000111 /* GameDetectionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameDetectionService.swift; sourceTree = "<group>"; };
+		5501B0222C5D000100000112 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
+		5501B0242C5D000100000113 /* AgentModeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentModeManager.swift; sourceTree = "<group>"; };
+		5501B0262C5D000100000114 /* SpatialAudioManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpatialAudioManager.swift; sourceTree = "<group>"; };
+		5501B0282C5D000100000115 /* ThermalStateManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThermalStateManager.swift; sourceTree = "<group>"; };
+		5501B02A2C5D000100000116 /* SensoryManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SensoryManager.swift; sourceTree = "<group>"; };
+		/* AHAP Resources */
+		5501B02C2C5D000100000117 /* ring_explosion.ahap */ = {isa = PBXFileReference; lastKnownFileType = file; path = ring_explosion.ahap; sourceTree = "<group>"; };
+		5501B02E2C5D000100000118 /* optimization_pulse.ahap */ = {isa = PBXFileReference; lastKnownFileType = file; path = optimization_pulse.ahap; sourceTree = "<group>"; };
+		5501B0302C5D000100000119 /* wake_up.ahap */ = {isa = PBXFileReference; lastKnownFileType = file; path = wake_up.ahap; sourceTree = "<group>"; };
+		5501B0322C5D00010000011A /* warning.ahap */ = {isa = PBXFileReference; lastKnownFileType = file; path = warning.ahap; sourceTree = "<group>"; };
+		5501B0342C5D00010000011B /* tap.ahap */ = {isa = PBXFileReference; lastKnownFileType = file; path = tap.ahap; sourceTree = "<group>"; };
+		/* Phase 76 additions - Text Reimplementation */
+		5501B04F2C5D000100000130 /* OptaTextStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptaTextStyle.swift; sourceTree = "<group>"; };
+		5501B0512C5D000100000131 /* CharacterAnimator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CharacterAnimator.swift; sourceTree = "<group>"; };
+		5501B0532C5D000100000132 /* OptaTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptaTextView.swift; sourceTree = "<group>"; };
+		5501B0552C5D000100000133 /* OptaTextZone.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptaTextZone.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -78,13 +146,19 @@
 				5501A0202C5D000100000011 /* Info.plist */,
 				5501A0222C5D000100000012 /* OptaApp.entitlements */,
 				5501A1042C5D00010000009E /* Bridge */,
+				5501B0402C5D000100000120 /* Managers */,
+				5501B0412C5D000100000121 /* Models */,
+				5501B0422C5D000100000122 /* Services */,
 				5501A1052C5D00010000009F /* Views */,
 				5501A1062C5D0001000000A0 /* Rendering */,
 				5501A1072C5D0001000000A1 /* Haptics */,
+				5501B0432C5D000100000123 /* Audio */,
 				5501A1082C5D0001000000A2 /* MenuBar */,
 				5501A1092C5D0001000000A3 /* Utilities */,
 				5501A10A2C5D0001000000A4 /* Generated */,
 				5501A10B2C5D0001000000A5 /* Libraries */,
+				5501B0482C5D000100000128 /* Design */,
+				5501B0492C5D000100000129 /* Animation */,
 			);
 			path = OptaApp;
 			sourceTree = "<group>";
@@ -101,9 +175,40 @@
 			isa = PBXGroup;
 			children = (
 				5501A0042C5D000100000003 /* RustBridge.swift */,
+				5501B0002C5D000100000101 /* EffectExecutor.swift */,
 				5501A01A2C5D00010000000E /* OptaRender-Bridging-Header.h */,
 			);
 			path = Bridge;
+			sourceTree = "<group>";
+		};
+		5501B0402C5D000100000120 /* Managers */ = {
+			isa = PBXGroup;
+			children = (
+				5501B0022C5D000100000102 /* OptaCoreManager.swift */,
+				5501B02A2C5D000100000116 /* SensoryManager.swift */,
+			);
+			path = Managers;
+			sourceTree = "<group>";
+		};
+		5501B0412C5D000100000121 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				5501B0042C5D000100000103 /* OptaViewModel.swift */,
+				5501B0062C5D000100000104 /* Game.swift */,
+				5501B0082C5D000100000105 /* OptimizationProfile.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		5501B0422C5D000100000122 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				5501B0202C5D000100000111 /* GameDetectionService.swift */,
+				5501B0222C5D000100000112 /* NotificationService.swift */,
+				5501B0242C5D000100000113 /* AgentModeManager.swift */,
+				5501B0282C5D000100000115 /* ThermalStateManager.swift */,
+			);
+			path = Services;
 			sourceTree = "<group>";
 		};
 		5501A1052C5D00010000009F /* Views */ = {
@@ -111,8 +216,45 @@
 			children = (
 				5501A0062C5D000100000004 /* MetalRenderView.swift */,
 				5501A0122C5D00010000000A /* SettingsView.swift */,
+				5501B00A2C5D000100000106 /* DashboardView.swift */,
+				5501B0442C5D000100000124 /* Components */,
+				5501B0452C5D000100000125 /* Settings */,
+				5501B0462C5D000100000126 /* Games */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		5501B0442C5D000100000124 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				5501B00C2C5D000100000107 /* OptaRingView.swift */,
+				5501B00E2C5D000100000108 /* QuickActions.swift */,
+				5501B0102C5D000100000109 /* ScoreDisplay.swift */,
+				5501B0122C5D00010000010A /* TelemetryCard.swift */,
+				5501B0532C5D000100000132 /* OptaTextView.swift */,
+				5501B0552C5D000100000133 /* OptaTextZone.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		5501B0452C5D000100000125 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				5501B0142C5D00010000010B /* ProfileManagerView.swift */,
+				5501B0162C5D00010000010C /* KeyboardShortcutsView.swift */,
+				5501B0182C5D00010000010D /* ThemeCustomizationView.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+		5501B0462C5D000100000126 /* Games */ = {
+			isa = PBXGroup;
+			children = (
+				5501B01A2C5D00010000010E /* GameCardView.swift */,
+				5501B01C2C5D00010000010F /* GameDetailView.swift */,
+				5501B01E2C5D000100000110 /* GamesLibraryView.swift */,
+			);
+			path = Games;
 			sourceTree = "<group>";
 		};
 		5501A1062C5D0001000000A0 /* Rendering */ = {
@@ -128,8 +270,29 @@
 			isa = PBXGroup;
 			children = (
 				5501A00C2C5D000100000007 /* HapticsManager.swift */,
+				5501B0472C5D000100000127 /* Resources */,
 			);
 			path = Haptics;
+			sourceTree = "<group>";
+		};
+		5501B0472C5D000100000127 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				5501B02C2C5D000100000117 /* ring_explosion.ahap */,
+				5501B02E2C5D000100000118 /* optimization_pulse.ahap */,
+				5501B0302C5D000100000119 /* wake_up.ahap */,
+				5501B0322C5D00010000011A /* warning.ahap */,
+				5501B0342C5D00010000011B /* tap.ahap */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		5501B0432C5D000100000123 /* Audio */ = {
+			isa = PBXGroup;
+			children = (
+				5501B0262C5D000100000114 /* SpatialAudioManager.swift */,
+			);
+			path = Audio;
 			sourceTree = "<group>";
 		};
 		5501A1082C5D0001000000A2 /* MenuBar */ = {
@@ -166,6 +329,22 @@
 				5501A01A2C5D000100000099 /* libopta_core.a */,
 			);
 			path = Libraries;
+			sourceTree = "<group>";
+		};
+		5501B0482C5D000100000128 /* Design */ = {
+			isa = PBXGroup;
+			children = (
+				5501B04F2C5D000100000130 /* OptaTextStyle.swift */,
+			);
+			path = Design;
+			sourceTree = "<group>";
+		};
+		5501B0492C5D000100000129 /* Animation */ = {
+			isa = PBXGroup;
+			children = (
+				5501B0512C5D000100000131 /* CharacterAnimator.swift */,
+			);
+			path = Animation;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -227,6 +406,11 @@
 			buildActionMask = 2147483647;
 			files = (
 				5501A0242C5D0001000000B0 /* Assets.xcassets in Resources */,
+				5501B02D2C5D000100000117 /* ring_explosion.ahap in Resources */,
+				5501B02F2C5D000100000118 /* optimization_pulse.ahap in Resources */,
+				5501B0312C5D000100000119 /* wake_up.ahap in Resources */,
+				5501B0332C5D00010000011A /* warning.ahap in Resources */,
+				5501B0352C5D00010000011B /* tap.ahap in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -240,6 +424,7 @@
 				5501A0012C5D000100000001 /* OptaAppApp.swift in Sources */,
 				5501A0032C5D000100000002 /* ContentView.swift in Sources */,
 				5501A0052C5D000100000003 /* RustBridge.swift in Sources */,
+				5501B0012C5D000100000101 /* EffectExecutor.swift in Sources */,
 				5501A0072C5D000100000004 /* MetalRenderView.swift in Sources */,
 				5501A0092C5D000100000005 /* RenderCoordinator.swift in Sources */,
 				5501A00B2C5D000100000006 /* DisplayLinkController.swift in Sources */,
@@ -249,6 +434,31 @@
 				5501A0132C5D00010000000A /* SettingsView.swift in Sources */,
 				5501A0152C5D00010000000B /* LaunchAtLogin.swift in Sources */,
 				5501A0172C5D00010000000C /* OptaCore.swift in Sources */,
+				5501B0032C5D000100000102 /* OptaCoreManager.swift in Sources */,
+				5501B0052C5D000100000103 /* OptaViewModel.swift in Sources */,
+				5501B0072C5D000100000104 /* Game.swift in Sources */,
+				5501B0092C5D000100000105 /* OptimizationProfile.swift in Sources */,
+				5501B00B2C5D000100000106 /* DashboardView.swift in Sources */,
+				5501B00D2C5D000100000107 /* OptaRingView.swift in Sources */,
+				5501B00F2C5D000100000108 /* QuickActions.swift in Sources */,
+				5501B0112C5D000100000109 /* ScoreDisplay.swift in Sources */,
+				5501B0132C5D00010000010A /* TelemetryCard.swift in Sources */,
+				5501B0152C5D00010000010B /* ProfileManagerView.swift in Sources */,
+				5501B0172C5D00010000010C /* KeyboardShortcutsView.swift in Sources */,
+				5501B0192C5D00010000010D /* ThemeCustomizationView.swift in Sources */,
+				5501B01B2C5D00010000010E /* GameCardView.swift in Sources */,
+				5501B01D2C5D00010000010F /* GameDetailView.swift in Sources */,
+				5501B01F2C5D000100000110 /* GamesLibraryView.swift in Sources */,
+				5501B0212C5D000100000111 /* GameDetectionService.swift in Sources */,
+				5501B0232C5D000100000112 /* NotificationService.swift in Sources */,
+				5501B0252C5D000100000113 /* AgentModeManager.swift in Sources */,
+				5501B0272C5D000100000114 /* SpatialAudioManager.swift in Sources */,
+				5501B0292C5D000100000115 /* ThermalStateManager.swift in Sources */,
+				5501B02B2C5D000100000116 /* SensoryManager.swift in Sources */,
+				5501B0502C5D000100000130 /* OptaTextStyle.swift in Sources */,
+				5501B0522C5D000100000131 /* CharacterAnimator.swift in Sources */,
+				5501B0542C5D000100000132 /* OptaTextView.swift in Sources */,
+				5501B0562C5D000100000133 /* OptaTextZone.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -13,8 +13,10 @@ import SwiftUI
 /// The main dashboard displaying real-time system health via OptaCoreManager.
 ///
 /// Layout:
-/// - Top: OptaRing centerpiece with score overlay
+/// - Top: OptaTextView branded header
+/// - Center: OptaRing centerpiece with score overlay
 /// - Middle: 3-column telemetry cards (CPU, Memory, GPU)
+/// - Context: OptaTextZone system status
 /// - Bottom: QuickActions bar
 ///
 /// # Usage
@@ -38,7 +40,7 @@ struct DashboardView: View {
     // MARK: - Constants
 
     private let horizontalPadding: CGFloat = 24
-    private let verticalSpacing: CGFloat = 24
+    private let verticalSpacing: CGFloat = 20
     private let ringSize: CGFloat = 300
 
     // MARK: - Body
@@ -47,11 +49,18 @@ struct DashboardView: View {
         GeometryReader { geometry in
             ScrollView(showsIndicators: false) {
                 VStack(spacing: verticalSpacing) {
+                    // Branded header: OPTA text with ring energy
+                    optaTextSection
+
                     // Top section: OptaRing with score overlay
                     ringSection
 
                     // Middle section: Telemetry cards
                     telemetrySection(width: geometry.size.width)
+
+                    // Contextual status message
+                    textZoneSection
+                        .padding(.horizontal, horizontalPadding)
 
                     // Bottom section: Quick actions
                     QuickActions(coreManager: coreManager)
@@ -70,6 +79,15 @@ struct DashboardView: View {
     }
 
     // MARK: - Subviews
+
+    /// Branded OPTA text header with energy-reactive glow
+    private var optaTextSection: some View {
+        OptaTextView(
+            style: .hero,
+            energyLevel: Double(coreManager.viewModel.ring.energy)
+        )
+        .padding(.top, 8)
+    }
 
     /// OptaRing centerpiece with score overlay
     private var ringSection: some View {
@@ -130,6 +148,54 @@ struct DashboardView: View {
     }
 
     // MARK: - Computed Properties
+
+    /// Contextual system status message zone
+    private var textZoneSection: some View {
+        Group {
+            // Priority: Critical thermal > Memory warning > Stealth mode > Default
+            if coreManager.viewModel.thermalState == .critical {
+                OptaTextZone.error(
+                    text: "High temperature detected",
+                    value: nil
+                )
+            } else if coreManager.viewModel.thermalState == .serious {
+                OptaTextZone.warning(
+                    text: "System running warm",
+                    value: nil
+                )
+            } else if coreManager.viewModel.memoryPressure == .critical {
+                OptaTextZone.error(
+                    text: "Critical memory pressure",
+                    value: Double(coreManager.viewModel.memoryUsage),
+                    valueSuffix: "%"
+                )
+            } else if coreManager.viewModel.memoryPressure == .warning {
+                OptaTextZone.warning(
+                    text: "High memory usage",
+                    value: Double(coreManager.viewModel.memoryUsage),
+                    valueSuffix: "%"
+                )
+            } else if coreManager.viewModel.stealthModeActive {
+                OptaTextZone.success(
+                    text: "Optimization in progress",
+                    value: nil,
+                    trend: .up
+                )
+            } else if let result = coreManager.viewModel.lastStealthResult {
+                OptaTextZone.success(
+                    text: "Optimized \(result.terminatedCount) processes",
+                    value: Double(result.memoryFreedMb),
+                    trend: .up,
+                    valueSuffix: "MB freed"
+                )
+            } else {
+                OptaTextZone(text: "System ready")
+            }
+        }
+        .animation(.easeInOut(duration: 0.3), value: coreManager.viewModel.thermalState.rawValue)
+        .animation(.easeInOut(duration: 0.3), value: coreManager.viewModel.memoryPressure.rawValue)
+        .animation(.easeInOut(duration: 0.3), value: coreManager.viewModel.stealthModeActive)
+    }
 
     /// Color for grade badge based on grade letter
     private var gradeColor: Color {

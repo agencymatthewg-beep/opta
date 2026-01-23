@@ -480,7 +480,6 @@ struct OptaTextZone_Previews: PreviewProvider {
                 OptaTextZone.success(text: "CPU Usage", value: 42, valueSuffix: "%")
 
                 OptaTextZone.success(text: "Memory freed", value: 1.5, valueSuffix: "GB")
-                    .environment(\.accessibilityReduceMotion, false)
 
                 OptaTextZone.success(text: "FPS improved", value: 60, trend: .up, valueSuffix: " FPS")
             }
@@ -496,7 +495,7 @@ struct OptaTextZone_Previews: PreviewProvider {
 
                 HStack(spacing: 16) {
                     OptaTextZone.success(text: "Performance", value: 85, trend: .up)
-                    OptaTextZone.warning(text: "Thermals", value: 78, trend: .down)
+                    OptaTextZone.warning(text: "High thermals", value: 78)
                 }
             }
         }

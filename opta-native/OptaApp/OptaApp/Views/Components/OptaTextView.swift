@@ -197,10 +197,11 @@ struct OptaTextView: View {
             style: style.font,
             color: textColor,
             glowColor: glowColor,
-            glowIntensity: glowIntensity
+            glowIntensity: glowIntensity,
+            springConfig: .smooth,
+            autoAnimate: style.animatesOnAppear && !reduceMotion
         )
-        .tracking(style.tracking)
-        .autoAnimate(style.animatesOnAppear && !reduceMotion)
+        .kerning(style.tracking)
     }
 
     /// Ambient style: subtle fade-in
@@ -210,11 +211,11 @@ struct OptaTextView: View {
             style: style.font,
             color: textColor,
             glowColor: glowColor,
-            glowIntensity: glowIntensity * 0.6
+            glowIntensity: glowIntensity * 0.6,
+            springConfig: .gentle,
+            autoAnimate: style.animatesOnAppear && !reduceMotion
         )
-        .tracking(style.tracking)
-        .autoAnimate(style.animatesOnAppear && !reduceMotion)
-        .springConfig(.gentle)
+        .kerning(style.tracking)
     }
 
     /// Compact style: static, no animation
@@ -224,29 +225,6 @@ struct OptaTextView: View {
             .tracking(style.tracking)
             .foregroundStyle(textColor)
             .textGlow(color: glowColor, intensity: glowIntensity * 0.4)
-    }
-}
-
-// MARK: - AnimatedTextView Extensions
-
-extension AnimatedTextView {
-    /// Sets whether to auto-animate on appear
-    func autoAnimate(_ value: Bool) -> AnimatedTextView {
-        var view = self
-        view.autoAnimate = value
-        return view
-    }
-
-    /// Sets the spring configuration
-    func springConfig(_ config: SpringConfiguration) -> AnimatedTextView {
-        var view = self
-        view.springConfig = config
-        return view
-    }
-
-    /// Sets letter tracking
-    func tracking(_ value: CGFloat) -> some View {
-        self.kerning(value)
     }
 }
 
