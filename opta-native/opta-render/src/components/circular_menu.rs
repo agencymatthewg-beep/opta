@@ -1,12 +1,13 @@
 //! Circular (radial) menu component for Opta.
 //!
-//! Provides a GPU-rendered radial menu with sectors, glow effects, and spring-physics
-//! animations. Designed for premium UI experiences with smooth interactions.
+//! Provides a GPU-rendered radial menu with obsidian material and branch-energy
+//! sector highlights. Designed for premium UI experiences with smooth interactions.
 //!
 //! # Features
 //!
 //! - Radial sector rendering using SDF
-//! - Highlighted sector with glow effect
+//! - Obsidian material base (deep black volcanic glass aesthetic)
+//! - Branch energy highlights that grow from inner radius outward
 //! - Spring-physics animations for open/close and highlight transitions
 //! - Configurable sector count and colors
 //! - Theme-aware styling with color temperature support
@@ -52,11 +53,11 @@ pub struct CircularMenuConfig {
     pub sector_count: u32,
     /// Quality level for visual effects.
     pub quality_level: PanelQualityLevel,
-    /// Highlight glow color (RGB).
-    pub glow_color: [f32; 3],
-    /// Glow intensity (0.0 - 2.0+).
-    pub glow_intensity: f32,
-    /// Base menu color (RGB).
+    /// Branch energy color (RGB) for highlighted sector.
+    pub branch_energy_color: [f32; 3],
+    /// Branch energy intensity (0.0 - 2.0+).
+    pub branch_energy_intensity: f32,
+    /// Base menu color (RGB) — obsidian default.
     pub base_color: [f32; 3],
     /// Border/divider opacity (0.0 - 1.0).
     pub border_opacity: f32,
@@ -72,9 +73,9 @@ impl Default for CircularMenuConfig {
             inner_radius: 50.0,
             sector_count: 4,
             quality_level: PanelQualityLevel::Medium,
-            glow_color: [0.4, 0.6, 1.0], // Opta blue
-            glow_intensity: 1.5,
-            base_color: [0.1, 0.15, 0.25],
+            branch_energy_color: [0.545, 0.361, 0.965], // Electric Violet
+            branch_energy_intensity: 1.5,
+            base_color: [0.02, 0.02, 0.03], // Obsidian
             border_opacity: 0.6,
             rotation_offset: -PI / 2.0, // Start from top
         }
@@ -105,9 +106,9 @@ impl CircularMenuConfig {
         self.position = [x, y];
     }
 
-    /// Set the glow color from RGB values.
-    pub fn set_glow_color(&mut self, r: f32, g: f32, b: f32) {
-        self.glow_color = [r, g, b];
+    /// Set the branch energy color from RGB values.
+    pub fn set_branch_energy_color(&mut self, r: f32, g: f32, b: f32) {
+        self.branch_energy_color = [r, g, b];
     }
 }
 
@@ -134,7 +135,7 @@ impl CircularMenuSector {
             id: id.into(),
             icon: icon.into(),
             label: label.into(),
-            color: [0.4, 0.6, 1.0], // Default Opta blue
+            color: [0.545, 0.361, 0.965], // Electric Violet
             enabled: true,
         }
     }
@@ -201,11 +202,11 @@ pub struct CircularMenuUniforms {
     /// Padding.
     pub _pad1: f32,
 
-    // Visual styling (16 bytes)
-    /// Glow color (RGB).
-    pub glow_color: [f32; 3],
-    /// Glow intensity.
-    pub glow_intensity: f32,
+    // Branch energy styling (16 bytes)
+    /// Branch energy color (RGB).
+    pub branch_energy_color: [f32; 3],
+    /// Branch energy intensity.
+    pub branch_energy_intensity: f32,
 
     // Theme colors (16 bytes)
     /// Base menu color (RGB).
@@ -243,8 +244,8 @@ impl CircularMenuUniforms {
             highlight_progress,
             time,
             _pad1: 0.0,
-            glow_color: config.glow_color,
-            glow_intensity: config.glow_intensity,
+            branch_energy_color: config.branch_energy_color,
+            branch_energy_intensity: config.branch_energy_intensity,
             base_color: config.base_color,
             border_opacity: config.border_opacity,
             resolution: [width as f32, height as f32],
