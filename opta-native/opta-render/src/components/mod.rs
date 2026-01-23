@@ -6,6 +6,9 @@
 //! - CircularMenu: Radial menu with sectors and spring animations
 //! - CpuMeter: Energy core visualization for CPU telemetry
 //! - MemoryMeter: Liquid fill visualization for memory telemetry
+//! - BranchMeter: Horizontal meter with branch energy veins
+//! - BranchIndicator: Circular status indicator with radial branch veins
+//! - BranchBorder: Panel border with perimeter-flowing branch veins
 //! - Telemetry: Data structures for system monitoring
 //!
 //! # Example
@@ -57,6 +60,9 @@
 //! menu.open();
 //! ```
 
+mod branch_border;
+mod branch_indicator;
+mod branch_meter;
 mod circular_menu;
 mod cpu_meter;
 mod glass_panel;
@@ -64,6 +70,9 @@ mod memory_meter;
 mod ring;
 mod telemetry;
 
+pub use branch_border::{BranchBorder, BranchBorderConfig, BranchBorderUniforms};
+pub use branch_indicator::{BranchIndicator, BranchIndicatorConfig, BranchIndicatorUniforms};
+pub use branch_meter::{BranchMeter, BranchMeterConfig, BranchMeterUniforms};
 pub use circular_menu::{
     all_sector_center_positions, calculate_all_sector_angles, calculate_sector_angles,
     is_point_in_menu, point_to_sector, sector_center_position, AnimatedCircularMenu, CircularMenu,
