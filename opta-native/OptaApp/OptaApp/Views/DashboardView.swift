@@ -40,6 +40,9 @@ struct DashboardView: View {
     /// Color temperature state from environment
     @Environment(\.colorTemperature) private var colorTemp
 
+    /// Whether the circular navigation menu is shown
+    @State private var showCircularMenu = false
+
     // MARK: - Constants
 
     private let horizontalPadding: CGFloat = 24
@@ -84,6 +87,12 @@ struct DashboardView: View {
             }
         }
         .background(Color(hex: "09090B"))
+        .overlay(
+            NavigableCircularMenuView(
+                isPresented: $showCircularMenu,
+                config: .defaultFourSector
+            )
+        )
         .onAppear {
             coreManager.appStarted()
         }
@@ -110,8 +119,9 @@ struct DashboardView: View {
                 intensity: coreManager.viewModel.ring.energy,
                 explodeProgress: coreManager.viewModel.ring.progress,
                 onTap: {
-                    // Toggle ring expanded state on tap
-                    coreManager.dispatch(.toggleRingExpanded)
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                        showCircularMenu.toggle()
+                    }
                 }
             )
             .frame(width: ringSize, height: ringSize)

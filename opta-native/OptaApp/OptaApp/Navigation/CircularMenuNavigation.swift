@@ -146,7 +146,7 @@ final class CircularMenuNavigationManager: ObservableObject {
         currentDestination = destination
 
         // Play haptic feedback
-        SensoryManager.shared.playHaptic(.levelChange)
+        SensoryManager.shared.playHaptic(.tap)
 
         // Navigate via Crux
         if let coreManager = coreManager {
@@ -252,18 +252,8 @@ struct CircularMenuNavigationModifier: ViewModifier {
 }
 
 // MARK: - Environment Key
-
-/// Environment key for accessing OptaCoreManager
-struct OptaCoreManagerKey: EnvironmentKey {
-    static let defaultValue: OptaCoreManager? = nil
-}
-
-extension EnvironmentValues {
-    var optaCoreManager: OptaCoreManager? {
-        get { self[OptaCoreManagerKey.self] }
-        set { self[OptaCoreManagerKey.self] = newValue }
-    }
-}
+// OptaCoreManagerKey and EnvironmentValues.optaCoreManager
+// are defined in ColorTemperatureEnvironment.swift
 
 // MARK: - Integrated Menu View
 

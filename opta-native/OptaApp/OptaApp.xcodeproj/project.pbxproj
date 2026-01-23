@@ -66,6 +66,10 @@
 		/* Phase 89 additions - Color Temperature Refinement */
 		5501B0622C5D00010000013A /* ColorTemperature.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B0612C5D00010000013A /* ColorTemperature.swift */; };
 		5501B0642C5D00010000013B /* ColorTemperatureEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B0632C5D00010000013B /* ColorTemperatureEnvironment.swift */; };
+		/* Circular Menu Integration */
+		5501B0672C5D00010000013C /* CircularMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B0662C5D00010000013C /* CircularMenuView.swift */; };
+		5501B0692C5D00010000013D /* CircularMenuNavigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B0682C5D00010000013D /* CircularMenuNavigation.swift */; };
+		5501B06B2C5D00010000013E /* CircularMenuAccessibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B06A2C5D00010000013E /* CircularMenuAccessibility.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -134,6 +138,10 @@
 		/* Phase 89 additions - Color Temperature Refinement */
 		5501B0612C5D00010000013A /* ColorTemperature.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorTemperature.swift; sourceTree = "<group>"; };
 		5501B0632C5D00010000013B /* ColorTemperatureEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorTemperatureEnvironment.swift; sourceTree = "<group>"; };
+		/* Circular Menu Integration */
+		5501B0662C5D00010000013C /* CircularMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CircularMenuView.swift; sourceTree = "<group>"; };
+		5501B0682C5D00010000013D /* CircularMenuNavigation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CircularMenuNavigation.swift; sourceTree = "<group>"; };
+		5501B06A2C5D00010000013E /* CircularMenuAccessibility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CircularMenuAccessibility.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -180,6 +188,8 @@
 				5501B0482C5D000100000128 /* Design */,
 				5501B0492C5D000100000129 /* Animation */,
 				5501B05D2C5D000100000137 /* Extensions */,
+				5501B06C2C5D00010000013F /* Navigation */,
+				5501B06D2C5D000100000140 /* Accessibility */,
 			);
 			path = OptaApp;
 			sourceTree = "<group>";
@@ -256,6 +266,7 @@
 				5501B0532C5D000100000132 /* OptaTextView.swift */,
 				5501B0552C5D000100000133 /* OptaTextZone.swift */,
 				5501B0572C5D000100000134 /* SparklineView.swift */,
+				5501B0662C5D00010000013C /* CircularMenuView.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -382,6 +393,22 @@
 			path = Extensions;
 			sourceTree = "<group>";
 		};
+		5501B06C2C5D00010000013F /* Navigation */ = {
+			isa = PBXGroup;
+			children = (
+				5501B0682C5D00010000013D /* CircularMenuNavigation.swift */,
+			);
+			path = Navigation;
+			sourceTree = "<group>";
+		};
+		5501B06D2C5D000100000140 /* Accessibility */ = {
+			isa = PBXGroup;
+			children = (
+				5501B06A2C5D00010000013E /* CircularMenuAccessibility.swift */,
+			);
+			path = Accessibility;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -501,6 +528,9 @@
 				5501B0602C5D000100000139 /* OrganicMotionModifiers.swift in Sources */,
 				5501B0622C5D00010000013A /* ColorTemperature.swift in Sources */,
 				5501B0642C5D00010000013B /* ColorTemperatureEnvironment.swift in Sources */,
+				5501B0672C5D00010000013C /* CircularMenuView.swift in Sources */,
+				5501B0692C5D00010000013D /* CircularMenuNavigation.swift in Sources */,
+				5501B06B2C5D00010000013E /* CircularMenuAccessibility.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

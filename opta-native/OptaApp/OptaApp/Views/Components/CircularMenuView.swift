@@ -2,14 +2,14 @@
 //  CircularMenuView.swift
 //  OptaApp
 //
-//  SwiftUI wrapper for the Rust circular menu component.
-//  Provides gesture handling, animation sync, and sector selection.
+//  Pure SwiftUI circular navigation menu.
+//  Provides gesture handling, animation, and sector selection.
 //
-//  Obsidian aesthetic: 0A0A0F base, unified violet (8B5CF6) branch-energy highlights.
+//  Obsidian aesthetic with temperature-driven violet accents.
 //
 
 import SwiftUI
-import Combine
+import Foundation
 
 // MARK: - Sector Model
 
@@ -31,15 +31,14 @@ struct CircularMenuSector: Identifiable, Equatable {
 
 // MARK: - CircularMenuView
 
-/// SwiftUI view wrapping the Rust circular menu component.
+/// SwiftUI circular navigation menu with obsidian aesthetic.
 ///
 /// Features:
-/// - GPU-accelerated rendering via Rust/wgpu
-/// - Smooth 120Hz animation sync via display link
-/// - Mouse/trackpad tracking for sector highlighting
-/// - Keyboard navigation with branch glow focus ring
+/// - Animated sector reveal with spring physics
+/// - Mouse hover for sector highlighting
+/// - Keyboard navigation (arrow keys, Return, Escape)
 /// - Haptic and audio feedback integration
-/// - Obsidian aesthetic with branch-energy violet highlights
+/// - Temperature-driven violet accents
 ///
 /// # Usage
 ///
@@ -79,43 +78,22 @@ struct CircularMenuView: View {
 
     // MARK: - State
 
-    /// The Rust bridge for the circular menu
-    @StateObject private var menuState = CircularMenuState()
-
     /// Currently highlighted sector index
     @State private var highlightedSector: Int = -1
 
-    /// Mouse position in view coordinates
-    @State private var mousePosition: CGPoint = .zero
-
-    /// Whether mouse is being tracked
-    @State private var isTrackingMouse: Bool = false
+    /// Open progress for animation (0.0 - 1.0)
+    @State private var openProgress: CGFloat = 0
 
     /// Keyboard navigation index
     @State private var keyboardIndex: Int = 0
 
-    /// Display link for animation sync
-    @State private var displayLink: CVDisplayLink?
-
-    /// Last frame timestamp
-    @State private var lastFrameTime: Double = 0
-
-    /// Animation cancellable
-    @State private var animationCancellable: AnyCancellable?
-
     // MARK: - Environment
 
-    /// Reduce motion preference
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    /// Color temperature from environment
     @Environment(\.colorTemperature) private var colorTemp
 
     // MARK: - Constants
 
-    private let animationDuration: Double = 0.3
-
-    /// Obsidian base color
     private let obsidianBase = Color(hex: "0A0A0F")
 
     // MARK: - Body
@@ -123,62 +101,51 @@ struct CircularMenuView: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                // Background dimming with subtle violet tint
+                // Background dimming
                 if isPresented {
-                    ZStack {
-                        Color.black
-                            .opacity(0.3 * Double(menuState.openProgress))
-                        colorTemp.violetColor
-                            .opacity(0.02 * Double(menuState.openProgress))
-                    }
-                    .ignoresSafeArea()
-                    .onTapGesture {
-                        dismiss()
-                    }
+                    Color.black
+                        .opacity(0.4 * openProgress)
+                        .ignoresSafeArea()
+                        .onTapGesture {
+                            dismiss()
+                        }
                 }
 
                 // Menu content
-                if menuState.openProgress > 0 {
+                if openProgress > 0.01 {
                     circularMenuContent(in: geometry)
                         .position(menuCenter(in: geometry))
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .onAppear {
-                setupDisplayLink()
-                configureMenu(in: geometry)
-            }
-            .onDisappear {
-                cleanupDisplayLink()
-            }
-            .onChange(of: isPresented) { _, newValue in
-                if newValue {
-                    openMenu()
-                } else {
-                    closeMenu()
-                }
-            }
         }
-        .focusable()
+        .focusable(isPresented)
         .onKeyPress(.escape) {
+            guard isPresented else { return .ignored }
             dismiss()
             return .handled
         }
         .onKeyPress(.leftArrow) {
+            guard isPresented else { return .ignored }
             navigateKeyboard(direction: -1)
             return .handled
         }
         .onKeyPress(.rightArrow) {
+            guard isPresented else { return .ignored }
             navigateKeyboard(direction: 1)
             return .handled
         }
         .onKeyPress(.return) {
+            guard isPresented else { return .ignored }
             selectCurrentSector()
             return .handled
         }
-        .onKeyPress(.space) {
-            selectCurrentSector()
-            return .handled
+        .onChange(of: isPresented) { _, newValue in
+            if newValue {
+                openMenu()
+            } else {
+                closeMenu()
+            }
         }
     }
 
@@ -188,144 +155,62 @@ struct CircularMenuView: View {
         ZStack {
             // Render sectors
             ForEach(sectors) { sector in
-                sectorView(sector, in: geometry)
+                sectorView(sector)
             }
 
-            // Center ring indicator
+            // Center indicator
             centerIndicator
         }
         .frame(width: radius * 2, height: radius * 2)
-        .scaleEffect(menuState.openProgress)
-        .opacity(Double(menuState.openProgress))
-        .trackingArea { event, phase in
-            handleMouseEvent(event, phase: phase, in: geometry)
-        }
+        .scaleEffect(openProgress)
+        .opacity(openProgress)
     }
 
     // MARK: - Sector View
 
-    private func sectorView(_ sector: CircularMenuSector, in geometry: GeometryProxy) -> some View {
+    private func sectorView(_ sector: CircularMenuSector) -> some View {
         let angle = sectorAngle(for: sector.id)
         let isHighlighted = highlightedSector == sector.id
-        let isKeyboardFocused = keyboardIndex == sector.id && highlightedSector < 0
         let sectorCenter = sectorCenterPosition(for: sector.id)
 
-        return ZStack {
-            // Sector arc background — obsidian fill
-            SectorArc(
-                startAngle: angle - sectorSpan / 2,
-                endAngle: angle + sectorSpan / 2,
-                innerRadius: innerRadius,
-                outerRadius: radius
-            )
-            .fill(obsidianBase)
-
-            // Highlighted state: violet radial gradient (branch-energy style)
-            if isHighlighted && !reduceMotion {
-                SectorArc(
-                    startAngle: angle - sectorSpan / 2,
-                    endAngle: angle + sectorSpan / 2,
-                    innerRadius: innerRadius,
-                    outerRadius: radius
+        return VStack(spacing: 6) {
+            // Icon
+            Image(systemName: sector.icon)
+                .font(.system(size: isHighlighted ? 22 : 18, weight: .medium))
+                .foregroundStyle(isHighlighted ? colorTemp.violetColor : .white.opacity(0.8))
+                .shadow(
+                    color: isHighlighted ? colorTemp.violetColor.opacity(0.5) : .clear,
+                    radius: isHighlighted ? 8 : 0
                 )
-                .fill(
-                    RadialGradient(
-                        colors: [
-                            colorTemp.violetColor.opacity(0.25 * Double(menuState.highlightProgress)),
-                            colorTemp.violetColor.opacity(0.08 * Double(menuState.highlightProgress)),
-                            Color.clear
-                        ],
-                        center: .center,
-                        startRadius: innerRadius,
-                        endRadius: radius
-                    )
-                )
-            }
 
-            // reduceMotion: highlighted state as solid violet border
-            if isHighlighted && reduceMotion {
-                SectorArc(
-                    startAngle: angle - sectorSpan / 2,
-                    endAngle: angle + sectorSpan / 2,
-                    innerRadius: innerRadius,
-                    outerRadius: radius
-                )
-                .stroke(colorTemp.violetColor, lineWidth: 2)
-            }
-
-            // Sector arc border
-            SectorArc(
-                startAngle: angle - sectorSpan / 2,
-                endAngle: angle + sectorSpan / 2,
-                innerRadius: innerRadius,
-                outerRadius: radius
-            )
-            .stroke(
-                isHighlighted
-                    ? colorTemp.violetColor.opacity(0.5)
-                    : Color.white.opacity(0.08),
-                lineWidth: isHighlighted ? 1.5 : 1
-            )
-
-            // Glow effect for highlighted sector (branch-energy violet radial)
-            if isHighlighted && !reduceMotion {
-                SectorArc(
-                    startAngle: angle - sectorSpan / 2,
-                    endAngle: angle + sectorSpan / 2,
-                    innerRadius: innerRadius,
-                    outerRadius: radius
-                )
-                .stroke(colorTemp.violetColor, lineWidth: 3)
-                .blur(radius: 6)
-                .opacity(Double(menuState.highlightProgress) * colorTemp.glowOpacity * 0.7)
-            }
-
-            // Keyboard focus indicator: distinct violet shadow glow ring
-            if isKeyboardFocused && !reduceMotion {
-                SectorArc(
-                    startAngle: angle - sectorSpan / 2,
-                    endAngle: angle + sectorSpan / 2,
-                    innerRadius: innerRadius,
-                    outerRadius: radius
-                )
-                .stroke(colorTemp.violetColor.opacity(0.4), lineWidth: 1.5)
-                .shadow(color: colorTemp.violetColor.opacity(0.4), radius: 6)
-            }
-
-            // Keyboard focus: reduceMotion fallback
-            if isKeyboardFocused && reduceMotion {
-                SectorArc(
-                    startAngle: angle - sectorSpan / 2,
-                    endAngle: angle + sectorSpan / 2,
-                    innerRadius: innerRadius,
-                    outerRadius: radius
-                )
-                .stroke(colorTemp.violetColor.opacity(0.6), lineWidth: 2)
-            }
-
-            // Icon and label — white 0.7 (normal) → white 1.0 (highlighted)
-            VStack(spacing: 4) {
-                Image(systemName: sector.icon)
-                    .font(.system(size: isHighlighted ? 24 : 20, weight: .semibold))
-                    .foregroundStyle(.white.opacity(isHighlighted ? 1.0 : 0.7))
-
-                Text(sector.label)
-                    .font(.system(size: isHighlighted ? 12 : 10, weight: .medium))
-                    .foregroundStyle(.white.opacity(isHighlighted ? 1.0 : 0.6))
-            }
-            .position(sectorCenter)
+            // Label
+            Text(sector.label)
+                .font(.system(size: 10, weight: .medium))
+                .foregroundStyle(isHighlighted ? .white : .white.opacity(0.6))
         }
-        .contentShape(
-            SectorArc(
-                startAngle: angle - sectorSpan / 2,
-                endAngle: angle + sectorSpan / 2,
-                innerRadius: innerRadius,
-                outerRadius: radius
-            )
+        .padding(12)
+        .background(
+            Circle()
+                .fill(isHighlighted ? obsidianBase.opacity(0.9) : obsidianBase.opacity(0.7))
         )
+        .overlay(
+            Circle()
+                .stroke(
+                    isHighlighted ? colorTemp.violetColor.opacity(0.6) : Color.white.opacity(0.1),
+                    lineWidth: isHighlighted ? 1.5 : 0.5
+                )
+        )
+        .scaleEffect(isHighlighted ? 1.1 : 1.0)
+        .offset(x: sectorCenter.x, y: sectorCenter.y)
+        .onHover { hovering in
+            withAnimation(.easeOut(duration: 0.15)) {
+                highlightedSector = hovering ? sector.id : -1
+            }
+        }
         .onTapGesture {
             selectSector(sector)
         }
+        .animation(.spring(response: 0.2, dampingFraction: 0.7), value: isHighlighted)
     }
 
     // MARK: - Center Indicator
@@ -333,23 +218,22 @@ struct CircularMenuView: View {
     private var centerIndicator: some View {
         Circle()
             .fill(obsidianBase)
-            .frame(width: innerRadius * 2, height: innerRadius * 2)
+            .frame(width: innerRadius * 1.2, height: innerRadius * 1.2)
             .overlay(
                 Circle()
-                    .strokeBorder(
-                        colorTemp.violetColor.opacity(0.3),
-                        lineWidth: 1
-                    )
+                    .stroke(colorTemp.violetColor.opacity(0.3), lineWidth: 1)
             )
             .overlay(
-                Image(systemName: "waveform.circle.fill")
-                    .font(.system(size: 24))
-                    .foregroundStyle(colorTemp.violetColor)
-                    .shadow(color: colorTemp.violetColor.opacity(colorTemp.glowOpacity * 0.7), radius: 4)
+                Image(systemName: "xmark")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.5))
             )
+            .onTapGesture {
+                dismiss()
+            }
     }
 
-    // MARK: - Geometry Helpers
+    // MARK: - Geometry
 
     private func menuCenter(in geometry: GeometryProxy) -> CGPoint {
         centerPosition ?? CGPoint(
@@ -358,94 +242,26 @@ struct CircularMenuView: View {
         )
     }
 
-    private var sectorSpan: Angle {
-        .degrees(360.0 / Double(sectors.count))
-    }
-
-    private func sectorAngle(for index: Int) -> Angle {
-        // Start from top (-90 degrees) and go clockwise
-        let baseAngle = -90.0
-        let sectorAngle = 360.0 / Double(sectors.count)
-        return .degrees(baseAngle + sectorAngle * Double(index))
+    private func sectorAngle(for index: Int) -> Double {
+        let sectorSize = (2 * .pi) / Double(sectors.count)
+        return sectorSize * Double(index) - .pi / 2 // Start from top
     }
 
     private func sectorCenterPosition(for index: Int) -> CGPoint {
-        let angle = sectorAngle(for: index)
-        let centerRadius = (innerRadius + radius) / 2
-        let x = radius + centerRadius * CGFloat(cos(angle.radians))
-        let y = radius + centerRadius * CGFloat(sin(angle.radians))
+        let angle: Double = sectorAngle(for: index)
+        let distance: CGFloat = (radius + innerRadius) / 2
+        let x: CGFloat = CGFloat(Darwin.cos(angle)) * distance
+        let y: CGFloat = CGFloat(Darwin.sin(angle)) * distance
         return CGPoint(x: x, y: y)
     }
 
-    // MARK: - Mouse Tracking
-
-    private func handleMouseEvent(_ event: NSEvent, phase: TrackingPhase, in geometry: GeometryProxy) {
-        switch phase {
-        case .entered:
-            isTrackingMouse = true
-        case .exited:
-            isTrackingMouse = false
-            updateHighlightedSector(-1)
-        case .moved:
-            let location = event.locationInWindow
-            let viewLocation = geometry.frame(in: .global)
-            let relativePoint = CGPoint(
-                x: location.x - viewLocation.minX,
-                y: viewLocation.maxY - location.y  // Flip Y for SwiftUI coordinates
-            )
-
-            mousePosition = relativePoint
-            updateSectorFromMouse(relativePoint, in: geometry)
-        }
-    }
-
-    private func updateSectorFromMouse(_ point: CGPoint, in geometry: GeometryProxy) {
-        let center = menuCenter(in: geometry)
-
-        // Convert to relative coordinates from center
-        let relativeX = point.x - center.x
-        let relativeY = point.y - center.y
-        let distance = sqrt(relativeX * relativeX + relativeY * relativeY)
-
-        // Check if within ring bounds
-        guard distance >= innerRadius && distance <= radius else {
-            updateHighlightedSector(-1)
-            return
-        }
-
-        // Calculate angle and determine sector
-        var angle = atan2(relativeY, relativeX)
-        angle = angle + .pi / 2  // Adjust for top-centered start
-        if angle < 0 { angle += .pi * 2 }
-
-        let sectorIndex = Int(angle / (.pi * 2 / Double(sectors.count)))
-        let clampedIndex = sectorIndex % sectors.count
-
-        updateHighlightedSector(clampedIndex)
-    }
-
-    private func updateHighlightedSector(_ index: Int) {
-        guard highlightedSector != index else { return }
-
-        withAnimation(.easeOut(duration: 0.15)) {
-            highlightedSector = index
-        }
-
-        menuState.bridge?.highlightedSector = Int32(index)
-
-        // Trigger haptic feedback on sector change
-        if index >= 0 {
-            SensoryManager.shared.playInteraction(.sectorHighlight)
-        }
-    }
-
-    // MARK: - Keyboard Navigation
+    // MARK: - Navigation
 
     private func navigateKeyboard(direction: Int) {
-        let newIndex = (keyboardIndex + direction + sectors.count) % sectors.count
-        keyboardIndex = newIndex
-        updateHighlightedSector(newIndex)
-
+        keyboardIndex = (keyboardIndex + direction + sectors.count) % sectors.count
+        withAnimation(.easeOut(duration: 0.15)) {
+            highlightedSector = keyboardIndex
+        }
         SensoryManager.shared.playInteraction(.navigation)
     }
 
@@ -460,9 +276,8 @@ struct CircularMenuView: View {
     private func selectSector(_ sector: CircularMenuSector) {
         SensoryManager.shared.playInteraction(.sectorSelect)
 
-        // Brief delay for feedback
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            withAnimation(.easeOut(duration: animationDuration)) {
+            withAnimation(.easeOut(duration: 0.2)) {
                 isPresented = false
             }
             onSelect?(sector)
@@ -470,7 +285,7 @@ struct CircularMenuView: View {
     }
 
     private func dismiss() {
-        withAnimation(.easeOut(duration: animationDuration)) {
+        withAnimation(.easeOut(duration: 0.2)) {
             isPresented = false
         }
         onDismiss?()
@@ -478,24 +293,17 @@ struct CircularMenuView: View {
 
     // MARK: - Menu State
 
-    private func configureMenu(in geometry: GeometryProxy) {
-        let center = menuCenter(in: geometry)
-
-        var config = CircularMenuConfig()
-        config.centerX = Float(center.x)
-        config.centerY = Float(center.y)
-        config.radius = Float(radius)
-        config.innerRadius = Float(innerRadius)
-        config.sectorCount = UInt32(max(1, sectors.count))
-        config.branchEnergyIntensity = 1.5
-
-        menuState.configure(config)
-    }
-
     private func openMenu() {
-        menuState.open()
         keyboardIndex = 0
-        startDisplayLinkIfNeeded()
+        highlightedSector = -1
+
+        let animation: Animation = reduceMotion
+            ? .easeOut(duration: 0.15)
+            : .spring(response: 0.35, dampingFraction: 0.7)
+
+        withAnimation(animation) {
+            openProgress = 1.0
+        }
 
         if !reduceMotion {
             SensoryManager.shared.playInteraction(.menuOpen)
@@ -503,258 +311,19 @@ struct CircularMenuView: View {
     }
 
     private func closeMenu() {
-        menuState.close()
         highlightedSector = -1
+
+        let animation: Animation = reduceMotion
+            ? .easeOut(duration: 0.1)
+            : .easeOut(duration: 0.2)
+
+        withAnimation(animation) {
+            openProgress = 0
+        }
 
         if !reduceMotion {
             SensoryManager.shared.playInteraction(.menuClose)
         }
-
-        // Stop display link after close animation completes
-        DispatchQueue.main.asyncAfter(deadline: .now() + animationDuration + 0.1) { [self] in
-            if !isPresented && menuState.openProgress < 0.01 {
-                stopDisplayLinkIfRunning()
-            }
-        }
-    }
-
-    // MARK: - Display Link
-
-    private func setupDisplayLink() {
-        guard !reduceMotion else { return }
-        cleanupDisplayLink()
-
-        var link: CVDisplayLink?
-        CVDisplayLinkCreateWithActiveCGDisplays(&link)
-
-        guard let displayLink = link else { return }
-
-        // Configure for main display (supports ProMotion 120Hz)
-        CVDisplayLinkSetCurrentCGDisplay(displayLink, CGMainDisplayID())
-
-        let callback: CVDisplayLinkOutputCallback = { _, _, _, _, _, userInfo -> CVReturn in
-            guard let userInfo = userInfo else { return kCVReturnSuccess }
-
-            // Use passRetained/takeRetainedValue pattern for safety
-            let state = Unmanaged<CircularMenuState>.fromOpaque(userInfo).takeUnretainedValue()
-
-            DispatchQueue.main.async {
-                state.update()
-            }
-
-            return kCVReturnSuccess
-        }
-
-        // Retain the state object to prevent deallocation while display link is active
-        let userInfo = Unmanaged.passRetained(menuState).toOpaque()
-        CVDisplayLinkSetOutputCallback(displayLink, callback, userInfo)
-        CVDisplayLinkStart(displayLink)
-
-        self.displayLink = displayLink
-    }
-
-    private func cleanupDisplayLink() {
-        if let displayLink = displayLink {
-            CVDisplayLinkStop(displayLink)
-            // Balance the passRetained call
-            Unmanaged.passUnretained(menuState).release()
-        }
-        displayLink = nil
-    }
-
-    private func startDisplayLinkIfNeeded() {
-        guard !reduceMotion else { return }
-        if let displayLink = displayLink, !CVDisplayLinkIsRunning(displayLink) {
-            CVDisplayLinkStart(displayLink)
-        } else if displayLink == nil {
-            setupDisplayLink()
-        }
-    }
-
-    private func stopDisplayLinkIfRunning() {
-        if let displayLink = displayLink, CVDisplayLinkIsRunning(displayLink) {
-            CVDisplayLinkStop(displayLink)
-        }
-    }
-}
-
-// MARK: - Circular Menu State
-
-/// Observable state object for the circular menu
-final class CircularMenuState: ObservableObject {
-
-    /// The Rust bridge
-    private(set) var bridge: CircularMenuBridge?
-
-    /// Current open progress (0.0-1.0)
-    @Published var openProgress: Float = 0
-
-    /// Current highlight progress (0.0-1.0)
-    @Published var highlightProgress: Float = 0
-
-    /// Last update timestamp
-    private var lastUpdateTime: CFAbsoluteTime = 0
-
-    /// Configure the menu with settings
-    func configure(_ config: CircularMenuConfig) {
-        bridge = CircularMenuBridge(config: config)
-    }
-
-    /// Open the menu
-    func open() {
-        bridge?.open()
-    }
-
-    /// Close the menu
-    func close() {
-        bridge?.close()
-    }
-
-    /// Update animation state (called from display link)
-    func update() {
-        let now = CFAbsoluteTimeGetCurrent()
-        let dt = Float(now - lastUpdateTime)
-        lastUpdateTime = now
-
-        guard dt > 0 && dt < 0.1 else { return }  // Skip unreasonable deltas
-
-        // Single lock acquisition for update + state read
-        guard let bridge = bridge else { return }
-        let snapshot = bridge.updateAndGetState(deltaTime: dt)
-
-        if abs(openProgress - snapshot.openProgress) > 0.001 {
-            openProgress = snapshot.openProgress
-        }
-        if abs(highlightProgress - snapshot.highlightProgress) > 0.001 {
-            highlightProgress = snapshot.highlightProgress
-        }
-    }
-}
-
-// MARK: - Sector Arc Shape
-
-/// Shape for drawing a sector arc
-struct SectorArc: Shape {
-    let startAngle: Angle
-    let endAngle: Angle
-    let innerRadius: CGFloat
-    let outerRadius: CGFloat
-
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-
-        let center = CGPoint(x: rect.midX, y: rect.midY)
-
-        // Start at outer arc
-        let startOuter = CGPoint(
-            x: center.x + outerRadius * CGFloat(cos(startAngle.radians)),
-            y: center.y + outerRadius * CGFloat(sin(startAngle.radians))
-        )
-
-        path.move(to: startOuter)
-
-        // Outer arc
-        path.addArc(
-            center: center,
-            radius: outerRadius,
-            startAngle: startAngle,
-            endAngle: endAngle,
-            clockwise: false
-        )
-
-        // Line to inner arc
-        path.addLine(to: CGPoint(
-            x: center.x + innerRadius * CGFloat(cos(endAngle.radians)),
-            y: center.y + innerRadius * CGFloat(sin(endAngle.radians))
-        ))
-
-        // Inner arc (reverse direction)
-        path.addArc(
-            center: center,
-            radius: innerRadius,
-            startAngle: endAngle,
-            endAngle: startAngle,
-            clockwise: true
-        )
-
-        path.closeSubpath()
-
-        return path
-    }
-}
-
-// MARK: - Tracking Area
-
-/// Tracking phase for mouse events
-enum TrackingPhase {
-    case entered
-    case exited
-    case moved
-}
-
-/// View modifier for tracking mouse events
-struct TrackingAreaModifier: ViewModifier {
-    let handler: (NSEvent, TrackingPhase) -> Void
-
-    func body(content: Content) -> some View {
-        content.overlay(
-            TrackingAreaView(handler: handler)
-        )
-    }
-}
-
-/// NSView wrapper for mouse tracking
-struct TrackingAreaView: NSViewRepresentable {
-    let handler: (NSEvent, TrackingPhase) -> Void
-
-    func makeNSView(context: Context) -> NSView {
-        let view = TrackingNSView()
-        view.handler = handler
-        return view
-    }
-
-    func updateNSView(_ nsView: NSView, context: Context) {
-        (nsView as? TrackingNSView)?.handler = handler
-    }
-
-    class TrackingNSView: NSView {
-        var handler: ((NSEvent, TrackingPhase) -> Void)?
-        var trackingArea: NSTrackingArea?
-
-        override func updateTrackingAreas() {
-            super.updateTrackingAreas()
-
-            if let trackingArea = trackingArea {
-                removeTrackingArea(trackingArea)
-            }
-
-            let area = NSTrackingArea(
-                rect: bounds,
-                options: [.mouseEnteredAndExited, .mouseMoved, .activeInKeyWindow],
-                owner: self,
-                userInfo: nil
-            )
-            addTrackingArea(area)
-            trackingArea = area
-        }
-
-        override func mouseEntered(with event: NSEvent) {
-            handler?(event, .entered)
-        }
-
-        override func mouseExited(with event: NSEvent) {
-            handler?(event, .exited)
-        }
-
-        override func mouseMoved(with event: NSEvent) {
-            handler?(event, .moved)
-        }
-    }
-}
-
-extension View {
-    func trackingArea(handler: @escaping (NSEvent, TrackingPhase) -> Void) -> some View {
-        modifier(TrackingAreaModifier(handler: handler))
     }
 }
 
@@ -763,13 +332,9 @@ extension View {
 #if DEBUG
 struct CircularMenuView_Previews: PreviewProvider {
     static var previews: some View {
-        ZStack {
-            Color(hex: "09090B").ignoresSafeArea()
-
-            CircularMenuPreviewWrapper()
-        }
-        .frame(width: 500, height: 500)
-        .preferredColorScheme(.dark)
+        CircularMenuPreviewWrapper()
+            .frame(width: 500, height: 500)
+            .preferredColorScheme(.dark)
     }
 }
 
@@ -777,17 +342,9 @@ struct CircularMenuPreviewWrapper: View {
     @State private var isPresented = true
 
     var body: some View {
-        VStack {
-            Button("Toggle Menu") {
-                withAnimation {
-                    isPresented.toggle()
-                }
-            }
-            .padding()
+        ZStack {
+            Color(hex: "09090B").ignoresSafeArea()
 
-            Spacer()
-        }
-        .overlay(
             CircularMenuView(
                 isPresented: $isPresented,
                 sectors: CircularMenuSector.defaultSectors,
@@ -795,7 +352,7 @@ struct CircularMenuPreviewWrapper: View {
                     print("Selected: \(sector.label)")
                 }
             )
-        )
+        }
     }
 }
 #endif
