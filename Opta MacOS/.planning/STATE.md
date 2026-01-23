@@ -571,6 +571,13 @@ v10.0 Progress: ██████░░░░ 60% (3 of 5 phases complete)
 | 78-02 | Maximum contrast uses solid backgrounds | Disables glass blur entirely for maximum visibility |
 | 78-02 | WGSL colorblind simulation | Protanopia, deuteranopia, tritanopia modes via matrix transforms |
 | 78-02 | WCAG contrast ratio calculation in shader | GPU-side accessibility validation with 4.5:1 minimum |
+| 78-01 | PanelQualityLevel enum matching ring pattern | Low(8), Medium(16), High(32), Ultra(64) blur samples for consistent quality tiers |
+| 78-01 | DepthHierarchy with 3 layers | Foreground(0.0), Content(0.5), Background(1.0) for proper glass stacking |
+| 78-01 | Depth-based blur scaling | Background panels get 2x blur multiplier, 0.9x opacity for visual depth |
+| 78-01 | Power curve for blur falloff | `base_blur * (1 + depth^falloff * 2)` creates natural depth perception |
+| 78-01 | Kawase blur for panel backdrop | Efficient 16-sample bokeh pattern, matches ring blur approach |
+| 78-01 | HDPanelUniforms 176-byte struct | 11 x 16-byte aligned groups for GPU buffer compatibility |
+| 78-01 | Quality gating for expensive features | dispersion_enabled(), cook_torrance_enabled() only at Ultra |
 
 ### Deferred Issues
 
