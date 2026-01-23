@@ -1,7 +1,8 @@
 //! Opta Ring 3D component.
 //!
-//! The ring is the central visual element of Opta - a glass torus that
-//! represents the AI's state through animation, color, and effects.
+//! The ring is the central visual element of Opta - an obsidian torus that
+//! represents the AI's state through animation, Cook-Torrance reflection,
+//! and subsurface emission effects.
 
 // Allow precision loss for u32 -> f32 conversions in graphics code
 #![allow(clippy::cast_precision_loss)]
@@ -212,6 +213,7 @@ impl RingState {
 /// Shader uniforms for the ring.
 ///
 /// Packed for 16-byte alignment as required by wgpu.
+/// Uses obsidian material properties (roughness, emission, base_color).
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct RingUniforms {
@@ -231,14 +233,14 @@ pub struct RingUniforms {
     pub ring_rotation: f32,
     /// Current tilt angle (radians).
     pub tilt_angle: f32,
-    /// Index of refraction for glass effect.
-    pub ior: f32,
+    /// Surface roughness for obsidian (0.03 = near-mirror polished).
+    pub roughness: f32,
+    /// Emission intensity for energy visibility through obsidian.
+    pub emission_intensity: f32,
+    /// Near-black obsidian base color (RGB).
+    pub base_color: [f32; 3],
     /// Padding for 16-byte alignment.
     pub _padding: f32,
-    /// Glass tint color (RGB).
-    pub tint_color: [f32; 3],
-    /// Additional padding.
-    pub _padding2: f32,
 }
 
 impl Default for RingUniforms {
@@ -262,10 +264,10 @@ impl Default for RingUniforms {
             fresnel_power: 3.0,
             ring_rotation: 0.0,
             tilt_angle: 0.26,
-            ior: 1.5,
+            roughness: 0.03,             // Near-mirror polished obsidian
+            emission_intensity: 0.0,     // No emission by default
+            base_color: [0.02, 0.02, 0.03], // Near-black obsidian
             _padding: 0.0,
-            tint_color: [0.4, 0.6, 1.0], // Light blue tint
-            _padding2: 0.0,
         }
     }
 }
@@ -281,10 +283,12 @@ pub struct RingConfig {
     pub major_segments: u32,
     /// Number of segments around the tube.
     pub minor_segments: u32,
-    /// Index of refraction for glass effect.
-    pub ior: f32,
-    /// Glass tint color (RGB).
-    pub tint: [f32; 3],
+    /// Surface roughness for obsidian (0.03 = near-mirror polished).
+    pub roughness: f32,
+    /// Near-black obsidian base color (RGB).
+    pub base_color: [f32; 3],
+    /// Energy color for subsurface emission (Electric Violet #8B5CF6).
+    pub energy_color: [f32; 3],
     /// Quality level for rendering.
     pub quality_level: RingQualityLevel,
 }
@@ -297,8 +301,9 @@ impl Default for RingConfig {
             minor_radius: 0.15,
             major_segments: quality.major_segments(),
             minor_segments: quality.minor_segments(),
-            ior: 1.5,
-            tint: [0.4, 0.6, 1.0], // Light blue
+            roughness: 0.03,                       // Near-mirror polished obsidian
+            base_color: [0.02, 0.02, 0.03],        // Near-black obsidian
+            energy_color: [0.545, 0.361, 0.965],   // Electric Violet #8B5CF6
             quality_level: quality,
         }
     }
@@ -314,8 +319,9 @@ impl RingConfig {
             minor_radius: 0.15,
             major_segments: quality.major_segments(),
             minor_segments: quality.minor_segments(),
-            ior: 1.5,
-            tint: [0.4, 0.6, 1.0],
+            roughness: 0.03,
+            base_color: [0.02, 0.02, 0.03],
+            energy_color: [0.545, 0.361, 0.965],
             quality_level: quality,
         }
     }
@@ -785,8 +791,8 @@ impl OptaRing {
 
         // Create uniform buffer
         let uniforms = RingUniforms {
-            tint_color: config.tint,
-            ior: config.ior,
+            roughness: config.roughness,
+            base_color: config.base_color,
             ..Default::default()
         };
         let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -848,7 +854,7 @@ impl OptaRing {
                 entry_point: Some("fs_main"),
                 targets: &[Some(wgpu::ColorTargetState {
                     format: surface_format,
-                    // Alpha blending for glass transparency
+                    // Blend state kept for compatibility (obsidian outputs alpha=1.0)
                     blend: Some(wgpu::BlendState {
                         color: wgpu::BlendComponent {
                             src_factor: wgpu::BlendFactor::SrcAlpha,
@@ -869,7 +875,7 @@ impl OptaRing {
                 topology: wgpu::PrimitiveTopology::TriangleList,
                 strip_index_format: None,
                 front_face: wgpu::FrontFace::Ccw,
-                // No culling - glass is see-through from both sides
+                // No culling - ring visible from all angles
                 cull_mode: None,
                 unclipped_depth: false,
                 polygon_mode: wgpu::PolygonMode::Fill,
@@ -1107,10 +1113,10 @@ impl OptaRing {
             fresnel_power: 3.0,
             ring_rotation: self.current_rotation,
             tilt_angle: self.current_tilt,
-            ior: self.config.ior,
+            roughness: self.config.roughness,
+            emission_intensity: self.current_energy * self.current_plasma,
+            base_color: self.config.base_color,
             _padding: 0.0,
-            tint_color: self.config.tint,
-            _padding2: 0.0,
         };
         queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[uniforms]));
 
@@ -1252,7 +1258,13 @@ mod tests {
         assert!((config.minor_radius - 0.15).abs() < f32::EPSILON);
         assert_eq!(config.major_segments, 64);
         assert_eq!(config.minor_segments, 32);
-        assert!((config.ior - 1.5).abs() < f32::EPSILON);
+        assert!((config.roughness - 0.03).abs() < f32::EPSILON);
+        assert!((config.base_color[0] - 0.02).abs() < f32::EPSILON);
+        assert!((config.base_color[1] - 0.02).abs() < f32::EPSILON);
+        assert!((config.base_color[2] - 0.03).abs() < f32::EPSILON);
+        assert!((config.energy_color[0] - 0.545).abs() < 0.001);
+        assert!((config.energy_color[1] - 0.361).abs() < 0.001);
+        assert!((config.energy_color[2] - 0.965).abs() < 0.001);
         assert_eq!(config.quality_level, RingQualityLevel::Medium);
     }
 
@@ -1300,8 +1312,9 @@ mod tests {
             minor_radius: 0.1,
             major_segments: 8,
             minor_segments: 6,
-            ior: 1.5,
-            tint: [1.0, 1.0, 1.0],
+            roughness: 0.03,
+            base_color: [0.02, 0.02, 0.03],
+            energy_color: [0.545, 0.361, 0.965],
             quality_level: RingQualityLevel::Low,
         };
 
