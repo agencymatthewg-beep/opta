@@ -139,6 +139,8 @@ pub mod effects;
 pub mod encoder;
 pub mod error;
 pub mod ffi;
+#[allow(clippy::cast_precision_loss)]
+pub mod ffi_panels;
 pub mod haptics;
 pub mod instance;
 pub mod memory;

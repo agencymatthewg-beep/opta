@@ -54,7 +54,7 @@ pub struct OptaRenderContext {
     pub gpu: GpuContext,
 
     /// The render surface (optional, created after init).
-    surface: Option<RenderSurface<'static>>,
+    pub(crate) surface: Option<RenderSurface<'static>>,
 
     /// Wrapper for the view pointer to satisfy raw-window-handle.
     view_wrapper: Option<Arc<ViewWrapper>>,
