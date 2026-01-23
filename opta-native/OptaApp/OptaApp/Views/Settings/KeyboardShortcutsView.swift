@@ -189,8 +189,9 @@ struct KeyboardShortcutsView: View {
     var body: some View {
         Form {
             Section {
-                ForEach(ShortcutAction.allCases) { action in
+                ForEach(Array(ShortcutAction.allCases.enumerated()), id: \.element.id) { index, action in
                     shortcutRow(for: action)
+                        .organicAppear(index: index, total: ShortcutAction.allCases.count)
                 }
             } header: {
                 Label("Shortcuts", systemImage: "keyboard")

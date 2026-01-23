@@ -180,6 +180,7 @@ struct MenuBarPopoverView: View {
                 value: cpuUsageString,
                 color: .blue
             )
+            .organicAppear(index: 0, total: 4)
 
             StatCard(
                 icon: "memorychip",
@@ -187,6 +188,7 @@ struct MenuBarPopoverView: View {
                 value: memoryUsageString,
                 color: .green
             )
+            .organicAppear(index: 1, total: 4)
 
             StatCard(
                 icon: "gpu",
@@ -194,6 +196,7 @@ struct MenuBarPopoverView: View {
                 value: gpuLoadString,
                 color: .purple
             )
+            .organicAppear(index: 2, total: 4)
 
             StatCard(
                 icon: "thermometer.medium",
@@ -201,6 +204,7 @@ struct MenuBarPopoverView: View {
                 value: temperatureString,
                 color: temperatureColor
             )
+            .organicAppear(index: 3, total: 4)
         }
         .padding(.horizontal, 12)
     }
@@ -576,6 +580,7 @@ struct MenuBarActionButton: View {
             )
         }
         .buttonStyle(.plain)
+        .organicHover(isHovered: isHovered, id: "menuBarAction-\(label)")
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.15)) {
                 isHovered = hovering

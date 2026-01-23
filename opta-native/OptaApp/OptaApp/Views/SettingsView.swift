@@ -252,6 +252,8 @@ struct SettingsRowView: View {
     let title: String
     let subtitle: String
 
+    @State private var isHovered = false
+
     var body: some View {
         HStack(spacing: 12) {
             ZStack {
@@ -277,6 +279,10 @@ struct SettingsRowView: View {
             }
         }
         .padding(.vertical, 4)
+        .organicHover(isHovered: isHovered, id: "settingsRow-\(title)")
+        .onHover { hovering in
+            isHovered = hovering
+        }
     }
 }
 

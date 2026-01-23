@@ -43,15 +43,19 @@ struct GameDetailView: View {
             VStack(spacing: 24) {
                 // Hero section
                 heroSection
+                    .organicAppear(index: 0, total: 4)
 
                 // Optimization section
                 optimizationSection
+                    .organicAppear(index: 1, total: 4)
 
                 // Performance history section
                 performanceHistorySection
+                    .organicAppear(index: 2, total: 4)
 
                 // Quick actions section
                 quickActionsSection
+                    .organicAppear(index: 3, total: 4)
             }
             .padding(20)
         }

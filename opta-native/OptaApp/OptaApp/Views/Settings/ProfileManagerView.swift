@@ -269,6 +269,8 @@ struct ProfileRowView: View {
     let onApply: () -> Void
     let onExport: () -> Void
 
+    @State private var isHovered = false
+
     var body: some View {
         HStack(spacing: 12) {
             // Profile icon (obsidian + violet)
@@ -340,6 +342,10 @@ struct ProfileRowView: View {
             .frame(width: 32)
         }
         .padding(.vertical, 8)
+        .organicHover(isHovered: isHovered, id: "profileRow-\(profile.id.uuidString)")
+        .onHover { hovering in
+            isHovered = hovering
+        }
     }
 
     private var qualityBadgeBackground: Color {
