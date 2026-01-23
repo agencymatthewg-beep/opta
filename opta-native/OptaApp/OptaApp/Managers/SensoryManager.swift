@@ -198,10 +198,11 @@ final class SensoryManager {
     /// Update listener orientation for spatial audio
     /// Call this when the camera/viewpoint rotates
     /// - Parameters:
-    ///   - forward: Forward direction vector
-    ///   - up: Up direction vector
-    func updateListenerOrientation(forward: SIMD3<Float>, up: SIMD3<Float>) {
-        audio.updateListenerOrientation(forward: forward, up: up)
+    ///   - yaw: Yaw angle in degrees (0 = forward, positive = right)
+    ///   - pitch: Pitch angle in degrees (0 = level, positive = up)
+    ///   - roll: Roll angle in degrees (0 = upright, positive = clockwise)
+    func updateListenerOrientation(yaw: Float, pitch: Float = 0, roll: Float = 0) {
+        audio.updateListenerOrientation(yaw: yaw, pitch: pitch, roll: roll)
     }
 
     /// Set the coordinate scale for spatial audio
@@ -251,5 +252,80 @@ final class SensoryManager {
     /// User-facing message about thermal state (if any)
     var thermalUserMessage: String? {
         thermal.userMessage
+    }
+
+    // MARK: - Circular Menu Interactions
+
+    /// Interaction types for circular menu
+    enum InteractionType {
+        case menuOpen
+        case menuClose
+        case sectorHighlight
+        case sectorSelect
+        case navigation
+        case generic
+    }
+
+    /// Play haptic feedback for a generic haptic type
+    /// - Parameter type: The haptic type to play
+    func playHaptic(_ type: HapticType) {
+        guard isEnabled else { return }
+        guard hapticsEnabled && thermal.shouldEnableFeature(.haptics) else { return }
+
+        haptics.playHaptic(type: type)
+    }
+
+    /// Play feedback for circular menu interactions
+    /// - Parameter interaction: The type of interaction
+    func playInteraction(_ interaction: InteractionType) {
+        guard isEnabled else { return }
+
+        switch interaction {
+        case .menuOpen:
+            // Soft whoosh feeling
+            if hapticsEnabled && thermal.shouldEnableFeature(.haptics) {
+                haptics.playHaptic(type: .wakeUp)
+            }
+            if audioEnabled {
+                audio.playSound2D(named: "menu_open", volume: 0.4)
+            }
+
+        case .menuClose:
+            // Gentle close
+            if hapticsEnabled && thermal.shouldEnableFeature(.haptics) {
+                haptics.playHaptic(type: .tap)
+            }
+            if audioEnabled {
+                audio.playSound2D(named: "menu_close", volume: 0.3)
+            }
+
+        case .sectorHighlight:
+            // Subtle tick when hovering between sectors
+            if hapticsEnabled && thermal.shouldEnableFeature(.haptics) {
+                haptics.playHaptic(type: .tap)
+            }
+            // No audio for highlight - too noisy
+
+        case .sectorSelect:
+            // Confirmation feedback
+            if hapticsEnabled && thermal.shouldEnableFeature(.haptics) {
+                haptics.playHaptic(type: .pulse)
+            }
+            if audioEnabled {
+                audio.playSound2D(named: "select", volume: 0.5)
+            }
+
+        case .navigation:
+            // Keyboard navigation between sectors
+            if hapticsEnabled && thermal.shouldEnableFeature(.haptics) {
+                haptics.playHaptic(type: .tap)
+            }
+
+        case .generic:
+            // Generic light tap
+            if hapticsEnabled && thermal.shouldEnableFeature(.haptics) {
+                haptics.playHaptic(type: .tap)
+            }
+        }
     }
 }
