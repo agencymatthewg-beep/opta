@@ -2,7 +2,8 @@
 //  CircularMenuBridge.swift
 //  OptaApp
 //
-//  Swift wrapper for Rust circular menu FFI
+//  Swift wrapper for Rust circular menu FFI.
+//  Uses branch-energy terminology aligned with the Rust layer.
 //
 
 import Foundation
@@ -21,10 +22,10 @@ struct CircularMenuConfig {
     var innerRadius: Float = 50
     /// Number of sectors in the menu
     var sectorCount: UInt32 = 4
-    /// Glow color
-    var glowColor: (r: Float, g: Float, b: Float) = (0.4, 0.6, 1.0)
-    /// Glow intensity (0.0-2.0+)
-    var glowIntensity: Float = 1.5
+    /// Branch energy color (Electric Violet default)
+    var branchEnergyColor: (r: Float, g: Float, b: Float) = (0.545, 0.361, 0.965)
+    /// Branch energy intensity (0.0-2.0+)
+    var branchEnergyIntensity: Float = 1.5
     /// Rotation offset in radians (default: top-centered)
     var rotationOffset: Float = -.pi / 2
 
@@ -36,10 +37,10 @@ struct CircularMenuConfig {
             radius: radius,
             inner_radius: innerRadius,
             sector_count: sectorCount,
-            glow_color_r: glowColor.r,
-            glow_color_g: glowColor.g,
-            glow_color_b: glowColor.b,
-            glow_intensity: glowIntensity,
+            branch_energy_r: branchEnergyColor.r,
+            branch_energy_g: branchEnergyColor.g,
+            branch_energy_b: branchEnergyColor.b,
+            branch_energy_intensity: branchEnergyIntensity,
             rotation_offset: rotationOffset
         )
     }
@@ -298,25 +299,25 @@ final class CircularMenuBridge {
 
     // MARK: - Appearance
 
-    /// Set the glow color for highlighted sectors
+    /// Set the branch energy color for highlighted sectors
     /// - Parameters:
     ///   - r: Red component (0.0-1.0)
     ///   - g: Green component (0.0-1.0)
     ///   - b: Blue component (0.0-1.0)
-    func setGlowColor(r: Float, g: Float, b: Float) {
+    func setBranchEnergyColor(r: Float, g: Float, b: Float) {
         menuLock.lock()
         defer { menuLock.unlock() }
 
         guard let menu = menu else { return }
-        _ = opta_circular_menu_set_glow_color(menu, r, g, b)
-        config.glowColor = (r, g, b)
+        _ = opta_circular_menu_set_branch_energy_color(menu, r, g, b)
+        config.branchEnergyColor = (r, g, b)
     }
 
-    /// Set the glow color from an NSColor
-    /// - Parameter color: The color to use for glow
-    func setGlowColor(_ color: NSColor) {
+    /// Set the branch energy color from an NSColor
+    /// - Parameter color: The color to use for branch energy highlights
+    func setBranchEnergyColor(_ color: NSColor) {
         guard let rgbColor = color.usingColorSpace(.sRGB) else { return }
-        setGlowColor(
+        setBranchEnergyColor(
             r: Float(rgbColor.redComponent),
             g: Float(rgbColor.greenComponent),
             b: Float(rgbColor.blueComponent)

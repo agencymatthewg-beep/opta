@@ -57,16 +57,9 @@ enum CircularMenuDestination: String, CaseIterable, Identifiable {
         }
     }
 
-    /// Accent color for the destination
+    /// Accent color for the destination — unified Electric Violet (branch-energy)
     var color: Color {
-        switch self {
-        case .dashboard: return Color(hex: "3B82F6")  // Blue
-        case .games: return Color(hex: "10B981")  // Emerald
-        case .profiles: return Color(hex: "F59E0B")  // Amber
-        case .settings: return Color(hex: "8B5CF6")  // Purple
-        case .optimize: return Color(hex: "EF4444")  // Red
-        case .aiChat: return Color(hex: "06B6D4")  // Cyan
-        }
+        Color(hex: "8B5CF6")
     }
 
     /// Convert to CircularMenuSector

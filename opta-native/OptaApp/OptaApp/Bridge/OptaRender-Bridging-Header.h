@@ -282,14 +282,14 @@ typedef struct {
     float inner_radius;
     /// Number of sectors in the menu
     uint32_t sector_count;
-    /// Glow color red component (0.0-1.0)
-    float glow_color_r;
-    /// Glow color green component (0.0-1.0)
-    float glow_color_g;
-    /// Glow color blue component (0.0-1.0)
-    float glow_color_b;
-    /// Glow intensity (0.0-2.0+)
-    float glow_intensity;
+    /// Branch energy color red component (0.0-1.0)
+    float branch_energy_r;
+    /// Branch energy color green component (0.0-1.0)
+    float branch_energy_g;
+    /// Branch energy color blue component (0.0-1.0)
+    float branch_energy_b;
+    /// Branch energy intensity (0.0-2.0+)
+    float branch_energy_intensity;
     /// Rotation offset in radians
     float rotation_offset;
 } OptaCircularMenuConfig;
@@ -403,13 +403,13 @@ OptaRenderResult opta_circular_menu_set_position(OptaCircularMenu* menu, float c
 
 // MARK: - Circular Menu Appearance
 
-/// Set the glow color for the highlighted sector
+/// Set the branch energy color for the highlighted sector
 /// @param menu The circular menu
 /// @param r Red component (0.0-1.0)
 /// @param g Green component (0.0-1.0)
 /// @param b Blue component (0.0-1.0)
 /// @return Result code
-OptaRenderResult opta_circular_menu_set_glow_color(OptaCircularMenu* menu, float r, float g, float b);
+OptaRenderResult opta_circular_menu_set_branch_energy_color(OptaCircularMenu* menu, float r, float g, float b);
 
 // MARK: - Circular Menu Hit Testing
 
