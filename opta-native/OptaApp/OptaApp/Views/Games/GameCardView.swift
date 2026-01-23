@@ -85,10 +85,9 @@ struct GameCardView: View {
         }
         .buttonStyle(.plain)
         .onHover { hovering in
-            withAnimation(.easeInOut(duration: 0.2)) {
-                isHovering = hovering
-            }
+            isHovering = hovering
         }
+        .organicHover(isHovered: isHovering, id: "card-\(game.id.uuidString)")
     }
 
     // MARK: - Components
@@ -315,10 +314,9 @@ struct CompactGameCardView: View {
         }
         .buttonStyle(.plain)
         .onHover { hovering in
-            withAnimation(.easeInOut(duration: 0.2)) {
-                isHovering = hovering
-            }
+            isHovering = hovering
         }
+        .organicHover(isHovered: isHovering, id: "compact-\(game.id.uuidString)")
     }
 }
 
