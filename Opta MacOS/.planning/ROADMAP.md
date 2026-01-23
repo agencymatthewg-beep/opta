@@ -1543,7 +1543,7 @@ Plans:
 - Panel quality tiers maintained (Low/Medium/High/Ultra)
 
 Plans:
-- [ ] 83-01: TBD (run /gsd:plan-phase 83 to break down)
+- [ ] 83-01: Obsidian Panel System (4 tasks, wave 1)
 
 #### Phase 84: Energy Branch Components
 **Goal**: Create reusable branch-energy UI components for telemetry indicators, progress bars, and status displays
