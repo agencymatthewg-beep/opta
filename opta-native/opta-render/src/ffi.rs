@@ -879,14 +879,14 @@ pub struct OptaCircularMenuConfig {
     pub inner_radius: f32,
     /// Number of sectors.
     pub sector_count: u32,
-    /// Glow color red component (0.0-1.0).
-    pub glow_color_r: f32,
-    /// Glow color green component (0.0-1.0).
-    pub glow_color_g: f32,
-    /// Glow color blue component (0.0-1.0).
-    pub glow_color_b: f32,
-    /// Glow intensity (0.0 - 2.0+).
-    pub glow_intensity: f32,
+    /// Branch energy color red component (0.0-1.0).
+    pub branch_energy_r: f32,
+    /// Branch energy color green component (0.0-1.0).
+    pub branch_energy_g: f32,
+    /// Branch energy color blue component (0.0-1.0).
+    pub branch_energy_b: f32,
+    /// Branch energy intensity (0.0 - 2.0+).
+    pub branch_energy_intensity: f32,
     /// Rotation offset in radians.
     pub rotation_offset: f32,
 }
@@ -899,10 +899,10 @@ impl Default for OptaCircularMenuConfig {
             radius: 150.0,
             inner_radius: 50.0,
             sector_count: 4,
-            glow_color_r: 0.4,
-            glow_color_g: 0.6,
-            glow_color_b: 1.0,
-            glow_intensity: 1.5,
+            branch_energy_r: 0.545,
+            branch_energy_g: 0.361,
+            branch_energy_b: 0.965,
+            branch_energy_intensity: 1.5,
             rotation_offset: -std::f32::consts::FRAC_PI_2,
         }
     }
@@ -949,12 +949,12 @@ pub unsafe extern "C" fn opta_circular_menu_create(
         radius: config_ref.radius,
         inner_radius: config_ref.inner_radius,
         sector_count: config_ref.sector_count,
-        glow_color: [
-            config_ref.glow_color_r,
-            config_ref.glow_color_g,
-            config_ref.glow_color_b,
+        branch_energy_color: [
+            config_ref.branch_energy_r,
+            config_ref.branch_energy_g,
+            config_ref.branch_energy_b,
         ],
-        glow_intensity: config_ref.glow_intensity,
+        branch_energy_intensity: config_ref.branch_energy_intensity,
         rotation_offset: config_ref.rotation_offset,
         ..CircularMenuConfig::default()
     };
@@ -1294,13 +1294,13 @@ pub unsafe extern "C" fn opta_circular_menu_get_sector_count(menu: *const OptaCi
     menu_ref.config.sector_count
 }
 
-/// Set the glow color for the highlighted sector.
+/// Set the branch energy color for the highlighted sector.
 ///
 /// # Safety
 ///
 /// `menu` must be a valid pointer from `opta_circular_menu_create`.
 #[no_mangle]
-pub unsafe extern "C" fn opta_circular_menu_set_glow_color(
+pub unsafe extern "C" fn opta_circular_menu_set_branch_energy_color(
     menu: *mut OptaCircularMenu,
     r: f32,
     g: f32,
@@ -1311,7 +1311,7 @@ pub unsafe extern "C" fn opta_circular_menu_set_glow_color(
     }
 
     let menu_ref = unsafe { &mut *menu };
-    menu_ref.config.set_glow_color(r, g, b);
+    menu_ref.config.set_branch_energy_color(r, g, b);
     OptaRenderResult::Success
 }
 
