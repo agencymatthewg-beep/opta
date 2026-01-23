@@ -1,18 +1,22 @@
 // Opta Ring shader.
 //
-// Renders the obsidian torus ring with Cook-Torrance BRDF, internal plasma,
+// Renders the obsidian torus ring with Cook-Torrance BRDF, branch energy,
 // and subsurface emission blend gated by inverse Fresnel.
 //
 // Dependencies:
 //   #include "math.wgsl"
 //   #include "noise.wgsl"
+//   #include "noise_hd.wgsl"
 //   #include "obsidian.wgsl"
 //   #include "color.wgsl"
+//   #include "branch_energy.wgsl"
 
 #include "math.wgsl"
 #include "noise.wgsl"
+#include "noise_hd.wgsl"
 #include "obsidian.wgsl"
 #include "color.wgsl"
+#include "branch_energy.wgsl"
 
 // =============================================================================
 // Uniforms
@@ -43,6 +47,14 @@ struct RingUniforms {
     base_color: vec3<f32>,
     /// Additional padding for 16-byte alignment.
     _padding: f32,
+    /// Branch revelation threshold (0-1, lower = more branches visible).
+    branch_threshold: f32,
+    /// Branch noise frequency scale.
+    branch_scale: f32,
+    /// Branch animation speed multiplier.
+    branch_speed: f32,
+    /// Number of major branches around the ring.
+    branch_count: f32,
 }
 
 @group(0) @binding(0)
@@ -95,46 +107,6 @@ fn vs_main(in: VertexInput) -> VertexOutput {
 }
 
 // =============================================================================
-// Internal Plasma Generation
-// =============================================================================
-
-/// Generate internal plasma effect based on position and time.
-fn internal_plasma(pos: vec3<f32>, uv: vec2<f32>, t: f32) -> f32 {
-    // Use UV coordinates to create flowing plasma inside the tube
-    let plasma_pos = vec2<f32>(
-        uv.x * 6.28318530718 + t * 0.5,  // Flow around the ring
-        uv.y * 6.28318530718 + t * 0.3   // Flow around the tube
-    );
-
-    // Multiple noise octaves for organic look
-    var plasma = 0.0;
-    plasma += fbm_perlin(plasma_pos * 2.0, 4, 2.0, 0.5) * 0.5;
-    plasma += simplex_noise_2d(plasma_pos * 3.0 + t * 0.2) * 0.3;
-    plasma += sin(plasma_pos.x * 4.0 + t) * sin(plasma_pos.y * 3.0 + t * 0.7) * 0.2;
-
-    // Remap to [0, 1]
-    return saturate(plasma * 0.5 + 0.5);
-}
-
-/// Generate plasma color based on intensity and energy level.
-/// Uses Electric Violet as the energy color.
-fn plasma_color(intensity: f32, energy: f32) -> vec3<f32> {
-    // Energy color: Electric Violet #8B5CF6
-    let energy_color = vec3<f32>(0.545, 0.361, 0.965);
-
-    // Dimmer variant for low energy
-    let low_color = energy_color * 0.3;
-    // Full saturation at high energy
-    let high_color = energy_color * 1.2;
-
-    // Blend based on energy level
-    let color = mix(low_color, high_color, energy);
-
-    // Apply intensity
-    return color * intensity * (0.8 + energy * 0.4);
-}
-
-// =============================================================================
 // Fragment Shader
 // =============================================================================
 
@@ -164,13 +136,20 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let fresnel = obsidian_view_fresnel(normal, view_dir, material.ior);
 
     // ==========================================================================
-    // Internal Plasma (subsurface emission)
+    // Branch Energy (subsurface emission)
     // ==========================================================================
     var emission = vec3<f32>(0.0);
     if uniforms.plasma_intensity > 0.001 {
-        let plasma_value = internal_plasma(in.world_position, in.uv, uniforms.time);
-        let plasma_col = plasma_color(plasma_value, uniforms.energy_level);
-        emission = plasma_col * uniforms.plasma_intensity * uniforms.energy_level;
+        let params = BranchParams(
+            uniforms.branch_threshold,
+            uniforms.branch_scale,
+            uniforms.branch_speed,
+            uniforms.branch_count,
+            uniforms.energy_level
+        );
+        let branch_value = branch_energy(in.uv, uniforms.time, params);
+        let branch_col = branch_color(branch_value, uniforms.energy_level);
+        emission = branch_col * uniforms.plasma_intensity;
     }
 
     // ==========================================================================
@@ -191,7 +170,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 // Alternative Entry Points
 // =============================================================================
 
-/// High-quality version with more plasma detail.
+/// High-quality version with domain-warped branch detail.
 @fragment
 fn fs_main_hq(in: VertexOutput) -> @location(0) vec4<f32> {
     let normal = normalize(in.world_normal);
@@ -215,23 +194,24 @@ fn fs_main_hq(in: VertexOutput) -> @location(0) vec4<f32> {
     // Fresnel for emission gating
     let fresnel = obsidian_view_fresnel(normal, view_dir, material.ior);
 
-    // Enhanced plasma with more octaves
+    // Enhanced branch energy with domain-warped UVs for organic feel
     var emission = vec3<f32>(0.0);
     if uniforms.plasma_intensity > 0.001 {
-        let plasma_pos = vec2<f32>(
-            in.uv.x * 6.28318530718 + uniforms.time * 0.5,
-            in.uv.y * 6.28318530718 + uniforms.time * 0.3
+        let params = BranchParams(
+            uniforms.branch_threshold,
+            uniforms.branch_scale * 1.5,
+            uniforms.branch_speed,
+            uniforms.branch_count,
+            uniforms.energy_level
         );
-
-        var plasma = 0.0;
-        plasma += fbm_perlin(plasma_pos * 2.0, 6, 2.0, 0.5) * 0.4;
-        plasma += fbm_simplex(plasma_pos * 3.0 + uniforms.time * 0.1, 4, 2.0, 0.5) * 0.3;
-        plasma += sin(plasma_pos.x * 4.0 + uniforms.time) * sin(plasma_pos.y * 3.0 + uniforms.time * 0.7) * 0.15;
-        plasma += worley_noise_2d(plasma_pos * 1.5) * 0.15;
-
-        let plasma_value = saturate(plasma * 0.5 + 0.5);
-        let plasma_col = plasma_color(plasma_value, uniforms.energy_level);
-        emission = plasma_col * uniforms.plasma_intensity * uniforms.energy_level;
+        // Warp UVs for organic feel
+        let warped_uv = in.uv + vec2<f32>(
+            simplex_noise_2d(in.uv * 3.0 + uniforms.time * 0.1) * 0.02,
+            simplex_noise_2d(in.uv * 3.0 + 5.0 + uniforms.time * 0.1) * 0.02
+        );
+        let branch_value = branch_energy(warped_uv, uniforms.time, params);
+        let branch_col = branch_color(branch_value, uniforms.energy_level);
+        emission = branch_col * uniforms.plasma_intensity;
     }
 
     // Emission blend
@@ -262,7 +242,7 @@ fn fs_main_lq(in: VertexOutput) -> @location(0) vec4<f32> {
     // Combine base with edge highlight
     var color = mix(base, highlight, fresnel * 0.6);
 
-    // Simple energy glow (no plasma computation)
+    // Simple energy glow (no branch computation)
     let energy_color = vec3<f32>(0.545, 0.361, 0.965); // Electric Violet
     color += energy_color * uniforms.energy_level * (1.0 - fresnel) * 0.3;
 
