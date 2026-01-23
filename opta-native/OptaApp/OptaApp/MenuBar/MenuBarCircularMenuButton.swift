@@ -3,6 +3,7 @@
 //  OptaApp
 //
 //  Quick access button for activating the circular menu from the menu bar.
+//  Obsidian aesthetic: 0A0A0F base, unified violet (#8B5CF6) accents.
 //
 
 import SwiftUI
@@ -23,6 +24,9 @@ struct MenuBarCircularMenuButton: View {
     /// Hover state
     @State private var isHovered: Bool = false
 
+    /// Branch energy violet
+    private let branchViolet = Color(hex: "8B5CF6")
+
     // MARK: - Body
 
     var body: some View {
@@ -34,22 +38,15 @@ struct MenuBarCircularMenuButton: View {
                 ZStack {
                     Circle()
                         .strokeBorder(
-                            LinearGradient(
-                                colors: [
-                                    Color(hex: "8B5CF6"),
-                                    Color(hex: "3B82F6")
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ),
+                            branchViolet,
                             lineWidth: 2
                         )
                         .frame(width: 24, height: 24)
 
-                    // Sector indicators
+                    // Sector indicators (all unified violet)
                     ForEach(0..<4, id: \.self) { index in
                         Circle()
-                            .fill(sectorColor(index))
+                            .fill(branchViolet.opacity(0.8))
                             .frame(width: 4, height: 4)
                             .offset(sectorOffset(index))
                     }
@@ -75,22 +72,18 @@ struct MenuBarCircularMenuButton: View {
             .padding(.vertical, 10)
             .background(
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(isHovered ? Color.white.opacity(0.1) : Color.white.opacity(0.05))
+                    .fill(
+                        isHovered
+                            ? branchViolet.opacity(0.12)
+                            : Color(hex: "0A0A0F")
+                    )
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 8)
                     .strokeBorder(
                         isHovered
-                            ? LinearGradient(
-                                colors: [Color(hex: "8B5CF6").opacity(0.5), Color(hex: "3B82F6").opacity(0.5)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                            : LinearGradient(
-                                colors: [Color.white.opacity(0.1), Color.white.opacity(0.05)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ),
+                            ? branchViolet.opacity(0.4)
+                            : Color.white.opacity(0.08),
                         lineWidth: 1
                     )
             )
@@ -104,16 +97,6 @@ struct MenuBarCircularMenuButton: View {
     }
 
     // MARK: - Helpers
-
-    private func sectorColor(_ index: Int) -> Color {
-        switch index {
-        case 0: return Color(hex: "3B82F6")  // Blue - Dashboard
-        case 1: return Color(hex: "10B981")  // Green - Games
-        case 2: return Color(hex: "F59E0B")  // Amber - Profiles
-        case 3: return Color(hex: "8B5CF6")  // Purple - Settings
-        default: return .white.opacity(0.5)
-        }
-    }
 
     private func sectorOffset(_ index: Int) -> CGSize {
         let radius: CGFloat = 7
@@ -152,18 +135,15 @@ struct MenuBarQuickNavigateRow: View {
 
     @State private var isHovered: Bool = false
 
+    /// Branch energy violet
+    private let branchViolet = Color(hex: "8B5CF6")
+
     var body: some View {
         Button(action: onTrigger) {
             HStack(spacing: 12) {
                 Image(systemName: "circle.grid.2x2.fill")
                     .font(.system(size: 16))
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [Color(hex: "8B5CF6"), Color(hex: "3B82F6")],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
+                    .foregroundStyle(branchViolet)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Quick Navigate")
@@ -188,7 +168,7 @@ struct MenuBarQuickNavigateRow: View {
                 }
                 .foregroundColor(.white.opacity(0.4))
                 .padding(.horizontal, 6)
-                .padding(.vertical: 3)
+                .padding(.vertical, 3)
                 .background(
                     RoundedRectangle(cornerRadius: 4)
                         .fill(Color.white.opacity(0.1))
@@ -197,12 +177,18 @@ struct MenuBarQuickNavigateRow: View {
             .padding(12)
             .background(
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(isHovered ? Color(hex: "8B5CF6").opacity(0.15) : Color.white.opacity(0.05))
+                    .fill(
+                        isHovered
+                            ? branchViolet.opacity(0.12)
+                            : Color(hex: "0A0A0F")
+                    )
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 8)
                     .strokeBorder(
-                        isHovered ? Color(hex: "8B5CF6").opacity(0.3) : Color.white.opacity(0.1),
+                        isHovered
+                            ? branchViolet.opacity(0.3)
+                            : Color.white.opacity(0.08),
                         lineWidth: 1
                     )
             )
@@ -227,6 +213,9 @@ struct CompactCircularMenuTrigger: View {
     @State private var isHovered: Bool = false
     @State private var isPressed: Bool = false
 
+    /// Branch energy violet
+    private let branchViolet = Color(hex: "8B5CF6")
+
     var body: some View {
         Button(action: action) {
             ZStack {
@@ -235,7 +224,7 @@ struct CompactCircularMenuTrigger: View {
                     .fill(
                         RadialGradient(
                             colors: [
-                                Color(hex: "8B5CF6").opacity(isHovered ? 0.3 : 0.1),
+                                branchViolet.opacity(isHovered ? 0.25 : 0.08),
                                 Color.clear
                             ],
                             center: .center,
@@ -248,21 +237,14 @@ struct CompactCircularMenuTrigger: View {
                 // Ring outline
                 Circle()
                     .strokeBorder(
-                        LinearGradient(
-                            colors: [
-                                Color(hex: "8B5CF6"),
-                                Color(hex: "3B82F6")
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
+                        branchViolet,
                         lineWidth: isHovered ? 2 : 1.5
                     )
                     .frame(width: 24, height: 24)
 
                 // Center dot
                 Circle()
-                    .fill(Color(hex: "8B5CF6"))
+                    .fill(branchViolet)
                     .frame(width: 4, height: 4)
             }
             .scaleEffect(isPressed ? 0.9 : 1.0)
@@ -348,7 +330,7 @@ struct MenuBarCircularMenuButton_Previews: PreviewProvider {
         }
         .padding()
         .frame(width: 280)
-        .background(Color(hex: "09090B"))
+        .background(Color(hex: "0A0A0F"))
         .preferredColorScheme(.dark)
     }
 }
