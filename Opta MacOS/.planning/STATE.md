@@ -9,10 +9,10 @@ See: .planning/PROJECT.md (updated 2026-01-15)
 
 ## Current Position
 
-Phase: 79 (Circular Menu) PLANNED
-Plan: 79-01, 79-02 ready for execution
+Phase: 79 (Circular Menu) COMPLETE
+Plan: 79-01 complete, 79-02 complete
 Status: v10.0 Visual Experience Reimplementation IN PROGRESS
-Last activity: 2026-01-23 — Planned Phase 79 (Circular Menu - wgpu component, SwiftUI integration, gestures, keyboard accessibility)
+Last activity: 2026-01-23 — Completed Plan 79-02 (SwiftUI Circular Menu Integration - gestures, keyboard, navigation, menu bar, haptics)
 
 Progress: ██████████ 100% of v5.0 (17 phases complete)
 v5.1 Progress: ██████████ 100% (7 of 7 phases complete)
@@ -21,7 +21,7 @@ v7.0 Progress: ██████████ 100% (8 of 8 phases complete)
 v8.0 Progress: ██████████ 100% (10 of 10 phases complete) ✅
 v9.0 Progress: ██████████ 100% (6 of 6 phases complete) ✅
 v9.1 Progress: ██████████ 100% (1 of 1 phases complete) ✅
-v10.0 Progress: ██████░░░░ 60% (3 of 5 phases complete)
+v10.0 Progress: ████████░░ 80% (4 of 5 phases complete)
 
 ### Phase 69 Plans (COMPLETE)
 | Plan | Status | Description |
@@ -66,14 +66,14 @@ v10.0 Progress: ██████░░░░ 60% (3 of 5 phases complete)
 | 76 | Opta Text Reimplementation | ✅ Complete |
 | 77 | HD Ring Enhancement | ✅ Complete |
 | 78 | HD Visual System | ✅ Complete |
-| 79 | Circular Menu | 📋 Ready (2 plans) |
+| 79 | Circular Menu | ✅ Complete |
 | 80 | Visual Integration & Launch | 📋 Planned |
 
-### Phase 79 Plans (READY)
+### Phase 79 Plans (COMPLETE)
 | Plan | Wave | Status | Description |
 |------|------|--------|-------------|
-| 79-01 | 1 | 📋 Ready | Circular Menu wgpu Component (shader, Rust component, geometry, spring animations, FFI) |
-| 79-02 | 2 | 📋 Ready | SwiftUI Circular Menu Integration (gestures, keyboard, navigation, menu bar, haptics) |
+| 79-01 | 1 | ✅ Complete | Circular Menu wgpu Component (shader, Rust component, geometry, spring animations, FFI) |
+| 79-02 | 2 | ✅ Complete | SwiftUI Circular Menu Integration (gestures, keyboard, navigation, menu bar, haptics) |
 
 ### Phase 78 Plans (COMPLETE)
 | Plan | Status | Description |
@@ -584,6 +584,20 @@ v10.0 Progress: ██████░░░░ 60% (3 of 5 phases complete)
 | 78-01 | Kawase blur for panel backdrop | Efficient 16-sample bokeh pattern, matches ring blur approach |
 | 78-01 | HDPanelUniforms 176-byte struct | 11 x 16-byte aligned groups for GPU buffer compatibility |
 | 78-01 | Quality gating for expensive features | dispersion_enabled(), cook_torrance_enabled() only at Ultra |
+| 79-01 | CircularMenuUniforms 96-byte struct | 6 x 16-byte aligned groups for GPU buffer compatibility |
+| 79-01 | SDF-based sector rendering | Shader-based anti-aliasing for smooth edges at any resolution |
+| 79-01 | Fullscreen quad for menu | Single draw call with fragment shader SDF, avoids complex geometry |
+| 79-01 | AnimatedCircularMenu wrapper | Decouples animation state from rendering for flexibility |
+| 79-01 | SpringConfig::RESPONSIVE for open/close | Quick response with minimal overshoot for menu animation |
+| 79-01 | SpringConfig::STIFF for highlight | Very quick transitions for sector highlight changes |
+| 79-01 | point_to_sector with open_progress scaling | Hit testing accounts for animated radius during open/close |
+| 79-01 | sector_center_position for icon placement | Calculates exact position for SF Symbols within sectors |
+| 79-02 | CVDisplayLink over Timer | 120Hz native animation sync for ProMotion displays |
+| 79-02 | NSTrackingArea for mouse | Precise mouse event handling in SwiftUI overlay |
+| 79-02 | ReducedMotionMenuView linear fallback | Accessibility compliance for motion-sensitive users |
+| 79-02 | Notification.Name for global toggle | Decouples menu bar from main app, enables global shortcut |
+| 79-02 | SensoryManager extension pattern | Keeps circular menu feedback with core sensory system |
+| 79-02 | Predefined Interaction static vars | Clean API: `.sectorHighlight` instead of constructor |
 
 ### Deferred Issues
 
@@ -613,9 +627,9 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-23
-Stopped at: Phase 79 planning complete
+Stopped at: Phase 79 complete (both plans)
 Resume file: None
-Next action: Run /gsd:execute-phase 79 to build Circular Menu
+Next action: Run /gsd:plan-phase 80 to plan Visual Integration & Launch
 
 **v9.0 Stats (COMPLETE):**
 - Phase 69 complete (2 plans) - UniFFI bindings, OptaCoreManager
