@@ -9,10 +9,10 @@ See: .planning/PROJECT.md (updated 2026-01-15)
 
 ## Current Position
 
-Phase: 84 of 90 (Energy Branch Components)
-Plan: 84-01 COMPLETE
-Status: v11.0 Phase 84 plan 01 complete
-Last activity: 2026-01-23 — Phase 84 plan 01 executed (branch energy GPU components)
+Phase: 85 of 90 (Dashboard Obsidian Refresh)
+Plan: 85-01 COMPLETE
+Status: v11.0 Phase 85 plan 01 complete
+Last activity: 2026-01-23 — Phase 85 plan 01 executed (FFI exports for GlassPanel + Branch components)
 
 Progress: ██████████ 100% of v5.0 (17 phases complete)
 v5.1 Progress: ██████████ 100% (7 of 7 phases complete)
@@ -22,7 +22,7 @@ v8.0 Progress: ██████████ 100% (10 of 10 phases complete) �
 v9.0 Progress: ██████████ 100% (6 of 6 phases complete) ✅
 v9.1 Progress: ██████████ 100% (1 of 1 phases complete) ✅
 v10.0 Progress: ████████░░ 80% (4 of 5 phases complete)
-v11.0 Progress: ████░░░░░░ 40% (4 of 10 phases complete)
+v11.0 Progress: █████░░░░░ 50% (5 of 10 phases complete)
 
 ### Phase 69 Plans (COMPLETE)
 | Plan | Status | Description |
@@ -68,12 +68,19 @@ v11.0 Progress: ████░░░░░░ 40% (4 of 10 phases complete)
 | 82 | Branch Energy System | ✅ Complete |
 | 83 | Obsidian Panel System | ✅ Complete |
 | 84 | Energy Branch Components | ✅ Complete |
-| 85 | Dashboard Obsidian Refresh | 📋 Planned |
+| 85 | Dashboard Obsidian Refresh | 🔄 In Progress |
 | 86 | Settings Obsidian UI | 📋 Planned |
 | 87 | Games Library Obsidian | 📋 Planned |
 | 88 | Menu Bar Obsidian | 📋 Planned |
 | 89 | Transitions & Motion | 📋 Planned |
 | 90 | Visual Polish & Launch | 📋 Planned |
+
+### Phase 85 Plans (In Progress)
+| Plan | Status | Description |
+|------|--------|-------------|
+| 85-01 | ✅ Complete | FFI Panel Exports (GlassPanel 9 functions, BranchMeter 6, BranchIndicator 5, BranchBorder 5) |
+| 85-02 | 📋 Planned | Swift Panel Wrappers |
+| 85-03 | 📋 Planned | Dashboard Integration |
 
 ### Phase 84 Plans (COMPLETE)
 | Plan | Status | Description |
@@ -650,6 +657,10 @@ v11.0 Progress: ████░░░░░░ 40% (4 of 10 phases complete)
 | 84-01 | Tri-axis in all branch components | Reach, width, brightness scale with energy uniformly |
 | 84-01 | energy=0 freezes animation | Reduced motion accessibility path in all 3 components |
 | 84-01 | Secondary harmonic at High+ quality | Half-density layer at 60% speed for BranchBorder depth |
+| 85-01 | pub(crate) surface field visibility | Cross-module FFI access without public API exposure |
+| 85-01 | let...else for null-pointer guards | Clippy-compliant idiomatic Rust pattern for FFI safety checks |
+| 85-01 | Module-level cast_precision_loss allow | u32->f32 resolution casts are intentional, suppress per-module |
+| 85-01 | Flattened config struct fields | position_x/y instead of arrays for simpler C ABI compatibility |
 
 ### Deferred Issues
 
@@ -680,9 +691,9 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-23
-Stopped at: Phase 85 planned (3 plans, 2 waves)
+Stopped at: Phase 85 plan 01 complete (FFI exports for panels + branch components)
 Resume file: None
-Next action: Execute Phase 85 (Dashboard Obsidian Refresh) — /gsd:execute-phase 85
+Next action: Execute Phase 85 plans 02-03 (Swift wrappers + Dashboard integration)
 
 **v9.0 Stats (COMPLETE):**
 - Phase 69 complete (2 plans) - UniFFI bindings, OptaCoreManager
