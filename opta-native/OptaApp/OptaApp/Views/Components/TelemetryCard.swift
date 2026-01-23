@@ -53,13 +53,13 @@ struct TelemetryCard: View {
     /// Whether to reduce motion for accessibility
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    /// Color temperature state from environment
+    @Environment(\.colorTemperature) private var colorTemp
+
     /// Animation state for the value
     @State private var animatedValue: Float = 0
 
     // MARK: - Constants
-
-    /// Branch-energy violet accent color
-    private static let branchViolet = Color(hex: "8B5CF6")
 
     /// Obsidian background base color
     private static let obsidianBase = Color(hex: "0A0A0F")
@@ -113,7 +113,7 @@ struct TelemetryCard: View {
                 .frame(height: 32)
 
             // Mini sparkline (compact, below meter)
-            SparklineView(data: history, color: Self.branchViolet)
+            SparklineView(data: history, color: colorTemp.violetColor)
                 .frame(height: 20)
         }
         .padding(16)
@@ -122,11 +122,11 @@ struct TelemetryCard: View {
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .stroke(
-                    Self.branchViolet.opacity(borderGlowOpacity),
+                    colorTemp.tintColor.opacity(borderGlowOpacity),
                     lineWidth: 1.5
                 )
         )
-        .shadow(color: Self.branchViolet.opacity(Double(energyLevel) * 0.15), radius: 12, x: 0, y: 4)
+        .shadow(color: colorTemp.tintColor.opacity(Double(energyLevel) * colorTemp.glowOpacity * 0.25), radius: 12, x: 0, y: 4)
         .organicPulse(id: title, intensity: .subtle)
         .onChange(of: value) { _, newValue in
             if reduceMotion {
@@ -149,7 +149,7 @@ struct TelemetryCard: View {
         HStack(spacing: 8) {
             Image(systemName: icon)
                 .font(.system(size: 16, weight: .medium))
-                .foregroundStyle(Self.branchViolet.opacity(Double(0.6 + energyLevel * 0.4)))
+                .foregroundStyle(colorTemp.violetColor.opacity(Double(0.6 + energyLevel * 0.4)))
 
             Text(title)
                 .font(.system(size: 14, weight: .semibold))
@@ -186,7 +186,7 @@ struct TelemetryCard: View {
             // Subtle depth gradient from top-left to bottom-right
             LinearGradient(
                 colors: [
-                    Self.branchViolet.opacity(Double(energyLevel) * 0.04),
+                    colorTemp.tintColor.opacity(Double(energyLevel) * colorTemp.ambientBrightness),
                     Color.clear
                 ],
                 startPoint: .topLeading,
@@ -201,7 +201,7 @@ struct TelemetryCard: View {
             // Outer glow ring
             Circle()
                 .stroke(
-                    Self.branchViolet.opacity(Double(indicatorEnergy) * 0.6),
+                    colorTemp.violetColor.opacity(Double(indicatorEnergy) * 0.6),
                     lineWidth: 1.5
                 )
                 .frame(width: 12, height: 12)
@@ -229,8 +229,8 @@ struct TelemetryCard: View {
                     .fill(
                         LinearGradient(
                             colors: [
-                                Self.branchViolet.opacity(0.7),
-                                Self.branchViolet.opacity(Double(energyLevel) * 0.9 + 0.1)
+                                colorTemp.violetColor.opacity(0.7),
+                                colorTemp.violetColor.opacity(Double(energyLevel) * 0.9 + 0.1)
                             ],
                             startPoint: .leading,
                             endPoint: .trailing
