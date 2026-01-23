@@ -56,6 +56,13 @@
 		5501B0522C5D000100000131 /* CharacterAnimator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B0512C5D000100000131 /* CharacterAnimator.swift */; };
 		5501B0542C5D000100000132 /* OptaTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B0532C5D000100000132 /* OptaTextView.swift */; };
 		5501B0562C5D000100000133 /* OptaTextZone.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B0552C5D000100000133 /* OptaTextZone.swift */; };
+		/* Phase 85 additions - Dashboard Obsidian Refresh */
+		5501B0582C5D000100000134 /* SparklineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B0572C5D000100000134 /* SparklineView.swift */; };
+		5501B05A2C5D000100000135 /* PanelBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B0592C5D000100000135 /* PanelBridge.swift */; };
+		5501B05C2C5D000100000136 /* Color+Hex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B05B2C5D000100000136 /* Color+Hex.swift */; };
+		/* Phase 88 additions - Organic Motion System */
+		5501B05E2C5D000100000138 /* OrganicMotion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B05D2C5D000100000138 /* OrganicMotion.swift */; };
+		5501B0602C5D000100000139 /* OrganicMotionModifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B05F2C5D000100000139 /* OrganicMotionModifiers.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -114,6 +121,13 @@
 		5501B0512C5D000100000131 /* CharacterAnimator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CharacterAnimator.swift; sourceTree = "<group>"; };
 		5501B0532C5D000100000132 /* OptaTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptaTextView.swift; sourceTree = "<group>"; };
 		5501B0552C5D000100000133 /* OptaTextZone.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptaTextZone.swift; sourceTree = "<group>"; };
+		/* Phase 85 additions - Dashboard Obsidian Refresh */
+		5501B0572C5D000100000134 /* SparklineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SparklineView.swift; sourceTree = "<group>"; };
+		5501B0592C5D000100000135 /* PanelBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PanelBridge.swift; sourceTree = "<group>"; };
+		5501B05B2C5D000100000136 /* Color+Hex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Hex.swift"; sourceTree = "<group>"; };
+		/* Phase 88 additions - Organic Motion System */
+		5501B05D2C5D000100000138 /* OrganicMotion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrganicMotion.swift; sourceTree = "<group>"; };
+		5501B05F2C5D000100000139 /* OrganicMotionModifiers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrganicMotionModifiers.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -159,6 +173,7 @@
 				5501A10B2C5D0001000000A5 /* Libraries */,
 				5501B0482C5D000100000128 /* Design */,
 				5501B0492C5D000100000129 /* Animation */,
+				5501B05D2C5D000100000137 /* Extensions */,
 			);
 			path = OptaApp;
 			sourceTree = "<group>";
@@ -177,6 +192,7 @@
 				5501A0042C5D000100000003 /* RustBridge.swift */,
 				5501B0002C5D000100000101 /* EffectExecutor.swift */,
 				5501A01A2C5D00010000000E /* OptaRender-Bridging-Header.h */,
+				5501B0592C5D000100000135 /* PanelBridge.swift */,
 			);
 			path = Bridge;
 			sourceTree = "<group>";
@@ -233,6 +249,7 @@
 				5501B0122C5D00010000010A /* TelemetryCard.swift */,
 				5501B0532C5D000100000132 /* OptaTextView.swift */,
 				5501B0552C5D000100000133 /* OptaTextZone.swift */,
+				5501B0572C5D000100000134 /* SparklineView.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -343,8 +360,18 @@
 			isa = PBXGroup;
 			children = (
 				5501B0512C5D000100000131 /* CharacterAnimator.swift */,
+				5501B05D2C5D000100000138 /* OrganicMotion.swift */,
+				5501B05F2C5D000100000139 /* OrganicMotionModifiers.swift */,
 			);
 			path = Animation;
+			sourceTree = "<group>";
+		};
+		5501B05D2C5D000100000137 /* Extensions */ = {
+			isa = PBXGroup;
+			children = (
+				5501B05B2C5D000100000136 /* Color+Hex.swift */,
+			);
+			path = Extensions;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -459,6 +486,11 @@
 				5501B0522C5D000100000131 /* CharacterAnimator.swift in Sources */,
 				5501B0542C5D000100000132 /* OptaTextView.swift in Sources */,
 				5501B0562C5D000100000133 /* OptaTextZone.swift in Sources */,
+				5501B0582C5D000100000134 /* SparklineView.swift in Sources */,
+				5501B05A2C5D000100000135 /* PanelBridge.swift in Sources */,
+				5501B05C2C5D000100000136 /* Color+Hex.swift in Sources */,
+				5501B05E2C5D000100000138 /* OrganicMotion.swift in Sources */,
+				5501B0602C5D000100000139 /* OrganicMotionModifiers.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
