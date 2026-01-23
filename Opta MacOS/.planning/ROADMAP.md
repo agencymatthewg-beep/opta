@@ -1576,7 +1576,7 @@ Plans:
 
 Plans:
 - [x] 85-01: Panel & Branch FFI Exports (3 tasks, wave 1)
-- [ ] 85-02: Swift Bridge + TelemetryCard Obsidian (3 tasks, wave 2)
+- [x] 85-02: Swift Bridge + TelemetryCard Obsidian (3 tasks, wave 2)
 - [x] 85-03: QuickActions + Dashboard Layout Obsidian (2 tasks, wave 2)
 
 #### Phase 86: Navigation Energy Language
@@ -1593,7 +1593,8 @@ Plans:
 - Keyboard focus indicators using branch glow
 
 Plans:
-- [ ] 86-01: TBD (run /gsd:plan-phase 86 to break down)
+- [ ] 86-01: Obsidian Menu Shader & Branch Highlight (3 tasks, wave 1)
+- [ ] 86-02: Swift Navigation Obsidian Refresh (3 tasks, wave 2)
 
 #### Phase 87: Settings & Library Alignment
 **Goal**: Redesign settings and games library views for obsidian aesthetic consistency
@@ -1760,7 +1761,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 �
 | 82. Branch Energy Shader | v11.0 | 1/1 | ✅ Complete | 2026-01-23 |
 | 83. Obsidian Panel System | v11.0 | 1/1 | ✅ Complete | 2026-01-23 |
 | 84. Energy Branch Components | v11.0 | 1/1 | ✅ Complete | 2026-01-23 |
-| 85. Dashboard Obsidian Refresh | v11.0 | 2/3 | In progress | - |
+| 85. Dashboard Obsidian Refresh | v11.0 | 3/3 | ✅ Complete | 2026-01-23 |
 | 86. Navigation Energy Language | v11.0 | 0/? | Not started | - |
 | 87. Settings & Library Alignment | v11.0 | 0/? | Not started | - |
 | 88. Organic Motion System | v11.0 | 0/? | Not started | - |
