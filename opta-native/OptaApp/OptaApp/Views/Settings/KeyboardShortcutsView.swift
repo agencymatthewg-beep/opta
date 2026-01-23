@@ -265,7 +265,7 @@ struct KeyboardShortcutsView: View {
 
             Spacer()
 
-            // Shortcut badge
+            // Shortcut badge (obsidian capsule with violet border)
             Button {
                 editingAction = action
             } label: {
@@ -273,7 +273,11 @@ struct KeyboardShortcutsView: View {
                     .font(.system(.body, design: .monospaced))
                     .padding(.horizontal, 10)
                     .padding(.vertical, 6)
-                    .background(.ultraThinMaterial)
+                    .background(Color(hex: "0A0A0F"))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6)
+                            .stroke(Color(hex: "8B5CF6").opacity(0.2), lineWidth: 1)
+                    )
                     .cornerRadius(6)
             }
             .buttonStyle(.plain)
@@ -338,7 +342,7 @@ struct ShortcutRecorderSheet: View {
             VStack(spacing: 8) {
                 Image(systemName: "keyboard")
                     .font(.system(size: 32))
-                    .foregroundColor(Color(hex: "#8B5CF6"))
+                    .foregroundColor(Color(hex: "8B5CF6"))
 
                 Text("Set Shortcut for \"\(action.name)\"")
                     .font(.headline)
@@ -348,10 +352,10 @@ struct ShortcutRecorderSheet: View {
                     .foregroundColor(.secondary)
             }
 
-            // Recording area
+            // Recording area (obsidian surface)
             ZStack {
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(.ultraThinMaterial)
+                    .fill(Color(hex: "0A0A0F"))
                     .frame(height: 80)
 
                 if recordedKey.isEmpty {
@@ -361,12 +365,12 @@ struct ShortcutRecorderSheet: View {
                 } else {
                     Text(displayString)
                         .font(.system(size: 28, weight: .medium, design: .monospaced))
-                        .foregroundColor(Color(hex: "#8B5CF6"))
+                        .foregroundColor(Color(hex: "8B5CF6"))
                 }
             }
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .stroke(isRecording ? Color(hex: "#8B5CF6") : Color.clear, lineWidth: 2)
+                    .stroke(isRecording ? Color(hex: "8B5CF6") : Color.clear, lineWidth: 2)
             )
             .onAppear {
                 isRecording = true
@@ -379,7 +383,7 @@ struct ShortcutRecorderSheet: View {
                         HStack(spacing: 4) {
                             Text(modifier.symbol)
                                 .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(recordedModifiers.contains(modifier) ? Color(hex: "#8B5CF6") : .secondary)
+                                .foregroundColor(recordedModifiers.contains(modifier) ? Color(hex: "8B5CF6") : .secondary)
                             Text(modifier.rawValue.capitalized)
                                 .font(.caption)
                                 .foregroundColor(recordedModifiers.contains(modifier) ? .primary : .secondary)
@@ -415,7 +419,7 @@ struct ShortcutRecorderSheet: View {
                     }
                 }
                 .buttonStyle(.borderedProminent)
-                .tint(Color(hex: "#8B5CF6"))
+                .tint(Color(hex: "8B5CF6"))
                 .disabled(recordedKey.isEmpty && recordedModifiers.isEmpty)
             }
         }
