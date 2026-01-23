@@ -24,8 +24,8 @@ struct MenuBarCircularMenuButton: View {
     /// Hover state
     @State private var isHovered: Bool = false
 
-    /// Branch energy violet
-    private let branchViolet = Color(hex: "8B5CF6")
+    /// Color temperature from environment
+    @Environment(\.colorTemperature) private var colorTemp
 
     // MARK: - Body
 
@@ -38,15 +38,16 @@ struct MenuBarCircularMenuButton: View {
                 ZStack {
                     Circle()
                         .strokeBorder(
-                            branchViolet,
+                            colorTemp.violetColor,
                             lineWidth: 2
                         )
                         .frame(width: 24, height: 24)
+                        .opacity(max(colorTemp.glowOpacity, 0.4))
 
                     // Sector indicators (all unified violet)
                     ForEach(0..<4, id: \.self) { index in
                         Circle()
-                            .fill(branchViolet.opacity(0.8))
+                            .fill(colorTemp.violetColor.opacity(max(colorTemp.glowOpacity, 0.4)))
                             .frame(width: 4, height: 4)
                             .offset(sectorOffset(index))
                     }
@@ -74,7 +75,7 @@ struct MenuBarCircularMenuButton: View {
                 RoundedRectangle(cornerRadius: 8)
                     .fill(
                         isHovered
-                            ? branchViolet.opacity(0.12)
+                            ? colorTemp.violetColor.opacity(0.12)
                             : Color(hex: "0A0A0F")
                     )
             )
@@ -82,7 +83,7 @@ struct MenuBarCircularMenuButton: View {
                 RoundedRectangle(cornerRadius: 8)
                     .strokeBorder(
                         isHovered
-                            ? branchViolet.opacity(0.4)
+                            ? colorTemp.violetColor.opacity(max(colorTemp.glowOpacity, 0.4))
                             : Color.white.opacity(0.08),
                         lineWidth: 1
                     )
@@ -135,15 +136,16 @@ struct MenuBarQuickNavigateRow: View {
 
     @State private var isHovered: Bool = false
 
-    /// Branch energy violet
-    private let branchViolet = Color(hex: "8B5CF6")
+    /// Color temperature from environment
+    @Environment(\.colorTemperature) private var colorTemp
 
     var body: some View {
         Button(action: onTrigger) {
             HStack(spacing: 12) {
                 Image(systemName: "circle.grid.2x2.fill")
                     .font(.system(size: 16))
-                    .foregroundStyle(branchViolet)
+                    .foregroundStyle(colorTemp.violetColor)
+                    .opacity(max(colorTemp.glowOpacity, 0.4))
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Quick Navigate")
@@ -179,7 +181,7 @@ struct MenuBarQuickNavigateRow: View {
                 RoundedRectangle(cornerRadius: 8)
                     .fill(
                         isHovered
-                            ? branchViolet.opacity(0.12)
+                            ? colorTemp.violetColor.opacity(0.12)
                             : Color(hex: "0A0A0F")
                     )
             )
@@ -187,7 +189,7 @@ struct MenuBarQuickNavigateRow: View {
                 RoundedRectangle(cornerRadius: 8)
                     .strokeBorder(
                         isHovered
-                            ? branchViolet.opacity(0.3)
+                            ? colorTemp.violetColor.opacity(max(colorTemp.glowOpacity, 0.4))
                             : Color.white.opacity(0.08),
                         lineWidth: 1
                     )
@@ -213,8 +215,8 @@ struct CompactCircularMenuTrigger: View {
     @State private var isHovered: Bool = false
     @State private var isPressed: Bool = false
 
-    /// Branch energy violet
-    private let branchViolet = Color(hex: "8B5CF6")
+    /// Color temperature from environment
+    @Environment(\.colorTemperature) private var colorTemp
 
     var body: some View {
         Button(action: action) {
@@ -224,7 +226,7 @@ struct CompactCircularMenuTrigger: View {
                     .fill(
                         RadialGradient(
                             colors: [
-                                branchViolet.opacity(isHovered ? 0.25 : 0.08),
+                                colorTemp.violetColor.opacity(isHovered ? 0.25 : max(colorTemp.glowOpacity * 0.15, 0.04)),
                                 Color.clear
                             ],
                             center: .center,
@@ -237,15 +239,17 @@ struct CompactCircularMenuTrigger: View {
                 // Ring outline
                 Circle()
                     .strokeBorder(
-                        branchViolet,
+                        colorTemp.violetColor,
                         lineWidth: isHovered ? 2 : 1.5
                     )
                     .frame(width: 24, height: 24)
+                    .opacity(max(colorTemp.glowOpacity, 0.4))
 
                 // Center dot
                 Circle()
-                    .fill(branchViolet)
+                    .fill(colorTemp.violetColor)
                     .frame(width: 4, height: 4)
+                    .opacity(max(colorTemp.glowOpacity, 0.4))
             }
             .scaleEffect(isPressed ? 0.9 : 1.0)
         }
