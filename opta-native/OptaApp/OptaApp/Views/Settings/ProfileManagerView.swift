@@ -23,6 +23,7 @@ struct ProfileManagerView: View {
     // MARK: - Environment
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorTemperature) private var colorTemp
 
     // MARK: - State
 
@@ -128,7 +129,7 @@ struct ProfileManagerView: View {
                 Label("Create Profile", systemImage: "plus")
             }
             .buttonStyle(.borderedProminent)
-            .tint(Color(hex: "8B5CF6"))
+            .tint(colorTemp.tintColor)
             .padding(.top, 8)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -262,6 +263,8 @@ struct ProfileManagerView: View {
 /// A single profile row in the list.
 struct ProfileRowView: View {
 
+    @Environment(\.colorTemperature) private var colorTemp
+
     let profile: OptimizationProfile
     let onApply: () -> Void
     let onExport: () -> Void
@@ -274,13 +277,13 @@ struct ProfileRowView: View {
                     .fill(Color(hex: "0A0A0F"))
                     .overlay(
                         RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color(hex: "8B5CF6").opacity(0.1), lineWidth: 1)
+                            .stroke(colorTemp.tintColor.opacity(colorTemp.glowOpacity * 0.25), lineWidth: 1)
                     )
                     .frame(width: 40, height: 40)
 
                 Image(systemName: "slider.horizontal.3")
                     .font(.system(size: 18))
-                    .foregroundColor(Color(hex: "8B5CF6"))
+                    .foregroundColor(colorTemp.violetColor)
             }
 
             // Profile info
@@ -321,7 +324,7 @@ struct ProfileRowView: View {
                     .font(.subheadline.weight(.medium))
             }
             .buttonStyle(.borderedProminent)
-            .tint(Color(hex: "8B5CF6"))
+            .tint(colorTemp.tintColor)
 
             Menu {
                 Button {
@@ -341,12 +344,12 @@ struct ProfileRowView: View {
 
     private var qualityBadgeBackground: Color {
         switch profile.qualityLevel {
-        case 0: return Color(hex: "8B5CF6").opacity(0.2)
-        case 1: return Color(hex: "8B5CF6").opacity(0.3)
-        case 2: return Color(hex: "8B5CF6").opacity(0.5)
-        case 3: return Color(hex: "8B5CF6").opacity(0.7)
-        case 4: return Color(hex: "8B5CF6")
-        default: return Color(hex: "8B5CF6").opacity(0.2)
+        case 0: return colorTemp.violetColor.opacity(0.2)
+        case 1: return colorTemp.violetColor.opacity(0.3)
+        case 2: return colorTemp.violetColor.opacity(0.5)
+        case 3: return colorTemp.violetColor.opacity(0.7)
+        case 4: return colorTemp.violetColor
+        default: return colorTemp.violetColor.opacity(0.2)
         }
     }
 
@@ -362,7 +365,7 @@ struct ProfileRowView: View {
     }
 
     private var qualityBadgeTextColor: Color {
-        profile.qualityLevel == 4 ? .white : Color(hex: "8B5CF6")
+        profile.qualityLevel == 4 ? .white : colorTemp.violetColor
     }
 }
 

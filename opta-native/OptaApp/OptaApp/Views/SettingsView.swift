@@ -246,6 +246,8 @@ struct SettingsView: View {
 
 /// A consistent row style for settings navigation links.
 struct SettingsRowView: View {
+    @Environment(\.colorTemperature) private var colorTemp
+
     let icon: String
     let title: String
     let subtitle: String
@@ -257,13 +259,13 @@ struct SettingsRowView: View {
                     .fill(Color(hex: "0A0A0F"))
                     .overlay(
                         RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color(hex: "8B5CF6").opacity(0.15), lineWidth: 1)
+                            .stroke(colorTemp.tintColor.opacity(colorTemp.glowOpacity * 0.3), lineWidth: 1)
                     )
                     .frame(width: 36, height: 36)
 
                 Image(systemName: icon)
                     .font(.system(size: 16))
-                    .foregroundColor(Color(hex: "8B5CF6"))
+                    .foregroundColor(colorTemp.violetColor)
             }
 
             VStack(alignment: .leading, spacing: 2) {
