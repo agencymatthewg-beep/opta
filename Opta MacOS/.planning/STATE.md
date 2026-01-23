@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-01-15)
 ## Current Position
 
 Phase: 81 of 90 (Obsidian Ring Material)
-Plan: Not started
-Status: v11.0 Refined Obsidian Aesthetic READY TO PLAN
-Last activity: 2026-01-23 — Milestone v11.0 created (10 phases, 81-90)
+Plan: 81-01 COMPLETE
+Status: v11.0 Phase 81 complete, Phase 82 next
+Last activity: 2026-01-23 — Phase 81 plan 01 executed (obsidian material replaces glass)
 
 Progress: ██████████ 100% of v5.0 (17 phases complete)
 v5.1 Progress: ██████████ 100% (7 of 7 phases complete)
@@ -22,7 +22,7 @@ v8.0 Progress: ██████████ 100% (10 of 10 phases complete) �
 v9.0 Progress: ██████████ 100% (6 of 6 phases complete) ✅
 v9.1 Progress: ██████████ 100% (1 of 1 phases complete) ✅
 v10.0 Progress: ████████░░ 80% (4 of 5 phases complete)
-v11.0 Progress: ░░░░░░░░░░ 0% (0 of 10 phases complete)
+v11.0 Progress: █░░░░░░░░░ 10% (1 of 10 phases complete)
 
 ### Phase 69 Plans (COMPLETE)
 | Plan | Status | Description |
@@ -60,6 +60,25 @@ v11.0 Progress: ░░░░░░░░░░ 0% (0 of 10 phases complete)
 | Plan | Status | Description |
 |------|--------|-------------|
 | 75-01 | ✅ Complete | Premium Haptics & Audio (AHAP files, SpatialAudioManager, ThermalStateManager, SensoryManager) |
+
+### v11.0 Refined Obsidian Aesthetic (In Progress)
+| Phase | Name | Status |
+|-------|------|--------|
+| 81 | Obsidian Ring Material | ✅ Complete |
+| 82 | Branch Energy System | 📋 Planned |
+| 83 | Score Orb & Glow | 📋 Planned |
+| 84 | Dashboard Obsidian Panels | 📋 Planned |
+| 85 | Settings Obsidian UI | 📋 Planned |
+| 86 | Games Library Obsidian | 📋 Planned |
+| 87 | Menu Bar Obsidian | 📋 Planned |
+| 88 | Transitions & Motion | 📋 Planned |
+| 89 | Accessibility & Contrast | 📋 Planned |
+| 90 | Visual Polish & Launch | 📋 Planned |
+
+### Phase 81 Plans (COMPLETE)
+| Plan | Status | Description |
+|------|--------|-------------|
+| 81-01 | ✅ Complete | Obsidian Ring Material (Cook-Torrance BRDF, emission blend, Electric Violet energy) |
 
 ### v10.0 Visual Experience Reimplementation (In Progress)
 | Phase | Name | Status |
@@ -599,6 +618,11 @@ v11.0 Progress: ░░░░░░░░░░ 0% (0 of 10 phases complete)
 | 79-02 | Notification.Name for global toggle | Decouples menu bar from main app, enables global shortcut |
 | 79-02 | SensoryManager extension pattern | Keeps circular menu feedback with core sensory system |
 | 79-02 | Predefined Interaction static vars | Clean API: `.sectorHighlight` instead of constructor |
+| 81-01 | Prefix BRDF functions with obsidian_ | Avoids symbol conflicts with glass_hd.wgsl still used by glass panels |
+| 81-01 | Keep blend state in pipeline | Opaque alpha=1.0 works with existing blend state; changing is breaking |
+| 81-01 | Plasma color: Electric Violet gradient | Single-hue dim-to-saturated violet more cohesive than old multi-hue |
+| 81-01 | emission_intensity = energy * plasma | Proportional to both activity level and plasma visibility |
+| 81-01 | Dual lights in HQ mode | Key + fill adds visual depth for Ultra quality rendering |
 
 ### Deferred Issues
 
@@ -629,9 +653,9 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-23
-Stopped at: Milestone v11.0 initialization
+Stopped at: Phase 81 complete (obsidian ring material)
 Resume file: None
-Next action: Run /gsd:plan-phase 81 to plan Obsidian Ring Material
+Next action: Plan Phase 82 (Branch Energy System)
 
 **v9.0 Stats (COMPLETE):**
 - Phase 69 complete (2 plans) - UniFFI bindings, OptaCoreManager
