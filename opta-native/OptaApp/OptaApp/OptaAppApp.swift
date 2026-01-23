@@ -37,6 +37,7 @@ struct OptaAppApp: App {
         // Main Window
         WindowGroup(id: "main") {
             mainContentView
+                .withColorTemperature()
                 .frame(minWidth: 800, minHeight: 600)
                 .preferredColorScheme(.dark)
                 .environment(\.optaCoreManager, coreManager)
@@ -121,7 +122,7 @@ struct OptaAppApp: App {
         .defaultSize(width: 450, height: 500)
 
         // Menu Bar Extra (macOS 13+)
-        MenuBarExtra("Opta", isInserted: $showMenuBarIcon) {
+        MenuBarExtra(isInserted: $showMenuBarIcon) {
             MenuBarPopoverView(
                 coordinator: renderCoordinator,
                 agentModeManager: agentModeManager
@@ -200,8 +201,8 @@ struct OptaAppApp: App {
             .onChange(of: coreManager.viewModel.selectedGameId) { _, newGameId in
                 // Load game from cache when navigating to game detail
                 Task {
-                    if let gameId = newGameId {
-                        selectedGame = await GameDetectionService.shared.getGame(id: gameId)
+                    if let gameId = newGameId, let uuid = UUID(uuidString: gameId) {
+                        selectedGame = await GameDetectionService.shared.getGame(id: uuid)
                     } else {
                         selectedGame = nil
                     }
@@ -230,8 +231,8 @@ struct OptaAppApp: App {
         .background(Color(hex: "09090B"))
         .task {
             // Load game from cache when showing detail view
-            if let gameId = coreManager.viewModel.selectedGameId {
-                selectedGame = await GameDetectionService.shared.getGame(id: gameId)
+            if let gameId = coreManager.viewModel.selectedGameId, let uuid = UUID(uuidString: gameId) {
+                selectedGame = await GameDetectionService.shared.getGame(id: uuid)
             }
         }
     }
