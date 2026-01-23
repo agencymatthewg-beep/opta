@@ -154,10 +154,15 @@ struct ThemeSettings: Codable, Equatable {
     }
 
     var backgroundColor: Color {
-        // OLED black (#09090B) at full darkness, lighter toward gray
-        let base = Color(hex: "#09090B")
-        let gray = Color(hex: "#1F1F23")
-        return base.opacity(backgroundDarkness) + gray.opacity(1 - backgroundDarkness)
+        // Obsidian base (0A0A0F) at full darkness, elevated with white overlay at lower values
+        let base = Color(hex: "0A0A0F")
+        let elevated = Color(hex: "0A0A0F").opacity(backgroundDarkness)
+        return base.opacity(backgroundDarkness) + elevated.opacity(1 - backgroundDarkness)
+    }
+
+    /// Elevated surface color (obsidian + white/8% overlay)
+    var elevatedSurfaceColor: Color {
+        Color(hex: "0A0A0F")
     }
 }
 
@@ -263,7 +268,7 @@ struct ThemeCustomizationView: View {
                             .foregroundColor(.secondary)
                     }
                     Slider(value: $settings.backgroundDarkness, in: 0.7...1.0)
-                        .tint(Color(hex: settings.accentColor))
+                        .tint(Color(hex: "8B5CF6"))
                         .onChange(of: settings.backgroundDarkness) { _, _ in
                             updatePresetToCustom()
                             saveSettings()
@@ -395,11 +400,15 @@ struct ThemeCustomizationView: View {
 
     private var previewSection: some View {
         VStack(spacing: 16) {
-            // Sample glass card
+            // Sample obsidian card
             HStack(spacing: 12) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 8)
-                        .fill(.ultraThinMaterial)
+                        .fill(Color(hex: "0A0A0F"))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color(hex: "8B5CF6").opacity(0.15), lineWidth: 1)
+                        )
                         .frame(width: 48, height: 48)
 
                     Image(systemName: "cpu")
@@ -410,7 +419,7 @@ struct ThemeCustomizationView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Sample Card")
                         .font(.headline)
-                    Text("With glass effect")
+                    Text("With obsidian surface")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -418,8 +427,15 @@ struct ThemeCustomizationView: View {
                 Spacer()
             }
             .padding(12)
-            .background(.ultraThinMaterial)
+            .background(
+                Color(hex: "0A0A0F")
+                    .overlay(Color(hex: "8B5CF6").opacity(0.05))
+            )
             .cornerRadius(12)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.white.opacity(0.05), lineWidth: 1)
+            )
 
             // Sample button
             HStack(spacing: 12) {
@@ -507,7 +523,6 @@ struct ThemeCustomizationView: View {
             }
             .padding(24)
             .navigationTitle("Custom Color")
-            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
@@ -569,31 +584,6 @@ struct ThemeCustomizationView: View {
 // MARK: - Color Extensions
 
 extension Color {
-    /// Create color from hex string
-    init(hex: String) {
-        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
-        var int: UInt64 = 0
-        Scanner(string: hex).scanHexInt64(&int)
-        let r, g, b: UInt64
-        switch hex.count {
-        case 3: // RGB (12-bit)
-            (r, g, b) = ((int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
-        case 6: // RGB (24-bit)
-            (r, g, b) = (int >> 16, int >> 8 & 0xFF, int & 0xFF)
-        case 8: // ARGB (32-bit)
-            (r, g, b) = (int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
-        default:
-            (r, g, b) = (139, 92, 246) // Default purple
-        }
-        self.init(
-            .sRGB,
-            red: Double(r) / 255,
-            green: Double(g) / 255,
-            blue: Double(b) / 255,
-            opacity: 1
-        )
-    }
-
     /// Convert color to hex string
     func toHex() -> String? {
         guard let components = NSColor(self).cgColor.components else { return nil }
