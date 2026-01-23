@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-01-15)
 ## Current Position
 
 Phase: 86 of 90 (Navigation Energy Language)
-Plan: 86-01 COMPLETE
-Status: v11.0 Phase 86 plan 01 complete
-Last activity: 2026-01-23 — Completed 86-01 (Obsidian menu shader + branch energy highlights)
+Plan: 86-02 COMPLETE (phase complete)
+Status: v11.0 Phase 86 complete — ready for phase 87
+Last activity: 2026-01-23 — Completed 86-02 (Swift UI obsidian + branch-energy integration)
 
 Progress: ██████████ 100% of v5.0 (17 phases complete)
 v5.1 Progress: ██████████ 100% (7 of 7 phases complete)
@@ -22,7 +22,7 @@ v8.0 Progress: ██████████ 100% (10 of 10 phases complete) �
 v9.0 Progress: ██████████ 100% (6 of 6 phases complete) ✅
 v9.1 Progress: ██████████ 100% (1 of 1 phases complete) ✅
 v10.0 Progress: ████████░░ 80% (4 of 5 phases complete)
-v11.0 Progress: ██████░░░░ 60% (6 of 10 phases complete, 86-01 in progress)
+v11.0 Progress: ███████░░░ 70% (7 of 10 phases complete)
 
 ### Phase 69 Plans (COMPLETE)
 | Plan | Status | Description |
@@ -69,17 +69,17 @@ v11.0 Progress: ██████░░░░ 60% (6 of 10 phases complete, 86-
 | 83 | Obsidian Panel System | ✅ Complete |
 | 84 | Energy Branch Components | ✅ Complete |
 | 85 | Dashboard Obsidian Refresh | ✅ Complete |
-| 86 | Navigation Energy Language | 🔨 In Progress |
+| 86 | Navigation Energy Language | ✅ Complete |
 | 87 | Games Library Obsidian | 📋 Planned |
 | 88 | Menu Bar Obsidian | 📋 Planned |
 | 89 | Transitions & Motion | 📋 Planned |
 | 90 | Visual Polish & Launch | 📋 Planned |
 
-### Phase 86 Plans (In Progress)
+### Phase 86 Plans (COMPLETE)
 | Plan | Status | Description |
 |------|--------|-------------|
 | 86-01 | ✅ Complete | Obsidian Menu Shader & Branch Highlight (obsidian material, branch energy wave, FFI update) |
-| 86-02 | 📋 Planned | Swift Circular Menu Obsidian Integration |
+| 86-02 | ✅ Complete | Swift Circular Menu Obsidian Integration (obsidian base, unified violet, bridge rename, menu bar update) |
 
 ### Phase 85 Plans (COMPLETE)
 | Plan | Status | Description |
@@ -681,6 +681,10 @@ v11.0 Progress: ██████░░░░ 60% (6 of 10 phases complete, 86-
 | 86-01 | Obsidian roughness as shader constant (0.03) | Material property, no runtime config needed; avoids wasting uniform field |
 | 86-01 | Wavefront branch energy over ridged turbulence | Cheaper per-pixel for UI menu while preserving inner-to-outer growth aesthetic |
 | 86-01 | highlight_progress drives branch wavefront | Existing spring sufficient; no separate branch_reach_spring needed |
+| 86-02 | Unified all sector colors to single Electric Violet | Cohesive brand identity over per-destination color coding |
+| 86-02 | Removed glowColor property from CircularMenuView | Color is intrinsic (branchViolet constant), simplifies API |
+| 86-02 | Distinct keyboard focus ring (violet shadow glow) | Separate from mouse highlight effect for accessibility clarity |
+| 86-02 | Branch-energy terminology in Swift bridge aligned with Rust FFI | Consistent naming across full stack (Rust + C header + Swift) |
 
 ### Deferred Issues
 
