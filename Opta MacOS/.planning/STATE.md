@@ -9,10 +9,10 @@ See: .planning/PROJECT.md (updated 2026-01-15)
 
 ## Current Position
 
-Phase: 82 of 90 (Branch Energy System)
-Plan: 82-01 COMPLETE
-Status: v11.0 Phase 82 complete, Phase 83 next
-Last activity: 2026-01-23 — Phase 82 plan 01 executed (branch energy replaces plasma)
+Phase: 84 of 90 (Energy Branch Components)
+Plan: 84-01 COMPLETE
+Status: v11.0 Phase 84 plan 01 complete
+Last activity: 2026-01-23 — Phase 84 plan 01 executed (branch energy GPU components)
 
 Progress: ██████████ 100% of v5.0 (17 phases complete)
 v5.1 Progress: ██████████ 100% (7 of 7 phases complete)
@@ -22,7 +22,7 @@ v8.0 Progress: ██████████ 100% (10 of 10 phases complete) �
 v9.0 Progress: ██████████ 100% (6 of 6 phases complete) ✅
 v9.1 Progress: ██████████ 100% (1 of 1 phases complete) ✅
 v10.0 Progress: ████████░░ 80% (4 of 5 phases complete)
-v11.0 Progress: ██░░░░░░░░ 20% (2 of 10 phases complete)
+v11.0 Progress: ████░░░░░░ 40% (4 of 10 phases complete)
 
 ### Phase 69 Plans (COMPLETE)
 | Plan | Status | Description |
@@ -66,14 +66,24 @@ v11.0 Progress: ██░░░░░░░░ 20% (2 of 10 phases complete)
 |-------|------|--------|
 | 81 | Obsidian Ring Material | ✅ Complete |
 | 82 | Branch Energy System | ✅ Complete |
-| 83 | Score Orb & Glow | 📋 Planned |
-| 84 | Dashboard Obsidian Panels | 📋 Planned |
-| 85 | Settings Obsidian UI | 📋 Planned |
-| 86 | Games Library Obsidian | 📋 Planned |
-| 87 | Menu Bar Obsidian | 📋 Planned |
-| 88 | Transitions & Motion | 📋 Planned |
-| 89 | Accessibility & Contrast | 📋 Planned |
+| 83 | Obsidian Panel System | ✅ Complete |
+| 84 | Energy Branch Components | ✅ Complete |
+| 85 | Dashboard Obsidian Refresh | 📋 Planned |
+| 86 | Settings Obsidian UI | 📋 Planned |
+| 87 | Games Library Obsidian | 📋 Planned |
+| 88 | Menu Bar Obsidian | 📋 Planned |
+| 89 | Transitions & Motion | 📋 Planned |
 | 90 | Visual Polish & Launch | 📋 Planned |
+
+### Phase 84 Plans (COMPLETE)
+| Plan | Status | Description |
+|------|--------|-------------|
+| 84-01 | ✅ Complete | Branch Energy GPU Components (BranchMeter, BranchIndicator, BranchBorder shaders + Rust components) |
+
+### Phase 83 Plans (COMPLETE)
+| Plan | Status | Description |
+|------|--------|-------------|
+| 83-01 | ✅ Complete | Obsidian Panel Shaders (Cook-Torrance, edge branches, no backdrop blur) |
 
 ### Phase 82 Plans (COMPLETE)
 | Plan | Status | Description |
@@ -635,6 +645,11 @@ v11.0 Progress: ██░░░░░░░░ 20% (2 of 10 phases complete)
 | 82-01 | Tri-axis response (reach/width/brightness) | Length, width, and brightness scale independently with energy |
 | 82-01 | Domain-warped UVs in HQ only | Organic feel in high quality without cost in standard mode |
 | 82-01 | Quality-scaled branch_count (6/8/10) | Fewer branches at low quality for performance, more at high for detail |
+| 84-01 | Self-contained shaders (no includes) | Each WGSL standalone, adapted from branch_energy/edge_branch patterns |
+| 84-01 | Alpha blend for Indicator+Border | Transparent regions require alpha; Meter uses opaque (fills rect) |
+| 84-01 | Tri-axis in all branch components | Reach, width, brightness scale with energy uniformly |
+| 84-01 | energy=0 freezes animation | Reduced motion accessibility path in all 3 components |
+| 84-01 | Secondary harmonic at High+ quality | Half-density layer at 60% speed for BranchBorder depth |
 
 ### Deferred Issues
 
@@ -665,9 +680,9 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-23
-Stopped at: Phase 82 complete (branch energy shader)
+Stopped at: Phase 84 plan 01 complete (branch energy GPU components)
 Resume file: None
-Next action: Plan Phase 83 (Score Orb & Glow)
+Next action: Plan Phase 85 (Dashboard Obsidian Refresh)
 
 **v9.0 Stats (COMPLETE):**
 - Phase 69 complete (2 plans) - UniFFI bindings, OptaCoreManager
