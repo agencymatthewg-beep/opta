@@ -3,7 +3,7 @@
 //  OptaApp
 //
 //  Main dashboard view displaying telemetry, Opta Score, and quick actions.
-//  The primary optimization interface for the app.
+//  Features obsidian depth hierarchy with branch-energy violet accents.
 //
 
 import SwiftUI
@@ -40,8 +40,14 @@ struct DashboardView: View {
     // MARK: - Constants
 
     private let horizontalPadding: CGFloat = 24
-    private let verticalSpacing: CGFloat = 20
+    private let verticalSpacing: CGFloat = 24
     private let ringSize: CGFloat = 300
+
+    /// Branch energy violet color
+    private let branchViolet = Color(hex: "8B5CF6")
+
+    /// Obsidian base color
+    private let obsidianBase = Color(hex: "0A0A0F")
 
     // MARK: - Body
 
@@ -49,25 +55,30 @@ struct DashboardView: View {
         GeometryReader { geometry in
             ScrollView(showsIndicators: false) {
                 VStack(spacing: verticalSpacing) {
-                    // Branded header: OPTA text with ring energy
+                    // Branded header: OPTA text with ring energy (full brightness - focal point)
                     optaTextSection
 
-                    // Top section: OptaRing with score overlay
+                    // Top section: OptaRing with score overlay (full brightness - focal point)
                     ringSection
 
-                    // Middle section: Telemetry cards
+                    // Middle section: Telemetry cards (content layer)
                     telemetrySection(width: geometry.size.width)
+                        .opacity(reduceMotion ? 1.0 : 0.95)
+                        .padding(.top, 8)
 
-                    // Contextual status message
+                    // Contextual status message (contextual layer)
                     textZoneSection
                         .padding(.horizontal, horizontalPadding)
+                        .opacity(reduceMotion ? 1.0 : 0.9)
+                        .padding(.bottom, 8)
 
                     // Bottom section: Quick actions
                     QuickActions(coreManager: coreManager)
                         .padding(.horizontal, horizontalPadding)
 
-                    // Additional info
+                    // Additional info (ambient layer - most recessed)
                     statusSection
+                        .opacity(reduceMotion ? 1.0 : 0.85)
                 }
                 .padding(.vertical, verticalSpacing)
             }
@@ -113,7 +124,7 @@ struct DashboardView: View {
                     .foregroundStyle(.white)
                     .contentTransition(.numericText())
 
-                // Grade badge
+                // Grade badge with obsidian background + functional color border
                 Text(coreManager.viewModel.scoreGrade)
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(gradeColor)
@@ -121,7 +132,11 @@ struct DashboardView: View {
                     .padding(.vertical, 4)
                     .background(
                         Capsule()
-                            .fill(gradeColor.opacity(0.15))
+                            .fill(obsidianBase)
+                    )
+                    .overlay(
+                        Capsule()
+                            .stroke(gradeColor.opacity(0.3), lineWidth: 1)
                     )
 
                 // Calculating indicator
@@ -197,7 +212,7 @@ struct DashboardView: View {
         .animation(.easeInOut(duration: 0.3), value: coreManager.viewModel.stealthModeActive)
     }
 
-    /// Color for grade badge based on grade letter
+    /// Color for grade badge based on grade letter (functional colors preserved)
     private var gradeColor: Color {
         switch coreManager.viewModel.scoreGrade {
         case "S":
@@ -256,7 +271,7 @@ struct DashboardView: View {
         .padding(.horizontal, horizontalPadding)
     }
 
-    /// Status information section
+    /// Status information section with obsidian background
     private var statusSection: some View {
         VStack(spacing: 8) {
             // Thermal state
@@ -264,6 +279,10 @@ struct DashboardView: View {
                 Circle()
                     .fill(thermalColor)
                     .frame(width: 8, height: 8)
+                    .shadow(
+                        color: thermalState == .nominal ? branchViolet.opacity(0.2) : .clear,
+                        radius: 3
+                    )
 
                 Text("Thermal: \(coreManager.viewModel.thermalState.rawValue)")
                     .font(.system(size: 12))
@@ -275,6 +294,10 @@ struct DashboardView: View {
                 Circle()
                     .fill(memoryPressureColor)
                     .frame(width: 8, height: 8)
+                    .shadow(
+                        color: memoryPressureState == .normal ? branchViolet.opacity(0.2) : .clear,
+                        radius: 3
+                    )
 
                 Text("Memory: \(coreManager.viewModel.memoryPressure.rawValue)")
                     .font(.system(size: 12))
@@ -317,7 +340,11 @@ struct DashboardView: View {
         .padding(.vertical, 16)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color.white.opacity(0.03))
+                .fill(obsidianBase)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(branchViolet.opacity(0.1), lineWidth: 1)
         )
         .padding(.horizontal, horizontalPadding)
     }
@@ -326,12 +353,12 @@ struct DashboardView: View {
     private var stealthModeIndicator: some View {
         HStack(spacing: 8) {
             ProgressView()
-                .progressViewStyle(CircularProgressViewStyle(tint: Color(hex: "8B5CF6")))
+                .progressViewStyle(CircularProgressViewStyle(tint: branchViolet))
                 .scaleEffect(0.6)
 
             Text("Stealth Mode Active")
                 .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(Color(hex: "8B5CF6"))
+                .foregroundStyle(branchViolet)
 
             Spacer()
         }
@@ -355,6 +382,16 @@ struct DashboardView: View {
     }
 
     // MARK: - Computed Properties
+
+    /// Current thermal state for shadow glow check
+    private var thermalState: ThermalState {
+        coreManager.viewModel.thermalState
+    }
+
+    /// Current memory pressure state for shadow glow check
+    private var memoryPressureState: MemoryPressure {
+        coreManager.viewModel.memoryPressure
+    }
 
     /// Color for thermal state indicator
     private var thermalColor: Color {
