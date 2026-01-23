@@ -70,8 +70,8 @@ extension View {
 /// ```
 struct ColorTemperatureProvider: ViewModifier {
 
-    /// Core manager providing ring state
-    @State private var coreManager = OptaCoreManager()
+    /// Core manager from environment (set by OptaAppApp)
+    @Environment(\.optaCoreManager) private var coreManager: OptaCoreManager?
 
     /// Current resolved temperature state
     @State private var currentState: ColorTemperatureState = .idle
@@ -88,16 +88,16 @@ struct ColorTemperatureProvider: ViewModifier {
             .onAppear {
                 resolveTemperature()
             }
-            .onChange(of: coreManager.viewModel.ring.phase) { _, _ in
+            .onChange(of: coreManager?.viewModel.ring.phase) { _, _ in
                 resolveTemperature()
             }
-            .onChange(of: coreManager.viewModel.ring.energy) { _, _ in
+            .onChange(of: coreManager?.viewModel.ring.energy) { _, _ in
                 resolveTemperature()
             }
-            .onChange(of: coreManager.viewModel.thermalState) { _, _ in
+            .onChange(of: coreManager?.viewModel.thermalState) { _, _ in
                 resolveTemperature()
             }
-            .onChange(of: coreManager.viewModel.memoryPressure) { _, _ in
+            .onChange(of: coreManager?.viewModel.memoryPressure) { _, _ in
                 resolveTemperature()
             }
     }
@@ -106,6 +106,8 @@ struct ColorTemperatureProvider: ViewModifier {
 
     /// Resolves the current temperature state and applies transition animation.
     private func resolveTemperature() {
+        guard let coreManager else { return }
+
         let ringPhase = coreManager.viewModel.ring.phase
         let energy = coreManager.viewModel.ring.energy
         let thermalState = mapThermalState(coreManager.viewModel.thermalState)
