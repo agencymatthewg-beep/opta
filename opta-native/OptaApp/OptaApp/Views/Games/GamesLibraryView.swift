@@ -25,6 +25,7 @@ struct GamesLibraryView: View {
     // MARK: - Environment
 
     @Environment(\.optaCoreManager) private var coreManager: OptaCoreManager?
+    @Environment(\.colorTemperature) private var colorTemp
 
     // MARK: - State
 
@@ -179,7 +180,7 @@ struct GamesLibraryView: View {
                 .padding(.vertical, 8)
                 .background(
                     Capsule()
-                        .fill(Color(hex: "8B5CF6"))
+                        .fill(colorTemp.violetColor)
                 )
             }
             .buttonStyle(.plain)
@@ -234,7 +235,7 @@ struct GamesLibraryView: View {
                     )
                     .overlay(
                         RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color(hex: "8B5CF6").opacity(0.08), lineWidth: 1)
+                            .stroke(colorTemp.tintColor.opacity(colorTemp.glowOpacity * 0.2), lineWidth: 1)
                     )
             )
 
@@ -331,7 +332,7 @@ struct GamesLibraryView: View {
                 Capsule()
                     .fill(
                         selectedPlatform == platform
-                            ? Color(hex: "8B5CF6")
+                            ? colorTemp.violetColor
                             : Color(hex: "0A0A0F")
                     )
                     .overlay(
@@ -402,7 +403,7 @@ struct GamesLibraryView: View {
 
             Image(systemName: "gamecontroller")
                 .font(.system(size: 48))
-                .foregroundStyle(Color(hex: "8B5CF6").opacity(0.3))
+                .foregroundStyle(colorTemp.violetColor.opacity(0.3))
 
             Text("No Games Found")
                 .font(.system(size: 18, weight: .semibold))
@@ -428,7 +429,7 @@ struct GamesLibraryView: View {
                 .padding(.vertical, 10)
                 .background(
                     RoundedRectangle(cornerRadius: 8)
-                        .fill(Color(hex: "8B5CF6"))
+                        .fill(colorTemp.violetColor)
                 )
             }
             .buttonStyle(.plain)
@@ -447,7 +448,7 @@ struct GamesLibraryView: View {
 
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 32))
-                .foregroundStyle(Color(hex: "8B5CF6").opacity(0.3))
+                .foregroundStyle(colorTemp.violetColor.opacity(0.3))
 
             Text("No games match your search")
                 .font(.system(size: 15, weight: .medium))
@@ -460,7 +461,7 @@ struct GamesLibraryView: View {
                 } label: {
                     Text("Clear filters")
                         .font(.system(size: 13))
-                        .foregroundStyle(Color(hex: "8B5CF6"))
+                        .foregroundStyle(colorTemp.violetColor)
                 }
                 .buttonStyle(.plain)
             }

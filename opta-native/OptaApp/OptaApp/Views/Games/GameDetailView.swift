@@ -23,6 +23,7 @@ struct GameDetailView: View {
     // MARK: - Environment
 
     @Environment(\.optaCoreManager) private var coreManager: OptaCoreManager?
+    @Environment(\.colorTemperature) private var colorTemp
 
     // MARK: - Properties
 
@@ -156,7 +157,7 @@ struct GameDetailView: View {
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color(hex: "8B5CF6").opacity(0.08), lineWidth: 1)
+                        .stroke(colorTemp.tintColor.opacity(colorTemp.glowOpacity * 0.2), lineWidth: 1)
                 )
         )
     }
@@ -178,7 +179,7 @@ struct GameDetailView: View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(spacing: 8) {
                 RoundedRectangle(cornerRadius: 1)
-                    .fill(Color(hex: "8B5CF6"))
+                    .fill(colorTemp.violetColor)
                     .frame(width: 2, height: 16)
                 Text("Optimization")
                     .font(.system(size: 16, weight: .semibold))
@@ -226,7 +227,7 @@ struct GameDetailView: View {
                         )
                         .overlay(
                             RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color(hex: "8B5CF6").opacity(0.08), lineWidth: 1)
+                                .stroke(colorTemp.tintColor.opacity(colorTemp.glowOpacity * 0.2), lineWidth: 1)
                         )
                 )
 
@@ -246,7 +247,7 @@ struct GameDetailView: View {
                         .padding(.vertical, 12)
                         .background(
                             RoundedRectangle(cornerRadius: 8)
-                                .fill(Color(hex: "8B5CF6"))
+                                .fill(colorTemp.violetColor)
                         )
                     }
                     .buttonStyle(.plain)
@@ -260,7 +261,7 @@ struct GameDetailView: View {
                             Text("Edit Profile")
                         }
                         .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(Color(hex: "8B5CF6"))
+                        .foregroundStyle(colorTemp.violetColor)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
                         .background(
@@ -268,7 +269,7 @@ struct GameDetailView: View {
                                 .fill(Color(hex: "0A0A0F"))
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 8)
-                                        .stroke(Color(hex: "8B5CF6").opacity(0.2), lineWidth: 1)
+                                        .stroke(colorTemp.tintColor.opacity(colorTemp.glowOpacity * 0.3), lineWidth: 1)
                                 )
                         )
                     }
@@ -316,7 +317,7 @@ struct GameDetailView: View {
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color(hex: "8B5CF6").opacity(0.08), lineWidth: 1)
+                        .stroke(colorTemp.tintColor.opacity(colorTemp.glowOpacity * 0.2), lineWidth: 1)
                 )
         )
     }
@@ -325,7 +326,7 @@ struct GameDetailView: View {
         HStack {
             Image(systemName: icon)
                 .font(.system(size: 11))
-                .foregroundStyle(Color(hex: "8B5CF6"))
+                .foregroundStyle(colorTemp.violetColor)
                 .frame(width: 20)
             Text(label)
                 .font(.system(size: 12))
@@ -343,7 +344,7 @@ struct GameDetailView: View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(spacing: 8) {
                 RoundedRectangle(cornerRadius: 1)
-                    .fill(Color(hex: "8B5CF6"))
+                    .fill(colorTemp.violetColor)
                     .frame(width: 2, height: 16)
                 Text("Performance History")
                     .font(.system(size: 16, weight: .semibold))
@@ -377,14 +378,14 @@ struct GameDetailView: View {
                             x: .value("Session", snapshot.timestamp, unit: .day),
                             y: .value("FPS", snapshot.avgFps)
                         )
-                        .foregroundStyle(Color(hex: "8B5CF6"))
+                        .foregroundStyle(colorTemp.violetColor)
                         .lineStyle(StrokeStyle(lineWidth: 2))
 
                         PointMark(
                             x: .value("Session", snapshot.timestamp, unit: .day),
                             y: .value("FPS", snapshot.avgFps)
                         )
-                        .foregroundStyle(Color(hex: "8B5CF6"))
+                        .foregroundStyle(colorTemp.violetColor)
                     }
                     .chartYAxis {
                         AxisMarks(position: .leading) { _ in
@@ -448,7 +449,7 @@ struct GameDetailView: View {
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color(hex: "8B5CF6").opacity(0.08), lineWidth: 1)
+                        .stroke(colorTemp.tintColor.opacity(colorTemp.glowOpacity * 0.2), lineWidth: 1)
                 )
         )
     }
@@ -486,7 +487,7 @@ struct GameDetailView: View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(spacing: 8) {
                 RoundedRectangle(cornerRadius: 1)
-                    .fill(Color(hex: "8B5CF6"))
+                    .fill(colorTemp.violetColor)
                     .frame(width: 2, height: 16)
                 Text("Quick Actions")
                     .font(.system(size: 16, weight: .semibold))
@@ -533,7 +534,7 @@ struct GameDetailView: View {
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color(hex: "8B5CF6").opacity(0.08), lineWidth: 1)
+                        .stroke(colorTemp.tintColor.opacity(colorTemp.glowOpacity * 0.2), lineWidth: 1)
                 )
         )
     }
@@ -655,6 +656,7 @@ struct GameDetailView: View {
 struct ProfileEditorSheet: View {
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorTemperature) private var colorTemp
 
     @Binding var game: Game
 
@@ -743,7 +745,7 @@ struct ProfileEditorSheet: View {
                                     .frame(width: 28, height: 28)
                                     .background(
                                         RoundedRectangle(cornerRadius: 6)
-                                            .fill(Color(hex: "8B5CF6"))
+                                            .fill(colorTemp.violetColor)
                                     )
                             }
                             .buttonStyle(.plain)
@@ -805,7 +807,7 @@ struct ProfileEditorSheet: View {
                         .padding(.vertical, 8)
                         .background(
                             RoundedRectangle(cornerRadius: 6)
-                                .fill(Color(hex: "8B5CF6"))
+                                .fill(colorTemp.violetColor)
                         )
                 }
                 .buttonStyle(.plain)
