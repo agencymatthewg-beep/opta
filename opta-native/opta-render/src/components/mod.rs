@@ -51,8 +51,8 @@ mod telemetry;
 
 pub use cpu_meter::{CpuMeter, CpuMeterConfig, CpuMeterUniforms, MeterVertex};
 pub use glass_panel::{
-    DepthHierarchy, GlassPanel, GlassPanelConfig, GlassPanelUniforms, PanelQualityLevel,
-    PanelVertex,
+    DepthHierarchy, GlassPanel, GlassPanelConfig, GlassPanelUniforms, HDPanelUniforms,
+    PanelQualityLevel, PanelVertex,
 };
 pub use memory_meter::{MemoryMeter, MemoryMeterConfig, MemoryMeterUniforms, MemoryMeterVertex};
 pub use ring::{

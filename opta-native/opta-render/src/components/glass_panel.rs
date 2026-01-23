@@ -199,6 +199,150 @@ impl DepthHierarchy {
     pub fn adjusted_blur(base_blur: f32, depth: f32, falloff: f32) -> f32 {
         base_blur * (1.0 + depth.powf(falloff) * 2.0)
     }
+
+    /// Compare depths for Z-ordering (returns ordering for sorting).
+    ///
+    /// Panels with lower depth values should render last (on top).
+    #[must_use]
+    pub fn compare_depth(a: f32, b: f32) -> std::cmp::Ordering {
+        // Higher depth (background) renders first
+        b.partial_cmp(&a).unwrap_or(std::cmp::Ordering::Equal)
+    }
+
+    /// Sort panels by depth for correct rendering order.
+    ///
+    /// Background panels render first, foreground panels render last (on top).
+    pub fn sort_by_depth<T, F>(panels: &mut [T], get_depth: F)
+    where
+        F: Fn(&T) -> f32,
+    {
+        panels.sort_by(|a, b| Self::compare_depth(get_depth(a), get_depth(b)));
+    }
+}
+
+// =============================================================================
+// HD Panel Uniforms (for glass_panel_hd.wgsl)
+// =============================================================================
+
+/// Uniform buffer data for the HD glass panel shader.
+///
+/// Matches the `HDPanelUniforms` struct in `glass_panel_hd.wgsl`.
+/// Total size: 192 bytes (aligned to 16 bytes).
+#[repr(C)]
+#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct HDPanelUniforms {
+    // Base panel properties (16 bytes)
+    /// Panel position in pixels.
+    pub position: [f32; 2],
+    /// Panel size in pixels.
+    pub size: [f32; 2],
+
+    // More base properties (16 bytes)
+    /// Corner radius in pixels.
+    pub corner_radius: f32,
+    /// Panel opacity (0.0 - 1.0).
+    pub opacity: f32,
+    /// Index of refraction.
+    pub ior: f32,
+    /// Surface roughness.
+    pub roughness: f32,
+
+    // Tint and dispersion (16 bytes)
+    /// Tint color (RGB + padding).
+    pub tint: [f32; 4],
+
+    // Depth hierarchy (16 bytes)
+    /// Dispersion amount.
+    pub dispersion: f32,
+    /// Depth layer (0-1).
+    pub depth_layer: f32,
+    /// Blur intensity base.
+    pub blur_intensity: f32,
+    /// Blur falloff exponent.
+    pub blur_falloff: f32,
+
+    // Fresnel highlights (16 bytes)
+    /// Fresnel color (RGB + intensity).
+    pub fresnel_color: [f32; 3],
+    /// Fresnel intensity.
+    pub fresnel_intensity: f32,
+
+    // Fresnel power and padding (16 bytes)
+    /// Fresnel power (sharpness).
+    pub fresnel_power: f32,
+    /// Padding for alignment.
+    pub _padding1: [f32; 3],
+
+    // Glow settings (16 bytes)
+    /// Glow color (RGB + intensity).
+    pub glow_color: [f32; 3],
+    /// Glow intensity.
+    pub glow_intensity: f32,
+
+    // Glow radius and padding (16 bytes)
+    /// Glow radius in pixels.
+    pub glow_radius: f32,
+    /// Padding for alignment.
+    pub _padding2: [f32; 3],
+
+    // Border settings (16 bytes)
+    /// Border width in pixels.
+    pub border_width: f32,
+    /// Padding for alignment.
+    pub _padding3: [f32; 3],
+
+    // Border color (16 bytes)
+    /// Border color (RGBA).
+    pub border_color: [f32; 4],
+
+    // Resolution and quality (16 bytes)
+    /// Render resolution (width, height).
+    pub resolution: [f32; 2],
+    /// Quality level (0-3).
+    pub quality_level: u32,
+    /// Animation time.
+    pub time: f32,
+}
+
+impl HDPanelUniforms {
+    /// Create HD uniforms from config and resolution.
+    pub fn from_config(config: &GlassPanelConfig, width: u32, height: u32, time: f32) -> Self {
+        Self {
+            position: config.position,
+            size: config.size,
+            corner_radius: config.corner_radius,
+            opacity: config.effective_opacity(),
+            ior: config.ior,
+            roughness: config.roughness,
+            tint: [config.tint[0], config.tint[1], config.tint[2], 1.0],
+            dispersion: if config.quality_level.dispersion_enabled() {
+                config.dispersion
+            } else {
+                0.0
+            },
+            depth_layer: config.depth_layer,
+            blur_intensity: config.effective_blur(),
+            blur_falloff: config.blur_falloff,
+            fresnel_color: config.fresnel_color,
+            fresnel_intensity: config.fresnel_intensity,
+            fresnel_power: config.fresnel_power,
+            _padding1: [0.0; 3],
+            glow_color: config.glow_color,
+            glow_intensity: if config.quality_level.inner_glow_enabled() {
+                config.glow_intensity
+            } else {
+                0.0
+            },
+            glow_radius: config.glow_radius,
+            _padding2: [0.0; 3],
+            border_width: config.border_width,
+            _padding3: [0.0; 3],
+            border_color: config.border_color,
+            resolution: [width as f32, height as f32],
+            quality_level: config.quality_level.as_u32(),
+            time,
+        }
+    }
 }
 
 // =============================================================================
