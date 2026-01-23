@@ -37,14 +37,14 @@ struct DashboardView: View {
     /// Reduce motion preference
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    /// Color temperature state from environment
+    @Environment(\.colorTemperature) private var colorTemp
+
     // MARK: - Constants
 
     private let horizontalPadding: CGFloat = 24
     private let verticalSpacing: CGFloat = 24
     private let ringSize: CGFloat = 300
-
-    /// Branch energy violet color
-    private let branchViolet = Color(hex: "8B5CF6")
 
     /// Obsidian base color
     private let obsidianBase = Color(hex: "0A0A0F")
@@ -262,7 +262,7 @@ struct DashboardView: View {
                 title: "Memory",
                 value: coreManager.viewModel.memoryUsage,
                 icon: "memorychip",
-                color: Color(hex: "8B5CF6"),
+                color: colorTemp.violetColor,
                 history: coreManager.viewModel.memoryHistory
             )
             .frame(width: cardWidth)
@@ -289,7 +289,7 @@ struct DashboardView: View {
                     .fill(thermalColor)
                     .frame(width: 8, height: 8)
                     .shadow(
-                        color: thermalState == .nominal ? branchViolet.opacity(0.2) : .clear,
+                        color: thermalState == .nominal ? colorTemp.tintColor.opacity(colorTemp.glowOpacity * 0.3) : .clear,
                         radius: 3
                     )
 
@@ -304,7 +304,7 @@ struct DashboardView: View {
                     .fill(memoryPressureColor)
                     .frame(width: 8, height: 8)
                     .shadow(
-                        color: memoryPressureState == .normal ? branchViolet.opacity(0.2) : .clear,
+                        color: memoryPressureState == .normal ? colorTemp.tintColor.opacity(colorTemp.glowOpacity * 0.3) : .clear,
                         radius: 3
                     )
 
@@ -353,7 +353,7 @@ struct DashboardView: View {
         )
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(branchViolet.opacity(0.1), lineWidth: 1)
+                .stroke(colorTemp.tintColor.opacity(colorTemp.glowOpacity * 0.15), lineWidth: 1)
         )
         .padding(.horizontal, horizontalPadding)
     }
@@ -362,12 +362,12 @@ struct DashboardView: View {
     private var stealthModeIndicator: some View {
         HStack(spacing: 8) {
             ProgressView()
-                .progressViewStyle(CircularProgressViewStyle(tint: branchViolet))
+                .progressViewStyle(CircularProgressViewStyle(tint: colorTemp.violetColor))
                 .scaleEffect(0.6)
 
             Text("Stealth Mode Active")
                 .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(branchViolet)
+                .foregroundStyle(colorTemp.violetColor)
 
             Spacer()
         }
