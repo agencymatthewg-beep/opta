@@ -3,7 +3,7 @@
 //  OptaApp
 //
 //  Quick action button bar for common optimization tasks.
-//  Features glass button styling with hover/press feedback.
+//  Features obsidian button styling with branch-energy violet hover/press feedback.
 //
 
 import SwiftUI
@@ -48,7 +48,7 @@ struct QuickActions: View {
             QuickActionButton(
                 title: "Scan Games",
                 icon: "gamecontroller.fill",
-                color: .cyan
+                color: Color(hex: "7C3AED")
             ) {
                 coreManager.dispatch(.scanGames)
             }
@@ -56,7 +56,7 @@ struct QuickActions: View {
             QuickActionButton(
                 title: "Score",
                 icon: "chart.bar.fill",
-                color: .green
+                color: Color(hex: "A855F7")
             ) {
                 coreManager.navigate(to: .optimize)
             }
@@ -66,7 +66,7 @@ struct QuickActions: View {
 
 // MARK: - QuickActionButton
 
-/// An individual quick action button with glass styling.
+/// An individual quick action button with obsidian styling and branch-energy hover effects.
 struct QuickActionButton: View {
 
     // MARK: - Properties
@@ -77,7 +77,7 @@ struct QuickActionButton: View {
     /// SF Symbol icon name
     let icon: String
 
-    /// Accent color
+    /// Accent color (violet family)
     let color: Color
 
     /// Whether the action is in progress
@@ -92,8 +92,19 @@ struct QuickActionButton: View {
     /// Press state
     @State private var isPressed: Bool = false
 
+    /// Loading pulse animation state
+    @State private var loadingPulse: Bool = false
+
     /// Reduce motion preference
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    // MARK: - Constants
+
+    /// Branch energy violet color
+    private let branchViolet = Color(hex: "8B5CF6")
+
+    /// Deep obsidian base
+    private let obsidianBase = Color(hex: "0A0A0F")
 
     // MARK: - Body
 
@@ -107,12 +118,12 @@ struct QuickActionButton: View {
                 ZStack {
                     if isLoading {
                         ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: color))
+                            .progressViewStyle(CircularProgressViewStyle(tint: branchViolet))
                             .scaleEffect(0.8)
                     } else {
                         Image(systemName: icon)
                             .font(.system(size: 20, weight: .semibold))
-                            .foregroundStyle(color)
+                            .foregroundStyle(iconColor)
                     }
                 }
                 .frame(height: 24)
@@ -129,17 +140,23 @@ struct QuickActionButton: View {
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .stroke(
-                        isHovered ? color.opacity(0.3) : Color.white.opacity(0.1),
-                        lineWidth: 1
-                    )
+                    .stroke(borderColor, lineWidth: 1)
             )
-            .scaleEffect(isPressed ? 0.97 : 1.0)
-            .shadow(color: isHovered ? color.opacity(0.2) : .clear, radius: 8, x: 0, y: 4)
+            .scaleEffect(isPressed ? 0.95 : 1.0)
+            .shadow(
+                color: isHovered && !reduceMotion ? branchViolet.opacity(0.15) : .clear,
+                radius: 12,
+                x: 0,
+                y: 4
+            )
         }
         .buttonStyle(PlainButtonStyle())
         .onHover { hovering in
-            withAnimation(.easeInOut(duration: 0.15)) {
+            guard !reduceMotion else {
+                isHovered = hovering
+                return
+            }
+            withAnimation(.easeInOut(duration: 0.2)) {
                 isHovered = hovering
             }
         }
@@ -147,37 +164,104 @@ struct QuickActionButton: View {
             DragGesture(minimumDistance: 0)
                 .onChanged { _ in
                     if !isPressed {
-                        withAnimation(.easeOut(duration: 0.1)) {
+                        if reduceMotion {
                             isPressed = true
+                        } else {
+                            withAnimation(.spring(response: 0.15, dampingFraction: 0.7)) {
+                                isPressed = true
+                            }
                         }
                     }
                 }
                 .onEnded { _ in
-                    withAnimation(.spring(response: 0.2, dampingFraction: 0.6)) {
+                    if reduceMotion {
                         isPressed = false
+                    } else {
+                        withAnimation(.spring(response: 0.15, dampingFraction: 0.7)) {
+                            isPressed = false
+                        }
                     }
                 }
         )
         .disabled(isLoading)
+        .onChange(of: isLoading) { _, newValue in
+            if newValue && !reduceMotion {
+                startLoadingPulse()
+            } else {
+                loadingPulse = false
+            }
+        }
     }
 
     // MARK: - Subviews
 
+    /// Obsidian button background with subtle inner shadow
     private var buttonBackground: some View {
         ZStack {
-            // Base dark color
-            Color(hex: "09090B")
+            // Deep obsidian base
+            obsidianBase
 
-            // Glass effect
-            Rectangle()
-                .fill(.ultraThinMaterial)
-                .opacity(0.5)
-
-            // Hover highlight
-            if isHovered {
-                Rectangle()
-                    .fill(color.opacity(0.05))
+            // Subtle hover glow (center radial approximation)
+            if isHovered && !reduceMotion {
+                RadialGradient(
+                    colors: [
+                        branchViolet.opacity(0.08),
+                        Color.clear
+                    ],
+                    center: .center,
+                    startRadius: 0,
+                    endRadius: 80
+                )
             }
+        }
+        // Inner shadow for depth perception
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(Color.black.opacity(0.4), lineWidth: 1)
+                .blur(radius: 1)
+                .offset(y: 1)
+                .mask(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(Color.black)
+                )
+        )
+    }
+
+    // MARK: - Computed Properties
+
+    /// Icon color with violet blend on hover
+    private var iconColor: Color {
+        if isHovered && !reduceMotion {
+            // Blend toward violet on hover
+            return color.opacity(0.7)
+        }
+        return color
+    }
+
+    /// Border color based on state
+    private var borderColor: Color {
+        if isLoading && !reduceMotion {
+            // Pulsing violet border during loading
+            return branchViolet.opacity(loadingPulse ? 0.5 : 0.2)
+        }
+        if isPressed {
+            return branchViolet.opacity(0.6)
+        }
+        if isHovered && !reduceMotion {
+            return branchViolet.opacity(0.4)
+        }
+        return Color.white.opacity(0.1)
+    }
+
+    // MARK: - Methods
+
+    /// Start the loading pulse animation
+    private func startLoadingPulse() {
+        withAnimation(
+            .easeInOut(duration: 0.8)
+            .repeatForever(autoreverses: true)
+        ) {
+            loadingPulse = true
         }
     }
 }
@@ -199,13 +283,13 @@ struct QuickActions_Previews: PreviewProvider {
                 QuickActionButton(
                     title: "Scan Games",
                     icon: "gamecontroller.fill",
-                    color: .cyan
+                    color: Color(hex: "7C3AED")
                 ) {}
 
                 QuickActionButton(
                     title: "Score",
                     icon: "chart.bar.fill",
-                    color: .green
+                    color: Color(hex: "A855F7")
                 ) {}
             }
 
