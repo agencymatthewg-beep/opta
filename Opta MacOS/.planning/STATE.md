@@ -9,10 +9,10 @@ See: .planning/PROJECT.md (updated 2026-01-15)
 
 ## Current Position
 
-Phase: 89 of 90 (Color Temperature Refinement) COMPLETE
-Plan: 89-01 COMPLETE, 89-02 COMPLETE, 89-03 COMPLETE
-Status: v11.0 Phase 89 complete — All views consume color temperature environment
-Last activity: 2026-01-24 — Completed 89-03-PLAN.md (Menu Bar & Games Temperature Integration)
+Phase: 90 of 90 (Visual Cohesion Launch) IN PROGRESS
+Plan: 90-01 COMPLETE, 90-02 pending
+Status: v11.0 Phase 90 in progress — All remaining 8B5CF6 hardcodes converted to colorTemp environment
+Last activity: 2026-01-24 — Completed 90-01-PLAN.md (Color Temperature Conversion of remaining views)
 
 Progress: ██████████ 100% of v5.0 (17 phases complete)
 v5.1 Progress: ██████████ 100% (7 of 7 phases complete)
@@ -73,7 +73,13 @@ v11.0 Progress: █████████░ 90% (9 of 10 phases complete, Pha
 | 87 | Settings & Library Alignment | ✅ Complete |
 | 88 | Organic Motion System | ✅ Complete |
 | 89 | Color Temperature Refinement | ✅ Complete |
-| 90 | Visual Cohesion Launch | 📋 Planned |
+| 90 | Visual Cohesion Launch | 🔄 In Progress |
+
+### Phase 90 Plans (IN PROGRESS)
+| Plan | Status | Description |
+|------|--------|-------------|
+| 90-01 | ✅ Complete | Color Temperature Conversion (9 remaining view files: Games, Settings, MenuBar, Utilities) |
+| 90-02 | 📋 Planned | Visual Cohesion Verification & Launch Polish |
 
 ### Phase 89 Plans (COMPLETE)
 | Plan | Wave | Status | Description |
@@ -726,6 +732,10 @@ v11.0 Progress: █████████░ 90% (9 of 10 phases complete, Pha
 | 89-03 | colorTemp.tintColor for quick optimize button | Responds to alert/amber state for thermal warnings, not just violet |
 | 89-03 | CircularMenuSector.defaultSectors color unchanged | Static model data consumed by CircularMenuAccessibility.swift, out of scope |
 | 89-03 | RadialGradient hover scales with glowOpacity * 0.25 | More pronounced in active/processing states, invisible in dormant |
+| 90-01 | SparklineView color parameter made Color? (nil) | Optional color with environment fallback pattern for reusable components |
+| 90-01 | CircularMenuDestination uses ColorTemperatureState.active.violetColor | Enums cannot use @Environment, static state reference provides temperature-aware color |
+| 90-01 | Separate View structs get their own @Environment | ProfileEditorSheet, ShortcutRecorderSheet, ProfileRowView, SettingsRowView each declare colorTemp |
+| 90-01 | Stroke opacities use glowOpacity * factor pattern | 0.2 for subtle borders, 0.3 for medium; consistent with 89-02/89-03 |
 
 ### Deferred Issues
 
@@ -756,9 +766,9 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-24
-Stopped at: Phase 89 complete (all 3 plans)
+Stopped at: Phase 90 plan 01 complete
 Resume file: None
-Next action: Execute Phase 90 (Visual Cohesion Launch)
+Next action: Execute 90-02 (Visual Cohesion Verification & Launch Polish)
 
 **v9.0 Stats (COMPLETE):**
 - Phase 69 complete (2 plans) - UniFFI bindings, OptaCoreManager
