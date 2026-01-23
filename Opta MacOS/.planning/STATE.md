@@ -9,10 +9,10 @@ See: .planning/PROJECT.md (updated 2026-01-15)
 
 ## Current Position
 
-Phase: 89 of 90 (Color Temperature Refinement) PLANNED
-Plan: 89-01, 89-02, 89-03 ready for execution
-Status: v11.0 Phase 89 planned — Color temperature state machine + integration
-Last activity: 2026-01-24 — Planned Phase 89 (3 plans, 2 waves)
+Phase: 89 of 90 (Color Temperature Refinement) IN PROGRESS
+Plan: 89-01 COMPLETE, 89-02 ready, 89-03 ready
+Status: v11.0 Phase 89 executing — Color temperature foundation built
+Last activity: 2026-01-24 — Executed Plan 89-01 (Color Temperature Foundation)
 
 Progress: ██████████ 100% of v5.0 (17 phases complete)
 v5.1 Progress: ██████████ 100% (7 of 7 phases complete)
@@ -72,13 +72,13 @@ v11.0 Progress: █████████░ 90% (9 of 10 phases complete)
 | 86 | Navigation Energy Language | ✅ Complete |
 | 87 | Settings & Library Alignment | ✅ Complete |
 | 88 | Organic Motion System | ✅ Complete |
-| 89 | Color Temperature Refinement | 📋 Planned |
+| 89 | Color Temperature Refinement | 🔄 In Progress |
 | 90 | Visual Cohesion Launch | 📋 Planned |
 
-### Phase 89 Plans (PLANNED)
+### Phase 89 Plans (IN PROGRESS)
 | Plan | Wave | Status | Description |
 |------|------|--------|-------------|
-| 89-01 | 1 | 📋 Planned | Color Temperature Foundation (ColorTemperature.swift, ColorTemperatureEnvironment.swift) |
+| 89-01 | 1 | ✅ Complete | Color Temperature Foundation (ColorTemperature.swift, ColorTemperatureEnvironment.swift) |
 | 89-02 | 2 | 📋 Planned | Dashboard Temperature Integration (DashboardView, TelemetryCard, QuickActions, ScoreDisplay) |
 | 89-03 | 2 | 📋 Planned | Menu Bar & Games Temperature Integration (MenuBarCircularMenuButton, GameCardView, CircularMenuView, OptaAppApp) |
 
@@ -714,6 +714,11 @@ v11.0 Progress: █████████░ 90% (9 of 10 phases complete)
 | 87-02 | 2px violet accent bar on section headers | Visual hierarchy without overwhelming; consistent brand indicator |
 | 87-02 | Edit Profile button: violet text + violet/20% border | Secondary action distinct from primary Optimize Now button |
 | 87-02 | Preserve ALL semantic colors in GameDetailView | 22C55E/F59E0B/EF4444/3B82F6 serve functional meaning, not decoration |
+| 89-01 | Default environment value .idle (not .dormant) | Safe visible baseline — views always have subtle violet by default |
+| 89-01 | Alert state overrides all ring-phase mappings | Thermal serious/critical and memory warning/critical take absolute priority |
+| 89-01 | NSColor.sRGB for component extraction | Reliable RGB values on macOS regardless of display color space |
+| 89-01 | @State coreManager in provider | SwiftUI lifecycle compliance rather than singleton pattern |
+| 89-01 | mapThermalState() bridge function | Bridges ThermalStateViewModel (Codable) to ProcessInfo.ThermalState (Foundation) |
 
 ### Deferred Issues
 
@@ -744,9 +749,9 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-24
-Stopped at: Phase 88 complete (all 3 plans — Foundation, Dashboard Integration, Games Integration)
+Stopped at: Phase 89 Plan 01 complete (Color Temperature Foundation)
 Resume file: None
-Next action: Execute Phase 89 (Transitions & Motion) or Phase 90 (Visual Polish & Launch)
+Next action: Execute Phase 89 Plans 02+03 (Wave 2: Dashboard + Menu/Games integration)
 
 **v9.0 Stats (COMPLETE):**
 - Phase 69 complete (2 plans) - UniFFI bindings, OptaCoreManager
