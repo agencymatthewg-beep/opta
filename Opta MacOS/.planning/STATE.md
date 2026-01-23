@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-01-15)
 ## Current Position
 
 Phase: 85 of 90 (Dashboard Obsidian Refresh)
-Plan: 85-03 COMPLETE (85-02 parallel)
-Status: v11.0 Phase 85 plans 01+03 complete, 02 in parallel
-Last activity: 2026-01-23 — Completed 85-03-PLAN.md (QuickActions + Dashboard obsidian refresh)
+Plan: 85-02 COMPLETE, 85-03 COMPLETE
+Status: v11.0 Phase 85 all plans complete
+Last activity: 2026-01-23 — Completed 85-02 (Swift panel wrappers + TelemetryCard obsidian refresh)
 
 Progress: ██████████ 100% of v5.0 (17 phases complete)
 v5.1 Progress: ██████████ 100% (7 of 7 phases complete)
@@ -22,7 +22,7 @@ v8.0 Progress: ██████████ 100% (10 of 10 phases complete) �
 v9.0 Progress: ██████████ 100% (6 of 6 phases complete) ✅
 v9.1 Progress: ██████████ 100% (1 of 1 phases complete) ✅
 v10.0 Progress: ████████░░ 80% (4 of 5 phases complete)
-v11.0 Progress: █████░░░░░ 50% (5 of 10 phases complete)
+v11.0 Progress: ██████░░░░ 60% (6 of 10 phases complete)
 
 ### Phase 69 Plans (COMPLETE)
 | Plan | Status | Description |
@@ -68,7 +68,7 @@ v11.0 Progress: █████░░░░░ 50% (5 of 10 phases complete)
 | 82 | Branch Energy System | ✅ Complete |
 | 83 | Obsidian Panel System | ✅ Complete |
 | 84 | Energy Branch Components | ✅ Complete |
-| 85 | Dashboard Obsidian Refresh | 🔄 In Progress |
+| 85 | Dashboard Obsidian Refresh | ✅ Complete |
 | 86 | Settings Obsidian UI | 📋 Planned |
 | 87 | Games Library Obsidian | 📋 Planned |
 | 88 | Menu Bar Obsidian | 📋 Planned |
@@ -79,7 +79,7 @@ v11.0 Progress: █████░░░░░ 50% (5 of 10 phases complete)
 | Plan | Status | Description |
 |------|--------|-------------|
 | 85-01 | ✅ Complete | FFI Panel Exports (GlassPanel 9 functions, BranchMeter 6, BranchIndicator 5, BranchBorder 5) |
-| 85-02 | 🔄 In Progress | Swift Panel Wrappers (parallel execution) |
+| 85-02 | ✅ Complete | Swift Panel Wrappers (PanelBridge, TelemetryCard obsidian, SparklineView extraction) |
 | 85-03 | ✅ Complete | QuickActions + Dashboard Layout Obsidian (obsidian buttons, depth hierarchy, violet palette) |
 
 ### Phase 84 Plans (COMPLETE)
@@ -665,6 +665,12 @@ v11.0 Progress: █████░░░░░ 50% (5 of 10 phases complete)
 | 85-03 | Grade badge preserves functional colors | Obsidian fill + functional color stroke; letter differentiates, color serves function |
 | 85-03 | Loading pulse on border opacity | Repeating easeInOut 0.2-0.5 opacity, 0.8s period for loading state |
 | 85-01 | Flattened config struct fields | position_x/y instead of arrays for simpler C ABI compatibility |
+| 85-02 | SwiftUI approximation for branch components | Full GPU compositing deferred until MetalRenderView supports multi-component rendering |
+| 85-02 | NSLock thread safety in bridge classes | Matches CircularMenuBridge pattern for consistent FFI concurrency |
+| 85-02 | color property kept for API compat | DashboardView passes color: but obsidian mode uses violet everywhere |
+| 85-02 | Color(hex:) extension stays in TelemetryCard | Widely imported from there by 24+ files, no need to move yet |
+| 85-02 | energyLevel = value/100 mapping | Direct telemetry percentage to branch energy intensity |
+| 85-02 | Obsidian base 0A0A0F + violet 8B5CF6 palette | Established as standard for all phases 85-90 |
 
 ### Deferred Issues
 
@@ -695,9 +701,9 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-23
-Stopped at: Phase 85 plan 03 complete (QuickActions + Dashboard obsidian refresh)
+Stopped at: Phase 85 complete (all 3 plans: FFI exports, Swift wrappers, Dashboard integration)
 Resume file: None
-Next action: Phase 85-02 completing in parallel; once done, Phase 85 complete, proceed to Phase 86
+Next action: Begin Phase 86 (Settings Obsidian UI)
 
 **v9.0 Stats (COMPLETE):**
 - Phase 69 complete (2 plans) - UniFFI bindings, OptaCoreManager
