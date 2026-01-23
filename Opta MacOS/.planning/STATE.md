@@ -9,10 +9,10 @@ See: .planning/PROJECT.md (updated 2026-01-15)
 
 ## Current Position
 
-Phase: 86 of 90 (Navigation Energy Language)
-Plan: 86-02 COMPLETE (phase complete)
-Status: v11.0 Phase 86 complete — ready for phase 87
-Last activity: 2026-01-23 — Completed 86-02 (Swift UI obsidian + branch-energy integration)
+Phase: 87 of 90 (Settings & Library Alignment)
+Plan: 87-01 + 87-02 PLANNED (ready for execution)
+Status: v11.0 Phase 87 planned — 2 parallel plans ready
+Last activity: 2026-01-24 — Planned 87-01 (Settings Obsidian) + 87-02 (Games Obsidian)
 
 Progress: ██████████ 100% of v5.0 (17 phases complete)
 v5.1 Progress: ██████████ 100% (7 of 7 phases complete)
@@ -74,6 +74,12 @@ v11.0 Progress: ███████░░░ 70% (7 of 10 phases complete)
 | 88 | Menu Bar Obsidian | 📋 Planned |
 | 89 | Transitions & Motion | 📋 Planned |
 | 90 | Visual Polish & Launch | 📋 Planned |
+
+### Phase 87 Plans (PLANNED)
+| Plan | Status | Description |
+|------|--------|-------------|
+| 87-01 | 📋 Planned | Settings Views Obsidian Refresh (SettingsView, ProfileManagerView, ThemeCustomizationView, KeyboardShortcutsView) |
+| 87-02 | 📋 Planned | Games Views Obsidian Refresh (GamesLibraryView, GameCardView, GameDetailView) |
 
 ### Phase 86 Plans (COMPLETE)
 | Plan | Status | Description |
