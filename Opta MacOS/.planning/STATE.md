@@ -9,10 +9,10 @@ See: .planning/PROJECT.md (updated 2026-01-15)
 
 ## Current Position
 
-Phase: 81 of 90 (Obsidian Ring Material)
-Plan: 81-01 COMPLETE
-Status: v11.0 Phase 81 complete, Phase 82 next
-Last activity: 2026-01-23 — Phase 81 plan 01 executed (obsidian material replaces glass)
+Phase: 82 of 90 (Branch Energy System)
+Plan: 82-01 COMPLETE
+Status: v11.0 Phase 82 complete, Phase 83 next
+Last activity: 2026-01-23 — Phase 82 plan 01 executed (branch energy replaces plasma)
 
 Progress: ██████████ 100% of v5.0 (17 phases complete)
 v5.1 Progress: ██████████ 100% (7 of 7 phases complete)
@@ -22,7 +22,7 @@ v8.0 Progress: ██████████ 100% (10 of 10 phases complete) �
 v9.0 Progress: ██████████ 100% (6 of 6 phases complete) ✅
 v9.1 Progress: ██████████ 100% (1 of 1 phases complete) ✅
 v10.0 Progress: ████████░░ 80% (4 of 5 phases complete)
-v11.0 Progress: █░░░░░░░░░ 10% (1 of 10 phases complete)
+v11.0 Progress: ██░░░░░░░░ 20% (2 of 10 phases complete)
 
 ### Phase 69 Plans (COMPLETE)
 | Plan | Status | Description |
@@ -65,7 +65,7 @@ v11.0 Progress: █░░░░░░░░░ 10% (1 of 10 phases complete)
 | Phase | Name | Status |
 |-------|------|--------|
 | 81 | Obsidian Ring Material | ✅ Complete |
-| 82 | Branch Energy System | 📋 Planned |
+| 82 | Branch Energy System | ✅ Complete |
 | 83 | Score Orb & Glow | 📋 Planned |
 | 84 | Dashboard Obsidian Panels | 📋 Planned |
 | 85 | Settings Obsidian UI | 📋 Planned |
@@ -74,6 +74,11 @@ v11.0 Progress: █░░░░░░░░░ 10% (1 of 10 phases complete)
 | 88 | Transitions & Motion | 📋 Planned |
 | 89 | Accessibility & Contrast | 📋 Planned |
 | 90 | Visual Polish & Launch | 📋 Planned |
+
+### Phase 82 Plans (COMPLETE)
+| Plan | Status | Description |
+|------|--------|-------------|
+| 82-01 | ✅ Complete | Branch Energy Shader (ridged turbulence veins, equator masking, threshold revelation, tri-axis response) |
 
 ### Phase 81 Plans (COMPLETE)
 | Plan | Status | Description |
@@ -623,6 +628,13 @@ v11.0 Progress: █░░░░░░░░░ 10% (1 of 10 phases complete)
 | 81-01 | Plasma color: Electric Violet gradient | Single-hue dim-to-saturated violet more cohesive than old multi-hue |
 | 81-01 | emission_intensity = energy * plasma | Proportional to both activity level and plasma visibility |
 | 81-01 | Dual lights in HQ mode | Key + fill adds visual depth for Ultra quality rendering |
+| 82-01 | Ridged turbulence over standard FBM | Creates sharp vein-like structures for branch energy aesthetic |
+| 82-01 | Equator-origin masking (v=0.5) | Branches emanate from ring equator, fade toward tube edges |
+| 82-01 | Dynamic threshold: 1.0 - energy*0.7 | Low energy = few branches; high energy reveals many, no extra state |
+| 82-01 | Per-branch phase offsets via hash | Each branch pulses independently for organic non-synchronized feel |
+| 82-01 | Tri-axis response (reach/width/brightness) | Length, width, and brightness scale independently with energy |
+| 82-01 | Domain-warped UVs in HQ only | Organic feel in high quality without cost in standard mode |
+| 82-01 | Quality-scaled branch_count (6/8/10) | Fewer branches at low quality for performance, more at high for detail |
 
 ### Deferred Issues
 
@@ -653,9 +665,9 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-23
-Stopped at: Phase 81 complete (obsidian ring material)
+Stopped at: Phase 82 complete (branch energy shader)
 Resume file: None
-Next action: Plan Phase 82 (Branch Energy System)
+Next action: Plan Phase 83 (Score Orb & Glow)
 
 **v9.0 Stats (COMPLETE):**
 - Phase 69 complete (2 plans) - UniFFI bindings, OptaCoreManager
