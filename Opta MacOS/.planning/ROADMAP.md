@@ -1610,7 +1610,8 @@ Plans:
 - Toggle/slider controls with branch-energy fill
 
 Plans:
-- [ ] 87-01: TBD (run /gsd:plan-phase 87 to break down)
+- [x] 87-01: Settings Views Obsidian Refresh (4 tasks, wave 1)
+- [x] 87-02: Games Views Obsidian Refresh (3 tasks, wave 1)
 
 #### Phase 88: Organic Motion System
 **Goal**: Replace uniform animations with organic per-element timing throughout the app
@@ -1762,8 +1763,8 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 �
 | 83. Obsidian Panel System | v11.0 | 1/1 | ✅ Complete | 2026-01-23 |
 | 84. Energy Branch Components | v11.0 | 1/1 | ✅ Complete | 2026-01-23 |
 | 85. Dashboard Obsidian Refresh | v11.0 | 3/3 | ✅ Complete | 2026-01-23 |
-| 86. Navigation Energy Language | v11.0 | 0/? | Not started | - |
-| 87. Settings & Library Alignment | v11.0 | 0/? | Not started | - |
+| 86. Navigation Energy Language | v11.0 | 2/2 | ✅ Complete | 2026-01-23 |
+| 87. Settings & Library Alignment | v11.0 | 2/2 | ✅ Complete | 2026-01-24 |
 | 88. Organic Motion System | v11.0 | 0/? | Not started | - |
 | 89. Color Temperature Refinement | v11.0 | 0/? | Not started | - |
 | 90. Visual Cohesion Launch | v11.0 | 0/? | Not started | - |
