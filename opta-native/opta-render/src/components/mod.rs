@@ -1,8 +1,8 @@
 //! Visual components module for Opta.
 //!
 //! This module provides GPU-accelerated 3D components including:
-//! - OptaRing: The central glass torus ring component
-//! - GlassPanel: Frosted glass UI panels with blur effects
+//! - OptaRing: The central obsidian torus ring component
+//! - GlassPanel: Obsidian panel UI overlays with Cook-Torrance specular
 //! - CircularMenu: Radial menu with sectors and spring animations
 //! - CpuMeter: Energy core visualization for CPU telemetry
 //! - MemoryMeter: Liquid fill visualization for memory telemetry
@@ -71,7 +71,7 @@ pub use circular_menu::{
 };
 pub use cpu_meter::{CpuMeter, CpuMeterConfig, CpuMeterUniforms, MeterVertex};
 pub use glass_panel::{
-    DepthHierarchy, GlassPanel, GlassPanelConfig, GlassPanelUniforms, HDPanelUniforms,
+    DepthHierarchy, GlassPanel, GlassPanelConfig, GlassPanelUniforms, ObsidianPanelUniforms,
     PanelQualityLevel, PanelVertex,
 };
 pub use memory_meter::{MemoryMeter, MemoryMeterConfig, MemoryMeterUniforms, MemoryMeterVertex};

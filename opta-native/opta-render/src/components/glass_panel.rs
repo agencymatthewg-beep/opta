@@ -1,24 +1,25 @@
-//! Glass panel component for UI overlays.
+//! Obsidian panel component for UI overlays.
 //!
-//! Provides a reusable glass panel rendering system with blur and depth effects.
-//! Uses SDF-based rounded rectangles with configurable blur, opacity, and tint.
+//! Provides a reusable obsidian panel rendering system with opaque dark surfaces,
+//! Cook-Torrance specular highlights, and edge branch energy veins.
+//! Uses SDF-based rounded rectangles with configurable opacity, border, and depth.
 //!
 //! # Quality Levels
 //!
 //! The panel supports multiple quality levels for different performance targets:
 //!
-//! - **Low**: 8 blur samples, basic effects (60fps on low-end devices)
-//! - **Medium**: 16 blur samples, standard effects (default)
-//! - **High**: 32 blur samples, HD fresnel + inner glow
-//! - **Ultra**: 64 blur samples, full Cook-Torrance + dispersion
+//! - **Low**: Flat obsidian color + simple fresnel edge (60fps on low-end devices)
+//! - **Medium**: Cook-Torrance specular + simple fresnel border glow (default)
+//! - **High**: Full Cook-Torrance + edge branch energy pattern
+//! - **Ultra**: High + domain-warped branches for organic feel
 //!
 //! # Depth Hierarchy
 //!
-//! Panels support depth-based rendering where background panels have more blur:
+//! Panels support depth-based rendering where depth controls specular and branch intensity:
 //!
-//! - `depth_layer = 0.0`: Foreground (modals, tooltips) - minimal blur
-//! - `depth_layer = 0.5`: Content (cards, sections) - medium blur
-//! - `depth_layer = 1.0`: Background (ambient elements) - maximum blur
+//! - `depth_layer = 0.0`: Foreground (modals, tooltips) - highest specular, brightest branches
+//! - `depth_layer = 0.5`: Content (cards, sections) - medium specular, standard branches
+//! - `depth_layer = 1.0`: Background (ambient elements) - minimal specular, dim branches
 //!
 //! # Example
 //!
@@ -39,51 +40,40 @@ use wgpu::util::DeviceExt;
 // Quality Level Enum
 // =============================================================================
 
-/// Quality level for glass panels.
+/// Quality level for obsidian panels.
 ///
-/// Controls blur sample counts and visual effect complexity.
+/// Controls specular computation and edge branch effects.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 #[repr(C)]
 pub enum PanelQualityLevel {
-    /// Low quality - 8 blur samples, basic fresnel.
+    /// Low quality - flat obsidian + simple fresnel edge.
     /// Suitable for low-power devices or background panels.
     Low,
 
-    /// Medium quality - 16 blur samples, standard fresnel.
+    /// Medium quality - Cook-Torrance specular + fresnel.
     /// Default quality level for most devices.
     #[default]
     Medium,
 
-    /// High quality - 32 blur samples, HD fresnel + inner glow.
+    /// High quality - full Cook-Torrance + edge branch energy.
     /// For high-end devices with ProMotion displays.
     High,
 
-    /// Ultra quality - 64 blur samples, full Cook-Torrance + dispersion.
+    /// Ultra quality - High + enhanced branch effects.
     /// For maximum visual fidelity on powerful GPUs.
     Ultra,
 }
 
 impl PanelQualityLevel {
-    /// Get the blur sample count for this quality level.
+    /// Check if Cook-Torrance specular is enabled for this quality level.
     #[must_use]
-    pub const fn blur_samples(self) -> u32 {
-        match self {
-            Self::Low => 8,
-            Self::Medium => 16,
-            Self::High => 32,
-            Self::Ultra => 64,
-        }
+    pub const fn specular_enabled(self) -> bool {
+        matches!(self, Self::Medium | Self::High | Self::Ultra)
     }
 
-    /// Check if blur is enabled for this quality level.
+    /// Check if edge branch energy is enabled for this quality level.
     #[must_use]
-    pub const fn blur_enabled(self) -> bool {
-        !matches!(self, Self::Low) || true // Low still has basic blur
-    }
-
-    /// Check if inner glow is enabled for this quality level.
-    #[must_use]
-    pub const fn inner_glow_enabled(self) -> bool {
+    pub const fn branch_enabled(self) -> bool {
         matches!(self, Self::High | Self::Ultra)
     }
 
@@ -91,23 +81,6 @@ impl PanelQualityLevel {
     #[must_use]
     pub const fn hd_fresnel_enabled(self) -> bool {
         matches!(self, Self::High | Self::Ultra)
-    }
-
-    /// Check if dispersion (chromatic aberration) is enabled.
-    #[must_use]
-    pub const fn dispersion_enabled(self) -> bool {
-        matches!(self, Self::Ultra)
-    }
-
-    /// Get the blur intensity multiplier for this quality level.
-    #[must_use]
-    pub const fn blur_intensity_multiplier(self) -> f32 {
-        match self {
-            Self::Low => 0.5,
-            Self::Medium => 1.0,
-            Self::High => 1.5,
-            Self::Ultra => 2.0,
-        }
     }
 
     /// Convert from integer value.
@@ -159,31 +132,32 @@ impl PanelQualityLevel {
 // Depth Hierarchy
 // =============================================================================
 
-/// Depth hierarchy levels for glass panels.
+/// Depth hierarchy levels for obsidian panels.
 ///
 /// Defines standard depth values for consistent layering.
+/// Controls specular intensity and edge branch density rather than blur.
 #[derive(Debug, Clone, Copy)]
 pub struct DepthHierarchy;
 
 impl DepthHierarchy {
     /// Foreground depth (modals, tooltips, overlays).
-    /// Minimal blur for sharp, immediate UI elements.
+    /// Highest specular intensity, brightest edge branches.
     pub const FOREGROUND: f32 = 0.0;
 
     /// Content depth (cards, sections, widgets).
-    /// Standard blur for content containers.
+    /// Medium specular, standard branches.
     pub const CONTENT: f32 = 0.5;
 
     /// Background depth (ambient elements, decorations).
-    /// Maximum blur for distant elements.
+    /// Minimal specular, dim/no branches.
     pub const BACKGROUND: f32 = 1.0;
 
-    /// Get blur multiplier for a given depth.
+    /// Get specular multiplier for a given depth.
     ///
-    /// Deeper panels have more blur to simulate depth of field.
+    /// Foreground panels have stronger specular highlights.
     #[must_use]
-    pub fn blur_multiplier(depth: f32) -> f32 {
-        1.0 + depth * 2.0
+    pub fn specular_multiplier(depth: f32) -> f32 {
+        1.0 - depth * 0.6
     }
 
     /// Get opacity multiplier for a given depth.
@@ -194,10 +168,10 @@ impl DepthHierarchy {
         1.0 - depth * 0.2
     }
 
-    /// Calculate depth-adjusted blur intensity.
+    /// Calculate depth-adjusted specular intensity.
     #[must_use]
-    pub fn adjusted_blur(base_blur: f32, depth: f32, falloff: f32) -> f32 {
-        base_blur * (1.0 + depth.powf(falloff) * 2.0)
+    pub fn adjusted_specular(base_specular: f32, depth: f32) -> f32 {
+        base_specular * Self::specular_multiplier(depth)
     }
 
     /// Compare depths for Z-ordering (returns ordering for sorting).
@@ -221,45 +195,53 @@ impl DepthHierarchy {
 }
 
 // =============================================================================
-// HD Panel Uniforms (for glass_panel_hd.wgsl)
+// Obsidian Panel Uniforms (for glass_panel_hd.wgsl)
 // =============================================================================
 
-/// Uniform buffer data for the HD glass panel shader.
+/// Uniform buffer data for the HD obsidian panel shader.
 ///
-/// Matches the `HDPanelUniforms` struct in `glass_panel_hd.wgsl`.
-/// Total size: 176 bytes (11 * 16-byte aligned groups).
+/// Matches the `ObsidianPanelUniforms` struct in `glass_panel_hd.wgsl`.
+/// Total size: 160 bytes (10 * 16-byte aligned groups).
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
-pub struct HDPanelUniforms {
+pub struct ObsidianPanelUniforms {
     // Base panel properties (16 bytes)
     /// Panel position in pixels.
     pub position: [f32; 2],
     /// Panel size in pixels.
     pub size: [f32; 2],
 
-    // More base properties (16 bytes)
+    // Material properties (16 bytes)
     /// Corner radius in pixels.
     pub corner_radius: f32,
     /// Panel opacity (0.0 - 1.0).
     pub opacity: f32,
-    /// Index of refraction.
-    pub ior: f32,
     /// Surface roughness.
     pub roughness: f32,
+    /// Index of refraction (1.85 for volcanic glass).
+    pub ior: f32,
 
-    // Tint and dispersion (16 bytes)
-    /// Tint color (RGB + padding).
-    pub tint: [f32; 4],
+    // Base color (16 bytes)
+    /// Obsidian base color (RGB + padding).
+    pub base_color: [f32; 4],
 
     // Depth hierarchy (16 bytes)
-    /// Dispersion amount.
-    pub dispersion: f32,
     /// Depth layer (0-1).
     pub depth_layer: f32,
-    /// Blur intensity base.
-    pub blur_intensity: f32,
-    /// Blur falloff exponent.
-    pub blur_falloff: f32,
+    /// Specular intensity (depth-scaled).
+    pub specular_intensity: f32,
+    /// Padding for alignment.
+    pub _pad_depth: [f32; 2],
+
+    // Edge branch parameters (16 bytes)
+    /// Branch reach in pixels.
+    pub branch_reach: f32,
+    /// Branch density.
+    pub branch_density: f32,
+    /// Branch animation speed.
+    pub branch_speed: f32,
+    /// Branch energy level [0,1].
+    pub branch_energy: f32,
 
     // Fresnel highlights (16 bytes)
     /// Fresnel color (RGB + intensity).
@@ -272,18 +254,6 @@ pub struct HDPanelUniforms {
     pub fresnel_power: f32,
     /// Padding for alignment.
     pub _padding1: [f32; 3],
-
-    // Glow settings (16 bytes)
-    /// Glow color (RGB + intensity).
-    pub glow_color: [f32; 3],
-    /// Glow intensity.
-    pub glow_intensity: f32,
-
-    // Glow radius and padding (16 bytes)
-    /// Glow radius in pixels.
-    pub glow_radius: f32,
-    /// Padding for alignment.
-    pub _padding2: [f32; 3],
 
     // Border settings (16 bytes)
     /// Border width in pixels.
@@ -304,37 +274,32 @@ pub struct HDPanelUniforms {
     pub time: f32,
 }
 
-impl HDPanelUniforms {
-    /// Create HD uniforms from config and resolution.
+impl ObsidianPanelUniforms {
+    /// Create obsidian uniforms from config and resolution.
     pub fn from_config(config: &GlassPanelConfig, width: u32, height: u32, time: f32) -> Self {
         Self {
             position: config.position,
             size: config.size,
             corner_radius: config.corner_radius,
             opacity: config.effective_opacity(),
-            ior: config.ior,
             roughness: config.roughness,
-            tint: [config.tint[0], config.tint[1], config.tint[2], 1.0],
-            dispersion: if config.quality_level.dispersion_enabled() {
-                config.dispersion
+            ior: config.ior,
+            base_color: [config.base_color[0], config.base_color[1], config.base_color[2], 1.0],
+            depth_layer: config.depth_layer,
+            specular_intensity: config.effective_specular(),
+            _pad_depth: [0.0; 2],
+            branch_reach: config.branch_reach,
+            branch_density: config.branch_density,
+            branch_speed: config.branch_speed,
+            branch_energy: if config.quality_level.branch_enabled() {
+                config.branch_energy
             } else {
                 0.0
             },
-            depth_layer: config.depth_layer,
-            blur_intensity: config.effective_blur(),
-            blur_falloff: config.blur_falloff,
             fresnel_color: config.fresnel_color,
             fresnel_intensity: config.fresnel_intensity,
             fresnel_power: config.fresnel_power,
             _padding1: [0.0; 3],
-            glow_color: config.glow_color,
-            glow_intensity: if config.quality_level.inner_glow_enabled() {
-                config.glow_intensity
-            } else {
-                0.0
-            },
-            glow_radius: config.glow_radius,
-            _padding2: [0.0; 3],
             border_width: config.border_width,
             _padding3: [0.0; 3],
             border_color: config.border_color,
@@ -388,7 +353,7 @@ impl PanelVertex {
     }
 }
 
-/// Configuration for a glass panel.
+/// Configuration for an obsidian panel.
 #[derive(Debug, Clone, Copy)]
 pub struct GlassPanelConfig {
     /// Panel position in pixels (top-left corner).
@@ -397,66 +362,62 @@ pub struct GlassPanelConfig {
     pub size: [f32; 2],
     /// Corner radius in pixels.
     pub corner_radius: f32,
-    /// Blur intensity (0.0 - 1.0).
-    pub blur: f32,
     /// Panel opacity (0.0 - 1.0).
     pub opacity: f32,
-    /// Tint color (RGB, 0.0 - 1.0).
-    pub tint: [f32; 3],
+    /// Obsidian base color (RGB, 0.0 - 1.0). Near-black.
+    pub base_color: [f32; 3],
     /// Border width in pixels.
     pub border_width: f32,
     /// Border color (RGBA, 0.0 - 1.0).
     pub border_color: [f32; 4],
     /// Depth layer (0.0 = foreground, higher = further back).
     pub depth_layer: f32,
-    /// Quality level for blur and effects.
+    /// Quality level for effects.
     pub quality_level: PanelQualityLevel,
-    /// Index of refraction for HD glass (1.5 = crown glass).
+    /// Index of refraction for obsidian (1.85 = volcanic glass).
     pub ior: f32,
-    /// Surface roughness for HD glass (0.0 = mirror, 1.0 = diffuse).
+    /// Surface roughness (0.0 = mirror, 1.0 = diffuse).
     pub roughness: f32,
-    /// Dispersion amount for chromatic aberration (0.0 = none).
-    pub dispersion: f32,
-    /// Blur falloff curve exponent for depth scaling.
-    pub blur_falloff: f32,
+    /// Specular intensity (depth-scaled highlight strength).
+    pub specular_intensity: f32,
     /// Fresnel edge highlight color (RGB).
     pub fresnel_color: [f32; 3],
     /// Fresnel edge highlight intensity.
     pub fresnel_intensity: f32,
     /// Fresnel edge power (controls sharpness).
     pub fresnel_power: f32,
-    /// Inner glow color (RGB).
-    pub glow_color: [f32; 3],
-    /// Inner glow intensity.
-    pub glow_intensity: f32,
-    /// Inner glow radius in pixels.
-    pub glow_radius: f32,
+    /// Edge branch reach in pixels from border.
+    pub branch_reach: f32,
+    /// Edge branch density (branches per 100px).
+    pub branch_density: f32,
+    /// Edge branch animation speed.
+    pub branch_speed: f32,
+    /// Edge branch energy level [0,1].
+    pub branch_energy: f32,
 }
 
 impl Default for GlassPanelConfig {
     fn default() -> Self {
-        let quality = PanelQualityLevel::default();
         Self {
             position: [0.0, 0.0],
             size: [200.0, 150.0],
             corner_radius: 16.0,
-            blur: 0.5,
-            opacity: 0.8,
-            tint: [1.0, 1.0, 1.0],
+            opacity: 0.9,
+            base_color: [0.02, 0.02, 0.03],
             border_width: 1.0,
-            border_color: [1.0, 1.0, 1.0, 0.2],
+            border_color: [0.545, 0.361, 0.965, 0.2],
             depth_layer: 0.0,
-            quality_level: quality,
-            ior: 1.5,
+            quality_level: PanelQualityLevel::default(),
+            ior: 1.85,
             roughness: 0.05,
-            dispersion: 0.0,
-            blur_falloff: 1.5,
-            fresnel_color: [1.0, 1.0, 1.0],
-            fresnel_intensity: 0.15,
+            specular_intensity: 0.15,
+            fresnel_color: [0.545, 0.361, 0.965],
+            fresnel_intensity: 0.1,
             fresnel_power: 3.0,
-            glow_color: [0.4, 0.6, 1.0],
-            glow_intensity: 0.0,
-            glow_radius: 20.0,
+            branch_reach: 4.0,
+            branch_density: 0.08,
+            branch_speed: 0.2,
+            branch_energy: 0.3,
         }
     }
 }
@@ -475,8 +436,9 @@ impl GlassPanelConfig {
     pub fn foreground() -> Self {
         Self {
             depth_layer: DepthHierarchy::FOREGROUND,
-            blur: 0.3,
-            opacity: 0.9,
+            specular_intensity: 0.2,
+            branch_energy: 0.5,
+            opacity: 0.95,
             ..Self::default()
         }
     }
@@ -486,8 +448,9 @@ impl GlassPanelConfig {
     pub fn content() -> Self {
         Self {
             depth_layer: DepthHierarchy::CONTENT,
-            blur: 0.5,
-            opacity: 0.8,
+            specular_intensity: 0.15,
+            branch_energy: 0.3,
+            opacity: 0.9,
             ..Self::default()
         }
     }
@@ -497,8 +460,9 @@ impl GlassPanelConfig {
     pub fn background() -> Self {
         Self {
             depth_layer: DepthHierarchy::BACKGROUND,
-            blur: 0.8,
-            opacity: 0.6,
+            specular_intensity: 0.08,
+            branch_energy: 0.1,
+            opacity: 0.85,
             ..Self::default()
         }
     }
@@ -507,21 +471,16 @@ impl GlassPanelConfig {
     pub fn set_quality(&mut self, quality: PanelQualityLevel) {
         self.quality_level = quality;
 
-        // Enable HD features based on quality
-        if quality.inner_glow_enabled() && self.glow_intensity == 0.0 {
-            self.glow_intensity = 0.1;
-        }
-
-        if quality.dispersion_enabled() && self.dispersion == 0.0 {
-            self.dispersion = 0.02;
+        // Enable branch energy for High/Ultra quality
+        if quality.branch_enabled() && self.branch_energy < 0.01 {
+            self.branch_energy = 0.3;
         }
     }
 
-    /// Get the effective blur intensity with depth scaling.
+    /// Get the effective specular intensity with depth scaling.
     #[must_use]
-    pub fn effective_blur(&self) -> f32 {
-        DepthHierarchy::adjusted_blur(self.blur, self.depth_layer, self.blur_falloff)
-            * self.quality_level.blur_intensity_multiplier()
+    pub fn effective_specular(&self) -> f32 {
+        DepthHierarchy::adjusted_specular(self.specular_intensity, self.depth_layer)
     }
 
     /// Get the effective opacity with depth scaling.
@@ -531,7 +490,7 @@ impl GlassPanelConfig {
     }
 }
 
-/// Uniform buffer data for the glass panel shader.
+/// Uniform buffer data for the LQ obsidian panel shader.
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct GlassPanelUniforms {
@@ -541,14 +500,14 @@ pub struct GlassPanelUniforms {
     pub size: [f32; 2],
     /// Corner radius in pixels.
     pub corner_radius: f32,
-    /// Blur intensity.
-    pub blur: f32,
     /// Opacity.
     pub opacity: f32,
+    /// Roughness.
+    pub roughness: f32,
     /// Depth layer.
     pub depth_layer: f32,
-    /// Tint color (RGB + padding).
-    pub tint: [f32; 4],
+    /// Obsidian base color (RGB + padding).
+    pub base_color: [f32; 4],
     /// Border width.
     pub border_width: f32,
     /// Padding for alignment.
@@ -568,10 +527,10 @@ impl GlassPanelUniforms {
             position: config.position,
             size: config.size,
             corner_radius: config.corner_radius,
-            blur: config.blur,
             opacity: config.opacity,
+            roughness: config.roughness,
             depth_layer: config.depth_layer,
-            tint: [config.tint[0], config.tint[1], config.tint[2], 1.0],
+            base_color: [config.base_color[0], config.base_color[1], config.base_color[2], 1.0],
             border_width: config.border_width,
             _padding1: [0.0; 3],
             border_color: config.border_color,
@@ -581,7 +540,7 @@ impl GlassPanelUniforms {
     }
 }
 
-/// Glass panel component for rendering frosted glass UI overlays.
+/// Obsidian panel component for rendering dark glass-like UI overlays.
 pub struct GlassPanel {
     // Geometry
     vertex_buffer: wgpu::Buffer,
@@ -594,9 +553,6 @@ pub struct GlassPanel {
 
     // Uniforms
     uniform_buffer: wgpu::Buffer,
-
-    // Sampler
-    sampler: wgpu::Sampler,
 
     // Configuration
     config: GlassPanelConfig,
@@ -611,7 +567,7 @@ impl GlassPanel {
     /// Embedded shader source.
     const SHADER: &'static str = include_str!("../../shaders/glass_panel.wgsl");
 
-    /// Create a new glass panel.
+    /// Create a new obsidian panel.
     ///
     /// # Arguments
     /// * `device` - The wgpu device
@@ -637,40 +593,28 @@ impl GlassPanel {
         let indices: [u16; 6] = [0, 1, 2, 2, 3, 0];
 
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Glass Panel Vertex Buffer"),
+            label: Some("Obsidian Panel Vertex Buffer"),
             contents: bytemuck::cast_slice(&vertices),
             usage: wgpu::BufferUsages::VERTEX,
         });
 
         let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Glass Panel Index Buffer"),
+            label: Some("Obsidian Panel Index Buffer"),
             contents: bytemuck::cast_slice(&indices),
             usage: wgpu::BufferUsages::INDEX,
-        });
-
-        // Create sampler
-        let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
-            label: Some("Glass Panel Sampler"),
-            address_mode_u: wgpu::AddressMode::ClampToEdge,
-            address_mode_v: wgpu::AddressMode::ClampToEdge,
-            address_mode_w: wgpu::AddressMode::ClampToEdge,
-            mag_filter: wgpu::FilterMode::Linear,
-            min_filter: wgpu::FilterMode::Linear,
-            mipmap_filter: wgpu::FilterMode::Nearest,
-            ..Default::default()
         });
 
         // Create uniform buffer
         let uniforms = GlassPanelUniforms::from_config(&config, width, height);
         let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Glass Panel Uniforms"),
+            label: Some("Obsidian Panel Uniforms"),
             contents: bytemuck::cast_slice(&[uniforms]),
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
 
-        // Create bind group layout
+        // Create bind group layout (uniform buffer only, no backdrop texture)
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("Glass Panel Bind Group Layout"),
+            label: Some("Obsidian Panel Bind Group Layout"),
             entries: &[
                 // Uniforms
                 wgpu::BindGroupLayoutEntry {
@@ -683,42 +627,24 @@ impl GlassPanel {
                     },
                     count: None,
                 },
-                // Backdrop texture
-                wgpu::BindGroupLayoutEntry {
-                    binding: 1,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Texture {
-                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                        view_dimension: wgpu::TextureViewDimension::D2,
-                        multisampled: false,
-                    },
-                    count: None,
-                },
-                // Sampler
-                wgpu::BindGroupLayoutEntry {
-                    binding: 2,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                    count: None,
-                },
             ],
         });
 
         // Create shader module
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("Glass Panel Shader"),
+            label: Some("Obsidian Panel Shader"),
             source: wgpu::ShaderSource::Wgsl(Self::SHADER.into()),
         });
 
         // Create pipeline
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("Glass Panel Pipeline Layout"),
+            label: Some("Obsidian Panel Pipeline Layout"),
             bind_group_layouts: &[&bind_group_layout],
             push_constant_ranges: &[],
         });
 
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: Some("Glass Panel Pipeline"),
+            label: Some("Obsidian Panel Pipeline"),
             layout: Some(&pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &shader,
@@ -758,7 +684,6 @@ impl GlassPanel {
             pipeline,
             bind_group_layout,
             uniform_buffer,
-            sampler,
             config,
             width,
             height,
@@ -797,42 +722,32 @@ impl GlassPanel {
         self.height = height;
     }
 
-    /// Render the glass panel.
+    /// Render the obsidian panel.
     ///
     /// # Arguments
     /// * `device` - The wgpu device
     /// * `queue` - The wgpu queue
     /// * `encoder` - The command encoder
-    /// * `backdrop_view` - Texture view of the scene behind the panel
     /// * `output_view` - Destination texture view
     pub fn render(
         &self,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         encoder: &mut wgpu::CommandEncoder,
-        backdrop_view: &wgpu::TextureView,
         output_view: &wgpu::TextureView,
     ) {
         // Update uniforms
         let uniforms = GlassPanelUniforms::from_config(&self.config, self.width, self.height);
         queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[uniforms]));
 
-        // Create bind group
+        // Create bind group (uniform buffer only)
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("Glass Panel Bind Group"),
+            label: Some("Obsidian Panel Bind Group"),
             layout: &self.bind_group_layout,
             entries: &[
                 wgpu::BindGroupEntry {
                     binding: 0,
                     resource: self.uniform_buffer.as_entire_binding(),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 1,
-                    resource: wgpu::BindingResource::TextureView(backdrop_view),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 2,
-                    resource: wgpu::BindingResource::Sampler(&self.sampler),
                 },
             ],
         });
@@ -840,7 +755,7 @@ impl GlassPanel {
         // Render pass
         {
             let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("Glass Panel Render Pass"),
+                label: Some("Obsidian Panel Render Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: output_view,
                     resolve_target: None,
@@ -885,20 +800,38 @@ mod tests {
     #[test]
     fn test_glass_panel_uniforms_size() {
         // Should be 96 bytes (aligned to 16 bytes)
-        // position: 8, size: 8, corner_radius: 4, blur: 4, opacity: 4, depth_layer: 4
-        // tint: 16, border_width: 4, _padding1: 12, border_color: 16
+        // position: 8, size: 8, corner_radius: 4, opacity: 4, roughness: 4, depth_layer: 4
+        // base_color: 16, border_width: 4, _padding1: 12, border_color: 16
         // resolution: 8, _padding2: 8
         // Total: 8 + 8 + 4 + 4 + 4 + 4 + 16 + 4 + 12 + 16 + 8 + 8 = 96
         assert_eq!(std::mem::size_of::<GlassPanelUniforms>(), 96);
     }
 
     #[test]
+    fn test_obsidian_panel_uniforms_size() {
+        // Should be 160 bytes (10 * 16-byte aligned groups)
+        // Groups: pos+size(16), material(16), base_color(16), depth(16),
+        //         branches(16), fresnel_color+intensity(16), fresnel_power+pad(16),
+        //         border_width+pad(16), border_color(16), resolution+quality+time(16)
+        assert_eq!(std::mem::size_of::<ObsidianPanelUniforms>(), 160);
+    }
+
+    #[test]
     fn test_glass_panel_config_default() {
         let config = GlassPanelConfig::default();
         assert!((config.corner_radius - 16.0).abs() < f32::EPSILON);
-        assert!((config.blur - 0.5).abs() < f32::EPSILON);
-        assert!((config.opacity - 0.8).abs() < f32::EPSILON);
+        assert!((config.opacity - 0.9).abs() < f32::EPSILON);
         assert!((config.border_width - 1.0).abs() < f32::EPSILON);
+        assert!((config.base_color[0] - 0.02).abs() < f32::EPSILON);
+        assert!((config.base_color[1] - 0.02).abs() < f32::EPSILON);
+        assert!((config.base_color[2] - 0.03).abs() < f32::EPSILON);
+        assert!((config.ior - 1.85).abs() < f32::EPSILON);
+        assert!((config.roughness - 0.05).abs() < f32::EPSILON);
+        assert!((config.specular_intensity - 0.15).abs() < f32::EPSILON);
+        assert!((config.branch_reach - 4.0).abs() < f32::EPSILON);
+        assert!((config.branch_density - 0.08).abs() < f32::EPSILON);
+        assert!((config.branch_speed - 0.2).abs() < f32::EPSILON);
+        assert!((config.branch_energy - 0.3).abs() < f32::EPSILON);
     }
 
     // ==========================================================================
@@ -912,11 +845,19 @@ mod tests {
     }
 
     #[test]
-    fn test_panel_quality_blur_samples() {
-        assert_eq!(PanelQualityLevel::Low.blur_samples(), 8);
-        assert_eq!(PanelQualityLevel::Medium.blur_samples(), 16);
-        assert_eq!(PanelQualityLevel::High.blur_samples(), 32);
-        assert_eq!(PanelQualityLevel::Ultra.blur_samples(), 64);
+    fn test_panel_quality_specular_enabled() {
+        assert!(!PanelQualityLevel::Low.specular_enabled());
+        assert!(PanelQualityLevel::Medium.specular_enabled());
+        assert!(PanelQualityLevel::High.specular_enabled());
+        assert!(PanelQualityLevel::Ultra.specular_enabled());
+    }
+
+    #[test]
+    fn test_panel_quality_branch_enabled() {
+        assert!(!PanelQualityLevel::Low.branch_enabled());
+        assert!(!PanelQualityLevel::Medium.branch_enabled());
+        assert!(PanelQualityLevel::High.branch_enabled());
+        assert!(PanelQualityLevel::Ultra.branch_enabled());
     }
 
     #[test]
@@ -937,32 +878,24 @@ mod tests {
     #[test]
     fn test_panel_quality_feature_flags() {
         // Low - basic features only
-        assert!(!PanelQualityLevel::Low.inner_glow_enabled());
+        assert!(!PanelQualityLevel::Low.branch_enabled());
         assert!(!PanelQualityLevel::Low.hd_fresnel_enabled());
-        assert!(!PanelQualityLevel::Low.dispersion_enabled());
+        assert!(!PanelQualityLevel::Low.specular_enabled());
 
-        // Medium - still basic
-        assert!(!PanelQualityLevel::Medium.inner_glow_enabled());
+        // Medium - specular but no branches
+        assert!(!PanelQualityLevel::Medium.branch_enabled());
         assert!(!PanelQualityLevel::Medium.hd_fresnel_enabled());
-        assert!(!PanelQualityLevel::Medium.dispersion_enabled());
+        assert!(PanelQualityLevel::Medium.specular_enabled());
 
         // High - HD features enabled
-        assert!(PanelQualityLevel::High.inner_glow_enabled());
+        assert!(PanelQualityLevel::High.branch_enabled());
         assert!(PanelQualityLevel::High.hd_fresnel_enabled());
-        assert!(!PanelQualityLevel::High.dispersion_enabled());
+        assert!(PanelQualityLevel::High.specular_enabled());
 
         // Ultra - all features
-        assert!(PanelQualityLevel::Ultra.inner_glow_enabled());
+        assert!(PanelQualityLevel::Ultra.branch_enabled());
         assert!(PanelQualityLevel::Ultra.hd_fresnel_enabled());
-        assert!(PanelQualityLevel::Ultra.dispersion_enabled());
-    }
-
-    #[test]
-    fn test_panel_quality_blur_intensity_multiplier() {
-        assert!((PanelQualityLevel::Low.blur_intensity_multiplier() - 0.5).abs() < f32::EPSILON);
-        assert!((PanelQualityLevel::Medium.blur_intensity_multiplier() - 1.0).abs() < f32::EPSILON);
-        assert!((PanelQualityLevel::High.blur_intensity_multiplier() - 1.5).abs() < f32::EPSILON);
-        assert!((PanelQualityLevel::Ultra.blur_intensity_multiplier() - 2.0).abs() < f32::EPSILON);
+        assert!(PanelQualityLevel::Ultra.specular_enabled());
     }
 
     #[test]
@@ -989,8 +922,8 @@ mod tests {
     fn test_config_with_quality() {
         let config = GlassPanelConfig::with_quality(PanelQualityLevel::High);
         assert_eq!(config.quality_level, PanelQualityLevel::High);
-        // High quality enables inner glow
-        assert!(config.glow_intensity > 0.0);
+        // High quality enables branch energy
+        assert!(config.branch_energy > 0.0);
     }
 
     #[test]
@@ -998,10 +931,11 @@ mod tests {
         let mut config = GlassPanelConfig::default();
         assert_eq!(config.quality_level, PanelQualityLevel::Medium);
 
-        config.set_quality(PanelQualityLevel::Ultra);
-        assert_eq!(config.quality_level, PanelQualityLevel::Ultra);
-        // Ultra enables dispersion
-        assert!(config.dispersion > 0.0);
+        config.branch_energy = 0.0; // Reset to test auto-enable
+        config.set_quality(PanelQualityLevel::High);
+        assert_eq!(config.quality_level, PanelQualityLevel::High);
+        // High enables branches
+        assert!(config.branch_energy > 0.0);
     }
 
     // ==========================================================================
@@ -1016,19 +950,19 @@ mod tests {
     }
 
     #[test]
-    fn test_depth_hierarchy_blur_multiplier() {
-        // Foreground: minimal blur multiplier
-        let fg_mult = DepthHierarchy::blur_multiplier(DepthHierarchy::FOREGROUND);
+    fn test_depth_hierarchy_specular_multiplier() {
+        // Foreground: maximum specular
+        let fg_mult = DepthHierarchy::specular_multiplier(DepthHierarchy::FOREGROUND);
         assert!((fg_mult - 1.0).abs() < f32::EPSILON);
 
-        // Background: maximum blur multiplier
-        let bg_mult = DepthHierarchy::blur_multiplier(DepthHierarchy::BACKGROUND);
-        assert!((bg_mult - 3.0).abs() < f32::EPSILON);
+        // Background: reduced specular (1.0 - 1.0 * 0.6 = 0.4)
+        let bg_mult = DepthHierarchy::specular_multiplier(DepthHierarchy::BACKGROUND);
+        assert!((bg_mult - 0.4).abs() < f32::EPSILON);
 
         // Content: intermediate
-        let content_mult = DepthHierarchy::blur_multiplier(DepthHierarchy::CONTENT);
-        assert!(content_mult > fg_mult);
-        assert!(content_mult < bg_mult);
+        let content_mult = DepthHierarchy::specular_multiplier(DepthHierarchy::CONTENT);
+        assert!(content_mult > bg_mult);
+        assert!(content_mult < fg_mult);
     }
 
     #[test]
@@ -1046,17 +980,16 @@ mod tests {
     }
 
     #[test]
-    fn test_depth_hierarchy_adjusted_blur() {
-        let base_blur = 0.5;
-        let falloff = 1.5;
+    fn test_depth_hierarchy_adjusted_specular() {
+        let base_specular = 0.15;
 
-        let fg_blur = DepthHierarchy::adjusted_blur(base_blur, DepthHierarchy::FOREGROUND, falloff);
-        let bg_blur = DepthHierarchy::adjusted_blur(base_blur, DepthHierarchy::BACKGROUND, falloff);
+        let fg_specular = DepthHierarchy::adjusted_specular(base_specular, DepthHierarchy::FOREGROUND);
+        let bg_specular = DepthHierarchy::adjusted_specular(base_specular, DepthHierarchy::BACKGROUND);
 
-        // Background should have more blur
-        assert!(bg_blur > fg_blur);
+        // Background should have lower specular
+        assert!(bg_specular < fg_specular);
         // Foreground should be close to base
-        assert!((fg_blur - base_blur).abs() < 0.1);
+        assert!((fg_specular - base_specular).abs() < f32::EPSILON);
     }
 
     #[test]
@@ -1099,19 +1032,13 @@ mod tests {
     }
 
     // ==========================================================================
-    // HD Panel Uniforms Tests
+    // Obsidian Panel Uniforms Tests
     // ==========================================================================
 
     #[test]
-    fn test_hd_panel_uniforms_size() {
-        // Should be 176 bytes (11 * 16 bytes for proper alignment)
-        assert_eq!(std::mem::size_of::<HDPanelUniforms>(), 176);
-    }
-
-    #[test]
-    fn test_hd_panel_uniforms_from_config() {
+    fn test_obsidian_panel_uniforms_from_config() {
         let config = GlassPanelConfig::with_quality(PanelQualityLevel::Ultra);
-        let uniforms = HDPanelUniforms::from_config(&config, 1920, 1080, 0.5);
+        let uniforms = ObsidianPanelUniforms::from_config(&config, 1920, 1080, 0.5);
 
         // Check resolution
         assert!((uniforms.resolution[0] - 1920.0).abs() < f32::EPSILON);
@@ -1120,26 +1047,32 @@ mod tests {
         // Check quality level
         assert_eq!(uniforms.quality_level, PanelQualityLevel::Ultra.as_u32());
 
-        // Ultra quality enables dispersion
-        assert!(uniforms.dispersion > 0.0);
+        // Ultra quality enables branch energy
+        assert!(uniforms.branch_energy > 0.0);
 
         // Time is passed through
         assert!((uniforms.time - 0.5).abs() < f32::EPSILON);
+
+        // Base color is obsidian (near-black)
+        assert!((uniforms.base_color[0] - 0.02).abs() < f32::EPSILON);
+        assert!((uniforms.base_color[1] - 0.02).abs() < f32::EPSILON);
+        assert!((uniforms.base_color[2] - 0.03).abs() < f32::EPSILON);
+
+        // IOR is volcanic glass
+        assert!((uniforms.ior - 1.85).abs() < f32::EPSILON);
     }
 
     #[test]
-    fn test_hd_uniforms_quality_gating() {
-        // Low quality should disable HD features
+    fn test_obsidian_uniforms_quality_gating() {
+        // Low quality should disable branch energy
         let low_config = GlassPanelConfig::with_quality(PanelQualityLevel::Low);
-        let low_uniforms = HDPanelUniforms::from_config(&low_config, 1920, 1080, 0.0);
-        assert!((low_uniforms.dispersion - 0.0).abs() < f32::EPSILON);
-        assert!((low_uniforms.glow_intensity - 0.0).abs() < f32::EPSILON);
+        let low_uniforms = ObsidianPanelUniforms::from_config(&low_config, 1920, 1080, 0.0);
+        assert!((low_uniforms.branch_energy - 0.0).abs() < f32::EPSILON);
 
-        // Ultra quality should enable all HD features
-        let ultra_config = GlassPanelConfig::with_quality(PanelQualityLevel::Ultra);
-        let ultra_uniforms = HDPanelUniforms::from_config(&ultra_config, 1920, 1080, 0.0);
-        assert!(ultra_uniforms.dispersion > 0.0);
-        assert!(ultra_uniforms.glow_intensity > 0.0);
+        // High quality should enable branch energy
+        let high_config = GlassPanelConfig::with_quality(PanelQualityLevel::High);
+        let high_uniforms = ObsidianPanelUniforms::from_config(&high_config, 1920, 1080, 0.0);
+        assert!(high_uniforms.branch_energy > 0.0);
     }
 
     // ==========================================================================
@@ -1150,33 +1083,36 @@ mod tests {
     fn test_config_foreground() {
         let config = GlassPanelConfig::foreground();
         assert!((config.depth_layer - DepthHierarchy::FOREGROUND).abs() < f32::EPSILON);
-        assert!((config.blur - 0.3).abs() < f32::EPSILON);
-        assert!((config.opacity - 0.9).abs() < f32::EPSILON);
+        assert!((config.specular_intensity - 0.2).abs() < f32::EPSILON);
+        assert!((config.branch_energy - 0.5).abs() < f32::EPSILON);
+        assert!((config.opacity - 0.95).abs() < f32::EPSILON);
     }
 
     #[test]
     fn test_config_content() {
         let config = GlassPanelConfig::content();
         assert!((config.depth_layer - DepthHierarchy::CONTENT).abs() < f32::EPSILON);
-        assert!((config.blur - 0.5).abs() < f32::EPSILON);
-        assert!((config.opacity - 0.8).abs() < f32::EPSILON);
+        assert!((config.specular_intensity - 0.15).abs() < f32::EPSILON);
+        assert!((config.branch_energy - 0.3).abs() < f32::EPSILON);
+        assert!((config.opacity - 0.9).abs() < f32::EPSILON);
     }
 
     #[test]
     fn test_config_background() {
         let config = GlassPanelConfig::background();
         assert!((config.depth_layer - DepthHierarchy::BACKGROUND).abs() < f32::EPSILON);
-        assert!((config.blur - 0.8).abs() < f32::EPSILON);
-        assert!((config.opacity - 0.6).abs() < f32::EPSILON);
+        assert!((config.specular_intensity - 0.08).abs() < f32::EPSILON);
+        assert!((config.branch_energy - 0.1).abs() < f32::EPSILON);
+        assert!((config.opacity - 0.85).abs() < f32::EPSILON);
     }
 
     #[test]
-    fn test_config_effective_blur() {
+    fn test_config_effective_specular() {
         let fg_config = GlassPanelConfig::foreground();
         let bg_config = GlassPanelConfig::background();
 
-        // Background should have higher effective blur
-        assert!(bg_config.effective_blur() > fg_config.effective_blur());
+        // Foreground should have higher effective specular
+        assert!(fg_config.effective_specular() > bg_config.effective_specular());
     }
 
     #[test]
