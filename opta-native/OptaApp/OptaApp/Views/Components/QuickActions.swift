@@ -44,6 +44,7 @@ struct QuickActions: View {
             ) {
                 coreManager.executeStealthMode()
             }
+            .organicAppear(index: 0, total: 3)
 
             QuickActionButton(
                 title: "Scan Games",
@@ -52,6 +53,7 @@ struct QuickActions: View {
             ) {
                 coreManager.dispatch(.scanGames)
             }
+            .organicAppear(index: 1, total: 3)
 
             QuickActionButton(
                 title: "Score",
@@ -60,6 +62,7 @@ struct QuickActions: View {
             ) {
                 coreManager.navigate(to: .optimize)
             }
+            .organicAppear(index: 2, total: 3)
         }
     }
 }
@@ -151,12 +154,13 @@ struct QuickActionButton: View {
             )
         }
         .buttonStyle(PlainButtonStyle())
+        .organicHover(isHovered: isHovered, id: "quickAction-\(title)")
         .onHover { hovering in
             guard !reduceMotion else {
                 isHovered = hovering
                 return
             }
-            withAnimation(.easeInOut(duration: 0.2)) {
+            withAnimation(OrganicMotion.organicSpring(for: "quickAction-\(title)", intensity: .medium)) {
                 isHovered = hovering
             }
         }
@@ -167,7 +171,7 @@ struct QuickActionButton: View {
                         if reduceMotion {
                             isPressed = true
                         } else {
-                            withAnimation(.spring(response: 0.15, dampingFraction: 0.7)) {
+                            withAnimation(OrganicMotion.organicSpring(for: "quickAction-\(title)-press", intensity: .energetic)) {
                                 isPressed = true
                             }
                         }
@@ -177,7 +181,7 @@ struct QuickActionButton: View {
                     if reduceMotion {
                         isPressed = false
                     } else {
-                        withAnimation(.spring(response: 0.15, dampingFraction: 0.7)) {
+                        withAnimation(OrganicMotion.organicSpring(for: "quickAction-\(title)-press", intensity: .energetic)) {
                             isPressed = false
                         }
                     }
@@ -255,10 +259,11 @@ struct QuickActionButton: View {
 
     // MARK: - Methods
 
-    /// Start the loading pulse animation
+    /// Start the loading pulse animation with organic timing
     private func startLoadingPulse() {
+        let duration = OrganicMotion.ambientDuration(for: "quickAction-\(title)-loading")
         withAnimation(
-            .easeInOut(duration: 0.8)
+            .easeInOut(duration: min(duration, 2.0))
             .repeatForever(autoreverses: true)
         ) {
             loadingPulse = true
