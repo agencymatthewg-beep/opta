@@ -1645,7 +1645,9 @@ Plans:
 - Smooth transitions between states (spring-based, not linear)
 
 Plans:
-- [ ] 89-01: TBD (run /gsd:plan-phase 89 to break down)
+- [ ] 89-01: Color Temperature Foundation (2 tasks, wave 1)
+- [ ] 89-02: Dashboard Temperature Integration (3 tasks, wave 2)
+- [ ] 89-03: Menu Bar & Games Temperature Integration (3 tasks, wave 2)
 
 #### Phase 90: Visual Cohesion Launch
 **Goal**: Full integration audit ensuring every component matches the refined aesthetic
