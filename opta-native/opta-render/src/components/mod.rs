@@ -50,7 +50,10 @@ mod ring;
 mod telemetry;
 
 pub use cpu_meter::{CpuMeter, CpuMeterConfig, CpuMeterUniforms, MeterVertex};
-pub use glass_panel::{GlassPanel, GlassPanelConfig, GlassPanelUniforms, PanelVertex};
+pub use glass_panel::{
+    DepthHierarchy, GlassPanel, GlassPanelConfig, GlassPanelUniforms, PanelQualityLevel,
+    PanelVertex,
+};
 pub use memory_meter::{MemoryMeter, MemoryMeterConfig, MemoryMeterUniforms, MemoryMeterVertex};
 pub use ring::{
     generate_torus_geometry, OptaRing, RingConfig, RingQualityLevel, RingSpringState, RingState,

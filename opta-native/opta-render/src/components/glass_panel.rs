@@ -2,11 +2,208 @@
 //!
 //! Provides a reusable glass panel rendering system with blur and depth effects.
 //! Uses SDF-based rounded rectangles with configurable blur, opacity, and tint.
+//!
+//! # Quality Levels
+//!
+//! The panel supports multiple quality levels for different performance targets:
+//!
+//! - **Low**: 8 blur samples, basic effects (60fps on low-end devices)
+//! - **Medium**: 16 blur samples, standard effects (default)
+//! - **High**: 32 blur samples, HD fresnel + inner glow
+//! - **Ultra**: 64 blur samples, full Cook-Torrance + dispersion
+//!
+//! # Depth Hierarchy
+//!
+//! Panels support depth-based rendering where background panels have more blur:
+//!
+//! - `depth_layer = 0.0`: Foreground (modals, tooltips) - minimal blur
+//! - `depth_layer = 0.5`: Content (cards, sections) - medium blur
+//! - `depth_layer = 1.0`: Background (ambient elements) - maximum blur
+//!
+//! # Example
+//!
+//! ```ignore
+//! use opta_render::components::{GlassPanel, GlassPanelConfig, PanelQualityLevel};
+//!
+//! let config = GlassPanelConfig::with_quality(PanelQualityLevel::High);
+//! let panel = GlassPanel::new(&device, surface_format, width, height);
+//! ```
 
 // Allow precision loss for u32 -> f32 conversions in graphics code
 #![allow(clippy::cast_precision_loss)]
 
+use crate::quality::QualityLevel;
 use wgpu::util::DeviceExt;
+
+// =============================================================================
+// Quality Level Enum
+// =============================================================================
+
+/// Quality level for glass panels.
+///
+/// Controls blur sample counts and visual effect complexity.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[repr(C)]
+pub enum PanelQualityLevel {
+    /// Low quality - 8 blur samples, basic fresnel.
+    /// Suitable for low-power devices or background panels.
+    Low,
+
+    /// Medium quality - 16 blur samples, standard fresnel.
+    /// Default quality level for most devices.
+    #[default]
+    Medium,
+
+    /// High quality - 32 blur samples, HD fresnel + inner glow.
+    /// For high-end devices with ProMotion displays.
+    High,
+
+    /// Ultra quality - 64 blur samples, full Cook-Torrance + dispersion.
+    /// For maximum visual fidelity on powerful GPUs.
+    Ultra,
+}
+
+impl PanelQualityLevel {
+    /// Get the blur sample count for this quality level.
+    #[must_use]
+    pub const fn blur_samples(self) -> u32 {
+        match self {
+            Self::Low => 8,
+            Self::Medium => 16,
+            Self::High => 32,
+            Self::Ultra => 64,
+        }
+    }
+
+    /// Check if blur is enabled for this quality level.
+    #[must_use]
+    pub const fn blur_enabled(self) -> bool {
+        !matches!(self, Self::Low) || true // Low still has basic blur
+    }
+
+    /// Check if inner glow is enabled for this quality level.
+    #[must_use]
+    pub const fn inner_glow_enabled(self) -> bool {
+        matches!(self, Self::High | Self::Ultra)
+    }
+
+    /// Check if HD fresnel (Cook-Torrance) is enabled.
+    #[must_use]
+    pub const fn hd_fresnel_enabled(self) -> bool {
+        matches!(self, Self::High | Self::Ultra)
+    }
+
+    /// Check if dispersion (chromatic aberration) is enabled.
+    #[must_use]
+    pub const fn dispersion_enabled(self) -> bool {
+        matches!(self, Self::Ultra)
+    }
+
+    /// Get the blur intensity multiplier for this quality level.
+    #[must_use]
+    pub const fn blur_intensity_multiplier(self) -> f32 {
+        match self {
+            Self::Low => 0.5,
+            Self::Medium => 1.0,
+            Self::High => 1.5,
+            Self::Ultra => 2.0,
+        }
+    }
+
+    /// Convert from integer value.
+    #[must_use]
+    pub const fn from_u32(value: u32) -> Self {
+        match value {
+            0 => Self::Low,
+            1 => Self::Medium,
+            2 => Self::High,
+            _ => Self::Ultra,
+        }
+    }
+
+    /// Convert to integer value.
+    #[must_use]
+    pub const fn as_u32(self) -> u32 {
+        match self {
+            Self::Low => 0,
+            Self::Medium => 1,
+            Self::High => 2,
+            Self::Ultra => 3,
+        }
+    }
+
+    /// Convert from adaptive quality level.
+    #[must_use]
+    pub const fn from_quality_level(quality: QualityLevel) -> Self {
+        match quality {
+            QualityLevel::Low => Self::Low,
+            QualityLevel::Medium => Self::Medium,
+            QualityLevel::High => Self::High,
+            QualityLevel::Ultra => Self::Ultra,
+        }
+    }
+
+    /// Convert to adaptive quality level.
+    #[must_use]
+    pub const fn to_quality_level(self) -> QualityLevel {
+        match self {
+            Self::Low => QualityLevel::Low,
+            Self::Medium => QualityLevel::Medium,
+            Self::High => QualityLevel::High,
+            Self::Ultra => QualityLevel::Ultra,
+        }
+    }
+}
+
+// =============================================================================
+// Depth Hierarchy
+// =============================================================================
+
+/// Depth hierarchy levels for glass panels.
+///
+/// Defines standard depth values for consistent layering.
+#[derive(Debug, Clone, Copy)]
+pub struct DepthHierarchy;
+
+impl DepthHierarchy {
+    /// Foreground depth (modals, tooltips, overlays).
+    /// Minimal blur for sharp, immediate UI elements.
+    pub const FOREGROUND: f32 = 0.0;
+
+    /// Content depth (cards, sections, widgets).
+    /// Standard blur for content containers.
+    pub const CONTENT: f32 = 0.5;
+
+    /// Background depth (ambient elements, decorations).
+    /// Maximum blur for distant elements.
+    pub const BACKGROUND: f32 = 1.0;
+
+    /// Get blur multiplier for a given depth.
+    ///
+    /// Deeper panels have more blur to simulate depth of field.
+    #[must_use]
+    pub fn blur_multiplier(depth: f32) -> f32 {
+        1.0 + depth * 2.0
+    }
+
+    /// Get opacity multiplier for a given depth.
+    ///
+    /// Deeper panels are slightly more transparent.
+    #[must_use]
+    pub fn opacity_multiplier(depth: f32) -> f32 {
+        1.0 - depth * 0.2
+    }
+
+    /// Calculate depth-adjusted blur intensity.
+    #[must_use]
+    pub fn adjusted_blur(base_blur: f32, depth: f32, falloff: f32) -> f32 {
+        base_blur * (1.0 + depth.powf(falloff) * 2.0)
+    }
+}
+
+// =============================================================================
+// Vertex Type
+// =============================================================================
 
 /// Simple vertex for panel rendering (position and UV only).
 #[repr(C)]
@@ -68,10 +265,33 @@ pub struct GlassPanelConfig {
     pub border_color: [f32; 4],
     /// Depth layer (0.0 = foreground, higher = further back).
     pub depth_layer: f32,
+    /// Quality level for blur and effects.
+    pub quality_level: PanelQualityLevel,
+    /// Index of refraction for HD glass (1.5 = crown glass).
+    pub ior: f32,
+    /// Surface roughness for HD glass (0.0 = mirror, 1.0 = diffuse).
+    pub roughness: f32,
+    /// Dispersion amount for chromatic aberration (0.0 = none).
+    pub dispersion: f32,
+    /// Blur falloff curve exponent for depth scaling.
+    pub blur_falloff: f32,
+    /// Fresnel edge highlight color (RGB).
+    pub fresnel_color: [f32; 3],
+    /// Fresnel edge highlight intensity.
+    pub fresnel_intensity: f32,
+    /// Fresnel edge power (controls sharpness).
+    pub fresnel_power: f32,
+    /// Inner glow color (RGB).
+    pub glow_color: [f32; 3],
+    /// Inner glow intensity.
+    pub glow_intensity: f32,
+    /// Inner glow radius in pixels.
+    pub glow_radius: f32,
 }
 
 impl Default for GlassPanelConfig {
     fn default() -> Self {
+        let quality = PanelQualityLevel::default();
         Self {
             position: [0.0, 0.0],
             size: [200.0, 150.0],
@@ -82,7 +302,88 @@ impl Default for GlassPanelConfig {
             border_width: 1.0,
             border_color: [1.0, 1.0, 1.0, 0.2],
             depth_layer: 0.0,
+            quality_level: quality,
+            ior: 1.5,
+            roughness: 0.05,
+            dispersion: 0.0,
+            blur_falloff: 1.5,
+            fresnel_color: [1.0, 1.0, 1.0],
+            fresnel_intensity: 0.15,
+            fresnel_power: 3.0,
+            glow_color: [0.4, 0.6, 1.0],
+            glow_intensity: 0.0,
+            glow_radius: 20.0,
         }
+    }
+}
+
+impl GlassPanelConfig {
+    /// Create a new configuration with the specified quality level.
+    #[must_use]
+    pub fn with_quality(quality: PanelQualityLevel) -> Self {
+        let mut config = Self::default();
+        config.set_quality(quality);
+        config
+    }
+
+    /// Create a foreground panel configuration (modals, tooltips).
+    #[must_use]
+    pub fn foreground() -> Self {
+        Self {
+            depth_layer: DepthHierarchy::FOREGROUND,
+            blur: 0.3,
+            opacity: 0.9,
+            ..Self::default()
+        }
+    }
+
+    /// Create a content panel configuration (cards, sections).
+    #[must_use]
+    pub fn content() -> Self {
+        Self {
+            depth_layer: DepthHierarchy::CONTENT,
+            blur: 0.5,
+            opacity: 0.8,
+            ..Self::default()
+        }
+    }
+
+    /// Create a background panel configuration (ambient elements).
+    #[must_use]
+    pub fn background() -> Self {
+        Self {
+            depth_layer: DepthHierarchy::BACKGROUND,
+            blur: 0.8,
+            opacity: 0.6,
+            ..Self::default()
+        }
+    }
+
+    /// Set the quality level and update related properties.
+    pub fn set_quality(&mut self, quality: PanelQualityLevel) {
+        self.quality_level = quality;
+
+        // Enable HD features based on quality
+        if quality.inner_glow_enabled() && self.glow_intensity == 0.0 {
+            self.glow_intensity = 0.1;
+        }
+
+        if quality.dispersion_enabled() && self.dispersion == 0.0 {
+            self.dispersion = 0.02;
+        }
+    }
+
+    /// Get the effective blur intensity with depth scaling.
+    #[must_use]
+    pub fn effective_blur(&self) -> f32 {
+        DepthHierarchy::adjusted_blur(self.blur, self.depth_layer, self.blur_falloff)
+            * self.quality_level.blur_intensity_multiplier()
+    }
+
+    /// Get the effective opacity with depth scaling.
+    #[must_use]
+    pub fn effective_opacity(&self) -> f32 {
+        self.opacity * DepthHierarchy::opacity_multiplier(self.depth_layer)
     }
 }
 
@@ -157,6 +458,9 @@ pub struct GlassPanel {
     config: GlassPanelConfig,
     width: u32,
     height: u32,
+
+    // Quality level
+    quality_level: PanelQualityLevel,
 }
 
 impl GlassPanel {
@@ -314,17 +618,33 @@ impl GlassPanel {
             config,
             width,
             height,
+            quality_level: config.quality_level,
         }
     }
 
     /// Update the panel configuration.
     pub fn set_config(&mut self, config: GlassPanelConfig) {
         self.config = config;
+        self.quality_level = config.quality_level;
     }
 
     /// Get the current configuration.
     pub fn config(&self) -> &GlassPanelConfig {
         &self.config
+    }
+
+    /// Get the current quality level.
+    #[must_use]
+    pub fn quality_level(&self) -> PanelQualityLevel {
+        self.quality_level
+    }
+
+    /// Set the quality level.
+    ///
+    /// Updates both the internal quality level and the configuration.
+    pub fn set_quality(&mut self, quality: PanelQualityLevel) {
+        self.quality_level = quality;
+        self.config.set_quality(quality);
     }
 
     /// Resize the panel render target.

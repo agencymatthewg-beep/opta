@@ -148,7 +148,11 @@ pub mod shader;
 pub mod state;
 pub mod surface;
 pub mod texture;
+pub mod theme;
 pub mod timing;
+
+// Accessibility module
+pub mod accessibility;
 
 // Re-export main types from Plan 60-02
 pub use buffer::{IndexBuffer, Vertex2D, VertexBuffer};
@@ -218,6 +222,14 @@ pub use texture::{TextureData, TextureError, TextureFormat, TextureLoader};
 #[cfg(target_os = "linux")]
 pub use platform::linux::{get_vulkan_adapter_info, is_vulkan_available};
 pub use platform::recommended_backend;
+
+// Re-export theme types from Plan 78-02
+pub use theme::{ColorTemperature, EffectPreset, PresetConfig, TemperatureColors};
+
+// Re-export accessibility types from Plan 78-02
+pub use accessibility::{
+    ContrastPreference, HighContrastConfig, MotionPreference, ReducedMotionConfig,
+};
 
 /// Crate version string.
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
