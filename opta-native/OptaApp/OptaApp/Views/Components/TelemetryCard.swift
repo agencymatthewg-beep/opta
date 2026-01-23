@@ -3,21 +3,23 @@
 //  OptaApp
 //
 //  Reusable telemetry card component for CPU, Memory, GPU displays.
-//  Features glass styling, sparkline chart, and animated value transitions.
+//  Features obsidian panel background, branch-energy violet meter,
+//  and animated value transitions.
 //
 
 import SwiftUI
 
 // MARK: - TelemetryCard
 
-/// A reusable card displaying telemetry metrics with sparkline history.
+/// A reusable card displaying telemetry metrics with obsidian styling.
 ///
 /// Features:
-/// - Title with SF Symbol icon
+/// - Title with SF Symbol icon and branch-energy status indicator
 /// - Large animated percentage value
-/// - Mini sparkline showing history
-/// - Color-coded indicator based on usage level
-/// - Glass card styling with OLED optimization
+/// - Branch-energy-inspired horizontal meter bar
+/// - Mini sparkline showing history below the meter
+/// - Obsidian background with violet border glow
+/// - OLED-optimized deep black base
 ///
 /// # Usage
 ///
@@ -26,7 +28,6 @@ import SwiftUI
 ///     title: "CPU",
 ///     value: coreManager.viewModel.cpuUsage,
 ///     icon: "cpu",
-///     color: .blue,
 ///     history: coreManager.viewModel.cpuHistory
 /// )
 /// ```
@@ -43,8 +44,8 @@ struct TelemetryCard: View {
     /// SF Symbol name for the icon
     let icon: String
 
-    /// Accent color for the card
-    let color: Color
+    /// Accent color for the card (unused in obsidian mode; kept for API compat)
+    var color: Color = Color(hex: "8B5CF6")
 
     /// History of values for sparkline (last 30 values)
     let history: [Float]
@@ -55,51 +56,77 @@ struct TelemetryCard: View {
     /// Animation state for the value
     @State private var animatedValue: Float = 0
 
+    // MARK: - Constants
+
+    /// Branch-energy violet accent color
+    private static let branchViolet = Color(hex: "8B5CF6")
+
+    /// Obsidian background base color
+    private static let obsidianBase = Color(hex: "0A0A0F")
+
+    // MARK: - Computed Properties
+
+    /// Normalized energy level [0, 1] derived from value
+    private var energyLevel: Float {
+        max(0, min(1, value / 100.0))
+    }
+
+    /// Status color based on usage thresholds
+    private var statusColor: Color {
+        if value < 60 {
+            return .green
+        } else if value < 85 {
+            return .yellow
+        } else {
+            return .red
+        }
+    }
+
+    /// Branch indicator energy based on status tier
+    private var indicatorEnergy: Float {
+        if value < 60 {
+            return 0.3
+        } else if value < 85 {
+            return 0.6
+        } else {
+            return 1.0
+        }
+    }
+
+    /// Border glow opacity based on energy
+    private var borderGlowOpacity: Double {
+        Double(energyLevel) * 0.5
+    }
+
     // MARK: - Body
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Header: Icon + Title
-            HStack(spacing: 8) {
-                Image(systemName: icon)
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundStyle(color)
-
-                Text(title)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.9))
-
-                Spacer()
-
-                // Status indicator
-                statusIndicator
-            }
+        VStack(alignment: .leading, spacing: 10) {
+            // Header: Icon + Title + Status Indicator
+            headerRow
 
             // Value display
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text("\(Int(animatedValue))")
-                    .font(.system(size: 36, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
-                    .contentTransition(.numericText())
-                    .animation(reduceMotion ? .none : .spring(response: 0.3, dampingFraction: 0.7), value: animatedValue)
+            valueDisplay
 
-                Text("%")
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.6))
-            }
+            // Branch-energy meter bar
+            branchMeterBar
+                .frame(height: 32)
 
-            // Sparkline chart
-            SparklineView(data: history, color: indicatorColor)
-                .frame(height: 40)
+            // Mini sparkline (compact, below meter)
+            SparklineView(data: history, color: Self.branchViolet)
+                .frame(height: 20)
         }
         .padding(16)
-        .background(glassBackground)
+        .background(obsidianBackground)
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                .stroke(
+                    Self.branchViolet.opacity(borderGlowOpacity),
+                    lineWidth: 1.5
+                )
         )
-        .shadow(color: .black.opacity(0.2), radius: 10, x: 0, y: 5)
+        .shadow(color: Self.branchViolet.opacity(Double(energyLevel) * 0.15), radius: 12, x: 0, y: 4)
         .onChange(of: value) { _, newValue in
             if reduceMotion {
                 animatedValue = newValue
@@ -116,124 +143,120 @@ struct TelemetryCard: View {
 
     // MARK: - Subviews
 
-    /// Glass background effect
-    private var glassBackground: some View {
+    /// Header row with icon, title, and branch-energy status indicator
+    private var headerRow: some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.system(size: 16, weight: .medium))
+                .foregroundStyle(Self.branchViolet.opacity(Double(0.6 + energyLevel * 0.4)))
+
+            Text(title)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.9))
+
+            Spacer()
+
+            // Branch-energy status indicator (SwiftUI approximation of BranchIndicator)
+            branchStatusIndicator
+        }
+    }
+
+    /// Value display with large percentage number
+    private var valueDisplay: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 4) {
+            Text("\(Int(animatedValue))")
+                .font(.system(size: 36, weight: .bold, design: .rounded))
+                .foregroundStyle(.white)
+                .contentTransition(.numericText())
+                .animation(reduceMotion ? .none : .spring(response: 0.3, dampingFraction: 0.7), value: animatedValue)
+
+            Text("%")
+                .font(.system(size: 18, weight: .medium))
+                .foregroundStyle(.white.opacity(0.6))
+        }
+    }
+
+    /// Obsidian background with depth gradient (no glass/ultraThinMaterial)
+    private var obsidianBackground: some View {
         ZStack {
-            // Base dark color (OLED optimized)
-            Color(hex: "09090B")
+            // Deep obsidian base (OLED optimized)
+            Self.obsidianBase
 
-            // Glass overlay
-            Rectangle()
-                .fill(.ultraThinMaterial)
-                .opacity(0.5)
+            // Subtle depth gradient from top-left to bottom-right
+            LinearGradient(
+                colors: [
+                    Self.branchViolet.opacity(Double(energyLevel) * 0.04),
+                    Color.clear
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
         }
     }
 
-    /// Status indicator circle
-    private var statusIndicator: some View {
-        Circle()
-            .fill(indicatorColor)
-            .frame(width: 8, height: 8)
-            .shadow(color: indicatorColor.opacity(0.5), radius: 4, x: 0, y: 0)
-    }
+    /// Branch-energy status indicator (SwiftUI approximation)
+    private var branchStatusIndicator: some View {
+        ZStack {
+            // Outer glow ring
+            Circle()
+                .stroke(
+                    Self.branchViolet.opacity(Double(indicatorEnergy) * 0.6),
+                    lineWidth: 1.5
+                )
+                .frame(width: 12, height: 12)
 
-    // MARK: - Computed Properties
-
-    /// Color based on usage level
-    private var indicatorColor: Color {
-        if value < 60 {
-            return .green
-        } else if value < 85 {
-            return .yellow
-        } else {
-            return .red
+            // Inner core
+            Circle()
+                .fill(statusColor)
+                .frame(width: 6, height: 6)
+                .shadow(color: statusColor.opacity(0.6), radius: 3, x: 0, y: 0)
         }
     }
-}
 
-// MARK: - SparklineView
-
-/// A mini sparkline chart for displaying telemetry history.
-struct SparklineView: View {
-
-    /// Data points for the chart
-    let data: [Float]
-
-    /// Line color
-    let color: Color
-
-    /// Padding for the chart
-    private let padding: CGFloat = 2
-
-    var body: some View {
+    /// Branch-energy meter bar (SwiftUI approximation of BranchMeter)
+    private var branchMeterBar: some View {
         GeometryReader { geometry in
-            if data.count >= 2 {
-                let points = calculatePoints(in: geometry.size)
+            let fillWidth = geometry.size.width * CGFloat(max(0, min(1, animatedValue / 100.0)))
 
-                ZStack {
-                    // Gradient fill below the line
-                    Path { path in
-                        guard let firstPoint = points.first else { return }
+            ZStack(alignment: .leading) {
+                // Track background
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(Color.white.opacity(0.06))
 
-                        path.move(to: CGPoint(x: firstPoint.x, y: geometry.size.height))
-                        path.addLine(to: firstPoint)
-
-                        for point in points.dropFirst() {
-                            path.addLine(to: point)
-                        }
-
-                        if let lastPoint = points.last {
-                            path.addLine(to: CGPoint(x: lastPoint.x, y: geometry.size.height))
-                        }
-
-                        path.closeSubpath()
-                    }
+                // Fill bar with branch-energy violet gradient
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
                     .fill(
                         LinearGradient(
-                            colors: [color.opacity(0.3), color.opacity(0.0)],
-                            startPoint: .top,
-                            endPoint: .bottom
+                            colors: [
+                                Self.branchViolet.opacity(0.7),
+                                Self.branchViolet.opacity(Double(energyLevel) * 0.9 + 0.1)
+                            ],
+                            startPoint: .leading,
+                            endPoint: .trailing
                         )
                     )
+                    .frame(width: fillWidth)
+                    .animation(reduceMotion ? .none : .spring(response: 0.4, dampingFraction: 0.8), value: animatedValue)
 
-                    // Line path
-                    Path { path in
-                        guard let firstPoint = points.first else { return }
-                        path.move(to: firstPoint)
-
-                        for point in points.dropFirst() {
-                            path.addLine(to: point)
-                        }
-                    }
-                    .stroke(color, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+                // Branch vein overlay (subtle texture lines along the fill)
+                if energyLevel > 0.3 {
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    Color.white.opacity(Double(energyLevel) * 0.08),
+                                    Color.clear,
+                                    Color.white.opacity(Double(energyLevel) * 0.05),
+                                    Color.clear
+                                ],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .frame(width: fillWidth)
+                        .animation(reduceMotion ? .none : .spring(response: 0.4, dampingFraction: 0.8), value: animatedValue)
                 }
-            } else {
-                // Empty state
-                Rectangle()
-                    .fill(Color.white.opacity(0.05))
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
             }
-        }
-    }
-
-    /// Calculate points for the chart based on data and size
-    private func calculatePoints(in size: CGSize) -> [CGPoint] {
-        guard !data.isEmpty else { return [] }
-
-        let maxValue = max(data.max() ?? 100, 100) // At least 100 for percentage
-        let minValue = min(data.min() ?? 0, 0)
-        let range = maxValue - minValue
-
-        let effectiveWidth = size.width - (padding * 2)
-        let effectiveHeight = size.height - (padding * 2)
-
-        let xStep = data.count > 1 ? effectiveWidth / CGFloat(data.count - 1) : 0
-
-        return data.enumerated().map { index, value in
-            let x = padding + CGFloat(index) * xStep
-            let normalizedValue = range > 0 ? (value - minValue) / range : 0.5
-            let y = padding + effectiveHeight * (1 - CGFloat(normalizedValue))
-            return CGPoint(x: x, y: y)
         }
     }
 }
@@ -278,7 +301,6 @@ struct TelemetryCard_Previews: PreviewProvider {
                 title: "CPU",
                 value: 45,
                 icon: "cpu",
-                color: .blue,
                 history: [30, 35, 45, 50, 45, 40, 55, 60, 45, 42, 45]
             )
 
@@ -286,7 +308,6 @@ struct TelemetryCard_Previews: PreviewProvider {
                 title: "Memory",
                 value: 72,
                 icon: "memorychip",
-                color: .purple,
                 history: [65, 68, 70, 72, 71, 70, 72, 74, 72, 70, 72]
             )
 
@@ -294,12 +315,11 @@ struct TelemetryCard_Previews: PreviewProvider {
                 title: "GPU",
                 value: 88,
                 icon: "gpu",
-                color: .orange,
                 history: [80, 82, 85, 88, 90, 88, 86, 88, 90, 92, 88]
             )
         }
         .padding()
-        .background(Color(hex: "09090B"))
+        .background(Color(hex: "0A0A0F"))
         .preferredColorScheme(.dark)
     }
 }
