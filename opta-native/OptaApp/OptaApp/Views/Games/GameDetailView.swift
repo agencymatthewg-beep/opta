@@ -54,7 +54,7 @@ struct GameDetailView: View {
             }
             .padding(20)
         }
-        .background(Color(hex: "09090B"))
+        .background(Color(hex: "0A0A0F"))
         .navigationTitle(game.name)
         .toolbar {
             ToolbarItem(placement: .navigation) {
@@ -149,10 +149,14 @@ struct GameDetailView: View {
         .padding(20)
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(.ultraThinMaterial)
+                .fill(Color(hex: "0A0A0F"))
                 .overlay(
                     RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                        .fill(Color.white.opacity(0.05))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color(hex: "8B5CF6").opacity(0.08), lineWidth: 1)
                 )
         )
     }
@@ -172,9 +176,14 @@ struct GameDetailView: View {
 
     private var optimizationSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Optimization")
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(.white)
+            HStack(spacing: 8) {
+                RoundedRectangle(cornerRadius: 1)
+                    .fill(Color(hex: "8B5CF6"))
+                    .frame(width: 2, height: 16)
+                Text("Optimization")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(.white)
+            }
 
             HStack(spacing: 12) {
                 // Profile card
@@ -210,10 +219,14 @@ struct GameDetailView: View {
                 .padding(16)
                 .background(
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(.ultraThinMaterial)
+                        .fill(Color(hex: "0A0A0F"))
                         .overlay(
                             RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                                .fill(Color.white.opacity(0.05))
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color(hex: "8B5CF6").opacity(0.08), lineWidth: 1)
                         )
                 )
 
@@ -247,12 +260,16 @@ struct GameDetailView: View {
                             Text("Edit Profile")
                         }
                         .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Color(hex: "8B5CF6"))
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
                         .background(
                             RoundedRectangle(cornerRadius: 8)
-                                .fill(Color.white.opacity(0.1))
+                                .fill(Color(hex: "0A0A0F"))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .stroke(Color(hex: "8B5CF6").opacity(0.2), lineWidth: 1)
+                                )
                         )
                     }
                     .buttonStyle(.plain)
@@ -292,10 +309,14 @@ struct GameDetailView: View {
         .padding(20)
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(.ultraThinMaterial)
+                .fill(Color(hex: "0A0A0F"))
                 .overlay(
                     RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                        .fill(Color.white.opacity(0.05))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color(hex: "8B5CF6").opacity(0.08), lineWidth: 1)
                 )
         )
     }
@@ -320,9 +341,14 @@ struct GameDetailView: View {
 
     private var performanceHistorySection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Performance History")
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(.white)
+            HStack(spacing: 8) {
+                RoundedRectangle(cornerRadius: 1)
+                    .fill(Color(hex: "8B5CF6"))
+                    .frame(width: 2, height: 16)
+                Text("Performance History")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(.white)
+            }
 
             if game.performanceHistory.isEmpty {
                 // Empty state
@@ -415,10 +441,14 @@ struct GameDetailView: View {
         .padding(20)
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(.ultraThinMaterial)
+                .fill(Color(hex: "0A0A0F"))
                 .overlay(
                     RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                        .fill(Color.white.opacity(0.05))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color(hex: "8B5CF6").opacity(0.08), lineWidth: 1)
                 )
         )
     }
@@ -454,9 +484,14 @@ struct GameDetailView: View {
 
     private var quickActionsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Quick Actions")
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(.white)
+            HStack(spacing: 8) {
+                RoundedRectangle(cornerRadius: 1)
+                    .fill(Color(hex: "8B5CF6"))
+                    .frame(width: 2, height: 16)
+                Text("Quick Actions")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(.white)
+            }
 
             HStack(spacing: 12) {
                 // Launch Game
@@ -491,10 +526,14 @@ struct GameDetailView: View {
         .padding(20)
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(.ultraThinMaterial)
+                .fill(Color(hex: "0A0A0F"))
                 .overlay(
                     RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                        .fill(Color.white.opacity(0.05))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color(hex: "8B5CF6").opacity(0.08), lineWidth: 1)
                 )
         )
     }
@@ -558,19 +597,16 @@ struct GameDetailView: View {
 
         // Launch via NSWorkspace
         let url = URL(fileURLWithPath: game.executablePath)
-        NSWorkspace.shared.open(url) { _, error in
-            DispatchQueue.main.async {
-                isLaunching = false
-                if let error = error {
-                    print("[GameDetailView] Launch error: \(error)")
-                } else {
-                    // Update last played
-                    game.lastPlayed = Date()
-                    Task {
-                        await GameDetectionService.shared.updateGame(game)
-                    }
-                }
+        let success = NSWorkspace.shared.open(url)
+        isLaunching = false
+        if success {
+            // Update last played
+            game.lastPlayed = Date()
+            Task {
+                await GameDetectionService.shared.updateGame(game)
             }
+        } else {
+            print("[GameDetailView] Launch failed for: \(game.name)")
         }
     }
 
@@ -651,7 +687,7 @@ struct ProfileEditorSheet: View {
                 .buttonStyle(.plain)
             }
             .padding(16)
-            .background(Color(hex: "09090B"))
+            .background(Color(hex: "0A0A0F"))
 
             Divider()
                 .background(Color.white.opacity(0.1))
@@ -775,10 +811,10 @@ struct ProfileEditorSheet: View {
                 .buttonStyle(.plain)
             }
             .padding(16)
-            .background(Color(hex: "09090B"))
+            .background(Color(hex: "0A0A0F"))
         }
         .frame(width: 400, height: 500)
-        .background(Color(hex: "0A0A0C"))
+        .background(Color(hex: "0A0A0F"))
     }
 
     private func saveProfile() {
