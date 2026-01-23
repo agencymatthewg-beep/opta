@@ -207,9 +207,18 @@ struct DashboardView: View {
                 OptaTextZone(text: "System ready")
             }
         }
-        .animation(.easeInOut(duration: 0.3), value: coreManager.viewModel.thermalState.rawValue)
-        .animation(.easeInOut(duration: 0.3), value: coreManager.viewModel.memoryPressure.rawValue)
-        .animation(.easeInOut(duration: 0.3), value: coreManager.viewModel.stealthModeActive)
+        .animation(
+            reduceMotion ? .none : OrganicMotion.organicSpring(for: "dashboard-thermal", intensity: .medium),
+            value: coreManager.viewModel.thermalState.rawValue
+        )
+        .animation(
+            reduceMotion ? .none : OrganicMotion.organicSpring(for: "dashboard-memory", intensity: .medium),
+            value: coreManager.viewModel.memoryPressure.rawValue
+        )
+        .animation(
+            reduceMotion ? .none : OrganicMotion.organicSpring(for: "dashboard-stealth", intensity: .energetic),
+            value: coreManager.viewModel.stealthModeActive
+        )
     }
 
     /// Color for grade badge based on grade letter (functional colors preserved)
@@ -384,12 +393,12 @@ struct DashboardView: View {
     // MARK: - Computed Properties
 
     /// Current thermal state for shadow glow check
-    private var thermalState: ThermalState {
+    private var thermalState: ThermalStateViewModel {
         coreManager.viewModel.thermalState
     }
 
     /// Current memory pressure state for shadow glow check
-    private var memoryPressureState: MemoryPressure {
+    private var memoryPressureState: MemoryPressureViewModel {
         coreManager.viewModel.memoryPressure
     }
 
