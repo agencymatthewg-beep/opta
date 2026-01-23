@@ -101,6 +101,8 @@ struct ProfileManagerView: View {
             .onDelete(perform: deleteProfiles)
         }
         .listStyle(.inset)
+        .scrollContentBackground(.hidden)
+        .background(Color(hex: "0A0A0F"))
     }
 
     // MARK: - Empty State
@@ -126,10 +128,11 @@ struct ProfileManagerView: View {
                 Label("Create Profile", systemImage: "plus")
             }
             .buttonStyle(.borderedProminent)
-            .tint(Color(hex: "#8B5CF6"))
+            .tint(Color(hex: "8B5CF6"))
             .padding(.top, 8)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(hex: "0A0A0F"))
     }
 
     // MARK: - Add Profile Sheet
@@ -172,7 +175,6 @@ struct ProfileManagerView: View {
             }
             .formStyle(.grouped)
             .navigationTitle("New Profile")
-            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
@@ -266,15 +268,19 @@ struct ProfileRowView: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            // Profile icon
+            // Profile icon (obsidian + violet)
             ZStack {
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(.ultraThinMaterial)
+                    .fill(Color(hex: "0A0A0F"))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color(hex: "8B5CF6").opacity(0.1), lineWidth: 1)
+                    )
                     .frame(width: 40, height: 40)
 
                 Image(systemName: "slider.horizontal.3")
                     .font(.system(size: 18))
-                    .foregroundColor(Color(hex: "#8B5CF6"))
+                    .foregroundColor(Color(hex: "8B5CF6"))
             }
 
             // Profile info
@@ -283,13 +289,13 @@ struct ProfileRowView: View {
                     .font(.headline)
 
                 HStack(spacing: 8) {
-                    // Quality badge
+                    // Quality badge (violet intensity tiers)
                     Text(profile.qualityLevelName)
                         .font(.caption)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
-                        .background(qualityBadgeColor.opacity(0.2))
-                        .foregroundColor(qualityBadgeColor)
+                        .background(qualityBadgeBackground)
+                        .foregroundColor(qualityBadgeTextColor.opacity(qualityBadgeTextOpacity))
                         .cornerRadius(4)
 
                     // Last used indicator
@@ -315,7 +321,7 @@ struct ProfileRowView: View {
                     .font(.subheadline.weight(.medium))
             }
             .buttonStyle(.borderedProminent)
-            .tint(Color(hex: "#8B5CF6"))
+            .tint(Color(hex: "8B5CF6"))
 
             Menu {
                 Button {
@@ -333,15 +339,30 @@ struct ProfileRowView: View {
         .padding(.vertical, 8)
     }
 
-    private var qualityBadgeColor: Color {
+    private var qualityBadgeBackground: Color {
         switch profile.qualityLevel {
-        case 0: return .gray
-        case 1: return .blue
-        case 2: return .green
-        case 3: return .orange
-        case 4: return .purple
-        default: return .gray
+        case 0: return Color(hex: "8B5CF6").opacity(0.2)
+        case 1: return Color(hex: "8B5CF6").opacity(0.3)
+        case 2: return Color(hex: "8B5CF6").opacity(0.5)
+        case 3: return Color(hex: "8B5CF6").opacity(0.7)
+        case 4: return Color(hex: "8B5CF6")
+        default: return Color(hex: "8B5CF6").opacity(0.2)
         }
+    }
+
+    private var qualityBadgeTextOpacity: Double {
+        switch profile.qualityLevel {
+        case 0: return 0.5
+        case 1: return 0.7
+        case 2: return 0.85
+        case 3: return 1.0
+        case 4: return 1.0
+        default: return 0.5
+        }
+    }
+
+    private var qualityBadgeTextColor: Color {
+        profile.qualityLevel == 4 ? .white : Color(hex: "8B5CF6")
     }
 }
 
