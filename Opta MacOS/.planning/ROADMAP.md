@@ -1593,8 +1593,8 @@ Plans:
 - Keyboard focus indicators using branch glow
 
 Plans:
-- [ ] 86-01: Obsidian Menu Shader & Branch Highlight (3 tasks, wave 1)
-- [ ] 86-02: Swift Navigation Obsidian Refresh (3 tasks, wave 2)
+- [x] 86-01: Obsidian Menu Shader & Branch Highlight (3 tasks, wave 1)
+- [x] 86-02: Swift Navigation Obsidian Refresh (3 tasks, wave 2)
 
 #### Phase 87: Settings & Library Alignment
 **Goal**: Redesign settings and games library views for obsidian aesthetic consistency
