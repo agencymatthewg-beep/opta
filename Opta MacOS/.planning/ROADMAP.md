@@ -18,7 +18,8 @@ Opta transforms from an empty Tauri scaffold into a full-featured AI-powered PC 
 - ✅ **v8.0 Rust Native Architecture** - Phases 59-68 (shipped 2026-01-21)
 - ✅ **v9.0 Native macOS App** - Phases 69-74 (shipped 2026-01-22)
 - ✅ **v9.1 Premium Polish** - Phase 75 (shipped 2026-01-22)
-- 📋 **v10.0 Visual Experience Reimplementation** - Phases 76-80 (planned)
+- 📋 **v10.0 Visual Experience Reimplementation** - Phases 76-80 + 79.1 (planned)
+- 📋 **v11.0 Refined Obsidian Aesthetic** - Phases 81-90 (planned)
 
 ## Domain Expertise
 
@@ -1445,6 +1446,26 @@ Plans:
 Plans:
 - [ ] 79-01: TBD
 
+#### Phase 79.1: Power Stone Obsidian Ring (INSERTED)
+**Goal**: Redesign the Opta Ring to match the Power Stone reference image—dark obsidian shell with deeply embedded purple energy core
+**Depends on**: Phase 77 (HD Ring Enhancement infrastructure)
+**Research**: Unlikely (implementation of established visual direction)
+
+**Key Deliverables:**
+- Obsidian shell material (opaque dark surface with controlled transmission)
+- Volumetric Power Stone energy core (multi-layer parallax sampling)
+- Inner rim concentrated glow (brightest point = looking into the power source)
+- Surface caustics from internal energy refraction
+- Atmospheric purple fog emission
+- State-mapped energy visibility (dormant=dark stone, active=Power Stone)
+- Three.js shader parity with wgpu implementation
+- Reference image calibration (match `50%Opta.png` at Active state)
+
+**Reference Image**: `Opta MacOS/Opta Vision/50%Opta.png`
+
+Plans:
+- [ ] 79.1-01: Power Stone Obsidian Ring
+
 #### Phase 80: Visual Integration & Launch
 **Goal**: Polish, integrate all visual systems, and prepare for release
 **Depends on**: Phase 79
@@ -1460,6 +1481,181 @@ Plans:
 
 Plans:
 - [ ] 80-01: TBD
+
+---
+
+### 📋 v11.0 Refined Obsidian Aesthetic (Planned)
+
+**Milestone Goal:** Align the entire Opta app design with the refined ring aesthetic—opaque HD obsidian surfaces, branch-based organic energy from equator, tri-axis response animations, and organic non-synchronous timing. Every component should feel carved from the same obsidian stone with living purple energy pulsing through it.
+
+**Design Principles (from Ring Visualization Work):**
+- 🪨 **Opaque Obsidian** — Not transparent glass. PBR obsidian (roughness 0.03, IOR 1.85, zero transmission)
+- 🌿 **Branch Energy** — fBm noise-based purple branches from equator, NOT smooth gradients
+- 📐 **Tri-Axis Response** — Length + Width + Brightness scale simultaneously
+- 🌊 **Organic Timing** — Per-element phase offsets, varied durations (3-7s), no synchronous pulsing
+- 💎 **Cook-Torrance PBR** — Physically-based rendering for all surfaces
+- 💜 **Electric Violet (#8B5CF6)** — Primary energy color, branch glow
+
+---
+
+#### Phase 81: Obsidian Ring Material
+**Goal**: Replace the current glass ring material with opaque PBR obsidian (Cook-Torrance BRDF, roughness 0.03, zero transmission)
+**Depends on**: Phase 80 (v10.0 complete)
+**Research**: Unlikely (shader implementation of established spec)
+
+**Key Deliverables:**
+- Cook-Torrance BRDF with GGX microfacet distribution
+- Obsidian material properties (roughness 0.03, IOR 1.85, zero transmission)
+- Subsurface emission blend for energy visibility
+- Fresnel-gated energy reveal (energy shows through at grazing angles)
+- Remove all glass transmission/refraction code
+
+Plans:
+- [ ] 81-01: TBD (run /gsd:plan-phase 81 to break down)
+
+#### Phase 82: Branch Energy Shader
+**Goal**: Implement fBm noise-based branch energy system in the ring wgpu shader with tri-axis response
+**Depends on**: Phase 81
+**Research**: Likely (fBm noise, threshold-based revelation)
+**Research Topics**: Fractal Brownian Motion in WGSL, noise-based branching patterns, threshold revelation techniques
+
+**Key Deliverables:**
+- fBm noise field generating organic branch patterns
+- Equator-origin branching (midpoint of tube wall cross-section)
+- Threshold-based revelation: `values > (1.0 - intensity)` become branch pixels
+- Tri-axis response uniforms (branch_intensity, branch_length, branch_width, branch_brightness)
+- Branch count scaling with intensity (~12 dormant to ~40 active)
+- Glow halo around active branches
+
+Plans:
+- [ ] 82-01: TBD (run /gsd:plan-phase 82 to break down)
+
+#### Phase 83: Obsidian Panel System
+**Goal**: Redesign the HD Glass Panel system to use obsidian-depth panels matching the ring surface quality
+**Depends on**: Phase 82
+**Research**: Unlikely (extending existing panel shader)
+
+**Key Deliverables:**
+- Panel material matching ring obsidian (dark, opaque, subtle specular)
+- Depth hierarchy preserved (foreground/content/background) but all obsidian
+- Subtle surface reflection (environment-mapped, not transmission)
+- Border glow using branch-energy language (thin purple veins at edges)
+- Panel quality tiers maintained (Low/Medium/High/Ultra)
+
+Plans:
+- [ ] 83-01: TBD (run /gsd:plan-phase 83 to break down)
+
+#### Phase 84: Energy Branch Components
+**Goal**: Create reusable branch-energy UI components for telemetry indicators, progress bars, and status displays
+**Depends on**: Phase 83
+**Research**: Unlikely (SwiftUI component patterns)
+
+**Key Deliverables:**
+- BranchEnergyMeter (replaces linear progress bars with organic branch fill)
+- BranchEnergyIndicator (status dot that grows/shrinks branches)
+- BranchEnergyBorder (panel borders with pulsing branch veins)
+- BranchEnergyText (text glow using branch intensity)
+- All components support tri-axis response and organic timing
+- Reduced motion fallback (static branch positions)
+
+Plans:
+- [ ] 84-01: TBD (run /gsd:plan-phase 84 to break down)
+
+#### Phase 85: Dashboard Obsidian Refresh
+**Goal**: Rebuild the dashboard with obsidian panels and branch-energy telemetry visualization
+**Depends on**: Phase 84
+**Research**: Unlikely (UI redesign with established components)
+
+**Key Deliverables:**
+- TelemetryCards with obsidian panels and branch-energy meters
+- CPU/GPU/Memory meters using BranchEnergyMeter
+- Score display with branch-energy intensity response
+- Quick actions with obsidian buttons and branch hover effects
+- Dashboard layout refined for obsidian depth hierarchy
+- Sparkline charts with branch-energy color palette
+
+Plans:
+- [ ] 85-01: TBD (run /gsd:plan-phase 85 to break down)
+
+#### Phase 86: Navigation Energy Language
+**Goal**: Update circular menu and navigation elements with obsidian containers and branch-energy highlights
+**Depends on**: Phase 85
+**Research**: Unlikely (extending existing menu shader)
+
+**Key Deliverables:**
+- Circular menu sectors with obsidian material
+- Sector highlight using branch-energy growth (branches extend on hover)
+- Menu open/close with organic branch animation
+- Navigation indicators with BranchEnergyIndicator
+- Menu bar agent icon with mini branch-energy state
+- Keyboard focus indicators using branch glow
+
+Plans:
+- [ ] 86-01: TBD (run /gsd:plan-phase 86 to break down)
+
+#### Phase 87: Settings & Library Alignment
+**Goal**: Redesign settings and games library views for obsidian aesthetic consistency
+**Depends on**: Phase 86
+**Research**: Unlikely (UI alignment work)
+
+**Key Deliverables:**
+- Settings panels with obsidian surface treatment
+- Profile cards with branch-energy active states
+- Theme customization preview using obsidian + branches
+- Game cards with obsidian backgrounds and branch-energy FPS indicators
+- Game detail view performance charts with branch-energy palette
+- Toggle/slider controls with branch-energy fill
+
+Plans:
+- [ ] 87-01: TBD (run /gsd:plan-phase 87 to break down)
+
+#### Phase 88: Organic Motion System
+**Goal**: Replace uniform animations with organic per-element timing throughout the app
+**Depends on**: Phase 87
+**Research**: Unlikely (animation implementation)
+
+**Key Deliverables:**
+- Per-element phase offset system (no two elements pulse in sync)
+- Varied duration ranges (3-7s for ambient, 0.5-1.5s for interactions)
+- Non-synchronous stagger for list items and grid elements
+- Spring physics with organic damping curves
+- Animation intensity response to system state (faster when CPU high)
+- Reduced motion: static positions, no pulsing
+
+Plans:
+- [ ] 88-01: TBD (run /gsd:plan-phase 88 to break down)
+
+#### Phase 89: Color Temperature Refinement
+**Goal**: Implement refined color temperature states across all components
+**Depends on**: Phase 88
+**Research**: Unlikely (color system tuning)
+
+**Key Deliverables:**
+- Dormant state: pure obsidian, no energy visible, monochrome
+- Idle state: faint branch glow at equator only, very dim purple
+- Active state: full branch extension, bright Electric Violet (#8B5CF6)
+- Processing state: rapid branch pulsing, increased brightness
+- Alert state: branches extend to maximum, warm amber tint
+- Smooth transitions between states (spring-based, not linear)
+
+Plans:
+- [ ] 89-01: TBD (run /gsd:plan-phase 89 to break down)
+
+#### Phase 90: Visual Cohesion Launch
+**Goal**: Full integration audit ensuring every component matches the refined aesthetic
+**Depends on**: Phase 89
+**Research**: Unlikely (QA and integration)
+
+**Key Deliverables:**
+- Component-by-component visual audit checklist
+- Performance benchmarks (120Hz target maintained)
+- Accessibility verification (reduced motion, high contrast modes)
+- Screenshot documentation of all visual states
+- Cross-state consistency verification (all 5 color temperatures)
+- Release preparation and demo materials
+
+Plans:
+- [ ] 90-01: TBD (run /gsd:plan-phase 90 to break down)
 
 ## Progress
 
@@ -1558,3 +1754,13 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 �
 | 78. HD Visual System | v10.0 | 0/1 | Planned | - |
 | 79. Circular Menu | v10.0 | 0/1 | Planned | - |
 | 80. Visual Integration & Launch | v10.0 | 0/1 | Planned | - |
+| 81. Obsidian Ring Material | v11.0 | 0/? | Not started | - |
+| 82. Branch Energy Shader | v11.0 | 0/? | Not started | - |
+| 83. Obsidian Panel System | v11.0 | 0/? | Not started | - |
+| 84. Energy Branch Components | v11.0 | 0/? | Not started | - |
+| 85. Dashboard Obsidian Refresh | v11.0 | 0/? | Not started | - |
+| 86. Navigation Energy Language | v11.0 | 0/? | Not started | - |
+| 87. Settings & Library Alignment | v11.0 | 0/? | Not started | - |
+| 88. Organic Motion System | v11.0 | 0/? | Not started | - |
+| 89. Color Temperature Refinement | v11.0 | 0/? | Not started | - |
+| 90. Visual Cohesion Launch | v11.0 | 0/? | Not started | - |
