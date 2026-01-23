@@ -183,7 +183,9 @@ struct SettingsView: View {
                 Label("Advanced", systemImage: "wrench.and.screwdriver")
             }
         }
-        .listStyle(.insetGrouped)
+        .listStyle(.inset)
+        .scrollContentBackground(.hidden)
+        .background(Color(hex: "0A0A0F"))
         .frame(minWidth: 450, idealWidth: 500, minHeight: 550, idealHeight: 650)
         .navigationTitle("Settings")
         .toolbar {
@@ -252,12 +254,16 @@ struct SettingsRowView: View {
         HStack(spacing: 12) {
             ZStack {
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(.ultraThinMaterial)
+                    .fill(Color(hex: "0A0A0F"))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color(hex: "8B5CF6").opacity(0.15), lineWidth: 1)
+                    )
                     .frame(width: 36, height: 36)
 
                 Image(systemName: icon)
                     .font(.system(size: 16))
-                    .foregroundColor(Color(hex: "#8B5CF6"))
+                    .foregroundColor(Color(hex: "8B5CF6"))
             }
 
             VStack(alignment: .leading, spacing: 2) {
@@ -288,6 +294,7 @@ struct SettingsWindowView: View {
         NavigationStack {
             SettingsView(coreManager: coreManager)
         }
+        .background(Color(hex: "0A0A0F"))
     }
 }
 
