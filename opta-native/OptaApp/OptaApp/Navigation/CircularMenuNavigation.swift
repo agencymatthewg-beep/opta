@@ -59,7 +59,7 @@ enum CircularMenuDestination: String, CaseIterable, Identifiable {
 
     /// Accent color for the destination — unified Electric Violet (branch-energy)
     var color: Color {
-        Color(hex: "8B5CF6")
+        ColorTemperatureState.active.violetColor
     }
 
     /// Convert to CircularMenuSector

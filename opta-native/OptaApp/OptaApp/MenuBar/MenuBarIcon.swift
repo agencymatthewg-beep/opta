@@ -15,6 +15,7 @@ struct MenuBarIcon: View {
 
     @ObservedObject var coordinator: RenderCoordinator
     var agentModeManager: AgentModeManager
+    @Environment(\.colorTemperature) private var colorTemp
 
     @State private var pulseAnimation = false
     @State private var rotationAngle: Double = 0
@@ -115,7 +116,7 @@ struct MenuBarIcon: View {
         case .critical:
             return [.red, .orange, .red, .orange]
         case .agent:
-            return [Color(hex: "8B5CF6") ?? .purple, .purple, Color(hex: "8B5CF6") ?? .purple, .purple]
+            return [colorTemp.violetColor, .purple, colorTemp.violetColor, .purple]
         case .paused:
             return [.gray, .gray.opacity(0.6), .gray, .gray.opacity(0.6)]
         }

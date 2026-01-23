@@ -28,29 +28,33 @@ import SwiftUI
 /// ```
 struct SparklineView: View {
 
+    // MARK: - Environment
+
+    @Environment(\.colorTemperature) private var colorTemp
+
     // MARK: - Properties
 
     /// Data points for the chart
     let data: [Float]
 
-    /// Line and gradient color (defaults to branch-energy violet)
-    let color: Color
+    /// Optional line and gradient color override (nil = use colorTemp.violetColor)
+    let color: Color?
 
     /// Padding for the chart
     private let padding: CGFloat = 2
 
-    // MARK: - Constants
-
-    /// Default branch-energy violet color
-    private static let defaultViolet = Color(hex: "8B5CF6")
+    /// Resolved color using environment temperature or explicit override
+    private var resolvedColor: Color {
+        color ?? colorTemp.violetColor
+    }
 
     // MARK: - Initialization
 
-    /// Create a sparkline with branch-energy violet as default color.
+    /// Create a sparkline with color temperature violet as default color.
     /// - Parameters:
     ///   - data: Array of Float values to plot
-    ///   - color: Line color (defaults to branch-energy violet #8B5CF6)
-    init(data: [Float], color: Color = Color(hex: "8B5CF6")) {
+    ///   - color: Line color override (nil = uses color temperature violet)
+    init(data: [Float], color: Color? = nil) {
         self.data = data
         self.color = color
     }
@@ -82,7 +86,7 @@ struct SparklineView: View {
                     }
                     .fill(
                         LinearGradient(
-                            colors: [color.opacity(0.3), color.opacity(0.0)],
+                            colors: [resolvedColor.opacity(0.3), resolvedColor.opacity(0.0)],
                             startPoint: .top,
                             endPoint: .bottom
                         )
@@ -97,7 +101,7 @@ struct SparklineView: View {
                             path.addLine(to: point)
                         }
                     }
-                    .stroke(color, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+                    .stroke(resolvedColor, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
                 }
             } else {
                 // Empty state

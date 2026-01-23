@@ -16,6 +16,7 @@ struct MenuBarPopoverView: View {
     @ObservedObject var coordinator: RenderCoordinator
     var agentModeManager: AgentModeManager
     @Environment(\.openWindow) private var openWindow
+    @Environment(\.colorTemperature) private var colorTemp
 
     // MARK: - Body
 
@@ -95,7 +96,7 @@ struct MenuBarPopoverView: View {
                 if agentModeManager.isAgentMode {
                     Text("Agent")
                         .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(Color(hex: "8B5CF6") ?? .purple)
+                        .foregroundColor(colorTemp.violetColor.opacity(max(colorTemp.glowOpacity, 0.4)))
                 } else {
                     Text("\(Int(coordinator.currentFPS)) FPS")
                         .font(.system(size: 11, weight: .medium, design: .monospaced))
@@ -232,7 +233,7 @@ struct MenuBarPopoverView: View {
             // Standard quick actions
             HStack(spacing: 12) {
                 if agentModeManager.isAgentMode {
-                    QuickActionButton(
+                    MenuBarActionButton(
                         icon: "macwindow",
                         label: "Dashboard",
                         color: .blue
@@ -240,7 +241,7 @@ struct MenuBarPopoverView: View {
                         openMainWindow()
                     }
                 } else {
-                    QuickActionButton(
+                    MenuBarActionButton(
                         icon: "bolt.fill",
                         label: "Optimize",
                         color: .blue
@@ -249,7 +250,7 @@ struct MenuBarPopoverView: View {
                     }
                 }
 
-                QuickActionButton(
+                MenuBarActionButton(
                     icon: "chart.bar.fill",
                     label: "Stats",
                     color: .green
@@ -257,7 +258,7 @@ struct MenuBarPopoverView: View {
                     openMainWindow()
                 }
 
-                QuickActionButton(
+                MenuBarActionButton(
                     icon: "gearshape.fill",
                     label: "Settings",
                     color: .gray
@@ -274,7 +275,7 @@ struct MenuBarPopoverView: View {
     private var agentModeRow: some View {
         HStack {
             Image(systemName: agentModeManager.isAgentMode ? "eye.slash.fill" : "eye.fill")
-                .foregroundColor(agentModeManager.isAgentMode ? Color(hex: "8B5CF6") ?? .purple : .white.opacity(0.6))
+                .foregroundColor(agentModeManager.isAgentMode ? colorTemp.violetColor.opacity(max(colorTemp.glowOpacity, 0.4)) : .white.opacity(0.6))
                 .frame(width: 20)
 
             VStack(alignment: .leading, spacing: 2) {
@@ -342,12 +343,12 @@ struct MenuBarPopoverView: View {
                 if agentModeManager.isAgentMode {
                     Text("AGENT")
                         .font(.system(size: 8, weight: .bold))
-                        .foregroundColor(Color(hex: "8B5CF6") ?? .purple)
+                        .foregroundColor(colorTemp.violetColor.opacity(max(colorTemp.glowOpacity, 0.4)))
                         .padding(.horizontal, 4)
                         .padding(.vertical, 2)
                         .background(
                             Capsule()
-                                .fill((Color(hex: "8B5CF6") ?? .purple).opacity(0.2))
+                                .fill(colorTemp.violetColor.opacity(max(colorTemp.glowOpacity, 0.4) * 0.2))
                         )
                 }
             }
@@ -548,7 +549,7 @@ struct StatCard: View {
 
 // MARK: - Quick Action Button
 
-struct QuickActionButton: View {
+struct MenuBarActionButton: View {
     let icon: String
     let label: String
     let color: Color
