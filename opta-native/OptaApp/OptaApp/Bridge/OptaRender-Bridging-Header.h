@@ -426,6 +426,216 @@ OptaRenderResult opta_circular_menu_hit_test(
     OptaCircularMenuHitTest* result
 );
 
+// MARK: - Obsidian Panel Types
+
+/// Opaque pointer to the Rust obsidian panel
+typedef struct OptaPanel OptaPanel;
+
+/// Configuration for obsidian panel creation
+typedef struct {
+    /// Panel position X in pixels
+    float position_x;
+    /// Panel position Y in pixels
+    float position_y;
+    /// Panel width in pixels
+    float width;
+    /// Panel height in pixels
+    float height;
+    /// Corner radius in pixels
+    float corner_radius;
+    /// Border width in pixels
+    float border_width;
+    /// Initial branch energy level [0, 1]
+    float energy;
+    /// Depth hierarchy layer [0, 1]
+    float depth_layer;
+    /// Quality level (0=Low, 1=Medium, 2=High, 3=Ultra)
+    uint32_t quality_level;
+} OptaPanelConfig;
+
+// MARK: - Obsidian Panel Lifecycle
+
+/// Create a new obsidian panel
+/// @param ctx Pointer to the render context
+/// @param config Pointer to panel configuration (NULL for defaults)
+/// @return Pointer to the panel, or NULL on failure
+OptaPanel* opta_panel_create(OptaRenderContext* ctx, const OptaPanelConfig* config);
+
+/// Destroy a panel and free resources
+/// @param panel The panel to destroy
+void opta_panel_destroy(OptaPanel* panel);
+
+// MARK: - Obsidian Panel Properties
+
+/// Set the panel position
+OptaRenderResult opta_panel_set_position(OptaPanel* panel, float x, float y);
+
+/// Set the panel size
+OptaRenderResult opta_panel_set_size(OptaPanel* panel, float width, float height);
+
+/// Set the branch energy level [0.0, 1.0]
+OptaRenderResult opta_panel_set_energy(OptaPanel* panel, float energy);
+
+/// Set the depth layer [0.0 = foreground, 1.0 = background]
+OptaRenderResult opta_panel_set_depth(OptaPanel* panel, float depth);
+
+/// Set the quality level (0=Low, 1=Medium, 2=High, 3=Ultra)
+OptaRenderResult opta_panel_set_quality(OptaPanel* panel, uint32_t level);
+
+/// Update the panel animation
+OptaRenderResult opta_panel_update(OptaPanel* panel, float dt);
+
+/// Render the panel to the current surface
+OptaRenderResult opta_panel_render(OptaPanel* panel, OptaRenderContext* ctx);
+
+// MARK: - Branch Meter Types
+
+/// Opaque pointer to the Rust branch meter
+typedef struct OptaBranchMeter OptaBranchMeter;
+
+/// Configuration for branch meter creation
+typedef struct {
+    /// Position X in pixels
+    float position_x;
+    /// Position Y in pixels
+    float position_y;
+    /// Width in pixels
+    float width;
+    /// Height in pixels
+    float height;
+    /// Corner radius in pixels
+    float corner_radius;
+    /// Initial fill level [0, 1]
+    float fill_level;
+    /// Initial branch energy [0, 1]
+    float energy;
+    /// Quality level (0-3)
+    uint32_t quality_level;
+    /// Viewport resolution width
+    float resolution_width;
+    /// Viewport resolution height
+    float resolution_height;
+} OptaBranchMeterConfig;
+
+// MARK: - Branch Meter Lifecycle
+
+/// Create a new branch meter
+/// @param ctx Pointer to the render context
+/// @param config Pointer to configuration (NULL for defaults)
+/// @return Pointer to the branch meter, or NULL on failure
+OptaBranchMeter* opta_branch_meter_create(OptaRenderContext* ctx, const OptaBranchMeterConfig* config);
+
+/// Destroy a branch meter and free resources
+void opta_branch_meter_destroy(OptaBranchMeter* meter);
+
+/// Set the fill level [0.0, 1.0]
+OptaRenderResult opta_branch_meter_set_fill(OptaBranchMeter* meter, float fill_level);
+
+/// Set the branch energy level [0.0, 1.0]
+OptaRenderResult opta_branch_meter_set_energy(OptaBranchMeter* meter, float energy);
+
+/// Update the branch meter animation
+OptaRenderResult opta_branch_meter_update(OptaBranchMeter* meter, float dt);
+
+/// Render the branch meter to the current surface
+OptaRenderResult opta_branch_meter_render(OptaBranchMeter* meter, OptaRenderContext* ctx);
+
+// MARK: - Branch Indicator Types
+
+/// Opaque pointer to the Rust branch indicator
+typedef struct OptaBranchIndicator OptaBranchIndicator;
+
+/// Configuration for branch indicator creation
+typedef struct {
+    /// Center X position in pixels
+    float center_x;
+    /// Center Y position in pixels
+    float center_y;
+    /// Inner core radius in pixels
+    float inner_radius;
+    /// Outer branch reach in pixels
+    float outer_radius;
+    /// Initial energy [0, 1]
+    float energy;
+    /// Number of radial branches
+    uint32_t branch_count;
+    /// Quality level (0-3)
+    uint32_t quality_level;
+    /// Viewport resolution width
+    float resolution_width;
+    /// Viewport resolution height
+    float resolution_height;
+} OptaBranchIndicatorConfig;
+
+// MARK: - Branch Indicator Lifecycle
+
+/// Create a new branch indicator
+/// @param ctx Pointer to the render context
+/// @param config Pointer to configuration (NULL for defaults)
+/// @return Pointer to the branch indicator, or NULL on failure
+OptaBranchIndicator* opta_branch_indicator_create(OptaRenderContext* ctx, const OptaBranchIndicatorConfig* config);
+
+/// Destroy a branch indicator and free resources
+void opta_branch_indicator_destroy(OptaBranchIndicator* indicator);
+
+/// Set the energy level [0.0, 1.0]
+OptaRenderResult opta_branch_indicator_set_energy(OptaBranchIndicator* indicator, float energy);
+
+/// Update the branch indicator animation
+OptaRenderResult opta_branch_indicator_update(OptaBranchIndicator* indicator, float dt);
+
+/// Render the branch indicator to the current surface
+OptaRenderResult opta_branch_indicator_render(OptaBranchIndicator* indicator, OptaRenderContext* ctx);
+
+// MARK: - Branch Border Types
+
+/// Opaque pointer to the Rust branch border
+typedef struct OptaBranchBorder OptaBranchBorder;
+
+/// Configuration for branch border creation
+typedef struct {
+    /// Position X in pixels
+    float position_x;
+    /// Position Y in pixels
+    float position_y;
+    /// Width in pixels
+    float width;
+    /// Height in pixels
+    float height;
+    /// Corner radius in pixels
+    float corner_radius;
+    /// Border band thickness in pixels
+    float border_width;
+    /// Initial energy [0, 1]
+    float energy;
+    /// Quality level (0-3)
+    uint32_t quality_level;
+    /// Viewport resolution width
+    float resolution_width;
+    /// Viewport resolution height
+    float resolution_height;
+} OptaBranchBorderConfig;
+
+// MARK: - Branch Border Lifecycle
+
+/// Create a new branch border
+/// @param ctx Pointer to the render context
+/// @param config Pointer to configuration (NULL for defaults)
+/// @return Pointer to the branch border, or NULL on failure
+OptaBranchBorder* opta_branch_border_create(OptaRenderContext* ctx, const OptaBranchBorderConfig* config);
+
+/// Destroy a branch border and free resources
+void opta_branch_border_destroy(OptaBranchBorder* border);
+
+/// Set the energy level [0.0, 1.0]
+OptaRenderResult opta_branch_border_set_energy(OptaBranchBorder* border, float energy);
+
+/// Update the branch border animation
+OptaRenderResult opta_branch_border_update(OptaBranchBorder* border, float dt);
+
+/// Render the branch border to the current surface
+OptaRenderResult opta_branch_border_render(OptaBranchBorder* border, OptaRenderContext* ctx);
+
 #ifdef __cplusplus
 }
 #endif
