@@ -124,10 +124,16 @@
 #![allow(clippy::return_self_not_must_use)]
 #![allow(clippy::needless_pass_by_value)]
 
+pub mod adaptive;
+pub mod animation;
 pub mod autorelease;
 pub mod bridge;
 pub mod buffer;
+
+// Platform-specific rendering integrations
+pub mod platform;
 pub mod components;
+pub mod debug;
 pub mod depth;
 pub mod effects;
 pub mod encoder;
@@ -135,11 +141,13 @@ pub mod error;
 pub mod ffi;
 pub mod haptics;
 pub mod instance;
+pub mod memory;
 pub mod pipeline;
 pub mod quality;
 pub mod shader;
 pub mod state;
 pub mod surface;
+pub mod texture;
 pub mod timing;
 
 // Re-export main types from Plan 60-02
@@ -182,9 +190,34 @@ pub use haptics::{
 pub use components::{
     // Ring component (Plan 63-01)
     generate_torus_geometry, OptaRing, RingConfig, RingState, RingUniforms, RingVertex,
+    // Ring quality and spring physics (Plan 77-01)
+    RingQualityLevel, RingSpringState, SpringConfig as RingSpringConfig, SpringValue, SpringVec3,
     // Glass panel component (Plan 63-02)
     GlassPanel, GlassPanelConfig, GlassPanelUniforms, PanelVertex,
 };
+
+// Re-export animation types from Plan 64-01
+pub use animation::{Spring, Spring2D, Spring3D, SpringColor, SpringConfig, DT_60HZ, DT_120HZ};
+
+// Re-export debug types from Plan 66-01
+pub use debug::DebugOverlay;
+
+// Re-export adaptive quality types from Plan 77-01
+pub use adaptive::{
+    AdaptiveQuality, FrameStats, RollingStats, ThermalState, quality_level_to_ring_quality,
+    ring_quality_to_quality_level,
+};
+
+// Re-export memory pool types from Plan 66-02
+pub use memory::{BufferPool, BufferSizeClass, PoolStats};
+
+// Re-export texture types from Plan 66-02
+pub use texture::{TextureData, TextureError, TextureFormat, TextureLoader};
+
+// Re-export platform types from Plan 67-02
+#[cfg(target_os = "linux")]
+pub use platform::linux::{get_vulkan_adapter_info, is_vulkan_available};
+pub use platform::recommended_backend;
 
 /// Crate version string.
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
