@@ -123,7 +123,7 @@ struct GamesLibraryView: View {
                 gamesGrid
             }
         }
-        .background(Color(hex: "09090B"))
+        .background(Color(hex: "0A0A0F"))
         .task {
             await scanForGames()
         }
@@ -188,7 +188,7 @@ struct GamesLibraryView: View {
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
         .background(
-            Color(hex: "09090B")
+            Color(hex: "0A0A0F")
                 .overlay(
                     Rectangle()
                         .fill(Color.white.opacity(0.05))
@@ -227,10 +227,14 @@ struct GamesLibraryView: View {
             .padding(10)
             .background(
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(.ultraThinMaterial)
+                    .fill(Color(hex: "0A0A0F"))
                     .overlay(
                         RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                            .fill(Color.white.opacity(0.08))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color(hex: "8B5CF6").opacity(0.08), lineWidth: 1)
                     )
             )
 
@@ -282,7 +286,11 @@ struct GamesLibraryView: View {
                     .padding(.vertical, 6)
                     .background(
                         Capsule()
-                            .fill(Color.white.opacity(0.08))
+                            .fill(Color(hex: "0A0A0F"))
+                            .overlay(
+                                Capsule()
+                                    .fill(Color.white.opacity(0.08))
+                            )
                     )
                 }
                 .menuStyle(.borderlessButton)
@@ -324,7 +332,15 @@ struct GamesLibraryView: View {
                     .fill(
                         selectedPlatform == platform
                             ? Color(hex: "8B5CF6")
-                            : Color.white.opacity(0.08)
+                            : Color(hex: "0A0A0F")
+                    )
+                    .overlay(
+                        Capsule()
+                            .fill(
+                                selectedPlatform == platform
+                                    ? Color.clear
+                                    : Color.white.opacity(0.08)
+                            )
                     )
             )
         }
@@ -340,7 +356,7 @@ struct GamesLibraryView: View {
                     GameCardView(
                         game: game,
                         onSelect: {
-                            coreManager?.navigateToGame(id: game.id)
+                            selectedGameId = game.id
                         },
                         onOptimize: {
                             optimizeGame(game)
@@ -350,6 +366,8 @@ struct GamesLibraryView: View {
             }
             .padding(20)
         }
+        .scrollContentBackground(.hidden)
+        .background(Color(hex: "0A0A0F"))
     }
 
     // MARK: - Loading View
@@ -382,7 +400,7 @@ struct GamesLibraryView: View {
 
             Image(systemName: "gamecontroller")
                 .font(.system(size: 48))
-                .foregroundStyle(.white.opacity(0.2))
+                .foregroundStyle(Color(hex: "8B5CF6").opacity(0.3))
 
             Text("No Games Found")
                 .font(.system(size: 18, weight: .semibold))
@@ -427,7 +445,7 @@ struct GamesLibraryView: View {
 
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 32))
-                .foregroundStyle(.white.opacity(0.2))
+                .foregroundStyle(Color(hex: "8B5CF6").opacity(0.3))
 
             Text("No games match your search")
                 .font(.system(size: 15, weight: .medium))
