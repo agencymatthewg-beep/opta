@@ -1,12 +1,11 @@
-// HD Glass panel shader for premium UI overlays.
+// Obsidian panel shader for premium UI overlays.
 //
-// Renders frosted glass panels with:
-// - Cook-Torrance BRDF for physically-based reflections
-// - Kawase blur sampling for efficient backdrop blur
-// - Depth-dependent blur intensity scaling
-// - Soft fresnel edge highlights using multi-scatter model
-// - Configurable inner glow effect
-// - Support for dispersion and chromatic aberration
+// Renders opaque obsidian panels with:
+// - Cook-Torrance BRDF for physically-based specular highlights
+// - SDF-based rounded rectangles with anti-aliased edges
+// - Edge branch energy veins (Electric Violet, High/Ultra quality)
+// - Depth-dependent specular intensity scaling
+// - Fresnel edge highlights matching ring obsidian material
 
 // =============================================================================
 // Math Utilities (inlined for standalone shader)
@@ -37,7 +36,7 @@ fn sd_rounded_box_2d(p: vec2<f32>, b: vec2<f32>, r: f32) -> f32 {
 }
 
 // =============================================================================
-// Cook-Torrance BRDF Components (from glass_hd.wgsl)
+// Cook-Torrance BRDF Components (obsidian specular)
 // =============================================================================
 
 /// GGX/Trowbridge-Reitz Normal Distribution Function (NDF).
@@ -77,17 +76,6 @@ fn fresnel_schlick_roughness(cos_theta: f32, f0: vec3<f32>, roughness: f32) -> v
     return f0 + (max(one_minus_rough, f0) - f0) * pow(saturate(1.0 - cos_theta), 5.0);
 }
 
-/// Multi-scatter Fresnel approximation.
-fn fresnel_multi_scatter(cos_theta: f32, f0: vec3<f32>, roughness: f32) -> vec3<f32> {
-    let single_scatter = fresnel_schlick_roughness(cos_theta, f0, roughness);
-
-    // Energy compensation factor
-    let f_avg = f0 + (vec3<f32>(1.0) - f0) * (1.0 / 21.0);
-    let f_ms = single_scatter * f_avg / (vec3<f32>(1.0) - f_avg * (1.0 - single_scatter));
-
-    return single_scatter + f_ms * (1.0 - single_scatter);
-}
-
 /// Calculate F0 (base reflectivity) from IOR.
 fn f0_from_ior(ior: f32) -> f32 {
     let r = (1.0 - ior) / (1.0 + ior);
@@ -95,67 +83,139 @@ fn f0_from_ior(ior: f32) -> f32 {
 }
 
 // =============================================================================
+// Edge Branch Energy (inlined for standalone shader)
+// =============================================================================
+
+/// Mask that fades branches from the panel edge inward.
+fn edge_branch_mask(edge_dist: f32, reach: f32) -> f32 {
+    return 1.0 - smoothstep(0.0, reach, edge_dist);
+}
+
+/// Compute perimeter coordinate from local position.
+fn edge_perimeter_coord(local_pos: vec2<f32>, half_size: vec2<f32>) -> f32 {
+    let norm_pos = local_pos / half_size;
+    let angle = atan2(norm_pos.y, norm_pos.x);
+    return (angle + PI) / TAU;
+}
+
+/// Compute edge branch pattern intensity.
+fn edge_branch_compute(
+    local_pos: vec2<f32>,
+    half_size: vec2<f32>,
+    corner_radius: f32,
+    edge_dist: f32,
+    reach: f32,
+    density: f32,
+    speed: f32,
+    energy: f32,
+    time: f32
+) -> f32 {
+    // Only compute if within the branch band
+    if edge_dist > reach {
+        return 0.0;
+    }
+
+    // Compute perimeter coordinate
+    let perimeter = edge_perimeter_coord(local_pos, half_size);
+    let perimeter_length = 2.0 * (half_size.x + half_size.y);
+    let edge_pos = perimeter * perimeter_length * 0.01;
+
+    // Branch cell and phase
+    let scaled_pos = edge_pos * density;
+    let cell = floor(scaled_pos);
+    let phase = fract(sin(cell * 127.1) * 43758.5453) * TAU;
+
+    // Branch pulse animation
+    let pulse = sin((scaled_pos + (time + phase) * speed) * TAU) * 0.5 + 0.5;
+
+    // Width concentration
+    let cell_frac = fract(scaled_pos);
+    let width_mask = 1.0 - smoothstep(0.0, 0.35, abs(cell_frac - 0.5));
+
+    // Energy-based threshold revelation
+    let threshold = 1.0 - energy * 0.8;
+    let revealed = smoothstep(threshold - 0.05, threshold + 0.05, pulse);
+
+    // Edge mask
+    let mask = edge_branch_mask(edge_dist, reach);
+
+    return mask * width_mask * revealed * pulse;
+}
+
+/// Compute branch color: Electric Violet with white-hot at peak.
+fn edge_branch_color(intensity: f32, energy: f32) -> vec3<f32> {
+    let violet = vec3<f32>(0.545, 0.361, 0.965);
+    let white_hot = vec3<f32>(1.0, 0.9, 1.0);
+    let hot_mix = smoothstep(0.9, 1.3, intensity) * energy;
+    return mix(violet * intensity, white_hot, hot_mix);
+}
+
+// =============================================================================
 // Uniforms
 // =============================================================================
 
-struct HDPanelUniforms {
-    // Base panel properties
+struct ObsidianPanelUniforms {
+    // Base panel properties (16 bytes)
     /// Panel position in pixels.
     position: vec2<f32>,
     /// Panel size in pixels.
     size: vec2<f32>,
+
+    // Material properties (16 bytes)
     /// Corner radius in pixels.
     corner_radius: f32,
     /// Panel opacity (0.0 - 1.0).
     opacity: f32,
-
-    // HD glass properties
-    /// Index of refraction (1.5 default for glass).
-    ior: f32,
-    /// Surface roughness [0,1] (affects blur and reflections).
+    /// Surface roughness [0,1].
     roughness: f32,
-    /// Tint color (RGB + padding).
-    tint: vec4<f32>,
-    /// Dispersion amount for chromatic aberration.
-    dispersion: f32,
+    /// Index of refraction (1.85 for volcanic glass).
+    ior: f32,
 
-    // Depth hierarchy
+    // Base color (16 bytes)
+    /// Obsidian base color (RGB + padding). Near-black.
+    base_color: vec4<f32>,
+
+    // Depth hierarchy (16 bytes)
     /// Depth layer (0.0 = foreground, 1.0 = background).
     depth_layer: f32,
-    /// Blur intensity base (scaled by depth).
-    blur_intensity: f32,
-    /// Blur falloff curve exponent.
-    blur_falloff: f32,
+    /// Specular intensity (depth-scaled).
+    specular_intensity: f32,
+    /// Padding for alignment.
+    _pad_depth: vec2<f32>,
 
-    // Fresnel edge highlights
+    // Edge branch parameters (16 bytes)
+    /// Branch reach in pixels from edge.
+    branch_reach: f32,
+    /// Branch density (branches per 100px).
+    branch_density: f32,
+    /// Branch animation speed.
+    branch_speed: f32,
+    /// Branch energy level [0,1].
+    branch_energy: f32,
+
+    // Fresnel edge highlights (16 bytes)
     /// Fresnel edge highlight color (RGB).
     fresnel_color: vec3<f32>,
     /// Fresnel edge highlight intensity.
     fresnel_intensity: f32,
+
+    // Fresnel power and padding (16 bytes)
     /// Fresnel edge power (controls sharpness).
     fresnel_power: f32,
-    /// Padding for 16-byte alignment.
+    /// Padding for alignment.
     _padding1: vec3<f32>,
 
-    // Ambient glow
-    /// Inner glow color (RGB).
-    glow_color: vec3<f32>,
-    /// Inner glow intensity.
-    glow_intensity: f32,
-    /// Inner glow radius (pixels from edge).
-    glow_radius: f32,
-    /// Padding.
-    _padding2: vec3<f32>,
-
-    // Border
+    // Border settings (16 bytes)
     /// Border width in pixels.
     border_width: f32,
-    /// Padding for vec4 alignment.
+    /// Padding for alignment.
     _padding3: vec3<f32>,
+
+    // Border color (16 bytes)
     /// Border color (RGBA).
     border_color: vec4<f32>,
 
-    // Resolution
+    // Resolution and quality (16 bytes)
     /// Render resolution (width, height).
     resolution: vec2<f32>,
     /// Quality level (0=low, 1=medium, 2=high, 3=ultra).
@@ -165,13 +225,7 @@ struct HDPanelUniforms {
 }
 
 @group(0) @binding(0)
-var<uniform> uniforms: HDPanelUniforms;
-
-@group(0) @binding(1)
-var backdrop_texture: texture_2d<f32>;
-
-@group(0) @binding(2)
-var backdrop_sampler: sampler;
+var<uniform> uniforms: ObsidianPanelUniforms;
 
 // =============================================================================
 // Vertex Shader
@@ -208,103 +262,6 @@ fn vs_main(in: VertexInput) -> VertexOutput {
 }
 
 // =============================================================================
-// Blur Sampling (Kawase-style progressive blur)
-// =============================================================================
-
-// Sample counts per quality level
-const SAMPLES_LOW: i32 = 8;
-const SAMPLES_MEDIUM: i32 = 16;
-const SAMPLES_HIGH: i32 = 32;
-const SAMPLES_ULTRA: i32 = 64;
-
-// Kawase blur kernel offsets (progressive sampling)
-fn kawase_offset(iteration: i32, sample_idx: i32, total_samples: i32) -> vec2<f32> {
-    // Create a spiral pattern for better coverage
-    let angle = f32(sample_idx) / f32(total_samples) * TAU;
-    let radius = f32(iteration + 1) * 0.5;
-    return vec2<f32>(cos(angle), sin(angle)) * radius;
-}
-
-/// Depth-adjusted blur radius.
-/// Panels further back (higher depth_layer) have more blur.
-fn depth_adjusted_blur(base_blur: f32, depth_layer: f32, falloff: f32) -> f32 {
-    // Blur scales with depth: foreground = base, background = base * (1 + depth * falloff)
-    let depth_scale = 1.0 + pow(depth_layer, falloff) * 2.0;
-    return base_blur * depth_scale;
-}
-
-/// Sample backdrop with Kawase blur based on quality level.
-fn sample_backdrop_hd(uv: vec2<f32>, blur_radius: f32) -> vec3<f32> {
-    var color = vec3<f32>(0.0);
-    let pixel_size = 1.0 / uniforms.resolution;
-
-    // Select sample count based on quality
-    var sample_count: i32;
-    if uniforms.quality_level == 0u {
-        sample_count = SAMPLES_LOW;
-    } else if uniforms.quality_level == 1u {
-        sample_count = SAMPLES_MEDIUM;
-    } else if uniforms.quality_level == 2u {
-        sample_count = SAMPLES_HIGH;
-    } else {
-        sample_count = SAMPLES_ULTRA;
-    }
-
-    // Progressive blur iterations (Kawase-style)
-    let iterations = 3;
-    var total_weight = 0.0;
-
-    for (var iter = 0; iter < iterations; iter = iter + 1) {
-        let iter_radius = blur_radius * f32(iter + 1) / f32(iterations);
-        let samples_this_iter = sample_count / iterations;
-
-        for (var i = 0; i < samples_this_iter; i = i + 1) {
-            let offset = kawase_offset(iter, i, samples_this_iter) * iter_radius * pixel_size;
-            let sample_uv = clamp(uv + offset, vec2<f32>(0.001), vec2<f32>(0.999));
-
-            // Weight by distance from center (gaussian-like falloff)
-            let dist = length(offset);
-            let weight = exp(-dist * dist * 2.0);
-
-            color += textureSample(backdrop_texture, backdrop_sampler, sample_uv).rgb * weight;
-            total_weight += weight;
-        }
-    }
-
-    // Center sample
-    color += textureSample(backdrop_texture, backdrop_sampler, uv).rgb * 1.5;
-    total_weight += 1.5;
-
-    return color / total_weight;
-}
-
-/// Sample with chromatic aberration (dispersion effect).
-fn sample_backdrop_dispersed(uv: vec2<f32>, blur_radius: f32, dispersion: f32) -> vec3<f32> {
-    if dispersion < 0.001 {
-        return sample_backdrop_hd(uv, blur_radius);
-    }
-
-    // Calculate UV offsets for each color channel
-    let center = vec2<f32>(0.5);
-    let dir = normalize(uv - center);
-    let dist = length(uv - center);
-
-    let r_offset = dispersion * dist * 0.02;
-    let b_offset = -dispersion * dist * 0.02;
-
-    let r_uv = uv + dir * r_offset;
-    let g_uv = uv;
-    let b_uv = uv + dir * b_offset;
-
-    // Sample each channel separately
-    let r = sample_backdrop_hd(r_uv, blur_radius).r;
-    let g = sample_backdrop_hd(g_uv, blur_radius).g;
-    let b = sample_backdrop_hd(b_uv, blur_radius).b;
-
-    return vec3<f32>(r, g, b);
-}
-
-// =============================================================================
 // Fragment Shader
 // =============================================================================
 
@@ -323,88 +280,70 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         discard;
     }
 
-    // Calculate blur radius with depth scaling
-    let effective_blur = depth_adjusted_blur(
-        uniforms.blur_intensity,
-        uniforms.depth_layer,
-        uniforms.blur_falloff
-    );
+    let edge_dist = -dist; // Positive inside
 
-    // Sample backdrop with blur and optional dispersion
-    let uv = in.pixel_pos / uniforms.resolution;
-    var backdrop_color: vec3<f32>;
+    // =========================================================================
+    // Obsidian Base Color
+    // =========================================================================
 
-    if uniforms.quality_level >= 3u && uniforms.dispersion > 0.001 {
-        // Ultra quality: enable dispersion
-        backdrop_color = sample_backdrop_dispersed(uv, effective_blur, uniforms.dispersion);
-    } else {
-        backdrop_color = sample_backdrop_hd(uv, effective_blur);
-    }
+    var panel_color = uniforms.base_color.rgb;
 
-    // Apply tint
-    var panel_color = backdrop_color * uniforms.tint.rgb;
-
-    // Edge distance for fresnel and effects (positive inside)
-    let edge_dist = -dist;
-
-    // ==========================================================================
-    // Cook-Torrance Fresnel Edge Highlights
-    // ==========================================================================
+    // =========================================================================
+    // Cook-Torrance Specular Highlights
+    // =========================================================================
 
     // Simulate view angle based on edge distance (edges = glancing angle)
     let normalized_edge = saturate(edge_dist / (uniforms.corner_radius * 2.0 + 1.0));
     let simulated_cos_theta = normalized_edge; // Center = 1.0, edges = 0.0
 
-    // Calculate base reflectivity from IOR
+    // Calculate base reflectivity from IOR (volcanic glass f0 ~ 0.085)
     let base_f0 = f0_from_ior(uniforms.ior);
-    let f0 = vec3<f32>(base_f0) * uniforms.tint.rgb;
+    let f0 = vec3<f32>(base_f0);
 
-    // Multi-scatter fresnel for physically accurate edge highlights
-    let fresnel = fresnel_multi_scatter(simulated_cos_theta, f0, uniforms.roughness);
+    // Fresnel with roughness correction
+    let fresnel = fresnel_schlick_roughness(simulated_cos_theta, f0, uniforms.roughness);
 
-    // Apply fresnel highlight with configurable color and intensity
-    let fresnel_strength = (1.0 - simulated_cos_theta);
-    let fresnel_contribution = pow(fresnel_strength, uniforms.fresnel_power) * uniforms.fresnel_intensity;
-    panel_color += uniforms.fresnel_color * fresnel_contribution;
+    // Specular highlight scaled by depth (foreground brighter, background dimmer)
+    let depth_specular = uniforms.specular_intensity * (1.0 - uniforms.depth_layer * 0.6);
+    let specular_contribution = fresnel * depth_specular;
+    panel_color += specular_contribution;
 
-    // ==========================================================================
-    // Inner Glow Effect
-    // ==========================================================================
+    // =========================================================================
+    // Fresnel Edge Highlight
+    // =========================================================================
 
-    if uniforms.glow_intensity > 0.001 && uniforms.quality_level >= 2u {
-        // Inner glow based on distance from edge
-        let glow_dist = saturate(edge_dist / uniforms.glow_radius);
-        let glow_factor = (1.0 - glow_dist) * exp(-glow_dist * 2.0);
-        panel_color += uniforms.glow_color * glow_factor * uniforms.glow_intensity;
+    let fresnel_strength = pow(1.0 - simulated_cos_theta, uniforms.fresnel_power);
+    panel_color += uniforms.fresnel_color * fresnel_strength * uniforms.fresnel_intensity;
+
+    // =========================================================================
+    // Edge Branch Energy (High/Ultra quality only)
+    // =========================================================================
+
+    if uniforms.quality_level >= 2u && uniforms.branch_energy > 0.001 {
+        let branch_intensity = edge_branch_compute(
+            local_pos, half_size, uniforms.corner_radius,
+            edge_dist, uniforms.branch_reach,
+            uniforms.branch_density, uniforms.branch_speed,
+            uniforms.branch_energy, uniforms.time
+        );
+        let branch_col = edge_branch_color(branch_intensity, uniforms.branch_energy);
+        panel_color += branch_col;
     }
 
-    // ==========================================================================
+    // =========================================================================
     // Border Rendering
-    // ==========================================================================
+    // =========================================================================
 
     let border_alpha = 1.0 - smoothstep(0.0, uniforms.border_width, edge_dist);
     panel_color = mix(panel_color, uniforms.border_color.rgb, border_alpha * uniforms.border_color.a);
 
-    // ==========================================================================
-    // Final Alpha Calculation
-    // ==========================================================================
+    // =========================================================================
+    // Final Alpha (opaque obsidian with soft edge AA)
+    // =========================================================================
 
-    // Soft edge antialiasing
     let edge_softness = 1.0;
     let shape_alpha = saturate(-dist / edge_softness);
-
-    // Depth-based opacity (background panels more transparent)
-    let depth_opacity = 1.0 - uniforms.depth_layer * 0.3;
-
-    // Fresnel-based opacity (more opaque at edges)
-    let fresnel_avg = (fresnel.r + fresnel.g + fresnel.b) / 3.0;
-    let fresnel_opacity = fresnel_avg * 0.3;
-
-    // Combine opacity factors
-    let base_alpha = uniforms.opacity * depth_opacity;
-    let alpha = saturate(base_alpha + fresnel_opacity) * shape_alpha;
-
-    // Include border alpha
+    let alpha = uniforms.opacity * shape_alpha;
     let final_alpha = max(alpha, border_alpha * uniforms.border_color.a);
 
     return vec4<f32>(panel_color, final_alpha);
@@ -431,14 +370,18 @@ fn fs_glow_only(in: VertexOutput) -> @location(0) vec4<f32> {
 
     let edge_dist = -dist;
 
-    // Only output glow contribution for bloom pass
+    // Only output glow contributions for bloom pass
     var glow = vec3<f32>(0.0);
 
-    // Inner glow
-    if uniforms.glow_intensity > 0.001 {
-        let glow_dist = saturate(edge_dist / uniforms.glow_radius);
-        let glow_factor = (1.0 - glow_dist) * exp(-glow_dist * 2.0);
-        glow = uniforms.glow_color * glow_factor * uniforms.glow_intensity;
+    // Edge branch glow (if visible)
+    if uniforms.quality_level >= 2u && uniforms.branch_energy > 0.001 {
+        let branch_intensity = edge_branch_compute(
+            local_pos, half_size, uniforms.corner_radius,
+            edge_dist, uniforms.branch_reach,
+            uniforms.branch_density, uniforms.branch_speed,
+            uniforms.branch_energy, uniforms.time
+        );
+        glow += edge_branch_color(branch_intensity, uniforms.branch_energy) * 0.7;
     }
 
     // Fresnel edge glow
