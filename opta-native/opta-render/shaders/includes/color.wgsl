@@ -225,3 +225,228 @@ fn blend_screen(base: vec3<f32>, blend: vec3<f32>) -> vec3<f32> {
 fn blend_multiply(base: vec3<f32>, blend: vec3<f32>) -> vec3<f32> {
     return base * blend;
 }
+
+// =============================================================================
+// Color Temperature System
+// =============================================================================
+
+/// Color temperature state constants.
+const TEMPERATURE_DORMANT: u32 = 0u;
+const TEMPERATURE_IDLE: u32 = 1u;
+const TEMPERATURE_ACTIVE: u32 = 2u;
+const TEMPERATURE_PROCESSING: u32 = 3u;
+const TEMPERATURE_ALERT: u32 = 4u;
+
+/// Opta brand purple (#8B5CF6) in linear space.
+const OPTA_PURPLE: vec3<f32> = vec3<f32>(0.545, 0.361, 0.965);
+
+/// Opta purple-blue for processing state.
+const OPTA_PURPLE_BLUE: vec3<f32> = vec3<f32>(0.400, 0.450, 0.980);
+
+/// Deep obsidian black for dormant state.
+const OBSIDIAN_BLACK: vec3<f32> = vec3<f32>(0.04, 0.04, 0.05);
+
+/// Cool gray for idle state.
+const COOL_GRAY: vec3<f32> = vec3<f32>(0.25, 0.27, 0.30);
+
+/// Alert amber for warning state.
+const ALERT_AMBER: vec3<f32> = vec3<f32>(1.0, 0.75, 0.0);
+
+/// Get primary color for a temperature state.
+fn temperature_primary(state: u32) -> vec3<f32> {
+    switch state {
+        case TEMPERATURE_DORMANT: { return OBSIDIAN_BLACK; }
+        case TEMPERATURE_IDLE: { return COOL_GRAY; }
+        case TEMPERATURE_ACTIVE: { return OPTA_PURPLE; }
+        case TEMPERATURE_PROCESSING: { return OPTA_PURPLE_BLUE; }
+        case TEMPERATURE_ALERT: { return ALERT_AMBER; }
+        default: { return OPTA_PURPLE; }
+    }
+}
+
+/// Get glow color for a temperature state.
+fn temperature_glow(state: u32) -> vec3<f32> {
+    switch state {
+        case TEMPERATURE_DORMANT: { return vec3<f32>(0.08, 0.08, 0.10); }
+        case TEMPERATURE_IDLE: { return vec3<f32>(0.3, 0.35, 0.45); }
+        case TEMPERATURE_ACTIVE: { return vec3<f32>(0.6, 0.4, 1.0); }
+        case TEMPERATURE_PROCESSING: { return vec3<f32>(0.5, 0.6, 1.0); }
+        case TEMPERATURE_ALERT: { return vec3<f32>(1.0, 0.6, 0.2); }
+        default: { return vec3<f32>(0.6, 0.4, 1.0); }
+    }
+}
+
+/// Blend between two temperature colors.
+/// t=0 returns from_color, t=1 returns to_color.
+fn temperature_blend(from_color: vec3<f32>, to_color: vec3<f32>, t: f32) -> vec3<f32> {
+    return mix(from_color, to_color, clamp(t, 0.0, 1.0));
+}
+
+/// Map energy level (0.0-1.0) to temperature state.
+fn energy_to_temperature(energy: f32) -> u32 {
+    if energy < 0.2 {
+        return TEMPERATURE_DORMANT;
+    } else if energy < 0.4 {
+        return TEMPERATURE_IDLE;
+    } else if energy < 0.7 {
+        return TEMPERATURE_ACTIVE;
+    } else {
+        return TEMPERATURE_PROCESSING;
+    }
+}
+
+/// Get smoothly interpolated temperature color based on energy.
+fn temperature_color_for_energy(energy: f32) -> vec3<f32> {
+    let e = clamp(energy, 0.0, 1.0);
+
+    // Define energy thresholds
+    if e < 0.2 {
+        // Dormant
+        return OBSIDIAN_BLACK;
+    } else if e < 0.4 {
+        // Transition Dormant -> Idle
+        let t = (e - 0.2) / 0.2;
+        return mix(OBSIDIAN_BLACK, COOL_GRAY, t);
+    } else if e < 0.7 {
+        // Transition Idle -> Active
+        let t = (e - 0.4) / 0.3;
+        return mix(COOL_GRAY, OPTA_PURPLE, t);
+    } else if e < 0.9 {
+        // Transition Active -> Processing
+        let t = (e - 0.7) / 0.2;
+        return mix(OPTA_PURPLE, OPTA_PURPLE_BLUE, t);
+    } else {
+        // High energy stays at processing
+        return OPTA_PURPLE_BLUE;
+    }
+}
+
+// =============================================================================
+// Accessibility Utilities
+// =============================================================================
+
+/// Calculate WCAG contrast ratio between two colors.
+/// Returns ratio >= 1.0 where higher is better.
+fn contrast_ratio(color1: vec3<f32>, color2: vec3<f32>) -> f32 {
+    let l1 = luminance(color1) + 0.05;
+    let l2 = luminance(color2) + 0.05;
+    return max(l1, l2) / min(l1, l2);
+}
+
+/// Boost contrast of a color against a background to meet target ratio.
+fn apply_contrast_boost(color: vec3<f32>, background: vec3<f32>, target_ratio: f32) -> vec3<f32> {
+    let current_ratio = contrast_ratio(color, background);
+    if current_ratio >= target_ratio {
+        return color;
+    }
+
+    let bg_lum = luminance(background);
+    let color_lum = luminance(color);
+    let go_lighter = color_lum > bg_lum;
+
+    // Calculate required luminance
+    let required_lum = select(
+        (bg_lum + 0.05) / target_ratio - 0.05,  // go darker
+        target_ratio * (bg_lum + 0.05) - 0.05,  // go lighter
+        go_lighter
+    );
+
+    // Scale color to reach required luminance
+    let scale = select(
+        required_lum / max(color_lum, 0.001),
+        min(required_lum / max(color_lum, 0.001), 1.5),
+        go_lighter
+    );
+
+    return clamp(color * scale, vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+/// Desaturate a color for reduced color mode.
+/// amount=0 is full color, amount=1 is grayscale.
+fn desaturate(color: vec3<f32>, amount: f32) -> vec3<f32> {
+    let gray = luminance(color);
+    return mix(color, vec3<f32>(gray), clamp(amount, 0.0, 1.0));
+}
+
+/// Adjust luminance of a color while preserving hue.
+/// factor > 1 increases brightness, factor < 1 decreases.
+fn luminance_adjust(color: vec3<f32>, factor: f32) -> vec3<f32> {
+    let hsv = rgb_to_hsv(color);
+    let new_v = clamp(hsv.z * factor, 0.0, 1.0);
+    return hsv_to_rgb(vec3<f32>(hsv.x, hsv.y, new_v));
+}
+
+/// Detect edges using luminance gradient for high contrast mode.
+/// Returns edge intensity (0.0-1.0).
+fn high_contrast_edge(
+    center: vec3<f32>,
+    left: vec3<f32>,
+    right: vec3<f32>,
+    up: vec3<f32>,
+    down: vec3<f32>
+) -> f32 {
+    let lc = luminance(center);
+    let ll = luminance(left);
+    let lr = luminance(right);
+    let lu = luminance(up);
+    let ld = luminance(down);
+
+    // Sobel-like gradient magnitude
+    let gx = abs(lr - ll);
+    let gy = abs(lu - ld);
+    let gradient = sqrt(gx * gx + gy * gy);
+
+    return clamp(gradient * 2.0, 0.0, 1.0);
+}
+
+/// Apply high contrast solid edge outline.
+fn apply_solid_edge(
+    color: vec3<f32>,
+    edge_intensity: f32,
+    edge_color: vec3<f32>,
+    threshold: f32
+) -> vec3<f32> {
+    if edge_intensity > threshold {
+        return edge_color;
+    }
+    return color;
+}
+
+/// Invert color for inverted contrast mode.
+fn invert_color(color: vec3<f32>) -> vec3<f32> {
+    return vec3<f32>(1.0) - color;
+}
+
+/// Apply reduced color saturation for colorblind-friendly mode.
+fn colorblind_adjust(color: vec3<f32>, mode: u32) -> vec3<f32> {
+    // mode 0 = normal, 1 = protanopia, 2 = deuteranopia, 3 = tritanopia
+    switch mode {
+        case 1u: {
+            // Protanopia simulation (reduce red perception)
+            return vec3<f32>(
+                0.567 * color.r + 0.433 * color.g,
+                0.558 * color.r + 0.442 * color.g,
+                0.242 * color.g + 0.758 * color.b
+            );
+        }
+        case 2u: {
+            // Deuteranopia simulation (reduce green perception)
+            return vec3<f32>(
+                0.625 * color.r + 0.375 * color.g,
+                0.7 * color.r + 0.3 * color.g,
+                0.3 * color.g + 0.7 * color.b
+            );
+        }
+        case 3u: {
+            // Tritanopia simulation (reduce blue perception)
+            return vec3<f32>(
+                0.95 * color.r + 0.05 * color.g,
+                0.433 * color.g + 0.567 * color.b,
+                0.475 * color.g + 0.525 * color.b
+            );
+        }
+        default: {
+            return color;
+        }
+    }
+}
