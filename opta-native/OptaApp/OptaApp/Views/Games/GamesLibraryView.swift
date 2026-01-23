@@ -352,7 +352,7 @@ struct GamesLibraryView: View {
     private var gamesGrid: some View {
         ScrollView {
             LazyVGrid(columns: columns, spacing: 12) {
-                ForEach(filteredGames) { game in
+                ForEach(Array(filteredGames.enumerated()), id: \.element.id) { index, game in
                     GameCardView(
                         game: game,
                         onSelect: {
@@ -362,9 +362,11 @@ struct GamesLibraryView: View {
                             optimizeGame(game)
                         }
                     )
+                    .organicAppear(index: index, total: filteredGames.count, spread: 0.8)
                 }
             }
             .padding(20)
+            .id("\(searchText)-\(selectedPlatform?.rawValue ?? "all")-\(filteredGames.count)")
         }
         .scrollContentBackground(.hidden)
         .background(Color(hex: "0A0A0F"))
