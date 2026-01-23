@@ -20,12 +20,12 @@ struct CircularMenuSector: Identifiable, Equatable {
     let label: String
     let color: Color
 
-    /// Default sectors for Opta navigation — unified violet palette
+    /// Default sectors for Opta navigation — accessibility-safe system purple
     static let defaultSectors: [CircularMenuSector] = [
-        CircularMenuSector(id: 0, icon: "house.fill", label: "Dashboard", color: Color(hex: "8B5CF6")),
-        CircularMenuSector(id: 1, icon: "gamecontroller.fill", label: "Games", color: Color(hex: "8B5CF6")),
-        CircularMenuSector(id: 2, icon: "chart.bar.fill", label: "Profiles", color: Color(hex: "8B5CF6")),
-        CircularMenuSector(id: 3, icon: "gearshape.fill", label: "Settings", color: Color(hex: "8B5CF6"))
+        CircularMenuSector(id: 0, icon: "house.fill", label: "Dashboard", color: .purple),
+        CircularMenuSector(id: 1, icon: "gamecontroller.fill", label: "Games", color: .purple),
+        CircularMenuSector(id: 2, icon: "chart.bar.fill", label: "Profiles", color: .purple),
+        CircularMenuSector(id: 3, icon: "gearshape.fill", label: "Settings", color: .purple)
     ]
 }
 
