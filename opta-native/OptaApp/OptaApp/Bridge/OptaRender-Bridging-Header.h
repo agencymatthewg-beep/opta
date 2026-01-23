@@ -265,6 +265,167 @@ typedef void (*HapticCallback)(uint32_t haptic_type);
 /// @param callback The callback function to invoke for haptic feedback
 void opta_render_set_haptic_callback(HapticCallback callback);
 
+// MARK: - Circular Menu Types
+
+/// Opaque pointer to the Rust circular menu
+typedef struct OptaCircularMenu OptaCircularMenu;
+
+/// Configuration for circular menu creation
+typedef struct {
+    /// Center X position in pixels
+    float center_x;
+    /// Center Y position in pixels
+    float center_y;
+    /// Outer radius in pixels
+    float radius;
+    /// Inner radius in pixels
+    float inner_radius;
+    /// Number of sectors in the menu
+    uint32_t sector_count;
+    /// Glow color red component (0.0-1.0)
+    float glow_color_r;
+    /// Glow color green component (0.0-1.0)
+    float glow_color_g;
+    /// Glow color blue component (0.0-1.0)
+    float glow_color_b;
+    /// Glow intensity (0.0-2.0+)
+    float glow_intensity;
+    /// Rotation offset in radians
+    float rotation_offset;
+} OptaCircularMenuConfig;
+
+/// Hit test result for circular menu
+typedef struct {
+    /// Sector index (-1 if not in menu)
+    int32_t sector_index;
+    /// Whether the point is within the menu ring
+    bool is_in_menu;
+    /// X position of the sector center (valid if sector_index >= 0)
+    float sector_center_x;
+    /// Y position of the sector center (valid if sector_index >= 0)
+    float sector_center_y;
+} OptaCircularMenuHitTest;
+
+// MARK: - Circular Menu Lifecycle
+
+/// Create a new circular menu
+/// @param config Pointer to configuration struct (can be NULL for defaults)
+/// @return Pointer to the circular menu, or NULL on failure
+OptaCircularMenu* opta_circular_menu_create(const OptaCircularMenuConfig* config);
+
+/// Destroy a circular menu and free resources
+/// @param menu The circular menu to destroy
+void opta_circular_menu_destroy(OptaCircularMenu* menu);
+
+// MARK: - Circular Menu State
+
+/// Open the circular menu with animation
+/// @param menu The circular menu
+/// @return Result code
+OptaRenderResult opta_circular_menu_open(OptaCircularMenu* menu);
+
+/// Close the circular menu with animation
+/// @param menu The circular menu
+/// @return Result code
+OptaRenderResult opta_circular_menu_close(OptaCircularMenu* menu);
+
+/// Toggle the circular menu open/closed state
+/// @param menu The circular menu
+/// @return Result code
+OptaRenderResult opta_circular_menu_toggle(OptaCircularMenu* menu);
+
+/// Check if the circular menu is open
+/// @param menu The circular menu
+/// @return true if open, false if closed
+bool opta_circular_menu_is_open(const OptaCircularMenu* menu);
+
+/// Check if the menu animation is currently active
+/// @param menu The circular menu
+/// @return true if animating, false otherwise
+bool opta_circular_menu_is_animating(const OptaCircularMenu* menu);
+
+/// Immediately set the open state without animation
+/// @param menu The circular menu
+/// @param open Whether to open (true) or close (false)
+/// @return Result code
+OptaRenderResult opta_circular_menu_set_open_immediate(OptaCircularMenu* menu, bool open);
+
+// MARK: - Circular Menu Animation
+
+/// Update the circular menu animation
+/// @param menu The circular menu
+/// @param dt Time delta in seconds
+/// @return Result code
+OptaRenderResult opta_circular_menu_update(OptaCircularMenu* menu, float dt);
+
+/// Get the current open progress (0.0 = closed, 1.0 = open)
+/// @param menu The circular menu
+/// @return Progress value 0.0-1.0
+float opta_circular_menu_get_open_progress(const OptaCircularMenu* menu);
+
+/// Get the current highlight progress (0.0 = none, 1.0 = full)
+/// @param menu The circular menu
+/// @return Progress value 0.0-1.0
+float opta_circular_menu_get_highlight_progress(const OptaCircularMenu* menu);
+
+// MARK: - Circular Menu Sectors
+
+/// Set the highlighted sector
+/// @param menu The circular menu
+/// @param sector Sector index to highlight (-1 for none)
+/// @return Result code
+OptaRenderResult opta_circular_menu_set_highlighted_sector(OptaCircularMenu* menu, int32_t sector);
+
+/// Get the currently highlighted sector
+/// @param menu The circular menu
+/// @return Sector index, or -1 if none highlighted
+int32_t opta_circular_menu_get_highlighted_sector(const OptaCircularMenu* menu);
+
+/// Set the number of sectors in the menu
+/// @param menu The circular menu
+/// @param count Number of sectors (1-12)
+/// @return Result code
+OptaRenderResult opta_circular_menu_set_sector_count(OptaCircularMenu* menu, uint32_t count);
+
+/// Get the number of sectors in the menu
+/// @param menu The circular menu
+/// @return Number of sectors
+uint32_t opta_circular_menu_get_sector_count(const OptaCircularMenu* menu);
+
+// MARK: - Circular Menu Position
+
+/// Set the menu center position
+/// @param menu The circular menu
+/// @param center_x X coordinate of center
+/// @param center_y Y coordinate of center
+/// @return Result code
+OptaRenderResult opta_circular_menu_set_position(OptaCircularMenu* menu, float center_x, float center_y);
+
+// MARK: - Circular Menu Appearance
+
+/// Set the glow color for the highlighted sector
+/// @param menu The circular menu
+/// @param r Red component (0.0-1.0)
+/// @param g Green component (0.0-1.0)
+/// @param b Blue component (0.0-1.0)
+/// @return Result code
+OptaRenderResult opta_circular_menu_set_glow_color(OptaCircularMenu* menu, float r, float g, float b);
+
+// MARK: - Circular Menu Hit Testing
+
+/// Hit test a point against the circular menu
+/// @param menu The circular menu
+/// @param x X coordinate to test
+/// @param y Y coordinate to test
+/// @param result Pointer to hit test result struct
+/// @return Result code
+OptaRenderResult opta_circular_menu_hit_test(
+    const OptaCircularMenu* menu,
+    float x,
+    float y,
+    OptaCircularMenuHitTest* result
+);
+
 #ifdef __cplusplus
 }
 #endif
