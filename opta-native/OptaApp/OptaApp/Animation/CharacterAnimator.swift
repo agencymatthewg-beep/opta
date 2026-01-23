@@ -221,6 +221,16 @@ final class CharacterAnimator {
         }
     }
 
+    /// Immediately reveals all characters without animation.
+    /// Used for accessibility when reduceMotion is enabled.
+    func revealAllImmediately() {
+        cancelPendingAnimations()
+        isAnimating = false
+        for index in characters.indices {
+            characters[index].reveal()
+        }
+    }
+
     // MARK: - Private Methods
 
     private func cancelPendingAnimations() {
@@ -339,10 +349,7 @@ struct AnimatedTextView: View {
     }
 
     private func showImmediately() {
-        guard let animator = animator else { return }
-        for index in animator.characters.indices {
-            animator.characters[index].reveal()
-        }
+        animator?.revealAllImmediately()
     }
 }
 
