@@ -169,7 +169,7 @@ impl CircularMenuSector {
 /// Uniform buffer data for the circular menu shader.
 ///
 /// Matches the `CircularMenuUniforms` struct in `circular_menu.wgsl`.
-/// Total size: 128 bytes (8 * 16-byte aligned groups).
+/// Total size: 96 bytes (6 * 16-byte aligned groups).
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct CircularMenuUniforms {
@@ -997,23 +997,29 @@ mod tests {
         let sector_count = 4;
         let rotation = 0.0;
 
-        // Point in sector 0 (right side)
-        let point = [100.0, 0.0];
+        // With 4 sectors and rotation 0:
+        // Sector 0: 0 to PI/2 (right-top quadrant)
+        // Sector 1: PI/2 to PI (top-left quadrant)
+        // Sector 2: PI to 3*PI/2 (left-bottom quadrant)
+        // Sector 3: 3*PI/2 to 2*PI (bottom-right quadrant)
+
+        // Point in sector 0 (right side, angle ~0)
+        let point = [100.0, 10.0]; // Slightly above positive X axis
         let sector = point_to_sector(point, center, inner_radius, outer_radius, sector_count, rotation);
         assert_eq!(sector, 0);
 
-        // Point in sector 1 (top)
-        let point = [0.0, 100.0];
+        // Point in sector 1 (top-left, angle ~3*PI/4)
+        let point = [-70.0, 70.0];
         let sector = point_to_sector(point, center, inner_radius, outer_radius, sector_count, rotation);
         assert_eq!(sector, 1);
 
-        // Point in sector 2 (left)
-        let point = [-100.0, 0.0];
+        // Point in sector 2 (left-bottom, angle ~5*PI/4)
+        let point = [-70.0, -70.0];
         let sector = point_to_sector(point, center, inner_radius, outer_radius, sector_count, rotation);
         assert_eq!(sector, 2);
 
-        // Point in sector 3 (bottom)
-        let point = [0.0, -100.0];
+        // Point in sector 3 (bottom-right, angle ~7*PI/4)
+        let point = [70.0, -70.0];
         let sector = point_to_sector(point, center, inner_radius, outer_radius, sector_count, rotation);
         assert_eq!(sector, 3);
     }
@@ -1069,8 +1075,8 @@ mod tests {
 
     #[test]
     fn test_menu_uniforms_size() {
-        // Should be 128 bytes (8 * 16 bytes for proper alignment)
-        assert_eq!(std::mem::size_of::<CircularMenuUniforms>(), 128);
+        // Should be 96 bytes (6 * 16 bytes for proper alignment)
+        assert_eq!(std::mem::size_of::<CircularMenuUniforms>(), 96);
     }
 
     #[test]

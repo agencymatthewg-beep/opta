@@ -35,6 +35,10 @@ use raw_window_handle::{
 use tracing::{debug, error, info, warn};
 
 use crate::bridge::RenderStatus;
+use crate::components::{
+    AnimatedCircularMenu, CircularMenuConfig, CircularMenuSector,
+    is_point_in_menu, point_to_sector, sector_center_position,
+};
 use crate::error::RenderError;
 use crate::instance::GpuContext;
 use crate::quality::{QualityLevel, QualitySettings};
@@ -765,6 +769,571 @@ pub unsafe extern "C" fn opta_render_get_quality_level(ctx: *const OptaRenderCon
     context.quality.level.as_u32()
 }
 
+// MARK: - Compatibility Aliases
+
+/// Create a new render context (alias for opta_render_init).
+///
+/// # Returns
+///
+/// Pointer to the render context, or null on failure.
+///
+/// # Safety
+///
+/// Caller must eventually call `opta_render_destroy` to free the context.
+#[no_mangle]
+pub extern "C" fn opta_render_create() -> *mut OptaRenderContext {
+    opta_render_init()
+}
+
+/// Get the last error message (currently always returns null).
+///
+/// # Safety
+///
+/// `ctx` can be null.
+#[no_mangle]
+pub unsafe extern "C" fn opta_render_get_last_error(_ctx: *const OptaRenderContext) -> *const std::ffi::c_char {
+    std::ptr::null()
+}
+
+/// Set quality level as a float value (0.0 = lowest, 1.0 = highest).
+///
+/// # Safety
+///
+/// `ctx` must be a valid pointer from `opta_render_init`.
+#[no_mangle]
+pub unsafe extern "C" fn opta_render_set_quality_value(
+    ctx: *mut OptaRenderContext,
+    quality_value: f32,
+) -> OptaRenderResult {
+    if ctx.is_null() {
+        return OptaRenderResult::NullPointer;
+    }
+
+    let context = unsafe { &mut *ctx };
+
+    // Map 0.0-1.0 to quality levels
+    let level = if quality_value <= 0.25 {
+        QualityLevel::Low
+    } else if quality_value <= 0.5 {
+        QualityLevel::Medium
+    } else if quality_value <= 0.75 {
+        QualityLevel::High
+    } else {
+        QualityLevel::Ultra
+    };
+
+    // Create new quality settings for this level
+    context.quality = QualitySettings::for_level(level);
+
+    info!("Set quality value to {:.2} (level: {:?})", quality_value, level);
+    OptaRenderResult::Success
+}
+
+/// Set the target frame rate.
+///
+/// # Safety
+///
+/// `ctx` must be a valid pointer from `opta_render_init`.
+#[no_mangle]
+pub unsafe extern "C" fn opta_render_set_target_fps(
+    ctx: *mut OptaRenderContext,
+    target_fps: u32,
+) -> OptaRenderResult {
+    if ctx.is_null() {
+        return OptaRenderResult::NullPointer;
+    }
+
+    let context = unsafe { &mut *ctx };
+    context.quality.target_fps = target_fps;
+    context.timing = FrameTiming::new(target_fps);
+
+    info!("Set target FPS to {}", target_fps);
+    OptaRenderResult::Success
+}
+
+// =============================================================================
+// Circular Menu FFI Functions
+// =============================================================================
+
+/// Opaque handle to a circular menu for Swift.
+pub struct OptaCircularMenu {
+    /// Configuration for the menu.
+    config: CircularMenuConfig,
+    /// Animated state wrapper.
+    animation: AnimatedCircularMenu,
+    /// Sectors in the menu (reserved for future use).
+    #[allow(dead_code)]
+    sectors: Vec<CircularMenuSector>,
+}
+
+/// Configuration passed from Swift for circular menu creation.
+#[repr(C)]
+pub struct OptaCircularMenuConfig {
+    /// Center X position in pixels.
+    pub center_x: f32,
+    /// Center Y position in pixels.
+    pub center_y: f32,
+    /// Outer radius in pixels.
+    pub radius: f32,
+    /// Inner radius in pixels.
+    pub inner_radius: f32,
+    /// Number of sectors.
+    pub sector_count: u32,
+    /// Glow color red component (0.0-1.0).
+    pub glow_color_r: f32,
+    /// Glow color green component (0.0-1.0).
+    pub glow_color_g: f32,
+    /// Glow color blue component (0.0-1.0).
+    pub glow_color_b: f32,
+    /// Glow intensity (0.0 - 2.0+).
+    pub glow_intensity: f32,
+    /// Rotation offset in radians.
+    pub rotation_offset: f32,
+}
+
+impl Default for OptaCircularMenuConfig {
+    fn default() -> Self {
+        Self {
+            center_x: 0.0,
+            center_y: 0.0,
+            radius: 150.0,
+            inner_radius: 50.0,
+            sector_count: 4,
+            glow_color_r: 0.4,
+            glow_color_g: 0.6,
+            glow_color_b: 1.0,
+            glow_intensity: 1.5,
+            rotation_offset: -std::f32::consts::FRAC_PI_2,
+        }
+    }
+}
+
+/// Hit test result for circular menu.
+#[repr(C)]
+pub struct OptaCircularMenuHitTest {
+    /// Sector index (-1 if not in menu).
+    pub sector_index: i32,
+    /// Whether the point is within the menu ring.
+    pub is_in_menu: bool,
+    /// X position of the sector center (valid if sector_index >= 0).
+    pub sector_center_x: f32,
+    /// Y position of the sector center (valid if sector_index >= 0).
+    pub sector_center_y: f32,
+}
+
+/// Create a new circular menu.
+///
+/// # Arguments
+///
+/// * `config` - Pointer to configuration struct
+///
+/// # Returns
+///
+/// Pointer to the circular menu, or null on failure.
+///
+/// # Safety
+///
+/// Caller must eventually call `opta_circular_menu_destroy` to free the menu.
+#[no_mangle]
+pub unsafe extern "C" fn opta_circular_menu_create(
+    config: *const OptaCircularMenuConfig,
+) -> *mut OptaCircularMenu {
+    let config_ref = if config.is_null() {
+        OptaCircularMenuConfig::default()
+    } else {
+        unsafe { &*config }.clone()
+    };
+
+    let menu_config = CircularMenuConfig {
+        position: [config_ref.center_x, config_ref.center_y],
+        radius: config_ref.radius,
+        inner_radius: config_ref.inner_radius,
+        sector_count: config_ref.sector_count,
+        glow_color: [
+            config_ref.glow_color_r,
+            config_ref.glow_color_g,
+            config_ref.glow_color_b,
+        ],
+        glow_intensity: config_ref.glow_intensity,
+        rotation_offset: config_ref.rotation_offset,
+        ..CircularMenuConfig::default()
+    };
+
+    let menu = Box::new(OptaCircularMenu {
+        config: menu_config,
+        animation: AnimatedCircularMenu::new(),
+        sectors: Vec::new(),
+    });
+
+    info!("opta_circular_menu_create: Created circular menu");
+    Box::into_raw(menu)
+}
+
+impl Clone for OptaCircularMenuConfig {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl Copy for OptaCircularMenuConfig {}
+
+/// Destroy a circular menu and free resources.
+///
+/// # Safety
+///
+/// * `menu` must be a valid pointer from `opta_circular_menu_create`
+/// * Do not use the pointer after calling this function
+#[no_mangle]
+pub unsafe extern "C" fn opta_circular_menu_destroy(menu: *mut OptaCircularMenu) {
+    if menu.is_null() {
+        warn!("opta_circular_menu_destroy: null pointer");
+        return;
+    }
+
+    info!("opta_circular_menu_destroy: Destroying circular menu");
+    let _ = unsafe { Box::from_raw(menu) };
+}
+
+/// Open the circular menu with animation.
+///
+/// # Safety
+///
+/// `menu` must be a valid pointer from `opta_circular_menu_create`.
+#[no_mangle]
+pub unsafe extern "C" fn opta_circular_menu_open(menu: *mut OptaCircularMenu) -> OptaRenderResult {
+    if menu.is_null() {
+        return OptaRenderResult::NullPointer;
+    }
+
+    let menu_ref = unsafe { &mut *menu };
+    menu_ref.animation.open();
+    debug!("opta_circular_menu_open: Menu opening");
+    OptaRenderResult::Success
+}
+
+/// Close the circular menu with animation.
+///
+/// # Safety
+///
+/// `menu` must be a valid pointer from `opta_circular_menu_create`.
+#[no_mangle]
+pub unsafe extern "C" fn opta_circular_menu_close(menu: *mut OptaCircularMenu) -> OptaRenderResult {
+    if menu.is_null() {
+        return OptaRenderResult::NullPointer;
+    }
+
+    let menu_ref = unsafe { &mut *menu };
+    menu_ref.animation.close();
+    debug!("opta_circular_menu_close: Menu closing");
+    OptaRenderResult::Success
+}
+
+/// Toggle the circular menu open/closed state.
+///
+/// # Safety
+///
+/// `menu` must be a valid pointer from `opta_circular_menu_create`.
+#[no_mangle]
+pub unsafe extern "C" fn opta_circular_menu_toggle(menu: *mut OptaCircularMenu) -> OptaRenderResult {
+    if menu.is_null() {
+        return OptaRenderResult::NullPointer;
+    }
+
+    let menu_ref = unsafe { &mut *menu };
+    menu_ref.animation.toggle();
+    debug!("opta_circular_menu_toggle: Menu toggled, is_open={}", menu_ref.animation.is_open());
+    OptaRenderResult::Success
+}
+
+/// Check if the circular menu is open.
+///
+/// # Safety
+///
+/// `menu` must be a valid pointer from `opta_circular_menu_create`.
+#[no_mangle]
+pub unsafe extern "C" fn opta_circular_menu_is_open(menu: *const OptaCircularMenu) -> bool {
+    if menu.is_null() {
+        return false;
+    }
+
+    let menu_ref = unsafe { &*menu };
+    menu_ref.animation.is_open()
+}
+
+/// Set the highlighted sector.
+///
+/// # Arguments
+///
+/// * `menu` - Pointer to the circular menu
+/// * `sector` - Sector index to highlight (-1 for none)
+///
+/// # Safety
+///
+/// `menu` must be a valid pointer from `opta_circular_menu_create`.
+#[no_mangle]
+pub unsafe extern "C" fn opta_circular_menu_set_highlighted_sector(
+    menu: *mut OptaCircularMenu,
+    sector: i32,
+) -> OptaRenderResult {
+    if menu.is_null() {
+        return OptaRenderResult::NullPointer;
+    }
+
+    let menu_ref = unsafe { &mut *menu };
+    menu_ref.animation.set_highlighted_sector(sector);
+    OptaRenderResult::Success
+}
+
+/// Get the currently highlighted sector.
+///
+/// # Safety
+///
+/// `menu` must be a valid pointer from `opta_circular_menu_create`.
+#[no_mangle]
+pub unsafe extern "C" fn opta_circular_menu_get_highlighted_sector(menu: *const OptaCircularMenu) -> i32 {
+    if menu.is_null() {
+        return -1;
+    }
+
+    let menu_ref = unsafe { &*menu };
+    menu_ref.animation.highlighted_sector()
+}
+
+/// Update the circular menu animation.
+///
+/// # Arguments
+///
+/// * `menu` - Pointer to the circular menu
+/// * `dt` - Time delta in seconds
+///
+/// # Safety
+///
+/// `menu` must be a valid pointer from `opta_circular_menu_create`.
+#[no_mangle]
+pub unsafe extern "C" fn opta_circular_menu_update(
+    menu: *mut OptaCircularMenu,
+    dt: f32,
+) -> OptaRenderResult {
+    if menu.is_null() {
+        return OptaRenderResult::NullPointer;
+    }
+
+    let menu_ref = unsafe { &mut *menu };
+    menu_ref.animation.update(dt);
+    OptaRenderResult::Success
+}
+
+/// Check if the menu animation is currently active.
+///
+/// # Safety
+///
+/// `menu` must be a valid pointer from `opta_circular_menu_create`.
+#[no_mangle]
+pub unsafe extern "C" fn opta_circular_menu_is_animating(menu: *const OptaCircularMenu) -> bool {
+    if menu.is_null() {
+        return false;
+    }
+
+    let menu_ref = unsafe { &*menu };
+    menu_ref.animation.is_animating()
+}
+
+/// Get the current open progress (0.0 = closed, 1.0 = open).
+///
+/// # Safety
+///
+/// `menu` must be a valid pointer from `opta_circular_menu_create`.
+#[no_mangle]
+pub unsafe extern "C" fn opta_circular_menu_get_open_progress(menu: *const OptaCircularMenu) -> f32 {
+    if menu.is_null() {
+        return 0.0;
+    }
+
+    let menu_ref = unsafe { &*menu };
+    menu_ref.animation.open_progress()
+}
+
+/// Get the current highlight progress (0.0 = none, 1.0 = full).
+///
+/// # Safety
+///
+/// `menu` must be a valid pointer from `opta_circular_menu_create`.
+#[no_mangle]
+pub unsafe extern "C" fn opta_circular_menu_get_highlight_progress(menu: *const OptaCircularMenu) -> f32 {
+    if menu.is_null() {
+        return 0.0;
+    }
+
+    let menu_ref = unsafe { &*menu };
+    menu_ref.animation.highlight_progress()
+}
+
+/// Set the menu center position.
+///
+/// # Safety
+///
+/// `menu` must be a valid pointer from `opta_circular_menu_create`.
+#[no_mangle]
+pub unsafe extern "C" fn opta_circular_menu_set_position(
+    menu: *mut OptaCircularMenu,
+    center_x: f32,
+    center_y: f32,
+) -> OptaRenderResult {
+    if menu.is_null() {
+        return OptaRenderResult::NullPointer;
+    }
+
+    let menu_ref = unsafe { &mut *menu };
+    menu_ref.config.set_position(center_x, center_y);
+    OptaRenderResult::Success
+}
+
+/// Hit test a point against the circular menu.
+///
+/// # Arguments
+///
+/// * `menu` - Pointer to the circular menu
+/// * `x` - X coordinate to test
+/// * `y` - Y coordinate to test
+/// * `out_result` - Pointer to hit test result struct
+///
+/// # Safety
+///
+/// Both pointers must be valid.
+#[no_mangle]
+pub unsafe extern "C" fn opta_circular_menu_hit_test(
+    menu: *const OptaCircularMenu,
+    x: f32,
+    y: f32,
+    out_result: *mut OptaCircularMenuHitTest,
+) -> OptaRenderResult {
+    if menu.is_null() || out_result.is_null() {
+        return OptaRenderResult::NullPointer;
+    }
+
+    let menu_ref = unsafe { &*menu };
+    let point = [x, y];
+    let center = menu_ref.config.position;
+    let open_progress = menu_ref.animation.open_progress();
+
+    // Scale radii by open progress
+    let radius = menu_ref.config.radius * open_progress;
+    let inner_radius = menu_ref.config.inner_radius * open_progress;
+
+    let is_in_menu = is_point_in_menu(point, center, inner_radius, radius);
+    let sector_index = point_to_sector(
+        point,
+        center,
+        inner_radius,
+        radius,
+        menu_ref.config.sector_count,
+        menu_ref.config.rotation_offset,
+    );
+
+    let (sector_center_x, sector_center_y) = if sector_index >= 0 {
+        let pos = sector_center_position(
+            sector_index as u32,
+            menu_ref.config.sector_count,
+            center,
+            inner_radius,
+            radius,
+            menu_ref.config.rotation_offset,
+        );
+        (pos[0], pos[1])
+    } else {
+        (0.0, 0.0)
+    };
+
+    unsafe {
+        (*out_result) = OptaCircularMenuHitTest {
+            sector_index,
+            is_in_menu,
+            sector_center_x,
+            sector_center_y,
+        };
+    }
+
+    OptaRenderResult::Success
+}
+
+/// Set the number of sectors in the menu.
+///
+/// # Safety
+///
+/// `menu` must be a valid pointer from `opta_circular_menu_create`.
+#[no_mangle]
+pub unsafe extern "C" fn opta_circular_menu_set_sector_count(
+    menu: *mut OptaCircularMenu,
+    count: u32,
+) -> OptaRenderResult {
+    if menu.is_null() {
+        return OptaRenderResult::NullPointer;
+    }
+
+    if count == 0 || count > 12 {
+        return OptaRenderResult::InvalidDimensions;
+    }
+
+    let menu_ref = unsafe { &mut *menu };
+    menu_ref.config.sector_count = count;
+    OptaRenderResult::Success
+}
+
+/// Get the number of sectors in the menu.
+///
+/// # Safety
+///
+/// `menu` must be a valid pointer from `opta_circular_menu_create`.
+#[no_mangle]
+pub unsafe extern "C" fn opta_circular_menu_get_sector_count(menu: *const OptaCircularMenu) -> u32 {
+    if menu.is_null() {
+        return 0;
+    }
+
+    let menu_ref = unsafe { &*menu };
+    menu_ref.config.sector_count
+}
+
+/// Set the glow color for the highlighted sector.
+///
+/// # Safety
+///
+/// `menu` must be a valid pointer from `opta_circular_menu_create`.
+#[no_mangle]
+pub unsafe extern "C" fn opta_circular_menu_set_glow_color(
+    menu: *mut OptaCircularMenu,
+    r: f32,
+    g: f32,
+    b: f32,
+) -> OptaRenderResult {
+    if menu.is_null() {
+        return OptaRenderResult::NullPointer;
+    }
+
+    let menu_ref = unsafe { &mut *menu };
+    menu_ref.config.set_glow_color(r, g, b);
+    OptaRenderResult::Success
+}
+
+/// Immediately set the open state without animation.
+///
+/// # Safety
+///
+/// `menu` must be a valid pointer from `opta_circular_menu_create`.
+#[no_mangle]
+pub unsafe extern "C" fn opta_circular_menu_set_open_immediate(
+    menu: *mut OptaCircularMenu,
+    open: bool,
+) -> OptaRenderResult {
+    if menu.is_null() {
+        return OptaRenderResult::NullPointer;
+    }
+
+    let menu_ref = unsafe { &mut *menu };
+    menu_ref.animation.set_open_immediate(open);
+    OptaRenderResult::Success
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -831,6 +1400,131 @@ mod tests {
             assert_eq!(opta_render_get_total_frames(ptr::null()), 0);
             assert!(opta_render_is_paused(ptr::null()));
             assert_eq!(opta_render_get_quality_level(ptr::null()), 1);
+        }
+    }
+
+    #[test]
+    fn test_circular_menu_null_pointer_handling() {
+        unsafe {
+            assert!(matches!(
+                opta_circular_menu_open(ptr::null_mut()),
+                OptaRenderResult::NullPointer
+            ));
+
+            assert!(matches!(
+                opta_circular_menu_close(ptr::null_mut()),
+                OptaRenderResult::NullPointer
+            ));
+
+            assert!(matches!(
+                opta_circular_menu_toggle(ptr::null_mut()),
+                OptaRenderResult::NullPointer
+            ));
+
+            assert!(!opta_circular_menu_is_open(ptr::null()));
+
+            assert!(matches!(
+                opta_circular_menu_update(ptr::null_mut(), 0.016),
+                OptaRenderResult::NullPointer
+            ));
+
+            assert_eq!(opta_circular_menu_get_highlighted_sector(ptr::null()), -1);
+            assert!((opta_circular_menu_get_open_progress(ptr::null()) - 0.0).abs() < f32::EPSILON);
+        }
+    }
+
+    #[test]
+    fn test_circular_menu_create_destroy() {
+        unsafe {
+            // Create with default config
+            let menu = opta_circular_menu_create(ptr::null());
+            assert!(!menu.is_null());
+
+            // Check initial state
+            assert!(!opta_circular_menu_is_open(menu));
+            assert_eq!(opta_circular_menu_get_highlighted_sector(menu), -1);
+            assert!((opta_circular_menu_get_open_progress(menu) - 0.0).abs() < f32::EPSILON);
+
+            // Destroy
+            opta_circular_menu_destroy(menu);
+        }
+    }
+
+    #[test]
+    fn test_circular_menu_open_close() {
+        unsafe {
+            let menu = opta_circular_menu_create(ptr::null());
+            assert!(!menu.is_null());
+
+            // Open
+            assert!(matches!(
+                opta_circular_menu_open(menu),
+                OptaRenderResult::Success
+            ));
+            assert!(opta_circular_menu_is_open(menu));
+            assert!(opta_circular_menu_is_animating(menu));
+
+            // Simulate animation
+            for _ in 0..240 {
+                opta_circular_menu_update(menu, 1.0 / 120.0);
+            }
+
+            // Should be near fully open
+            let progress = opta_circular_menu_get_open_progress(menu);
+            assert!(progress > 0.9);
+
+            // Close
+            assert!(matches!(
+                opta_circular_menu_close(menu),
+                OptaRenderResult::Success
+            ));
+            assert!(!opta_circular_menu_is_open(menu));
+
+            opta_circular_menu_destroy(menu);
+        }
+    }
+
+    #[test]
+    fn test_circular_menu_hit_test() {
+        unsafe {
+            let mut config = OptaCircularMenuConfig::default();
+            config.center_x = 200.0;
+            config.center_y = 200.0;
+            config.radius = 150.0;
+            config.inner_radius = 50.0;
+            config.sector_count = 4;
+            config.rotation_offset = 0.0;
+
+            let menu = opta_circular_menu_create(&config);
+            assert!(!menu.is_null());
+
+            // Set menu fully open immediately
+            opta_circular_menu_set_open_immediate(menu, true);
+
+            let mut result = OptaCircularMenuHitTest {
+                sector_index: -1,
+                is_in_menu: false,
+                sector_center_x: 0.0,
+                sector_center_y: 0.0,
+            };
+
+            // Test point in sector 0 (right side)
+            assert!(matches!(
+                opta_circular_menu_hit_test(menu, 300.0, 200.0, &mut result),
+                OptaRenderResult::Success
+            ));
+            assert!(result.is_in_menu);
+            assert_eq!(result.sector_index, 0);
+
+            // Test point outside menu
+            assert!(matches!(
+                opta_circular_menu_hit_test(menu, 0.0, 0.0, &mut result),
+                OptaRenderResult::Success
+            ));
+            assert!(!result.is_in_menu);
+            assert_eq!(result.sector_index, -1);
+
+            opta_circular_menu_destroy(menu);
         }
     }
 }
