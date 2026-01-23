@@ -241,6 +241,14 @@ pub struct RingUniforms {
     pub base_color: [f32; 3],
     /// Padding for 16-byte alignment.
     pub _padding: f32,
+    /// Branch revelation threshold (0-1, lower = more visible).
+    pub branch_threshold: f32,
+    /// Branch noise frequency scale.
+    pub branch_scale: f32,
+    /// Branch animation speed multiplier.
+    pub branch_speed: f32,
+    /// Number of major branches around the ring.
+    pub branch_count: f32,
 }
 
 impl Default for RingUniforms {
@@ -268,6 +276,10 @@ impl Default for RingUniforms {
             emission_intensity: 0.0,     // No emission by default
             base_color: [0.02, 0.02, 0.03], // Near-black obsidian
             _padding: 0.0,
+            branch_threshold: 0.85,  // High threshold = few branches at default energy
+            branch_scale: 4.0,
+            branch_speed: 0.3,
+            branch_count: 8.0,
         }
     }
 }
@@ -291,6 +303,12 @@ pub struct RingConfig {
     pub energy_color: [f32; 3],
     /// Quality level for rendering.
     pub quality_level: RingQualityLevel,
+    /// Noise frequency for branch pattern.
+    pub branch_scale: f32,
+    /// Animation speed for branch pulsing.
+    pub branch_speed: f32,
+    /// Number of major branches around the ring.
+    pub branch_count: f32,
 }
 
 impl Default for RingConfig {
@@ -305,6 +323,9 @@ impl Default for RingConfig {
             base_color: [0.02, 0.02, 0.03],        // Near-black obsidian
             energy_color: [0.545, 0.361, 0.965],   // Electric Violet #8B5CF6
             quality_level: quality,
+            branch_scale: 4.0,
+            branch_speed: 0.3,
+            branch_count: 8.0,
         }
     }
 }
@@ -314,6 +335,11 @@ impl RingConfig {
     ///
     /// Segment counts are automatically set based on quality.
     pub fn with_quality(quality: RingQualityLevel) -> Self {
+        let branch_count = match quality {
+            RingQualityLevel::Low => 6.0,
+            RingQualityLevel::Medium => 8.0,
+            RingQualityLevel::High | RingQualityLevel::Ultra => 10.0,
+        };
         Self {
             major_radius: 1.0,
             minor_radius: 0.15,
@@ -323,6 +349,9 @@ impl RingConfig {
             base_color: [0.02, 0.02, 0.03],
             energy_color: [0.545, 0.361, 0.965],
             quality_level: quality,
+            branch_scale: 4.0,
+            branch_speed: 0.3,
+            branch_count,
         }
     }
 
@@ -1117,6 +1146,13 @@ impl OptaRing {
             emission_intensity: self.current_energy * self.current_plasma,
             base_color: self.config.base_color,
             _padding: 0.0,
+            // Branch threshold derived from energy level:
+            // High energy -> low threshold (more branches visible)
+            // Low energy -> high threshold (few branches)
+            branch_threshold: 1.0 - self.current_energy * 0.7,
+            branch_scale: self.config.branch_scale,
+            branch_speed: self.config.branch_speed,
+            branch_count: self.config.branch_count,
         };
         queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[uniforms]));
 
@@ -1246,9 +1282,9 @@ mod tests {
     #[test]
     fn test_ring_uniforms_size() {
         // RingUniforms should be properly aligned for GPU
-        // 2 mat4x4 (128 bytes) + 12 floats (48 bytes) = 176 bytes
+        // 2 mat4x4 (128 bytes) + 16 floats (64 bytes) = 192 bytes
         let size = std::mem::size_of::<RingUniforms>();
-        assert_eq!(size, 176);
+        assert_eq!(size, 192);
     }
 
     #[test]
@@ -1266,6 +1302,9 @@ mod tests {
         assert!((config.energy_color[1] - 0.361).abs() < 0.001);
         assert!((config.energy_color[2] - 0.965).abs() < 0.001);
         assert_eq!(config.quality_level, RingQualityLevel::Medium);
+        assert!((config.branch_scale - 4.0).abs() < f32::EPSILON);
+        assert!((config.branch_speed - 0.3).abs() < f32::EPSILON);
+        assert!((config.branch_count - 8.0).abs() < f32::EPSILON);
     }
 
     #[test]
@@ -1316,6 +1355,9 @@ mod tests {
             base_color: [0.02, 0.02, 0.03],
             energy_color: [0.545, 0.361, 0.965],
             quality_level: RingQualityLevel::Low,
+            branch_scale: 4.0,
+            branch_speed: 0.3,
+            branch_count: 6.0,
         };
 
         let (vertices, indices) = generate_torus_geometry(&config);

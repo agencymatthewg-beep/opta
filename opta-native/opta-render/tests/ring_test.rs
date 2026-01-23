@@ -93,14 +93,20 @@ fn test_ring_vertex_layout() {
 fn test_ring_uniforms_layout() {
     // Verify uniforms structure size (for GPU alignment)
     let size = std::mem::size_of::<RingUniforms>();
-    assert_eq!(size, 176, "RingUniforms should be 176 bytes");
-    
+    assert_eq!(size, 192, "RingUniforms should be 192 bytes");
+
     // Verify the default uniforms have sensible values
     let uniforms = RingUniforms::default();
     assert!(uniforms.time == 0.0);
     assert!((uniforms.energy_level - 0.2).abs() < f32::EPSILON);
     assert!((uniforms.fresnel_power - 3.0).abs() < f32::EPSILON);
     assert!((uniforms.roughness - 0.03).abs() < f32::EPSILON);
+
+    // Verify branch uniform defaults
+    assert!((uniforms.branch_threshold - 0.85).abs() < f32::EPSILON);
+    assert!((uniforms.branch_scale - 4.0).abs() < f32::EPSILON);
+    assert!((uniforms.branch_speed - 0.3).abs() < f32::EPSILON);
+    assert!((uniforms.branch_count - 8.0).abs() < f32::EPSILON);
 }
 
 #[test]
@@ -114,6 +120,9 @@ fn test_generate_torus_geometry_basic() {
         base_color: [0.02, 0.02, 0.03],
         energy_color: [0.545, 0.361, 0.965],
         quality_level: RingQualityLevel::Low,
+        branch_scale: 4.0,
+        branch_speed: 0.3,
+        branch_count: 6.0,
     };
     
     let (vertices, indices) = generate_torus_geometry(&config);
@@ -177,6 +186,9 @@ fn test_generate_torus_geometry_bounds() {
         base_color: [0.02, 0.02, 0.03],
         energy_color: [0.545, 0.361, 0.965],
         quality_level: RingQualityLevel::Low,
+        branch_scale: 4.0,
+        branch_speed: 0.3,
+        branch_count: 6.0,
     };
     
     let (vertices, _) = generate_torus_geometry(&config);
@@ -223,6 +235,9 @@ fn test_ring_config_custom() {
         base_color: [0.02, 0.02, 0.03],
         energy_color: [0.545, 0.361, 0.965],
         quality_level: RingQualityLevel::High,
+        branch_scale: 5.0,
+        branch_speed: 0.4,
+        branch_count: 10.0,
     };
 
     assert!((config.major_radius - 2.5).abs() < f32::EPSILON);
@@ -230,4 +245,7 @@ fn test_ring_config_custom() {
     assert_eq!(config.major_segments, 128);
     assert_eq!(config.minor_segments, 64);
     assert!((config.roughness - 0.05).abs() < f32::EPSILON);
+    assert!((config.branch_scale - 5.0).abs() < f32::EPSILON);
+    assert!((config.branch_speed - 0.4).abs() < f32::EPSILON);
+    assert!((config.branch_count - 10.0).abs() < f32::EPSILON);
 }
