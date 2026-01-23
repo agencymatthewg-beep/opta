@@ -9,6 +9,81 @@
 use std::f32::consts::TAU;
 use wgpu::util::DeviceExt;
 
+/// Quality level for ring rendering.
+///
+/// Higher quality levels use more geometry segments for smoother curves
+/// and enable additional visual effects.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum RingQualityLevel {
+    /// Low quality - 32x16 segments, minimal effects.
+    /// Suitable for low-power devices or background rendering.
+    Low,
+    /// Medium quality - 64x32 segments, standard effects.
+    /// Default quality level for most devices.
+    #[default]
+    Medium,
+    /// High quality - 128x64 segments, enhanced effects.
+    /// For high-end devices with ProMotion displays.
+    High,
+    /// Ultra quality - 256x128 segments, all effects enabled.
+    /// For maximum visual fidelity on powerful GPUs.
+    Ultra,
+}
+
+impl RingQualityLevel {
+    /// Get the segment multiplier for this quality level.
+    ///
+    /// This multiplier is applied to base segment counts.
+    pub fn segment_multiplier(&self) -> f32 {
+        match self {
+            Self::Low => 0.5,
+            Self::Medium => 1.0,
+            Self::High => 2.0,
+            Self::Ultra => 4.0,
+        }
+    }
+
+    /// Get base major segments for this quality level.
+    pub fn major_segments(&self) -> u32 {
+        match self {
+            Self::Low => 32,
+            Self::Medium => 64,
+            Self::High => 128,
+            Self::Ultra => 256,
+        }
+    }
+
+    /// Get base minor segments for this quality level.
+    pub fn minor_segments(&self) -> u32 {
+        match self {
+            Self::Low => 16,
+            Self::Medium => 32,
+            Self::High => 64,
+            Self::Ultra => 128,
+        }
+    }
+
+    /// Convert from u32 quality level value.
+    pub fn from_u32(value: u32) -> Self {
+        match value {
+            0 => Self::Low,
+            1 => Self::Medium,
+            2 => Self::High,
+            _ => Self::Ultra,
+        }
+    }
+
+    /// Convert to u32 for FFI.
+    pub fn as_u32(&self) -> u32 {
+        match self {
+            Self::Low => 0,
+            Self::Medium => 1,
+            Self::High => 2,
+            Self::Ultra => 3,
+        }
+    }
+}
+
 /// A 3D vertex for the ring geometry.
 ///
 /// Contains position, normal, and UV attributes for proper lighting and texturing.
@@ -210,18 +285,46 @@ pub struct RingConfig {
     pub ior: f32,
     /// Glass tint color (RGB).
     pub tint: [f32; 3],
+    /// Quality level for rendering.
+    pub quality_level: RingQualityLevel,
 }
 
 impl Default for RingConfig {
     fn default() -> Self {
+        let quality = RingQualityLevel::default();
         Self {
             major_radius: 1.0,
             minor_radius: 0.15,
-            major_segments: 64,
-            minor_segments: 32,
+            major_segments: quality.major_segments(),
+            minor_segments: quality.minor_segments(),
             ior: 1.5,
             tint: [0.4, 0.6, 1.0], // Light blue
+            quality_level: quality,
         }
+    }
+}
+
+impl RingConfig {
+    /// Create a new configuration with the specified quality level.
+    ///
+    /// Segment counts are automatically set based on quality.
+    pub fn with_quality(quality: RingQualityLevel) -> Self {
+        Self {
+            major_radius: 1.0,
+            minor_radius: 0.15,
+            major_segments: quality.major_segments(),
+            minor_segments: quality.minor_segments(),
+            ior: 1.5,
+            tint: [0.4, 0.6, 1.0],
+            quality_level: quality,
+        }
+    }
+
+    /// Set the quality level and update segment counts accordingly.
+    pub fn set_quality(&mut self, quality: RingQualityLevel) {
+        self.quality_level = quality;
+        self.major_segments = quality.major_segments();
+        self.minor_segments = quality.minor_segments();
     }
 }
 
@@ -301,9 +404,11 @@ pub struct OptaRing {
     index_count: u32,
     uniform_buffer: wgpu::Buffer,
     bind_group: wgpu::BindGroup,
+    bind_group_layout: wgpu::BindGroupLayout,
     pipeline: wgpu::RenderPipeline,
     config: RingConfig,
     state: RingState,
+    quality_level: RingQualityLevel,
     // Animation state
     current_rotation: f32,
     current_tilt: f32,
@@ -452,15 +557,18 @@ impl OptaRing {
         });
 
         let state = RingState::default();
+        let quality_level = config.quality_level;
         Self {
             vertex_buffer,
             index_buffer,
             index_count,
             uniform_buffer,
             bind_group,
+            bind_group_layout,
             pipeline,
             config,
             state,
+            quality_level,
             current_rotation: 0.0,
             current_tilt: state.tilt_angle(),
             current_energy: state.energy_level(),
@@ -638,6 +746,66 @@ impl OptaRing {
     pub fn plasma_intensity(&self) -> f32 {
         self.current_plasma
     }
+
+    /// Get the current quality level.
+    pub fn quality_level(&self) -> RingQualityLevel {
+        self.quality_level
+    }
+
+    /// Set the quality level and regenerate geometry if needed.
+    ///
+    /// This will recreate vertex and index buffers with the new segment counts.
+    pub fn set_quality(&mut self, device: &wgpu::Device, quality: RingQualityLevel) {
+        if self.quality_level != quality {
+            self.quality_level = quality;
+            self.config.set_quality(quality);
+            self.regenerate_geometry(device);
+        }
+    }
+
+    /// Regenerate the ring geometry based on current config.
+    ///
+    /// Call this after changing segment counts or radii.
+    pub fn regenerate_geometry(&mut self, device: &wgpu::Device) {
+        let (vertices, indices) = generate_torus_geometry(&self.config);
+        self.index_count = indices.len() as u32;
+
+        // Create new vertex buffer
+        self.vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Ring Vertex Buffer"),
+            contents: bytemuck::cast_slice(&vertices),
+            usage: wgpu::BufferUsages::VERTEX,
+        });
+
+        // Create new index buffer
+        self.index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Ring Index Buffer"),
+            contents: bytemuck::cast_slice(&indices),
+            usage: wgpu::BufferUsages::INDEX,
+        });
+
+        // Recreate bind group with existing uniform buffer
+        self.bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("Ring Bind Group"),
+            layout: &self.bind_group_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: self.uniform_buffer.as_entire_binding(),
+            }],
+        });
+    }
+
+    /// Get the current vertex count (for debug/stats).
+    pub fn vertex_count(&self) -> u32 {
+        let major = self.config.major_segments;
+        let minor = self.config.minor_segments;
+        (major + 1) * (minor + 1)
+    }
+
+    /// Get the current triangle count (for debug/stats).
+    pub fn triangle_count(&self) -> u32 {
+        self.index_count / 3
+    }
 }
 
 #[cfg(test)]
@@ -673,6 +841,7 @@ mod tests {
         assert_eq!(config.major_segments, 64);
         assert_eq!(config.minor_segments, 32);
         assert!((config.ior - 1.5).abs() < f32::EPSILON);
+        assert_eq!(config.quality_level, RingQualityLevel::Medium);
     }
 
     #[test]
@@ -721,6 +890,7 @@ mod tests {
             minor_segments: 6,
             ior: 1.5,
             tint: [1.0, 1.0, 1.0],
+            quality_level: RingQualityLevel::Low,
         };
 
         let (vertices, indices) = generate_torus_geometry(&config);
@@ -775,5 +945,63 @@ mod tests {
         assert!((lerp(0.0, 10.0, 1.0) - 10.0).abs() < f32::EPSILON);
         assert!((lerp(0.0, 10.0, 0.5) - 5.0).abs() < f32::EPSILON);
         assert!((lerp(5.0, 15.0, 0.25) - 7.5).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_quality_level_segments() {
+        // Test that quality levels have correct segment counts
+        assert_eq!(RingQualityLevel::Low.major_segments(), 32);
+        assert_eq!(RingQualityLevel::Low.minor_segments(), 16);
+
+        assert_eq!(RingQualityLevel::Medium.major_segments(), 64);
+        assert_eq!(RingQualityLevel::Medium.minor_segments(), 32);
+
+        assert_eq!(RingQualityLevel::High.major_segments(), 128);
+        assert_eq!(RingQualityLevel::High.minor_segments(), 64);
+
+        assert_eq!(RingQualityLevel::Ultra.major_segments(), 256);
+        assert_eq!(RingQualityLevel::Ultra.minor_segments(), 128);
+    }
+
+    #[test]
+    fn test_quality_level_conversion() {
+        // Test u32 conversion round-trip
+        assert_eq!(RingQualityLevel::from_u32(0), RingQualityLevel::Low);
+        assert_eq!(RingQualityLevel::from_u32(1), RingQualityLevel::Medium);
+        assert_eq!(RingQualityLevel::from_u32(2), RingQualityLevel::High);
+        assert_eq!(RingQualityLevel::from_u32(3), RingQualityLevel::Ultra);
+        assert_eq!(RingQualityLevel::from_u32(100), RingQualityLevel::Ultra); // Clamp high values
+
+        assert_eq!(RingQualityLevel::Low.as_u32(), 0);
+        assert_eq!(RingQualityLevel::Medium.as_u32(), 1);
+        assert_eq!(RingQualityLevel::High.as_u32(), 2);
+        assert_eq!(RingQualityLevel::Ultra.as_u32(), 3);
+    }
+
+    #[test]
+    fn test_quality_level_multipliers() {
+        assert!((RingQualityLevel::Low.segment_multiplier() - 0.5).abs() < f32::EPSILON);
+        assert!((RingQualityLevel::Medium.segment_multiplier() - 1.0).abs() < f32::EPSILON);
+        assert!((RingQualityLevel::High.segment_multiplier() - 2.0).abs() < f32::EPSILON);
+        assert!((RingQualityLevel::Ultra.segment_multiplier() - 4.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_config_with_quality() {
+        let config = RingConfig::with_quality(RingQualityLevel::High);
+        assert_eq!(config.major_segments, 128);
+        assert_eq!(config.minor_segments, 64);
+        assert_eq!(config.quality_level, RingQualityLevel::High);
+    }
+
+    #[test]
+    fn test_config_set_quality() {
+        let mut config = RingConfig::default();
+        assert_eq!(config.quality_level, RingQualityLevel::Medium);
+
+        config.set_quality(RingQualityLevel::Ultra);
+        assert_eq!(config.quality_level, RingQualityLevel::Ultra);
+        assert_eq!(config.major_segments, 256);
+        assert_eq!(config.minor_segments, 128);
     }
 }

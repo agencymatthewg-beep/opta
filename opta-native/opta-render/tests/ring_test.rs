@@ -1,6 +1,6 @@
 //! Integration tests for the Opta Ring component.
 
-use opta_render::components::{generate_torus_geometry, RingConfig, RingState, RingUniforms, RingVertex};
+use opta_render::components::{generate_torus_geometry, RingConfig, RingQualityLevel, RingState, RingUniforms, RingVertex};
 
 #[test]
 fn test_ring_config_defaults() {
@@ -112,6 +112,7 @@ fn test_generate_torus_geometry_basic() {
         minor_segments: 4,
         ior: 1.5,
         tint: [1.0, 1.0, 1.0],
+        quality_level: RingQualityLevel::Low,
     };
     
     let (vertices, indices) = generate_torus_geometry(&config);
@@ -173,6 +174,7 @@ fn test_generate_torus_geometry_bounds() {
         minor_segments: 8,
         ior: 1.5,
         tint: [1.0, 1.0, 1.0],
+        quality_level: RingQualityLevel::Low,
     };
     
     let (vertices, _) = generate_torus_geometry(&config);
@@ -217,6 +219,7 @@ fn test_ring_config_custom() {
         minor_segments: 64,
         ior: 1.7,
         tint: [0.2, 0.8, 0.5],
+        quality_level: RingQualityLevel::High,
     };
     
     assert!((config.major_radius - 2.5).abs() < f32::EPSILON);
