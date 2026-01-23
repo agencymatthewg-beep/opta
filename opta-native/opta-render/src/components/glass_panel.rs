@@ -227,7 +227,7 @@ impl DepthHierarchy {
 /// Uniform buffer data for the HD glass panel shader.
 ///
 /// Matches the `HDPanelUniforms` struct in `glass_panel_hd.wgsl`.
-/// Total size: 192 bytes (aligned to 16 bytes).
+/// Total size: 176 bytes (11 * 16-byte aligned groups).
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct HDPanelUniforms {
@@ -872,6 +872,10 @@ impl GlassPanel {
 mod tests {
     use super::*;
 
+    // ==========================================================================
+    // Basic Type Tests
+    // ==========================================================================
+
     #[test]
     fn test_panel_vertex_size() {
         // PanelVertex should be 16 bytes (2 + 2 floats = 4 floats * 4 bytes)
@@ -895,5 +899,292 @@ mod tests {
         assert!((config.blur - 0.5).abs() < f32::EPSILON);
         assert!((config.opacity - 0.8).abs() < f32::EPSILON);
         assert!((config.border_width - 1.0).abs() < f32::EPSILON);
+    }
+
+    // ==========================================================================
+    // Panel Quality Level Tests
+    // ==========================================================================
+
+    #[test]
+    fn test_panel_quality_level_default() {
+        let quality = PanelQualityLevel::default();
+        assert_eq!(quality, PanelQualityLevel::Medium);
+    }
+
+    #[test]
+    fn test_panel_quality_blur_samples() {
+        assert_eq!(PanelQualityLevel::Low.blur_samples(), 8);
+        assert_eq!(PanelQualityLevel::Medium.blur_samples(), 16);
+        assert_eq!(PanelQualityLevel::High.blur_samples(), 32);
+        assert_eq!(PanelQualityLevel::Ultra.blur_samples(), 64);
+    }
+
+    #[test]
+    fn test_panel_quality_level_conversion() {
+        // Test u32 conversion round-trip
+        assert_eq!(PanelQualityLevel::from_u32(0), PanelQualityLevel::Low);
+        assert_eq!(PanelQualityLevel::from_u32(1), PanelQualityLevel::Medium);
+        assert_eq!(PanelQualityLevel::from_u32(2), PanelQualityLevel::High);
+        assert_eq!(PanelQualityLevel::from_u32(3), PanelQualityLevel::Ultra);
+        assert_eq!(PanelQualityLevel::from_u32(100), PanelQualityLevel::Ultra); // Clamp high values
+
+        assert_eq!(PanelQualityLevel::Low.as_u32(), 0);
+        assert_eq!(PanelQualityLevel::Medium.as_u32(), 1);
+        assert_eq!(PanelQualityLevel::High.as_u32(), 2);
+        assert_eq!(PanelQualityLevel::Ultra.as_u32(), 3);
+    }
+
+    #[test]
+    fn test_panel_quality_feature_flags() {
+        // Low - basic features only
+        assert!(!PanelQualityLevel::Low.inner_glow_enabled());
+        assert!(!PanelQualityLevel::Low.hd_fresnel_enabled());
+        assert!(!PanelQualityLevel::Low.dispersion_enabled());
+
+        // Medium - still basic
+        assert!(!PanelQualityLevel::Medium.inner_glow_enabled());
+        assert!(!PanelQualityLevel::Medium.hd_fresnel_enabled());
+        assert!(!PanelQualityLevel::Medium.dispersion_enabled());
+
+        // High - HD features enabled
+        assert!(PanelQualityLevel::High.inner_glow_enabled());
+        assert!(PanelQualityLevel::High.hd_fresnel_enabled());
+        assert!(!PanelQualityLevel::High.dispersion_enabled());
+
+        // Ultra - all features
+        assert!(PanelQualityLevel::Ultra.inner_glow_enabled());
+        assert!(PanelQualityLevel::Ultra.hd_fresnel_enabled());
+        assert!(PanelQualityLevel::Ultra.dispersion_enabled());
+    }
+
+    #[test]
+    fn test_panel_quality_blur_intensity_multiplier() {
+        assert!((PanelQualityLevel::Low.blur_intensity_multiplier() - 0.5).abs() < f32::EPSILON);
+        assert!((PanelQualityLevel::Medium.blur_intensity_multiplier() - 1.0).abs() < f32::EPSILON);
+        assert!((PanelQualityLevel::High.blur_intensity_multiplier() - 1.5).abs() < f32::EPSILON);
+        assert!((PanelQualityLevel::Ultra.blur_intensity_multiplier() - 2.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_panel_quality_from_quality_level() {
+        assert_eq!(
+            PanelQualityLevel::from_quality_level(QualityLevel::Low),
+            PanelQualityLevel::Low
+        );
+        assert_eq!(
+            PanelQualityLevel::from_quality_level(QualityLevel::Medium),
+            PanelQualityLevel::Medium
+        );
+        assert_eq!(
+            PanelQualityLevel::from_quality_level(QualityLevel::High),
+            PanelQualityLevel::High
+        );
+        assert_eq!(
+            PanelQualityLevel::from_quality_level(QualityLevel::Ultra),
+            PanelQualityLevel::Ultra
+        );
+    }
+
+    #[test]
+    fn test_config_with_quality() {
+        let config = GlassPanelConfig::with_quality(PanelQualityLevel::High);
+        assert_eq!(config.quality_level, PanelQualityLevel::High);
+        // High quality enables inner glow
+        assert!(config.glow_intensity > 0.0);
+    }
+
+    #[test]
+    fn test_config_set_quality() {
+        let mut config = GlassPanelConfig::default();
+        assert_eq!(config.quality_level, PanelQualityLevel::Medium);
+
+        config.set_quality(PanelQualityLevel::Ultra);
+        assert_eq!(config.quality_level, PanelQualityLevel::Ultra);
+        // Ultra enables dispersion
+        assert!(config.dispersion > 0.0);
+    }
+
+    // ==========================================================================
+    // Depth Hierarchy Tests
+    // ==========================================================================
+
+    #[test]
+    fn test_depth_hierarchy_constants() {
+        assert!((DepthHierarchy::FOREGROUND - 0.0).abs() < f32::EPSILON);
+        assert!((DepthHierarchy::CONTENT - 0.5).abs() < f32::EPSILON);
+        assert!((DepthHierarchy::BACKGROUND - 1.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_depth_hierarchy_blur_multiplier() {
+        // Foreground: minimal blur multiplier
+        let fg_mult = DepthHierarchy::blur_multiplier(DepthHierarchy::FOREGROUND);
+        assert!((fg_mult - 1.0).abs() < f32::EPSILON);
+
+        // Background: maximum blur multiplier
+        let bg_mult = DepthHierarchy::blur_multiplier(DepthHierarchy::BACKGROUND);
+        assert!((bg_mult - 3.0).abs() < f32::EPSILON);
+
+        // Content: intermediate
+        let content_mult = DepthHierarchy::blur_multiplier(DepthHierarchy::CONTENT);
+        assert!(content_mult > fg_mult);
+        assert!(content_mult < bg_mult);
+    }
+
+    #[test]
+    fn test_depth_hierarchy_opacity_multiplier() {
+        // Foreground: full opacity
+        let fg_opacity = DepthHierarchy::opacity_multiplier(DepthHierarchy::FOREGROUND);
+        assert!((fg_opacity - 1.0).abs() < f32::EPSILON);
+
+        // Background: reduced opacity
+        let bg_opacity = DepthHierarchy::opacity_multiplier(DepthHierarchy::BACKGROUND);
+        assert!((bg_opacity - 0.8).abs() < f32::EPSILON);
+
+        // Opacity decreases with depth
+        assert!(fg_opacity > bg_opacity);
+    }
+
+    #[test]
+    fn test_depth_hierarchy_adjusted_blur() {
+        let base_blur = 0.5;
+        let falloff = 1.5;
+
+        let fg_blur = DepthHierarchy::adjusted_blur(base_blur, DepthHierarchy::FOREGROUND, falloff);
+        let bg_blur = DepthHierarchy::adjusted_blur(base_blur, DepthHierarchy::BACKGROUND, falloff);
+
+        // Background should have more blur
+        assert!(bg_blur > fg_blur);
+        // Foreground should be close to base
+        assert!((fg_blur - base_blur).abs() < 0.1);
+    }
+
+    #[test]
+    fn test_depth_hierarchy_compare_depth() {
+        use std::cmp::Ordering;
+
+        // Higher depth (background) should sort before lower depth (foreground)
+        assert_eq!(
+            DepthHierarchy::compare_depth(DepthHierarchy::FOREGROUND, DepthHierarchy::BACKGROUND),
+            Ordering::Greater
+        );
+        assert_eq!(
+            DepthHierarchy::compare_depth(DepthHierarchy::BACKGROUND, DepthHierarchy::FOREGROUND),
+            Ordering::Less
+        );
+        assert_eq!(
+            DepthHierarchy::compare_depth(DepthHierarchy::CONTENT, DepthHierarchy::CONTENT),
+            Ordering::Equal
+        );
+    }
+
+    #[test]
+    fn test_depth_hierarchy_sort_by_depth() {
+        struct Panel {
+            depth: f32,
+        }
+
+        let mut panels = vec![
+            Panel { depth: DepthHierarchy::FOREGROUND },
+            Panel { depth: DepthHierarchy::BACKGROUND },
+            Panel { depth: DepthHierarchy::CONTENT },
+        ];
+
+        DepthHierarchy::sort_by_depth(&mut panels, |p| p.depth);
+
+        // Should be sorted: background first, then content, then foreground (last = on top)
+        assert!((panels[0].depth - DepthHierarchy::BACKGROUND).abs() < f32::EPSILON);
+        assert!((panels[1].depth - DepthHierarchy::CONTENT).abs() < f32::EPSILON);
+        assert!((panels[2].depth - DepthHierarchy::FOREGROUND).abs() < f32::EPSILON);
+    }
+
+    // ==========================================================================
+    // HD Panel Uniforms Tests
+    // ==========================================================================
+
+    #[test]
+    fn test_hd_panel_uniforms_size() {
+        // Should be 176 bytes (11 * 16 bytes for proper alignment)
+        assert_eq!(std::mem::size_of::<HDPanelUniforms>(), 176);
+    }
+
+    #[test]
+    fn test_hd_panel_uniforms_from_config() {
+        let config = GlassPanelConfig::with_quality(PanelQualityLevel::Ultra);
+        let uniforms = HDPanelUniforms::from_config(&config, 1920, 1080, 0.5);
+
+        // Check resolution
+        assert!((uniforms.resolution[0] - 1920.0).abs() < f32::EPSILON);
+        assert!((uniforms.resolution[1] - 1080.0).abs() < f32::EPSILON);
+
+        // Check quality level
+        assert_eq!(uniforms.quality_level, PanelQualityLevel::Ultra.as_u32());
+
+        // Ultra quality enables dispersion
+        assert!(uniforms.dispersion > 0.0);
+
+        // Time is passed through
+        assert!((uniforms.time - 0.5).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_hd_uniforms_quality_gating() {
+        // Low quality should disable HD features
+        let low_config = GlassPanelConfig::with_quality(PanelQualityLevel::Low);
+        let low_uniforms = HDPanelUniforms::from_config(&low_config, 1920, 1080, 0.0);
+        assert!((low_uniforms.dispersion - 0.0).abs() < f32::EPSILON);
+        assert!((low_uniforms.glow_intensity - 0.0).abs() < f32::EPSILON);
+
+        // Ultra quality should enable all HD features
+        let ultra_config = GlassPanelConfig::with_quality(PanelQualityLevel::Ultra);
+        let ultra_uniforms = HDPanelUniforms::from_config(&ultra_config, 1920, 1080, 0.0);
+        assert!(ultra_uniforms.dispersion > 0.0);
+        assert!(ultra_uniforms.glow_intensity > 0.0);
+    }
+
+    // ==========================================================================
+    // Config Factory Methods Tests
+    // ==========================================================================
+
+    #[test]
+    fn test_config_foreground() {
+        let config = GlassPanelConfig::foreground();
+        assert!((config.depth_layer - DepthHierarchy::FOREGROUND).abs() < f32::EPSILON);
+        assert!((config.blur - 0.3).abs() < f32::EPSILON);
+        assert!((config.opacity - 0.9).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_config_content() {
+        let config = GlassPanelConfig::content();
+        assert!((config.depth_layer - DepthHierarchy::CONTENT).abs() < f32::EPSILON);
+        assert!((config.blur - 0.5).abs() < f32::EPSILON);
+        assert!((config.opacity - 0.8).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_config_background() {
+        let config = GlassPanelConfig::background();
+        assert!((config.depth_layer - DepthHierarchy::BACKGROUND).abs() < f32::EPSILON);
+        assert!((config.blur - 0.8).abs() < f32::EPSILON);
+        assert!((config.opacity - 0.6).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_config_effective_blur() {
+        let fg_config = GlassPanelConfig::foreground();
+        let bg_config = GlassPanelConfig::background();
+
+        // Background should have higher effective blur
+        assert!(bg_config.effective_blur() > fg_config.effective_blur());
+    }
+
+    #[test]
+    fn test_config_effective_opacity() {
+        let fg_config = GlassPanelConfig::foreground();
+        let bg_config = GlassPanelConfig::background();
+
+        // Foreground should have higher effective opacity
+        assert!(fg_config.effective_opacity() > bg_config.effective_opacity());
     }
 }
