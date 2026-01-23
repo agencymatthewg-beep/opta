@@ -3,6 +3,7 @@
 //! This module provides GPU-accelerated 3D components including:
 //! - OptaRing: The central glass torus ring component
 //! - GlassPanel: Frosted glass UI panels with blur effects
+//! - CircularMenu: Radial menu with sectors and spring animations
 //! - CpuMeter: Energy core visualization for CPU telemetry
 //! - MemoryMeter: Liquid fill visualization for memory telemetry
 //! - Telemetry: Data structures for system monitoring
@@ -42,13 +43,32 @@
 //! // Render
 //! cpu_meter.render(&queue, &mut encoder, &output_view, &cpu_telemetry);
 //! ```
+//!
+//! # Circular Menu Example
+//!
+//! ```ignore
+//! use opta_render::components::{CircularMenu, CircularMenuConfig, CircularMenuSector};
+//!
+//! let mut menu = CircularMenu::new(&device, surface_format, width, height);
+//! menu.set_sectors(vec![
+//!     CircularMenuSector::new("settings", "gear", "Settings"),
+//!     CircularMenuSector::new("optimize", "bolt", "Optimize"),
+//! ]);
+//! menu.open();
+//! ```
 
+mod circular_menu;
 mod cpu_meter;
 mod glass_panel;
 mod memory_meter;
 mod ring;
 mod telemetry;
 
+pub use circular_menu::{
+    all_sector_center_positions, calculate_all_sector_angles, calculate_sector_angles,
+    is_point_in_menu, point_to_sector, sector_center_position, AnimatedCircularMenu, CircularMenu,
+    CircularMenuConfig, CircularMenuSector, CircularMenuUniforms, MenuVertex,
+};
 pub use cpu_meter::{CpuMeter, CpuMeterConfig, CpuMeterUniforms, MeterVertex};
 pub use glass_panel::{
     DepthHierarchy, GlassPanel, GlassPanelConfig, GlassPanelUniforms, HDPanelUniforms,
