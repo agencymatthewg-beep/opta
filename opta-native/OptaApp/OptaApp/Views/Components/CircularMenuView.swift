@@ -5,6 +5,8 @@
 //  SwiftUI wrapper for the Rust circular menu component.
 //  Provides gesture handling, animation sync, and sector selection.
 //
+//  Obsidian aesthetic: 0A0A0F base, unified violet (8B5CF6) branch-energy highlights.
+//
 
 import SwiftUI
 import Combine
@@ -18,11 +20,11 @@ struct CircularMenuSector: Identifiable, Equatable {
     let label: String
     let color: Color
 
-    /// Default sectors for Opta navigation
+    /// Default sectors for Opta navigation — unified violet palette
     static let defaultSectors: [CircularMenuSector] = [
-        CircularMenuSector(id: 0, icon: "house.fill", label: "Dashboard", color: Color(hex: "3B82F6")),
-        CircularMenuSector(id: 1, icon: "gamecontroller.fill", label: "Games", color: Color(hex: "10B981")),
-        CircularMenuSector(id: 2, icon: "chart.bar.fill", label: "Profiles", color: Color(hex: "F59E0B")),
+        CircularMenuSector(id: 0, icon: "house.fill", label: "Dashboard", color: Color(hex: "8B5CF6")),
+        CircularMenuSector(id: 1, icon: "gamecontroller.fill", label: "Games", color: Color(hex: "8B5CF6")),
+        CircularMenuSector(id: 2, icon: "chart.bar.fill", label: "Profiles", color: Color(hex: "8B5CF6")),
         CircularMenuSector(id: 3, icon: "gearshape.fill", label: "Settings", color: Color(hex: "8B5CF6"))
     ]
 }
@@ -35,8 +37,9 @@ struct CircularMenuSector: Identifiable, Equatable {
 /// - GPU-accelerated rendering via Rust/wgpu
 /// - Smooth 120Hz animation sync via display link
 /// - Mouse/trackpad tracking for sector highlighting
-/// - Keyboard navigation support
+/// - Keyboard navigation with branch glow focus ring
 /// - Haptic and audio feedback integration
+/// - Obsidian aesthetic with branch-energy violet highlights
 ///
 /// # Usage
 ///
@@ -74,9 +77,6 @@ struct CircularMenuView: View {
     /// Inner radius of the menu
     var innerRadius: CGFloat = 50
 
-    /// Glow color for highlighted sectors
-    var glowColor: Color = Color(hex: "8B5CF6")
-
     // MARK: - State
 
     /// The Rust bridge for the circular menu
@@ -112,19 +112,29 @@ struct CircularMenuView: View {
 
     private let animationDuration: Double = 0.3
 
+    /// Obsidian base color
+    private let obsidianBase = Color(hex: "0A0A0F")
+
+    /// Branch energy violet
+    private let branchViolet = Color(hex: "8B5CF6")
+
     // MARK: - Body
 
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                // Background dimming
+                // Background dimming with subtle violet tint
                 if isPresented {
-                    Color.black
-                        .opacity(0.3 * Double(menuState.openProgress))
-                        .ignoresSafeArea()
-                        .onTapGesture {
-                            dismiss()
-                        }
+                    ZStack {
+                        Color.black
+                            .opacity(0.3 * Double(menuState.openProgress))
+                        branchViolet
+                            .opacity(0.02 * Double(menuState.openProgress))
+                    }
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        dismiss()
+                    }
                 }
 
                 // Menu content
@@ -197,21 +207,51 @@ struct CircularMenuView: View {
     private func sectorView(_ sector: CircularMenuSector, in geometry: GeometryProxy) -> some View {
         let angle = sectorAngle(for: sector.id)
         let isHighlighted = highlightedSector == sector.id
+        let isKeyboardFocused = keyboardIndex == sector.id && highlightedSector < 0
         let sectorCenter = sectorCenterPosition(for: sector.id)
 
         return ZStack {
-            // Sector arc background
+            // Sector arc background — obsidian fill
             SectorArc(
                 startAngle: angle - sectorSpan / 2,
                 endAngle: angle + sectorSpan / 2,
                 innerRadius: innerRadius,
                 outerRadius: radius
             )
-            .fill(
-                isHighlighted
-                    ? sector.color.opacity(0.3)
-                    : Color.white.opacity(0.05)
-            )
+            .fill(obsidianBase)
+
+            // Highlighted state: violet radial gradient (branch-energy style)
+            if isHighlighted && !reduceMotion {
+                SectorArc(
+                    startAngle: angle - sectorSpan / 2,
+                    endAngle: angle + sectorSpan / 2,
+                    innerRadius: innerRadius,
+                    outerRadius: radius
+                )
+                .fill(
+                    RadialGradient(
+                        colors: [
+                            branchViolet.opacity(0.25 * Double(menuState.highlightProgress)),
+                            branchViolet.opacity(0.08 * Double(menuState.highlightProgress)),
+                            Color.clear
+                        ],
+                        center: .center,
+                        startRadius: innerRadius,
+                        endRadius: radius
+                    )
+                )
+            }
+
+            // reduceMotion: highlighted state as solid violet border
+            if isHighlighted && reduceMotion {
+                SectorArc(
+                    startAngle: angle - sectorSpan / 2,
+                    endAngle: angle + sectorSpan / 2,
+                    innerRadius: innerRadius,
+                    outerRadius: radius
+                )
+                .stroke(branchViolet, lineWidth: 2)
+            }
 
             // Sector arc border
             SectorArc(
@@ -222,12 +262,12 @@ struct CircularMenuView: View {
             )
             .stroke(
                 isHighlighted
-                    ? sector.color.opacity(0.6)
-                    : Color.white.opacity(0.15),
-                lineWidth: isHighlighted ? 2 : 1
+                    ? branchViolet.opacity(0.5)
+                    : Color.white.opacity(0.08),
+                lineWidth: isHighlighted ? 1.5 : 1
             )
 
-            // Glow effect for highlighted sector
+            // Glow effect for highlighted sector (branch-energy violet radial)
             if isHighlighted && !reduceMotion {
                 SectorArc(
                     startAngle: angle - sectorSpan / 2,
@@ -235,20 +275,43 @@ struct CircularMenuView: View {
                     innerRadius: innerRadius,
                     outerRadius: radius
                 )
-                .stroke(sector.color, lineWidth: 4)
-                .blur(radius: 8)
-                .opacity(Double(menuState.highlightProgress) * 0.5)
+                .stroke(branchViolet, lineWidth: 3)
+                .blur(radius: 6)
+                .opacity(Double(menuState.highlightProgress) * 0.4)
             }
 
-            // Icon and label
+            // Keyboard focus indicator: distinct violet shadow glow ring
+            if isKeyboardFocused && !reduceMotion {
+                SectorArc(
+                    startAngle: angle - sectorSpan / 2,
+                    endAngle: angle + sectorSpan / 2,
+                    innerRadius: innerRadius,
+                    outerRadius: radius
+                )
+                .stroke(branchViolet.opacity(0.4), lineWidth: 1.5)
+                .shadow(color: branchViolet.opacity(0.4), radius: 6)
+            }
+
+            // Keyboard focus: reduceMotion fallback
+            if isKeyboardFocused && reduceMotion {
+                SectorArc(
+                    startAngle: angle - sectorSpan / 2,
+                    endAngle: angle + sectorSpan / 2,
+                    innerRadius: innerRadius,
+                    outerRadius: radius
+                )
+                .stroke(branchViolet.opacity(0.6), lineWidth: 2)
+            }
+
+            // Icon and label — white 0.7 (normal) → white 1.0 (highlighted)
             VStack(spacing: 4) {
                 Image(systemName: sector.icon)
                     .font(.system(size: isHighlighted ? 24 : 20, weight: .semibold))
-                    .foregroundStyle(isHighlighted ? sector.color : .white.opacity(0.8))
+                    .foregroundStyle(.white.opacity(isHighlighted ? 1.0 : 0.7))
 
                 Text(sector.label)
                     .font(.system(size: isHighlighted ? 12 : 10, weight: .medium))
-                    .foregroundStyle(isHighlighted ? .white : .white.opacity(0.6))
+                    .foregroundStyle(.white.opacity(isHighlighted ? 1.0 : 0.6))
             }
             .position(sectorCenter)
         }
@@ -269,42 +332,20 @@ struct CircularMenuView: View {
 
     private var centerIndicator: some View {
         Circle()
-            .fill(
-                RadialGradient(
-                    colors: [
-                        Color(hex: "1E1E2E").opacity(0.9),
-                        Color(hex: "09090B")
-                    ],
-                    center: .center,
-                    startRadius: 0,
-                    endRadius: innerRadius
-                )
-            )
+            .fill(obsidianBase)
             .frame(width: innerRadius * 2, height: innerRadius * 2)
             .overlay(
                 Circle()
                     .strokeBorder(
-                        LinearGradient(
-                            colors: [
-                                Color.white.opacity(0.2),
-                                Color.white.opacity(0.05)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
+                        branchViolet.opacity(0.3),
                         lineWidth: 1
                     )
             )
             .overlay(
                 Image(systemName: "waveform.circle.fill")
                     .font(.system(size: 24))
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [.blue, .purple],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
+                    .foregroundStyle(branchViolet)
+                    .shadow(color: branchViolet.opacity(0.4), radius: 4)
             )
     }
 
@@ -440,38 +481,13 @@ struct CircularMenuView: View {
     private func configureMenu(in geometry: GeometryProxy) {
         let center = menuCenter(in: geometry)
 
-        // Safely extract RGB components (handle grayscale and other color spaces)
-        let glowR: Float
-        let glowG: Float
-        let glowB: Float
-        if let cgColor = glowColor.cgColor,
-           let components = cgColor.components,
-           components.count >= 3 {
-            glowR = Float(components[0])
-            glowG = Float(components[1])
-            glowB = Float(components[2])
-        } else if let cgColor = glowColor.cgColor,
-                  let components = cgColor.components,
-                  components.count >= 1 {
-            // Grayscale color space - use luminance for all channels
-            let gray = Float(components[0])
-            glowR = gray
-            glowG = gray
-            glowB = gray
-        } else {
-            // Fallback blue-purple glow
-            glowR = 0.545
-            glowG = 0.361
-            glowB = 0.965
-        }
-
         var config = CircularMenuConfig()
         config.centerX = Float(center.x)
         config.centerY = Float(center.y)
         config.radius = Float(radius)
         config.innerRadius = Float(innerRadius)
         config.sectorCount = UInt32(max(1, sectors.count))
-        config.glowColor = (glowR, glowG, glowB)
+        config.branchEnergyIntensity = 1.5
 
         menuState.configure(config)
     }
