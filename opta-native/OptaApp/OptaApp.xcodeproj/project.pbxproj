@@ -63,6 +63,9 @@
 		/* Phase 88 additions - Organic Motion System */
 		5501B05E2C5D000100000138 /* OrganicMotion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B05D2C5D000100000138 /* OrganicMotion.swift */; };
 		5501B0602C5D000100000139 /* OrganicMotionModifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B05F2C5D000100000139 /* OrganicMotionModifiers.swift */; };
+		/* Phase 89 additions - Color Temperature Refinement */
+		5501B0622C5D00010000013A /* ColorTemperature.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B0612C5D00010000013A /* ColorTemperature.swift */; };
+		5501B0642C5D00010000013B /* ColorTemperatureEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B0632C5D00010000013B /* ColorTemperatureEnvironment.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -128,6 +131,9 @@
 		/* Phase 88 additions - Organic Motion System */
 		5501B05D2C5D000100000138 /* OrganicMotion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrganicMotion.swift; sourceTree = "<group>"; };
 		5501B05F2C5D000100000139 /* OrganicMotionModifiers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrganicMotionModifiers.swift; sourceTree = "<group>"; };
+		/* Phase 89 additions - Color Temperature Refinement */
+		5501B0612C5D00010000013A /* ColorTemperature.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorTemperature.swift; sourceTree = "<group>"; };
+		5501B0632C5D00010000013B /* ColorTemperatureEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorTemperatureEnvironment.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -352,6 +358,8 @@
 			isa = PBXGroup;
 			children = (
 				5501B04F2C5D000100000130 /* OptaTextStyle.swift */,
+				5501B0612C5D00010000013A /* ColorTemperature.swift */,
+				5501B0632C5D00010000013B /* ColorTemperatureEnvironment.swift */,
 			);
 			path = Design;
 			sourceTree = "<group>";
@@ -491,6 +499,8 @@
 				5501B05C2C5D000100000136 /* Color+Hex.swift in Sources */,
 				5501B05E2C5D000100000138 /* OrganicMotion.swift in Sources */,
 				5501B0602C5D000100000139 /* OrganicMotionModifiers.swift in Sources */,
+				5501B0622C5D00010000013A /* ColorTemperature.swift in Sources */,
+				5501B0642C5D00010000013B /* ColorTemperatureEnvironment.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
