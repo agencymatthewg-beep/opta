@@ -695,31 +695,6 @@ extension View {
     }
 }
 
-// MARK: - Sensory Interactions
-
-extension SensoryManager.Interaction {
-    static let sectorHighlight = SensoryManager.Interaction(
-        haptic: .alignment,
-        sound: nil
-    )
-    static let sectorSelect = SensoryManager.Interaction(
-        haptic: .levelChange,
-        sound: .activate
-    )
-    static let menuOpen = SensoryManager.Interaction(
-        haptic: .generic,
-        sound: nil
-    )
-    static let menuClose = SensoryManager.Interaction(
-        haptic: .generic,
-        sound: nil
-    )
-    static let navigation = SensoryManager.Interaction(
-        haptic: .alignment,
-        sound: nil
-    )
-}
-
 // MARK: - Preview
 
 #if DEBUG
