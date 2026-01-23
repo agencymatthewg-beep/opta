@@ -35,6 +35,9 @@ struct GameCardView: View {
     /// Hover state for visual feedback
     @State private var isHovering = false
 
+    /// Accessibility: reduce motion preference
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     // MARK: - Body
 
     var body: some View {
@@ -151,16 +154,47 @@ struct GameCardView: View {
         .help("Quick Optimize")
     }
 
-    /// Glass card background with hover effect
+    /// Obsidian card background with branch-energy hover glow
     private var cardBackground: some View {
         RoundedRectangle(cornerRadius: 12)
-            .fill(.ultraThinMaterial)
+            .fill(Color(hex: "0A0A0F"))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.white.opacity(0.05))
+            )
+            .overlay(
+                // Branch-energy hover: radial violet glow
+                Group {
+                    if reduceMotion {
+                        // Reduce-motion fallback: solid violet border on hover
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(
+                                isHovering
+                                    ? Color(hex: "8B5CF6").opacity(0.3)
+                                    : Color(hex: "8B5CF6").opacity(0.1),
+                                lineWidth: isHovering ? 2 : 1
+                            )
+                    } else {
+                        // Branch-energy radial gradient
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(
+                                RadialGradient(
+                                    colors: [
+                                        Color(hex: "8B5CF6").opacity(isHovering ? 0.15 : 0),
+                                        .clear
+                                    ],
+                                    center: .center,
+                                    startRadius: 0,
+                                    endRadius: 120
+                                )
+                            )
+                    }
+                }
+            )
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
                     .stroke(
-                        isHovering
-                            ? Color(hex: "8B5CF6").opacity(0.3)
-                            : Color.white.opacity(0.08),
+                        Color(hex: "8B5CF6").opacity(isHovering ? 0.3 : 0.1),
                         lineWidth: 1
                     )
             )
@@ -182,6 +216,7 @@ struct CompactGameCardView: View {
     var onSelect: () -> Void
 
     @State private var isHovering = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         Button {
@@ -217,7 +252,7 @@ struct CompactGameCardView: View {
                                 .foregroundStyle(Color(hex: "22C55E"))
                                 .background(
                                     Circle()
-                                        .fill(Color(hex: "09090B"))
+                                        .fill(Color(hex: "0A0A0F"))
                                         .padding(-2)
                                 )
                         }
@@ -237,13 +272,41 @@ struct CompactGameCardView: View {
             .padding(12)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(.ultraThinMaterial)
+                    .fill(Color(hex: "0A0A0F"))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.white.opacity(0.05))
+                    )
+                    .overlay(
+                        Group {
+                            if reduceMotion {
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(
+                                        isHovering
+                                            ? Color(hex: "8B5CF6").opacity(0.3)
+                                            : Color(hex: "8B5CF6").opacity(0.1),
+                                        lineWidth: isHovering ? 2 : 1
+                                    )
+                            } else {
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(
+                                        RadialGradient(
+                                            colors: [
+                                                Color(hex: "8B5CF6").opacity(isHovering ? 0.15 : 0),
+                                                .clear
+                                            ],
+                                            center: .center,
+                                            startRadius: 0,
+                                            endRadius: 120
+                                        )
+                                    )
+                            }
+                        }
+                    )
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
                             .stroke(
-                                isHovering
-                                    ? Color(hex: "8B5CF6").opacity(0.3)
-                                    : Color.white.opacity(0.08),
+                                Color(hex: "8B5CF6").opacity(isHovering ? 0.3 : 0.1),
                                 lineWidth: 1
                             )
                     )
@@ -263,7 +326,7 @@ struct CompactGameCardView: View {
 
 #Preview {
     ZStack {
-        Color(hex: "09090B")
+        Color(hex: "0A0A0F")
             .ignoresSafeArea()
 
         VStack(spacing: 16) {
