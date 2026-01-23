@@ -9,10 +9,10 @@ See: .planning/PROJECT.md (updated 2026-01-15)
 
 ## Current Position
 
-Phase: 87 of 90 (Settings & Library Alignment) COMPLETE
-Plan: 87-01 COMPLETE, 87-02 COMPLETE
-Status: v11.0 Phase 87 complete — All games views migrated to obsidian
-Last activity: 2026-01-24 — Executed 87-02 (Games Views Obsidian Refresh)
+Phase: 88 of 90 (Organic Motion System) PLANNED
+Plan: 88-01, 88-02, 88-03 ready for execution
+Status: v11.0 Phase 88 planned — Organic motion foundation + dashboard/games integration
+Last activity: 2026-01-24 — Planned Phase 88 (3 plans, 2 waves)
 
 Progress: ██████████ 100% of v5.0 (17 phases complete)
 v5.1 Progress: ██████████ 100% (7 of 7 phases complete)
@@ -71,9 +71,16 @@ v11.0 Progress: ████████░░ 80% (8 of 10 phases complete)
 | 85 | Dashboard Obsidian Refresh | ✅ Complete |
 | 86 | Navigation Energy Language | ✅ Complete |
 | 87 | Settings & Library Alignment | ✅ Complete |
-| 88 | Menu Bar Obsidian | 📋 Planned |
+| 88 | Organic Motion System | 📋 Planned |
 | 89 | Transitions & Motion | 📋 Planned |
 | 90 | Visual Polish & Launch | 📋 Planned |
+
+### Phase 88 Plans (PLANNED)
+| Plan | Wave | Status | Description |
+|------|------|--------|-------------|
+| 88-01 | 1 | 📋 Planned | Organic Motion Foundation (OrganicMotion.swift, OrganicMotionModifiers.swift) |
+| 88-02 | 2 | 📋 Planned | Dashboard Organic Integration (TelemetryCard, QuickActions, ScoreDisplay) |
+| 88-03 | 2 | 📋 Planned | Games & List Organic Integration (GameCardView, GamesLibraryView, DashboardView) |
 
 ### Phase 87 Plans (COMPLETE)
 | Plan | Status | Description |
