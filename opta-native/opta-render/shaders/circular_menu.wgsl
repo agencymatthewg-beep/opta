@@ -1,12 +1,12 @@
-// Circular Menu Shader
+// Circular Menu Shader — Obsidian + Branch Energy
 //
-// GPU-rendered radial menu with sectors, glow effects, and glass styling.
-// Designed for premium UI with spring-physics animations.
+// GPU-rendered radial menu with obsidian material and branch-energy sector
+// highlights. Designed for premium UI with spring-physics animations.
 //
 // Features:
 // - Radial sector rendering using SDF
-// - Soft glow on highlighted sector
-// - Glass background with blur effect
+// - Obsidian material (deep black with subtle reflections)
+// - Branch energy highlight that grows from inner radius outward
 // - Smooth anti-aliased edges
 // - Color temperature theming support
 
@@ -15,32 +15,32 @@
 // =============================================================================
 
 struct CircularMenuUniforms {
-    // Menu geometry
+    // Menu geometry (16 bytes)
     center: vec2<f32>,
     radius: f32,
     inner_radius: f32,
 
-    // Sector configuration
+    // Sector configuration (16 bytes)
     sector_count: u32,
     highlighted_sector: i32,
     rotation_offset: f32,
     _pad0: f32,
 
-    // Animation state
+    // Animation state (16 bytes)
     open_progress: f32,
     highlight_progress: f32,
     time: f32,
     _pad1: f32,
 
-    // Visual styling
-    glow_color: vec3<f32>,
-    glow_intensity: f32,
+    // Branch energy styling (16 bytes)
+    branch_energy_color: vec3<f32>,
+    branch_energy_intensity: f32,
 
-    // Theme colors
+    // Theme colors (16 bytes)
     base_color: vec3<f32>,
     border_opacity: f32,
 
-    // Display
+    // Display (16 bytes)
     resolution: vec2<f32>,
     _pad2: vec2<f32>,
 }
@@ -79,6 +79,13 @@ fn vs_main(in: VertexInput) -> VertexOutput {
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
 const AA_PIXELS: f32 = 1.5;
+
+// Obsidian material properties
+const OBSIDIAN_BASE: vec3<f32> = vec3<f32>(0.02, 0.02, 0.03);
+const OBSIDIAN_ROUGHNESS: f32 = 0.03;
+
+// Electric Violet (branch energy default)
+const ELECTRIC_VIOLET: vec3<f32> = vec3<f32>(0.545, 0.361, 0.965);
 
 // =============================================================================
 // SDF Functions
@@ -192,20 +199,102 @@ fn point_to_sector(p: vec2<f32>, center: vec2<f32>, sector_count: u32, rotation:
     return sector % i32(sector_count);
 }
 
-/// Soft radial glow effect.
-fn soft_glow(dist: f32, radius: f32, intensity: f32) -> f32 {
-    let norm_dist = clamp(dist / radius, 0.0, 1.0);
-    return pow(1.0 - norm_dist, 2.0) * intensity;
+// =============================================================================
+// Obsidian Material
+// =============================================================================
+
+/// Compute obsidian material appearance.
+/// Returns color with subtle anisotropic highlights characteristic of volcanic glass.
+fn obsidian_material(normalized_dist: f32, view_angle: f32, time: f32) -> vec3<f32> {
+    // Base obsidian surface
+    var color = OBSIDIAN_BASE;
+
+    // Subtle specular highlight (simulates polished volcanic glass)
+    let spec_angle = view_angle * PI;
+    let specular = pow(max(cos(spec_angle), 0.0), 1.0 / OBSIDIAN_ROUGHNESS) * 0.08;
+    color += vec3<f32>(specular);
+
+    // Very subtle depth variation (internal structure of obsidian)
+    let depth_noise = sin(normalized_dist * 12.0 + time * 0.3) * 0.005;
+    color += vec3<f32>(depth_noise);
+
+    return color;
 }
 
-/// Energy pulse animation.
-fn energy_pulse(time: f32, freq: f32, amp: f32) -> f32 {
-    return 1.0 + sin(time * freq * TAU) * 0.5 * amp;
+/// Fresnel-like edge highlight for obsidian.
+fn obsidian_fresnel(normalized_dist: f32) -> f32 {
+    // Stronger at edges of the ring (both inner and outer)
+    let edge = abs(normalized_dist * 2.0 - 1.0);
+    return pow(edge, 4.0) * 0.15;
 }
 
-/// Glass-like fresnel effect.
-fn fresnel(view_angle: f32, power: f32) -> f32 {
-    return pow(1.0 - abs(view_angle), power);
+// =============================================================================
+// Branch Energy Functions
+// =============================================================================
+
+/// Compute branch energy intensity at a given point within the highlighted sector.
+/// Energy grows from the inner radius outward, creating a rising energy wave.
+fn branch_energy_wave(
+    dist_from_center: f32,
+    inner_r: f32,
+    outer_r: f32,
+    progress: f32,
+    time: f32
+) -> f32 {
+    // Normalized position within the ring (0 = inner edge, 1 = outer edge)
+    let ring_t = clamp((dist_from_center - inner_r) / (outer_r - inner_r), 0.0, 1.0);
+
+    // Energy front: grows outward with highlight_progress
+    // At progress=0, no energy. At progress=1, full reach.
+    let energy_front = progress;
+
+    // The energy is strongest behind the wavefront and fades at the leading edge
+    let behind_front = smoothstep(energy_front, energy_front - 0.3, ring_t);
+    let at_front = 1.0 - smoothstep(energy_front - 0.05, energy_front, ring_t);
+
+    // Combine: energy exists from inner to front, brightest near the front
+    let base_energy = behind_front * (0.4 + 0.6 * (1.0 - at_front));
+
+    // Pulsing animation along the energy body
+    let pulse = sin(ring_t * 8.0 - time * 3.0) * 0.15 + 0.85;
+
+    // Wavefront glow: extra brightness right at the leading edge
+    let front_glow = exp(-pow((ring_t - energy_front) * 10.0, 2.0)) * 0.6;
+
+    return clamp((base_energy * pulse + front_glow) * progress, 0.0, 1.0);
+}
+
+/// Compute the angular fade for branch energy within a sector.
+/// Energy is strongest at the sector center and fades toward edges.
+fn branch_energy_angular_fade(
+    p: vec2<f32>,
+    center: vec2<f32>,
+    sector_start: f32,
+    sector_end: f32
+) -> f32 {
+    let rel_p = p - center;
+    var angle = atan2(rel_p.y, rel_p.x);
+    if angle < 0.0 {
+        angle += TAU;
+    }
+
+    // Compute how far into the sector this angle is (0-1)
+    var sector_span = sector_end - sector_start;
+    if sector_span < 0.0 {
+        sector_span += TAU;
+    }
+
+    var angle_in_sector = angle - sector_start;
+    if angle_in_sector < 0.0 {
+        angle_in_sector += TAU;
+    }
+
+    let t = clamp(angle_in_sector / sector_span, 0.0, 1.0);
+
+    // Smooth fade at sector edges (strongest in center)
+    let edge_fade = smoothstep(0.0, 0.15, t) * smoothstep(1.0, 0.85, t);
+
+    return edge_fade;
 }
 
 // =============================================================================
@@ -239,13 +328,8 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         return vec4<f32>(0.0);
     }
 
-    // Base colors
-    var final_color = uniforms.base_color;
-    var alpha = 0.0;
-
-    // Glass background for ring
-    let glass_base = vec3<f32>(0.05, 0.07, 0.12);
-    let glass_alpha = 0.85 * uniforms.open_progress;
+    // Normalized distance within ring (0 = inner edge, 1 = outer edge)
+    let normalized_dist = (dist_from_center - animated_inner) / (animated_radius - animated_inner);
 
     // Determine current sector
     let current_sector = point_to_sector(p, center, uniforms.sector_count, uniforms.rotation_offset);
@@ -269,70 +353,63 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         divider_intensity = max(divider_intensity, line_mask);
     }
 
-    // Sector highlighting
-    var highlight_factor = 0.0;
+    // Obsidian base material
+    let view_angle = normalized_dist * 2.0 - 1.0; // -1 at inner, +1 at outer
+    var final_color = obsidian_material(normalized_dist, view_angle, uniforms.time);
+
+    // Obsidian fresnel at ring edges
+    let fresnel = obsidian_fresnel(normalized_dist);
+    final_color += vec3<f32>(fresnel);
+
+    // Branch energy on highlighted sector
     if uniforms.highlighted_sector >= 0 && current_sector == uniforms.highlighted_sector {
-        // Animate highlight based on progress
-        highlight_factor = uniforms.highlight_progress;
-
-        // Add glow effect
-        let angles = get_sector_angles(u32(uniforms.highlighted_sector), uniforms.sector_count, uniforms.rotation_offset);
-        let sector_dist = sdf_ring_sector(p, center, animated_radius, animated_inner, angles.x, angles.y);
-
-        // Inner glow
-        let glow_dist = max(-sector_dist, 0.0);
-        let glow_factor = soft_glow(glow_dist, 30.0, uniforms.glow_intensity);
-
-        // Pulse animation
-        let pulse = energy_pulse(uniforms.time, 1.5, 0.2);
-        highlight_factor *= pulse;
-
-        // Add glow color
-        final_color = mix(final_color, uniforms.glow_color, glow_factor * highlight_factor);
-    }
-
-    // Compose glass effect
-    let normalized_dist = (dist_from_center - animated_inner) / (animated_radius - animated_inner);
-    let edge_fresnel = fresnel(normalized_dist * 2.0 - 1.0, 3.0);
-
-    // Base glass color
-    var glass_color = glass_base;
-    glass_color += edge_fresnel * 0.1;
-
-    // Highlight enhancement
-    if highlight_factor > 0.0 {
-        let highlight_color = mix(glass_color, uniforms.glow_color * 0.3, highlight_factor * 0.5);
-        glass_color = highlight_color;
-    }
-
-    // Divider lines
-    let divider_color = vec3<f32>(0.3, 0.4, 0.6);
-    glass_color = mix(glass_color, divider_color, divider_intensity * uniforms.border_opacity);
-
-    // Outer edge glow
-    let outer_edge_dist = animated_radius - dist_from_center;
-    let outer_glow = soft_glow(outer_edge_dist, 10.0, 0.3) * uniforms.open_progress;
-    glass_color += uniforms.glow_color * outer_glow * 0.5;
-
-    // Inner edge glow
-    let inner_edge_dist = dist_from_center - animated_inner;
-    let inner_glow = soft_glow(inner_edge_dist, 8.0, 0.2) * uniforms.open_progress;
-    glass_color += uniforms.glow_color * inner_glow * 0.3;
-
-    // Final composition
-    final_color = glass_color;
-    alpha = glass_alpha * ring_mask;
-
-    // Add slight color variation per sector for visual interest
-    if current_sector >= 0 {
-        let sector_hue_shift = f32(current_sector) / f32(uniforms.sector_count);
-        let subtle_tint = vec3<f32>(
-            0.05 * sin(sector_hue_shift * TAU),
-            0.05 * sin(sector_hue_shift * TAU + 2.094),
-            0.05 * sin(sector_hue_shift * TAU + 4.188)
+        let angles = get_sector_angles(
+            u32(uniforms.highlighted_sector),
+            uniforms.sector_count,
+            uniforms.rotation_offset
         );
-        final_color += subtle_tint * 0.5;
+
+        // Compute radial energy wave
+        let energy_wave = branch_energy_wave(
+            dist_from_center,
+            animated_inner,
+            animated_radius,
+            uniforms.highlight_progress,
+            uniforms.time
+        );
+
+        // Angular fade (energy strongest at sector center)
+        let angular_fade = branch_energy_angular_fade(p, center, angles.x, angles.y);
+
+        // Combined branch energy intensity
+        let energy = energy_wave * angular_fade * uniforms.branch_energy_intensity;
+
+        // Apply energy color with additive blending
+        let energy_color = uniforms.branch_energy_color * energy;
+        final_color += energy_color;
+
+        // Subtle inner glow at the energy boundary
+        let inner_glow = exp(-pow((dist_from_center - animated_inner) * 0.1, 2.0))
+            * uniforms.highlight_progress * 0.2 * angular_fade;
+        final_color += uniforms.branch_energy_color * inner_glow;
     }
+
+    // Divider lines (subtle on obsidian)
+    let divider_color = vec3<f32>(0.08, 0.08, 0.10);
+    final_color = mix(final_color, divider_color, divider_intensity * uniforms.border_opacity);
+
+    // Outer edge subtle rim light
+    let outer_edge_dist = animated_radius - dist_from_center;
+    let outer_rim = exp(-outer_edge_dist * 0.5) * 0.04 * uniforms.open_progress;
+    final_color += vec3<f32>(outer_rim);
+
+    // Inner edge subtle rim light
+    let inner_edge_dist = dist_from_center - animated_inner;
+    let inner_rim = exp(-inner_edge_dist * 0.5) * 0.03 * uniforms.open_progress;
+    final_color += vec3<f32>(inner_rim);
+
+    // Alpha: obsidian is opaque where the ring exists
+    let alpha = 0.92 * uniforms.open_progress * ring_mask;
 
     return vec4<f32>(final_color, alpha);
 }
