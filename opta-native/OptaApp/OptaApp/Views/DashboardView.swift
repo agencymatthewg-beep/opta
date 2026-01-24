@@ -87,12 +87,17 @@ struct DashboardView: View {
             }
         }
         .background(Color(hex: "09090B"))
-        .overlay(
-            NavigableCircularMenuView(
-                isPresented: $showCircularMenu,
-                config: .defaultFourSector
-            )
-        )
+        .overlay {
+            if showCircularMenu {
+                CircularMenuView(
+                    isPresented: $showCircularMenu,
+                    sectors: CircularMenuSector.defaultSectors,
+                    onSelect: { sector in
+                        CircularMenuNavigationManager.shared.navigate(sector: sector)
+                    }
+                )
+            }
+        }
         .onAppear {
             coreManager.appStarted()
         }
@@ -111,53 +116,65 @@ struct DashboardView: View {
 
     /// OptaRing centerpiece with score overlay
     private var ringSection: some View {
-        ZStack {
-            // The 3D OptaRing as visual centerpiece
-            OptaRingView(
-                coordinator: renderCoordinator,
-                phase: coreManager.viewModel.ring.phase,
-                intensity: coreManager.viewModel.ring.energy,
-                explodeProgress: coreManager.viewModel.ring.progress,
-                onTap: {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                        showCircularMenu.toggle()
+        Button {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                showCircularMenu.toggle()
+            }
+        } label: {
+            ZStack {
+                // The 3D OptaRing as visual centerpiece (may not render if Metal unavailable)
+                OptaRingView(
+                    coordinator: renderCoordinator,
+                    phase: coreManager.viewModel.ring.phase,
+                    intensity: coreManager.viewModel.ring.energy,
+                    explodeProgress: coreManager.viewModel.ring.progress,
+                    onTap: {}
+                )
+                .frame(width: ringSize, height: ringSize)
+                .allowsHitTesting(false)
+
+                // Visible ring border (fallback when Metal isn't rendering)
+                Circle()
+                    .stroke(colorTemp.violetColor.opacity(0.4), lineWidth: 2)
+                    .frame(width: ringSize - 20, height: ringSize - 20)
+                    .shadow(color: colorTemp.violetColor.opacity(0.2), radius: 8)
+
+                // Score display overlaid in the center of the ring
+                VStack(spacing: 4) {
+                    // Large score number
+                    Text("\(coreManager.viewModel.optaScore)")
+                        .font(.system(size: 56, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
+                        .contentTransition(.numericText())
+
+                    // Grade badge with obsidian background + functional color border
+                    Text(coreManager.viewModel.scoreGrade)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(gradeColor)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 4)
+                        .background(
+                            Capsule()
+                                .fill(obsidianBase)
+                        )
+                        .overlay(
+                            Capsule()
+                                .stroke(gradeColor.opacity(0.3), lineWidth: 1)
+                        )
+
+                    // Calculating indicator
+                    if coreManager.viewModel.scoreCalculating {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            .scaleEffect(0.6)
+                            .padding(.top, 4)
                     }
                 }
-            )
-            .frame(width: ringSize, height: ringSize)
-
-            // Score display overlaid in the center of the ring
-            VStack(spacing: 4) {
-                // Large score number
-                Text("\(coreManager.viewModel.optaScore)")
-                    .font(.system(size: 56, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
-                    .contentTransition(.numericText())
-
-                // Grade badge with obsidian background + functional color border
-                Text(coreManager.viewModel.scoreGrade)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(gradeColor)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 4)
-                    .background(
-                        Capsule()
-                            .fill(obsidianBase)
-                    )
-                    .overlay(
-                        Capsule()
-                            .stroke(gradeColor.opacity(0.3), lineWidth: 1)
-                    )
-
-                // Calculating indicator
-                if coreManager.viewModel.scoreCalculating {
-                    ProgressView()
-                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                        .scaleEffect(0.6)
-                        .padding(.top, 4)
-                }
             }
+            .frame(width: ringSize, height: ringSize)
         }
+        .buttonStyle(.plain)
+        .focusEffectDisabled()
         .padding(.top, 16)
     }
 

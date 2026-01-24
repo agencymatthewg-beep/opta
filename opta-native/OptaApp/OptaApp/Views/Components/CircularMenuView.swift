@@ -99,26 +99,21 @@ struct CircularMenuView: View {
     // MARK: - Body
 
     var body: some View {
-        GeometryReader { geometry in
-            ZStack {
-                // Background dimming
-                if isPresented {
-                    Color.black
-                        .opacity(0.4 * openProgress)
-                        .ignoresSafeArea()
-                        .onTapGesture {
-                            dismiss()
-                        }
+        ZStack {
+            // Background dimming - fills entire overlay
+            Color.black
+                .opacity(isPresented ? 0.4 * openProgress : 0)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    dismiss()
                 }
 
-                // Menu content
-                if openProgress > 0.01 {
-                    circularMenuContent(in: geometry)
-                        .position(menuCenter(in: geometry))
-                }
+            // Menu content
+            if openProgress > 0.01 {
+                circularMenuContent()
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .focusable(isPresented)
         .onKeyPress(.escape) {
             guard isPresented else { return .ignored }
@@ -147,11 +142,16 @@ struct CircularMenuView: View {
                 closeMenu()
             }
         }
+        .onAppear {
+            if isPresented {
+                openMenu()
+            }
+        }
     }
 
     // MARK: - Menu Content
 
-    private func circularMenuContent(in geometry: GeometryProxy) -> some View {
+    private func circularMenuContent() -> some View {
         ZStack {
             // Render sectors
             ForEach(sectors) { sector in
@@ -234,13 +234,6 @@ struct CircularMenuView: View {
     }
 
     // MARK: - Geometry
-
-    private func menuCenter(in geometry: GeometryProxy) -> CGPoint {
-        centerPosition ?? CGPoint(
-            x: geometry.size.width / 2,
-            y: geometry.size.height / 2
-        )
-    }
 
     private func sectorAngle(for index: Int) -> Double {
         let sectorSize = (2 * .pi) / Double(sectors.count)
