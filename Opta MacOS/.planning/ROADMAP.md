@@ -20,6 +20,7 @@ Opta transforms from an empty Tauri scaffold into a full-featured AI-powered PC 
 - ✅ **v9.1 Premium Polish** - Phase 75 (shipped 2026-01-22)
 - 📋 **v10.0 Visual Experience Reimplementation** - Phases 76-80 + 79.1 (planned)
 - 📋 **v11.0 Refined Obsidian Aesthetic** - Phases 81-90 (planned)
+- 📋 **v12.0 Feature Restoration** - Phases 91-100 (planned)
 
 ## Domain Expertise
 
@@ -1666,6 +1667,173 @@ Plans:
 - [x] 90-01: Complete Color Temperature Conversion (3 tasks, wave 1)
 - [x] 90-02: Visual Consistency Audit & Build Verification (3 tasks, wave 2)
 
+---
+
+### 📋 v12.0 Feature Restoration (Planned)
+
+**Milestone Goal:** Restore key features from the old Opta MacOS (Tauri+React) app into the new native SwiftUI+Rust architecture. Features are reimplemented natively—old React code serves as feature specifications, not code to port.
+
+**Architecture:**
+- **UI**: SwiftUI views with obsidian+violet aesthetic
+- **Logic**: Rust core via Crux events/effects
+- **State**: OptaViewModel extensions
+- **Effects**: wgpu shaders where GPU rendering is appropriate
+
+---
+
+#### Phase 91: Optimize Page & Process Management
+**Goal**: Build the core optimization UI showing running processes, resource usage, and one-click optimization
+**Depends on**: Phase 90 (v11.0 complete)
+**Research**: Unlikely (existing patterns in old app)
+
+**Key Deliverables:**
+- OptimizeView with process list and resource breakdown
+- ProcessManagementView with sortable process table
+- One-click optimization (Stealth Mode integration)
+- Before/after comparison display
+- Process priority management UI
+
+Plans:
+- [ ] 91-01: Optimize Page UI
+- [ ] 91-02: Process Management View
+
+#### Phase 92: AI Chat Interface
+**Goal**: Native AI chat with local+cloud hybrid routing
+**Depends on**: Phase 91
+**Research**: Likely (MLX integration, hybrid LLM patterns)
+
+**Key Deliverables:**
+- AiChatView with message bubbles and streaming
+- Hybrid routing (local MLX vs cloud Claude)
+- Optimization-focused prompt templates
+- Context-aware suggestions
+- Chat history persistence
+
+Plans:
+- [ ] 92-01: AI Chat View and Message System
+
+#### Phase 93: Command Palette (Cmd+K)
+**Goal**: Global command palette for power user navigation and actions
+**Depends on**: Phase 92
+**Research**: Unlikely (established pattern)
+
+**Key Deliverables:**
+- CommandPaletteView triggered by Cmd+K
+- Fuzzy search across actions, pages, settings
+- Recent commands history
+- Keyboard-first navigation
+- Custom action registration API
+
+Plans:
+- [ ] 93-01: Command Palette Implementation
+
+#### Phase 94: Score Breakdown & History
+**Goal**: Full score page with breakdown by category and historical tracking
+**Depends on**: Phase 93
+**Research**: Unlikely (existing scoring in Rust core)
+
+**Key Deliverables:**
+- ScoreDetailView with category breakdown
+- Score history chart (sparkline over time)
+- Category scores (Performance, Experience, Competitive)
+- Score comparison (before/after optimization)
+- Export/share score card
+
+Plans:
+- [ ] 94-01: Score Detail and History Views
+
+#### Phase 95: Badges, Achievements & Gamification
+**Goal**: Retention system with badges, streaks, XP, and daily challenges
+**Depends on**: Phase 94
+**Research**: Unlikely (gamification patterns)
+
+**Key Deliverables:**
+- Badge collection view
+- Achievement unlock animations
+- Daily challenge system
+- Streak tracking with visual indicators
+- XP progression and levels
+
+Plans:
+- [ ] 95-01: Gamification System
+
+#### Phase 96: Game Session Tracking & Benchmarking
+**Goal**: Per-game performance tracking and before/after benchmark proofs
+**Depends on**: Phase 95
+**Research**: Likely (FPS monitoring integration)
+
+**Key Deliverables:**
+- Game session recorder (FPS, thermals, CPU during play)
+- Before/after benchmark comparison
+- Per-game optimization history
+- Performance trend charts
+- Session replay timeline
+
+Plans:
+- [ ] 96-01: Game Session and Benchmark System
+
+#### Phase 97: Conflict Detection & Adaptive Learning
+**Goal**: Detect competing optimizers and learn user optimization patterns
+**Depends on**: Phase 96
+**Research**: Likely (competitor tool detection on macOS)
+
+**Key Deliverables:**
+- Competing optimizer detection (CleanMyMac, iStat, etc.)
+- Conflict warning UI with recommendations
+- User pattern learning (time-based, activity-based)
+- Personalized optimization suggestions
+- Privacy-preserving local analytics
+
+Plans:
+- [ ] 97-01: Conflict Detection and Pattern Learning
+
+#### Phase 98: Advanced Optimization (Network, Power Profiles)
+**Goal**: Network latency optimization and power mode management
+**Depends on**: Phase 97
+**Research**: Likely (macOS network tuning, power management APIs)
+
+**Key Deliverables:**
+- Network optimizer (DNS, buffer sizes, QoS)
+- Power profile manager (Low Power, High Performance, Balanced)
+- Per-game network profiles
+- Battery impact estimation
+- Automatic profile switching
+
+Plans:
+- [ ] 98-01: Network and Power Optimization
+
+#### Phase 99: Visual Effects (wgpu Particles & Celebrations)
+**Goal**: Particle effects, achievement celebrations, and atmospheric ambience via wgpu
+**Depends on**: Phase 98
+**Research**: Likely (wgpu particle systems)
+
+**Key Deliverables:**
+- wgpu particle system (GPU-computed)
+- Achievement celebration effects (fireworks, confetti)
+- Atmospheric background particles
+- Energy field around ring during optimization
+- Performance-adaptive particle count
+
+Plans:
+- [ ] 99-01: wgpu Particle Effects System
+
+#### Phase 100: Chess Game (SwiftUI Reimplementation)
+**Goal**: Full chess experience in native SwiftUI with Stockfish integration
+**Depends on**: Phase 99
+**Research**: Likely (Stockfish Swift integration)
+
+**Key Deliverables:**
+- ChessView with native SwiftUI board
+- Stockfish engine integration
+- Puzzle system (Lichess database)
+- Game import (PGN, Chess.com, Lichess)
+- AI opponent modes
+
+Plans:
+- [ ] 100-01: Chess Game SwiftUI Implementation
+
+---
+
 ## Progress
 
 **Execution Order:**
@@ -1773,3 +1941,13 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5 → 6 → 7 �
 | 88. Organic Motion System | v11.0 | 3/3 | ✅ Complete | 2026-01-24 |
 | 89. Color Temperature Refinement | v11.0 | 3/3 | ✅ Complete | 2026-01-24 |
 | 90. Visual Cohesion Launch | v11.0 | 2/2 | ✅ Complete | 2026-01-24 |
+| 91. Optimize Page & Process Management | v12.0 | 0/2 | Planned | - |
+| 92. AI Chat Interface | v12.0 | 0/1 | Planned | - |
+| 93. Command Palette (Cmd+K) | v12.0 | 0/1 | Planned | - |
+| 94. Score Breakdown & History | v12.0 | 0/1 | Planned | - |
+| 95. Badges, Achievements & Gamification | v12.0 | 0/1 | Planned | - |
+| 96. Game Session Tracking & Benchmarking | v12.0 | 0/1 | Planned | - |
+| 97. Conflict Detection & Adaptive Learning | v12.0 | 0/1 | Planned | - |
+| 98. Advanced Optimization (Network, Power) | v12.0 | 0/1 | Planned | - |
+| 99. Visual Effects (wgpu particles) | v12.0 | 0/1 | Planned | - |
+| 100. Chess Game (SwiftUI) | v12.0 | 0/1 | Planned | - |
