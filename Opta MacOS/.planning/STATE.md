@@ -9,10 +9,10 @@ See: .planning/PROJECT.md (updated 2026-01-15)
 
 ## Current Position
 
-Phase: 93 of 100 (Command Palette)
-Plan: 93-01 COMPLETE
-Status: v12.0 Feature Restoration — Phase 93 plan 01 complete (Command Palette with Cmd+K, fuzzy search, keyboard nav)
-Last activity: 2026-01-24 — Completed 93-01 (CommandPaletteModels, CommandPaletteView, Cmd+K wiring)
+Phase: 94 of 100 (Score Breakdown)
+Plan: 94-01 COMPLETE
+Status: v12.0 Feature Restoration — Phase 94 plan 01 complete (Score Breakdown with category cards, history chart, navigation)
+Last activity: 2026-01-24 — Completed 94-01 (ScoreModels, ScoreDetailView, ScoreCategoryCard, ScoreHistoryChart)
 
 Progress: ██████████ 100% of v5.0 (17 phases complete)
 v5.1 Progress: ██████████ 100% (7 of 7 phases complete)
@@ -23,7 +23,12 @@ v9.0 Progress: ██████████ 100% (6 of 6 phases complete) ✅
 v9.1 Progress: ██████████ 100% (1 of 1 phases complete) ✅
 v10.0 Progress: ████████░░ 80% (4 of 5 phases complete)
 v11.0 Progress: ██████████ 100% (10 of 10 phases complete) ✅
-v12.0 Progress: ███░░░░░░░ 20% (2 of 10 phases in progress)
+v12.0 Progress: ███░░░░░░░ 30% (3 of 10 phases complete)
+
+### Phase 94 Plans (COMPLETE)
+| Plan | Status | Description |
+|------|--------|-------------|
+| 94-01 | ✅ Complete | Score Breakdown (ScoreModels, ScoreDetailView, ScoreCategoryCard, ScoreHistoryChart, navigation wiring) |
 
 ### Phase 93 Plans (COMPLETE)
 | Plan | Status | Description |
@@ -772,6 +777,12 @@ v12.0 Progress: ███░░░░░░░ 20% (2 of 10 phases in progress)
 | 90-02 | CircularMenuView defaultSectors uses Color.purple | System accessibility-safe color for static model data; runtime rendering uses colorTemp |
 | 90-02 | TelemetryCard default color parameter kept | API compat residual; obsidian mode uses colorTemp.violetColor at runtime |
 | 90-02 | 16 files use colorTemperature environment | 15 consumer views + 1 definition file; complete coverage of all violet-rendering views |
+| 94-01 | ScoreBreakdown.calculate() from ViewModel telemetry | Derives 3 categories directly from existing cpuUsage/memoryUsage/gpuUsage/thermalState/memoryPressure |
+| 94-01 | Three categories: Performance, Stability, Gaming | Complete coverage: resource efficiency, system health, and gaming readiness |
+| 94-01 | Grade thresholds S=95+/A=80-94/B=65-79/C=50-64/D=30-49/F=<30 | Consistent with existing gradeColor mapping across views |
+| 94-01 | ScoreHistoryManager persists to Application Support | ~/Library/Application Support/OptaApp/score-history.json, max 90 entries |
+| 94-01 | SwiftUI Charts for score history | LineMark+AreaMark for trend, PointMark for optimization events |
+| 94-01 | Score section in OptimizeView now navigable | Tappable button with chevron, navigates to .score page |
 
 ### Deferred Issues
 
@@ -802,9 +813,9 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-24
-Stopped at: Phase 93 plan 01 complete — Command Palette Implementation
+Stopped at: Phase 94 plan 01 complete — Score Breakdown & History
 Resume file: None
-Next action: Phase 94 (next feature phase)
+Next action: Phase 95 (next feature phase)
 
 **v9.0 Stats (COMPLETE):**
 - Phase 69 complete (2 plans) - UniFFI bindings, OptaCoreManager
