@@ -9,10 +9,10 @@ See: .planning/PROJECT.md (updated 2026-01-15)
 
 ## Current Position
 
-Phase: 91 of 100 (Optimize Page & Process Management) COMPLETE
-Plan: 91-01 COMPLETE, 91-02 COMPLETE
-Status: v12.0 Feature Restoration — Phase 91 complete (OptimizeView + ProcessesView)
-Last activity: 2026-01-24 — Completed 91-02 (ProcessesView with sortable table, multi-select, terminate)
+Phase: 92 of 100 (AI Chat)
+Plan: 92-01 COMPLETE
+Status: v12.0 Feature Restoration — Phase 92 plan 01 complete (AI Chat view and message system)
+Last activity: 2026-01-24 — Completed 92-01 (AiChatView, ChatMessageBubble, ChatInputView, ChatModels)
 
 Progress: ██████████ 100% of v5.0 (17 phases complete)
 v5.1 Progress: ██████████ 100% (7 of 7 phases complete)
@@ -23,7 +23,12 @@ v9.0 Progress: ██████████ 100% (6 of 6 phases complete) ✅
 v9.1 Progress: ██████████ 100% (1 of 1 phases complete) ✅
 v10.0 Progress: ████████░░ 80% (4 of 5 phases complete)
 v11.0 Progress: ██████████ 100% (10 of 10 phases complete) ✅
-v12.0 Progress: █░░░░░░░░░ 10% (1 of 10 phases complete)
+v12.0 Progress: ██░░░░░░░░ 15% (1.5 of 10 phases in progress)
+
+### Phase 92 Plans (In Progress)
+| Plan | Status | Description |
+|------|--------|-------------|
+| 92-01 | ✅ Complete | AI Chat View and Message System (ChatModels, AiChatView, ChatMessageBubble, ChatInputView) |
 
 ### Phase 91 Plans (COMPLETE)
 | Plan | Status | Description |
@@ -744,6 +749,9 @@ v12.0 Progress: █░░░░░░░░░ 10% (1 of 10 phases complete)
 | 90-01 | Separate View structs get their own @Environment | ProfileEditorSheet, ShortcutRecorderSheet, ProfileRowView, SettingsRowView each declare colorTemp |
 | 90-01 | Stroke opacities use glowOpacity * factor pattern | 0.2 for subtle borders, 0.3 for medium; consistent with 89-02/89-03 |
 | 90-02 | Organic motion applied selectively (not over-applied) | Interactive cards get organicHover, section lists get organicAppear with stagger, skip structural elements |
+| 92-01 | Swift-side ChatViewModel (not Crux) | LLM calls are platform-specific (MLX/network); no shared Rust logic needed |
+| 92-01 | Timer-based simulated streaming | Placeholder character-by-character response until LLM integration |
+| 92-01 | if/else for message backgrounds | SwiftUI opaque types from computed properties cannot be used in ternary |
 | 90-02 | CircularMenuView defaultSectors uses Color.purple | System accessibility-safe color for static model data; runtime rendering uses colorTemp |
 | 90-02 | TelemetryCard default color parameter kept | API compat residual; obsidian mode uses colorTemp.violetColor at runtime |
 | 90-02 | 16 files use colorTemperature environment | 15 consumer views + 1 definition file; complete coverage of all violet-rendering views |
@@ -777,9 +785,9 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-24
-Stopped at: Phase 91 complete — OptimizeView + ProcessesView both built and wired
+Stopped at: Phase 92 plan 01 complete — AI Chat view and message system
 Resume file: None
-Next action: Plan and execute Phase 92
+Next action: Plan 92-02 (if any remaining AI Chat tasks) or Phase 93
 
 **v9.0 Stats (COMPLETE):**
 - Phase 69 complete (2 plans) - UniFFI bindings, OptaCoreManager
