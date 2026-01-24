@@ -1694,8 +1694,8 @@ Plans:
 - Process priority management UI
 
 Plans:
-- [ ] 91-01: Optimize Page UI
-- [ ] 91-02: Process Management View
+- [x] 91-01: Optimize Page UI
+- [x] 91-02: Process Management View
 
 #### Phase 92: AI Chat Interface
 **Goal**: Native AI chat with local+cloud hybrid routing
