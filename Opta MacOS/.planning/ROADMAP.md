@@ -1711,6 +1711,7 @@ Plans:
 
 Plans:
 - [ ] 92-01: AI Chat View and Message System
+- [ ] 92-02: LLM Service and Hybrid Routing
 
 #### Phase 93: Command Palette (Cmd+K)
 **Goal**: Global command palette for power user navigation and actions
