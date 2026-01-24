@@ -9,10 +9,10 @@ See: .planning/PROJECT.md (updated 2026-01-15)
 
 ## Current Position
 
-Phase: 94 of 100 (Score Breakdown)
-Plan: 94-01 COMPLETE
-Status: v12.0 Feature Restoration — Phase 94 plan 01 complete (Score Breakdown with category cards, history chart, navigation)
-Last activity: 2026-01-24 — Completed 94-01 (ScoreModels, ScoreDetailView, ScoreCategoryCard, ScoreHistoryChart)
+Phase: 95 of 100 (Gamification)
+Plan: 95-01 COMPLETE
+Status: v12.0 Feature Restoration — Phase 95 plan 01 complete (Gamification system with badges, achievements, streaks, XP, daily challenges)
+Last activity: 2026-01-24 — Completed 95-01 (GamificationModels, GamificationManager, GamificationDashboard, BadgeCollectionView, AchievementUnlockOverlay)
 
 Progress: ██████████ 100% of v5.0 (17 phases complete)
 v5.1 Progress: ██████████ 100% (7 of 7 phases complete)
@@ -23,7 +23,12 @@ v9.0 Progress: ██████████ 100% (6 of 6 phases complete) ✅
 v9.1 Progress: ██████████ 100% (1 of 1 phases complete) ✅
 v10.0 Progress: ████████░░ 80% (4 of 5 phases complete)
 v11.0 Progress: ██████████ 100% (10 of 10 phases complete) ✅
-v12.0 Progress: ███░░░░░░░ 30% (3 of 10 phases complete)
+v12.0 Progress: ████░░░░░░ 40% (4 of 10 phases complete)
+
+### Phase 95 Plans (COMPLETE)
+| Plan | Status | Description |
+|------|--------|-------------|
+| 95-01 | ✅ Complete | Gamification System (GamificationModels, GamificationManager, GamificationDashboard, BadgeCollectionView, AchievementUnlockOverlay, navigation wiring) |
 
 ### Phase 94 Plans (COMPLETE)
 | Plan | Status | Description |
@@ -777,6 +782,11 @@ v12.0 Progress: ███░░░░░░░ 30% (3 of 10 phases complete)
 | 90-02 | CircularMenuView defaultSectors uses Color.purple | System accessibility-safe color for static model data; runtime rendering uses colorTemp |
 | 90-02 | TelemetryCard default color parameter kept | API compat residual; obsidian mode uses colorTemp.violetColor at runtime |
 | 90-02 | 16 files use colorTemperature environment | 15 consumer views + 1 definition file; complete coverage of all violet-rendering views |
+| 95-01 | @Observable singleton for GamificationManager | Matches ScoreHistoryManager pattern, modern macOS 14+ observation |
+| 95-01 | Day-of-year seeded challenge selection | Deterministic daily challenges without true randomness |
+| 95-01 | PageViewModel CaseIterable extension | Enables exploration badge checking across all navigation pages |
+| 95-01 | 4-second auto-dismiss for unlock overlay | Enough to appreciate without blocking user interaction |
+| 95-01 | JSON persistence to Application Support | ~/Library/Application Support/OptaApp/gamification.json, atomic writes |
 | 94-01 | ScoreBreakdown.calculate() from ViewModel telemetry | Derives 3 categories directly from existing cpuUsage/memoryUsage/gpuUsage/thermalState/memoryPressure |
 | 94-01 | Three categories: Performance, Stability, Gaming | Complete coverage: resource efficiency, system health, and gaming readiness |
 | 94-01 | Grade thresholds S=95+/A=80-94/B=65-79/C=50-64/D=30-49/F=<30 | Consistent with existing gradeColor mapping across views |
@@ -813,9 +823,9 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-24
-Stopped at: Phase 94 plan 01 complete — Score Breakdown & History
+Stopped at: Phase 95 plan 01 complete — Gamification System
 Resume file: None
-Next action: Phase 95 (next feature phase)
+Next action: Phase 96 (next feature phase)
 
 **v9.0 Stats (COMPLETE):**
 - Phase 69 complete (2 plans) - UniFFI bindings, OptaCoreManager
