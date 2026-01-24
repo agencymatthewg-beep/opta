@@ -210,6 +210,13 @@ struct OptaAppApp: App {
 
                 case .aiChat:
                     AiChatView()
+
+                case .score:
+                    placeholderView(
+                        title: "Score",
+                        subtitle: "Score Detail View",
+                        icon: "chart.bar.fill"
+                    )
                 }
             }
             .onChange(of: coreManager.viewModel.selectedGameId) { _, newGameId in
