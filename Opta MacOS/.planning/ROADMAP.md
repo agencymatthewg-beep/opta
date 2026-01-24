@@ -1741,7 +1741,7 @@ Plans:
 - Export/share score card
 
 Plans:
-- [ ] 94-01: Score Detail and History Views
+- [x] 94-01: Score Detail and History Views
 
 #### Phase 95: Badges, Achievements & Gamification
 **Goal**: Retention system with badges, streaks, XP, and daily challenges
