@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-01-15)
 ## Current Position
 
 Phase: 92 of 100 (AI Chat)
-Plan: 92-01 COMPLETE
-Status: v12.0 Feature Restoration — Phase 92 plan 01 complete (AI Chat view and message system)
-Last activity: 2026-01-24 — Completed 92-01 (AiChatView, ChatMessageBubble, ChatInputView, ChatModels)
+Plan: 92-02 COMPLETE
+Status: v12.0 Feature Restoration — Phase 92 plan 02 complete (LLM Service and Hybrid Routing)
+Last activity: 2026-01-24 — Completed 92-02 (LLMService, CloudLLMService, LocalLLMService, SemanticRouter, ChatService)
 
 Progress: ██████████ 100% of v5.0 (17 phases complete)
 v5.1 Progress: ██████████ 100% (7 of 7 phases complete)
@@ -29,6 +29,7 @@ v12.0 Progress: ██░░░░░░░░ 15% (1.5 of 10 phases in progress
 | Plan | Status | Description |
 |------|--------|-------------|
 | 92-01 | ✅ Complete | AI Chat View and Message System (ChatModels, AiChatView, ChatMessageBubble, ChatInputView) |
+| 92-02 | ✅ Complete | LLM Service and Hybrid Routing (LLMService, CloudLLMService, LocalLLMService, SemanticRouter, ChatService) |
 
 ### Phase 91 Plans (COMPLETE)
 | Plan | Status | Description |
@@ -751,6 +752,12 @@ v12.0 Progress: ██░░░░░░░░ 15% (1.5 of 10 phases in progress
 | 90-02 | Organic motion applied selectively (not over-applied) | Interactive cards get organicHover, section lists get organicAppear with stagger, skip structural elements |
 | 92-01 | Swift-side ChatViewModel (not Crux) | LLM calls are platform-specific (MLX/network); no shared Rust logic needed |
 | 92-01 | Timer-based simulated streaming | Placeholder character-by-character response until LLM integration |
+| 92-02 | UserDefaults for API key storage | Simpler for MVP; Keychain migration path documented |
+| 92-02 | Mock generation in LocalLLMService | MLX package dependency deferred; structure ready for integration |
+| 92-02 | Keyword heuristics for routing | Deterministic, no model dependency, good enough for v1 |
+| 92-02 | Default auto-route to cloud | Until local model quality proven |
+| 92-02 | AsyncThrowingStream for generation | Back-pressure aware, cancellation-safe streaming |
+| 92-02 | @MainActor on ChatService methods | Safe UI updates from streaming async callbacks |
 | 92-01 | if/else for message backgrounds | SwiftUI opaque types from computed properties cannot be used in ternary |
 | 90-02 | CircularMenuView defaultSectors uses Color.purple | System accessibility-safe color for static model data; runtime rendering uses colorTemp |
 | 90-02 | TelemetryCard default color parameter kept | API compat residual; obsidian mode uses colorTemp.violetColor at runtime |
@@ -785,9 +792,9 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-24
-Stopped at: Phase 92 plan 01 complete — AI Chat view and message system
+Stopped at: Phase 92 plan 02 complete — LLM Service and Hybrid Routing
 Resume file: None
-Next action: Plan 92-02 (if any remaining AI Chat tasks) or Phase 93
+Next action: Plan 92-03 (if any remaining AI Chat tasks) or Phase 93
 
 **v9.0 Stats (COMPLETE):**
 - Phase 69 complete (2 plans) - UniFFI bindings, OptaCoreManager
