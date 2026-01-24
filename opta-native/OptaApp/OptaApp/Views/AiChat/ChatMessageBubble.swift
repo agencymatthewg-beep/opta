@@ -83,16 +83,22 @@ struct ChatMessageBubble: View {
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
                 .background(assistantBackground)
-        } else {
+        } else if message.role == .user {
             Text(message.content)
                 .font(.system(size: 14, weight: .regular))
-                .foregroundStyle(message.role == .user ? .white : .white.opacity(0.9))
+                .foregroundStyle(.white)
                 .textSelection(.enabled)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
-                .background(
-                    message.role == .user ? userBackground : assistantBackground
-                )
+                .background(userBackground)
+        } else {
+            Text(message.content)
+                .font(.system(size: 14, weight: .regular))
+                .foregroundStyle(.white.opacity(0.9))
+                .textSelection(.enabled)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background(assistantBackground)
         }
     }
 

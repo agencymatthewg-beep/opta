@@ -183,11 +183,7 @@ struct OptaAppApp: App {
                     )
 
                 case .aiChat:
-                    placeholderView(
-                        title: "AI Chat",
-                        subtitle: "Coming in Phase 76",
-                        icon: "message"
-                    )
+                    AiChatView()
                 }
             }
             .onChange(of: coreManager.viewModel.selectedGameId) { _, newGameId in
