@@ -68,6 +68,15 @@ struct OptaViewModel: Codable {
     /// Number of selected processes
     var selectedProcessCount: Int = 0
 
+    /// List of running processes (populated when on Processes page)
+    var processes: [ProcessViewModel] = []
+
+    /// Current process filter state
+    var processFilter: ProcessFilterViewModel = ProcessFilterViewModel()
+
+    /// PIDs of selected processes
+    var selectedPids: [UInt32] = []
+
     /// Whether stealth mode is active
     var stealthModeActive: Bool = false
 
@@ -301,6 +310,69 @@ struct StealthResultViewModel: Codable {
     var memoryFreedMb: UInt64
 }
 
+// MARK: - Process View Model
+
+/// Individual process for display in ProcessesView
+struct ProcessViewModel: Identifiable, Equatable {
+    var id: UInt32 { pid }
+    var pid: UInt32
+    var name: String
+    var cpuPercent: Float
+    var memoryBytes: UInt64
+    var user: String
+    var isKillable: Bool
+
+    /// Memory in MB for display
+    var memoryMb: Float {
+        Float(memoryBytes) / 1_000_000.0
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case pid, name, cpuPercent, memoryBytes, user, isKillable
+    }
+}
+
+extension ProcessViewModel: Codable {}
+
+// MARK: - Process Filter View Model
+
+/// Process filter state for UI
+struct ProcessFilterViewModel: Codable, Equatable {
+    var search: String = ""
+    var minCpu: Float = 0
+    var onlyKillable: Bool = false
+    var sortBy: ProcessSortViewModel = .cpu
+    var sortAscending: Bool = false
+}
+
+// MARK: - Process Sort View Model
+
+/// Process sort options
+enum ProcessSortViewModel: String, Codable, CaseIterable {
+    case cpu = "Cpu"
+    case memory = "Memory"
+    case name = "Name"
+    case pid = "Pid"
+
+    var displayName: String {
+        switch self {
+        case .cpu: return "CPU"
+        case .memory: return "Memory"
+        case .name: return "Name"
+        case .pid: return "PID"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .cpu: return "cpu"
+        case .memory: return "memorychip"
+        case .name: return "textformat"
+        case .pid: return "number"
+        }
+    }
+}
+
 // MARK: - OptaEvent
 
 /// Events that can be dispatched to Crux.
@@ -335,6 +407,13 @@ enum OptaEvent {
     case clearProcessSelection
     case terminateSelected
     case executeStealthMode
+    case updateProcessFilter(
+        search: String?,
+        minCpu: Float?,
+        onlyKillable: Bool?,
+        sortBy: ProcessSortViewModel?,
+        sortAscending: Bool?
+    )
 
     // MARK: - Game Events
 
@@ -416,6 +495,14 @@ enum OptaEvent {
             return "\"TerminateSelected\""
         case .executeStealthMode:
             return "\"ExecuteStealthMode\""
+        case .updateProcessFilter(let search, let minCpu, let onlyKillable, let sortBy, let sortAscending):
+            var fields: [String] = []
+            if let s = search { fields.append("\"search\":\"\(s)\"") }
+            if let cpu = minCpu { fields.append("\"min_cpu\":\(cpu)") }
+            if let k = onlyKillable { fields.append("\"only_killable\":\(k)") }
+            if let sort = sortBy { fields.append("\"sort_by\":\"\(sort.rawValue)\"") }
+            if let asc = sortAscending { fields.append("\"sort_ascending\":\(asc)") }
+            return "{\"UpdateProcessFilter\":{\(fields.joined(separator: ","))}}"
 
         // Games
         case .scanGames:
