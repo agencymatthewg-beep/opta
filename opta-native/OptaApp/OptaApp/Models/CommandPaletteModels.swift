@@ -224,6 +224,15 @@ class CommandPaletteViewModel {
             shortcut: nil,
             action: { navigate(.processes) }
         ))
+        commands.append(CommandAction(
+            id: "nav.score",
+            title: "Go to Score",
+            subtitle: "Score breakdown and history",
+            icon: "chart.bar.fill",
+            category: .navigation,
+            shortcut: nil,
+            action: { navigate(.score) }
+        ))
 
         // Action commands
         commands.append(CommandAction(

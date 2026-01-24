@@ -197,43 +197,53 @@ struct OptimizeView: View {
     // MARK: - Score Section
 
     private var scoreSection: some View {
-        HStack(spacing: 16) {
-            // Score value
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Opta Score")
+        Button {
+            coreManager.navigate(to: .score)
+        } label: {
+            HStack(spacing: 16) {
+                // Score value
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Opta Score")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.6))
+
+                    Text("\(coreManager.viewModel.optaScore)")
+                        .font(.system(size: 36, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
+                }
+
+                Spacer()
+
+                // Grade badge
+                Text(coreManager.viewModel.scoreGrade)
+                    .font(.system(size: 20, weight: .bold, design: .rounded))
+                    .foregroundStyle(gradeColor)
+                    .frame(width: 48, height: 48)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(obsidianBase)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(gradeColor.opacity(0.4), lineWidth: 2)
+                            )
+                    )
+
+                // Chevron indicator
+                Image(systemName: "chevron.right")
                     .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.6))
-
-                Text("\(coreManager.viewModel.optaScore)")
-                    .font(.system(size: 36, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(.white.opacity(0.4))
             }
-
-            Spacer()
-
-            // Grade badge
-            Text(coreManager.viewModel.scoreGrade)
-                .font(.system(size: 20, weight: .bold, design: .rounded))
-                .foregroundStyle(gradeColor)
-                .frame(width: 48, height: 48)
-                .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(obsidianBase)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(gradeColor.opacity(0.4), lineWidth: 2)
-                        )
-                )
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(obsidianBase)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(colorTemp.violetColor.opacity(colorTemp.glowOpacity * 0.2), lineWidth: 1)
+                    )
+            )
         }
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(obsidianBase)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(colorTemp.violetColor.opacity(colorTemp.glowOpacity * 0.2), lineWidth: 1)
-                )
-        )
+        .buttonStyle(.plain)
     }
 
     // MARK: - Process Summary Section
