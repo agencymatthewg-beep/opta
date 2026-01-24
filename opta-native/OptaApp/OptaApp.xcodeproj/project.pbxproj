@@ -87,6 +87,11 @@
 		/* Phase 93 additions - Command Palette */
 		5501B08B2C5D00010000016B /* CommandPaletteModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B08A2C5D00010000016A /* CommandPaletteModels.swift */; };
 		5501B08D2C5D00010000016D /* CommandPaletteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B08C2C5D00010000016C /* CommandPaletteView.swift */; };
+		/* Phase 94 additions - Score Breakdown */
+		5501B0902C5D000100000170 /* ScoreModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B08F2C5D00010000016F /* ScoreModels.swift */; };
+		5501B0922C5D000100000172 /* ScoreDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B0912C5D000100000171 /* ScoreDetailView.swift */; };
+		5501B0942C5D000100000174 /* ScoreCategoryCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B0932C5D000100000173 /* ScoreCategoryCard.swift */; };
+		5501B0962C5D000100000176 /* ScoreHistoryChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B0952C5D000100000175 /* ScoreHistoryChart.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -175,6 +180,11 @@
 		5501B0882C5D000100000168 /* ChatService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatService.swift; sourceTree = "<group>"; };
 		5501B08A2C5D00010000016A /* CommandPaletteModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandPaletteModels.swift; sourceTree = "<group>"; };
 		5501B08C2C5D00010000016C /* CommandPaletteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandPaletteView.swift; sourceTree = "<group>"; };
+		/* Phase 94 additions - Score Breakdown */
+		5501B08F2C5D00010000016F /* ScoreModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoreModels.swift; sourceTree = "<group>"; };
+		5501B0912C5D000100000171 /* ScoreDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoreDetailView.swift; sourceTree = "<group>"; };
+		5501B0932C5D000100000173 /* ScoreCategoryCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoreCategoryCard.swift; sourceTree = "<group>"; };
+		5501B0952C5D000100000175 /* ScoreHistoryChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoreHistoryChart.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -263,6 +273,7 @@
 				5501B0082C5D000100000105 /* OptimizationProfile.swift */,
 				5501B0742C5D000100000150 /* ChatModels.swift */,
 				5501B08A2C5D00010000016A /* CommandPaletteModels.swift */,
+				5501B08F2C5D00010000016F /* ScoreModels.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -294,6 +305,7 @@
 				5501B0442C5D000100000124 /* Components */,
 				5501B0452C5D000100000125 /* Settings */,
 				5501B0462C5D000100000126 /* Games */,
+				5501B08E2C5D00010000016E /* Score */,
 				5501B07C2C5D000100000158 /* AiChat */,
 			);
 			path = Views;
@@ -333,6 +345,16 @@
 				5501B01E2C5D000100000110 /* GamesLibraryView.swift */,
 			);
 			path = Games;
+			sourceTree = "<group>";
+		};
+		5501B08E2C5D00010000016E /* Score */ = {
+			isa = PBXGroup;
+			children = (
+				5501B0912C5D000100000171 /* ScoreDetailView.swift */,
+				5501B0932C5D000100000173 /* ScoreCategoryCard.swift */,
+				5501B0952C5D000100000175 /* ScoreHistoryChart.swift */,
+			);
+			path = Score;
 			sourceTree = "<group>";
 		};
 		5501A1062C5D0001000000A0 /* Rendering */ = {
@@ -598,6 +620,10 @@
 				5501B0892C5D000100000169 /* ChatService.swift in Sources */,
 				5501B08B2C5D00010000016B /* CommandPaletteModels.swift in Sources */,
 				5501B08D2C5D00010000016D /* CommandPaletteView.swift in Sources */,
+				5501B0902C5D000100000170 /* ScoreModels.swift in Sources */,
+				5501B0922C5D000100000172 /* ScoreDetailView.swift in Sources */,
+				5501B0942C5D000100000174 /* ScoreCategoryCard.swift in Sources */,
+				5501B0962C5D000100000176 /* ScoreHistoryChart.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
