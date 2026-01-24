@@ -559,6 +559,27 @@ enum OptaEvent {
     }
 }
 
+// MARK: - Optimize Computed Properties
+
+extension OptaViewModel {
+
+    /// Summary of current system health for the optimize page
+    var systemHealthStatus: String {
+        if thermalState == .critical || memoryPressure == .critical {
+            return "Needs Optimization"
+        } else if thermalState == .serious || memoryPressure == .warning {
+            return "Could Improve"
+        } else {
+            return "Running Well"
+        }
+    }
+
+    /// Whether optimization is recommended based on current system state
+    var optimizationRecommended: Bool {
+        cpuUsage > 70 || memoryUsage > 80 || thermalState != .nominal
+    }
+}
+
 // MARK: - Model Slices
 
 /// Model slices for efficient partial updates.
