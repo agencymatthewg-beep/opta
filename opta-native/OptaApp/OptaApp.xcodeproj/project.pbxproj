@@ -84,6 +84,9 @@
 		5501B0852C5D000100000165 /* LocalLLMService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B0842C5D000100000164 /* LocalLLMService.swift */; };
 		5501B0872C5D000100000167 /* SemanticRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B0862C5D000100000166 /* SemanticRouter.swift */; };
 		5501B0892C5D000100000169 /* ChatService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B0882C5D000100000168 /* ChatService.swift */; };
+		/* Phase 93 additions - Command Palette */
+		5501B08B2C5D00010000016B /* CommandPaletteModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B08A2C5D00010000016A /* CommandPaletteModels.swift */; };
+		5501B08D2C5D00010000016D /* CommandPaletteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B08C2C5D00010000016C /* CommandPaletteView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -170,6 +173,8 @@
 		5501B0842C5D000100000164 /* LocalLLMService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalLLMService.swift; sourceTree = "<group>"; };
 		5501B0862C5D000100000166 /* SemanticRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SemanticRouter.swift; sourceTree = "<group>"; };
 		5501B0882C5D000100000168 /* ChatService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatService.swift; sourceTree = "<group>"; };
+		5501B08A2C5D00010000016A /* CommandPaletteModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandPaletteModels.swift; sourceTree = "<group>"; };
+		5501B08C2C5D00010000016C /* CommandPaletteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandPaletteView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -257,6 +262,7 @@
 				5501B0062C5D000100000104 /* Game.swift */,
 				5501B0082C5D000100000105 /* OptimizationProfile.swift */,
 				5501B0742C5D000100000150 /* ChatModels.swift */,
+				5501B08A2C5D00010000016A /* CommandPaletteModels.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -304,6 +310,7 @@
 				5501B0552C5D000100000133 /* OptaTextZone.swift */,
 				5501B0572C5D000100000134 /* SparklineView.swift */,
 				5501B0662C5D00010000013C /* CircularMenuView.swift */,
+				5501B08C2C5D00010000016C /* CommandPaletteView.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -589,6 +596,8 @@
 				5501B0852C5D000100000165 /* LocalLLMService.swift in Sources */,
 				5501B0872C5D000100000167 /* SemanticRouter.swift in Sources */,
 				5501B0892C5D000100000169 /* ChatService.swift in Sources */,
+				5501B08B2C5D00010000016B /* CommandPaletteModels.swift in Sources */,
+				5501B08D2C5D00010000016D /* CommandPaletteView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

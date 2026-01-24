@@ -31,17 +31,36 @@ struct OptaAppApp: App {
     /// Selected game for detail view (loaded from cache when navigating)
     @State private var selectedGame: Game?
 
+    /// Command palette view model for Cmd+K quick actions
+    @State private var commandPalette = CommandPaletteViewModel()
+
     // MARK: - Body
 
     var body: some Scene {
         // Main Window
         WindowGroup(id: "main") {
-            mainContentView
-                .withColorTemperature()
-                .frame(minWidth: 800, minHeight: 600)
-                .preferredColorScheme(.dark)
-                .environment(\.optaCoreManager, coreManager)
-                .environment(\.agentModeManager, agentModeManager)
+            ZStack {
+                mainContentView
+
+                if commandPalette.isPresented {
+                    CommandPaletteView(viewModel: commandPalette)
+                        .transition(.opacity)
+                }
+            }
+            .withColorTemperature()
+            .frame(minWidth: 800, minHeight: 600)
+            .preferredColorScheme(.dark)
+            .environment(\.optaCoreManager, coreManager)
+            .environment(\.agentModeManager, agentModeManager)
+            .task {
+                commandPalette.registerDefaults(
+                    navigate: { page in coreManager.navigate(to: page) },
+                    post: { name in NotificationCenter.default.post(name: name, object: nil) },
+                    setQuality: { level in renderCoordinator.qualityLevel = level },
+                    togglePause: { renderCoordinator.isPaused.toggle() },
+                    toggleAgent: { agentModeManager.toggleShowHideWindow() }
+                )
+            }
         }
         .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 1280, height: 800)
@@ -77,6 +96,13 @@ struct OptaAppApp: App {
                         renderCoordinator.qualityLevel = .adaptive
                     }
                 }
+            }
+
+            CommandGroup(after: .textEditing) {
+                Button("Command Palette") {
+                    commandPalette.toggle()
+                }
+                .keyboardShortcut("k", modifiers: [.command])
             }
 
             // Custom keyboard shortcuts
