@@ -92,6 +92,12 @@
 		5501B0922C5D000100000172 /* ScoreDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B0912C5D000100000171 /* ScoreDetailView.swift */; };
 		5501B0942C5D000100000174 /* ScoreCategoryCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B0932C5D000100000173 /* ScoreCategoryCard.swift */; };
 		5501B0962C5D000100000176 /* ScoreHistoryChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B0952C5D000100000175 /* ScoreHistoryChart.swift */; };
+		/* Phase 95 additions - Gamification */
+		5501B09B2C5D000100000181 /* GamificationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B09A2C5D000100000180 /* GamificationModels.swift */; };
+		5501B09D2C5D000100000183 /* GamificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B09C2C5D000100000182 /* GamificationManager.swift */; };
+		5501B09F2C5D000100000185 /* GamificationDashboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B09E2C5D000100000184 /* GamificationDashboard.swift */; };
+		5501B0A12C5D000100000187 /* BadgeCollectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B0A02C5D000100000186 /* BadgeCollectionView.swift */; };
+		5501B0A32C5D000100000189 /* AchievementUnlockOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B0A22C5D000100000188 /* AchievementUnlockOverlay.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -185,6 +191,12 @@
 		5501B0912C5D000100000171 /* ScoreDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoreDetailView.swift; sourceTree = "<group>"; };
 		5501B0932C5D000100000173 /* ScoreCategoryCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoreCategoryCard.swift; sourceTree = "<group>"; };
 		5501B0952C5D000100000175 /* ScoreHistoryChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoreHistoryChart.swift; sourceTree = "<group>"; };
+		/* Phase 95 additions - Gamification */
+		5501B09A2C5D000100000180 /* GamificationModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GamificationModels.swift; sourceTree = "<group>"; };
+		5501B09C2C5D000100000182 /* GamificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GamificationManager.swift; sourceTree = "<group>"; };
+		5501B09E2C5D000100000184 /* GamificationDashboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GamificationDashboard.swift; sourceTree = "<group>"; };
+		5501B0A02C5D000100000186 /* BadgeCollectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BadgeCollectionView.swift; sourceTree = "<group>"; };
+		5501B0A22C5D000100000188 /* AchievementUnlockOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementUnlockOverlay.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -274,6 +286,7 @@
 				5501B0742C5D000100000150 /* ChatModels.swift */,
 				5501B08A2C5D00010000016A /* CommandPaletteModels.swift */,
 				5501B08F2C5D00010000016F /* ScoreModels.swift */,
+				5501B09A2C5D000100000180 /* GamificationModels.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -290,6 +303,7 @@
 				5501B0842C5D000100000164 /* LocalLLMService.swift */,
 				5501B0862C5D000100000166 /* SemanticRouter.swift */,
 				5501B0882C5D000100000168 /* ChatService.swift */,
+				5501B09C2C5D000100000182 /* GamificationManager.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -307,8 +321,19 @@
 				5501B0462C5D000100000126 /* Games */,
 				5501B08E2C5D00010000016E /* Score */,
 				5501B07C2C5D000100000158 /* AiChat */,
+				5501B0A42C5D00010000018A /* Gamification */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		5501B0A42C5D00010000018A /* Gamification */ = {
+			isa = PBXGroup;
+			children = (
+				5501B09E2C5D000100000184 /* GamificationDashboard.swift */,
+				5501B0A02C5D000100000186 /* BadgeCollectionView.swift */,
+				5501B0A22C5D000100000188 /* AchievementUnlockOverlay.swift */,
+			);
+			path = Gamification;
 			sourceTree = "<group>";
 		};
 		5501B0442C5D000100000124 /* Components */ = {
@@ -624,6 +649,11 @@
 				5501B0922C5D000100000172 /* ScoreDetailView.swift in Sources */,
 				5501B0942C5D000100000174 /* ScoreCategoryCard.swift in Sources */,
 				5501B0962C5D000100000176 /* ScoreHistoryChart.swift in Sources */,
+				5501B09B2C5D000100000181 /* GamificationModels.swift in Sources */,
+				5501B09D2C5D000100000183 /* GamificationManager.swift in Sources */,
+				5501B09F2C5D000100000185 /* GamificationDashboard.swift in Sources */,
+				5501B0A12C5D000100000187 /* BadgeCollectionView.swift in Sources */,
+				5501B0A32C5D000100000189 /* AchievementUnlockOverlay.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

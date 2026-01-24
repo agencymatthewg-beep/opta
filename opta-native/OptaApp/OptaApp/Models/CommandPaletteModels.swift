@@ -233,6 +233,15 @@ class CommandPaletteViewModel {
             shortcut: nil,
             action: { navigate(.score) }
         ))
+        commands.append(CommandAction(
+            id: "nav.gamification",
+            title: "View Achievements",
+            subtitle: "Badges, streaks & challenges",
+            icon: "trophy.fill",
+            category: .navigation,
+            shortcut: nil,
+            action: { navigate(.gamification) }
+        ))
 
         // Action commands
         commands.append(CommandAction(

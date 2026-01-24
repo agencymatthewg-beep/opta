@@ -46,6 +46,11 @@ struct OptaAppApp: App {
                     CommandPaletteView(viewModel: commandPalette)
                         .transition(.opacity)
                 }
+
+                if GamificationManager.shared.showUnlockOverlay {
+                    AchievementUnlockOverlay()
+                        .transition(.opacity)
+                }
             }
             .withColorTemperature()
             .frame(minWidth: 800, minHeight: 600)
@@ -60,6 +65,7 @@ struct OptaAppApp: App {
                     togglePause: { renderCoordinator.isPaused.toggle() },
                     toggleAgent: { agentModeManager.toggleShowHideWindow() }
                 )
+                GamificationManager.shared.recordDailyActivity()
             }
         }
         .windowStyle(.hiddenTitleBar)
@@ -213,6 +219,9 @@ struct OptaAppApp: App {
 
                 case .score:
                     ScoreDetailView(coreManager: coreManager)
+
+                case .gamification:
+                    GamificationDashboard(coreManager: coreManager)
                 }
             }
             .onChange(of: coreManager.viewModel.selectedGameId) { _, newGameId in

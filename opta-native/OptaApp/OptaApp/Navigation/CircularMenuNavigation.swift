@@ -190,7 +190,7 @@ final class CircularMenuNavigationManager: ObservableObject {
             currentDestination = .optimize
         case .aiChat:
             currentDestination = .aiChat
-        case .processes, .chess, .score:
+        case .processes, .chess, .score, .gamification:
             // No direct mapping, keep current
             break
         }
