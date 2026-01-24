@@ -70,6 +70,9 @@
 		5501B0672C5D00010000013C /* CircularMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B0662C5D00010000013C /* CircularMenuView.swift */; };
 		5501B0692C5D00010000013D /* CircularMenuNavigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B0682C5D00010000013D /* CircularMenuNavigation.swift */; };
 		5501B06B2C5D00010000013E /* CircularMenuAccessibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B06A2C5D00010000013E /* CircularMenuAccessibility.swift */; };
+		/* Phase 91 additions - Optimize Page & Process Management */
+		5501B0712C5D000100000141 /* OptimizeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B0702C5D000100000141 /* OptimizeView.swift */; };
+		5501B06F2C5D000100000140 /* ProcessesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B06E2C5D000100000140 /* ProcessesView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -142,6 +145,9 @@
 		5501B0662C5D00010000013C /* CircularMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CircularMenuView.swift; sourceTree = "<group>"; };
 		5501B0682C5D00010000013D /* CircularMenuNavigation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CircularMenuNavigation.swift; sourceTree = "<group>"; };
 		5501B06A2C5D00010000013E /* CircularMenuAccessibility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CircularMenuAccessibility.swift; sourceTree = "<group>"; };
+		/* Phase 91 additions - Optimize Page & Process Management */
+		5501B0702C5D000100000141 /* OptimizeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptimizeView.swift; sourceTree = "<group>"; };
+		5501B06E2C5D000100000140 /* ProcessesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessesView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -249,6 +255,8 @@
 				5501A0062C5D000100000004 /* MetalRenderView.swift */,
 				5501A0122C5D00010000000A /* SettingsView.swift */,
 				5501B00A2C5D000100000106 /* DashboardView.swift */,
+				5501B0702C5D000100000141 /* OptimizeView.swift */,
+				5501B06E2C5D000100000140 /* ProcessesView.swift */,
 				5501B0442C5D000100000124 /* Components */,
 				5501B0452C5D000100000125 /* Settings */,
 				5501B0462C5D000100000126 /* Games */,
@@ -531,6 +539,8 @@
 				5501B0672C5D00010000013C /* CircularMenuView.swift in Sources */,
 				5501B0692C5D00010000013D /* CircularMenuNavigation.swift in Sources */,
 				5501B06B2C5D00010000013E /* CircularMenuAccessibility.swift in Sources */,
+				5501B0712C5D000100000141 /* OptimizeView.swift in Sources */,
+				5501B06F2C5D000100000140 /* ProcessesView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
