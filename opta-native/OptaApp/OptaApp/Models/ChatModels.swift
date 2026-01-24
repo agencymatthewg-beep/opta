@@ -137,6 +137,8 @@ enum LLMModel: String, CaseIterable, Codable {
 /// This is a Swift-side ViewModel (not Crux-managed) because LLM interactions
 /// are platform-specific. The chat state persists for the app session and
 /// can be extended to support persistence in future phases.
+///
+/// Integrates with ChatService for real LLM routing and streaming.
 @Observable
 final class ChatViewModel {
 
@@ -157,47 +159,34 @@ final class ChatViewModel {
     /// Selected LLM model for routing
     var selectedModel: LLMModel = .auto
 
-    /// System prompt context for the conversation
-    var conversationContext: String = "You are Opta, an AI assistant specialized in system optimization. You help users understand and improve their Mac's performance, manage processes, optimize games, and maintain system health."
+    /// Telemetry data for system context (set by view on appear)
+    var telemetry: OptaViewModel?
+
+    /// Chat service for LLM orchestration
+    @ObservationIgnored private let chatService = ChatService.shared
 
     // MARK: - Methods
 
-    /// Send the current input as a user message and trigger generation
+    /// Send the current input as a user message and trigger LLM generation.
+    ///
+    /// Routes through ChatService which handles SemanticRouter dispatch
+    /// and streaming response assembly.
     func sendMessage() {
         let text = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty, !isGenerating else { return }
 
-        // Add user message
-        let userMessage = ChatMessage.user(text)
-        messages.append(userMessage)
-        inputText = ""
+        let systemContext = chatService.buildSystemPrompt(telemetry: telemetry)
 
-        // Start generation
-        isGenerating = true
-        streamingText = ""
-
-        // Create placeholder streaming assistant message
-        let assistantMessage = ChatMessage.assistant("", streaming: true)
-        messages.append(assistantMessage)
-
-        // Simulate a response (placeholder until LLM integration in future phase)
-        simulateResponse(for: text, messageId: assistantMessage.id)
+        Task { @MainActor in
+            await chatService.sendMessage(text, in: self, systemContext: systemContext)
+        }
     }
 
     /// Cancel the current generation
     func cancelGeneration() {
-        guard isGenerating else { return }
-        isGenerating = false
-
-        // Finalize the streaming message with current text
-        if let lastIndex = messages.indices.last,
-           messages[lastIndex].isStreaming {
-            messages[lastIndex].isStreaming = false
-            if messages[lastIndex].content.isEmpty {
-                messages[lastIndex].content = "[Generation cancelled]"
-            }
+        Task { @MainActor in
+            chatService.cancelGeneration(in: self)
         }
-        streamingText = ""
     }
 
     /// Clear all messages and reset conversation
@@ -206,76 +195,5 @@ final class ChatViewModel {
         streamingText = ""
         isGenerating = false
         inputText = ""
-    }
-
-    /// Update the system context prompt
-    func addSystemContext(_ context: String) {
-        conversationContext = context
-    }
-
-    // MARK: - Private
-
-    /// Simulate a streaming response (placeholder for real LLM integration)
-    private func simulateResponse(for query: String, messageId: UUID) {
-        let response = generatePlaceholderResponse(for: query)
-        let characters = Array(response)
-        var currentIndex = 0
-
-        // Stream characters with delay
-        Timer.scheduledTimer(withTimeInterval: 0.02, repeats: true) { [weak self] timer in
-            guard let self = self else {
-                timer.invalidate()
-                return
-            }
-
-            guard self.isGenerating, currentIndex < characters.count else {
-                timer.invalidate()
-                self.finalizeResponse(messageId: messageId, model: self.selectedModel)
-                return
-            }
-
-            currentIndex += 1
-            let text = String(characters.prefix(currentIndex))
-            self.streamingText = text
-
-            if let index = self.messages.firstIndex(where: { $0.id == messageId }) {
-                self.messages[index].content = text
-            }
-        }
-    }
-
-    /// Finalize a streaming response
-    private func finalizeResponse(messageId: UUID, model: LLMModel) {
-        isGenerating = false
-
-        if let index = messages.firstIndex(where: { $0.id == messageId }) {
-            messages[index].isStreaming = false
-            messages[index].metadata = MessageMetadata(
-                model: model == .local ? "local-mlx" : "claude-sonnet",
-                tokensUsed: Int.random(in: 50...200),
-                latencyMs: Int.random(in: 200...1500),
-                routedLocally: model == .local || (model == .auto && Bool.random())
-            )
-        }
-        streamingText = ""
-    }
-
-    /// Generate a placeholder response based on the query
-    private func generatePlaceholderResponse(for query: String) -> String {
-        let lowered = query.lowercased()
-
-        if lowered.contains("cpu") || lowered.contains("processor") {
-            return "Your CPU usage is currently within normal range. I can see a few background processes consuming more resources than expected. Would you like me to identify the top consumers and suggest optimizations?"
-        } else if lowered.contains("memory") || lowered.contains("ram") {
-            return "Looking at your memory usage, you have several applications holding onto cached memory that could be freed. The largest consumers are browser tabs and background services. I can help you reclaim some of that memory if you'd like."
-        } else if lowered.contains("fan") || lowered.contains("noise") || lowered.contains("thermal") || lowered.contains("heat") {
-            return "Your thermal state is currently nominal. To reduce fan noise, I can suggest reducing background workload, adjusting quality settings for resource-intensive apps, or enabling the low-power optimization profile."
-        } else if lowered.contains("game") || lowered.contains("fps") || lowered.contains("performance") {
-            return "For gaming performance, I recommend closing unnecessary background processes, ensuring your power settings are optimized for high performance, and checking that your GPU drivers are up to date. Would you like me to run a quick optimization pass?"
-        } else if lowered.contains("optimize") || lowered.contains("speed") || lowered.contains("faster") {
-            return "I can help optimize your system! Here's what I'd suggest:\n\n1. Close unused background processes\n2. Free up cached memory\n3. Adjust energy settings for performance\n4. Check for thermal throttling\n\nWould you like me to proceed with any of these?"
-        } else {
-            return "I can help you with system optimization, process management, game performance tuning, and thermal management. What specific aspect of your Mac's performance would you like to improve?"
-        }
     }
 }

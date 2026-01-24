@@ -46,6 +46,9 @@ struct AiChatView: View {
     /// Electric Violet accent
     private let electricViolet = Color(hex: "8B5CF6")
 
+    /// Whether API key settings sheet is shown
+    @State private var showApiKeySheet: Bool = false
+
     /// Suggestion chips for empty state
     private let suggestions = [
         "Optimize my CPU usage",
@@ -72,6 +75,13 @@ struct AiChatView: View {
             ChatInputView(viewModel: viewModel)
         }
         .background(Color(hex: "09090B"))
+        .onAppear {
+            // Pass telemetry context to view model
+            viewModel.telemetry = coreManager?.viewModel
+        }
+        .sheet(isPresented: $showApiKeySheet) {
+            ApiKeySettingsSheet(isPresented: $showApiKeySheet)
+        }
     }
 
     // MARK: - Header Section
@@ -108,6 +118,22 @@ struct AiChatView: View {
 
             // Model picker
             modelPicker
+
+            // Settings gear for API key
+            Button {
+                showApiKeySheet = true
+            } label: {
+                Image(systemName: "gearshape")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.white.opacity(0.5))
+                    .frame(width: 28, height: 28)
+                    .background(
+                        Circle()
+                            .fill(.white.opacity(0.06))
+                    )
+            }
+            .buttonStyle(.plain)
+            .help("AI Settings")
 
             // Clear button
             if !viewModel.messages.isEmpty {
@@ -290,6 +316,137 @@ struct AiChatView: View {
             .onChange(of: viewModel.streamingText) { _, _ in
                 proxy.scrollTo("bottom", anchor: .bottom)
             }
+        }
+    }
+}
+
+// MARK: - API Key Settings Sheet
+
+/// Sheet for configuring the Claude API key.
+///
+/// Simple text field with save/clear actions for cloud LLM access.
+struct ApiKeySettingsSheet: View {
+
+    @Binding var isPresented: Bool
+    @State private var apiKeyInput: String = ""
+    @State private var hasExistingKey: Bool = false
+
+    /// Obsidian base color
+    private let obsidianBase = Color(hex: "0A0A0F")
+
+    /// Electric Violet accent
+    private let electricViolet = Color(hex: "8B5CF6")
+
+    var body: some View {
+        VStack(spacing: 20) {
+            // Header
+            HStack {
+                Text("AI Settings")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(.white)
+
+                Spacer()
+
+                Button {
+                    isPresented = false
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.5))
+                        .frame(width: 24, height: 24)
+                        .background(Circle().fill(.white.opacity(0.08)))
+                }
+                .buttonStyle(.plain)
+            }
+
+            // API Key section
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Claude API Key")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.7))
+
+                Text("Required for Cloud mode. Get your key from console.anthropic.com")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.white.opacity(0.4))
+
+                SecureField("sk-ant-...", text: $apiKeyInput)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 13, design: .monospaced))
+                    .foregroundStyle(.white)
+                    .padding(10)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(obsidianBase)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(.white.opacity(0.1), lineWidth: 1)
+                            )
+                    )
+
+                // Status indicator
+                if hasExistingKey {
+                    HStack(spacing: 6) {
+                        Circle()
+                            .fill(.green.opacity(0.8))
+                            .frame(width: 6, height: 6)
+                        Text("API key configured")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.white.opacity(0.5))
+                    }
+                }
+            }
+
+            // Actions
+            HStack(spacing: 12) {
+                if hasExistingKey {
+                    Button {
+                        CloudLLMService.shared.clearApiKey()
+                        hasExistingKey = false
+                        apiKeyInput = ""
+                    } label: {
+                        Text("Clear Key")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(.red.opacity(0.8))
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(.red.opacity(0.1))
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                Spacer()
+
+                Button {
+                    if !apiKeyInput.isEmpty {
+                        CloudLLMService.shared.setApiKey(apiKeyInput)
+                        hasExistingKey = true
+                        apiKeyInput = ""
+                    }
+                    isPresented = false
+                } label: {
+                    Text("Save")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(electricViolet.opacity(0.6))
+                        )
+                }
+                .buttonStyle(.plain)
+            }
+
+            Spacer()
+        }
+        .padding(24)
+        .frame(width: 400, height: 280)
+        .background(Color(hex: "0C0C12"))
+        .onAppear {
+            hasExistingKey = CloudLLMService.shared.apiKey != nil
         }
     }
 }

@@ -78,6 +78,12 @@
 		5501B0772C5D000100000153 /* AiChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B0762C5D000100000152 /* AiChatView.swift */; };
 		5501B0792C5D000100000155 /* ChatMessageBubble.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B0782C5D000100000154 /* ChatMessageBubble.swift */; };
 		5501B07B2C5D000100000157 /* ChatInputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B07A2C5D000100000156 /* ChatInputView.swift */; };
+		/* Phase 92-02 additions - LLM Services */
+		5501B0812C5D000100000161 /* LLMService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B0802C5D000100000160 /* LLMService.swift */; };
+		5501B0832C5D000100000163 /* CloudLLMService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B0822C5D000100000162 /* CloudLLMService.swift */; };
+		5501B0852C5D000100000165 /* LocalLLMService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B0842C5D000100000164 /* LocalLLMService.swift */; };
+		5501B0872C5D000100000167 /* SemanticRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B0862C5D000100000166 /* SemanticRouter.swift */; };
+		5501B0892C5D000100000169 /* ChatService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5501B0882C5D000100000168 /* ChatService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -158,6 +164,12 @@
 		5501B0762C5D000100000152 /* AiChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AiChatView.swift; sourceTree = "<group>"; };
 		5501B0782C5D000100000154 /* ChatMessageBubble.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatMessageBubble.swift; sourceTree = "<group>"; };
 		5501B07A2C5D000100000156 /* ChatInputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatInputView.swift; sourceTree = "<group>"; };
+		/* Phase 92-02 additions - LLM Services */
+		5501B0802C5D000100000160 /* LLMService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMService.swift; sourceTree = "<group>"; };
+		5501B0822C5D000100000162 /* CloudLLMService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudLLMService.swift; sourceTree = "<group>"; };
+		5501B0842C5D000100000164 /* LocalLLMService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalLLMService.swift; sourceTree = "<group>"; };
+		5501B0862C5D000100000166 /* SemanticRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SemanticRouter.swift; sourceTree = "<group>"; };
+		5501B0882C5D000100000168 /* ChatService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -256,6 +268,11 @@
 				5501B0222C5D000100000112 /* NotificationService.swift */,
 				5501B0242C5D000100000113 /* AgentModeManager.swift */,
 				5501B0282C5D000100000115 /* ThermalStateManager.swift */,
+				5501B0802C5D000100000160 /* LLMService.swift */,
+				5501B0822C5D000100000162 /* CloudLLMService.swift */,
+				5501B0842C5D000100000164 /* LocalLLMService.swift */,
+				5501B0862C5D000100000166 /* SemanticRouter.swift */,
+				5501B0882C5D000100000168 /* ChatService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -567,6 +584,11 @@
 				5501B0772C5D000100000153 /* AiChatView.swift in Sources */,
 				5501B0792C5D000100000155 /* ChatMessageBubble.swift in Sources */,
 				5501B07B2C5D000100000157 /* ChatInputView.swift in Sources */,
+				5501B0812C5D000100000161 /* LLMService.swift in Sources */,
+				5501B0832C5D000100000163 /* CloudLLMService.swift in Sources */,
+				5501B0852C5D000100000165 /* LocalLLMService.swift in Sources */,
+				5501B0872C5D000100000167 /* SemanticRouter.swift in Sources */,
+				5501B0892C5D000100000169 /* ChatService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
