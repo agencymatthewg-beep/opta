@@ -200,6 +200,7 @@ enum PageViewModel: String, Codable {
     case chess = "Chess"
     case aiChat = "AiChat"
     case score = "Score"
+    case gamification = "Gamification"
 }
 
 // MARK: - Thermal State
