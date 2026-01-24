@@ -170,11 +170,7 @@ struct OptaAppApp: App {
                     }
 
                 case .optimize:
-                    placeholderView(
-                        title: "Optimize",
-                        subtitle: "Coming in Phase 73",
-                        icon: "bolt"
-                    )
+                    OptimizeView(coreManager: coreManager)
 
                 case .processes:
                     placeholderView(
