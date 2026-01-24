@@ -116,65 +116,65 @@ struct DashboardView: View {
 
     /// OptaRing centerpiece with score overlay
     private var ringSection: some View {
-        Button {
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                showCircularMenu.toggle()
-            }
-        } label: {
-            ZStack {
-                // The 3D OptaRing as visual centerpiece (may not render if Metal unavailable)
-                OptaRingView(
-                    coordinator: renderCoordinator,
-                    phase: coreManager.viewModel.ring.phase,
-                    intensity: coreManager.viewModel.ring.energy,
-                    explodeProgress: coreManager.viewModel.ring.progress,
-                    onTap: {}
-                )
-                .frame(width: ringSize, height: ringSize)
-                .allowsHitTesting(false)
-
-                // Visible ring border (fallback when Metal isn't rendering)
-                Circle()
-                    .stroke(colorTemp.violetColor.opacity(0.4), lineWidth: 2)
-                    .frame(width: ringSize - 20, height: ringSize - 20)
-                    .shadow(color: colorTemp.violetColor.opacity(0.2), radius: 8)
-
-                // Score display overlaid in the center of the ring
-                VStack(spacing: 4) {
-                    // Large score number
-                    Text("\(coreManager.viewModel.optaScore)")
-                        .font(.system(size: 56, weight: .bold, design: .rounded))
-                        .foregroundStyle(.white)
-                        .contentTransition(.numericText())
-
-                    // Grade badge with obsidian background + functional color border
-                    Text(coreManager.viewModel.scoreGrade)
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(gradeColor)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 4)
-                        .background(
-                            Capsule()
-                                .fill(obsidianBase)
-                        )
-                        .overlay(
-                            Capsule()
-                                .stroke(gradeColor.opacity(0.3), lineWidth: 1)
-                        )
-
-                    // Calculating indicator
-                    if coreManager.viewModel.scoreCalculating {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                            .scaleEffect(0.6)
-                            .padding(.top, 4)
+        ZStack {
+            // The 3D OptaRing behind everything (Metal NSView - can't be inside Button)
+            OptaRingView(
+                coordinator: renderCoordinator,
+                phase: coreManager.viewModel.ring.phase,
+                intensity: coreManager.viewModel.ring.energy,
+                explodeProgress: coreManager.viewModel.ring.progress,
+                onTap: {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                        showCircularMenu.toggle()
                     }
                 }
-            }
+            )
             .frame(width: ringSize, height: ringSize)
+
+            // Transparent button overlay on top for reliable click handling
+            Button {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                    showCircularMenu.toggle()
+                }
+            } label: {
+                Circle()
+                    .fill(Color.clear)
+                    .frame(width: ringSize - 20, height: ringSize - 20)
+            }
+            .buttonStyle(.plain)
+            .focusEffectDisabled()
+
+            // Score display (non-interactive)
+            VStack(spacing: 4) {
+                Text("\(coreManager.viewModel.optaScore)")
+                    .font(.system(size: 56, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+                    .contentTransition(.numericText())
+
+                Text(coreManager.viewModel.scoreGrade)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(gradeColor)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 4)
+                    .background(
+                        Capsule()
+                            .fill(obsidianBase)
+                    )
+                    .overlay(
+                        Capsule()
+                            .stroke(gradeColor.opacity(0.3), lineWidth: 1)
+                    )
+
+                if coreManager.viewModel.scoreCalculating {
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        .scaleEffect(0.6)
+                        .padding(.top, 4)
+                }
+            }
+            .allowsHitTesting(false)
         }
-        .buttonStyle(.plain)
-        .focusEffectDisabled()
+        .frame(width: ringSize, height: ringSize)
         .padding(.top, 16)
     }
 
