@@ -7,6 +7,28 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A100061001 /* GamificationDashboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100061000 /* GamificationDashboard.swift */; };
+		A100040001 /* GameSessionViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100040000 /* GameSessionViewModel.swift */; };
+		A100041001 /* OptimizationViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100041000 /* OptimizationViewModel.swift */; };
+		A100042001 /* ConflictViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100042000 /* ConflictViewModel.swift */; };
+		A100043001 /* ChessViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100043000 /* ChessViewModel.swift */; };
+		A100044001 /* ChessEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100044000 /* ChessEngine.swift */; };
+		A100045001 /* GameSessionDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100045000 /* GameSessionDetailView.swift */; };
+		A100046001 /* GameSessionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100046000 /* GameSessionView.swift */; };
+		A100047001 /* RadialMenuLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100047000 /* RadialMenuLayout.swift */; };
+		A100048001 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100048000 /* RootView.swift */; };
+		A100049001 /* OptimizationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100049000 /* OptimizationView.swift */; };
+		A100050001 /* OptaRingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100050000 /* OptaRingView.swift */; };
+		A100051001 /* ConflictView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100051000 /* ConflictView.swift */; };
+		A100052001 /* SatelliteButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100052000 /* SatelliteButton.swift */; };
+		A100053001 /* ChessBoardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100053000 /* ChessBoardView.swift */; };
+		A100054001 /* ParticleEffectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100054000 /* ParticleEffectView.swift */; };
+		A100055001 /* VisualEffectsOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100055000 /* VisualEffectsOverlay.swift */; };
+		A100056001 /* ConflictDetectionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100056000 /* ConflictDetectionService.swift */; };
+		A100057001 /* NetworkLatencyService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100057000 /* NetworkLatencyService.swift */; };
+		A100058001 /* PowerService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100058000 /* PowerService.swift */; };
+		A100059001 /* GameSessionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100059000 /* GameSessionService.swift */; };
+		A100060001 /* PatternLearningService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100060000 /* PatternLearningService.swift */; };
 		A1000001001 /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000 /* App.swift */; };
 		A1000002001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1000002000 /* Assets.xcassets */; };
 		A1000003001 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1000003000 /* Preview Assets.xcassets */; };
@@ -65,6 +87,28 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		A100061000 /* GamificationDashboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GamificationDashboard.swift; sourceTree = "<group>"; };
+		A100040000 /* GameSessionViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameSessionViewModel.swift; sourceTree = "<group>"; };
+		A100041000 /* OptimizationViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptimizationViewModel.swift; sourceTree = "<group>"; };
+		A100042000 /* ConflictViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConflictViewModel.swift; sourceTree = "<group>"; };
+		A100043000 /* ChessViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChessViewModel.swift; sourceTree = "<group>"; };
+		A100044000 /* ChessEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChessEngine.swift; sourceTree = "<group>"; };
+		A100045000 /* GameSessionDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameSessionDetailView.swift; sourceTree = "<group>"; };
+		A100046000 /* GameSessionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameSessionView.swift; sourceTree = "<group>"; };
+		A100047000 /* RadialMenuLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadialMenuLayout.swift; sourceTree = "<group>"; };
+		A100048000 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		A100049000 /* OptimizationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptimizationView.swift; sourceTree = "<group>"; };
+		A100050000 /* OptaRingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptaRingView.swift; sourceTree = "<group>"; };
+		A100051000 /* ConflictView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConflictView.swift; sourceTree = "<group>"; };
+		A100052000 /* SatelliteButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SatelliteButton.swift; sourceTree = "<group>"; };
+		A100053000 /* ChessBoardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChessBoardView.swift; sourceTree = "<group>"; };
+		A100054000 /* ParticleEffectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParticleEffectView.swift; sourceTree = "<group>"; };
+		A100055000 /* VisualEffectsOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisualEffectsOverlay.swift; sourceTree = "<group>"; };
+		A100056000 /* ConflictDetectionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConflictDetectionService.swift; sourceTree = "<group>"; };
+		A100057000 /* NetworkLatencyService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkLatencyService.swift; sourceTree = "<group>"; };
+		A100058000 /* PowerService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PowerService.swift; sourceTree = "<group>"; };
+		A100059000 /* GameSessionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameSessionService.swift; sourceTree = "<group>"; };
+		A100060000 /* PatternLearningService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatternLearningService.swift; sourceTree = "<group>"; };
 		A1000000000 /* OptaNative.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OptaNative.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A1000001000 /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
 		A1000002000 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -169,6 +213,7 @@
 				A1000024000 /* ViewModels */,
 				A1000025000 /* Services */,
 				A1000026000 /* Utilities */,
+				A1000023700 /* GameLogic */,
 				A1000002000 /* Assets.xcassets */,
 				A1000004000 /* OptaNative.entitlements */,
 				A1000004100 /* Info.plist */,
@@ -193,6 +238,9 @@
 				A1000023100 /* MainWindow */,
 				A1000023200 /* MenuBar */,
 				A1000023300 /* Components */,
+				A1000023400 /* GameSession */,
+				A1000023500 /* Chess */,
+				A1000023600 /* Effects */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -206,6 +254,8 @@
 				A100029000 /* ProcessListSection.swift */,
 				A100030000 /* ProcessRow.swift */,
 				A100031000 /* SettingsView.swift */,
+				A100048000 /* RootView.swift */,
+				A100047000 /* RadialMenuLayout.swift */,
 			);
 			path = MainWindow;
 			sourceTree = "<group>";
@@ -227,6 +277,10 @@
 				A1000005000 /* GlassBackground.swift */,
 				A100034000 /* ChromaticLoadingEffect.swift */,
 				A100035000 /* VisualEffects.swift */,
+				A100049000 /* OptimizationView.swift */,
+				A100050000 /* OptaRingView.swift */,
+				A100051000 /* ConflictView.swift */,
+				A100052000 /* SatelliteButton.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -236,6 +290,10 @@
 			children = (
 				A100021000 /* TelemetryViewModel.swift */,
 				A100028000 /* ProcessViewModel.swift */,
+				A100040000 /* GameSessionViewModel.swift */,
+				A100041000 /* OptimizationViewModel.swift */,
+				A100042000 /* ConflictViewModel.swift */,
+				A100043000 /* ChessViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -246,6 +304,11 @@
 				A100014000 /* HelperManager.swift */,
 				A100020000 /* TelemetryService.swift */,
 				A100022000 /* ProcessService.swift */,
+				A100056000 /* ConflictDetectionService.swift */,
+				A100057000 /* NetworkLatencyService.swift */,
+				A100058000 /* PowerService.swift */,
+				A100059000 /* GameSessionService.swift */,
+				A100060000 /* PatternLearningService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -283,6 +346,41 @@
 				A1000008200 /* launchd.plist */,
 			);
 			path = OptaNative/Helper;
+			sourceTree = "<group>";
+		};
+		A1000023400 /* GameSession */ = {
+			isa = PBXGroup;
+			children = (
+				A100046000 /* GameSessionView.swift */,
+				A100045000 /* GameSessionDetailView.swift */,
+				A100061000 /* GamificationDashboard.swift */,
+			);
+			path = GameSession;
+			sourceTree = "<group>";
+		};
+		A1000023500 /* Chess */ = {
+			isa = PBXGroup;
+			children = (
+				A100053000 /* ChessBoardView.swift */,
+			);
+			path = Chess;
+			sourceTree = "<group>";
+		};
+		A1000023600 /* Effects */ = {
+			isa = PBXGroup;
+			children = (
+				A100054000 /* ParticleEffectView.swift */,
+				A100055000 /* VisualEffectsOverlay.swift */,
+			);
+			path = Effects;
+			sourceTree = "<group>";
+		};
+		A1000023700 /* GameLogic */ = {
+			isa = PBXGroup;
+			children = (
+				A100044000 /* ChessEngine.swift */,
+			);
+			path = GameLogic;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -407,6 +505,28 @@
 				A100033001 /* SystemOrbitalView.swift in Sources */,
 				A100034001 /* ChromaticLoadingEffect.swift in Sources */,
 				A100035001 /* VisualEffects.swift in Sources */,
+				A100061001 /* GamificationDashboard.swift in Sources */,
+				A100040001 /* GameSessionViewModel.swift in Sources */,
+				A100041001 /* OptimizationViewModel.swift in Sources */,
+				A100042001 /* ConflictViewModel.swift in Sources */,
+				A100043001 /* ChessViewModel.swift in Sources */,
+				A100044001 /* ChessEngine.swift in Sources */,
+				A100045001 /* GameSessionDetailView.swift in Sources */,
+				A100046001 /* GameSessionView.swift in Sources */,
+				A100047001 /* RadialMenuLayout.swift in Sources */,
+				A100048001 /* RootView.swift in Sources */,
+				A100049001 /* OptimizationView.swift in Sources */,
+				A100050001 /* OptaRingView.swift in Sources */,
+				A100051001 /* ConflictView.swift in Sources */,
+				A100052001 /* SatelliteButton.swift in Sources */,
+				A100053001 /* ChessBoardView.swift in Sources */,
+				A100054001 /* ParticleEffectView.swift in Sources */,
+				A100055001 /* VisualEffectsOverlay.swift in Sources */,
+				A100056001 /* ConflictDetectionService.swift in Sources */,
+				A100057001 /* NetworkLatencyService.swift in Sources */,
+				A100058001 /* PowerService.swift in Sources */,
+				A100059001 /* GameSessionService.swift in Sources */,
+				A100060001 /* PatternLearningService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

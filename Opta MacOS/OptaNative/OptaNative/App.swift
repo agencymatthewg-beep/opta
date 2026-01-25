@@ -22,7 +22,7 @@ struct OptaNativeApp: App {
     var body: some Scene {
         // Main Window
         WindowGroup {
-            MainWindowView()
+            RootView()
                 .environment(telemetry)
         }
         .windowStyle(.hiddenTitleBar)
