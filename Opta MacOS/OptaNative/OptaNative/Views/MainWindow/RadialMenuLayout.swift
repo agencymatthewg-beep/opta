@@ -45,8 +45,8 @@ struct RadialMenuLayout: View {
                 VStack(spacing: 8) {
                     // Premium 3D Text
                     Text(hoveredItem?.rawValue ?? "OPTA")
-                        .font(.opta(size: 46, weight: .heavy)) // Thicker font for 3D effect
-                        .tracking(1) // Modern spacing
+                        .font(.system(size: 44, weight: .bold, design: .default)) // Sharp, Professional
+                        .tracking(6) // Wide spacing = Futuristic
                         .foregroundStyle(
                             LinearGradient(
                                 colors: [
