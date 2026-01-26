@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-26)
 
 **Core value:** Ecosystem continuity — One click access to see what's running, launch what you need, and control everything from a single, always-available menu bar icon.
-**Current focus:** Phase 4 — App Controls
+**Current focus:** Phase 5 — Preferences
 
 ## Current Position
 
-Phase: 4 of 6 (App Controls) — IN PROGRESS
-Plan: 0/1 complete
-Status: Plan created, ready for execution
-Last activity: 2026-01-26 — Phase 4 plan created
+Phase: 5 of 6 (Preferences) — NOT STARTED
+Plan: 0/TBD complete
+Status: Ready to plan Phase 5
+Last activity: 2026-01-26 — Phase 4 complete
 
-Progress: █████░░░░░ 50%
+Progress: ██████░░░░ 67%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 3
+- Total plans completed: 4
 - Average duration: ~15 min
-- Total execution time: 0.75 hours
+- Total execution time: 1.0 hours
 
 **By Phase:**
 
@@ -30,9 +30,10 @@ Progress: █████░░░░░ 50%
 | 1. Foundation | 1/1 | ~15 min | 15 min |
 | 2. App Detection | 1/1 | ~15 min | 15 min |
 | 3. Menu UI | 1/1 | ~15 min | 15 min |
+| 4. App Controls | 1/1 | ~15 min | 15 min |
 
 **Recent Trend:**
-- Last 5 plans: 15 min, 15 min, 15 min
+- Last 5 plans: 15 min, 15 min, 15 min, 15 min
 - Trend: Consistent execution velocity
 
 ## Accumulated Context
@@ -48,6 +49,8 @@ Recent decisions affecting current work:
 - Phase 2: Combine publishers for SwiftUI reactivity
 - Phase 3: Filled vs outline icon to indicate running state
 - Phase 3: 280x300 popover size for compact, focused UI
+- Phase 4: 0.5s delay in restart() for clean termination before relaunch
+- Phase 4: Control buttons appear on hover only (keep UI clean)
 
 ### Deferred Issues
 
@@ -64,5 +67,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-26
-Stopped at: Phase 3 Menu UI complete, ready for Phase 4 App Controls
+Stopped at: Phase 4 App Controls complete, ready for Phase 5 Preferences
 Resume file: None
