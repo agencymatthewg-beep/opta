@@ -51,7 +51,7 @@ Key deliverables:
 **Goal**: Syncthing-style menu with app list and status indicators
 **Depends on**: Phase 2
 **Research**: Unlikely (SwiftUI patterns from Phase 1)
-**Plans**: TBD
+**Plans**: 1
 
 Key deliverables:
 - Menu bar icon with color-coded status (green/yellow/red)
