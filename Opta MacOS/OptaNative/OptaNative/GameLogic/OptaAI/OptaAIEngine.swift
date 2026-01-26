@@ -14,6 +14,17 @@ import Foundation
 
 actor OptaAIEngine {
 
+    // MARK: - Constants
+
+    /// Maximum moves to track in opening book (20 full moves = 40 half-moves)
+    private static let maxOpeningBookMoves = 40
+
+    /// Default AI thinking time in milliseconds
+    private static let defaultFallbackTimeMs = 1500
+
+    /// Default search depth for tactical fallback
+    private static let defaultSearchDepth = 4
+
     // MARK: - Configuration
 
     /// Opening book built from user's games
@@ -25,7 +36,7 @@ actor OptaAIEngine {
     /// User's playing color in their games
     private let username: String
 
-    /// Fallback AI for positions not in opening book
+    /// Fallback AI for positions not in opening book (injectable for testing)
     private let fallbackAI: ChessAI
 
     /// Whether the opening book has been loaded
@@ -57,9 +68,13 @@ actor OptaAIEngine {
 
     // MARK: - Initialization
 
-    init(username: String = "Serppy") {
+    /// Initialize OptaAI with configurable username and fallback AI
+    /// - Parameters:
+    ///   - username: The chess.com/lichess username to learn from
+    ///   - fallbackAI: Optional custom AI instance for dependency injection (defaults to ChessAI)
+    init(username: String, fallbackAI: ChessAI? = nil) {
         self.username = username
-        self.fallbackAI = ChessAI(maxTimeMs: 1500)
+        self.fallbackAI = fallbackAI ?? ChessAI(maxTimeMs: Self.defaultFallbackTimeMs)
     }
 
     // MARK: - Public API
@@ -69,7 +84,9 @@ actor OptaAIEngine {
         let games = parsePGN(pgnContent)
         buildOpeningBook(from: games)
         isLoaded = true
+        #if DEBUG
         print("OptaAI: Loaded \(games.count) games, \(openingBook.count) positions")
+        #endif
     }
 
     /// Get the best move in user's style
@@ -81,17 +98,21 @@ actor OptaAIEngine {
         if let bookMoves = openingBook[positionKey], !bookMoves.isEmpty {
             // Select move based on user's historical preferences
             if let selectedMove = selectMoveFromBook(bookMoves, state: state) {
+                #if DEBUG
                 print("OptaAI: Playing book move")
+                #endif
                 return selectedMove
             }
         }
 
         // Fall back to tactical AI for unknown positions
+        #if DEBUG
         print("OptaAI: Position not in book, using tactical engine")
+        #endif
         return await fallbackAI.calculateBestMove(
             state: state,
             color: color,
-            targetDepth: 4
+            targetDepth: Self.defaultSearchDepth
         )
     }
 
@@ -215,8 +236,8 @@ actor OptaAIEngine {
                     }
                 }
 
-                // Only track first 20 moves for opening book
-                if moveIndex >= 40 { break }
+                // Only track first 20 moves for opening book (40 half-moves)
+                if moveIndex >= Self.maxOpeningBookMoves { break }
             }
         }
     }
@@ -234,7 +255,7 @@ actor OptaAIEngine {
 
         // Check if move already exists
         if let existingIndex = moves.firstIndex(where: { $0.move == move }) {
-            var existing = moves[existingIndex]
+            let existing = moves[existingIndex]
             let wasWin = (result == .whiteWins && userIsWhite) || (result == .blackWins && !userIsWhite)
             let newCount = existing.count + 1
             let newWinRate = (existing.winRate * Double(existing.count) + (wasWin ? 1.0 : 0.0)) / Double(newCount)
@@ -459,88 +480,5 @@ actor OptaAIEngine {
         }
     }
 
-    private func canPieceReach(from: Position, to: Position, piece: ChessPiece, state: ChessState) -> Bool {
-        // Can't move to the same square
-        guard from != to else { return false }
-
-        // Validate positions are on board
-        guard from.rank >= 0 && from.rank < 8 && from.file >= 0 && from.file < 8,
-              to.rank >= 0 && to.rank < 8 && to.file >= 0 && to.file < 8 else {
-            return false
-        }
-
-        let dr = to.rank - from.rank
-        let df = to.file - from.file
-
-        switch piece.type {
-        case .pawn:
-            let direction = piece.color == .white ? 1 : -1
-            let startRank = piece.color == .white ? 1 : 6
-
-            // Capture
-            if abs(df) == 1 && dr == direction {
-                return true
-            }
-            // Forward move
-            if df == 0 && dr == direction {
-                return state.board.piece(at: to) == nil
-            }
-            // Double move from start
-            if df == 0 && dr == direction * 2 && from.rank == startRank {
-                let intermediate = Position(rank: from.rank + direction, file: from.file)
-                return state.board.piece(at: intermediate) == nil && state.board.piece(at: to) == nil
-            }
-            return false
-
-        case .knight:
-            return (abs(dr) == 2 && abs(df) == 1) || (abs(dr) == 1 && abs(df) == 2)
-
-        case .bishop:
-            if abs(dr) != abs(df) || dr == 0 { return false }
-            return isPathClear(from: from, to: to, state: state)
-
-        case .rook:
-            if dr != 0 && df != 0 { return false }
-            return isPathClear(from: from, to: to, state: state)
-
-        case .queen:
-            if dr != 0 && df != 0 && abs(dr) != abs(df) { return false }
-            return isPathClear(from: from, to: to, state: state)
-
-        case .king:
-            return abs(dr) <= 1 && abs(df) <= 1
-        }
-    }
-
-    private func isPathClear(from: Position, to: Position, state: ChessState) -> Bool {
-        let dr = to.rank - from.rank
-        let df = to.file - from.file
-
-        // Same square - no path to check
-        guard dr != 0 || df != 0 else { return true }
-
-        let steps = max(abs(dr), abs(df))
-
-        // Guard against invalid moves (steps should be >= 1)
-        guard steps >= 1 else { return true }
-
-        let stepR = dr == 0 ? 0 : dr / abs(dr)
-        let stepF = df == 0 ? 0 : df / abs(df)
-
-        for i in 1..<steps {
-            let newRank = from.rank + stepR * i
-            let newFile = from.file + stepF * i
-
-            // Validate bounds before creating Position
-            guard newRank >= 0 && newRank < 8 && newFile >= 0 && newFile < 8 else {
-                return false // Invalid path - treat as blocked
-            }
-
-            let checkPos = Position(rank: newRank, file: newFile)
-            if state.board.piece(at: checkPos) != nil {
-                return false
-            }
-        }
-        return true
-    }
+    // Note: canPieceReach() and isPathClear() are now shared functions in ChessEngine.swift
 }
