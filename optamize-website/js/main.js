@@ -471,14 +471,72 @@ function setupNewsletter() {
     document.querySelector('.newsletter-form')?.addEventListener('submit', (e) => {
         e.preventDefault();
         const form = e.target;
+        const input = form.querySelector('input[type="email"]');
+        const email = input?.value?.trim() || '';
+
+        // Email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!email || !emailRegex.test(email)) {
+            // Show error state
+            input.style.borderColor = 'var(--neon-red)';
+            input.style.animation = 'shake 0.3s ease';
+            setTimeout(() => {
+                input.style.borderColor = '';
+                input.style.animation = '';
+            }, 2000);
+            return;
+        }
+
+        // Store email locally (for demo - replace with actual API call)
+        const subscribers = JSON.parse(localStorage.getItem('opta-subscribers') || '[]');
+        if (!subscribers.includes(email)) {
+            subscribers.push(email);
+            localStorage.setItem('opta-subscribers', JSON.stringify(subscribers));
+        }
+
+        // Show success
         form.innerHTML = `
             <div style="text-align: center; padding: 1rem;">
                 <span style="font-size: 2rem;">✨</span>
                 <p style="color: var(--text-primary); margin-top: 0.5rem;">Thanks! You're on the list.</p>
+                <p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 0.25rem;">${email}</p>
             </div>
         `;
     });
 }
+
+// Download notification (until actual download is available)
+function showDownloadNotification(appName) {
+    // Remove existing notification if any
+    const existing = document.querySelector('.download-notification');
+    if (existing) existing.remove();
+
+    const notification = document.createElement('div');
+    notification.className = 'download-notification';
+    notification.innerHTML = `
+        <div class="notification-content">
+            <span class="notification-icon">🚀</span>
+            <div class="notification-text">
+                <strong>${appName}</strong>
+                <p>Coming soon to the Mac App Store! Join the waitlist below.</p>
+            </div>
+            <button class="notification-close" onclick="this.parentElement.parentElement.remove()">×</button>
+        </div>
+    `;
+    document.body.appendChild(notification);
+
+    // Auto-remove after 5 seconds
+    setTimeout(() => notification.remove(), 5000);
+
+    // Scroll to newsletter section if on main page
+    const newsletter = document.querySelector('.newsletter, [data-layer="3"]');
+    if (newsletter) {
+        newsletter.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+}
+
+// Make function globally available
+window.showDownloadNotification = showDownloadNotification;
 
 // ============================================
 // INJECT PREMIUM STYLES
@@ -486,6 +544,69 @@ function setupNewsletter() {
 
 const premiumStyles = document.createElement('style');
 premiumStyles.textContent = `
+    /* Shake animation for form validation */
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        20%, 60% { transform: translateX(-5px); }
+        40%, 80% { transform: translateX(5px); }
+    }
+
+    /* Download notification */
+    .download-notification {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 10000;
+        animation: slideInRight 0.3s ease;
+    }
+
+    .download-notification .notification-content {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px 20px;
+        background: var(--surface, #18181b);
+        border: 1px solid var(--glass-border, rgba(255,255,255,0.08));
+        border-radius: 12px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+        max-width: 360px;
+    }
+
+    .download-notification .notification-icon {
+        font-size: 1.5rem;
+    }
+
+    .download-notification .notification-text strong {
+        display: block;
+        color: var(--text-primary, #fafafa);
+        font-size: 0.9rem;
+    }
+
+    .download-notification .notification-text p {
+        color: var(--text-secondary, #a1a1aa);
+        font-size: 0.8rem;
+        margin: 4px 0 0;
+    }
+
+    .download-notification .notification-close {
+        background: none;
+        border: none;
+        color: var(--text-muted, #52525b);
+        font-size: 1.25rem;
+        cursor: pointer;
+        padding: 0;
+        line-height: 1;
+    }
+
+    .download-notification .notification-close:hover {
+        color: var(--text-primary, #fafafa);
+    }
+
+    @keyframes slideInRight {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+
     /* Cinematic Preloader */
     .cinematic-preloader {
         position: fixed;
@@ -839,6 +960,7 @@ document.addEventListener('DOMContentLoaded', () => {
         initStaggeredAnimations();
         initMagneticButtons();
         init3DTilt();
+        initSpatialOrbs();
     }, { once: true });
 
     // Fallback if intro was skipped
@@ -846,6 +968,9 @@ document.addEventListener('DOMContentLoaded', () => {
         initStaggeredAnimations();
         initMagneticButtons();
         init3DTilt();
+        if (!document.querySelector('.spatial-orbs-container')) {
+            initSpatialOrbs();
+        }
     }, 3500);
 });
 

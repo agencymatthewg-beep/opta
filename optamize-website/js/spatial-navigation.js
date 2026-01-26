@@ -113,6 +113,9 @@ class SpatialNavigation {
     }
 
     createA11yAnnouncer() {
+        // Check if announcer already exists in HTML
+        if (document.getElementById('a11y-announce')) return;
+
         const announcer = document.createElement('div');
         announcer.id = 'a11y-announce';
         announcer.setAttribute('aria-live', 'polite');
@@ -544,6 +547,9 @@ class SpatialNavigation {
                 translateX(${this.currentX}px)
                 rotateY(${this.currentRotationY}deg)
             `;
+
+            // Seamless looping for ambient elements (if needed later)
+            // Currently relies on long tracks, but can add infinite scroll logic here
         }
 
         requestAnimationFrame(this.render);
