@@ -1,20 +1,29 @@
 #!/bin/bash
-# Double-click this file to stop all Opta processes
-# =================================================
 
-cd "$(dirname "$0")"
+# Stop Opta Mini
+# Gracefully terminates the running app.
 
-echo "🛑 Stopping Opta..."
+APP_NAME="OptaNative"
+
+echo "🛑 Stopping Opta Mini..."
 echo ""
 
-if command -v just &> /dev/null; then
-    just kill
+if pgrep -x "$APP_NAME" > /dev/null; then
+    # Try graceful quit first
+    osascript -e "tell application \"$APP_NAME\" to quit" 2>/dev/null
+    sleep 1
+
+    # Force kill if still running
+    if pgrep -x "$APP_NAME" > /dev/null; then
+        pkill -x "$APP_NAME"
+        echo "✓ Force stopped $APP_NAME"
+    else
+        echo "✓ $APP_NAME quit gracefully"
+    fi
 else
-    pkill -f 'opta|tauri|vite' 2>/dev/null || true
+    echo "ℹ️  Opta Mini is not running"
 fi
 
-echo ""
-echo "✓ Opta stopped"
 echo ""
 echo "Press any key to close..."
 read -n 1
