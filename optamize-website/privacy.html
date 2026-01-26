@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy | Optamize</title>
+    <meta name="description" content="Privacy policy for Opta apps. Your data stays on your device.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <style>
+        .page-content {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 8rem 2rem 4rem;
+        }
+
+        .page-content h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #fff, var(--primary-glow));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .page-content .last-updated {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            margin-bottom: 3rem;
+        }
+
+        .page-content h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-top: 2.5rem;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .page-content p, .page-content li {
+            color: var(--text-secondary);
+            line-height: 1.8;
+            margin-bottom: 1rem;
+        }
+
+        .page-content ul {
+            padding-left: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .page-content li {
+            margin-bottom: 0.5rem;
+        }
+
+        .highlight-box {
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .highlight-box p {
+            margin-bottom: 0;
+        }
+
+        .back-link {
+            position: fixed;
+            top: 1.5rem;
+            left: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.875rem;
+            padding: 0.5rem 1rem;
+            background: var(--glass-bg);
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            backdrop-filter: blur(20px);
+            transition: all 0.2s ease;
+            z-index: 100;
+        }
+
+        .back-link:hover {
+            color: var(--text-primary);
+            border-color: var(--primary);
+        }
+    </style>
+</head>
+<body>
+    <a href="/" class="back-link">
+        <span>&larr;</span>
+        <span>Home</span>
+    </a>
+
+    <main class="page-content">
+        <h1>Privacy Policy</h1>
+        <p class="last-updated">Last updated: January 2025</p>
+
+        <div class="highlight-box">
+            <p><strong>TL;DR:</strong> Your data stays on your device. We don't collect, store, or sell your personal information. All AI processing happens locally.</p>
+        </div>
+
+        <h2>Our Philosophy</h2>
+        <p>At Optamize, we believe privacy is a fundamental right. Our apps are designed from the ground up to respect your privacy by processing everything locally on your device.</p>
+
+        <h2>Data Collection</h2>
+        <p>We collect <strong>zero</strong> personal data. Specifically:</p>
+        <ul>
+            <li>No user accounts or registration required</li>
+            <li>No analytics or tracking</li>
+            <li>No crash reporting that includes personal data</li>
+            <li>No advertising or ad tracking</li>
+            <li>No data sharing with third parties</li>
+        </ul>
+
+        <h2>Local Processing</h2>
+        <p>All Opta apps process data entirely on your device:</p>
+        <ul>
+            <li><strong>Opta MacOS:</strong> System telemetry and optimization happen locally. Your performance data never leaves your Mac.</li>
+            <li><strong>Opta Scan:</strong> Document scanning and OCR use on-device AI. Your scanned documents are stored only on your device and iCloud (if you enable it).</li>
+            <li><strong>Opta LM:</strong> Calendar and task data sync through your own accounts (Google, Apple, Todoist). We never see or store your data.</li>
+        </ul>
+
+        <h2>Third-Party Services</h2>
+        <p>Some apps integrate with third-party services at your request:</p>
+        <ul>
+            <li><strong>iCloud:</strong> If you enable iCloud sync, your data syncs through Apple's secure infrastructure.</li>
+            <li><strong>Google Calendar:</strong> Direct API connection using OAuth. We never store your Google credentials.</li>
+            <li><strong>Todoist:</strong> Direct API connection. Your tasks stay between you and Todoist.</li>
+        </ul>
+
+        <h2>Data Storage</h2>
+        <p>All app data is stored locally on your device using secure system APIs:</p>
+        <ul>
+            <li>macOS: Sandboxed app container with Keychain for sensitive data</li>
+            <li>iOS: App sandbox with Keychain Services</li>
+        </ul>
+
+        <h2>Your Rights</h2>
+        <p>Since we don't collect your data, you have complete control:</p>
+        <ul>
+            <li>Delete the app to remove all data</li>
+            <li>Export your data anytime from within the app</li>
+            <li>Revoke third-party service access from your account settings</li>
+        </ul>
+
+        <h2>Contact</h2>
+        <p>Questions about privacy? Reach out at <a href="mailto:privacy@optamize.biz" style="color: var(--primary);">privacy@optamize.biz</a></p>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-brand">
+                <span class="footer-logo">◈</span>
+                <span>Optamize</span>
+            </div>
+            <div class="footer-links">
+                <a href="/privacy.html">Privacy</a>
+                <a href="/support.html">Support</a>
+                <a href="/changelog.html">Changelog</a>
+            </div>
+            <div class="footer-copyright">
+                © 2025 Optamize. The pursuit of optimal.
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/main.js"></script>
+</body>
+</html>
