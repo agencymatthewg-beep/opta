@@ -100,6 +100,13 @@ final class ProcessMonitor: ObservableObject {
         }
     }
 
+    /// Launch all stopped Opta apps
+    func launchAll() {
+        for app in OptaApp.allApps where !isRunning(app) {
+            launch(app)
+        }
+    }
+
     private func subscribeToNotifications() {
         let workspace = NSWorkspace.shared
         let nc = workspace.notificationCenter
