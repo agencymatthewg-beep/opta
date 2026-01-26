@@ -8,8 +8,6 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
 
 APP_NAME="OptaNative"
-BUILD_DIR="$SCRIPT_DIR/build"
-APP_PATH="$BUILD_DIR/Build/Products/Debug/$APP_NAME.app"
 
 clear
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -65,12 +63,10 @@ echo "🛠️  Building Opta Mini..."
 echo "   This may take a moment..."
 echo ""
 
-BUILD_LOG=$(mktemp)
 xcodebuild -project "$SCRIPT_DIR/OptaNative.xcodeproj" \
            -scheme "OptaNative" \
            -configuration Debug \
-           -derivedDataPath "$BUILD_DIR" \
-           build 2>&1 | tee "$BUILD_LOG"
+           build 2>&1 | tee /tmp/opta_build.log
 
 BUILD_RESULT=${PIPESTATUS[0]}
 
@@ -86,22 +82,20 @@ if [ $BUILD_RESULT -ne 0 ]; then
     echo "  • Run: xcode-select --install"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
-    rm -f "$BUILD_LOG"
     echo "Press any key to close..."
     read -n 1 -s
     exit 1
 fi
 
-rm -f "$BUILD_LOG"
 echo "✅ Build successful"
 echo ""
 
-# Verify app exists
-if [ ! -d "$APP_PATH" ]; then
+# Find the built app
+APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData -name "$APP_NAME.app" -path "*/Debug/*" -type d 2>/dev/null | head -1)
+
+if [ -z "$APP_PATH" ]; then
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo "  ❌ ERROR - Built app not found"
-    echo ""
-    echo "  Expected at: $APP_PATH"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
     echo "Press any key to close..."

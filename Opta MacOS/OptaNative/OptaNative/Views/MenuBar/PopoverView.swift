@@ -158,7 +158,7 @@ struct PopoverView: View {
                 }
             }
         }
-        .frame(width: 320, height: showingHolographic ? 520 : 380)
+        .frame(width: 320, height: showingHolographic ? 620 : 480)
         .onAppear {
             telemetry.startMonitoring()
         }
@@ -377,6 +377,7 @@ struct CircularGauge: View {
 struct QuickActionsSection: View {
     let systemState: SystemState
     @State private var isOptimizing: Bool = false
+    @AppStorage("launchAtLogin") private var launchAtLogin: Bool = false
 
     var body: some View {
         VStack(spacing: 12) {
@@ -401,10 +402,41 @@ struct QuickActionsSection: View {
                     openSettings()
                 }
 
+                SmallActionButton(icon: "arrow.clockwise", label: "Restart") {
+                    restartApp()
+                }
+
                 SmallActionButton(icon: "power", label: "Quit") {
                     quitApp()
                 }
             }
+
+            Divider()
+                .background(Color.optaBorder.opacity(0.3))
+
+            // Launch at Login toggle
+            HStack {
+                Image(systemName: launchAtLogin ? "checkmark.circle.fill" : "circle")
+                    .foregroundColor(launchAtLogin ? Color.optaSuccess : Color.optaMutedForeground)
+                    .font(.system(size: 14))
+
+                Text("Launch at Login")
+                    .font(.system(size: 12))
+                    .foregroundColor(Color.optaForeground)
+
+                Spacer()
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+            .background(Color.optaMuted.opacity(0.3))
+            .cornerRadius(6)
+            .onTapGesture {
+                launchAtLogin.toggle()
+                AppLaunchManager.shared.setLaunchAtLogin(launchAtLogin)
+            }
+
+            // Opta Hub - Launch companion apps
+            OptaHubSection()
         }
     }
 
@@ -428,8 +460,271 @@ struct QuickActionsSection: View {
         openDashboard()
     }
 
+    private func restartApp() {
+        AppLaunchManager.shared.restartApp()
+    }
+
     private func quitApp() {
         NSApp.terminate(nil)
+    }
+}
+
+// MARK: - Opta Hub Section
+
+struct OptaHubSection: View {
+    @State private var lifeManagerStatus: AppStatus = .unknown
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Image(systemName: "square.grid.2x2")
+                    .font(.system(size: 12))
+                    .foregroundColor(Color.optaPrimary)
+
+                Text("Opta Hub")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(Color.optaMutedForeground)
+                    .textCase(.uppercase)
+
+                Spacer()
+            }
+
+            // Opta Life Manager
+            CompanionAppRow(
+                name: "Life Manager",
+                icon: "calendar.badge.clock",
+                status: lifeManagerStatus,
+                onLaunch: { launchLifeManager() },
+                onOpen: { openLifeManagerInBrowser() }
+            )
+        }
+        .padding(10)
+        .background(Color.optaMuted.opacity(0.2))
+        .cornerRadius(8)
+        .onAppear {
+            checkLifeManagerStatus()
+        }
+    }
+
+    private func checkLifeManagerStatus() {
+        Task {
+            lifeManagerStatus = await AppLaunchManager.shared.checkLifeManagerStatus()
+        }
+    }
+
+    private func launchLifeManager() {
+        Task {
+            lifeManagerStatus = .launching
+            let success = await AppLaunchManager.shared.launchLifeManager()
+            lifeManagerStatus = success ? .running : .stopped
+        }
+    }
+
+    private func openLifeManagerInBrowser() {
+        if let url = URL(string: "http://localhost:3000") {
+            NSWorkspace.shared.open(url)
+        }
+    }
+}
+
+// MARK: - Companion App Row
+
+enum AppStatus {
+    case unknown
+    case running
+    case stopped
+    case launching
+}
+
+struct CompanionAppRow: View {
+    let name: String
+    let icon: String
+    let status: AppStatus
+    let onLaunch: () -> Void
+    let onOpen: () -> Void
+
+    @State private var isHovered = false
+
+    private var statusColor: Color {
+        switch status {
+        case .running: return Color.optaSuccess
+        case .stopped: return Color.optaDanger
+        case .launching: return Color.optaWarning
+        case .unknown: return Color.optaMutedForeground
+        }
+    }
+
+    private var statusText: String {
+        switch status {
+        case .running: return "Running"
+        case .stopped: return "Stopped"
+        case .launching: return "Starting..."
+        case .unknown: return "Checking..."
+        }
+    }
+
+    var body: some View {
+        HStack(spacing: 10) {
+            // Icon
+            Image(systemName: icon)
+                .font(.system(size: 16))
+                .foregroundColor(Color.optaPrimary)
+                .frame(width: 24)
+
+            // Name & Status
+            VStack(alignment: .leading, spacing: 2) {
+                Text(name)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(Color.optaForeground)
+
+                HStack(spacing: 4) {
+                    Circle()
+                        .fill(statusColor)
+                        .frame(width: 6, height: 6)
+
+                    Text(statusText)
+                        .font(.system(size: 10))
+                        .foregroundColor(Color.optaMutedForeground)
+                }
+            }
+
+            Spacer()
+
+            // Actions
+            if status == .running {
+                Button(action: onOpen) {
+                    Image(systemName: "arrow.up.forward.square")
+                        .font(.system(size: 14))
+                        .foregroundColor(Color.optaPrimary)
+                }
+                .buttonStyle(.plain)
+                .help("Open in browser")
+            } else if status == .launching {
+                ProgressView()
+                    .scaleEffect(0.6)
+            } else {
+                Button(action: onLaunch) {
+                    Image(systemName: "play.fill")
+                        .font(.system(size: 12))
+                        .foregroundColor(.white)
+                        .padding(6)
+                        .background(Color.optaPrimary)
+                        .clipShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .help("Launch \(name)")
+            }
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 8)
+        .background(isHovered ? Color.optaMuted.opacity(0.5) : Color.clear)
+        .cornerRadius(6)
+        .onHover { hovering in
+            isHovered = hovering
+        }
+    }
+}
+
+// MARK: - App Launch Manager
+
+@MainActor
+class AppLaunchManager {
+    static let shared = AppLaunchManager()
+
+    private init() {}
+
+    /// Restart the Opta Mini app
+    func restartApp() {
+        let executablePath = Bundle.main.executablePath!
+        let task = Process()
+        task.launchPath = "/bin/bash"
+        task.arguments = ["-c", "sleep 1 && open '\(Bundle.main.bundlePath)'"]
+
+        do {
+            try task.run()
+        } catch {
+            print("[AppLaunchManager] Failed to schedule restart: \(error)")
+        }
+
+        // Quit current instance
+        NSApp.terminate(nil)
+    }
+
+    /// Set launch at login
+    func setLaunchAtLogin(_ enabled: Bool) {
+        // Use SMAppService for modern macOS login item management
+        // This is a simplified version - production should use SMAppService
+        let script: String
+        if enabled {
+            script = """
+            tell application "System Events"
+                make login item at end with properties {path:"\(Bundle.main.bundlePath)", hidden:false}
+            end tell
+            """
+        } else {
+            script = """
+            tell application "System Events"
+                delete login item "\(Bundle.main.bundleIdentifier ?? "OptaNative")"
+            end tell
+            """
+        }
+
+        if let appleScript = NSAppleScript(source: script) {
+            var error: NSDictionary?
+            appleScript.executeAndReturnError(&error)
+            if let error = error {
+                print("[AppLaunchManager] AppleScript error: \(error)")
+            }
+        }
+    }
+
+    /// Check if Opta Life Manager is running
+    func checkLifeManagerStatus() async -> AppStatus {
+        // Check if the Next.js dev server is running on port 3000
+        guard let url = URL(string: "http://localhost:3000") else {
+            return .stopped
+        }
+
+        do {
+            let (_, response) = try await URLSession.shared.data(from: url)
+            if let httpResponse = response as? HTTPURLResponse,
+               httpResponse.statusCode == 200 {
+                return .running
+            }
+        } catch {
+            // Not running or error
+        }
+
+        return .stopped
+    }
+
+    /// Launch Opta Life Manager
+    func launchLifeManager() async -> Bool {
+        // Path to the Life Manager project
+        let lifeManagerPath = NSString(string: "~/Documents/Opta/opta-life-manager").expandingTildeInPath
+
+        // Check if directory exists
+        guard FileManager.default.fileExists(atPath: lifeManagerPath) else {
+            print("[AppLaunchManager] Life Manager not found at \(lifeManagerPath)")
+            return false
+        }
+
+        // Launch using npm run dev in background
+        let task = Process()
+        task.launchPath = "/bin/bash"
+        task.arguments = ["-c", "cd '\(lifeManagerPath)' && /opt/homebrew/bin/npm run dev &"]
+        task.standardOutput = FileHandle.nullDevice
+        task.standardError = FileHandle.nullDevice
+
+        do {
+            try task.run()
+            // Wait a bit for server to start
+            try await Task.sleep(nanoseconds: 3_000_000_000)
+            return await checkLifeManagerStatus() == .running
+        } catch {
+            print("[AppLaunchManager] Failed to launch Life Manager: \(error)")
+            return false
+        }
     }
 }
 
