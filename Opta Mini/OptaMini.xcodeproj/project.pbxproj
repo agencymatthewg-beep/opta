@@ -11,6 +11,8 @@
 		A1000003233F000100000001 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000004233F000100000001 /* ContentView.swift */; };
 		A1000005233F000100000001 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000006233F000100000001 /* AppDelegate.swift */; };
 		A1000007233F000200000001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1000008233F000200000001 /* Assets.xcassets */; };
+		A1000022233F000300000001 /* OptaApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000020233F000300000001 /* OptaApp.swift */; };
+		A1000023233F000300000001 /* ProcessMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000021233F000300000001 /* ProcessMonitor.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -21,6 +23,8 @@
 		A1000008233F000200000001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A100000A233F000200000001 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A100000B233F000200000001 /* OptaMini.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = OptaMini.entitlements; sourceTree = "<group>"; };
+		A1000020233F000300000001 /* OptaApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptaApp.swift; sourceTree = "<group>"; };
+		A1000021233F000300000001 /* ProcessMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessMonitor.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -56,11 +60,29 @@
 				A1000002233F000100000001 /* OptaMiniApp.swift */,
 				A1000006233F000100000001 /* AppDelegate.swift */,
 				A1000004233F000100000001 /* ContentView.swift */,
+				A1000024233F000300000001 /* Models */,
+				A1000025233F000300000001 /* Services */,
 				A1000008233F000200000001 /* Assets.xcassets */,
 				A100000A233F000200000001 /* Info.plist */,
 				A100000B233F000200000001 /* OptaMini.entitlements */,
 			);
 			path = OptaMini;
+			sourceTree = "<group>";
+		};
+		A1000024233F000300000001 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				A1000020233F000300000001 /* OptaApp.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		A1000025233F000300000001 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				A1000021233F000300000001 /* ProcessMonitor.swift */,
+			);
+			path = Services;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -135,6 +157,8 @@
 				A1000001233F000100000001 /* OptaMiniApp.swift in Sources */,
 				A1000003233F000100000001 /* ContentView.swift in Sources */,
 				A1000005233F000100000001 /* AppDelegate.swift in Sources */,
+				A1000022233F000300000001 /* OptaApp.swift in Sources */,
+				A1000023233F000300000001 /* ProcessMonitor.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
