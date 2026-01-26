@@ -68,6 +68,38 @@ final class ProcessMonitor: ObservableObject {
         return .noneRunning
     }
 
+    // MARK: - App Controls
+
+    /// Launch an Opta app
+    func launch(_ app: OptaApp) {
+        guard let url = app.appURL else { return }
+        NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration())
+    }
+
+    /// Stop a running Opta app
+    func stop(_ app: OptaApp) {
+        guard let runningApp = NSWorkspace.shared.runningApplications.first(where: {
+            $0.bundleIdentifier == app.bundleIdentifier
+        }) else { return }
+        runningApp.terminate()
+    }
+
+    /// Restart an Opta app (stop then launch)
+    func restart(_ app: OptaApp) {
+        stop(app)
+        // Delay launch slightly to allow clean termination
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            self?.launch(app)
+        }
+    }
+
+    /// Stop all running Opta apps
+    func stopAll() {
+        for app in OptaApp.allApps where isRunning(app) {
+            stop(app)
+        }
+    }
+
     private func subscribeToNotifications() {
         let workspace = NSWorkspace.shared
         let nc = workspace.notificationCenter
