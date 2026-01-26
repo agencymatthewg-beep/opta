@@ -2,6 +2,22 @@ import Foundation
 import AppKit
 import Combine
 
+/// Overall ecosystem health status
+enum EcosystemStatus {
+    case allRunning    // All apps running
+    case someRunning   // Some apps running
+    case noneRunning   // No apps running
+
+    var iconName: String {
+        switch self {
+        case .allRunning, .someRunning:
+            return "circle.grid.2x2.fill"
+        case .noneRunning:
+            return "circle.grid.2x2"
+        }
+    }
+}
+
 /// Monitors running applications and tracks Opta ecosystem app status
 @MainActor
 final class ProcessMonitor: ObservableObject {
@@ -41,6 +57,15 @@ final class ProcessMonitor: ObservableObject {
     /// Count of running Opta apps
     var runningCount: Int {
         appStatus.values.filter { $0 }.count
+    }
+
+    /// Overall ecosystem status for menu bar icon
+    var ecosystemStatus: EcosystemStatus {
+        let running = runningCount
+        let total = OptaApp.allApps.count
+        if running == total { return .allRunning }
+        if running > 0 { return .someRunning }
+        return .noneRunning
     }
 
     private func subscribeToNotifications() {
