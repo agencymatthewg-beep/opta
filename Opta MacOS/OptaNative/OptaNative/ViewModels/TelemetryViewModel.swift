@@ -89,8 +89,9 @@ class TelemetryViewModel {
 
         isMonitoring = true
 
-        monitoringTask = Task {
-            await service.startPolling(interval: 1.0) { [weak self] snapshot in
+        monitoringTask = Task { [weak self] in
+            guard let self else { return }
+            await self.service.startPolling(interval: 1.0) { [weak self] snapshot in
                 Task { @MainActor [weak self] in
                     self?.updateFromSnapshot(snapshot)
                 }

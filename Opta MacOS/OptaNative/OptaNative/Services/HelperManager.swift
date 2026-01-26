@@ -37,6 +37,7 @@ class HelperManager {
 
     /// Installs the privileged helper tool using SMJobBless.
     /// This will prompt the user for admin credentials.
+    @MainActor
     func installHelper() async throws {
         // Reset error state
         lastError = nil
@@ -46,15 +47,12 @@ class HelperManager {
             let service = SMAppService.daemon(plistName: "\(helperID).plist")
             try await service.register()
 
-            // Update installed status
-            await MainActor.run {
-                self.isHelperInstalled = true
-            }
+            // Update installed status atomically on success
+            self.isHelperInstalled = true
         } catch {
-            await MainActor.run {
-                self.lastError = "Failed to install helper: \(error.localizedDescription)"
-                self.isHelperInstalled = false
-            }
+            // Update state atomically on failure
+            self.lastError = "Failed to install helper: \(error.localizedDescription)"
+            self.isHelperInstalled = false
             throw error
         }
     }
@@ -66,15 +64,17 @@ class HelperManager {
     }
 
     /// Uninstalls the helper tool.
+    @MainActor
     func uninstallHelper() async throws {
         let service = SMAppService.daemon(plistName: "\(helperID).plist")
         try await service.unregister()
-        await MainActor.run {
-            self.isHelperInstalled = false
-        }
+        self.isHelperInstalled = false
     }
 
     // MARK: - XPC Communication
+
+    /// Last XPC error for diagnostics
+    private(set) var lastXPCError: Error?
 
     /// Gets a remote proxy to the helper tool.
     private func getHelperProxy() throws -> HelperProtocol {
@@ -89,8 +89,10 @@ class HelperManager {
             connection?.resume()
         }
 
-        guard let proxy = connection?.remoteObjectProxyWithErrorHandler({ error in
+        guard let proxy = connection?.remoteObjectProxyWithErrorHandler({ [weak self] error in
             print("XPC error: \(error.localizedDescription)")
+            self?.lastXPCError = error
+            self?.lastError = "XPC communication error: \(error.localizedDescription)"
         }) as? HelperProtocol else {
             throw HelperError.connectionFailed
         }
@@ -101,9 +103,17 @@ class HelperManager {
     // MARK: - Helper Operations
 
     /// Terminates a process using the privileged helper.
-    /// - Parameter pid: The process ID to terminate
+    /// - Parameter pid: The process ID to terminate (must be > 0)
     /// - Returns: Tuple of (success, errorMessage)
     func terminateProcess(pid: Int32) async -> (success: Bool, error: String?) {
+        // Validate PID is positive and not special system PIDs
+        guard pid > 0 else {
+            return (false, "Invalid PID: must be greater than 0")
+        }
+        guard pid != 1 else {
+            return (false, "Cannot terminate launchd (PID 1)")
+        }
+
         do {
             let proxy = try getHelperProxy()
 
@@ -119,10 +129,22 @@ class HelperManager {
 
     /// Sets the priority of a process using the privileged helper.
     /// - Parameters:
-    ///   - pid: The process ID to modify
+    ///   - pid: The process ID to modify (must be > 0)
     ///   - priority: Nice value (-20 to 19, lower = higher priority)
     /// - Returns: Whether the operation succeeded
     func setProcessPriority(pid: Int32, priority: Int32) async -> Bool {
+        // Validate PID
+        guard pid > 0 else {
+            lastError = "Invalid PID: must be greater than 0"
+            return false
+        }
+
+        // Validate priority is within valid nice range
+        guard priority >= -20 && priority <= 19 else {
+            lastError = "Invalid priority: must be between -20 and 19"
+            return false
+        }
+
         do {
             let proxy = try getHelperProxy()
 
@@ -132,6 +154,7 @@ class HelperManager {
                 }
             }
         } catch {
+            lastError = error.localizedDescription
             return false
         }
     }

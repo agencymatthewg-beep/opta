@@ -105,15 +105,12 @@ class ProcessViewModel {
         isLoading = true
         errorMessage = nil
 
-        // Fetch processes on background thread
-        Task.detached { [weak self] in
+        // Fetch processes asynchronously (ProcessService is an actor)
+        Task { [weak self] in
             guard let self = self else { return }
-            let processes = self.processService.getRunningProcesses()
-
-            await MainActor.run {
-                self.allProcesses = processes
-                self.isLoading = false
-            }
+            let processes = await self.processService.getRunningProcesses()
+            self.allProcesses = processes
+            self.isLoading = false
         }
     }
 

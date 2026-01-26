@@ -69,7 +69,8 @@ struct ProcessInfo: Identifiable, Sendable {
 
 /// Service for enumerating and categorizing running processes.
 /// Uses BSD proc_* APIs for efficient, low-overhead process listing.
-final class ProcessService: @unchecked Sendable {
+/// Thread-safe via actor isolation.
+actor ProcessService {
 
     // MARK: - Constants
 

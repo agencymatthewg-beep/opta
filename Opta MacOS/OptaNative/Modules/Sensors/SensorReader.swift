@@ -43,6 +43,7 @@ struct SensorReadings {
 
 /// Service for reading hardware sensors
 /// Combines SMC bridge with chip-specific sensor key mappings
+/// Thread-safe via internal synchronization on state properties
 final class SensorReader {
 
     // MARK: - Properties
@@ -52,11 +53,26 @@ final class SensorReader {
     private let chipInfo: ChipInfo
     private let queue = DispatchQueue(label: "com.opta.native.sensor-reader", qos: .utility)
 
-    /// Whether the reader is connected to SMC
-    private(set) var isConnected: Bool = false
+    /// Synchronization queue for thread-safe state access
+    private let stateQueue = DispatchQueue(label: "com.opta.native.sensor-reader.state", qos: .utility)
 
-    /// Last error encountered
-    private(set) var lastError: Error?
+    /// Internal storage for connection state
+    private var _isConnected: Bool = false
+
+    /// Internal storage for last error
+    private var _lastError: Error?
+
+    /// Whether the reader is connected to SMC (thread-safe)
+    private(set) var isConnected: Bool {
+        get { stateQueue.sync { _isConnected } }
+        set { stateQueue.sync { _isConnected = newValue } }
+    }
+
+    /// Last error encountered (thread-safe)
+    private(set) var lastError: Error? {
+        get { stateQueue.sync { _lastError } }
+        set { stateQueue.sync { _lastError = newValue } }
+    }
 
     // MARK: - Initialization
 
