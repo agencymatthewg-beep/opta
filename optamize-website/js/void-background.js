@@ -35,6 +35,12 @@ class VoidBackground {
     }
 
     init() {
+        // Skip heavy animations for reduced motion preference
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            console.log('VoidBackground: Skipping due to reduced motion preference');
+            return;
+        }
+
         this.container = document.querySelector('.void-background');
         if (!this.container) {
             console.warn('VoidBackground: .void-background not found');
@@ -175,6 +181,28 @@ class VoidBackground {
      * Provides Z-velocity for motion blur effect
      */
     onNavigationStart(direction, axis) {
+        // ... (existing implementation)
+    }
+
+    /**
+     * Updates parallax based on external input (e.g. spatial navigation position)
+     * @param {number} x - Raw X position
+     * @param {number} z - Raw Z position
+     */
+    updateParallax(x, z) {
+        // Convert large spatial coordinates to subtle parallax offsets
+        // Scale down significantly to keep the background feeling distant
+        this.targetParallaxX = -x * 0.05;
+
+        // Z movement creates a "zoom" feel in the background elements via spread
+        // We can simulate this by slightly scaling the nebula or adding Y drift
+        // For now, let's map Z to a subtle Y drift to feel like we're moving "into" the void
+        this.targetParallaxY = -z * 0.02;
+    }
+
+    // ===================== RENDER LOOP =====================
+
+    startRenderLoop() {
         // Simulated Motion Blur: Stretch stars along Z-axis
         if (axis === 'z') {
             const starLayer = document.getElementById('stardustLayer');

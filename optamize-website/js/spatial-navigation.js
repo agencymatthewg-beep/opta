@@ -42,9 +42,9 @@ class SpatialNavigation {
     }
 
     init() {
-        this.scene = document.getElementById('spatialScene');
+        this.scene = document.getElementById('main-content');
         if (!this.scene) {
-            console.warn('SpatialNavigation: #spatialScene not found');
+            console.warn('SpatialNavigation: #main-content not found');
             return;
         }
 
@@ -62,6 +62,11 @@ class SpatialNavigation {
 
         this.updateActiveLayer();
         this.startRenderLoop();
+
+        // Connect to Void Background if available
+        if (window.voidBackground) {
+            console.log('SpatialNavigation: Connected to VoidBackground');
+        }
 
         console.log('SpatialNavigation initialized');
     }
@@ -547,6 +552,12 @@ class SpatialNavigation {
                 translateX(${this.currentX}px)
                 rotateY(${this.currentRotationY}deg)
             `;
+
+            // Sync with Void Background for parallax
+            if (window.voidBackground) {
+                // Using raw values for normalized parallax
+                window.voidBackground.updateParallax(this.currentX, this.currentZ);
+            }
 
             // Seamless looping for ambient elements (if needed later)
             // Currently relies on long tracks, but can add infinite scroll logic here

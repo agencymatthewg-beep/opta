@@ -9,9 +9,23 @@
 
     <!-- Open Graph -->
     <meta property="og:title" content="Opta - One Tool to Replace Them All">
-    <meta property="og:description" content="The ecosystem of intelligent apps for macOS and iOS">
+    <meta property="og:description" content="The ecosystem of intelligent apps for macOS and iOS. System optimization, AI-powered photo analysis, and intelligent life management.">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://optamize.biz">
+    <meta property="og:url" content="https://optamize.biz/">
+    <meta property="og:site_name" content="Optamize">
+    <meta property="og:image" content="https://optamize.biz/assets/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:locale" content="en_US">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Opta - One Tool to Replace Them All">
+    <meta name="twitter:description" content="The ecosystem of intelligent apps for macOS and iOS">
+    <meta name="twitter:image" content="https://optamize.biz/assets/og-image.png">
+
+    <!-- Canonical -->
+    <link rel="canonical" href="https://optamize.biz/">
 
     <title>Opta - One Tool to Replace Them All</title>
 
@@ -60,42 +74,45 @@
     <div class="spatial-viewport">
 
         <!-- Command Palette Overlay (floats above 3D space) -->
-        <div class="command-palette-overlay" id="commandPalette">
-            <div class="command-palette">
+        <div class="command-palette-overlay" id="commandPalette" role="dialog" aria-modal="true" aria-label="Command palette">
+            <div class="command-palette" role="search">
                 <div class="command-input-wrapper">
-                    <svg class="command-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <svg class="command-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                         <circle cx="11" cy="11" r="8"></circle>
                         <path d="m21 21-4.35-4.35"></path>
                     </svg>
-                    <input type="text" class="command-input" id="commandInput" placeholder="Search apps, features, or type a command..." autofocus>
-                    <kbd class="command-hint">ESC</kbd>
+                    <input type="text" class="command-input" id="commandInput" placeholder="Search apps, features, or type a command..." autofocus aria-label="Search command" aria-describedby="commandHint" autocomplete="off">
+                    <kbd class="command-hint" id="commandHint" aria-label="Press Escape to close">ESC</kbd>
                 </div>
-                <div class="command-results" id="commandResults">
-                    <div class="command-group">
-                        <div class="command-group-title">Apps</div>
-                        <div class="command-items" id="appResults"></div>
+                <div class="command-results" id="commandResults" role="listbox" aria-label="Search results">
+                    <div class="command-group" role="group" aria-labelledby="appGroupTitle">
+                        <div class="command-group-title" id="appGroupTitle">Apps</div>
+                        <div class="command-items" id="appResults" role="presentation"></div>
                     </div>
-                    <div class="command-group">
-                        <div class="command-group-title">Navigation</div>
-                        <div class="command-items" id="navResults"></div>
+                    <div class="command-group" role="group" aria-labelledby="navGroupTitle">
+                        <div class="command-group-title" id="navGroupTitle">Navigation</div>
+                        <div class="command-items" id="navResults" role="presentation"></div>
                     </div>
                 </div>
             </div>
         </div>
 
+        <!-- Skip to main content (accessibility) -->
+        <a href="#main-content" class="skip-link sr-only">Skip to main content</a>
+
         <!-- Minimal Navigation (floats above 3D space) -->
-        <nav class="nav nav-minimal">
+        <nav class="nav nav-minimal" aria-label="Main navigation">
             <div class="nav-container">
-                <a href="#home" class="nav-logo no-drag" data-navigate-layer="0">
-                    <div class="nav-ring"></div>
+                <a href="#home" class="nav-logo no-drag" data-navigate-layer="0" aria-label="Opta Home">
+                    <div class="nav-ring" aria-hidden="true"></div>
                     <span>opta</span>
                 </a>
-                <button class="nav-command no-drag" id="openCommand" aria-label="Open command palette">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <button class="nav-command no-drag" id="openCommand" aria-label="Open command palette (press /)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                         <circle cx="11" cy="11" r="8"></circle>
                         <path d="m21 21-4.35-4.35"></path>
                     </svg>
-                    <kbd>/</kbd>
+                    <kbd aria-hidden="true">/</kbd>
                 </button>
             </div>
         </nav>
@@ -103,7 +120,7 @@
         <!-- ================================================================
              3D SCENE CONTAINER
              ================================================================ -->
-        <div class="spatial-scene" id="spatialScene">
+        <main class="spatial-scene" id="main-content" role="main" aria-label="Opta apps showcase">
 
             <!-- ============================================================
                  LAYER 0: HOME (Z: 0)
@@ -549,6 +566,5 @@
     <script src="js/spatial-orbs.js"></script>
     <script src="js/intro-sequence.js"></script>
     <script src="js/spatial-navigation.js"></script>
-    <script src="js/main.js"></script>
 </body>
 </html>

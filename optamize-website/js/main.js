@@ -4,6 +4,35 @@
  */
 
 // ============================================
+// UTILITIES
+// ============================================
+
+// Debounce utility for performance-critical events like resize
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// Check for reduced motion preference
+const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// Safe initialization wrapper with error handling
+function safeInit(name, fn) {
+    try {
+        fn();
+    } catch (error) {
+        console.warn(`[Opta] ${name} initialization failed:`, error);
+    }
+}
+
+// ============================================
 // CINEMATIC INTRO (Preloader with Shutter Wipe)
 // ============================================
 
@@ -73,7 +102,7 @@ function initParallaxGrid() {
         canvas.height = window.innerHeight;
     }
     resize();
-    window.addEventListener('resize', resize);
+    window.addEventListener('resize', debounce(resize, 150));
 
     document.addEventListener('mousemove', (e) => {
         mouseX = (e.clientX / window.innerWidth - 0.5) * 2;
@@ -949,27 +978,37 @@ function init3DTilt() {
 document.addEventListener('DOMContentLoaded', () => {
     // Note: Cinematic intro is handled by intro-sequence.js
     // initCinematicIntro() removed to avoid conflict
-    initAtmosphere();
-    setupCommandPalette();
-    setupKeyboardShortcuts();
-    setupSatelliteHovers();
-    setupNewsletter();
+
+    // Core atmosphere (skip heavy particles if reduced motion)
+    if (!prefersReducedMotion) {
+        safeInit('Atmosphere', initAtmosphere);
+    }
+
+    // Essential UI features
+    safeInit('CommandPalette', setupCommandPalette);
+    safeInit('KeyboardShortcuts', setupKeyboardShortcuts);
+    safeInit('SatelliteHovers', setupSatelliteHovers);
+    safeInit('Newsletter', setupNewsletter);
 
     // Delay interactive features until after intro
     document.addEventListener('introComplete', () => {
-        initStaggeredAnimations();
-        initMagneticButtons();
-        init3DTilt();
-        initSpatialOrbs();
+        safeInit('StaggeredAnimations', initStaggeredAnimations);
+        if (!prefersReducedMotion) {
+            safeInit('MagneticButtons', initMagneticButtons);
+            safeInit('3DTilt', init3DTilt);
+            safeInit('SpatialOrbs', initSpatialOrbs);
+        }
     }, { once: true });
 
     // Fallback if intro was skipped
     setTimeout(() => {
-        initStaggeredAnimations();
-        initMagneticButtons();
-        init3DTilt();
-        if (!document.querySelector('.spatial-orbs-container')) {
-            initSpatialOrbs();
+        safeInit('StaggeredAnimations', initStaggeredAnimations);
+        if (!prefersReducedMotion) {
+            safeInit('MagneticButtons', initMagneticButtons);
+            safeInit('3DTilt', init3DTilt);
+            if (!document.querySelector('.spatial-orbs-container')) {
+                safeInit('SpatialOrbs', initSpatialOrbs);
+            }
         }
     }, 3500);
 });
