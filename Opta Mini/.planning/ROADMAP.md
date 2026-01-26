@@ -19,7 +19,7 @@ None (standard macOS SwiftUI patterns)
 - [x] **Phase 3: Menu UI** - Menu bar popover with app list and status indicators
 - [x] **Phase 4: App Controls** - Launch, stop, restart functionality for Opta apps
 - [x] **Phase 5: Preferences** - Settings panel and About section
-- [ ] **Phase 6: Polish** - Design refinement, performance optimization, testing
+- [x] **Phase 6: Polish** - Design refinement, performance optimization, testing
 
 ## Phase Details
 
@@ -87,7 +87,7 @@ Key deliverables:
 **Goal**: Design refinement, performance, stability
 **Depends on**: Phase 5
 **Research**: Unlikely (internal refinement)
-**Plans**: 1
+**Plans**: 1 (complete)
 
 Key deliverables:
 - Opta design system colors/typography
@@ -107,4 +107,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 3. Menu UI | 1/1 | Complete | 2026-01-26 |
 | 4. App Controls | 1/1 | Complete | 2026-01-26 |
 | 5. Preferences | 1/1 | Complete | 2026-01-26 |
-| 6. Polish | 0/TBD | Not started | - |
+| 6. Polish | 1/1 | Complete | 2026-01-26 |
