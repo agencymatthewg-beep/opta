@@ -62,9 +62,8 @@ Key deliverables:
 ### Phase 4: App Controls
 **Goal**: Launch, stop, restart Opta apps from menu
 **Depends on**: Phase 3
-**Research**: Likely (NSWorkspace open, NSRunningApplication terminate)
-**Research topics**: NSWorkspace.open(), NSRunningApplication.terminate(), graceful shutdown patterns
-**Plans**: TBD
+**Research**: Unlikely (NSWorkspace APIs well-documented)
+**Plans**: 1
 
 Key deliverables:
 - Launch button for stopped apps
