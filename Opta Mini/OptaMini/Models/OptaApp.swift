@@ -1,4 +1,5 @@
 import Foundation
+import AppKit
 
 /// Represents an app in the Opta ecosystem
 struct OptaApp: Identifiable, Hashable {
@@ -6,6 +7,11 @@ struct OptaApp: Identifiable, Hashable {
     let name: String
     let bundleIdentifier: String
     let icon: String  // SF Symbol name
+
+    /// URL to the app bundle (for launching)
+    var appURL: URL? {
+        NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleIdentifier)
+    }
 
     /// All apps in the Opta ecosystem
     static let allApps: [OptaApp] = [
