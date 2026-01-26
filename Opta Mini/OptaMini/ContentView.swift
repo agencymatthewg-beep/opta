@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct ContentView: View {
+    @ObservedObject var processMonitor: ProcessMonitor
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             // Header
@@ -8,19 +10,17 @@ struct ContentView: View {
                 Text("Opta Mini")
                     .font(.title2.bold())
 
-                Text("Opta Ecosystem Hub")
+                Text("\(processMonitor.runningCount) of \(OptaApp.allApps.count) apps running")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
 
             Divider()
 
-            // Placeholder for app list
-            Text("Apps will appear here")
-                .font(.body)
-                .foregroundColor(.secondary)
-                .frame(maxWidth: .infinity, alignment: .center)
-                .padding(.vertical, 40)
+            // App list
+            ForEach(OptaApp.allApps) { app in
+                AppRowView(app: app, isRunning: processMonitor.isRunning(app))
+            }
 
             Spacer()
         }
@@ -29,6 +29,39 @@ struct ContentView: View {
     }
 }
 
+struct AppRowView: View {
+    let app: OptaApp
+    let isRunning: Bool
+
+    var body: some View {
+        HStack(spacing: 12) {
+            // Status indicator
+            Circle()
+                .fill(isRunning ? Color.green : Color.gray.opacity(0.3))
+                .frame(width: 8, height: 8)
+
+            // App icon
+            Image(systemName: app.icon)
+                .font(.title3)
+                .foregroundColor(isRunning ? .primary : .secondary)
+                .frame(width: 24)
+
+            // App name
+            Text(app.name)
+                .font(.body)
+                .foregroundColor(isRunning ? .primary : .secondary)
+
+            Spacer()
+
+            // Status text
+            Text(isRunning ? "Running" : "Stopped")
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+        .padding(.vertical, 4)
+    }
+}
+
 #Preview {
-    ContentView()
+    ContentView(processMonitor: ProcessMonitor())
 }

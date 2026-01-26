@@ -4,8 +4,12 @@ import SwiftUI
 class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem?
     private var popover: NSPopover?
+    private var processMonitor: ProcessMonitor?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Create the process monitor
+        processMonitor = ProcessMonitor()
+
         // Create the status item in the menu bar
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
 
@@ -20,7 +24,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         popover = NSPopover()
         popover?.contentSize = NSSize(width: 300, height: 400)
         popover?.behavior = .transient
-        popover?.contentViewController = NSHostingController(rootView: ContentView())
+        popover?.contentViewController = NSHostingController(rootView: ContentView(processMonitor: processMonitor!))
     }
 
     @objc private func togglePopover() {
