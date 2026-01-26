@@ -18,6 +18,8 @@
     will-change: transform;
     transform-style: preserve-3d;
     pointer-events: none;
+    /* Center transform origin for symmetrical scaling */
+    transform-origin: center center;
 }
 
 .orb-inner {
@@ -26,6 +28,8 @@
     filter: blur(40px);
     opacity: 0.4;
     will-change: transform, opacity;
+    transform-origin: center center;
+    backface-visibility: hidden;
 }
 
 /* 

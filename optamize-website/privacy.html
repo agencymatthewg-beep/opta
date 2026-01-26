@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/styles.css">
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <link rel="canonical" href="https://optamize.biz/privacy.html">
     <style>
         .page-content {
             max-width: 800px;
@@ -82,6 +83,7 @@
             background: var(--glass-bg);
             border: 1px solid var(--border);
             border-radius: 100px;
+            -webkit-backdrop-filter: blur(20px);
             backdrop-filter: blur(20px);
             transition: all 0.2s ease;
             z-index: 100;
@@ -94,12 +96,14 @@
     </style>
 </head>
 <body>
+    <a href="#main-content" class="skip-link sr-only">Skip to main content</a>
+
     <a href="/" class="back-link">
         <span>&larr;</span>
         <span>Home</span>
     </a>
 
-    <main class="page-content">
+    <main id="main-content" class="page-content">
         <h1>Privacy Policy</h1>
         <p class="last-updated">Last updated: January 2025</p>
 
