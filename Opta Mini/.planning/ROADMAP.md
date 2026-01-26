@@ -38,9 +38,8 @@ Key deliverables:
 ### Phase 2: App Detection
 **Goal**: Detect and track running Opta ecosystem apps
 **Depends on**: Phase 1
-**Research**: Likely (NSRunningApplication, process monitoring)
-**Research topics**: NSWorkspace notifications, process enumeration, bundle identifier matching
-**Plans**: TBD
+**Research**: Unlikely (NSWorkspace APIs well-documented)
+**Plans**: 1
 
 Key deliverables:
 - AppRegistry model defining Opta ecosystem apps
