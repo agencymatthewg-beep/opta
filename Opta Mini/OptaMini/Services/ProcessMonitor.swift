@@ -1,0 +1,84 @@
+import Foundation
+import AppKit
+import Combine
+
+/// Monitors running applications and tracks Opta ecosystem app status
+@MainActor
+final class ProcessMonitor: ObservableObject {
+    /// Current status of each Opta app (bundleId -> isRunning)
+    @Published private(set) var appStatus: [String: Bool] = [:]
+
+    private var cancellables = Set<AnyCancellable>()
+
+    init() {
+        // Initialize status for all Opta apps
+        for app in OptaApp.allApps {
+            appStatus[app.bundleIdentifier] = false
+        }
+
+        // Check initial state
+        refreshStatus()
+
+        // Subscribe to workspace notifications
+        subscribeToNotifications()
+    }
+
+    /// Refresh status by checking currently running apps
+    func refreshStatus() {
+        let runningApps = NSWorkspace.shared.runningApplications
+        let runningBundleIds = Set(runningApps.compactMap { $0.bundleIdentifier })
+
+        for app in OptaApp.allApps {
+            appStatus[app.bundleIdentifier] = runningBundleIds.contains(app.bundleIdentifier)
+        }
+    }
+
+    /// Check if a specific app is running
+    func isRunning(_ app: OptaApp) -> Bool {
+        appStatus[app.bundleIdentifier] ?? false
+    }
+
+    /// Count of running Opta apps
+    var runningCount: Int {
+        appStatus.values.filter { $0 }.count
+    }
+
+    private func subscribeToNotifications() {
+        let workspace = NSWorkspace.shared
+        let nc = workspace.notificationCenter
+
+        // App launched
+        nc.publisher(for: NSWorkspace.didLaunchApplicationNotification)
+            .compactMap { $0.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication }
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] app in
+                self?.handleAppLaunch(app)
+            }
+            .store(in: &cancellables)
+
+        // App terminated
+        nc.publisher(for: NSWorkspace.didTerminateApplicationNotification)
+            .compactMap { $0.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication }
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] app in
+                self?.handleAppTermination(app)
+            }
+            .store(in: &cancellables)
+    }
+
+    private func handleAppLaunch(_ app: NSRunningApplication) {
+        guard let bundleId = app.bundleIdentifier,
+              OptaApp.allApps.contains(where: { $0.bundleIdentifier == bundleId }) else {
+            return
+        }
+        appStatus[bundleId] = true
+    }
+
+    private func handleAppTermination(_ app: NSRunningApplication) {
+        guard let bundleId = app.bundleIdentifier,
+              OptaApp.allApps.contains(where: { $0.bundleIdentifier == bundleId }) else {
+            return
+        }
+        appStatus[bundleId] = false
+    }
+}
