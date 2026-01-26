@@ -14,7 +14,7 @@ None (standard macOS SwiftUI patterns)
 - Integer phases (1, 2, 3): Planned milestone work
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
-- [ ] **Phase 1: Foundation** - Xcode project setup, menu bar app infrastructure
+- [x] **Phase 1: Foundation** - Xcode project setup, menu bar app infrastructure
 - [ ] **Phase 2: App Detection** - Process monitoring, app registry, status tracking
 - [ ] **Phase 3: Menu UI** - Menu bar popover with app list and status indicators
 - [ ] **Phase 4: App Controls** - Launch, stop, restart functionality for Opta apps
@@ -27,7 +27,7 @@ None (standard macOS SwiftUI patterns)
 **Goal**: Working menu bar app skeleton with icon that appears in menu bar
 **Depends on**: Nothing (first phase)
 **Research**: Unlikely (standard Xcode/SwiftUI setup)
-**Plans**: TBD
+**Plans**: 1 (complete)
 
 Key deliverables:
 - Xcode project configured as menu bar app (no dock icon)
@@ -104,7 +104,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/TBD | Not started | - |
+| 1. Foundation | 1/1 | Complete | 2026-01-26 |
 | 2. App Detection | 0/TBD | Not started | - |
 | 3. Menu UI | 0/TBD | Not started | - |
 | 4. App Controls | 0/TBD | Not started | - |
