@@ -129,6 +129,16 @@ struct FooterView: View {
 
             Spacer()
 
+            Button {
+                NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+            } label: {
+                Image(systemName: "gear")
+                    .font(.system(size: 12))
+            }
+            .buttonStyle(.plain)
+            .foregroundColor(.secondary)
+            .help("Preferences")
+
             Button("Quit") {
                 NSApplication.shared.terminate(nil)
             }

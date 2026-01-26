@@ -13,6 +13,10 @@
 		A1000007233F000200000001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1000008233F000200000001 /* Assets.xcassets */; };
 		A1000022233F000300000001 /* OptaApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000020233F000300000001 /* OptaApp.swift */; };
 		A1000023233F000300000001 /* ProcessMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000021233F000300000001 /* ProcessMonitor.swift */; };
+		A1000030233F000500000001 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000031233F000500000001 /* SettingsView.swift */; };
+		A1000032233F000500000001 /* GeneralSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000033233F000500000001 /* GeneralSettingsView.swift */; };
+		A1000034233F000500000001 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000035233F000500000001 /* AboutView.swift */; };
+		A1000036233F000500000001 /* LoginItemManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000037233F000500000001 /* LoginItemManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -25,6 +29,10 @@
 		A100000B233F000200000001 /* OptaMini.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = OptaMini.entitlements; sourceTree = "<group>"; };
 		A1000020233F000300000001 /* OptaApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptaApp.swift; sourceTree = "<group>"; };
 		A1000021233F000300000001 /* ProcessMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessMonitor.swift; sourceTree = "<group>"; };
+		A1000031233F000500000001 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		A1000033233F000500000001 /* GeneralSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneralSettingsView.swift; sourceTree = "<group>"; };
+		A1000035233F000500000001 /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
+		A1000037233F000500000001 /* LoginItemManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginItemManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -62,6 +70,7 @@
 				A1000004233F000100000001 /* ContentView.swift */,
 				A1000024233F000300000001 /* Models */,
 				A1000025233F000300000001 /* Services */,
+				A1000038233F000500000001 /* Views */,
 				A1000008233F000200000001 /* Assets.xcassets */,
 				A100000A233F000200000001 /* Info.plist */,
 				A100000B233F000200000001 /* OptaMini.entitlements */,
@@ -81,8 +90,19 @@
 			isa = PBXGroup;
 			children = (
 				A1000021233F000300000001 /* ProcessMonitor.swift */,
+				A1000037233F000500000001 /* LoginItemManager.swift */,
 			);
 			path = Services;
+			sourceTree = "<group>";
+		};
+		A1000038233F000500000001 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				A1000031233F000500000001 /* SettingsView.swift */,
+				A1000033233F000500000001 /* GeneralSettingsView.swift */,
+				A1000035233F000500000001 /* AboutView.swift */,
+			);
+			path = Views;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -159,6 +179,10 @@
 				A1000005233F000100000001 /* AppDelegate.swift in Sources */,
 				A1000022233F000300000001 /* OptaApp.swift in Sources */,
 				A1000023233F000300000001 /* ProcessMonitor.swift in Sources */,
+				A1000030233F000500000001 /* SettingsView.swift in Sources */,
+				A1000032233F000500000001 /* GeneralSettingsView.swift in Sources */,
+				A1000034233F000500000001 /* AboutView.swift in Sources */,
+				A1000036233F000500000001 /* LoginItemManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

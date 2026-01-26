@@ -75,7 +75,7 @@ Key deliverables:
 **Goal**: Settings panel and About section
 **Depends on**: Phase 4
 **Research**: Unlikely (standard SwiftUI Settings scene)
-**Plans**: TBD
+**Plans**: 1
 
 Key deliverables:
 - Preferences window (Settings scene)
