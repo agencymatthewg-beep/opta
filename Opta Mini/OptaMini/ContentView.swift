@@ -8,11 +8,12 @@ struct ContentView: View {
             // Header
             VStack(alignment: .leading, spacing: 4) {
                 Text("Opta Mini")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(OptaFonts.title)
 
                 Text("\(processMonitor.runningCount) of \(OptaApp.allApps.count) apps running")
-                    .font(.system(size: 11))
-                    .foregroundColor(.secondary)
+                    .font(OptaFonts.caption)
+                    .foregroundColor(OptaColors.textSecondary)
+                    .accessibilityLabel("\(processMonitor.runningCount) of \(OptaApp.allApps.count) Opta apps running")
             }
             .padding(.horizontal, 12)
             .padding(.top, 12)
@@ -57,47 +58,63 @@ struct AppRowView: View {
     let onLaunch: () -> Void
     let onStop: () -> Void
     @State private var isHovered = false
+    @State private var isPressed = false
 
     var body: some View {
         HStack(spacing: 12) {
-            // Status indicator
+            // Status indicator with animation
             Circle()
-                .fill(isRunning ? Color.green : Color.gray.opacity(0.3))
+                .fill(isRunning ? OptaColors.success : OptaColors.inactive)
                 .frame(width: 8, height: 8)
+                .animation(.easeInOut(duration: OptaAnimations.standard), value: isRunning)
 
             // App icon
             Image(systemName: app.icon)
                 .font(.system(size: 18))
-                .foregroundColor(isRunning ? .primary : .secondary)
+                .foregroundColor(isRunning ? OptaColors.textPrimary : OptaColors.textSecondary)
                 .frame(width: 24)
+                .animation(.easeInOut(duration: OptaAnimations.standard), value: isRunning)
 
             // App name
             Text(app.name)
-                .font(.system(size: 13))
-                .foregroundColor(isRunning ? .primary : .secondary)
+                .font(OptaFonts.body)
+                .foregroundColor(isRunning ? OptaColors.textPrimary : OptaColors.textSecondary)
+                .animation(.easeInOut(duration: OptaAnimations.standard), value: isRunning)
 
             Spacer()
 
             // Action button (shown on hover) or status text
-            if isHovered {
-                Button(action: isRunning ? onStop : onLaunch) {
-                    Image(systemName: isRunning ? "stop.fill" : "play.fill")
-                        .font(.system(size: 10))
-                        .foregroundColor(isRunning ? .red : .green)
+            Group {
+                if isHovered {
+                    Button(action: isRunning ? onStop : onLaunch) {
+                        Image(systemName: isRunning ? "stop.fill" : "play.fill")
+                            .font(OptaFonts.small)
+                            .foregroundColor(isRunning ? OptaColors.danger : OptaColors.success)
+                    }
+                    .buttonStyle(.plain)
+                    .scaleEffect(isPressed ? 0.9 : 1.0)
+                    .animation(.easeOut(duration: OptaAnimations.quick), value: isPressed)
+                    .simultaneousGesture(
+                        DragGesture(minimumDistance: 0)
+                            .onChanged { _ in isPressed = true }
+                            .onEnded { _ in isPressed = false }
+                    )
+                    .help(isRunning ? "Stop \(app.name)" : "Launch \(app.name)")
+                    .accessibilityLabel(isRunning ? "Stop \(app.name)" : "Launch \(app.name)")
+                } else {
+                    Text(isRunning ? "Running" : "Stopped")
+                        .font(OptaFonts.caption)
+                        .foregroundColor(OptaColors.textSecondary)
                 }
-                .buttonStyle(.plain)
-                .help(isRunning ? "Stop" : "Launch")
-            } else {
-                Text(isRunning ? "Running" : "Stopped")
-                    .font(.system(size: 11))
-                    .foregroundColor(.secondary)
             }
+            .frame(width: 50, alignment: .trailing)
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 6)
         .background(
             RoundedRectangle(cornerRadius: 6)
-                .fill(isHovered ? Color.primary.opacity(0.1) : Color.clear)
+                .fill(isHovered ? OptaColors.hover : Color.clear)
+                .animation(.easeOut(duration: OptaAnimations.quick), value: isHovered)
         )
         .contentShape(Rectangle())
         .onTapGesture {
@@ -109,6 +126,11 @@ struct AppRowView: View {
             isHovered = hovering
         }
         .padding(.horizontal, 4)
+        // Accessibility
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(app.name), \(isRunning ? "running" : "stopped")")
+        .accessibilityHint(isRunning ? "Double tap to stop" : "Double tap to launch")
+        .accessibilityAddTraits(isRunning ? .isSelected : [])
     }
 }
 
@@ -117,14 +139,18 @@ struct FooterView: View {
     let onQuitAll: () -> Void
 
     var body: some View {
-        HStack {
+        HStack(spacing: 12) {
             if runningCount > 0 {
                 Button("Quit All") {
                     onQuitAll()
                 }
                 .buttonStyle(.plain)
-                .font(.system(size: 12))
-                .foregroundColor(.red.opacity(0.8))
+                .font(OptaFonts.button)
+                .foregroundColor(OptaColors.danger.opacity(0.9))
+                .keyboardShortcut("q", modifiers: [.command, .shift])
+                .help("Quit all running Opta apps (⇧⌘Q)")
+                .accessibilityLabel("Quit all Opta apps")
+                .accessibilityHint("Stops all \(runningCount) running apps")
             }
 
             Spacer()
@@ -133,18 +159,23 @@ struct FooterView: View {
                 NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
             } label: {
                 Image(systemName: "gear")
-                    .font(.system(size: 12))
+                    .font(OptaFonts.button)
             }
             .buttonStyle(.plain)
-            .foregroundColor(.secondary)
-            .help("Preferences")
+            .foregroundColor(OptaColors.textSecondary)
+            .keyboardShortcut(",", modifiers: .command)
+            .help("Preferences (⌘,)")
+            .accessibilityLabel("Open Preferences")
 
             Button("Quit") {
                 NSApplication.shared.terminate(nil)
             }
             .buttonStyle(.plain)
-            .font(.system(size: 12))
-            .foregroundColor(.secondary)
+            .font(OptaFonts.button)
+            .foregroundColor(OptaColors.textSecondary)
+            .keyboardShortcut("q", modifiers: .command)
+            .help("Quit Opta Mini (⌘Q)")
+            .accessibilityLabel("Quit Opta Mini")
         }
     }
 }

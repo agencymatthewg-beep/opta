@@ -87,7 +87,7 @@ Key deliverables:
 **Goal**: Design refinement, performance, stability
 **Depends on**: Phase 5
 **Research**: Unlikely (internal refinement)
-**Plans**: TBD
+**Plans**: 1
 
 Key deliverables:
 - Opta design system colors/typography

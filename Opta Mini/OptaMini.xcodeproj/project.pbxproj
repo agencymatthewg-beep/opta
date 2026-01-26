@@ -17,6 +17,7 @@
 		A1000032233F000500000001 /* GeneralSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000033233F000500000001 /* GeneralSettingsView.swift */; };
 		A1000034233F000500000001 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000035233F000500000001 /* AboutView.swift */; };
 		A1000036233F000500000001 /* LoginItemManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000037233F000500000001 /* LoginItemManager.swift */; };
+		A1000040233F000600000001 /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000041233F000600000001 /* DesignSystem.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -33,6 +34,7 @@
 		A1000033233F000500000001 /* GeneralSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneralSettingsView.swift; sourceTree = "<group>"; };
 		A1000035233F000500000001 /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
 		A1000037233F000500000001 /* LoginItemManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginItemManager.swift; sourceTree = "<group>"; };
+		A1000041233F000600000001 /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -71,6 +73,7 @@
 				A1000024233F000300000001 /* Models */,
 				A1000025233F000300000001 /* Services */,
 				A1000038233F000500000001 /* Views */,
+				A1000042233F000600000001 /* Utilities */,
 				A1000008233F000200000001 /* Assets.xcassets */,
 				A100000A233F000200000001 /* Info.plist */,
 				A100000B233F000200000001 /* OptaMini.entitlements */,
@@ -103,6 +106,14 @@
 				A1000035233F000500000001 /* AboutView.swift */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		A1000042233F000600000001 /* Utilities */ = {
+			isa = PBXGroup;
+			children = (
+				A1000041233F000600000001 /* DesignSystem.swift */,
+			);
+			path = Utilities;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -183,6 +194,7 @@
 				A1000032233F000500000001 /* GeneralSettingsView.swift in Sources */,
 				A1000034233F000500000001 /* AboutView.swift in Sources */,
 				A1000036233F000500000001 /* LoginItemManager.swift in Sources */,
+				A1000040233F000600000001 /* DesignSystem.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
