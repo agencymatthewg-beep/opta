@@ -33,7 +33,7 @@ struct VisualEffectsOverlay: View {
         case "achievement":
             triggerEffect(.confetti, duration: 3.0)
         case "optimization_complete":
-            triggerEffect(.energyField, duration: 2.0)
+            triggerEffect(.energyField(center: CGPoint(x: 300, y: 300)), duration: 2.0)
         case "game_session_end":
             triggerEffect(.fireworks, duration: 3.0)
         default: break
