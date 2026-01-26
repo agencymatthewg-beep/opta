@@ -18,7 +18,7 @@ None (standard macOS SwiftUI patterns)
 - [x] **Phase 2: App Detection** - Process monitoring, app registry, status tracking
 - [x] **Phase 3: Menu UI** - Menu bar popover with app list and status indicators
 - [x] **Phase 4: App Controls** - Launch, stop, restart functionality for Opta apps
-- [ ] **Phase 5: Preferences** - Settings panel and About section
+- [x] **Phase 5: Preferences** - Settings panel and About section
 - [ ] **Phase 6: Polish** - Design refinement, performance optimization, testing
 
 ## Phase Details
@@ -75,7 +75,7 @@ Key deliverables:
 **Goal**: Settings panel and About section
 **Depends on**: Phase 4
 **Research**: Unlikely (standard SwiftUI Settings scene)
-**Plans**: 1
+**Plans**: 1 (complete)
 
 Key deliverables:
 - Preferences window (Settings scene)
@@ -106,5 +106,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 2. App Detection | 1/1 | Complete | 2026-01-26 |
 | 3. Menu UI | 1/1 | Complete | 2026-01-26 |
 | 4. App Controls | 1/1 | Complete | 2026-01-26 |
-| 5. Preferences | 0/TBD | Not started | - |
+| 5. Preferences | 1/1 | Complete | 2026-01-26 |
 | 6. Polish | 0/TBD | Not started | - |
