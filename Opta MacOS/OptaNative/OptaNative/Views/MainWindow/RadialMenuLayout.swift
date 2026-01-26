@@ -11,24 +11,71 @@ import SwiftUI
 
 struct RadialMenuLayout: View {
     @Binding var selectedItem: NavigationItem?
-    
+
+    // Environment - Real-time system metrics
+    @Environment(TelemetryViewModel.self) private var telemetry
+
     // State
     @State private var hoveredItem: NavigationItem?
-    
+
     // Config
-    private let radius: CGFloat = 180
+    private let radius: CGFloat = 250 // Increased radius to minimize overlap
+
+    // MARK: - Ring Energy Calculation
+
+    /// Calculates ring energy (0-1) from system metrics.
+    /// Combines CPU usage and memory pressure into a unified energy level.
+    private var ringEnergy: Double {
+        // Weighted average: 60% CPU, 40% memory (CPU is more dynamic)
+        let cpuContribution = (telemetry.cpuUsage / 100.0) * 0.6
+        let memContribution = (telemetry.memoryPercent / 100.0) * 0.4
+
+        // Base energy of 0.3 ensures ring is never completely dormant
+        let baseEnergy = 0.3
+        let dynamicEnergy = cpuContribution + memContribution
+
+        // Clamp to 0.3 - 1.0 range
+        return min(1.0, baseEnergy + dynamicEnergy * 0.7)
+    }
+
+    /// Dynamic status text based on system state
+    private var systemStatusText: String {
+        if telemetry.isCPUHot {
+            return "Running Hot"
+        } else if telemetry.isCPUUsageHigh {
+            return "High Load"
+        } else if telemetry.isMemoryHigh {
+            return "Memory Pressure"
+        } else if telemetry.cpuUsage > 50 {
+            return "Working"
+        } else if telemetry.cpuUsage > 20 {
+            return "Active"
+        } else {
+            return "System Idle"
+        }
+    }
+
+    /// Status glow color based on system health
+    private var statusGlowColor: Color {
+        if telemetry.isCPUHot {
+            return .red.opacity(0.6)
+        } else if telemetry.isCPUUsageHigh || telemetry.isMemoryHigh {
+            return .optaNeonAmber.opacity(0.5)
+        } else if telemetry.cpuUsage > 50 {
+            return .optaElectricBlue.opacity(0.4)
+        } else {
+            return .optaNeonPurple.opacity(0.3)
+        }
+    }
     
-    // Navigation Items mapped to approximate angles (in degrees)
-    // 0 is Right (3 o'clock), moving clockwise.
-    // Adjusted to match reference image clock positions.
-    private let items: [(NavigationItem, Double)] = [
-        (.dashboard, 315),   // Top-Right (2 o'clock) -> -45 deg
-        (.gameSession, 0),   // Right (3 o'clock) -> 0 deg
-        (.chess, 45),        // Bottom-Right (5 o'clock) -> 45 deg
-        (.optimization, 90), // Bottom (6 o'clock) -> 90 deg
-        (.conflicts, 135),   // Bottom-Left (7 o'clock) -> 135 deg
-        (.gamification, 180) // Left (9 o'clock) -> 180 deg
-        // Settings would be at 225 (-135), added later if needed
+    // Navigation Items
+    private let items: [NavigationItem] = [
+        .gameSession,   // 0 deg (Right)
+        .chess,         // 60 deg
+        .optimization,  // 120 deg
+        .conflicts,     // 180 deg
+        .gamification,  // 240 deg
+        .dashboard      // 300 deg
     ]
     
     var body: some View {
@@ -37,43 +84,50 @@ struct RadialMenuLayout: View {
             
             // Central Nucleus
             ZStack {
-                OptaRingView()
-                    .frame(width: 320, height: 320) // explicit sizing
+                OptaRingView(energy: ringEnergy)
+                    .frame(width: 320, height: 320)
                     .opacity(0.9)
-                    .offset(y: 10) // Visual centering adjustment for tilt
+                    .offset(y: 10)
                 
                 VStack(spacing: 8) {
-                    // Premium 3D Text
+                    // Official Opta Hero Typography
+                    // Font: Sora Bold, Tracking: 0.12em, Gradient: Moonlight (dynamic)
                     Text(hoveredItem?.rawValue ?? "OPTA")
-                        .font(.system(size: 44, weight: .bold, design: .default)) // Sharp, Professional
-                        .tracking(6) // Wide spacing = Futuristic
+                        .font(.optaHero(size: OptaTypography.heroSize))
+                        .tracking(OptaTypography.heroTracking)
                         .foregroundStyle(
-                            LinearGradient(
-                                colors: [
-                                    .white,
-                                    .white.opacity(0.8)
-                                ],
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
+                            // Moonlight gradient - tinted based on hover state
+                            hoveredItem != nil
+                                ? LinearGradient.optaMoonlightTinted(with: itemColor(for: hoveredItem!))
+                                : LinearGradient.optaMoonlight
                         )
-                        // Layer 1: Colored Glow (Atmosphere)
+                        // Primary atmospheric glow (changes with hover)
                         .shadow(
-                            color: hoveredItem != nil ? Color(itemColor(for: hoveredItem!)).opacity(0.8) : Color(hex: 0x581C87).opacity(0.5),
-                            radius: 20, x: 0, y: 0
+                            color: hoveredItem != nil
+                                ? itemColor(for: hoveredItem!).opacity(0.8)
+                                : Color.optaNeonPurple.opacity(0.5),
+                            radius: 40, x: 0, y: 0
                         )
-                        // Layer 2: Core Bloom (Intense)
+                        // Secondary tight glow
                         .shadow(
-                            color: hoveredItem != nil ? Color(itemColor(for: hoveredItem!)) : Color(hex: 0x581C87).opacity(0.3),
-                            radius: 5, x: 0, y: 0
+                            color: hoveredItem != nil
+                                ? itemColor(for: hoveredItem!)
+                                : Color.optaDeepPurple.opacity(0.3),
+                            radius: 10, x: 0, y: 0
                         )
-                        // Layer 3: Drop Shadow (Depth)
+                        // Drop shadow for depth
                         .shadow(color: .black.opacity(0.8), radius: 2, x: 0, y: 2)
+                        // CRITICAL: Prevent text clipping during animations
+                        .fixedSize(horizontal: true, vertical: false)
                         .contentTransition(.numericText())
-                    
+
                     if hoveredItem == nil {
-                        Text("System Active")
-                            .font(.opta(size: 13, weight: .medium))
+                        // Official Opta Subtitle Typography
+                        // Font: Sora Light, Tracking: 0.25em, Uppercase
+                        Text(systemStatusText)
+                            .font(.optaSubtitle(size: OptaTypography.subtitleSize))
+                            .tracking(OptaTypography.subtitleTracking)
+                            .textCase(.uppercase)
                             .foregroundStyle(
                                 LinearGradient(
                                     colors: [Color.optaTextMuted, Color.optaTextMuted.opacity(0.5)],
@@ -81,15 +135,23 @@ struct RadialMenuLayout: View {
                                     endPoint: .trailing
                                 )
                             )
-                            .tracking(4)
-                            .shadow(color: Color.optaNeonPurple.opacity(0.3), radius: 5)
+                            // Dynamic glow based on system health
+                            .shadow(color: statusGlowColor, radius: 8)
+                            .shadow(color: statusGlowColor.opacity(0.5), radius: 15)
+                            .fixedSize(horizontal: true, vertical: false)
+                            .contentTransition(.interpolate)
+                            .animation(.easeInOut(duration: 0.5), value: systemStatusText)
                     }
                 }
-            .animation(.bouncy, value: hoveredItem)
+                // Padding to accommodate shadow/glow effects (prevents clipping)
+                .padding(.horizontal, 60)
+                .animation(.bouncy, value: hoveredItem)
             }
 
             // Satellites
-            ForEach(items, id: \.0) { item, angle in
+            ForEach(Array(items.enumerated()), id: \.element) { index, item in
+                let angle = Double(index) * (360.0 / Double(items.count))
+                
                 SatelliteButton(
                     item: item,
                     action: { selectedItem = item },
@@ -122,6 +184,7 @@ struct RadialMenuLayout: View {
         case .gameSession: return .optaElectricBlue
         case .gamification: return .indigo
         case .optimization: return .optaNeonAmber
+        case .macTweaks: return .cyan
         case .conflicts: return .red
         case .chess: return .white
         }
@@ -130,6 +193,7 @@ struct RadialMenuLayout: View {
 
 #Preview {
     RadialMenuLayout(selectedItem: .constant(nil))
+        .environment(TelemetryViewModel.preview)
         .background(Color.optaVoid)
         .preferredColorScheme(.dark)
 }
