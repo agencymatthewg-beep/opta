@@ -35,6 +35,11 @@ class SpatialNavigation {
         this.edgeHints = [];
         this.proximityThreshold = 100;
 
+        // Timer IDs for cleanup
+        this.rotationResetTimer = null;
+        this.labelTimeout = null;
+        this.rafId = null;
+
         // Bound methods
         this.render = this.render.bind(this);
         this.handleKeydown = this.handleKeydown.bind(this);
@@ -363,6 +368,11 @@ class SpatialNavigation {
         this.updateEdgeHints();
         this.updateNavIndicator();
         this.announceLayer();
+
+        // Trigger Warp Effect
+        if (window.triggerOrbWarp) {
+            window.triggerOrbWarp(direction > 0 ? 'forward' : 'backward');
+        }
     }
 
     navigateHorizontal(direction) {
@@ -520,7 +530,7 @@ class SpatialNavigation {
     // ===================== RENDER LOOP =====================
 
     startRenderLoop() {
-        requestAnimationFrame(this.render);
+        this.rafId = requestAnimationFrame(this.render);
     }
 
     render() {
@@ -563,7 +573,7 @@ class SpatialNavigation {
             // Currently relies on long tracks, but can add infinite scroll logic here
         }
 
-        requestAnimationFrame(this.render);
+        this.rafId = requestAnimationFrame(this.render);
     }
 
     // ===================== PUBLIC API =====================
@@ -577,8 +587,19 @@ class SpatialNavigation {
     }
 
     destroy() {
+        // Clear timers
+        if (this.rotationResetTimer) clearTimeout(this.rotationResetTimer);
+        if (this.labelTimeout) clearTimeout(this.labelTimeout);
+        if (this.rafId) cancelAnimationFrame(this.rafId);
+
+        // Remove event listeners
         document.removeEventListener('keydown', this.handleKeydown);
         document.removeEventListener('wheel', this.handleWheel);
+
+        // Remove created DOM elements
+        document.querySelector('.edge-hints')?.remove();
+        document.querySelector('.nav-indicator')?.remove();
+        document.querySelector('.layer-label')?.remove();
     }
 }
 

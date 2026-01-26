@@ -181,7 +181,30 @@ class VoidBackground {
      * Provides Z-velocity for motion blur effect
      */
     onNavigationStart(direction, axis) {
-        // ... (existing implementation)
+        if (!this.container) return;
+
+        // Z-axis navigation creates depth motion blur effect
+        if (axis === 'z') {
+            const starLayer = document.getElementById('stardustLayer');
+            if (starLayer) {
+                const scale = direction > 0 ? 1.5 : 0.8;
+                starLayer.style.transition = 'transform 0.2s ease-in, filter 0.2s ease-in';
+                starLayer.style.transform = `scale(${scale})`;
+                starLayer.style.filter = 'blur(2px)';
+
+                setTimeout(() => {
+                    starLayer.style.transition = 'transform 0.5s ease-out, filter 0.5s ease-out';
+                    starLayer.style.transform = 'scale(1)';
+                    starLayer.style.filter = 'blur(0)';
+                }, 300);
+            }
+
+            // Viewport tunnel effect
+            this.container.classList.add('navigating-depth');
+            setTimeout(() => {
+                this.container.classList.remove('navigating-depth');
+            }, 500);
+        }
     }
 
     /**
@@ -198,35 +221,6 @@ class VoidBackground {
         // We can simulate this by slightly scaling the nebula or adding Y drift
         // For now, let's map Z to a subtle Y drift to feel like we're moving "into" the void
         this.targetParallaxY = -z * 0.02;
-    }
-
-    // ===================== RENDER LOOP =====================
-
-    startRenderLoop() {
-        // Simulated Motion Blur: Stretch stars along Z-axis
-        if (axis === 'z') {
-            const starLayer = document.getElementById('stardustLayer');
-            if (starLayer) {
-                // Determine stretch direction
-                const scale = direction > 0 ? 3 : 0.2;
-
-                starLayer.style.transition = 'transform 0.2s ease-in';
-                starLayer.style.transform = `scale(${scale})`; // Simple scale warp
-                starLayer.style.filter = 'blur(4px)'; // Add speed blur
-
-                setTimeout(() => {
-                    starLayer.style.transition = 'transform 0.5s ease-out';
-                    starLayer.style.transform = 'scale(1)';
-                    starLayer.style.filter = 'blur(0)';
-                }, 400);
-            }
-
-            // Viewport "tunnel" effect
-            this.container.classList.add('navigating-depth');
-            setTimeout(() => {
-                this.container.classList.remove('navigating-depth');
-            }, 600);
-        }
     }
 
     // ===================== RENDER LOOP =====================
@@ -360,6 +354,13 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
         // No intro - init immediately
         initVoid();
+    }
+});
+
+// Cleanup on page unload to prevent memory leaks
+window.addEventListener('beforeunload', () => {
+    if (window.voidBg) {
+        window.voidBg.destroy();
     }
 });
 

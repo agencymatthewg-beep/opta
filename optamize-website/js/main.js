@@ -236,38 +236,68 @@ function initCursorGlow() {
 }
 
 // ============================================
-// MAGNETIC BUTTONS
+// MAGNETIC BUTTONS (Event Delegation)
 // ============================================
 
 function initMagneticButtons() {
-    const buttons = document.querySelectorAll('.btn, .app-card, .feature-card, .satellite');
+    const magneticSelector = '.btn, .app-card, .feature-card, .satellite';
+    let currentMagneticElement = null;
 
-    buttons.forEach(btn => {
-        btn.addEventListener('mousemove', (e) => {
-            const rect = btn.getBoundingClientRect();
-            const x = e.clientX - rect.left - rect.width / 2;
-            const y = e.clientY - rect.top - rect.height / 2;
+    // Single delegated mousemove listener for all magnetic elements
+    document.addEventListener('mousemove', (e) => {
+        const btn = e.target.closest(magneticSelector);
+        if (!btn) {
+            // Left magnetic area - reset if we were hovering one
+            if (currentMagneticElement) {
+                resetMagneticElement(currentMagneticElement);
+                currentMagneticElement = null;
+            }
+            return;
+        }
 
-            // Normalize for glow (0 to 100%)
-            const xPercent = ((e.clientX - rect.left) / rect.width) * 100;
-            const yPercent = ((e.clientY - rect.top) / rect.height) * 100;
+        currentMagneticElement = btn;
+        const rect = btn.getBoundingClientRect();
+        const x = e.clientX - rect.left - rect.width / 2;
+        const y = e.clientY - rect.top - rect.height / 2;
 
-            btn.style.setProperty('--mouse-x', `${xPercent}%`);
-            btn.style.setProperty('--mouse-y', `${yPercent}%`);
+        // Normalize for glow (0 to 100%)
+        const xPercent = ((e.clientX - rect.left) / rect.width) * 100;
+        const yPercent = ((e.clientY - rect.top) / rect.height) * 100;
 
-            // Magnetic pull strength
-            const strength = 0.25; // Stronger pull
-            btn.style.transform = `translate(${x * strength}px, ${y * strength}px)`;
-        });
+        btn.style.setProperty('--mouse-x', `${xPercent}%`);
+        btn.style.setProperty('--mouse-y', `${yPercent}%`);
 
-        btn.addEventListener('mouseleave', () => {
-            btn.style.transform = '';
-            btn.style.transition = 'transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)';
-            setTimeout(() => {
-                btn.style.transition = '';
-            }, 500);
-        });
+        // Magnetic pull strength
+        const strength = 0.25;
+        btn.style.transform = `translate(${x * strength}px, ${y * strength}px)`;
     });
+
+    // Single delegated mouseleave listener
+    document.addEventListener('mouseleave', () => {
+        if (currentMagneticElement) {
+            resetMagneticElement(currentMagneticElement);
+            currentMagneticElement = null;
+        }
+    });
+
+    // Watch for leaving magnetic elements specifically
+    document.addEventListener('mouseout', (e) => {
+        const btn = e.target.closest(magneticSelector);
+        if (btn && !btn.contains(e.relatedTarget)) {
+            resetMagneticElement(btn);
+            if (currentMagneticElement === btn) {
+                currentMagneticElement = null;
+            }
+        }
+    });
+
+    function resetMagneticElement(el) {
+        el.style.transform = '';
+        el.style.transition = 'transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)';
+        setTimeout(() => {
+            el.style.transition = '';
+        }, 500);
+    }
 }
 
 // ============================================
@@ -446,16 +476,52 @@ function executeCommand(command) {
 function openCommandPalette() {
     commandPalette?.classList.add('active');
     commandInput?.focus();
-    commandInput.value = '';
+    if (commandInput) commandInput.value = '';
     filteredCommands = [...commands];
     selectedIndex = 0;
     renderResults(commands);
     document.body.style.overflow = 'hidden';
+
+    // Set up focus trap
+    setupFocusTrap();
 }
 
 function closeCommandPalette() {
     commandPalette?.classList.remove('active');
     document.body.style.overflow = '';
+}
+
+// Focus trap for command palette accessibility
+function setupFocusTrap() {
+    if (!commandPalette) return;
+
+    const handleTab = (e) => {
+        if (!commandPalette.classList.contains('active')) return;
+        if (e.key !== 'Tab') return;
+
+        // Get all focusable elements in the palette
+        const focusableElements = commandPalette.querySelectorAll(
+            'input, button, [tabindex]:not([tabindex="-1"]), .command-item'
+        );
+        const focusable = Array.from(focusableElements).filter(el => el.offsetParent !== null);
+
+        if (focusable.length === 0) return;
+
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (e.shiftKey && document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+        }
+    };
+
+    // Remove old listener if exists, add new one
+    document.removeEventListener('keydown', handleTab);
+    document.addEventListener('keydown', handleTab);
 }
 
 function setupKeyboardShortcuts() {
@@ -503,9 +569,9 @@ function setupNewsletter() {
         const input = form.querySelector('input[type="email"]');
         const email = input?.value?.trim() || '';
 
-        // Email validation
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!email || !emailRegex.test(email)) {
+        // Email validation using native HTML5 validation + regex fallback
+        const isValidEmail = input?.validity?.valid || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        if (!email || !isValidEmail) {
             // Show error state
             input.style.borderColor = 'var(--neon-red)';
             input.style.animation = 'shake 0.3s ease';
@@ -549,7 +615,7 @@ function showDownloadNotification(appName) {
                 <strong>${appName}</strong>
                 <p>Coming soon to the Mac App Store! Join the waitlist below.</p>
             </div>
-            <button class="notification-close" onclick="this.parentElement.parentElement.remove()">×</button>
+            <button class="notification-close" onclick="this.parentElement.parentElement.remove()" aria-label="Close notification">×</button>
         </div>
     `;
     document.body.appendChild(notification);

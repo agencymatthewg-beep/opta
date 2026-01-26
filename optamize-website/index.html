@@ -27,6 +27,34 @@
     <!-- Canonical -->
     <link rel="canonical" href="https://optamize.biz/">
 
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "Optamize",
+        "url": "https://optamize.biz",
+        "logo": "https://optamize.biz/assets/favicon.svg",
+        "sameAs": [],
+        "description": "The ecosystem of intelligent apps for macOS and iOS. System optimization, AI-powered photo analysis, and intelligent life management."
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Opta MacOS",
+        "operatingSystem": "macOS",
+        "applicationCategory": "UtilitiesApplication",
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+        },
+        "description": "Premium system optimization for Mac with real-time telemetry and AI-powered performance tuning."
+    }
+    </script>
+
     <title>Opta - One Tool to Replace Them All</title>
 
     <!-- Fonts -->
@@ -503,7 +531,7 @@
                         <h2>Stay in the Loop</h2>
                         <p>Get notified about new apps, updates, and exclusive early access.</p>
                         <form class="newsletter-form" id="newsletterForm">
-                            <input type="email" placeholder="your@email.com" required class="no-drag">
+                            <input type="email" placeholder="your@email.com" required class="no-drag" autocomplete="email" minlength="5" aria-label="Email address">
                             <button type="submit" class="btn btn-primary no-drag">
                                 Subscribe
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

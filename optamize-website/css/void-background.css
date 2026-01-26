@@ -289,7 +289,7 @@
     transform: translateZ(0);
 }
 
-/* Disable animations when not visible */
-.void-background:not(:visible) * {
+/* Disable animations when hidden */
+.void-background.hidden * {
     animation-play-state: paused !important;
 }

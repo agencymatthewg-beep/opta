@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/styles.css">
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <link rel="canonical" href="https://optamize.biz/support.html">
     <style>
         .page-content {
             max-width: 800px;
@@ -99,6 +100,7 @@
         }
 
         .faq-question {
+            width: 100%;
             padding: 1.25rem;
             cursor: pointer;
             display: flex;
@@ -106,10 +108,20 @@
             align-items: center;
             font-weight: 500;
             color: var(--text-primary);
+            background: transparent;
+            border: none;
+            text-align: left;
+            font-size: inherit;
+            font-family: inherit;
         }
 
         .faq-question:hover {
             background: rgba(255, 255, 255, 0.02);
+        }
+
+        .faq-question:focus {
+            outline: 2px solid var(--primary);
+            outline-offset: -2px;
         }
 
         .faq-arrow {
@@ -198,20 +210,20 @@
             <h2>Frequently Asked Questions</h2>
 
             <div class="faq-item">
-                <div class="faq-question">
+                <button class="faq-question" aria-expanded="false">
                     <span>Is my data sent to the cloud?</span>
                     <span class="faq-arrow">▼</span>
-                </div>
+                </button>
                 <div class="faq-answer">
                     <p>No. All Opta apps process data locally on your device. We don't have servers that store your personal data. If you enable iCloud sync, that goes through Apple's infrastructure - never through us.</p>
                 </div>
             </div>
 
             <div class="faq-item">
-                <div class="faq-question">
+                <button class="faq-question" aria-expanded="false">
                     <span>What are the system requirements?</span>
                     <span class="faq-arrow">▼</span>
-                </div>
+                </button>
                 <div class="faq-answer">
                     <p><strong>Opta MacOS:</strong> macOS 13 (Ventura) or later, Apple Silicon or Intel processor<br>
                     <strong>Opta Scan:</strong> iOS 16 or later<br>
@@ -220,30 +232,30 @@
             </div>
 
             <div class="faq-item">
-                <div class="faq-question">
+                <button class="faq-question" aria-expanded="false">
                     <span>How do I export my data?</span>
                     <span class="faq-arrow">▼</span>
-                </div>
+                </button>
                 <div class="faq-answer">
                     <p>Each app has an export option in Settings. You can export your data in standard formats (JSON, PDF, etc.) that work with other apps and services.</p>
                 </div>
             </div>
 
             <div class="faq-item">
-                <div class="faq-question">
+                <button class="faq-question" aria-expanded="false">
                     <span>Do you offer refunds?</span>
                     <span class="faq-arrow">▼</span>
-                </div>
+                </button>
                 <div class="faq-answer">
                     <p>Purchases through the App Store are subject to Apple's refund policy. You can request a refund through Apple's Report a Problem page within 14 days of purchase.</p>
                 </div>
             </div>
 
             <div class="faq-item">
-                <div class="faq-question">
+                <button class="faq-question" aria-expanded="false">
                     <span>Can I use Opta MacOS on multiple Macs?</span>
                     <span class="faq-arrow">▼</span>
-                </div>
+                </button>
                 <div class="faq-answer">
                     <p>Yes! A single purchase covers all Macs signed into your Apple ID. No subscription, no device limits.</p>
                 </div>
@@ -274,7 +286,8 @@
         document.querySelectorAll('.faq-question').forEach(question => {
             question.addEventListener('click', () => {
                 const item = question.parentElement;
-                item.classList.toggle('open');
+                const isOpen = item.classList.toggle('open');
+                question.setAttribute('aria-expanded', isOpen);
             });
         });
     </script>

@@ -199,6 +199,21 @@ class IntroSequence {
 
         try {
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+            // Resume audio context if suspended (required for user-gesture initiated playback)
+            if (ctx.state === 'suspended') {
+                ctx.resume().then(() => this._playWarpOscillator(ctx)).catch(() => {});
+            } else {
+                this._playWarpOscillator(ctx);
+            }
+        } catch (e) {
+            // Audio not supported or blocked - silently continue
+            console.debug('IntroSequence: Audio playback skipped', e.message);
+        }
+    }
+
+    _playWarpOscillator(ctx) {
+        try {
             const oscillator = ctx.createOscillator();
             const gainNode = ctx.createGain();
 
@@ -214,8 +229,13 @@ class IntroSequence {
 
             oscillator.start(ctx.currentTime);
             oscillator.stop(ctx.currentTime + 0.5);
+
+            // Clean up audio context after sound completes
+            setTimeout(() => {
+                ctx.close().catch(() => {});
+            }, 600);
         } catch (e) {
-            // Audio not supported or blocked - silently continue
+            // Oscillator creation failed - silently continue
         }
     }
 
