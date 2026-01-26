@@ -1,71 +1,109 @@
 #!/bin/bash
 
 # Opta Mini Quick Launch
-# Launches the existing built app without rebuilding.
-# Use "Launch Opta Premium.command" to rebuild first.
+# Double-click to launch Opta Mini from an existing build.
 
-cd "$(dirname "$0")"
+# Navigate to script directory
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR"
 
 APP_NAME="OptaNative"
-BUILD_DIR="./build"
+BUILD_DIR="$SCRIPT_DIR/build"
 DEBUG_PATH="$BUILD_DIR/Build/Products/Debug/$APP_NAME.app"
 RELEASE_PATH="$BUILD_DIR/Build/Products/Release/$APP_NAME.app"
 
-echo "🚀 Quick Launch: Opta Mini"
+clear
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  🚀 Opta Mini - Quick Launch"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+echo "📂 Directory: $SCRIPT_DIR"
 echo ""
 
 # Check if already running
 if pgrep -x "$APP_NAME" > /dev/null; then
-    echo "⚡ Already running. Bringing to front..."
+    PID=$(pgrep -x "$APP_NAME")
+    echo "✅ Opta Mini is ALREADY RUNNING (PID: $PID)"
+    echo ""
+    echo "   Bringing window to front..."
     open -a "$APP_NAME"
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "Press any key to close this window..."
+    read -n 1 -s
     exit 0
 fi
 
 # Function to sign and launch
-sign_and_launch() {
+launch_app() {
     local app_path="$1"
-    echo "🔐 Ensuring app is signed..."
+    local build_type="$2"
+
+    echo "📍 Found $build_type build"
+    echo "   Path: $app_path"
+    echo ""
+
+    # Sign for local execution
+    echo "🔐 Signing for local execution..."
     xattr -cr "$app_path" 2>/dev/null
     codesign --force --deep --sign - "$app_path" 2>/dev/null
 
-    echo "🚀 Launching..."
+    if [ $? -ne 0 ]; then
+        echo "⚠️  Signing warning (may still work)"
+    fi
+
+    echo "🚀 Launching Opta Mini..."
     open "$app_path"
-    sleep 1
+
+    # Wait and verify
+    sleep 2
 
     if pgrep -x "$APP_NAME" > /dev/null; then
-        echo "✨ Opta Mini is now running"
+        PID=$(pgrep -x "$APP_NAME")
+        echo ""
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "  ✅ SUCCESS - Opta Mini is running!"
+        echo "     PID: $PID"
+        echo "     Look for it in your menu bar ↗️"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        echo "Press any key to close this window..."
+        read -n 1 -s
         exit 0
     else
-        echo "⚠️  Launch may have failed"
+        echo ""
+        echo "❌ FAILED - App did not start"
         return 1
     fi
 }
 
-# Try Debug build first (more likely to exist)
+# Try Debug build first
 if [ -d "$DEBUG_PATH" ]; then
-    echo "📍 Found Debug build"
-    sign_and_launch "$DEBUG_PATH"
+    launch_app "$DEBUG_PATH" "Debug"
 fi
 
 # Try Release build
 if [ -d "$RELEASE_PATH" ]; then
-    echo "📍 Found Release build"
-    sign_and_launch "$RELEASE_PATH"
+    launch_app "$RELEASE_PATH" "Release"
 fi
 
 # Search DerivedData as fallback
-echo "🔍 Searching for built app..."
+echo "🔍 Searching Xcode DerivedData..."
 FOUND_APP=$(find ~/Library/Developer/Xcode/DerivedData -name "$APP_NAME.app" -type d 2>/dev/null | head -1)
 
 if [ -n "$FOUND_APP" ]; then
-    echo "📍 Found at: $FOUND_APP"
-    sign_and_launch "$FOUND_APP"
+    launch_app "$FOUND_APP" "Cached"
 fi
 
 # No app found
-echo "❌ No built app found."
 echo ""
-echo "Run 'Launch Opta Premium.command' to build and launch."
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  ❌ ERROR - No built app found"
 echo ""
-read -p "Press ENTER to close..."
+echo "  Please run 'Launch Opta Premium.command'"
+echo "  to build and launch Opta Mini."
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+echo "Press any key to close..."
+read -n 1 -s
 exit 1

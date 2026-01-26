@@ -1,67 +1,145 @@
 #!/bin/bash
 
-# Opta Mini Launch Script
-# Builds and launches the native macOS app.
+# Opta Mini Premium Launch
+# Double-click to build and launch Opta Mini.
 
-cd "$(dirname "$0")"
-echo "📂 Working Directory: $(pwd)"
+# Navigate to script directory
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR"
 
 APP_NAME="OptaNative"
-BUILD_DIR="./build"
+BUILD_DIR="$SCRIPT_DIR/build"
 APP_PATH="$BUILD_DIR/Build/Products/Debug/$APP_NAME.app"
 
+clear
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  🔮 Opta Mini - Premium Launch"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
-echo "🔮 Opta Mini Launch Sequence"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "📂 Directory: $SCRIPT_DIR"
+echo ""
 
-# 1. Check if already running
+# Check if already running
 if pgrep -x "$APP_NAME" > /dev/null; then
-    echo "⚡ Opta is already running. Bringing to front..."
+    PID=$(pgrep -x "$APP_NAME")
+    echo "✅ Opta Mini is ALREADY RUNNING (PID: $PID)"
+    echo ""
+    echo "   Bringing window to front..."
     open -a "$APP_NAME"
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "Press any key to close this window..."
+    read -n 1 -s
     exit 0
 fi
 
-# 2. Build (incremental)
+# Check for Xcode
+if ! command -v xcodebuild &> /dev/null; then
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "  ❌ ERROR - Xcode not found"
+    echo ""
+    echo "  Please install Xcode from the App Store."
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    echo "Press any key to close..."
+    read -n 1 -s
+    exit 1
+fi
+
+# Check for project file
+if [ ! -f "$SCRIPT_DIR/OptaNative.xcodeproj/project.pbxproj" ]; then
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "  ❌ ERROR - Project not found"
+    echo ""
+    echo "  OptaNative.xcodeproj not found in:"
+    echo "  $SCRIPT_DIR"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    echo "Press any key to close..."
+    read -n 1 -s
+    exit 1
+fi
+
+# Build
 echo "🛠️  Building Opta Mini..."
-BUILD_OUTPUT=$(xcodebuild -project "OptaNative.xcodeproj" \
+echo "   This may take a moment..."
+echo ""
+
+BUILD_LOG=$(mktemp)
+xcodebuild -project "$SCRIPT_DIR/OptaNative.xcodeproj" \
            -scheme "OptaNative" \
            -configuration Debug \
            -derivedDataPath "$BUILD_DIR" \
-           build 2>&1)
+           build 2>&1 | tee "$BUILD_LOG"
 
-BUILD_RESULT=$?
+BUILD_RESULT=${PIPESTATUS[0]}
 
-if [ $BUILD_RESULT -eq 0 ] || [ -d "$APP_PATH" ]; then
-    echo "✅ Build complete"
+echo ""
 
-    # 3. Clear extended attributes and re-sign for local execution
-    echo "🔐 Signing for local execution..."
-    xattr -cr "$APP_PATH" 2>/dev/null
-    codesign --force --deep --sign - "$APP_PATH" 2>/dev/null
-
-    # 4. Launch
-    if [ -d "$APP_PATH" ]; then
-        echo "🚀 Launching Opta Mini..."
-        open "$APP_PATH"
-        sleep 1
-
-        if pgrep -x "$APP_NAME" > /dev/null; then
-            echo ""
-            echo "✨ Opta Mini is now running in your menu bar"
-        else
-            echo "⚠️  App may have launched but couldn't verify"
-        fi
-    else
-        echo "❌ Could not find built app at: $APP_PATH"
-        read -p "Press ENTER to close..."
-        exit 1
-    fi
-else
-    echo "❌ Build failed"
+if [ $BUILD_RESULT -ne 0 ]; then
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "  ❌ BUILD FAILED"
     echo ""
-    echo "Build output (last 30 lines):"
-    echo "$BUILD_OUTPUT" | tail -30
+    echo "  Check the output above for errors."
+    echo "  Common fixes:"
+    echo "  • Open in Xcode and check for issues"
+    echo "  • Run: xcode-select --install"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
-    read -p "Press ENTER to close..."
+    rm -f "$BUILD_LOG"
+    echo "Press any key to close..."
+    read -n 1 -s
     exit 1
 fi
+
+rm -f "$BUILD_LOG"
+echo "✅ Build successful"
+echo ""
+
+# Verify app exists
+if [ ! -d "$APP_PATH" ]; then
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "  ❌ ERROR - Built app not found"
+    echo ""
+    echo "  Expected at: $APP_PATH"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    echo "Press any key to close..."
+    read -n 1 -s
+    exit 1
+fi
+
+# Sign for local execution
+echo "🔐 Signing for local execution..."
+xattr -cr "$APP_PATH" 2>/dev/null
+codesign --force --deep --sign - "$APP_PATH" 2>/dev/null
+
+# Launch
+echo "🚀 Launching Opta Mini..."
+open "$APP_PATH"
+
+# Wait and verify
+sleep 2
+
+if pgrep -x "$APP_NAME" > /dev/null; then
+    PID=$(pgrep -x "$APP_NAME")
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "  ✅ SUCCESS - Opta Mini is running!"
+    echo "     PID: $PID"
+    echo "     Look for it in your menu bar ↗️"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+else
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "  ❌ LAUNCH FAILED"
+    echo ""
+    echo "  The app built but failed to start."
+    echo "  Try opening OptaNative.xcodeproj in"
+    echo "  Xcode and running from there."
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+fi
+
+echo ""
+echo "Press any key to close this window..."
+read -n 1 -s
