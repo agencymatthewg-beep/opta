@@ -1,0 +1,308 @@
+import Foundation
+import Combine
+
+// MARK: - API Service
+
+@MainActor
+class APIService: ObservableObject {
+    static let shared = APIService()
+    
+    // Configure this to your deployed Next.js app URL
+    private let baseURL: String
+    
+    @Published var isLoading = false
+    @Published var lastError: String?
+    
+    private init() {
+        // Default to localhost for development
+        // Change this to your production URL when deploying
+        #if DEBUG
+        self.baseURL = "http://localhost:3000/api/mobile"
+        #else
+        self.baseURL = "https://your-opta-domain.com/api/mobile"
+        #endif
+    }
+    
+    // MARK: - Tasks API
+    
+    func fetchTasksDashboard() async throws -> TaskDashboardData {
+        let data: APIResponse<TaskDashboardData> = try await get("/tasks?view=dashboard")
+        return data.data!
+    }
+    
+    func fetchTodayTasks() async throws -> [OptaTask] {
+        let data: APIResponse<[OptaTask]> = try await get("/tasks?view=today")
+        return data.data ?? []
+    }
+    
+    func createTask(content: String, dueString: String? = nil, priority: Int? = nil) async throws -> OptaTask {
+        var body: [String: Any] = [
+            "action": "create",
+            "content": content
+        ]
+        if let dueString = dueString {
+            body["due_string"] = dueString
+        }
+        if let priority = priority {
+            body["priority"] = priority
+        }
+
+        let response: CreateTaskResponse = try await post("/tasks", body: body)
+        let task = response.task
+
+        // Schedule notification reminder if task has a due date
+        await MainActor.run {
+            NotificationManager.shared.scheduleTaskReminder(for: task)
+        }
+
+        return task
+    }
+    
+    func completeTask(taskId: String) async throws {
+        let body: [String: Any] = [
+            "action": "complete",
+            "taskId": taskId
+        ]
+        let _: APIResponse<EmptyData> = try await post("/tasks", body: body)
+    }
+    
+    // MARK: - Calendar API
+    
+    func fetchCalendarEvents(range: String = "today") async throws -> [CalendarEvent] {
+        let response: CalendarResponse = try await get("/calendar?range=\(range)")
+        return response.events
+    }
+    
+    func createCalendarEvent(summary: String, startTime: String, endTime: String? = nil) async throws {
+        var body: [String: Any] = [
+            "summary": summary,
+            "startTime": startTime
+        ]
+        if let endTime = endTime {
+            body["endTime"] = endTime
+        }
+        let _: APIResponse<EmptyData> = try await post("/calendar", body: body)
+    }
+    
+    func deleteCalendarEvent(eventId: String) async throws {
+        let _: APIResponse<EmptyData> = try await delete("/calendar?id=\(eventId)")
+    }
+    
+    // MARK: - Email API
+    
+    func fetchUnreadEmails() async throws -> [Email] {
+        let response: EmailResponse = try await get("/email")
+        return response.emails
+    }
+    
+    func createEmailDraft(to: String, subject: String, body: String) async throws {
+        let requestBody: [String: Any] = [
+            "action": "draft",
+            "to": to,
+            "subject": subject,
+            "body": body
+        ]
+        let _: APIResponse<EmptyData> = try await post("/email", body: requestBody)
+    }
+    
+    // MARK: - AI API
+
+    func sendAICommand(_ command: String, state: [String: Any] = [:]) async throws -> AICommandResponse {
+        // Try backend first, fall back to local AI if unavailable
+        do {
+            let body: [String: Any] = [
+                "action": "command",
+                "command": command,
+                "state": state
+            ]
+            return try await post("/ai", body: body)
+        } catch {
+            // Backend unavailable - use on-device AI
+            return await LocalAIService.shared.processCommand(command, state: state)
+        }
+    }
+    
+    func fetchBriefing() async throws -> Briefing {
+        do {
+            let body: [String: Any] = ["action": "briefing"]
+            let response: AIBriefingResponse = try await post("/ai", body: body)
+            return response.briefing
+        } catch {
+            // Return a local briefing when backend unavailable
+            let hour = Calendar.current.component(.hour, from: Date())
+            let greeting = hour < 12 ? "Good morning!" : (hour < 17 ? "Good afternoon!" : "Good evening!")
+            return Briefing(
+                greeting: greeting,
+                summary: "Welcome to Opta! Check your tasks and schedule below to stay organized today.",
+                stats: BriefingStats(tasksToday: 0, tasksTotal: 0, upcomingEvents: 0, unreadEmails: 0),
+                nextEvents: []
+            )
+        }
+    }
+
+    func fetchQuickStatus() async throws -> QuickStatusResponse {
+        do {
+            let body: [String: Any] = ["action": "quick_status"]
+            return try await post("/ai", body: body)
+        } catch {
+            // Return a local status when backend unavailable
+            return QuickStatusResponse(
+                success: true,
+                status: QuickStatus(tasksToday: 0, nextEvent: nil, nextEventTime: nil),
+                spokenResponse: "Ready to help! Check your dashboard for today's overview."
+            )
+        }
+    }
+    
+    // MARK: - Auth API
+    
+    func verifyAuth() async throws -> Bool {
+        let response: AuthVerifyResponse = try await get("/auth")
+        return response.authenticated
+    }
+    
+    // MARK: - HTTP Methods
+    
+    private func get<T: Decodable>(_ endpoint: String) async throws -> T {
+        guard let url = URL(string: baseURL + endpoint) else {
+            throw APIError.invalidURL
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        addAuthHeaders(&request)
+        
+        return try await execute(request)
+    }
+    
+    private func post<T: Decodable>(_ endpoint: String, body: [String: Any]) async throws -> T {
+        guard let url = URL(string: baseURL + endpoint) else {
+            throw APIError.invalidURL
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        addAuthHeaders(&request)
+        
+        return try await execute(request)
+    }
+    
+    private func delete<T: Decodable>(_ endpoint: String) async throws -> T {
+        guard let url = URL(string: baseURL + endpoint) else {
+            throw APIError.invalidURL
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        addAuthHeaders(&request)
+        
+        return try await execute(request)
+    }
+    
+    private func execute<T: Decodable>(_ request: URLRequest) async throws -> T {
+        isLoading = true
+        defer { isLoading = false }
+        
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw APIError.invalidResponse
+            }
+            
+            if httpResponse.statusCode == 401 {
+                throw APIError.unauthorized
+            }
+            
+            guard (200...299).contains(httpResponse.statusCode) else {
+                if let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data) {
+                    throw APIError.serverError(errorResponse.error)
+                }
+                throw APIError.httpError(httpResponse.statusCode)
+            }
+            
+            let decoder = JSONDecoder()
+            return try decoder.decode(T.self, from: data)
+            
+        } catch let error as APIError {
+            lastError = error.localizedDescription
+            throw error
+        } catch {
+            lastError = error.localizedDescription
+            throw APIError.networkError(error)
+        }
+    }
+    
+    private func addAuthHeaders(_ request: inout URLRequest) {
+        // Add session cookie or token if available
+        if let token = AuthManager.shared.sessionToken {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+    }
+}
+
+// MARK: - API Types
+
+struct APIResponse<T: Decodable>: Decodable {
+    let success: Bool
+    let data: T?
+    let message: String?
+}
+
+struct EmptyData: Decodable {}
+
+struct ErrorResponse: Decodable {
+    let error: String
+}
+
+struct AuthVerifyResponse: Decodable {
+    let authenticated: Bool
+    let user: UserInfo?
+}
+
+struct UserInfo: Decodable {
+    let name: String?
+    let email: String?
+    let image: String?
+}
+
+struct CreateTaskResponse: Decodable {
+    let success: Bool
+    let task: OptaTask
+    let message: String?
+}
+
+// MARK: - API Error
+
+enum APIError: LocalizedError {
+    case invalidURL
+    case invalidResponse
+    case unauthorized
+    case httpError(Int)
+    case serverError(String)
+    case networkError(Error)
+    case decodingError(Error)
+    
+    var errorDescription: String? {
+        switch self {
+        case .invalidURL:
+            return "Invalid API URL"
+        case .invalidResponse:
+            return "Invalid response from server"
+        case .unauthorized:
+            return "Please sign in to continue"
+        case .httpError(let code):
+            return "Server error (HTTP \(code))"
+        case .serverError(let message):
+            return message
+        case .networkError(let error):
+            return "Network error: \(error.localizedDescription)"
+        case .decodingError(let error):
+            return "Data error: \(error.localizedDescription)"
+        }
+    }
+}
