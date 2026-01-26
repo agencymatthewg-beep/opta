@@ -106,6 +106,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         menu.addItem(NSMenuItem.separator())
 
+        // Website
+        let websiteItem = NSMenuItem(title: "Open Optamize Website", action: #selector(openWebsite), keyEquivalent: "")
+        websiteItem.target = self
+        menu.addItem(websiteItem)
+
+        let copyLinkItem = NSMenuItem(title: "Copy Website Link", action: #selector(copyWebsiteLink), keyEquivalent: "")
+        copyLinkItem.target = self
+        menu.addItem(copyLinkItem)
+
+        menu.addItem(NSMenuItem.separator())
+
         // Preferences
         let prefsItem = NSMenuItem(title: "Preferences...", action: #selector(openPreferences), keyEquivalent: ",")
         prefsItem.target = self
@@ -150,6 +161,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func openPreferences() {
         NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+    }
+
+    @objc private func openWebsite() {
+        if let url = URL(string: "https://optamize.app") {
+            NSWorkspace.shared.open(url)
+        }
+    }
+
+    @objc private func copyWebsiteLink() {
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString("https://optamize.app", forType: .string)
     }
 
     @objc private func quitApp() {
