@@ -24,7 +24,12 @@ struct ContentView: View {
             // App list
             VStack(spacing: 2) {
                 ForEach(OptaApp.allApps) { app in
-                    AppRowView(app: app, isRunning: processMonitor.isRunning(app))
+                    AppRowView(
+                        app: app,
+                        isRunning: processMonitor.isRunning(app),
+                        onLaunch: { processMonitor.launch(app) },
+                        onStop: { processMonitor.stop(app) }
+                    )
                 }
             }
             .padding(.vertical, 8)
@@ -35,9 +40,12 @@ struct ContentView: View {
             Divider()
                 .padding(.horizontal, 8)
 
-            FooterView()
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
+            FooterView(
+                runningCount: processMonitor.runningCount,
+                onQuitAll: { processMonitor.stopAll() }
+            )
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
         }
         .frame(width: 280, height: 300)
     }
@@ -46,6 +54,8 @@ struct ContentView: View {
 struct AppRowView: View {
     let app: OptaApp
     let isRunning: Bool
+    let onLaunch: () -> Void
+    let onStop: () -> Void
     @State private var isHovered = false
 
     var body: some View {
@@ -68,10 +78,20 @@ struct AppRowView: View {
 
             Spacer()
 
-            // Status text
-            Text(isRunning ? "Running" : "Stopped")
-                .font(.system(size: 11))
-                .foregroundColor(.secondary)
+            // Action button (shown on hover) or status text
+            if isHovered {
+                Button(action: isRunning ? onStop : onLaunch) {
+                    Image(systemName: isRunning ? "stop.fill" : "play.fill")
+                        .font(.system(size: 10))
+                        .foregroundColor(isRunning ? .red : .green)
+                }
+                .buttonStyle(.plain)
+                .help(isRunning ? "Stop" : "Launch")
+            } else {
+                Text(isRunning ? "Running" : "Stopped")
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary)
+            }
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 6)
@@ -79,6 +99,12 @@ struct AppRowView: View {
             RoundedRectangle(cornerRadius: 6)
                 .fill(isHovered ? Color.primary.opacity(0.1) : Color.clear)
         )
+        .contentShape(Rectangle())
+        .onTapGesture {
+            if !isRunning {
+                onLaunch()
+            }
+        }
         .onHover { hovering in
             isHovered = hovering
         }
@@ -87,8 +113,20 @@ struct AppRowView: View {
 }
 
 struct FooterView: View {
+    let runningCount: Int
+    let onQuitAll: () -> Void
+
     var body: some View {
         HStack {
+            if runningCount > 0 {
+                Button("Quit All") {
+                    onQuitAll()
+                }
+                .buttonStyle(.plain)
+                .font(.system(size: 12))
+                .foregroundColor(.red.opacity(0.8))
+            }
+
             Spacer()
 
             Button("Quit") {
