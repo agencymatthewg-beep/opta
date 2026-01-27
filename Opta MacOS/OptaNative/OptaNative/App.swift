@@ -2,12 +2,10 @@
 //  App.swift
 //  OptaNative
 //
-//  Main application entry point with menu bar integration.
-//  Manages TelemetryViewModel as environment object for both
-//  the main window and menu bar popover.
-//  Enhanced with pin/transient behavior, momentum-based icon,
-//  and global celebration overlay.
-//  Created for Opta Native macOS - Plans 19-06, 20-09, 99-01
+//  Main application entry point.
+//  Manages TelemetryViewModel as environment object for the main window.
+//  Menu bar functionality moved to OptaMini.
+//  Created for Opta Native macOS
 //
 
 import SwiftUI
@@ -125,22 +123,6 @@ struct OptaNativeApp: App {
                 .keyboardShortcut("s", modifiers: [.command, .option])
             }
         }
-
-        // Menu Bar Extra with dynamic momentum-based icon
-        // This appears on the RIGHT side of the menu bar (with WiFi, battery, etc.)
-        MenuBarExtra {
-            // Use enhanced PopoverView with holographic visualization
-            PopoverView()
-                .environment(telemetry)
-        } label: {
-            // Visible label with icon and text
-            HStack(spacing: 3) {
-                Image(systemName: "bolt.circle.fill")
-                Text("Opta")
-                    .font(.system(size: 12, weight: .medium))
-            }
-        }
-        .menuBarExtraStyle(.window)
     }
 
     /// Opens the about information
@@ -150,51 +132,3 @@ struct OptaNativeApp: App {
     }
 }
 
-// MARK: - Menu Bar Icon View
-
-/// Dynamic menu bar icon that reflects system momentum state
-struct MenuBarIconView: View {
-    let cpuUsage: Double
-    let cpuTemperature: Double
-    let isHot: Bool
-
-    var body: some View {
-        HStack(spacing: 4) {
-            // Status icon
-            Image(systemName: statusIcon)
-                .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(iconColor)
-
-            // Optional: Show brief CPU indicator when high
-            if cpuUsage > 75 {
-                Text("\(Int(cpuUsage))")
-                    .font(.system(size: 9, weight: .medium, design: .rounded))
-                    .foregroundStyle(.secondary)
-            }
-        }
-    }
-
-    /// Dynamic icon based on system state
-    private var statusIcon: String {
-        if isHot {
-            return "flame.fill"
-        } else if cpuUsage > 85 {
-            return "bolt.trianglebadge.exclamationmark.fill"
-        } else if cpuUsage > 60 {
-            return "bolt.fill"
-        } else {
-            return "bolt"
-        }
-    }
-
-    /// Icon color based on state
-    private var iconColor: Color {
-        if isHot || cpuUsage > 85 {
-            return .red
-        } else if cpuUsage > 60 {
-            return .orange
-        } else {
-            return .primary
-        }
-    }
-}
