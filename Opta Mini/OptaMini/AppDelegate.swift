@@ -2,6 +2,20 @@ import Cocoa
 import SwiftUI
 import Combine
 
+// MARK: - NSImage Tinting Extension
+
+extension NSImage {
+    func tinted(with color: NSColor) -> NSImage {
+        let image = self.copy() as! NSImage
+        image.lockFocus()
+        color.set()
+        let imageRect = NSRect(origin: .zero, size: image.size)
+        imageRect.fill(using: .sourceAtop)
+        image.unlockFocus()
+        return image
+    }
+}
+
 // MARK: - Constants
 
 private enum MenuConstants {
@@ -30,39 +44,49 @@ private enum MenuConstants {
     }
 }
 
-/// Menu bar icon style options
-enum MenuBarIconStyle: String, CaseIterable {
-    case ecosystemGrid = "ecosystem"   // Default grid icon
-    case minimalDot = "dot"            // Simple circle indicator
-    case optaLogo = "logo"             // O logo style
+/// Menu bar icon color options
+enum MenuBarIconColor: String, CaseIterable {
+    case purple = "purple"     // Default Opta purple
+    case blue = "blue"
+    case green = "green"
+    case orange = "orange"
+    case pink = "pink"
+    case white = "white"       // System default (template)
 
     var displayName: String {
         switch self {
-        case .ecosystemGrid: return "Ecosystem Grid"
-        case .minimalDot: return "Minimal Dot"
-        case .optaLogo: return "Opta Logo"
+        case .purple: return "Purple (Default)"
+        case .blue: return "Blue"
+        case .green: return "Green"
+        case .orange: return "Orange"
+        case .pink: return "Pink"
+        case .white: return "System Default"
         }
     }
 
-    /// Returns the SF Symbol names for inactive and active states
-    func symbolNames(isActive: Bool) -> String {
+    var color: NSColor {
         switch self {
-        case .ecosystemGrid:
-            return isActive ? "circle.grid.2x2.fill" : "circle.grid.2x2"
-        case .minimalDot:
-            return isActive ? "circle.fill" : "circle"
-        case .optaLogo:
-            return isActive ? "o.circle.fill" : "o.circle"
+        case .purple: return NSColor(red: 0.66, green: 0.33, blue: 0.97, alpha: 1.0)  // #A855F7
+        case .blue: return NSColor.systemBlue
+        case .green: return NSColor.systemGreen
+        case .orange: return NSColor.systemOrange
+        case .pink: return NSColor.systemPink
+        case .white: return NSColor.white
         }
     }
 
-    static var current: MenuBarIconStyle {
-        let rawValue = UserDefaults.standard.string(forKey: "menuBarIconStyle") ?? "ecosystem"
-        return MenuBarIconStyle(rawValue: rawValue) ?? .ecosystemGrid
+    /// Whether to use template rendering (for system default)
+    var isTemplate: Bool {
+        return self == .white
     }
 
-    static func save(_ style: MenuBarIconStyle) {
-        UserDefaults.standard.set(style.rawValue, forKey: "menuBarIconStyle")
+    static var current: MenuBarIconColor {
+        let rawValue = UserDefaults.standard.string(forKey: "menuBarIconColor") ?? "purple"
+        return MenuBarIconColor(rawValue: rawValue) ?? .purple
+    }
+
+    static func save(_ color: MenuBarIconColor) {
+        UserDefaults.standard.set(color.rawValue, forKey: "menuBarIconColor")
     }
 }
 
@@ -106,7 +130,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func registerDefaults() {
         UserDefaults.standard.register(defaults: [
             "notificationsEnabled": true,
-            "menuBarIconStyle": MenuBarIconStyle.ecosystemGrid.rawValue
+            "menuBarIconColor": MenuBarIconColor.purple.rawValue
         ])
     }
 
@@ -134,12 +158,23 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func updateMenuBarIcon() {
         guard let button = statusItem?.button, let monitor = processMonitor else { return }
         let isActive = monitor.runningCount > 0
-        let iconStyle = MenuBarIconStyle.current
-        let symbolName = iconStyle.symbolNames(isActive: isActive)
-        button.image = NSImage(
-            systemSymbolName: symbolName,
-            accessibilityDescription: MenuConstants.accessibilityLabel
-        )
+        let iconColor = MenuBarIconColor.current
+
+        // Always use Opta O symbol
+        let symbolName = isActive ? "o.circle.fill" : "o.circle"
+
+        if let image = NSImage(systemSymbolName: symbolName, accessibilityDescription: MenuConstants.accessibilityLabel) {
+            if iconColor.isTemplate {
+                // Use system template rendering
+                image.isTemplate = true
+                button.image = image
+            } else {
+                // Apply custom color
+                image.isTemplate = false
+                let coloredImage = image.tinted(with: iconColor.color)
+                button.image = coloredImage
+            }
+        }
     }
 
     // MARK: - Menu Building
@@ -353,11 +388,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @MainActor
     private func addFooterSection(to menu: NSMenu) {
-        // Icon Style Submenu
-        let iconStyleItem = NSMenuItem(title: "Menu Bar Icon", action: nil, keyEquivalent: "")
-        iconStyleItem.image = NSImage(systemSymbolName: "paintbrush", accessibilityDescription: "Icon Style")
-        iconStyleItem.submenu = buildIconStyleSubmenu()
-        menu.addItem(iconStyleItem)
+        // Icon Color Submenu
+        let iconColorItem = NSMenuItem(title: "Icon Color", action: nil, keyEquivalent: "")
+        iconColorItem.image = NSImage(systemSymbolName: "paintbrush", accessibilityDescription: "Icon Color")
+        iconColorItem.submenu = buildIconColorSubmenu()
+        menu.addItem(iconColorItem)
 
         // Notifications Toggle
         let notificationsEnabled = UserDefaults.standard.bool(forKey: "notificationsEnabled")
@@ -428,23 +463,37 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    // MARK: - Icon Style
+    // MARK: - Icon Color
 
     @MainActor
-    private func buildIconStyleSubmenu() -> NSMenu {
+    private func buildIconColorSubmenu() -> NSMenu {
         let submenu = NSMenu()
-        let currentStyle = MenuBarIconStyle.current
+        let currentColor = MenuBarIconColor.current
 
-        for style in MenuBarIconStyle.allCases {
+        for color in MenuBarIconColor.allCases {
             let item = NSMenuItem(
-                title: style.displayName,
-                action: #selector(changeIconStyle(_:)),
+                title: color.displayName,
+                action: #selector(changeIconColor(_:)),
                 keyEquivalent: ""
             )
             item.target = self
-            item.representedObject = style
-            item.state = (style == currentStyle) ? .on : .off
-            item.image = NSImage(systemSymbolName: style.symbolNames(isActive: true), accessibilityDescription: style.displayName)
+            item.representedObject = color
+            item.state = (color == currentColor) ? .on : .off
+
+            // Create a colored circle indicator for each option
+            if let circleImage = NSImage(systemSymbolName: "circle.fill", accessibilityDescription: color.displayName) {
+                if color.isTemplate {
+                    circleImage.isTemplate = true
+                } else {
+                    circleImage.isTemplate = false
+                    let tintedImage = circleImage.tinted(with: color.color)
+                    item.image = tintedImage
+                }
+                if color.isTemplate {
+                    item.image = circleImage
+                }
+            }
+
             submenu.addItem(item)
         }
 
@@ -452,9 +501,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @MainActor
-    @objc private func changeIconStyle(_ sender: NSMenuItem) {
-        guard let style = sender.representedObject as? MenuBarIconStyle else { return }
-        MenuBarIconStyle.save(style)
+    @objc private func changeIconColor(_ sender: NSMenuItem) {
+        guard let color = sender.representedObject as? MenuBarIconColor else { return }
+        MenuBarIconColor.save(color)
         updateMenuBarIcon()
         rebuildMenu()
     }
