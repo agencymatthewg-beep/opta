@@ -109,16 +109,41 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         for app in OptaApp.allApps {
             let isRunning = monitor.isRunning(app)
-            let statusDot = isRunning ? MenuConstants.StatusIndicator.running : MenuConstants.StatusIndicator.stopped
 
             let item = NSMenuItem()
-            item.title = "\(statusDot)  \(app.name)"
+            item.attributedTitle = createAppTitle(name: app.name, isRunning: isRunning)
             item.representedObject = app
             item.image = NSImage(systemSymbolName: app.icon, accessibilityDescription: app.name)
             item.submenu = buildAppSubmenu(for: app, isRunning: isRunning)
 
             menu.addItem(item)
         }
+    }
+
+    /// Creates an attributed title with a colored status indicator
+    private func createAppTitle(name: String, isRunning: Bool) -> NSAttributedString {
+        let statusDot = isRunning ? MenuConstants.StatusIndicator.running : MenuConstants.StatusIndicator.stopped
+        let statusColor: NSColor = isRunning ? .systemGreen : .systemGray
+
+        let attributedString = NSMutableAttributedString()
+
+        // Colored status dot
+        let dotAttributes: [NSAttributedString.Key: Any] = [
+            .foregroundColor: statusColor,
+            .font: NSFont.systemFont(ofSize: 12)
+        ]
+        attributedString.append(NSAttributedString(string: statusDot, attributes: dotAttributes))
+
+        // Spacing
+        attributedString.append(NSAttributedString(string: "  "))
+
+        // App name (default color)
+        let nameAttributes: [NSAttributedString.Key: Any] = [
+            .font: NSFont.systemFont(ofSize: 13)
+        ]
+        attributedString.append(NSAttributedString(string: name, attributes: nameAttributes))
+
+        return attributedString
     }
 
     @MainActor
