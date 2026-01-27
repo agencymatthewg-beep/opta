@@ -363,21 +363,23 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Get the path to the current app
         let bundlePath = Bundle.main.bundlePath
 
-        // Launch a new instance after a short delay
-        let task = Process()
-        task.launchPath = "/usr/bin/open"
-        task.arguments = ["-n", bundlePath]
+        // Use a shell command that waits for the app to quit, then relaunches
+        // This ensures clean quit before relaunch
+        let script = """
+        sleep 1
+        open "\(bundlePath)"
+        """
 
-        // Quit after launching new instance
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            do {
-                try task.run()
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                    NSApplication.shared.terminate(nil)
-                }
-            } catch {
-                print("Failed to restart: \(error)")
-            }
+        let task = Process()
+        task.launchPath = "/bin/bash"
+        task.arguments = ["-c", script]
+
+        do {
+            try task.run()
+            // Quit immediately - the bash script will relaunch after we're gone
+            NSApplication.shared.terminate(nil)
+        } catch {
+            print("Failed to restart: \(error)")
         }
     }
 
