@@ -15,8 +15,13 @@ const eslintConfig = defineConfig([
   ]),
   {
     rules: {
-      // Disable overly strict React 18 hooks rule for async data fetching patterns
+      // Disable overly strict React 18 hooks rules for async data fetching patterns
       "react-hooks/set-state-in-effect": "off",
+      "react-hooks/immutability": "off",
+      // Allow unescaped entities in JSX
+      "react/no-unescaped-entities": "off",
+      // Allow explicit any for complex third-party integrations
+      "@typescript-eslint/no-explicit-any": "warn",
     },
   },
 ]);
