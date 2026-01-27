@@ -15,17 +15,19 @@ enum NavigationItem: String, CaseIterable, Identifiable {
     case gameSession = "Game Booster"
     case gamification = "Achievements"
     case optimization = "Optimization"
+    case macTweaks = "Mac Tweaks"
     case conflicts = "Health"
     case chess = "Chess"
-    
+
     var id: String { rawValue }
-    
+
     var icon: String {
         switch self {
         case .dashboard: return "gauge.with.dots.needle.bottom.50percent"
         case .gameSession: return "gamecontroller.fill"
         case .gamification: return "trophy.fill"
         case .optimization: return "slider.horizontal.3"
+        case .macTweaks: return "gearshape.2.fill"
         case .conflicts: return "stethoscope"
         case .chess: return "crown.fill"
         }
@@ -34,10 +36,10 @@ enum NavigationItem: String, CaseIterable, Identifiable {
 
 struct RootView: View {
     @State private var selection: NavigationItem? = nil // Nil means Home/Radial Menu
-    
+
     // Environment
     @Environment(TelemetryViewModel.self) private var telemetry
-    
+
     var body: some View {
         ZStack {
             // Background Atmosphere (Global)
@@ -67,6 +69,8 @@ struct RootView: View {
                         GamificationDashboard()
                     case .optimization:
                         OptimizationView()
+                    case .macTweaks:
+                        DefaultsOptimizerView()
                     case .conflicts:
                         ConflictView()
                     case .chess:
@@ -107,6 +111,62 @@ struct RootView: View {
         }
         .preferredColorScheme(.dark)
         .animation(.spring(response: 0.5, dampingFraction: 0.8), value: selection)
+        // MARK: - Keyboard Shortcuts
+        .onKeyboardShortcut(.goHome) {
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                selection = nil
+            }
+        }
+        .onKeyboardShortcut(.goBack) {
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                selection = nil
+            }
+        }
+        .onKeyboardShortcut(.refresh) {
+            // Refresh telemetry data
+            Task {
+                await telemetry.refresh()
+            }
+        }
+        .onKeyboardShortcut(.hardReset) {
+            // Hard reset - go home and refresh
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                selection = nil
+            }
+            Task {
+                await telemetry.refresh()
+            }
+        }
+        .onKeyboardShortcut(.navDashboard) {
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                selection = .dashboard
+            }
+        }
+        .onKeyboardShortcut(.navGameBooster) {
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                selection = .gameSession
+            }
+        }
+        .onKeyboardShortcut(.navAchievements) {
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                selection = .gamification
+            }
+        }
+        .onKeyboardShortcut(.navOptimization) {
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                selection = .optimization
+            }
+        }
+        .onKeyboardShortcut(.navHealth) {
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                selection = .conflicts
+            }
+        }
+        .onKeyboardShortcut(.navChess) {
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                selection = .chess
+            }
+        }
     }
 }
 

@@ -42,6 +42,18 @@ struct OptaLMiOSApp: App {
             .onOpenURL { url in
                 // Handle Google Sign-In callback
                 _ = authManager.handleURL(url)
+                // TodoistService temporarily disabled
+                /*
+                if !authManager.handleURL(url) {
+                    // Check if it's a Todoist OAuth callback
+                    if TodoistService.isOAuthCallback(url),
+                       let code = TodoistService.extractCode(from: url) {
+                        Task {
+                            await authManager.handleTodoistCallback(code: code)
+                        }
+                    }
+                }
+                */
             }
             .task {
                 // Restore previous Google Sign-In on app launch

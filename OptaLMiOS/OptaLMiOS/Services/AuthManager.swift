@@ -113,6 +113,39 @@ class AuthManager: NSObject, ObservableObject {
         )
     }
 
+    // TodoistService temporarily disabled
+    /*
+    func signInWithTodoist() async throws {
+        isLoading = true
+        error = nil
+
+        defer { isLoading = false }
+
+        guard let authURL = TodoistService.shared.initiateOAuth() else {
+            error = "Failed to generate Todoist OAuth URL"
+            throw AuthError.todoistOAuthFailed
+        }
+
+        // Open Safari for OAuth flow
+        // The callback will be handled in the app delegate/scene delegate
+        await UIApplication.shared.open(authURL)
+    }
+
+    func handleTodoistCallback(code: String) async {
+        isLoading = true
+        error = nil
+
+        defer { isLoading = false }
+
+        do {
+            try await TodoistService.shared.handleOAuthCallback(code: code)
+            // Todoist auth successful - user can now use hybrid mode
+        } catch {
+            self.error = error.localizedDescription
+        }
+    }
+    */
+
     func signOut() {
         // Sign out from Google
         GIDSignIn.sharedInstance.signOut()
@@ -301,6 +334,19 @@ struct User: Codable {
     let name: String
     let email: String
     let image: String?
+}
+
+// MARK: - Auth Error
+
+enum AuthError: LocalizedError {
+    case todoistOAuthFailed
+
+    var errorDescription: String? {
+        switch self {
+        case .todoistOAuthFailed:
+            return "Failed to initiate Todoist OAuth flow"
+        }
+    }
 }
 
 // MARK: - Keychain Helper

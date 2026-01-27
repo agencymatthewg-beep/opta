@@ -91,9 +91,8 @@ final class SpatialAudioManager {
 
         // Configure listener (user) position at origin
         environment.listenerPosition = AVAudio3DPoint(x: 0, y: 0, z: 0)
-        environment.listenerAngularOrientation = AVAudio3DVectorOrientation(
-            forward: AVAudio3DVector(x: 0, y: 0, z: -1),
-            up: AVAudio3DVector(x: 0, y: 1, z: 0)
+        environment.listenerAngularOrientation = AVAudio3DAngularOrientation(
+            yaw: 0, pitch: 0, roll: 0
         )
 
         // Configure distance attenuation (inverse model for realistic physics)
@@ -270,9 +269,11 @@ final class SpatialAudioManager {
     ///   - forward: Forward direction vector
     ///   - up: Up direction vector
     func updateListenerOrientation(forward: SIMD3<Float>, up: SIMD3<Float>) {
-        environmentNode?.listenerAngularOrientation = AVAudio3DVectorOrientation(
-            forward: AVAudio3DVector(x: forward.x, y: forward.y, z: forward.z),
-            up: AVAudio3DVector(x: up.x, y: up.y, z: up.z)
+        // Convert forward/up vectors to yaw/pitch/roll angles
+        let yaw = atan2(forward.x, -forward.z) * 180.0 / .pi
+        let pitch = asin(forward.y) * 180.0 / .pi
+        environmentNode?.listenerAngularOrientation = AVAudio3DAngularOrientation(
+            yaw: yaw, pitch: pitch, roll: 0
         )
     }
 

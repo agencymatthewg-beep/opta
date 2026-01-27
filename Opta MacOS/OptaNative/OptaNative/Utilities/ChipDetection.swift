@@ -166,4 +166,61 @@ enum ChipDetection {
     static func clearCache() {
         cachedInfo = nil
     }
+
+    /// Whether this chip supports High Power Mode
+    /// Only M3 Pro/Max and M4 Pro/Max support this feature
+    static var supportsHighPowerMode: Bool {
+        let family = getChipFamily()
+        let variant = getChipVariant()
+
+        // High Power Mode requires Pro/Max/Ultra variant
+        guard variant == .pro || variant == .max || variant == .ultra else {
+            return false
+        }
+
+        // High Power Mode is available on M3+ Pro/Max chips
+        switch family {
+        case .m3, .m4:
+            return true
+        default:
+            return false
+        }
+    }
+
+    /// Check if High Power Mode is currently enabled
+    /// Returns nil if not supported, true if enabled, false if disabled
+    static func isHighPowerModeEnabled() -> Bool? {
+        guard supportsHighPowerMode else { return nil }
+
+        // Check via powermetrics or ioreg
+        // For now, use a defaults read check (requires testing on actual hardware)
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/pmset")
+        process.arguments = ["-g"]
+
+        let pipe = Pipe()
+        process.standardOutput = pipe
+        process.standardError = FileHandle.nullDevice
+
+        do {
+            try process.run()
+            process.waitUntilExit()
+
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            guard let output = String(data: data, encoding: .utf8) else {
+                return nil
+            }
+
+            // Look for "highpowermode" in pmset output
+            // When enabled, should show "highpowermode 1"
+            if output.contains("highpowermode") {
+                return output.contains("highpowermode         1") ||
+                       output.contains("highpowermode 1")
+            }
+
+            return nil
+        } catch {
+            return nil
+        }
+    }
 }

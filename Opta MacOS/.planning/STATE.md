@@ -9,10 +9,10 @@ See: .planning/PROJECT.md (updated 2026-01-15)
 
 ## Current Position
 
-Phase: 95 of 100 (Gamification)
-Plan: 95-01 COMPLETE
-Status: v12.0 Feature Restoration — Phase 95 plan 01 complete (Gamification system with badges, achievements, streaks, XP, daily challenges)
-Last activity: 2026-01-24 — Completed 95-01 (GamificationModels, GamificationManager, GamificationDashboard, BadgeCollectionView, AchievementUnlockOverlay)
+Phase: 100 of 100 (Chess SwiftUI Reimplementation)
+Plan: 100-01 COMPLETE
+Status: v12.0 Feature Restoration — COMPLETE (10 of 10 phases)
+Last activity: 2026-01-26 — Completed 100-01 (Chess SwiftUI: PGN import/export, Puzzle Mode)
 
 Progress: ██████████ 100% of v5.0 (17 phases complete)
 v5.1 Progress: ██████████ 100% (7 of 7 phases complete)
@@ -23,73 +23,116 @@ v9.0 Progress: ██████████ 100% (6 of 6 phases complete) ✅
 v9.1 Progress: ██████████ 100% (1 of 1 phases complete) ✅
 v10.0 Progress: ████████░░ 80% (4 of 5 phases complete)
 v11.0 Progress: ██████████ 100% (10 of 10 phases complete) ✅
-v12.0 Progress: ████░░░░░░ 40% (4 of 10 phases complete)
+v12.0 Progress: ██████████ 100% (10 of 10 phases complete) ✅
+
+### Phase 96 Plans (COMPLETE)
+
+| Plan | Status | Description |
+|------|--------|-------------|
+| 96-01 | ✅ Complete | Game Session System (GameSessionService, GameSessionViewModel, GameSessionView, GameSessionDetailView) |
+
+### Phase 97 Plans (COMPLETE)
+
+| Plan | Status | Description |
+|------|--------|-------------|
+| 97-01 | ✅ Complete | Conflict Detection & Adaptive Learning (14 conflict definitions, pattern tracking integration, Obsidian ConflictView, auto-suggest prompts) |
+
+### Phase 98 Plans (COMPLETE)
+
+| Plan | Status | Description |
+|------|--------|-------------|
+| 98-01 | ✅ Complete | Advanced Optimization (NetworkLatencyService DNS/jitter/QoS, PowerService battery impact, OptimizationView Obsidian, auto-switch) |
+
+### Phase 99 Plans (COMPLETE)
+
+| Plan | Status | Description |
+|------|--------|-------------|
+| 99-01 | ✅ Complete | Visual Effects (CelebrationService, enhanced ParticleEffectView, CelebrationOverlay, RingEnergyField, App.swift integration) |
+
+### Phase 100 Plans (COMPLETE)
+
+| Plan | Status | Description |
+|------|--------|-------------|
+| 100-01 | ✅ Complete | Chess SwiftUI Reimplementation (PGNService, ChessPuzzle model, PuzzleService, PuzzleViewModel, PuzzleModeView, import/export integration) |
 
 ### Phase 95 Plans (COMPLETE)
+
 | Plan | Status | Description |
 |------|--------|-------------|
 | 95-01 | ✅ Complete | Gamification System (GamificationModels, GamificationManager, GamificationDashboard, BadgeCollectionView, AchievementUnlockOverlay, navigation wiring) |
 
 ### Phase 94 Plans (COMPLETE)
+
 | Plan | Status | Description |
 |------|--------|-------------|
 | 94-01 | ✅ Complete | Score Breakdown (ScoreModels, ScoreDetailView, ScoreCategoryCard, ScoreHistoryChart, navigation wiring) |
 
 ### Phase 93 Plans (COMPLETE)
+
 | Plan | Status | Description |
 |------|--------|-------------|
 | 93-01 | ✅ Complete | Command Palette (CommandPaletteModels, CommandPaletteView, Cmd+K shortcut, fuzzy search) |
 
 ### Phase 92 Plans (COMPLETE)
+
 | Plan | Status | Description |
 |------|--------|-------------|
 | 92-01 | ✅ Complete | AI Chat View and Message System (ChatModels, AiChatView, ChatMessageBubble, ChatInputView) |
 | 92-02 | ✅ Complete | LLM Service and Hybrid Routing (LLMService, CloudLLMService, LocalLLMService, SemanticRouter, ChatService) |
 
 ### Phase 91 Plans (COMPLETE)
+
 | Plan | Status | Description |
 |------|--------|-------------|
 | 91-01 | ✅ Complete | OptimizeView (hero button, health grid, before/after results, score, process summary) |
 | 91-02 | ✅ Complete | ProcessesView (sortable table, search/filter, multi-select, terminate with confirm) |
 
 ### Phase 69 Plans (COMPLETE)
+
 | Plan | Status | Description |
 |------|--------|-------------|
 | 69-01 | ✅ Complete | Swift Bindings Setup (UniFFI generation, Xcode integration) |
 | 69-02 | ✅ Complete | Shell Implementation (OptaCoreManager, ViewModel, EffectExecutor) |
 
 ### Phase 70 Plans (COMPLETE)
+
 | Plan | Status | Description |
 |------|--------|-------------|
 | 70-01 | ✅ Complete | Dashboard UI Components (TelemetryCard, ScoreDisplay, QuickActions, DashboardView) |
 | 70-02 | ✅ Complete | OptaRing Integration (OptaRingView wrapper, page-based navigation) |
 
 ### Phase 71 Plans (COMPLETE)
+
 | Plan | Status | Description |
 |------|--------|-------------|
 | 71-01 | ✅ Complete | Settings Preferences (Profiles, Shortcuts, Themes, Refactored SettingsView) |
 
 ### Phase 72 Plans (COMPLETE)
+
 | Plan | Status | Description |
 |------|--------|-------------|
 | 72-01 | ✅ Complete | Games Library (Game detection, GameCardView, GamesLibraryView, GameDetailView) |
 
 ### Phase 73 Plans (COMPLETE)
+
 | Plan | Status | Description |
 |------|--------|-------------|
 | 73-01 | ✅ Complete | Menu Bar Agent (NotificationService, AgentModeManager, enhanced MenuBar UI) |
 
 ### Phase 74 Plans (COMPLETE)
+
 | Plan | Status | Description |
 |------|--------|-------------|
 | 74-01 | ✅ Complete | App Store Preparation (Assets.xcassets, metadata, archive script) |
 
 ### Phase 75 Plans (COMPLETE)
+
 | Plan | Status | Description |
 |------|--------|-------------|
 | 75-01 | ✅ Complete | Premium Haptics & Audio (AHAP files, SpatialAudioManager, ThermalStateManager, SensoryManager) |
 
 ### v11.0 Refined Obsidian Aesthetic (Complete) ✅
+
 | Phase | Name | Status |
 |-------|------|--------|
 | 81 | Obsidian Ring Material | ✅ Complete |
@@ -104,12 +147,14 @@ v12.0 Progress: ████░░░░░░ 40% (4 of 10 phases complete)
 | 90 | Visual Cohesion Launch | ✅ Complete |
 
 ### Phase 90 Plans (COMPLETE)
+
 | Plan | Status | Description |
 |------|--------|-------------|
 | 90-01 | ✅ Complete | Color Temperature Conversion (9 remaining view files: Games, Settings, MenuBar, Utilities) |
 | 90-02 | ✅ Complete | Visual Cohesion Verification & Launch Polish (organic motion gap, Color.purple defaults, audit) |
 
 ### Phase 89 Plans (COMPLETE)
+
 | Plan | Wave | Status | Description |
 |------|------|--------|-------------|
 | 89-01 | 1 | ✅ Complete | Color Temperature Foundation (ColorTemperature.swift, ColorTemperatureEnvironment.swift) |
@@ -117,6 +162,7 @@ v12.0 Progress: ████░░░░░░ 40% (4 of 10 phases complete)
 | 89-03 | 2 | ✅ Complete | Menu Bar & Games Temperature Integration (MenuBarCircularMenuButton, GameCardView, CircularMenuView, OptaAppApp) |
 
 ### Phase 88 Plans (COMPLETE)
+
 | Plan | Wave | Status | Description |
 |------|------|--------|-------------|
 | 88-01 | 1 | ✅ Complete | Organic Motion Foundation (OrganicMotion.swift, OrganicMotionModifiers.swift) |
@@ -124,18 +170,21 @@ v12.0 Progress: ████░░░░░░ 40% (4 of 10 phases complete)
 | 88-03 | 2 | ✅ Complete | Games & List Organic Integration (GameCardView, GamesLibraryView, DashboardView) |
 
 ### Phase 87 Plans (COMPLETE)
+
 | Plan | Status | Description |
 |------|--------|-------------|
 | 87-01 | ✅ Complete | Settings Views Obsidian Refresh (SettingsView, ProfileManagerView, ThemeCustomizationView, KeyboardShortcutsView) |
 | 87-02 | ✅ Complete | Games Views Obsidian Refresh (GamesLibraryView, GameCardView, GameDetailView) |
 
 ### Phase 86 Plans (COMPLETE)
+
 | Plan | Status | Description |
 |------|--------|-------------|
 | 86-01 | ✅ Complete | Obsidian Menu Shader & Branch Highlight (obsidian material, branch energy wave, FFI update) |
 | 86-02 | ✅ Complete | Swift Circular Menu Obsidian Integration (obsidian base, unified violet, bridge rename, menu bar update) |
 
 ### Phase 85 Plans (COMPLETE)
+
 | Plan | Status | Description |
 |------|--------|-------------|
 | 85-01 | ✅ Complete | FFI Panel Exports (GlassPanel 9 functions, BranchMeter 6, BranchIndicator 5, BranchBorder 5) |
@@ -143,26 +192,31 @@ v12.0 Progress: ████░░░░░░ 40% (4 of 10 phases complete)
 | 85-03 | ✅ Complete | QuickActions + Dashboard Layout Obsidian (obsidian buttons, depth hierarchy, violet palette) |
 
 ### Phase 84 Plans (COMPLETE)
+
 | Plan | Status | Description |
 |------|--------|-------------|
 | 84-01 | ✅ Complete | Branch Energy GPU Components (BranchMeter, BranchIndicator, BranchBorder shaders + Rust components) |
 
 ### Phase 83 Plans (COMPLETE)
+
 | Plan | Status | Description |
 |------|--------|-------------|
 | 83-01 | ✅ Complete | Obsidian Panel Shaders (Cook-Torrance, edge branches, no backdrop blur) |
 
 ### Phase 82 Plans (COMPLETE)
+
 | Plan | Status | Description |
 |------|--------|-------------|
 | 82-01 | ✅ Complete | Branch Energy Shader (ridged turbulence veins, equator masking, threshold revelation, tri-axis response) |
 
 ### Phase 81 Plans (COMPLETE)
+
 | Plan | Status | Description |
 |------|--------|-------------|
 | 81-01 | ✅ Complete | Obsidian Ring Material (Cook-Torrance BRDF, emission blend, Electric Violet energy) |
 
 ### v10.0 Visual Experience Reimplementation (In Progress)
+
 | Phase | Name | Status |
 |-------|------|--------|
 | 76 | Opta Text Reimplementation | ✅ Complete |
@@ -172,29 +226,34 @@ v12.0 Progress: ████░░░░░░ 40% (4 of 10 phases complete)
 | 80 | Visual Integration & Launch | 📋 Planned |
 
 ### Phase 79 Plans (COMPLETE)
+
 | Plan | Wave | Status | Description |
 |------|------|--------|-------------|
 | 79-01 | 1 | ✅ Complete | Circular Menu wgpu Component (shader, Rust component, geometry, spring animations, FFI) |
 | 79-02 | 2 | ✅ Complete | SwiftUI Circular Menu Integration (gestures, keyboard, navigation, menu bar, haptics) |
 
 ### Phase 78 Plans (COMPLETE)
+
 | Plan | Status | Description |
 |------|--------|-------------|
 | 78-01 | ✅ Complete | HD Glass Panel System (HD shader, quality levels, glow/neon effects, depth hierarchy) |
 | 78-02 | ✅ Complete | Theme, Presets & Accessibility (color temperature, effect presets, reduced motion, high contrast) |
 
 ### Phase 77 Plans (COMPLETE)
+
 | Plan | Status | Description |
 |------|--------|-------------|
 | 77-01 | ✅ Complete | HD Ring Enhancement (geometry, glass, plasma, bloom, physics, 120Hz) |
 
 ### Phase 76 Plans (COMPLETE)
+
 | Plan | Status | Description |
 |------|--------|-------------|
 | 76-01 | ✅ Complete | Text Foundation (OptaTextStyle, CharacterAnimator) |
 | 76-02 | ✅ Complete | Text Components (OptaTextView, OptaTextZone, Dashboard Integration) |
 
 ### v5.0 Phase Completion Summary
+
 | Phase | Name | Status |
 |-------|------|--------|
 | 24 | 3D Ring Foundation | ✅ Complete |
@@ -216,6 +275,7 @@ v12.0 Progress: ████░░░░░░ 40% (4 of 10 phases complete)
 | 40 | Documentation & Launch | ✅ Complete |
 
 ### v5.1 Ring Visual Enhancement (Complete)
+
 | Phase | Name | Status |
 |-------|------|--------|
 | 41.2 | Internal Plasma Core | ✅ Complete |
@@ -227,6 +287,7 @@ v12.0 Progress: ████░░░░░░ 40% (4 of 10 phases complete)
 | 41.8 | Reference Image Parity | ✅ Complete |
 
 ### v6.0 Phase Progress (Complete)
+
 | Phase | Name | Status |
 |-------|------|--------|
 | 41 | Knowledge Research Foundation | ✅ Complete |
@@ -242,6 +303,7 @@ v12.0 Progress: ████░░░░░░ 40% (4 of 10 phases complete)
 | 50 | v6.0 Launch | ✅ Complete |
 
 ### Phase 41 Plans (COMPLETE)
+
 | Plan | Domain | Description |
 |------|--------|-------------|
 | 41-01 | GPU | Apple Silicon GPU Architecture Research |
@@ -251,6 +313,7 @@ v12.0 Progress: ████░░░░░░ 40% (4 of 10 phases complete)
 | 41-05 | Storage | Apple Silicon Storage Optimization Research |
 
 ### Phase 41.1 Plans (COMPLETE)
+
 | Plan | Status | Description |
 |------|--------|-------------|
 | 41.1-01 | ✅ Complete | Directory structure and JSON schema |
@@ -259,6 +322,7 @@ v12.0 Progress: ████░░░░░░ 40% (4 of 10 phases complete)
 | 41.1-04 | ✅ Complete | Extraction methodology documentation |
 
 **Knowledge Extracted:**
+
 - 4 HIGH priority Gemini reports processed
 - ~200 knowledge entries across T2, T3, T4 tiers
 - Architecture files: apple-silicon.json, optimization-software.json
@@ -266,6 +330,7 @@ v12.0 Progress: ████░░░░░░ 40% (4 of 10 phases complete)
 - Reports archived to `.planning/research/archive/`
 
 ### Phase 42 Plans (COMPLETE)
+
 | Plan | Status | Description |
 |------|--------|-------------|
 | 42-01 | ✅ Complete | Component Interaction Matrix Schema |
@@ -275,6 +340,7 @@ v12.0 Progress: ████░░░░░░ 40% (4 of 10 phases complete)
 | 42-05 | ✅ Complete | Power Budget Optimization Tables |
 
 ### Phase 43 Plans (COMPLETE)
+
 | Plan | Status | Description |
 |------|--------|-------------|
 | 43-01 | ✅ Complete | Settings schema and directory structure |
@@ -284,11 +350,13 @@ v12.0 Progress: ████░░░░░░ 40% (4 of 10 phases complete)
 | 43-05 | ✅ Complete | Hardware recommendations (4 tiers) + Solver rules (30 rules) |
 
 ### Phase 51 Plans
+
 | Plan | Status | Description |
 |------|--------|-------------|
 | 51-01 | ⏳ Ready | Full quick access system (widget, tabs, shortcut) |
 
 ### v7.0 Chess Mastery (Complete)
+
 | Phase | Name | Status |
 |-------|------|--------|
 | 51 | Quick Access System | ✅ Complete |
@@ -301,6 +369,7 @@ v12.0 Progress: ████░░░░░░ 40% (4 of 10 phases complete)
 | 58 | Chess Mastery Launch | ✅ Complete |
 
 ### v8.0 Rust Native Architecture (Complete) 🎉
+
 | Phase | Name | Status |
 |-------|------|--------|
 | 59 | Rust Core Foundation | ✅ Complete (3 plans) |
@@ -315,6 +384,7 @@ v12.0 Progress: ████░░░░░░ 40% (4 of 10 phases complete)
 | 68 | Rust Native Launch | ✅ Complete (1 plan - testing & compliance)
 
 **Architecture Overview:**
+
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                    Native Shell Layer                    │
@@ -329,6 +399,7 @@ v12.0 Progress: ████░░░░░░ 40% (4 of 10 phases complete)
 ```
 
 **Key Technologies:**
+
 - Crux (headless Rust core)
 - UniFFI (Swift/Kotlin bindings)
 - wgpu (Metal/Vulkan/DX12)
@@ -336,6 +407,7 @@ v12.0 Progress: ████░░░░░░ 40% (4 of 10 phases complete)
 - Rive (animations)
 
 ### Phase 59 Plans (COMPLETE)
+
 | Plan | Wave | Status | Description |
 |------|------|--------|-------------|
 | 59-01 | 1 | ✅ Complete | UniFFI Interface Definition |
@@ -343,6 +415,7 @@ v12.0 Progress: ████░░░░░░ 40% (4 of 10 phases complete)
 | 59-03 | 2 | ✅ Complete | Cross-Compilation Setup |
 
 ### Phase 60 Plans (COMPLETE)
+
 | Plan | Wave | Status | Description |
 |------|------|--------|-------------|
 | 60-01 | 1 | ✅ Complete | wgpu Instance and Surface (GpuContext, RenderSurface) |
@@ -350,6 +423,7 @@ v12.0 Progress: ████░░░░░░ 40% (4 of 10 phases complete)
 | 60-03 | 2 | ✅ Complete | Frame Timing and Quality (FrameTiming, QualitySettings, RenderState) |
 
 **Phase 60 Deliverables:**
+
 - `opta-render` crate with wgpu v24.0 and Metal backend
 - GPU context initialization with Apple Silicon detection
 - Surface management for SwiftUI/UIKit integration
@@ -363,6 +437,7 @@ v12.0 Progress: ████░░░░░░ 40% (4 of 10 phases complete)
 ## Performance Metrics
 
 **Velocity:**
+
 - Total plans completed: 82
 - Average duration: 8 min
 - Total execution time: ~10.6 hours
@@ -394,6 +469,7 @@ v12.0 Progress: ████░░░░░░ 40% (4 of 10 phases complete)
 | 20. Rich Interactions & Premium Visuals | 11/11 | ~90 min | 8.2 min |
 
 **Recent Trend:**
+
 - Last 5 plans: 15, 10, 12, 8, 10 min (Wave 3-4)
 - Trend: Swift/SwiftUI plans slightly longer than React
 
@@ -793,6 +869,41 @@ v12.0 Progress: ████░░░░░░ 40% (4 of 10 phases complete)
 | 94-01 | ScoreHistoryManager persists to Application Support | ~/Library/Application Support/OptaApp/score-history.json, max 90 entries |
 | 94-01 | SwiftUI Charts for score history | LineMark+AreaMark for trend, PointMark for optimization events |
 | 94-01 | Score section in OptimizeView now navigable | Tappable button with chevron, navigates to .score page |
+| 97-01 | 14 conflict definitions (was 5) | Added Turbo Boost Switcher, OnyX, Memory Clean, Dr. Cleaner, Stats, MenuMeters, Parallels, gfxCardStatus, Activity Monitor |
+| 97-01 | UserDefaults for ignored conflicts persistence | JSONEncoder/Decoder with Set<String>, survives app restarts |
+| 97-01 | Pattern tracking in GameSessionViewModel | trackEvent(.gameLaunch) and trackEvent(.optimizeOn/Off) on session start/stop |
+| 97-01 | Power profile tracking in OptimizationViewModel | Track optimization on/off when switching to/from Gaming/HighPerformance profiles |
+| 97-01 | Auto-suggest optimization prompt | Shows when game name matches frequently-optimized pattern (>50% probability) |
+| 97-01 | Obsidian design for ConflictView | Color.optaVoid background, optaSurface cards, optaNeonPurple accents, Opta typography |
+| 98-01 | DNS resolution timing via CFHost | Uses CFHostStartInfoResolution for precise DNS lookup measurements |
+| 98-01 | Jitter calculated as standard deviation | Multiple ping samples (3) for latency variance calculation |
+| 98-01 | QoS classification (excellent/good/fair/poor) | Based on total latency (<30/60/120ms) and jitter (<5/10/25ms) thresholds |
+| 98-01 | Buffer recommendation based on network conditions | 64KB for excellent, 128KB for good, 256KB for variable connections |
+| 98-01 | BatteryImpact enum (minimal/moderate/significant/heavy) | Maps power profiles to expected battery drain levels |
+| 98-01 | ThermalImpact enum (cool/warm/hot) | Maps power profiles to expected thermal output |
+| 98-01 | IOKit.ps for battery status | Uses IOPSCopyPowerSourcesInfo for battery capacity, health, and cycle count |
+| 98-01 | Auto-switch integration with PatternLearningService | Checks shouldSuggestOptimization to recommend Gaming profile |
+| 98-01 | Obsidian design for OptimizationView | NetworkOverviewCard, PowerProfileCard with battery/thermal indicators, Opta typography |
+| 99-01 | CelebrationService singleton pattern | @Observable @MainActor for thread-safe state, queue for sequential effects |
+| 99-01 | NSWorkspace.accessibilityDisplayShouldReduceMotion | UserDefaults fallback for system accessibility preference |
+| 99-01 | ParticleEffectView GeometryReader integration | Proper macOS sizing, removed UIScreen stub compatibility hack |
+| 99-01 | Obsidian color palettes (5 palettes) | obsidian, fire, sparkle, snow, energy for different effect types |
+| 99-01 | Particle shapes enum (circle/square/star/diamond) | Variety in burst effects, shape selection based on effect style |
+| 99-01 | RingEnergyField with orbital physics | Angular velocity for orbit, radial oscillation for organic motion |
+| 99-01 | EnergyFieldTheme enum (neutral/optimizing/success/warning/gaming) | Color themes respond to system optimization state |
+| 99-01 | CelebrationOverlay view modifier pattern | .celebrationOverlay() extension enables easy integration |
+| 99-01 | BurstParticle private struct | Separate from Particle model for overlay-specific properties |
+| 99-01 | Auto-dismiss celebration badge after effect.duration | Coordinated badge and particle lifetime |
+| 100-01 | Reduced scope: PGN + Puzzles only | Existing ChessEngine, ChessAI, ChessBoardView already feature-complete |
+| 100-01 | Actor pattern for PGNService | Thread-safe async parsing without data races |
+| 100-01 | Actor pattern for PuzzleService | Thread-safe puzzle loading and progress tracking |
+| 100-01 | 10 sample puzzles as fallback | Ensures puzzle mode works without bundled Lichess database |
+| 100-01 | UCI notation for puzzle moves | Standard format compatible with Lichess puzzle database |
+| 100-01 | Elo-like rating for puzzle progress | Simple but effective user rating calculation |
+| 100-01 | NSOpenPanel/NSSavePanel for file dialogs | Native macOS file selection for PGN import/export |
+| 100-01 | Stockfish marked optional | Native ChessAI provides sufficient gameplay; UCI integration deferred |
+| 100-01 | PuzzleState enum for state machine | Clear puzzle lifecycle: loading → showingOpponentMove → waitingForPlayerMove → evaluating → solved/failed |
+| 100-01 | Obsidian design for PuzzleModeView | optaVoid background, optaSurface cards, optaNeonPurple/optaElectricBlue accents |
 
 ### Deferred Issues
 
@@ -822,12 +933,13 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-24
-Stopped at: Phase 95 plan 01 complete — Gamification System
+Last session: 2026-01-26
+Stopped at: Phase 100 plan 01 complete — v12.0 Feature Restoration COMPLETE
 Resume file: None
-Next action: Phase 96 (next feature phase)
+Next action: v10.0 Phase 80 (Visual Integration & Launch) or new milestone planning
 
 **v9.0 Stats (COMPLETE):**
+
 - Phase 69 complete (2 plans) - UniFFI bindings, OptaCoreManager
 - Phase 70 complete (2 plans) - Dashboard UI components, OptaRing integration
 - Phase 71 complete (1 plan) - Settings system with profiles, shortcuts, themes

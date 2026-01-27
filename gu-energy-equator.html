@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Opta Ring: Energy Equator Concept</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap');
+
+        :root {
+            --void: #09090b;
+            --surface: #18181b;
+            --elevated: #27272a;
+            --border: #3f3f46;
+            --text-primary: #fafafa;
+            --text-secondary: #a1a1aa;
+            --text-muted: #52525b;
+            --primary: #8b5cf6;
+            --primary-glow: #a855f7;
+            --neon-blue: #3b82f6;
+            --neon-green: #22c55e;
+            --neon-amber: #f59e0b;
+            --neon-red: #ef4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Sora', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--void);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* Noise overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            opacity: 0.03;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 60px 40px;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 80px;
+        }
+
+        .header h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            letter-spacing: 0.15em;
+            background: linear-gradient(180deg, #fafafa 0%, #a855f7 50%, #6366f1 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 60px rgba(139, 92, 246, 0.5);
+            margin-bottom: 16px;
+        }
+
+        .header .subtitle {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            font-weight: 300;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+        }
+
+        .header .version {
+            margin-top: 24px;
+            display: inline-block;
+            padding: 8px 24px;
+            background: rgba(139, 92, 246, 0.15);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 100px;
+            font-size: 0.875rem;
+            color: var(--primary);
+            letter-spacing: 0.1em;
+        }
+
+        /* Glass panels */
+        .glass {
+            background: rgba(24, 24, 27, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 40px;
+            margin-bottom: 40px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .glass::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        }
+
+        .glass-subtle {
+            background: rgba(24, 24, 27, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Section headers */
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .section-header h2 {
+            font-size: 1.75rem;
+            font-weight: 600;
+            background: linear-gradient(90deg, var(--text-primary), var(--primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .section-header .line {
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, var(--primary), transparent);
+            box-shadow: 0 0 10px var(--primary);
+        }
+
+        /* Core concept visualization */
+        .concept-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 60px;
+        }
+
+        @media (max-width: 900px) {
+            .concept-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .concept-card {
+            text-align: center;
+        }
+
+        .concept-card h3 {
+            font-size: 1.25rem;
+            margin-bottom: 24px;
+            color: var(--text-secondary);
+            letter-spacing: 0.1em;
+        }
+
+        .concept-card.wrong h3 {
+            color: var(--neon-red);
+        }
+
+        .concept-card.right h3 {
+            color: var(--neon-green);
+        }
+
+        /* Ring visualizations */
+        .ring-demo {
+            width: 280px;
+            height: 280px;
+            margin: 0 auto;
+            position: relative;
+            border-radius: 50%;
+        }
+
+        /* WRONG: Old surface glow */
+        .ring-old {
+            background: radial-gradient(circle, #09090b 40%, transparent 70%);
+            border: 40px solid #1a1a20;
+            box-shadow:
+                inset 0 0 30px rgba(168, 85, 247, 0.3),
+                0 0 40px rgba(88, 28, 135, 0.5);
+        }
+
+        .ring-old::after {
+            content: '';
+            position: absolute;
+            top: -40px;
+            left: -40px;
+            right: -40px;
+            bottom: -40px;
+            border-radius: 50%;
+            border: 4px solid;
+            border-color: transparent transparent var(--primary) var(--primary);
+            animation: rotate-glow 4s linear infinite;
+        }
+
+        @keyframes rotate-glow {
+            to { transform: rotate(360deg); }
+        }
+
+        /* RIGHT: Energy Equator */
+        .ring-new {
+            background: radial-gradient(circle, #09090b 40%, transparent 70%);
+            border: 40px solid #1a1a20;
+            box-shadow:
+                inset 0 0 60px rgba(168, 85, 247, 0.4),
+                0 0 60px rgba(88, 28, 135, 0.6);
+            overflow: hidden;
+        }
+
+        .ring-new::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: -40px;
+            right: -40px;
+            height: 20px;
+            transform: translateY(-50%);
+            background: linear-gradient(90deg,
+                transparent 0%,
+                rgba(168, 85, 247, 0.8) 15%,
+                rgba(255, 255, 255, 0.9) 20%,
+                rgba(168, 85, 247, 0.5) 30%,
+                rgba(168, 85, 247, 0.9) 45%,
+                rgba(255, 255, 255, 1) 50%,
+                rgba(168, 85, 247, 0.7) 55%,
+                rgba(168, 85, 247, 0.4) 70%,
+                rgba(255, 255, 255, 0.8) 80%,
+                rgba(168, 85, 247, 0.6) 90%,
+                transparent 100%
+            );
+            filter: blur(4px);
+            animation: plasma-pulse 3s ease-in-out infinite;
+            border-radius: 50%;
+        }
+
+        @keyframes plasma-pulse {
+            0%, 100% { opacity: 0.7; filter: blur(4px); }
+            50% { opacity: 1; filter: blur(6px); }
+        }
+
+        .ring-new::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: -40px;
+            right: -40px;
+            height: 8px;
+            transform: translateY(-50%);
+            background: linear-gradient(90deg,
+                transparent 5%,
+                rgba(255, 255, 255, 0.3) 20%,
+                rgba(255, 255, 255, 0.9) 35%,
+                rgba(255, 255, 255, 0.4) 50%,
+                rgba(255, 255, 255, 1) 65%,
+                rgba(255, 255, 255, 0.5) 80%,
+                transparent 95%
+            );
+            filter: blur(2px);
+            animation: plasma-flicker 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes plasma-flicker {
+            0% { opacity: 0.6; transform: translateY(-50%) scaleX(0.95); }
+            100% { opacity: 1; transform: translateY(-50%) scaleX(1.05); }
+        }
+
+        .concept-desc {
+            margin-top: 24px;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.8;
+        }
+
+        /* Cross-section diagram */
+        .cross-section {
+            background: var(--surface);
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            margin: 40px 0;
+        }
+
+        .cross-section-svg {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .cross-section pre {
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-align: left;
+            display: inline-block;
+            line-height: 1.6;
+        }
+
+        .cross-section .highlight {
+            color: var(--primary);
+        }
+
+        /* Key principles */
+        .principles {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            margin-top: 40px;
+        }
+
+        .principle {
+            background: rgba(139, 92, 246, 0.05);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 12px;
+            padding: 24px;
+            transition: all 0.3s ease;
+        }
+
+        .principle:hover {
+            border-color: rgba(139, 92, 246, 0.4);
+            box-shadow: 0 0 30px rgba(139, 92, 246, 0.1);
+        }
+
+        .principle h4 {
+            font-size: 1.1rem;
+            margin-bottom: 12px;
+            color: var(--primary);
+        }
+
+        .principle p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* Comparison table */
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 32px 0;
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+            padding: 16px 20px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .comparison-table th {
+            color: var(--text-muted);
+            font-weight: 500;
+            font-size: 0.875rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        .comparison-table td {
+            color: var(--text-secondary);
+        }
+
+        .comparison-table .old {
+            color: var(--neon-red);
+            opacity: 0.7;
+        }
+
+        .comparison-table .new {
+            color: var(--neon-green);
+        }
+
+        /* Code blocks */
+        .code-block {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 24px 0;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+            font-size: 0.85rem;
+            overflow-x: auto;
+        }
+
+        .code-block .comment {
+            color: var(--text-muted);
+        }
+
+        .code-block .keyword {
+            color: var(--primary);
+        }
+
+        .code-block .value {
+            color: var(--neon-amber);
+        }
+
+        /* Live plasma animation */
+        .plasma-demo {
+            width: 100%;
+            height: 300px;
+            border-radius: 12px;
+            background: var(--void);
+            position: relative;
+            overflow: hidden;
+            margin: 40px 0;
+        }
+
+        .plasma-demo .ring-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 240px;
+            height: 240px;
+        }
+
+        .plasma-demo .glass-ring {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 50px solid;
+            border-color: #1a1a20;
+            background: radial-gradient(circle, #09090b 45%, transparent 100%);
+            position: relative;
+            box-shadow:
+                0 0 80px rgba(88, 28, 135, 0.6),
+                inset 0 0 40px rgba(168, 85, 247, 0.2);
+        }
+
+        /* Animated plasma core */
+        .plasma-core {
+            position: absolute;
+            top: 50%;
+            left: -50px;
+            right: -50px;
+            height: 30px;
+            transform: translateY(-50%);
+            pointer-events: none;
+        }
+
+        .plasma-strand {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 4px;
+            transform: translateY(-50%);
+            border-radius: 50%;
+            filter: blur(3px);
+        }
+
+        .plasma-strand:nth-child(1) {
+            background: linear-gradient(90deg,
+                transparent 2%,
+                rgba(168, 85, 247, 0.9) 15%,
+                rgba(255, 255, 255, 1) 25%,
+                rgba(168, 85, 247, 0.6) 40%,
+                rgba(255, 255, 255, 0.8) 55%,
+                rgba(168, 85, 247, 0.8) 70%,
+                rgba(255, 255, 255, 0.9) 85%,
+                transparent 98%
+            );
+            animation: plasma-flow-1 2.5s ease-in-out infinite;
+        }
+
+        .plasma-strand:nth-child(2) {
+            top: 40%;
+            height: 3px;
+            background: linear-gradient(90deg,
+                transparent 5%,
+                rgba(139, 92, 246, 0.7) 20%,
+                rgba(255, 255, 255, 0.9) 35%,
+                rgba(139, 92, 246, 0.5) 60%,
+                rgba(255, 255, 255, 0.7) 80%,
+                transparent 95%
+            );
+            animation: plasma-flow-2 3s ease-in-out infinite;
+            filter: blur(2px);
+        }
+
+        .plasma-strand:nth-child(3) {
+            top: 60%;
+            height: 3px;
+            background: linear-gradient(90deg,
+                transparent 8%,
+                rgba(192, 132, 252, 0.6) 25%,
+                rgba(255, 255, 255, 0.8) 45%,
+                rgba(192, 132, 252, 0.7) 65%,
+                rgba(255, 255, 255, 0.6) 85%,
+                transparent 92%
+            );
+            animation: plasma-flow-3 2.8s ease-in-out infinite;
+            filter: blur(2px);
+        }
+
+        @keyframes plasma-flow-1 {
+            0%, 100% {
+                opacity: 0.8;
+                transform: translateY(-50%) scaleX(0.98);
+            }
+            25% {
+                opacity: 1;
+                transform: translateY(-50%) scaleX(1.02);
+            }
+            50% {
+                opacity: 0.7;
+                transform: translateY(-50%) scaleX(0.96);
+            }
+            75% {
+                opacity: 0.95;
+                transform: translateY(-50%) scaleX(1.01);
+            }
+        }
+
+        @keyframes plasma-flow-2 {
+            0%, 100% { opacity: 0.5; transform: translateY(-50%) scaleX(0.95); }
+            33% { opacity: 0.9; transform: translateY(-50%) scaleX(1.03); }
+            66% { opacity: 0.6; transform: translateY(-50%) scaleX(0.97); }
+        }
+
+        @keyframes plasma-flow-3 {
+            0%, 100% { opacity: 0.6; transform: translateY(-50%) scaleX(1.01); }
+            40% { opacity: 0.85; transform: translateY(-50%) scaleX(0.96); }
+            70% { opacity: 0.5; transform: translateY(-50%) scaleX(1.02); }
+        }
+
+        /* Hot spots */
+        .hot-spot {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: radial-gradient(circle, #fff 0%, rgba(168, 85, 247, 0.8) 40%, transparent 70%);
+            border-radius: 50%;
+            filter: blur(2px);
+            animation: hot-spot-pulse 2s ease-in-out infinite;
+        }
+
+        .hot-spot:nth-child(4) {
+            top: 45%;
+            left: 20%;
+            animation-delay: 0s;
+        }
+
+        .hot-spot:nth-child(5) {
+            top: 50%;
+            left: 55%;
+            animation-delay: 0.7s;
+        }
+
+        .hot-spot:nth-child(6) {
+            top: 48%;
+            left: 80%;
+            animation-delay: 1.3s;
+        }
+
+        @keyframes hot-spot-pulse {
+            0%, 100% { opacity: 0.3; transform: scale(0.8); }
+            50% { opacity: 1; transform: scale(1.2); }
+        }
+
+        /* Glass reflection */
+        .glass-reflection {
+            position: absolute;
+            top: -50px;
+            left: -50px;
+            right: -50px;
+            bottom: -50px;
+            border-radius: 50%;
+            border: 50px solid transparent;
+            background: linear-gradient(135deg,
+                rgba(255, 255, 255, 0.15) 0%,
+                transparent 40%,
+                transparent 60%,
+                rgba(255, 255, 255, 0.05) 100%
+            );
+            background-clip: padding-box;
+            pointer-events: none;
+        }
+
+        /* Quote block */
+        .quote {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), transparent);
+            border-left: 3px solid var(--primary);
+            padding: 24px 32px;
+            margin: 32px 0;
+            border-radius: 0 12px 12px 0;
+        }
+
+        .quote p {
+            font-size: 1.1rem;
+            font-style: italic;
+            color: var(--text-secondary);
+            line-height: 1.8;
+        }
+
+        .quote .author {
+            margin-top: 12px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            font-style: normal;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            margin-top: 80px;
+            padding-top: 40px;
+            border-top: 1px solid var(--border);
+        }
+
+        .footer p {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+
+        .footer .opta {
+            color: var(--primary);
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>ENERGY EQUATOR</h1>
+            <p class="subtitle">The New Opta Ring Plasma Core</p>
+            <span class="version">Specification v2.0</span>
+        </header>
+
+        <!-- Core Concept -->
+        <section class="glass">
+            <div class="section-header">
+                <h2>The Evolution</h2>
+                <div class="line"></div>
+            </div>
+
+            <div class="concept-grid">
+                <div class="concept-card wrong">
+                    <h3>OLD: Surface Gradient</h3>
+                    <div class="ring-demo ring-old"></div>
+                    <p class="concept-desc">
+                        A predictable rotating gradient on the ring's surface.
+                        Mechanical, uniform, lifeless — like a loading spinner.
+                    </p>
+                </div>
+
+                <div class="concept-card right">
+                    <h3>NEW: Energy Equator</h3>
+                    <div class="ring-demo ring-new"></div>
+                    <p class="concept-desc">
+                        Living plasma suspended <strong>inside</strong> the glass torus.
+                        Abstract, variable, alive — like contained cosmic energy.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Live Demo -->
+        <section class="glass">
+            <div class="section-header">
+                <h2>Live Plasma Demonstration</h2>
+                <div class="line"></div>
+            </div>
+
+            <div class="plasma-demo">
+                <div class="ring-container">
+                    <div class="glass-ring">
+                        <div class="plasma-core">
+                            <div class="plasma-strand"></div>
+                            <div class="plasma-strand"></div>
+                            <div class="plasma-strand"></div>
+                            <div class="hot-spot"></div>
+                            <div class="hot-spot"></div>
+                            <div class="hot-spot"></div>
+                        </div>
+                        <div class="glass-reflection"></div>
+                    </div>
+                </div>
+            </div>
+
+            <p style="text-align: center; color: var(--text-secondary); margin-top: 16px;">
+                Notice how the plasma varies in intensity — some areas bright, others dim, constantly shifting.
+            </p>
+        </section>
+
+        <!-- Cross Section -->
+        <section class="glass">
+            <div class="section-header">
+                <h2>Anatomy: Tube Cross-Section</h2>
+                <div class="line"></div>
+            </div>
+
+            <div class="cross-section">
+                <pre>
+                        ┌────────────────────────────────────────┐
+                        │         <span class="highlight">OUTER GLASS WALL</span>                │
+                        │    ╭──────────────────────────────╮    │
+                        │    │                              │    │
+                        │    │   ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐   │    │
+                        │    │   │                      │   │    │
+                        │    │   │  <span class="highlight">≋≋≋≋≋≋≋≋≋≋≋≋≋≋≋≋</span>  │   │    │  ← <span class="highlight">ENERGY EQUATOR</span>
+                        │    │   │  <span class="highlight">≋≋ PLASMA CORE ≋≋</span>  │   │    │    (True 3D center)
+                        │    │   │  <span class="highlight">≋≋≋≋≋≋≋≋≋≋≋≋≋≋≋≋</span>  │   │    │
+                        │    │   │                      │   │    │
+                        │    │   └ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘   │    │
+                        │    │                              │    │
+                        │    ╰──────────────────────────────╯    │
+                        │         <span class="highlight">INNER GLASS WALL</span>                │
+                        └────────────────────────────────────────┘
+
+                        The plasma floats in the <span class="highlight">hollow center</span> of the torus tube,
+                        <span class="highlight">equidistant</span> from both inner and outer walls.
+
+                        It is <span class="highlight">NOT</span> on the surface — it is <span class="highlight">INSIDE</span> the glass.
+                </pre>
+            </div>
+        </section>
+
+        <!-- Key Principles -->
+        <section class="glass">
+            <div class="section-header">
+                <h2>Core Principles</h2>
+                <div class="line"></div>
+            </div>
+
+            <div class="principles">
+                <div class="principle">
+                    <h4>3D Depth</h4>
+                    <p>The plasma exists in true 3D space — centered within the hollow tube cavity, not painted on the surface.</p>
+                </div>
+
+                <div class="principle">
+                    <h4>Symmetric Positioning</h4>
+                    <p>Equidistant from both the inner and outer walls of the torus. Follows the toroidal path around the ring.</p>
+                </div>
+
+                <div class="principle">
+                    <h4>Abstract & Variable</h4>
+                    <p>NOT a uniform gradient. Organic turbulence creates random bright spots and dim regions.</p>
+                </div>
+
+                <div class="principle">
+                    <h4>Alive, Not Mechanical</h4>
+                    <p>Feels like contained lightning or nebula gas — unpredictable, powerful, ready to escape.</p>
+                </div>
+
+                <div class="principle">
+                    <h4>Hot Spots</h4>
+                    <p>Random areas of intense brightness that appear and fade. 15% probability per frame, 0.92 decay rate.</p>
+                </div>
+
+                <div class="principle">
+                    <h4>High Turbulence</h4>
+                    <p>6 octaves of noise with aggressive domain warping. Chaos, not calm.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Comparison -->
+        <section class="glass">
+            <div class="section-header">
+                <h2>Before vs After</h2>
+                <div class="line"></div>
+            </div>
+
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Property</th>
+                        <th>Old (v1.0)</th>
+                        <th>New (v2.0)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Position</td>
+                        <td class="old">On ring surface</td>
+                        <td class="new">Inside tube cavity (Energy Equator)</td>
+                    </tr>
+                    <tr>
+                        <td>Pattern</td>
+                        <td class="old">Uniform rotating gradient</td>
+                        <td class="new">Abstract noise-driven plasma</td>
+                    </tr>
+                    <tr>
+                        <td>Intensity</td>
+                        <td class="old">Consistent brightness</td>
+                        <td class="new">Variable with random hot spots</td>
+                    </tr>
+                    <tr>
+                        <td>Movement</td>
+                        <td class="old">Predictable 8s rotation</td>
+                        <td class="new">Chaotic turbulence + base flow</td>
+                    </tr>
+                    <tr>
+                        <td>Noise Octaves</td>
+                        <td class="old">5</td>
+                        <td class="new">6 (more detail)</td>
+                    </tr>
+                    <tr>
+                        <td>Warp Strength</td>
+                        <td class="old">0.3 → 0.6</td>
+                        <td class="new">0.5 → 0.9 (more aggressive)</td>
+                    </tr>
+                    <tr>
+                        <td>Feel</td>
+                        <td class="old">Screensaver, mechanical</td>
+                        <td class="new">Living entity, contained power</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Technical -->
+        <section class="glass">
+            <div class="section-header">
+                <h2>Technical Implementation</h2>
+                <div class="line"></div>
+            </div>
+
+            <div class="code-block">
+<span class="comment">// Energy Equator positioning (shader pseudocode)</span>
+tubeRadius = <span class="value">0.35</span>;        <span class="comment">// Radius of tube cross-section</span>
+plasmaRadius = <span class="value">0.0</span>;        <span class="comment">// Plasma at CENTER (equator)</span>
+plasmaThickness = <span class="value">0.15</span>;   <span class="comment">// How thick the band appears</span>
+
+<span class="comment">// Distance from tube center determines visibility</span>
+distanceFromEquator = <span class="keyword">abs</span>(localTubePosition - plasmaRadius);
+equatorFalloff = <span class="keyword">smoothstep</span>(plasmaThickness, <span class="value">0.0</span>, distanceFromEquator);
+
+<span class="comment">// Final plasma is brightest at equator, fades toward walls</span>
+finalPlasmaColor = plasmaColor * equatorFalloff * plasmaIntensity;
+            </div>
+
+            <div class="code-block">
+<span class="comment">// Hot spot generation</span>
+hotSpotNoise = <span class="keyword">noise</span>(position * <span class="value">2.0</span> + time * <span class="value">0.1</span>);
+isHotSpot = hotSpotNoise > (<span class="value">1.0</span> - hotSpotProbability);
+plasmaIntensity = <span class="keyword">mix</span>(basePlasma, <span class="value">1.0</span>, isHotSpot * hotSpotIntensity);
+
+<span class="comment">// Noise parameters for high turbulence</span>
+octaves = <span class="value">6</span>;
+lacunarity = <span class="value">2.2</span>;
+gain = <span class="value">0.55</span>;
+turbulenceScale = <span class="value">3.0</span>;
+turbulenceSpeed = <span class="value">0.8</span>;
+            </div>
+        </section>
+
+        <!-- Quote -->
+        <section class="glass glass-subtle">
+            <div class="quote">
+                <p>
+                    "The glow should be closer to the image in which it looks as though the ring
+                    has an abstract glowing, variable powerful glow within it that gives the ring
+                    a more alive feel."
+                </p>
+                <span class="author">— Design Direction</span>
+            </div>
+        </section>
+
+        <footer class="footer">
+            <p>
+                <span class="opta">OPTA</span> Energy Equator Specification
+                <br>
+                Version 2.0 • January 2026
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

@@ -20,7 +20,7 @@ struct NotificationTypeRow: View {
             } label: {
                 HStack(spacing: 16) {
                     // Icon
-                    Image(systemName: type.iconName)
+                    Image(systemName: type.icon)
                         .font(.system(size: 20))
                         .foregroundStyle(settings.isEnabled ? Color.optaPrimary : Color.optaTextMuted)
                         .frame(width: 28)

@@ -469,7 +469,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Utility Actions
 
     @objc private func openPreferences() {
-        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+        // Activate the app first (required for menu bar apps)
+        NSApp.activate(ignoringOtherApps: true)
+
+        // Use the correct selector for SwiftUI Settings scene (macOS 13+)
+        if #available(macOS 13.0, *) {
+            NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+        } else {
+            NSApp.sendAction(Selector(("showPreferencesWindow:")), to: nil, from: nil)
+        }
     }
 
     @objc private func openWebsite() {

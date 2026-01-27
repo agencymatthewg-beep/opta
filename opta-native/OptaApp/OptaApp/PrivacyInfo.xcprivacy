@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  PrivacyInfo.xcprivacy
+  Opta v8.0 Privacy Manifest
+
+  This manifest declares Opta's data collection and usage practices
+  for App Store compliance (required as of Spring 2024).
+
+  Opta collects:
+  - Device hardware telemetry (CPU/GPU/Memory usage) - stays on device
+  - User preferences/settings - stays on device
+
+  Opta does NOT:
+  - Track users across apps
+  - Collect personally identifiable information
+  - Share data with third parties
+  - Use advertising identifiers
+-->
+<plist version="1.0">
+<dict>
+    <!-- Privacy Tracking Declaration -->
+    <key>NSPrivacyTracking</key>
+    <false/>
+
+    <!-- Tracking Domains (empty - no tracking) -->
+    <key>NSPrivacyTrackingDomains</key>
+    <array/>
+
+    <!-- Privacy Nutrition Labels - Data Collection Declaration -->
+    <key>NSPrivacyCollectedDataTypes</key>
+    <array>
+        <!-- Performance Data - Device telemetry for optimization -->
+        <dict>
+            <key>NSPrivacyCollectedDataType</key>
+            <string>NSPrivacyCollectedDataTypePerformanceData</string>
+            <key>NSPrivacyCollectedDataTypeLinked</key>
+            <false/>
+            <key>NSPrivacyCollectedDataTypeTracking</key>
+            <false/>
+            <key>NSPrivacyCollectedDataTypePurposes</key>
+            <array>
+                <string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+            </array>
+        </dict>
+    </array>
+
+    <!-- Required Reason APIs Declaration -->
+    <key>NSPrivacyAccessedAPITypes</key>
+    <array>
+        <!-- System Boot Time API (for uptime calculations) -->
+        <dict>
+            <key>NSPrivacyAccessedAPIType</key>
+            <string>NSPrivacyAccessedAPICategorySystemBootTime</string>
+            <key>NSPrivacyAccessedAPITypeReasons</key>
+            <array>
+                <!-- 35F9.1: Measure time elapsed between events in the app -->
+                <string>35F9.1</string>
+            </array>
+        </dict>
+
+        <!-- File Timestamp API (for cache management) -->
+        <dict>
+            <key>NSPrivacyAccessedAPIType</key>
+            <string>NSPrivacyAccessedAPICategoryFileTimestamp</string>
+            <key>NSPrivacyAccessedAPITypeReasons</key>
+            <array>
+                <!-- C617.1: Access file timestamps for app's own files -->
+                <string>C617.1</string>
+            </array>
+        </dict>
+
+        <!-- User Defaults API (for preferences storage) -->
+        <dict>
+            <key>NSPrivacyAccessedAPIType</key>
+            <string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+            <key>NSPrivacyAccessedAPITypeReasons</key>
+            <array>
+                <!-- CA92.1: Access UserDefaults to read/write app settings -->
+                <string>CA92.1</string>
+            </array>
+        </dict>
+    </array>
+</dict>
+</plist>

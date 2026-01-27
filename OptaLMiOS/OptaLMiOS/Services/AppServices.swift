@@ -183,6 +183,12 @@ class NotificationManager: ObservableObject {
 
         content.categoryIdentifier = type.defaultCategory
 
+        // Thread identifier for grouping notifications of the same type
+        content.threadIdentifier = type.rawValue
+
+        // Summary argument for grouped notifications
+        content.summaryArgument = type.displayName
+
         // User info
         var finalUserInfo = userInfo
         finalUserInfo["notificationType"] = type.rawValue
@@ -204,6 +210,16 @@ class NotificationManager: ObservableObject {
             } else {
                 self.lastNotificationTimes[type.rawValue] = Date()
                 print("[NotificationManager] Scheduled: \(type.rawValue)")
+
+                // Log to history
+                Task { @MainActor in
+                    NotificationHistoryManager.shared.logNotification(
+                        id: request.identifier,
+                        type: type,
+                        title: title,
+                        body: body
+                    )
+                }
             }
         }
     }
@@ -302,6 +318,14 @@ class NotificationManager: ObservableObject {
         )
     }
 
+    func notifyWeatherUpdate(temperature: Int, condition: String, message: String) {
+        scheduleNotification(
+            .weatherUpdate,
+            title: "\(temperature)°C - \(condition)",
+            body: message
+        )
+    }
+
     // MARK: - Badge Management
 
     func updateBadgeCount(_ count: Int) {
@@ -342,9 +366,28 @@ class NotificationManager: ObservableObject {
             options: []
         )
 
-        let snoozeAction = UNNotificationAction(
-            identifier: "SNOOZE_ACTION",
-            title: "Snooze",
+        // Snooze preset actions
+        let snooze5minAction = UNNotificationAction(
+            identifier: "SNOOZE_5MIN",
+            title: "5 min",
+            options: []
+        )
+
+        let snooze15minAction = UNNotificationAction(
+            identifier: "SNOOZE_15MIN",
+            title: "15 min",
+            options: []
+        )
+
+        let snooze1hrAction = UNNotificationAction(
+            identifier: "SNOOZE_1HR",
+            title: "1 hour",
+            options: []
+        )
+
+        let snoozeLaterAction = UNNotificationAction(
+            identifier: "SNOOZE_LATER",
+            title: "Later today",
             options: []
         )
 
@@ -363,19 +406,19 @@ class NotificationManager: ObservableObject {
         let categories = [
             UNNotificationCategory(
                 identifier: "TASK",
-                actions: [completeAction, snoozeAction, dismissAction],
+                actions: [completeAction, snooze5minAction, snooze15minAction, snooze1hrAction],
                 intentIdentifiers: [],
                 options: []
             ),
             UNNotificationCategory(
                 identifier: "EVENT",
-                actions: [viewAction, dismissAction],
+                actions: [viewAction, snooze15minAction, dismissAction],
                 intentIdentifiers: [],
                 options: []
             ),
             UNNotificationCategory(
                 identifier: "BRIEFING",
-                actions: [viewAction, dismissAction],
+                actions: [viewAction, snoozeLaterAction, dismissAction],
                 intentIdentifiers: [],
                 options: []
             ),
@@ -393,7 +436,13 @@ class NotificationManager: ObservableObject {
             ),
             UNNotificationCategory(
                 identifier: "FOCUS",
-                actions: [dismissAction],
+                actions: [snooze5minAction, snooze15minAction, dismissAction],
+                intentIdentifiers: [],
+                options: []
+            ),
+            UNNotificationCategory(
+                identifier: "WEATHER",
+                actions: [viewAction, dismissAction],
                 intentIdentifiers: [],
                 options: []
             ),
@@ -456,11 +505,18 @@ class NotificationDelegateHandler: NSObject, UNUserNotificationCenterDelegate {
                 NotificationCenter.default.post(name: .completeTask, object: nil, userInfo: ["taskId": taskId])
             }
 
-        case "SNOOZE_ACTION":
-            // Handle snooze (reschedule for 10 minutes later)
-            if let taskId = userInfo["taskId"] as? String {
-                NotificationCenter.default.post(name: .snoozeTask, object: nil, userInfo: ["taskId": taskId])
-            }
+        case "SNOOZE_5MIN":
+            rescheduleNotification(content: response.notification.request.content, userInfo: userInfo, delayMinutes: 5)
+
+        case "SNOOZE_15MIN":
+            rescheduleNotification(content: response.notification.request.content, userInfo: userInfo, delayMinutes: 15)
+
+        case "SNOOZE_1HR":
+            rescheduleNotification(content: response.notification.request.content, userInfo: userInfo, delayMinutes: 60)
+
+        case "SNOOZE_LATER":
+            // Later today = 3 hours from now
+            rescheduleNotification(content: response.notification.request.content, userInfo: userInfo, delayMinutes: 180)
 
         case "VIEW_ACTION":
             NotificationCenter.default.post(name: .openOptaApp, object: nil, userInfo: userInfo)
@@ -473,6 +529,36 @@ class NotificationDelegateHandler: NSObject, UNUserNotificationCenterDelegate {
         }
 
         completionHandler()
+    }
+
+    // MARK: - Snooze Helper
+
+    private func rescheduleNotification(content: UNNotificationContent, userInfo: [AnyHashable: Any], delayMinutes: Int) {
+        let newContent = UNMutableNotificationContent()
+        newContent.title = content.title
+        newContent.body = content.body
+        newContent.sound = content.sound
+        newContent.badge = content.badge
+        newContent.categoryIdentifier = content.categoryIdentifier
+        newContent.threadIdentifier = content.threadIdentifier
+        newContent.summaryArgument = content.summaryArgument
+        newContent.userInfo = userInfo
+
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: TimeInterval(delayMinutes * 60), repeats: false)
+
+        let request = UNNotificationRequest(
+            identifier: "snoozed-\(UUID().uuidString)",
+            content: newContent,
+            trigger: trigger
+        )
+
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("[NotificationDelegateHandler] Failed to reschedule: \(error)")
+            } else {
+                print("[NotificationDelegateHandler] Rescheduled for \(delayMinutes) minutes")
+            }
+        }
     }
 }
 

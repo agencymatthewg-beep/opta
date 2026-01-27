@@ -1,0 +1,8 @@
+node_modules
+.next
+.git
+.archive
+.claude
+*.tsbuildinfo
+.env.local
+wrangler.toml

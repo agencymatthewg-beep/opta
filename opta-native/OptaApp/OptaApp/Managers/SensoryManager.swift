@@ -202,7 +202,16 @@ final class SensoryManager {
     ///   - pitch: Pitch angle in degrees (0 = level, positive = up)
     ///   - roll: Roll angle in degrees (0 = upright, positive = clockwise)
     func updateListenerOrientation(yaw: Float, pitch: Float = 0, roll: Float = 0) {
-        audio.updateListenerOrientation(yaw: yaw, pitch: pitch, roll: roll)
+        // Convert yaw/pitch to forward and up vectors
+        let yawRad = yaw * .pi / 180.0
+        let pitchRad = pitch * .pi / 180.0
+        let forward = SIMD3<Float>(
+            sin(yawRad) * cos(pitchRad),
+            sin(pitchRad),
+            -cos(yawRad) * cos(pitchRad)
+        )
+        let up = SIMD3<Float>(0, 1, 0)
+        audio.updateListenerOrientation(forward: forward, up: up)
     }
 
     /// Set the coordinate scale for spatial audio

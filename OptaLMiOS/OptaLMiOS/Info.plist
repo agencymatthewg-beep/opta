@@ -63,6 +63,7 @@
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>opta</string>
+				<string>optalm</string>
 			</array>
 		</dict>
 	</array>
@@ -70,5 +71,15 @@
 	<string>$(GOOGLE_CLIENT_ID)</string>
 	<key>NSUserNotificationsUsageDescription</key>
 	<string>Opta LM uses notifications to remind you about tasks and events, deliver your daily briefing, share AI insights, and celebrate your goal achievements. You can customize which notifications you receive in Settings.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Opta LM uses your location to provide weather updates and alerts for extreme conditions in your area.</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>Opta uses your sleep and activity data to provide productivity insights and help you optimize your schedule. All analysis is done on-device and your health data never leaves your iPhone.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Opta does not write to your health data. We only read sleep and activity information to provide personalized insights.</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>Opta LM syncs your calendar events to provide a unified view alongside your tasks and goals.</string>
+	<key>NSRemindersUsageDescription</key>
+	<string>Opta LM syncs your reminders to keep your tasks up-to-date across all your apps.</string>
 </dict>
 </plist>

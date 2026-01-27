@@ -12,24 +12,107 @@ import SwiftUI
 // MARK: - Color Palette
 
 extension Font {
-    /// Premium "Opta" Typeface (Outfit). Falls back to System Rounded.
+    // MARK: - Official Opta Typography (Sora)
+    // Reference: OPTA_TYPOGRAPHY_SPECIFICATION.md
+
+    /// Primary Opta font - Sora (Google Fonts)
+    /// Falls back to SF Pro if Sora not bundled
     static func opta(size: CGFloat, weight: Font.Weight = .regular) -> Font {
-        return Font.custom("Outfit-Regular", size: size)
+        // Try Sora first (if bundled), fall back to system
+        return Font.custom("Sora", size: size)
             .weight(weight)
     }
 
-    // MARK: - Semantic Typography (New)
-    static let optaDisplay = Font.system(size: 32, weight: .bold, design: .rounded)
-    static let optaTitle = Font.system(size: 24, weight: .bold, design: .rounded)
-    static let optaBody = Font.system(size: 15, weight: .medium, design: .default)
+    /// Hero heading style - Bold, large, for major titles
+    /// Size: 44pt (3.5rem equivalent), Weight: Bold, Tracking: 0.12em (~5pt)
+    static func optaHero(size: CGFloat = 44) -> Font {
+        return Font.custom("Sora", size: size)
+            .weight(.bold)
+    }
+
+    /// Subtitle style - Light weight, uppercase, wide tracking
+    /// Size: 13pt, Weight: Light, Tracking: 0.25em (~3pt)
+    static func optaSubtitle(size: CGFloat = 13) -> Font {
+        return Font.custom("Sora", size: size)
+            .weight(.light)
+    }
+
+    /// Badge style - Regular weight, medium tracking
+    /// Size: 11pt, Weight: Regular, Tracking: 0.15em
+    static func optaBadge(size: CGFloat = 11) -> Font {
+        return Font.custom("Sora", size: size)
+            .weight(.regular)
+    }
+
+    /// Section header style - Semibold, for panel headers
+    /// Size: 18pt, Weight: Semibold, Tracking: 0.08em
+    static func optaSectionHeader(size: CGFloat = 18) -> Font {
+        return Font.custom("Sora", size: size)
+            .weight(.semibold)
+    }
+
+    // MARK: - Semantic Typography
+    static let optaDisplay = Font.optaHero(size: 32)
+    static let optaTitle = Font.optaSectionHeader(size: 24)
+    static let optaBody = Font.opta(size: 15, weight: .medium)
     static let optaMono = Font.system(size: 12, weight: .bold, design: .monospaced)
 
     // MARK: - Legacy Typography (referenced by existing views)
-    static let optaH1 = Font.system(size: 36, weight: .semibold, design: .default)
-    static let optaH2 = Font.system(size: 24, weight: .semibold, design: .default)
-    static let optaH3 = Font.system(size: 18, weight: .semibold, design: .default)
-    static let optaBodyMedium = Font.system(size: 14, weight: .medium, design: .default)
-    static let optaSmall = Font.system(size: 12, weight: .regular, design: .default)
+    static let optaH1 = Font.optaHero(size: 36)
+    static let optaH2 = Font.optaSectionHeader(size: 24)
+    static let optaH3 = Font.optaSectionHeader(size: 18)
+    static let optaBodyMedium = Font.opta(size: 14, weight: .medium)
+    static let optaSmall = Font.opta(size: 12, weight: .regular)
+}
+
+// MARK: - Opta Typography Constants
+
+enum OptaTypography {
+    // Hero heading specifications
+    static let heroSize: CGFloat = 44
+    static let heroTracking: CGFloat = 5  // 0.12em at 44pt ≈ 5pt
+
+    // Subtitle specifications
+    static let subtitleSize: CGFloat = 13
+    static let subtitleTracking: CGFloat = 3  // 0.25em at 13pt ≈ 3pt
+
+    // Badge specifications
+    static let badgeSize: CGFloat = 11
+    static let badgeTracking: CGFloat = 1.5  // 0.15em at 11pt
+
+    // Section header specifications
+    static let sectionSize: CGFloat = 18
+    static let sectionTracking: CGFloat = 1.5  // 0.08em at 18pt
+}
+
+// MARK: - Moonlight Gradient
+
+extension LinearGradient {
+    /// The signature Opta "Moonlight" gradient for hero text
+    /// Direction: Top to bottom (mimics overhead lighting)
+    /// Stops: White (0%) → Electric Violet (50%) → Indigo (100%)
+    static let optaMoonlight = LinearGradient(
+        colors: [
+            Color(hex: 0xFAFAFA),  // White
+            Color(hex: 0xA855F7),  // Electric Violet
+            Color(hex: 0x6366F1)   // Indigo
+        ],
+        startPoint: .top,
+        endPoint: .bottom
+    )
+
+    /// Dynamic moonlight gradient that can be tinted with a color
+    static func optaMoonlightTinted(with color: Color) -> LinearGradient {
+        return LinearGradient(
+            colors: [
+                Color.white,
+                color,
+                color.opacity(0.7)
+            ],
+            startPoint: .top,
+            endPoint: .bottom
+        )
+    }
 }
 
 extension Color {

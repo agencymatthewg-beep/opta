@@ -14,7 +14,9 @@ struct GameSessionView: View {
     @State private var viewModel = GameSessionViewModel()
     @State private var gameName: String = ""
     @State private var isOptimized: Bool = true
-    
+    @State private var showOptimizationSuggestion: Bool = false
+    @State private var suggestionDismissed: Bool = false
+
     var body: some View {
         VStack(spacing: 20) {
             // Header
@@ -78,12 +80,55 @@ struct GameSessionView: View {
                         VStack(alignment: .leading, spacing: 12) {
                             TextField("Game Name (e.g. Cyberpunk 2077)", text: $gameName)
                                 .textFieldStyle(.roundedBorder)
-                            
+                                .onChange(of: gameName) { _, newValue in
+                                    checkOptimizationSuggestion(for: newValue)
+                                }
+
+                            // Optimization Suggestion Banner
+                            if showOptimizationSuggestion && !isOptimized && !suggestionDismissed {
+                                HStack(spacing: 10) {
+                                    Image(systemName: "sparkles")
+                                        .foregroundStyle(Color.optaNeonPurple)
+
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text("You usually optimize for this game")
+                                            .font(.caption)
+                                            .fontWeight(.medium)
+                                        Text("Enable optimization for best performance?")
+                                            .font(.caption2)
+                                            .foregroundStyle(.secondary)
+                                    }
+
+                                    Spacer()
+
+                                    Button("Yes") {
+                                        isOptimized = true
+                                        showOptimizationSuggestion = false
+                                    }
+                                    .buttonStyle(.borderedProminent)
+                                    .tint(Color.optaNeonPurple)
+                                    .controlSize(.small)
+
+                                    Button("Not now") {
+                                        suggestionDismissed = true
+                                    }
+                                    .buttonStyle(.bordered)
+                                    .controlSize(.small)
+                                }
+                                .padding(10)
+                                .background(Color.optaNeonPurple.opacity(0.1))
+                                .cornerRadius(8)
+                                .transition(.opacity.combined(with: .move(edge: .top)))
+                            }
+
                             Toggle("Opta Optimization Active", isOn: $isOptimized)
-                            
+
                             Button(action: {
                                 if !gameName.isEmpty {
                                     viewModel.startRecording(gameName: gameName, isOptimized: isOptimized)
+                                    // Reset for next session
+                                    suggestionDismissed = false
+                                    showOptimizationSuggestion = false
                                 }
                             }) {
                                 Text("Start Recording")
@@ -113,6 +158,25 @@ struct GameSessionView: View {
         }
         .padding()
         .frame(minWidth: 500, minHeight: 400)
+        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: showOptimizationSuggestion)
+    }
+
+    // MARK: - Helpers
+
+    private func checkOptimizationSuggestion(for gameName: String) {
+        guard !gameName.isEmpty, gameName.count >= 3 else {
+            showOptimizationSuggestion = false
+            return
+        }
+
+        Task {
+            let shouldSuggest = await viewModel.shouldSuggestOptimization(for: gameName)
+            await MainActor.run {
+                withAnimation {
+                    showOptimizationSuggestion = shouldSuggest
+                }
+            }
+        }
     }
 }
 

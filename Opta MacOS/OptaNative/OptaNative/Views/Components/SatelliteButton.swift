@@ -24,6 +24,7 @@ struct SatelliteButton: View {
         case .gameSession: return .optaElectricBlue // Controller
         case .gamification: return .indigo // Trophy
         case .optimization: return .optaNeonAmber // Lightning
+        case .macTweaks: return .cyan // System/Gears
         case .conflicts: return .red // Target/Health
         case .chess: return .white // Crown
         }

@@ -4,6 +4,7 @@ struct DashboardView: View {
     @StateObject private var viewModel = DashboardViewModel()
     @EnvironmentObject var authManager: AuthManager
     @State private var showBriefingSheet = false
+    @State private var showHealthInsights = false
     @State private var selectedTab = 0
     
     var body: some View {
@@ -30,7 +31,18 @@ struct DashboardView: View {
                         // Tasks Card
                         TasksCard(tasks: viewModel.todayTasks, isLoading: viewModel.isLoadingTasks)
                             .slideIn(delay: 0.4)
-                        
+
+                        // Health Card (temporarily disabled)
+                        /*
+                        HealthCard(
+                            sleepData: viewModel.todaySleep,
+                            activityData: viewModel.todayActivity,
+                            isLoading: viewModel.isLoadingHealth,
+                            onTap: { showHealthInsights = true }
+                        )
+                        .slideIn(delay: 0.45)
+                        */
+
                         // Two Column Layout
                         HStack(spacing: 16) {
                             CalendarCard(events: viewModel.upcomingEvents, isLoading: viewModel.isLoadingCalendar)
@@ -68,6 +80,12 @@ struct DashboardView: View {
                 BriefingSheetView(briefing: viewModel.currentBriefing)
                     .presentationDetents([.medium, .large])
             }
+            // Health insights sheet (temporarily disabled)
+            /*
+            .sheet(isPresented: $showHealthInsights) {
+                HealthInsightsView()
+            }
+            */
         }
         .task {
             await viewModel.loadData()
@@ -480,14 +498,19 @@ class DashboardViewModel: ObservableObject {
     @Published var briefingSummary = "Tap the ring for your full briefing..."
     @Published var currentBriefing: Briefing?
     @Published var stats = DashboardStats()
-    
+
+    // Health data (temporarily disabled)
+    // @Published var todaySleep: SleepData?
+    // @Published var todayActivity: ActivityData?
+
     @Published var isLoading = false
     @Published var isLoadingTasks = false
     @Published var isLoadingCalendar = false
     @Published var isLoadingEmails = false
     @Published var isLoadingBriefing = false
+    @Published var isLoadingHealth = false
     @Published var error: String?
-    
+
     @Published var calendarConnected = true
     @Published var emailConnected = true
     @Published var todoistConnected = true
@@ -501,17 +524,20 @@ class DashboardViewModel: ObservableObject {
     }
     
     private let api = APIService.shared
-    
+    // private let healthService = HealthService.shared
+
     func loadData() async {
         isLoading = true
-        
+
         await withTaskGroup(of: Void.self) { group in
             group.addTask { await self.loadTasks() }
             group.addTask { await self.loadCalendar() }
             group.addTask { await self.loadEmails() }
             group.addTask { await self.loadBriefing() }
+            // Health data loading temporarily disabled
+            // group.addTask { await self.loadHealthData() }
         }
-        
+
         isLoading = false
     }
     
@@ -565,7 +591,7 @@ class DashboardViewModel: ObservableObject {
     private func loadBriefing() async {
         isLoadingBriefing = true
         defer { isLoadingBriefing = false }
-        
+
         do {
             let briefing = try await api.fetchBriefing()
             currentBriefing = briefing
@@ -574,6 +600,29 @@ class DashboardViewModel: ObservableObject {
             briefingSummary = "Tap the ring for your full briefing"
         }
     }
+
+    // Health data loading temporarily disabled (HealthService excluded from build)
+    /*
+    private func loadHealthData() async {
+        // Only load if authorized
+        guard healthService.authorizationStatus.isAuthorized else { return }
+
+        isLoadingHealth = true
+        defer { isLoadingHealth = false }
+
+        do {
+            // Load sleep and activity data in parallel
+            async let sleep = healthService.fetchSleepData(for: Date())
+            async let activity = healthService.fetchActivityData(for: Date())
+
+            todaySleep = try await sleep
+            todayActivity = try await activity
+        } catch {
+            // Silently fail - health data is optional
+            // Users can manually refresh from health insights view
+        }
+    }
+    */
 }
 
 #Preview {

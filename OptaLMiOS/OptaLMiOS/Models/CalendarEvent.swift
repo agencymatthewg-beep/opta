@@ -11,6 +11,11 @@ struct CalendarEvent: Identifiable, Codable, Hashable {
     let isAllDay: Bool
     let location: String?
     let htmlLink: String?
+
+    // EventKit sync tracking fields (will be enabled when EventSource.swift compiles correctly)
+    var ekEventIdentifier: String?
+    // var source: EventSource?
+    var lastSyncedAt: Date?
     
     var startDate: Date? {
         start?.isoDate

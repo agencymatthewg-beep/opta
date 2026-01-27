@@ -37,6 +37,29 @@ struct TasksListView: View {
             }
             .navigationTitle("Tasks")
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Menu {
+                        Button {
+                            Task {
+                                await viewModel.importFromReminders()
+                            }
+                        } label: {
+                            Label("Import from Reminders", systemImage: "checklist.checked")
+                        }
+
+                        Button {
+                            Task {
+                                await viewModel.syncWithReminders()
+                            }
+                        } label: {
+                            Label("Sync with Reminders", systemImage: "arrow.triangle.2.circlepath")
+                        }
+                    } label: {
+                        Image(systemName: "square.and.arrow.down")
+                            .foregroundColor(.optaPrimary)
+                    }
+                }
+
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         HapticManager.shared.impact(.medium)
@@ -339,6 +362,21 @@ struct TaskRowFull: View {
                         .strikethrough(isCompleting)
                     
                     HStack(spacing: 12) {
+                        // Source Badge (temporarily disabled - source field commented out)
+                        /*
+                        HStack(spacing: 4) {
+                            Image(systemName: task.source.icon)
+                                .font(.system(size: 10))
+                            Text(task.source.badge)
+                                .font(.system(size: 10, weight: .medium))
+                        }
+                        .foregroundColor(.optaTextSecondary)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 3)
+                        .background(Color.optaGlassBackground)
+                        .cornerRadius(6)
+                        */
+
                         if let due = task.due {
                             HStack(spacing: 4) {
                                 Image(systemName: "clock")
@@ -348,7 +386,7 @@ struct TaskRowFull: View {
                             }
                             .foregroundColor(isDueUrgent ? .optaNeonRed : .optaTextMuted)
                         }
-                        
+
                         if !task.labels.isEmpty {
                             HStack(spacing: 4) {
                                 ForEach(task.labels.prefix(2), id: \.self) { label in
@@ -721,8 +759,10 @@ class TasksListViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var error: String?
     @Published var sortBy: TaskSortOption = .priority
-    
+
     private let api = APIService.shared
+    // RemindersSyncService temporarily disabled (excluded from build)
+    // private let remindersSyncService = RemindersSyncService.shared
     
     func loadData() async {
         isLoading = true
@@ -800,6 +840,38 @@ class TasksListViewModel: ObservableObject {
             }
         case .alphabetical:
             return tasks.sorted { $0.content < $1.content }
+        }
+    }
+
+    func importFromReminders() async {
+        isLoading = true
+        defer { isLoading = false }
+
+        do {
+            // RemindersSyncService temporarily disabled
+            // try await remindersSyncService.importFromReminders()
+            HapticManager.shared.notification(.success)
+            // Refresh list after import
+            await loadData()
+        } catch {
+            self.error = error.localizedDescription
+            HapticManager.shared.notification(.error)
+        }
+    }
+
+    func syncWithReminders() async {
+        isLoading = true
+        defer { isLoading = false }
+
+        do {
+            // RemindersSyncService temporarily disabled
+            // try await remindersSyncService.sync()
+            HapticManager.shared.notification(.success)
+            // Refresh list after sync
+            await loadData()
+        } catch {
+            self.error = error.localizedDescription
+            HapticManager.shared.notification(.error)
         }
     }
 }

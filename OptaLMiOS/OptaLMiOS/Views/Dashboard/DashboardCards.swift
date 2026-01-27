@@ -467,20 +467,20 @@ struct StatBadge: View {
     let value: String
     let label: String
     let color: Color
-    
+
     var body: some View {
         VStack(spacing: 4) {
             HStack(spacing: 4) {
                 Image(systemName: icon)
                     .font(.caption2)
                     .foregroundColor(.optaTextMuted)
-                
+
                 Text(label.uppercased())
                     .font(.system(size: 8, weight: .medium))
                     .foregroundColor(.optaTextMuted)
                     .tracking(1)
             }
-            
+
             Text(value)
                 .font(.title3.bold().monospacedDigit())
                 .foregroundColor(color)
@@ -495,6 +495,117 @@ struct StatBadge: View {
         )
     }
 }
+
+// MARK: - Health Card (temporarily disabled - HealthService excluded from build)
+/*
+struct HealthCard: View {
+    let sleepData: SleepData?
+    let activityData: ActivityData?
+    var isLoading: Bool = false
+    var onTap: (() -> Void)? = nil
+
+    var body: some View {
+        Button {
+            HapticManager.shared.impact(.light)
+            onTap?()
+        } label: {
+            VStack(alignment: .leading, spacing: 12) {
+                // Header
+                HStack {
+                    HStack(spacing: 6) {
+                        Image(systemName: "heart.text.square")
+                            .font(.caption)
+                            .foregroundColor(.optaNeonCyan)
+
+                        Text("HEALTH")
+                            .font(.caption.bold())
+                            .foregroundColor(.optaTextMuted)
+                            .tracking(2)
+                    }
+
+                    Spacer()
+
+                    Image(systemName: "chevron.right")
+                        .font(.caption2)
+                        .foregroundColor(.optaTextMuted)
+                }
+
+                if isLoading {
+                    VStack(spacing: 8) {
+                        SkeletonView(width: 120, height: 16)
+                        SkeletonView(width: 80, height: 12)
+                    }
+                } else if let sleepData = sleepData, let activityData = activityData {
+                    // Sleep Quality
+                    HStack(spacing: 8) {
+                        Text(sleepData.qualityEmoji)
+                            .font(.title2)
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(String(format: "%.1f hours", sleepData.totalHours))
+                                .font(.subheadline.bold())
+                                .foregroundColor(.optaTextPrimary)
+
+                            Text("\(sleepData.quality.displayName) sleep")
+                                .font(.caption)
+                                .foregroundColor(.optaTextMuted)
+                        }
+
+                        Spacer()
+                    }
+
+                    Divider()
+                        .background(Color.optaGlassBorder)
+                        .padding(.vertical, 4)
+
+                    // Activity Summary
+                    HStack(spacing: 16) {
+                        VStack(spacing: 4) {
+                            Text("\(activityData.steps.formatted())")
+                                .font(.caption.bold().monospacedDigit())
+                                .foregroundColor(.optaNeonGreen)
+
+                            Text("Steps")
+                                .font(.caption2)
+                                .foregroundColor(.optaTextMuted)
+                        }
+
+                        VStack(spacing: 4) {
+                            Text("\(Int(activityData.activeEnergyBurned))")
+                                .font(.caption.bold().monospacedDigit())
+                                .foregroundColor(.optaNeonAmber)
+
+                            Text("kcal")
+                                .font(.caption2)
+                                .foregroundColor(.optaTextMuted)
+                        }
+
+                        Spacer()
+
+                        Text(activityData.activityLevel.emoji)
+                            .font(.title3)
+                    }
+                } else {
+                    VStack(spacing: 8) {
+                        Image(systemName: "heart.text.square")
+                            .font(.title2)
+                            .foregroundColor(.optaTextMuted)
+
+                        Text("Tap to connect")
+                            .font(.caption)
+                            .foregroundColor(.optaTextMuted)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                }
+            }
+            .padding()
+            .glassPanel()
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+*/
 
 #Preview {
     ScrollView {

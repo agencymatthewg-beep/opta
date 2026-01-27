@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 import UserNotifications
 
 // MARK: - Notification Type Enum
@@ -11,6 +12,7 @@ enum OptaNotificationType: String, CaseIterable, Codable, Identifiable {
     case goalMilestone = "goal-milestone"
     case habitStreak = "habit-streak"
     case focusSession = "focus-session"
+    case weatherUpdate = "weather-update"
     case lowPriority = "low-priority"
 
     var id: String { rawValue }
@@ -24,6 +26,7 @@ enum OptaNotificationType: String, CaseIterable, Codable, Identifiable {
         case .goalMilestone: return "Goal Milestones"
         case .habitStreak: return "Habit Streaks"
         case .focusSession: return "Focus Sessions"
+        case .weatherUpdate: return "Weather Updates"
         case .lowPriority: return "Low Priority"
         }
     }
@@ -37,11 +40,12 @@ enum OptaNotificationType: String, CaseIterable, Codable, Identifiable {
         case .goalMilestone: return "Progress on your goals"
         case .habitStreak: return "Habit streak celebrations"
         case .focusSession: return "Focus and break reminders"
+        case .weatherUpdate: return "Location-based weather alerts"
         case .lowPriority: return "Background updates"
         }
     }
 
-    var iconName: String {
+    var icon: String {
         switch self {
         case .taskReminder: return "checklist"
         case .eventReminder: return "calendar.badge.clock"
@@ -50,7 +54,22 @@ enum OptaNotificationType: String, CaseIterable, Codable, Identifiable {
         case .goalMilestone: return "flag.checkered"
         case .habitStreak: return "flame.fill"
         case .focusSession: return "hourglass"
+        case .weatherUpdate: return "cloud.sun.fill"
         case .lowPriority: return "bell.badge"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .taskReminder: return .optaPrimary
+        case .eventReminder: return .optaNeonBlue
+        case .dailyBriefing: return .optaNeonCyan
+        case .aiInsight: return .purple
+        case .goalMilestone: return .green
+        case .habitStreak: return .orange
+        case .focusSession: return .blue
+        case .weatherUpdate: return .cyan
+        case .lowPriority: return .gray
         }
     }
 
@@ -62,6 +81,7 @@ enum OptaNotificationType: String, CaseIterable, Codable, Identifiable {
         case .aiInsight: return "AI_INSIGHT"
         case .goalMilestone, .habitStreak: return "ACHIEVEMENT"
         case .focusSession: return "FOCUS"
+        case .weatherUpdate: return "WEATHER"
         case .lowPriority: return "UPDATE"
         }
     }
@@ -116,6 +136,13 @@ struct NotificationTypeSettings: Codable, Equatable {
                 isEnabled: false,
                 soundEnabled: true,
                 debounceInterval: 0,
+                deliveryStyle: .banner
+            )
+        case .weatherUpdate:
+            return NotificationTypeSettings(
+                isEnabled: true,
+                soundEnabled: false,
+                debounceInterval: 3600, // 1 hour
                 deliveryStyle: .banner
             )
         case .lowPriority:

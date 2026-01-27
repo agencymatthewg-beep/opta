@@ -162,8 +162,30 @@ struct NotificationSettingsView: View {
                     }
                 }
 
-                // Test & reset
+                // History & Test
                 Section {
+                    NavigationLink {
+                        NotificationHistoryView()
+                    } label: {
+                        HStack(spacing: 16) {
+                            Image(systemName: "clock.fill")
+                                .font(.system(size: 20))
+                                .foregroundStyle(Color.optaNeonBlue)
+                                .frame(width: 28)
+
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Notification History")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundStyle(Color.optaTextPrimary)
+
+                                Text("Past 7 days")
+                                    .font(.system(size: 13))
+                                    .foregroundStyle(Color.optaTextSecondary)
+                            }
+                        }
+                    }
+                    .listRowBackground(Color.optaGlassBackground)
+
                     Button {
                         showTestSheet = true
                         HapticManager.shared.impact(.light)

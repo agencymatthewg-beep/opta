@@ -16,7 +16,7 @@ struct NotificationTestSheet: View {
                                 testNotification(type)
                             } label: {
                                 HStack(spacing: 16) {
-                                    Image(systemName: type.iconName)
+                                    Image(systemName: type.icon)
                                         .font(.system(size: 20))
                                         .foregroundStyle(Color.optaPrimary)
                                         .frame(width: 28)
@@ -103,6 +103,9 @@ struct NotificationTestSheet: View {
 
         case .focusSession:
             manager.scheduleFocusReminder(message: "Time for a break", at: Date().addingTimeInterval(5))
+
+        case .weatherUpdate:
+            manager.notifyWeatherUpdate(temperature: 22, condition: "Partly Cloudy", message: "Perfect weather today at 22°C")
 
         case .lowPriority:
             manager.notifyLowPriority(message: "Background sync completed")

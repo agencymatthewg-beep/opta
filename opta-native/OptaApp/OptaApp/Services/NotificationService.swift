@@ -103,7 +103,7 @@ actor NotificationService {
         }
 
         // Check authorization
-        guard isAuthorized else {
+        if !isAuthorized {
             let authorized = await requestAuthorization()
             guard authorized else {
                 print("[NotificationService] Not authorized to show notifications")
