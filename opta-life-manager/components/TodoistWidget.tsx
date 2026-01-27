@@ -133,16 +133,24 @@ export function TodoistWidget() {
     }
 
     if (error) {
+        const isConfigError = error.toLowerCase().includes("not configured") || error.toLowerCase().includes("token");
         return (
             <div className="flex flex-col items-center justify-center py-8 text-center">
-                <AlertCircle className="w-8 h-8 text-red-400 mb-2" />
-                <p className="text-sm text-text-muted">{error}</p>
-                <button
-                    onClick={loadData}
-                    className="mt-3 text-xs text-primary hover:text-primary-glow transition-colors"
-                >
-                    Try Again
-                </button>
+                <AlertCircle className={cn("w-8 h-8 mb-2", isConfigError ? "text-neon-amber" : "text-red-400")} />
+                <p className="text-sm text-text-muted">
+                    {isConfigError ? "Todoist API token not configured" : error}
+                </p>
+                <p className="text-xs text-text-muted mt-1">
+                    {isConfigError ? "Add your token in Settings (⚙️) to connect Todoist" : ""}
+                </p>
+                {!isConfigError && (
+                    <button
+                        onClick={loadData}
+                        className="mt-3 text-xs text-primary hover:text-primary-glow transition-colors"
+                    >
+                        Try Again
+                    </button>
+                )}
             </div>
         );
     }

@@ -9,7 +9,8 @@ import {
   Search,
   Cloud,
   Newspaper,
-  Lightbulb
+  Lightbulb,
+  Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTasks } from "@/contextsHooks/TaskContext";
@@ -26,6 +27,7 @@ import { NewsWidget } from "@/components/NewsWidget";
 import { SmartInsightsWidget } from "@/components/SmartInsightsWidget";
 import { motion, Variants } from "framer-motion";
 import { MagneticButton } from "@/components/MagneticButton";
+import { SettingsPanel } from "@/components/SettingsPanel";
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -58,6 +60,7 @@ export default function Dashboard({ session }: { session: Session | null }) {
   const { tasks, clearCompleted } = useTasks();
   const [activeHighlight, setActiveHighlight] = useState<string | null>(null);
   const [briefing, setBriefing] = useState("Initializing system intelligence...");
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const scrollToWidget = (id: string) => {
     const element = document.getElementById(id);
@@ -92,6 +95,7 @@ export default function Dashboard({ session }: { session: Session | null }) {
 
   return (
     <div className="">
+      <SettingsPanel isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
       <CommandOverlay
         onNavigate={scrollToWidget}
         onClearCompleted={clearCompleted}
@@ -110,6 +114,13 @@ export default function Dashboard({ session }: { session: Session | null }) {
           <div className="flex gap-4 items-center">
             <button aria-label="Search" className="p-3 rounded-full hover:bg-white/5 transition-colors text-text-secondary hover:text-primary">
               <Search className="w-5 h-5" />
+            </button>
+            <button
+              aria-label="Settings"
+              onClick={() => setSettingsOpen(true)}
+              className="p-3 rounded-full hover:bg-white/5 transition-colors text-text-secondary hover:text-primary"
+            >
+              <Settings className="w-5 h-5" />
             </button>
 
             {session?.user ? (

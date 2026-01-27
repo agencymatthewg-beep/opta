@@ -3,6 +3,15 @@ node_modules
 .git
 .archive
 .claude
+.serena
 *.tsbuildinfo
 .env.local
+.env
 wrangler.toml
+*.log
+*.md
+.DS_Store
+coverage
+__tests__
+*.test.*
+*.spec.*
