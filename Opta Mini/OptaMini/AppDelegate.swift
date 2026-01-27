@@ -282,6 +282,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         prefsItem.image = NSImage(systemSymbolName: MenuConstants.Icons.preferences, accessibilityDescription: "Preferences")
         menu.addItem(prefsItem)
 
+        let restartItem = NSMenuItem(
+            title: "Restart Opta Mini",
+            action: #selector(restartOptaMini),
+            keyEquivalent: "r"
+        )
+        restartItem.keyEquivalentModifierMask = [.command, .shift]
+        restartItem.target = self
+        restartItem.image = NSImage(systemSymbolName: MenuConstants.Icons.restart, accessibilityDescription: "Restart")
+        menu.addItem(restartItem)
+
         let quitItem = NSMenuItem(
             title: "Quit Opta Mini",
             action: #selector(quitApp),
@@ -347,6 +357,28 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.setString(MenuConstants.websiteURL, forType: .string)
+    }
+
+    @objc private func restartOptaMini() {
+        // Get the path to the current app
+        let bundlePath = Bundle.main.bundlePath
+
+        // Launch a new instance after a short delay
+        let task = Process()
+        task.launchPath = "/usr/bin/open"
+        task.arguments = ["-n", bundlePath]
+
+        // Quit after launching new instance
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            do {
+                try task.run()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    NSApplication.shared.terminate(nil)
+                }
+            } catch {
+                print("Failed to restart: \(error)")
+            }
+        }
     }
 
     @objc private func quitApp() {
