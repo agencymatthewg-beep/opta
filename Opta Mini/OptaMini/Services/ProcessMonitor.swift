@@ -2,15 +2,25 @@ import Foundation
 import AppKit
 import Combine
 
+/// Status of an individual app/service
+enum AppStatus: Equatable {
+    case stopped
+    case launching
+    case running
+}
+
 /// Overall ecosystem health status
 enum EcosystemStatus {
     case allRunning    // All apps running
     case someRunning   // Some apps running
+    case someLaunching // Some apps launching
     case noneRunning   // No apps running
 
     var iconName: String {
         switch self {
         case .allRunning, .someRunning:
+            return "circle.grid.2x2.fill"
+        case .someLaunching:
             return "circle.grid.2x2.fill"
         case .noneRunning:
             return "circle.grid.2x2"
@@ -21,8 +31,8 @@ enum EcosystemStatus {
 /// Monitors running applications and launchd services, tracks Opta ecosystem status
 @MainActor
 final class ProcessMonitor: ObservableObject {
-    /// Current status of each Opta component (id -> isRunning)
-    @Published private(set) var appStatus: [String: Bool] = [:]
+    /// Current status of each Opta component (id -> AppStatus)
+    @Published private(set) var appStatus: [String: AppStatus] = [:]
 
     private var cancellables = Set<AnyCancellable>()
     private var serviceCheckTimer: Timer?
@@ -30,7 +40,7 @@ final class ProcessMonitor: ObservableObject {
     init() {
         // Initialize status for all Opta apps/services
         for app in OptaApp.allApps {
-            appStatus[app.id] = false
+            appStatus[app.id] = .stopped
         }
 
         // Check initial state
@@ -38,7 +48,7 @@ final class ProcessMonitor: ObservableObject {
 
         // Subscribe to workspace notifications (for regular apps)
         subscribeToNotifications()
-        
+
         // Set up periodic check for launchd services
         startServiceMonitoring()
     }
@@ -54,17 +64,25 @@ final class ProcessMonitor: ObservableObject {
         let runningBundleIds = Set(runningApps.compactMap { $0.bundleIdentifier })
 
         for app in OptaApp.regularApps {
-            appStatus[app.id] = runningBundleIds.contains(app.bundleIdentifier)
+            let isRunning = runningBundleIds.contains(app.bundleIdentifier)
+            // Only update if not currently launching, or if now running
+            if appStatus[app.id] != .launching || isRunning {
+                appStatus[app.id] = isRunning ? .running : .stopped
+            }
         }
-        
+
         // Check launchd services via process list
         checkServiceStatus()
     }
-    
+
     /// Check status of launchd services
     private func checkServiceStatus() {
         for service in OptaApp.services {
-            appStatus[service.id] = isServiceRunning(service)
+            let isRunning = isServiceRunning(service)
+            // Only update if not currently launching, or if now running
+            if appStatus[service.id] != .launching || isRunning {
+                appStatus[service.id] = isRunning ? .running : .stopped
+            }
         }
     }
     
@@ -99,21 +117,38 @@ final class ProcessMonitor: ObservableObject {
         }
     }
 
+    /// Get status of a specific app/service
+    func status(_ app: OptaApp) -> AppStatus {
+        appStatus[app.id] ?? .stopped
+    }
+
     /// Check if a specific app/service is running
     func isRunning(_ app: OptaApp) -> Bool {
-        appStatus[app.id] ?? false
+        appStatus[app.id] == .running
+    }
+
+    /// Check if a specific app/service is launching
+    func isLaunching(_ app: OptaApp) -> Bool {
+        appStatus[app.id] == .launching
     }
 
     /// Count of running Opta components
     var runningCount: Int {
-        appStatus.values.filter { $0 }.count
+        appStatus.values.filter { $0 == .running }.count
+    }
+
+    /// Count of launching Opta components
+    var launchingCount: Int {
+        appStatus.values.filter { $0 == .launching }.count
     }
 
     /// Overall ecosystem status for menu bar icon
     var ecosystemStatus: EcosystemStatus {
         let running = runningCount
+        let launching = launchingCount
         let total = OptaApp.allApps.count
         if running == total { return .allRunning }
+        if launching > 0 { return .someLaunching }
         if running > 0 { return .someRunning }
         return .noneRunning
     }
@@ -122,11 +157,21 @@ final class ProcessMonitor: ObservableObject {
 
     /// Launch an Opta app or service
     func launch(_ app: OptaApp) {
+        // Set to launching state
+        appStatus[app.id] = .launching
+
         switch app.type {
         case .app:
             launchApp(app)
         case .launchdService:
             startService(app)
+        }
+
+        // Timeout: if still launching after 10 seconds, check actual status
+        DispatchQueue.main.asyncAfter(deadline: .now() + 10.0) { [weak self] in
+            if self?.appStatus[app.id] == .launching {
+                self?.refreshStatus()
+            }
         }
     }
 
@@ -253,7 +298,7 @@ final class ProcessMonitor: ObservableObject {
               let optaApp = OptaApp.regularApps.first(where: { $0.bundleIdentifier == bundleId }) else {
             return
         }
-        appStatus[optaApp.id] = true
+        appStatus[optaApp.id] = .running
     }
 
     private func handleAppTermination(_ app: NSRunningApplication) {
@@ -261,6 +306,6 @@ final class ProcessMonitor: ObservableObject {
               let optaApp = OptaApp.regularApps.first(where: { $0.bundleIdentifier == bundleId }) else {
             return
         }
-        appStatus[optaApp.id] = false
+        appStatus[optaApp.id] = .stopped
     }
 }

@@ -11,6 +11,7 @@ private enum MenuConstants {
 
     enum StatusIndicator {
         static let running = "●"
+        static let launching = "◐"
         static let stopped = "○"
     }
 
@@ -108,22 +109,34 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         guard let monitor = processMonitor else { return }
 
         for app in OptaApp.allApps {
-            let isRunning = monitor.isRunning(app)
+            let status = monitor.status(app)
 
             let item = NSMenuItem()
-            item.attributedTitle = createAppTitle(name: app.name, isRunning: isRunning)
+            item.attributedTitle = createAppTitle(name: app.name, status: status)
             item.representedObject = app
             item.image = NSImage(systemSymbolName: app.icon, accessibilityDescription: app.name)
-            item.submenu = buildAppSubmenu(for: app, isRunning: isRunning)
+            item.submenu = buildAppSubmenu(for: app, status: status)
 
             menu.addItem(item)
         }
     }
 
     /// Creates an attributed title with a colored status indicator
-    private func createAppTitle(name: String, isRunning: Bool) -> NSAttributedString {
-        let statusDot = isRunning ? MenuConstants.StatusIndicator.running : MenuConstants.StatusIndicator.stopped
-        let statusColor: NSColor = isRunning ? .systemGreen : .systemGray
+    private func createAppTitle(name: String, status: AppStatus) -> NSAttributedString {
+        let statusDot: String
+        let statusColor: NSColor
+
+        switch status {
+        case .running:
+            statusDot = MenuConstants.StatusIndicator.running
+            statusColor = .systemGreen
+        case .launching:
+            statusDot = MenuConstants.StatusIndicator.launching
+            statusColor = .systemOrange
+        case .stopped:
+            statusDot = MenuConstants.StatusIndicator.stopped
+            statusColor = .systemGray
+        }
 
         let attributedString = NSMutableAttributedString()
 
@@ -147,10 +160,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @MainActor
-    private func buildAppSubmenu(for app: OptaApp, isRunning: Bool) -> NSMenu {
+    private func buildAppSubmenu(for app: OptaApp, status: AppStatus) -> NSMenu {
         let submenu = NSMenu()
 
-        if isRunning {
+        switch status {
+        case .running:
             let stopItem = NSMenuItem(title: "Stop", action: #selector(stopApp(_:)), keyEquivalent: "")
             stopItem.target = self
             stopItem.representedObject = app
@@ -162,7 +176,20 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             restartItem.representedObject = app
             restartItem.image = NSImage(systemSymbolName: MenuConstants.Icons.restart, accessibilityDescription: "Restart")
             submenu.addItem(restartItem)
-        } else {
+
+        case .launching:
+            let launchingItem = NSMenuItem(title: "Launching...", action: nil, keyEquivalent: "")
+            launchingItem.isEnabled = false
+            launchingItem.image = NSImage(systemSymbolName: "hourglass", accessibilityDescription: "Launching")
+            submenu.addItem(launchingItem)
+
+            let cancelItem = NSMenuItem(title: "Cancel", action: #selector(stopApp(_:)), keyEquivalent: "")
+            cancelItem.target = self
+            cancelItem.representedObject = app
+            cancelItem.image = NSImage(systemSymbolName: "xmark.circle", accessibilityDescription: "Cancel")
+            submenu.addItem(cancelItem)
+
+        case .stopped:
             let launchItem = NSMenuItem(title: "Launch", action: #selector(launchApp(_:)), keyEquivalent: "")
             launchItem.target = self
             launchItem.representedObject = app
