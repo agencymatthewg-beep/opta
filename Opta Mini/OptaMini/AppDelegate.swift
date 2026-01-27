@@ -5,7 +5,8 @@ import Combine
 // MARK: - Constants
 
 private enum MenuConstants {
-    static let websiteURL = "https://optamize.app"
+    static let websiteURL = "https://optamize.biz"
+    static let lifeManagerURL = "https://lm.optamize.biz"
     static let accessibilityLabel = "Opta Mini"
 
     enum StatusIndicator {
@@ -144,6 +145,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             submenu.addItem(launchItem)
         }
 
+        // Add "Open in Browser" for Opta LM (Life Manager has web dashboard)
+        if app.id == "com.opta.life-manager" {
+            submenu.addItem(NSMenuItem.separator())
+            let openBrowserItem = NSMenuItem(title: "Open in Browser", action: #selector(openLifeManager), keyEquivalent: "")
+            openBrowserItem.target = self
+            openBrowserItem.image = NSImage(systemSymbolName: MenuConstants.Icons.website, accessibilityDescription: "Open in Browser")
+            submenu.addItem(openBrowserItem)
+        }
+
         return submenu
     }
 
@@ -273,6 +283,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func openWebsite() {
         guard let url = URL(string: MenuConstants.websiteURL) else { return }
+        NSWorkspace.shared.open(url)
+    }
+
+    @objc private func openLifeManager() {
+        guard let url = URL(string: MenuConstants.lifeManagerURL) else { return }
         NSWorkspace.shared.open(url)
     }
 
