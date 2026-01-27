@@ -160,6 +160,7 @@ struct PopoverView: View {
         }
         .frame(width: 320, height: showingHolographic ? 620 : 480)
         .onAppear {
+            NSLog("[PopoverView] Popover appeared")
             telemetry.startMonitoring()
         }
         .onDisappear {
@@ -461,10 +462,12 @@ struct QuickActionsSection: View {
     }
 
     private func restartApp() {
+        NSLog("[QuickActions] Restart button pressed")
         AppLaunchManager.shared.restartApp()
     }
 
     private func quitApp() {
+        NSLog("[QuickActions] Quit button pressed")
         NSApp.terminate(nil)
     }
 }
@@ -507,22 +510,37 @@ struct OptaHubSection: View {
     }
 
     private func checkLifeManagerStatus() {
+        NSLog("[OptaHub] Checking Life Manager status...")
         Task {
             lifeManagerStatus = await AppLaunchManager.shared.checkLifeManagerStatus()
+            NSLog("[OptaHub] Status check result: \(lifeManagerStatus)")
         }
     }
 
     private func launchLifeManager() {
+        NSLog("[OptaHub] Launch Life Manager button pressed")
         Task {
             lifeManagerStatus = .launching
             let success = await AppLaunchManager.shared.launchLifeManager()
+            NSLog("[OptaHub] Launch result: \(success)")
             lifeManagerStatus = success ? .running : .stopped
         }
     }
 
     private func openLifeManagerInBrowser() {
-        if let url = URL(string: "http://localhost:3000") {
-            NSWorkspace.shared.open(url)
+        NSLog("[OptaHub] Opening Life Manager in browser...")
+
+        // Direct shell open is most reliable
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+        task.arguments = ["http://localhost:3000"]
+
+        do {
+            try task.run()
+            task.waitUntilExit()
+            NSLog("[OptaHub] Open command executed")
+        } catch {
+            NSLog("[OptaHub] Open failed: \(error)")
         }
     }
 }
@@ -592,18 +610,26 @@ struct CompanionAppRow: View {
 
             // Actions
             if status == .running {
-                Button(action: onOpen) {
+                Button {
+                    NSLog("[CompanionAppRow] Open button clicked")
+                    onOpen()
+                } label: {
                     Image(systemName: "arrow.up.forward.square")
                         .font(.system(size: 14))
                         .foregroundColor(Color.optaPrimary)
+                        .padding(8)
+                        .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.borderless)
                 .help("Open in browser")
             } else if status == .launching {
                 ProgressView()
                     .scaleEffect(0.6)
             } else {
-                Button(action: onLaunch) {
+                Button {
+                    NSLog("[CompanionAppRow] Launch button clicked for \(name)")
+                    onLaunch()
+                } label: {
                     Image(systemName: "play.fill")
                         .font(.system(size: 12))
                         .foregroundColor(.white)
@@ -611,7 +637,7 @@ struct CompanionAppRow: View {
                         .background(Color.optaPrimary)
                         .clipShape(Circle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.borderless)
                 .help("Launch \(name)")
             }
         }

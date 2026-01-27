@@ -28,7 +28,10 @@ struct OptaRingView: View {
     
     // MARK: - Animation State
     @State private var energyRotation: Double = 0
+    @State private var energyRotation2: Double = 0
     @State private var pulseScale: Double = 1.0
+    @State private var glowOpacity: Double = 0.3
+    @State private var aberrationOffset: Double = 0.0
     @State private var isAnimating = false
     
     var body: some View {
@@ -76,10 +79,14 @@ struct OptaRingView: View {
                     lineWidth: 8
                 )
                 .frame(width: 240, height: 240)
-
-                // Fallback to previous programmatic version
-                LegacyOptaRingView(energy: energy)
-            }
+        }
+        .frame(width: 320, height: 320)
+        .rotation3DEffect(
+            .degrees(25),
+            axis: (x: 1.0, y: 0.0, z: 0.0)
+        )
+        .onAppear {
+            startAnimations()
         }
     }
     
