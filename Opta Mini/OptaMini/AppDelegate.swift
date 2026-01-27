@@ -30,14 +30,54 @@ private enum MenuConstants {
     }
 }
 
+/// Menu bar icon style options
+enum MenuBarIconStyle: String, CaseIterable {
+    case ecosystemGrid = "ecosystem"   // Default grid icon
+    case minimalDot = "dot"            // Simple circle indicator
+    case optaLogo = "logo"             // O logo style
+
+    var displayName: String {
+        switch self {
+        case .ecosystemGrid: return "Ecosystem Grid"
+        case .minimalDot: return "Minimal Dot"
+        case .optaLogo: return "Opta Logo"
+        }
+    }
+
+    /// Returns the SF Symbol names for inactive and active states
+    func symbolNames(isActive: Bool) -> String {
+        switch self {
+        case .ecosystemGrid:
+            return isActive ? "circle.grid.2x2.fill" : "circle.grid.2x2"
+        case .minimalDot:
+            return isActive ? "circle.fill" : "circle"
+        case .optaLogo:
+            return isActive ? "o.circle.fill" : "o.circle"
+        }
+    }
+
+    static var current: MenuBarIconStyle {
+        let rawValue = UserDefaults.standard.string(forKey: "menuBarIconStyle") ?? "ecosystem"
+        return MenuBarIconStyle(rawValue: rawValue) ?? .ecosystemGrid
+    }
+
+    static func save(_ style: MenuBarIconStyle) {
+        UserDefaults.standard.set(style.rawValue, forKey: "menuBarIconStyle")
+    }
+}
+
 // MARK: - AppDelegate
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem?
     private var processMonitor: ProcessMonitor?
     private var statusObserver: AnyCancellable?
+    private var globalHotkeyMonitor: Any?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Set default preferences on first launch
+        registerDefaults()
+
         processMonitor = ProcessMonitor()
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
 
@@ -58,6 +98,34 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
 
         updateMenuBarIcon()
+        setupGlobalHotkey()
+    }
+
+    // MARK: - Global Hotkey
+
+    private func registerDefaults() {
+        UserDefaults.standard.register(defaults: [
+            "notificationsEnabled": true,
+            "menuBarIconStyle": MenuBarIconStyle.ecosystemGrid.rawValue
+        ])
+    }
+
+    private func setupGlobalHotkey() {
+        // Register ⌥⌘O (Option+Command+O) to open the menu
+        globalHotkeyMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            // Check for ⌥⌘O
+            let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+            if flags == [.option, .command] && event.charactersIgnoringModifiers == "o" {
+                DispatchQueue.main.async {
+                    self?.showMenu()
+                }
+            }
+        }
+    }
+
+    private func showMenu() {
+        guard let button = statusItem?.button else { return }
+        button.performClick(nil)
     }
 
     // MARK: - Menu Bar Icon
@@ -65,9 +133,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @MainActor
     private func updateMenuBarIcon() {
         guard let button = statusItem?.button, let monitor = processMonitor else { return }
-        let status = monitor.ecosystemStatus
+        let isActive = monitor.runningCount > 0
+        let iconStyle = MenuBarIconStyle.current
+        let symbolName = iconStyle.symbolNames(isActive: isActive)
         button.image = NSImage(
-            systemSymbolName: status.iconName,
+            systemSymbolName: symbolName,
             accessibilityDescription: MenuConstants.accessibilityLabel
         )
     }
@@ -165,6 +235,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         switch status {
         case .running:
+            // Show uptime at the top
+            if let uptime = processMonitor?.formattedUptime(for: app) {
+                let uptimeItem = NSMenuItem()
+                uptimeItem.title = "Running for \(uptime)"
+                uptimeItem.isEnabled = false
+                uptimeItem.image = NSImage(systemSymbolName: "clock", accessibilityDescription: "Uptime")
+                submenu.addItem(uptimeItem)
+                submenu.addItem(NSMenuItem.separator())
+            }
+
             let stopItem = NSMenuItem(title: "Stop", action: #selector(stopApp(_:)), keyEquivalent: "")
             stopItem.target = self
             stopItem.representedObject = app
@@ -273,14 +353,25 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @MainActor
     private func addFooterSection(to menu: NSMenu) {
-        let prefsItem = NSMenuItem(
-            title: "Preferences...",
-            action: #selector(openPreferences),
-            keyEquivalent: ","
+        // Icon Style Submenu
+        let iconStyleItem = NSMenuItem(title: "Menu Bar Icon", action: nil, keyEquivalent: "")
+        iconStyleItem.image = NSImage(systemSymbolName: "paintbrush", accessibilityDescription: "Icon Style")
+        iconStyleItem.submenu = buildIconStyleSubmenu()
+        menu.addItem(iconStyleItem)
+
+        // Notifications Toggle
+        let notificationsEnabled = UserDefaults.standard.bool(forKey: "notificationsEnabled")
+        let notifyItem = NSMenuItem(
+            title: "Notifications",
+            action: #selector(toggleNotifications),
+            keyEquivalent: ""
         )
-        prefsItem.target = self
-        prefsItem.image = NSImage(systemSymbolName: MenuConstants.Icons.preferences, accessibilityDescription: "Preferences")
-        menu.addItem(prefsItem)
+        notifyItem.target = self
+        notifyItem.state = notificationsEnabled ? .on : .off
+        notifyItem.image = NSImage(systemSymbolName: "bell", accessibilityDescription: "Notifications")
+        menu.addItem(notifyItem)
+
+        menu.addItem(NSMenuItem.separator())
 
         let restartItem = NSMenuItem(
             title: "Restart Opta Mini",
@@ -335,6 +426,44 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         Task { @MainActor in
             processMonitor?.stopAll()
         }
+    }
+
+    // MARK: - Icon Style
+
+    @MainActor
+    private func buildIconStyleSubmenu() -> NSMenu {
+        let submenu = NSMenu()
+        let currentStyle = MenuBarIconStyle.current
+
+        for style in MenuBarIconStyle.allCases {
+            let item = NSMenuItem(
+                title: style.displayName,
+                action: #selector(changeIconStyle(_:)),
+                keyEquivalent: ""
+            )
+            item.target = self
+            item.representedObject = style
+            item.state = (style == currentStyle) ? .on : .off
+            item.image = NSImage(systemSymbolName: style.symbolNames(isActive: true), accessibilityDescription: style.displayName)
+            submenu.addItem(item)
+        }
+
+        return submenu
+    }
+
+    @MainActor
+    @objc private func changeIconStyle(_ sender: NSMenuItem) {
+        guard let style = sender.representedObject as? MenuBarIconStyle else { return }
+        MenuBarIconStyle.save(style)
+        updateMenuBarIcon()
+        rebuildMenu()
+    }
+
+    @MainActor
+    @objc private func toggleNotifications() {
+        let current = UserDefaults.standard.bool(forKey: "notificationsEnabled")
+        UserDefaults.standard.set(!current, forKey: "notificationsEnabled")
+        rebuildMenu()
     }
 
     // MARK: - Utility Actions

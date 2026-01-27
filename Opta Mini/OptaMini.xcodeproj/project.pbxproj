@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0D3C42EC66BA98574ED77AB0 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6051D2BA26596890B63467A7 /* NotificationService.swift */; };
 		A1000001233F000100000001 /* OptaMiniApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000002233F000100000001 /* OptaMiniApp.swift */; };
 		A1000003233F000100000001 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000004233F000100000001 /* ContentView.swift */; };
 		A1000005233F000100000001 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000006233F000100000001 /* AppDelegate.swift */; };
@@ -21,11 +22,12 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		A1000009233F000100000001 /* OptaMini.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OptaMini.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		6051D2BA26596890B63467A7 /* NotificationService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		A1000002233F000100000001 /* OptaMiniApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptaMiniApp.swift; sourceTree = "<group>"; };
 		A1000004233F000100000001 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		A1000006233F000100000001 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		A1000008233F000200000001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A1000009233F000100000001 /* OptaMini.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OptaMini.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A100000A233F000200000001 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A100000B233F000200000001 /* OptaMini.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = OptaMini.entitlements; sourceTree = "<group>"; };
 		A1000020233F000300000001 /* OptaApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptaApp.swift; sourceTree = "<group>"; };
@@ -56,14 +58,6 @@
 			);
 			sourceTree = "<group>";
 		};
-		A100000F233F000100000001 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				A1000009233F000100000001 /* OptaMini.app */,
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
 		A100000E233F000100000001 /* OptaMini */ = {
 			isa = PBXGroup;
 			children = (
@@ -81,6 +75,14 @@
 			path = OptaMini;
 			sourceTree = "<group>";
 		};
+		A100000F233F000100000001 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A1000009233F000100000001 /* OptaMini.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
 		A1000024233F000300000001 /* Models */ = {
 			isa = PBXGroup;
 			children = (
@@ -94,6 +96,7 @@
 			children = (
 				A1000021233F000300000001 /* ProcessMonitor.swift */,
 				A1000037233F000500000001 /* LoginItemManager.swift */,
+				6051D2BA26596890B63467A7 /* NotificationService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -195,6 +198,7 @@
 				A1000034233F000500000001 /* AboutView.swift in Sources */,
 				A1000036233F000500000001 /* LoginItemManager.swift in Sources */,
 				A1000040233F000600000001 /* DesignSystem.swift in Sources */,
+				0D3C42EC66BA98574ED77AB0 /* NotificationService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -376,20 +380,20 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		A1000015233F000200000001 /* Build configuration list for PBXProject "OptaMini" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				A1000016233F000200000001 /* Debug */,
-				A1000017233F000200000001 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		A1000011233F000200000001 /* Build configuration list for PBXNativeTarget "OptaMini" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				A1000018233F000200000001 /* Debug */,
 				A1000019233F000200000001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A1000015233F000200000001 /* Build configuration list for PBXProject "OptaMini" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A1000016233F000200000001 /* Debug */,
+				A1000017233F000200000001 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

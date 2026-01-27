@@ -34,8 +34,12 @@ final class ProcessMonitor: ObservableObject {
     /// Current status of each Opta component (id -> AppStatus)
     @Published private(set) var appStatus: [String: AppStatus] = [:]
 
+    /// Track when each app started running (for uptime display)
+    private(set) var appStartTimes: [String: Date] = [:]
+
     private var cancellables = Set<AnyCancellable>()
     private var serviceCheckTimer: Timer?
+    private let notificationService = NotificationService.shared
 
     init() {
         // Initialize status for all Opta apps/services
@@ -65,9 +69,18 @@ final class ProcessMonitor: ObservableObject {
 
         for app in OptaApp.regularApps {
             let isRunning = runningBundleIds.contains(app.bundleIdentifier)
+            let wasRunning = appStatus[app.id] == .running
+
             // Only update if not currently launching, or if now running
             if appStatus[app.id] != .launching || isRunning {
                 appStatus[app.id] = isRunning ? .running : .stopped
+
+                // Track start time if newly running
+                if isRunning && !wasRunning {
+                    appStartTimes[app.id] = Date()
+                } else if !isRunning && wasRunning {
+                    appStartTimes.removeValue(forKey: app.id)
+                }
             }
         }
 
@@ -79,9 +92,23 @@ final class ProcessMonitor: ObservableObject {
     private func checkServiceStatus() {
         for service in OptaApp.services {
             let isRunning = isServiceRunning(service)
+            let wasRunning = appStatus[service.id] == .running
+            let wasLaunching = appStatus[service.id] == .launching
+
             // Only update if not currently launching, or if now running
             if appStatus[service.id] != .launching || isRunning {
                 appStatus[service.id] = isRunning ? .running : .stopped
+
+                // Track start time and send notifications
+                if isRunning && !wasRunning {
+                    appStartTimes[service.id] = Date()
+                    if wasLaunching {
+                        notificationService.notifyAppStarted(service.name)
+                    }
+                } else if !isRunning && wasRunning {
+                    appStartTimes.removeValue(forKey: service.id)
+                    notificationService.notifyAppStopped(service.name)
+                }
             }
         }
     }
@@ -299,6 +326,8 @@ final class ProcessMonitor: ObservableObject {
             return
         }
         appStatus[optaApp.id] = .running
+        appStartTimes[optaApp.id] = Date()
+        notificationService.notifyAppStarted(optaApp.name)
     }
 
     private func handleAppTermination(_ app: NSRunningApplication) {
@@ -307,5 +336,30 @@ final class ProcessMonitor: ObservableObject {
             return
         }
         appStatus[optaApp.id] = .stopped
+        appStartTimes.removeValue(forKey: optaApp.id)
+        notificationService.notifyAppStopped(optaApp.name)
+    }
+
+    /// Get uptime for an app (returns nil if not running)
+    func uptime(for app: OptaApp) -> TimeInterval? {
+        guard let startTime = appStartTimes[app.id] else { return nil }
+        return Date().timeIntervalSince(startTime)
+    }
+
+    /// Format uptime as human-readable string
+    func formattedUptime(for app: OptaApp) -> String? {
+        guard let uptime = uptime(for: app) else { return nil }
+
+        let hours = Int(uptime) / 3600
+        let minutes = (Int(uptime) % 3600) / 60
+        let seconds = Int(uptime) % 60
+
+        if hours > 0 {
+            return "\(hours)h \(minutes)m"
+        } else if minutes > 0 {
+            return "\(minutes)m \(seconds)s"
+        } else {
+            return "\(seconds)s"
+        }
     }
 }
