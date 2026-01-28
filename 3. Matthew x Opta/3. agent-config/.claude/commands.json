@@ -17,7 +17,7 @@
       "type": "tool",
       "action": "Read",
       "params": {
-        "file_path": "Opta MacOS/DESIGN_SYSTEM.md"
+        "file_path": "1. Apps/2. Desktop/1. Opta Native/DESIGN_SYSTEM.md"
       }
     },
     "/status": {
@@ -37,17 +37,17 @@
     "/rust": {
       "description": "Navigate to Rust core and show info",
       "type": "bash",
-      "action": "cd opta-native && pwd && echo '\\n=== Workspace Members ===' && cargo metadata --no-deps --format-version 1 | jq -r '.workspace_members[]' 2>/dev/null || ls -la"
+      "action": "cd \"1. Apps/4. Shared/1. opta-native\" && pwd && echo '\\n=== Workspace Members ===' && cargo metadata --no-deps --format-version 1 | jq -r '.workspace_members[]' 2>/dev/null || ls -la"
     },
     "/apps": {
       "description": "List all Opta apps",
       "type": "bash",
-      "action": "echo '=== iOS Apps ===' && ls -1 'Opta iOS' 2>/dev/null | grep -E '\\.xcodeproj$|\\.xcworkspace$' | sed 's/\\..*$//' && echo '\\n=== Desktop Apps ===' && ls -1 'Opta MacOS' 'Opta Mini' 2>/dev/null && echo '\\n=== Web Apps ===' && ls -1 'opta-life-manager' 'optamize-website' 2>/dev/null"
+      "action": "echo '=== iOS Apps ===' && ls -1 '1. Apps/1. iOS' 2>/dev/null && echo '\\n=== Desktop Apps ===' && ls -1 '1. Apps/2. Desktop' 2>/dev/null && echo '\\n=== Web Apps ===' && ls -1 '1. Apps/3. Web' 2>/dev/null"
     },
     "/research": {
       "description": "Search Gemini Deep Research files",
       "type": "bash",
-      "action": "find 'Gemini Deep Research' -name '*.html' -o -name '*.md' 2>/dev/null | head -20"
+      "action": "find '2. Gemini Deep Research' -name '*.html' -o -name '*.md' 2>/dev/null | head -20"
     }
   },
   "aliases": {
