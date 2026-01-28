@@ -29,16 +29,4 @@
   body {
     @apply bg-opta-bg text-white antialiased;
   }
-
-  /* Smooth scrolling for touch devices */
-  .modal-scroll {
-    -webkit-overflow-scrolling: touch;
-  }
-}
-
-@layer utilities {
-  /* Prevent background scroll when modal is open */
-  .modal-open {
-    overscroll-behavior: contain;
-  }
 }
