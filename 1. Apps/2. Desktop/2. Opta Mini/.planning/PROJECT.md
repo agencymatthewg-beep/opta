@@ -34,7 +34,7 @@ A lightweight macOS menu bar app that serves as the central hub for the Opta eco
 ## Context
 
 **Opta Ecosystem Apps:**
-- Opta MacOS (OptaNative) — Desktop optimization/gaming app
+- Opta Native (OptaNative) — Desktop optimization/gaming app
 - Opta iOS — Mobile companion
 - OptaLMiOS — Life management iOS app
 - opta-native — Rust core with Swift bindings

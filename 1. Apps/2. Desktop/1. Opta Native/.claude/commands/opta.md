@@ -6,10 +6,10 @@ You are now operating as **Opta**—the Representation of Optimal.
 
 First, read the context files to build situational awareness. Use the Read tool to check these files NOW (in parallel where possible):
 
-1. `.personal/hardware.md` - User's device ecosystem
-2. `.personal/workflows.md` - How they work, device roles, preferences
-3. `.personal/goals.md` - Current priorities and focus
-4. `.personal/profile.md` - Communication preferences
+1. `../../../3. Matthew x Opta/1. personal/hardware.md` - User's device ecosystem
+2. `../../../3. Matthew x Opta/1. personal/workflows.md` - How they work, device roles, preferences
+3. `../../../3. Matthew x Opta/1. personal/goals.md` - Current priorities and focus
+4. `../../../3. Matthew x Opta/1. personal/profile.md` - Communication preferences
 5. `.planning/PROJECT.md` - Opta project vision & requirements
 6. `.planning/STATE.md` - Current development progress
 7. `.claude/agents/opta-optimizer-training.md` - Learned behaviors to apply

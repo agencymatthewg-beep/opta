@@ -7,7 +7,8 @@
 # Note: Download iOS simulators from Xcode > Settings > Platforms
 # Run: sim-list to see available devices after installation
 
-OPTA_DIR="/Users/matthewbyrden/Documents/Opta/1. Apps/2. Desktop/1. Opta Native"
+OPTA_IOS_DIR="/Users/matthewbyrden/Documents/Opta/1. Apps/1. iOS/1. Opta"
+OPTA_DESKTOP_DIR="/Users/matthewbyrden/Documents/Opta/1. Apps/2. Desktop/1. Opta Native"
 BRAIN_DIR="/Users/matthewbyrden/Documents/Syncthing Claude Brain"
 
 # ============================================
@@ -57,16 +58,16 @@ alias ios-schemes="xcodebuild -list 2>&1 | xcbeautify"
 # ============================================
 
 # Run Fastlane beta (TestFlight)
-alias fl-beta="cd $OPTA_DIR && fastlane beta"
+alias fl-beta="cd \"$OPTA_IOS_DIR\" && fastlane beta"
 
 # Run Fastlane tests
-alias fl-test="cd $OPTA_DIR && fastlane test"
+alias fl-test="cd \"$OPTA_IOS_DIR\" && fastlane test"
 
 # Check code signing
-alias fl-match="cd $OPTA_DIR && fastlane match"
+alias fl-match="cd \"$OPTA_IOS_DIR\" && fastlane match"
 
 # Init Fastlane in project
-alias fl-init="cd $OPTA_DIR && fastlane init"
+alias fl-init="cd \"$OPTA_IOS_DIR\" && fastlane init"
 
 # ============================================
 # WORKSPACE LAUNCHERS
@@ -74,17 +75,17 @@ alias fl-init="cd $OPTA_DIR && fastlane init"
 
 # Launch Opta macOS workspace (Alt+1)
 function work-opta() {
-    cd "$OPTA_DIR"
+    cd "$OPTA_DESKTOP_DIR"
     aerospace workspace 1
     open -a Ghostty
     sleep 0.3
     osascript -e 'tell application "Ghostty" to activate'
-    echo "Opta workspace ready (Alt+1). Run 'claude' to start Claude Code."
+    echo "Opta Desktop workspace ready (Alt+1). Run 'claude' to start Claude Code."
 }
 
 # Launch Opta iOS workspace (Alt+2)
 function work-ios() {
-    cd "$OPTA_DIR"
+    cd "$OPTA_IOS_DIR"
     aerospace workspace 2
     xcrun simctl boot 'iPhone 17 Pro' 2>/dev/null
     open -a Simulator
@@ -119,7 +120,8 @@ alias ws-comms="aerospace workspace 5"
 alias xc="open -a Xcode ."
 
 # Open specific Xcode project/workspace
-alias xc-opta="open -a Xcode $OPTA_DIR/*.xcodeproj 2>/dev/null || open -a Xcode $OPTA_DIR/*.xcworkspace 2>/dev/null || echo 'No Xcode project found'"
+alias xc-opta-ios="open -a Xcode \"$OPTA_IOS_DIR\"/*.xcodeproj 2>/dev/null || open -a Xcode \"$OPTA_IOS_DIR\"/*.xcworkspace 2>/dev/null || echo 'No Xcode project found'"
+alias xc-opta-desktop="open -a Xcode \"$OPTA_DESKTOP_DIR\"/*.xcodeproj 2>/dev/null || open -a Xcode \"$OPTA_DESKTOP_DIR\"/*.xcworkspace 2>/dev/null || echo 'No Xcode project found'"
 
 # Kill Xcode (useful when it hangs)
 alias xc-kill="killall Xcode 2>/dev/null && echo 'Xcode killed' || echo 'Xcode not running'"

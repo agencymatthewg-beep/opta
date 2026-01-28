@@ -1,110 +1,141 @@
 # Codebase Structure
 
 **Analysis Date:** 2026-01-28
+**Structure:** Numbered Hierarchical Organization
 
 ## Directory Layout
 
 ```
 Opta/
-├── Opta MacOS/           # Desktop app (Tauri + React + SwiftUI hybrid)
-│   ├── src/              # React frontend
-│   ├── src-tauri/        # Tauri Rust backend
-│   ├── OptaNative/       # SwiftUI native components
-│   └── scripts/          # Python telemetry scripts
-├── Opta iOS/             # Mobile monorepo (Expo + React Native)
-│   ├── apps/mobile/      # Main Expo app
-│   └── packages/         # Shared packages (api, shared)
-├── opta-life-manager/    # Web app (Next.js 15)
-│   ├── app/              # App Router pages
-│   ├── components/       # React components
-│   └── lib/              # Utilities and API clients
-├── opta-native/          # Rust workspace
-│   ├── opta-core/        # Crux core logic
-│   ├── opta-shared/      # Shared types/utilities
-│   ├── opta-render/      # wgpu GPU rendering
-│   └── OptaApp/          # macOS SwiftUI app
-├── OptaLMiOS/            # Life Manager iOS (SwiftUI)
-├── Opta Mini/            # Menu bar agent (SwiftUI)
-├── .planning/            # Project planning docs
-├── .personal/            # Personal context
-└── .serena/              # Serena MCP config
+├── 1. Apps/
+│   ├── 1. iOS/
+│   │   ├── 1. Opta/                    # Main iOS app (SwiftUI)
+│   │   │   ├── apps/mobile/            # Main Expo app
+│   │   │   └── packages/               # Shared packages (api, shared)
+│   │   └── 3. Opta LM iOS/             # Life Manager iOS (SwiftUI)
+│   ├── 2. Desktop/
+│   │   ├── 1. Opta Native/             # Main desktop app (Tauri + React + SwiftUI hybrid)
+│   │   │   ├── src/                    # React frontend
+│   │   │   ├── src-tauri/              # Tauri Rust backend
+│   │   │   ├── OptaNative/             # SwiftUI native components
+│   │   │   └── scripts/                # Python telemetry scripts
+│   │   └── 2. Opta Mini/               # Menu bar agent (SwiftUI)
+│   ├── 3. Web/
+│   │   ├── 1. Opta Life Manager/       # Web app (Next.js 15)
+│   │   │   ├── app/                    # App Router pages
+│   │   │   ├── components/             # React components
+│   │   │   └── lib/                    # Utilities and API clients
+│   │   ├── 2. Opta LM Edge/            # Edge deployment variant
+│   │   ├── 3. Optamize Website/        # Marketing website
+│   │   └── 4. AI Components/           # Shared component library
+│   └── 4. Shared/
+│       ├── 1. opta-native/             # Rust workspace
+│       │   ├── opta-core/              # Crux core logic
+│       │   ├── opta-shared/            # Shared types/utilities
+│       │   ├── opta-render/            # wgpu GPU rendering
+│       │   └── OptaApp/                # macOS SwiftUI app
+│       └── 2. design-assets/           # Logos, icons, animation frames
+│           ├── logos/                  # App logos (PNG, SVG)
+│           ├── icons/                  # Icon sets
+│           ├── animation-frames/       # Opta Ring frames
+│           └── Opta Aesthetic Vision/  # Design specs
+├── 2. Gemini Deep Research/            # Research and exploration
+└── 3. Matthew x Opta/
+    ├── 1. personal/                    # Personal context (calendar, hardware, goals)
+    ├── 2. project/                     # Cross-project planning
+    │   ├── .planning/                  # This folder
+    │   └── reorganization-docs/        # Reorganization documentation
+    └── 3. agent-config/                # Agent configuration
+        ├── .claude/                    # Claude Code config
+        ├── .serena/                    # Serena MCP config
+        └── .opta/                      # Opta-specific context
 ```
 
 ## Directory Purposes
 
-**Opta MacOS/src/**
-- Purpose: React frontend for desktop app
-- Contains: Pages, components, hooks, contexts, utilities
+### 1. Apps/2. Desktop/1. Opta Native/
+
+**src/** - React frontend for desktop app
+- Purpose: UI components, pages, hooks, contexts
 - Key files: `main.tsx`, `App.tsx`, `pages/*.tsx`
 - Subdirectories: `components/`, `hooks/`, `contexts/`, `lib/`, `pages/`, `types/`
 
-**Opta MacOS/src-tauri/**
-- Purpose: Tauri Rust backend
-- Contains: IPC commands, system integration, window management
+**src-tauri/** - Tauri Rust backend
+- Purpose: IPC commands, system integration, window management
 - Key files: `main.rs`, `lib.rs`, `telemetry.rs`, `processes.rs`
 - Subdirectories: `src/` (Rust source), `icons/`, `capabilities/`
 
-**Opta MacOS/OptaNative/**
-- Purpose: SwiftUI native components (hybrid approach)
-- Contains: Views, ViewModels, Utilities, Services
+**OptaNative/** - SwiftUI native components
+- Purpose: Native macOS UI (hybrid approach)
 - Key files: `Views/MainWindow/`, `ViewModels/ChessViewModel.swift`
 - Subdirectories: `Views/`, `ViewModels/`, `Utilities/`, `Services/`
 
-**opta-native/opta-core/**
-- Purpose: Cross-platform Crux core
-- Contains: App logic, model, events, effects, capabilities
+### 1. Apps/4. Shared/1. opta-native/
+
+**opta-core/** - Cross-platform Crux core
+- Purpose: Core app logic, model, events, effects
 - Key files: `lib.rs`, `app.rs`, `model.rs`, `event.rs`, `effect.rs`
-- Subdirectories: `src/` only
 
-**opta-native/opta-render/**
-- Purpose: GPU rendering with wgpu
-- Contains: Render pipelines, shaders, GPU abstractions
+**opta-render/** - GPU rendering with wgpu
+- Purpose: Render pipelines, shaders, GPU abstractions
 - Key files: `lib.rs`, shader files (.wgsl)
-- Subdirectories: `src/`, `shaders/`
 
-**opta-life-manager/**
-- Purpose: Next.js web application
-- Contains: App Router pages, Server Actions, components
-- Key files: `app/page.tsx`, `auth.ts`, `lib/actions.ts`
-- Subdirectories: `app/`, `components/`, `lib/`
+**opta-shared/** - Shared Rust types and utilities
+- Purpose: Types, constants, utilities used across workspace
 
-**Opta iOS/packages/api/**
-- Purpose: Hono API server for mobile
-- Contains: Route handlers, middleware, validation
-- Key files: `src/index.ts`, `src/routes/*.ts`
+### 1. Apps/3. Web/1. Opta Life Manager/
+
+**app/** - Next.js App Router pages
+- Purpose: Server and client components, routes
+- Key files: `page.tsx`, `layout.tsx`, Server Actions
+
+**components/** - React components
+- Purpose: Reusable UI components
+
+**lib/** - Utilities and API clients
+- Purpose: Server Actions, API integrations, utilities
+- Key files: `actions.ts`, `auth.ts`
+
+### 1. Apps/1. iOS/1. Opta/
+
+**apps/mobile/** - Main Expo app
+- Purpose: React Native mobile app
+- Key files: `app/_layout.tsx` (Expo Router root)
+
+**packages/api/** - Hono API server
+- Purpose: Mobile backend API
 - Subdirectories: `src/routes/`, `src/middleware/`
+
+**packages/shared/** - Shared mobile types
+- Purpose: Types shared between frontend and API
 
 ## Key File Locations
 
 **Entry Points:**
-- `Opta MacOS/src/main.tsx` - React app mount
-- `Opta MacOS/src-tauri/src/main.rs` → `lib.rs` - Tauri backend
-- `opta-life-manager/app/page.tsx` - Next.js home
-- `opta-native/opta-core/src/lib.rs` - Crux library
-- `Opta iOS/apps/mobile/app/_layout.tsx` - Expo Router root
+- `1. Apps/2. Desktop/1. Opta Native/src/main.tsx` - React app mount
+- `1. Apps/2. Desktop/1. Opta Native/src-tauri/src/main.rs` - Tauri backend
+- `1. Apps/3. Web/1. Opta Life Manager/app/page.tsx` - Next.js home
+- `1. Apps/4. Shared/1. opta-native/opta-core/src/lib.rs` - Crux library
+- `1. Apps/1. iOS/1. Opta/apps/mobile/app/_layout.tsx` - Expo Router root
 
 **Configuration:**
-- `Opta MacOS/tsconfig.json` - TypeScript config
-- `Opta MacOS/vite.config.ts` - Vite bundler config
-- `Opta MacOS/src-tauri/tauri.conf.json` - Tauri app config
-- `opta-life-manager/next.config.ts` - Next.js config
-- `opta-native/Cargo.toml` - Rust workspace manifest
+- `1. Apps/2. Desktop/1. Opta Native/tsconfig.json` - TypeScript config
+- `1. Apps/2. Desktop/1. Opta Native/vite.config.ts` - Vite bundler config
+- `1. Apps/2. Desktop/1. Opta Native/src-tauri/tauri.conf.json` - Tauri config
+- `1. Apps/3. Web/1. Opta Life Manager/next.config.ts` - Next.js config
+- `1. Apps/4. Shared/1. opta-native/Cargo.toml` - Rust workspace manifest
 
 **Core Logic:**
-- `opta-native/opta-core/src/app.rs` - Crux application
-- `opta-life-manager/lib/actions.ts` - Server Actions
-- `Opta MacOS/src/hooks/*.ts` - React hooks
-- `Opta MacOS/OptaNative/OptaNative/ViewModels/*.swift` - SwiftUI ViewModels
-
-**Testing:**
-- No dedicated test directories (design system compliance as quality gate)
-- TypeScript strict mode in all tsconfig.json files
+- `1. Apps/4. Shared/1. opta-native/opta-core/src/app.rs` - Crux application
+- `1. Apps/3. Web/1. Opta Life Manager/lib/actions.ts` - Server Actions
+- `1. Apps/2. Desktop/1. Opta Native/src/hooks/*.ts` - React hooks
+- `1. Apps/2. Desktop/1. Opta Native/OptaNative/OptaNative/ViewModels/*.swift` - ViewModels
 
 **Documentation:**
-- `CLAUDE.md` - Root instructions
-- `Opta MacOS/CLAUDE.md` - Desktop-specific instructions
-- `Opta MacOS/DESIGN_SYSTEM.md` - UI/UX guidelines
-- `.planning/` - Project state and roadmaps
+- `CLAUDE.md` - Root navigation
+- `1. Apps/2. Desktop/1. Opta Native/CLAUDE.md` - Desktop instructions
+- `1. Apps/2. Desktop/1. Opta Native/DESIGN_SYSTEM.md` - UI/UX guidelines
+- `3. Matthew x Opta/2. project/.planning/` - Project state and roadmaps
 
 ## Naming Conventions
 
@@ -115,7 +146,8 @@ Opta/
 - snake_case.rs for Rust files (`telemetry.rs`)
 
 **Directories:**
-- kebab-case for all directories (`src-tauri/`, `opta-core/`)
+- Numbered for top-level organization (`1. Apps/`, `2. Gemini Deep Research/`)
+- kebab-case for code directories (`src-tauri/`, `opta-core/`)
 - Plural for collections (`components/`, `hooks/`, `services/`)
 - PascalCase for Swift directories (`Views/`, `ViewModels/`)
 
@@ -128,49 +160,50 @@ Opta/
 ## Where to Add New Code
 
 **New Feature (Desktop):**
-- Primary code: `Opta MacOS/src/pages/` or `Opta MacOS/src/components/`
-- Hooks: `Opta MacOS/src/hooks/`
-- Tauri commands: `Opta MacOS/src-tauri/src/`
-- Config if needed: `Opta MacOS/src/lib/`
+- Primary code: `1. Apps/2. Desktop/1. Opta Native/src/pages/` or `.../components/`
+- Hooks: `1. Apps/2. Desktop/1. Opta Native/src/hooks/`
+- Tauri commands: `1. Apps/2. Desktop/1. Opta Native/src-tauri/src/`
+- Config: `1. Apps/2. Desktop/1. Opta Native/src/lib/`
 
 **New Feature (Native Rust):**
-- Core logic: `opta-native/opta-core/src/`
-- Shared types: `opta-native/opta-shared/src/`
-- GPU rendering: `opta-native/opta-render/src/`
+- Core logic: `1. Apps/4. Shared/1. opta-native/opta-core/src/`
+- Shared types: `1. Apps/4. Shared/1. opta-native/opta-shared/src/`
+- GPU rendering: `1. Apps/4. Shared/1. opta-native/opta-render/src/`
 
 **New Feature (Web):**
-- Pages: `opta-life-manager/app/`
-- Components: `opta-life-manager/components/`
-- Server Actions: `opta-life-manager/lib/actions.ts`
-- API integrations: `opta-life-manager/lib/`
+- Pages: `1. Apps/3. Web/1. Opta Life Manager/app/`
+- Components: `1. Apps/3. Web/1. Opta Life Manager/components/`
+- Server Actions: `1. Apps/3. Web/1. Opta Life Manager/lib/actions.ts`
+- API integrations: `1. Apps/3. Web/1. Opta Life Manager/lib/`
 
 **New Route (Mobile API):**
-- Definition: `Opta iOS/packages/api/src/routes/`
-- Shared types: `Opta iOS/packages/shared/src/`
+- Definition: `1. Apps/1. iOS/1. Opta/packages/api/src/routes/`
+- Shared types: `1. Apps/1. iOS/1. Opta/packages/shared/src/`
 
 **Utilities:**
-- React utilities: `Opta MacOS/src/lib/`
-- Rust utilities: `opta-native/opta-shared/src/`
-- Web utilities: `opta-life-manager/lib/`
+- React utilities: `1. Apps/2. Desktop/1. Opta Native/src/lib/`
+- Rust utilities: `1. Apps/4. Shared/1. opta-native/opta-shared/src/`
+- Web utilities: `1. Apps/3. Web/1. Opta Life Manager/lib/`
 
 ## Special Directories
 
-**opta-native/OptaApp/OptaApp/Generated/**
+**1. Apps/4. Shared/1. opta-native/OptaApp/OptaApp/Generated/**
 - Purpose: Auto-generated UniFFI Swift bindings
 - Source: Generated by `uniffi-bindgen` from Rust
 - Committed: Yes (regenerate on Rust interface changes)
 
-**.planning/**
-- Purpose: Project state and planning documents
+**3. Matthew x Opta/2. project/.planning/**
+- Purpose: Cross-project planning documents
 - Source: Created by GSD workflow
 - Committed: Yes
 
-**Opta MacOS/node_modules/**
+**node_modules/**
 - Purpose: npm dependencies
 - Source: npm install
-- Committed: No (gitignored)
+- Committed: No (gitignored in all projects)
 
 ---
 
 *Structure analysis: 2026-01-28*
+*Updated after folder reorganization*
 *Update when directory structure changes*

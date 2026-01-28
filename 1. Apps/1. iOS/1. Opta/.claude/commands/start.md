@@ -6,10 +6,10 @@ Begin a new development session with full context loading.
 
 Read ALL context files in parallel to build situational awareness:
 
-1. `.personal/hardware.md` - Device ecosystem
-2. `.personal/workflows.md` - Work patterns and preferences
-3. `.personal/goals.md` - Current priorities
-4. `.personal/profile.md` - Communication style
+1. `../../../3. Matthew x Opta/1. personal/hardware.md` - Device ecosystem
+2. `../../../3. Matthew x Opta/1. personal/workflows.md` - Work patterns and preferences
+3. `../../../3. Matthew x Opta/1. personal/goals.md` - Current priorities
+4. `../../../3. Matthew x Opta/1. personal/profile.md` - Communication style
 5. `.planning/PROJECT.md` - Opta vision and requirements
 6. `.planning/STATE.md` - Current progress and decisions
 7. `.planning/MUST_HAVE.md` - Must-implement features

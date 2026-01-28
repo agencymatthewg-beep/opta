@@ -13,7 +13,7 @@ NC='\033[0m'
 
 GLOBAL_CONFIG="$HOME/.claude/commands.json"
 OPTA_ROOT="/Users/matthewbyrden/Documents/Opta"
-FOLDER_CONFIG="$OPTA_ROOT/.claude/commands.json"
+FOLDER_CONFIG="$OPTA_ROOT/3. Matthew x Opta/3. agent-config/.claude/commands.json"
 
 # Find all project configs
 PROJECT_CONFIGS=()

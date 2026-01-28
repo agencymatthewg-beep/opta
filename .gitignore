@@ -33,3 +33,7 @@ Opta MacOS/Opta Vision/IdealQualityOfAnimationsInspo.mov
 # Rust build artifacts
 target/
 **/target/
+
+# Build artifacts
+build/
+**/build/

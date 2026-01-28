@@ -27,7 +27,7 @@ tech-stack:
 - Created `OptaMini/Models/OptaApp.swift`
 - Defined `OptaApp` struct with `Identifiable` and `Hashable` conformance
 - Registered 3 Opta ecosystem apps:
-  - Opta MacOS (`com.opta.OptaNative`)
+  - Opta Native (`com.opta.OptaNative`)
   - Opta LM (`com.opta.OptaLM`)
   - Opta Scan (`com.opta.OptaScan`)
 - Each app has: id, name, bundleIdentifier, icon (SF Symbol)
