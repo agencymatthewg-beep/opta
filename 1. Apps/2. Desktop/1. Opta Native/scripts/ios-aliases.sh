@@ -2,12 +2,12 @@
 # Opta iOS development aliases for macOS
 #
 # Add to your ~/.zshrc:
-#   source /Users/matthewbyrden/Documents/Opta/scripts/ios-aliases.sh
+#   source "/Users/matthewbyrden/Documents/Opta/1. Apps/2. Desktop/1. Opta Native/scripts/ios-aliases.sh"
 #
 # Note: Download iOS simulators from Xcode > Settings > Platforms
 # Run: sim-list to see available devices after installation
 
-OPTA_DIR="/Users/matthewbyrden/Documents/Opta"
+OPTA_DIR="/Users/matthewbyrden/Documents/Opta/1. Apps/2. Desktop/1. Opta Native"
 BRAIN_DIR="/Users/matthewbyrden/Documents/Syncthing Claude Brain"
 
 # ============================================

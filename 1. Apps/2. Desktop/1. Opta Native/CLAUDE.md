@@ -116,7 +116,7 @@ This project uses the **opta-optimizer** agent as the default mode of operation.
 
 Before responding to any significant request, check these context sources:
 
-### Personal Context (`../.personal/`)
+### Personal Context (`../../../3. Matthew x Opta/1. personal/`)
 - `hardware.md` - Matthew's device ecosystem (Mac Studio, MacBook Pro, Gaming PC, Server)
 - `workflows.md` - Device roles, Syncthing setup, cross-device patterns
 - `goals.md` - Current priorities and focus areas
@@ -180,7 +180,7 @@ Check `.planning/STATE.md` for current progress. As of last update:
 
 **At the START of every working session, you MUST:**
 
-1. **Read `../.personal/calendar.md`** and provide a brief:
+1. **Read `../../../3. Matthew x Opta/1. personal/calendar.md`** and provide a brief:
    - Today's events and commitments
    - Subscriptions renewing in the next 7 days
    - Key events in the next 3-5 days

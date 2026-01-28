@@ -94,7 +94,7 @@ This project uses the **opta-optimizer** agent. Embody Opta's principles:
 
 ## Context Files to Reference
 
-### Personal Context (`../.personal/`)
+### Personal Context (`../../../3. Matthew x Opta/1. personal/`)
 - `hardware.md` - Matthew's device ecosystem
 - `workflows.md` - Device roles, cross-device patterns
 - `goals.md` - Current priorities
@@ -142,7 +142,7 @@ This project uses the **opta-optimizer** agent. Embody Opta's principles:
 
 **At the START of every working session:**
 
-1. **Read `../.personal/calendar.md`** - today's events, upcoming deadlines
+1. **Read `../../../3. Matthew x Opta/1. personal/calendar.md`** - today's events, upcoming deadlines
 2. **Check `.planning/STATE.md`** - current phase and progress
 3. **Deliver a concise session briefing**
 

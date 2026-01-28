@@ -5,11 +5,11 @@
 # These aliases provide quick shortcuts that use the CLI
 #
 # Add to your ~/.zshrc:
-#   source /Users/matthewbyrden/Documents/Opta/scripts/opta-aliases.sh
+#   source "/Users/matthewbyrden/Documents/Opta/1. Apps/2. Desktop/1. Opta Native/scripts/opta-aliases.sh"
 #
 # Then restart your terminal or run: source ~/.zshrc
 
-OPTA_DIR="/Users/matthewbyrden/Documents/Opta"
+OPTA_DIR="/Users/matthewbyrden/Documents/Opta/1. Apps/2. Desktop/1. Opta Native"
 OPTA_CLI="$OPTA_DIR/scripts/opta"
 
 # ============================================
