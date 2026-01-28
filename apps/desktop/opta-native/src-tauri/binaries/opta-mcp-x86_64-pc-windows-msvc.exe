@@ -1,0 +1,28 @@
+@echo off
+REM Opta MCP Server sidecar script for Windows
+REM This script spawns the Python MCP server
+
+setlocal enabledelayedexpansion
+
+set "SCRIPT_DIR=%~dp0"
+set "PROJECT_ROOT=%SCRIPT_DIR%..\.."
+set "MCP_SERVER_DIR=%PROJECT_ROOT%\mcp-server"
+
+REM Check if we're in development mode (mcp-server directory exists as sibling)
+if exist "%MCP_SERVER_DIR%" (
+    REM Development mode: use local mcp-server
+    cd /d "%MCP_SERVER_DIR%"
+
+    REM Activate venv if it exists
+    if exist "venv\Scripts\activate.bat" (
+        call venv\Scripts\activate.bat
+    ) else if exist ".venv\Scripts\activate.bat" (
+        call .venv\Scripts\activate.bat
+    )
+
+    REM Run the MCP server
+    python -m opta_mcp.server
+) else (
+    REM Production mode: expect opta_mcp to be installed in system Python
+    python -m opta_mcp.server
+)

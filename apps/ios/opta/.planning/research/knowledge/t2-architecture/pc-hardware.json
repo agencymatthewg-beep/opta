@@ -1,0 +1,107 @@
+{
+  "$schema": "knowledge-schema.json",
+  "tier": 2,
+  "tierName": "architecture",
+  "domain": "general",
+  "lastUpdated": "2026-01-18",
+  "confidence": "high",
+  "sources": [
+    {
+      "name": "Gemini Deep Research - In-Depth PC Analysis and Building Guide",
+      "type": "gemini-research",
+      "date": "2026-01-18"
+    }
+  ],
+  "entries": [
+    {
+      "id": "vrm-power-delivery",
+      "fact": "VRM (Voltage Regulator Module) quality directly impacts CPU stability and overclocking headroom",
+      "details": "VRMs convert 12V input to ~1V for CPU. Higher phase count and better components provide cleaner power delivery, enabling higher sustained clocks. Budget boards may throttle high-end CPUs under sustained load.",
+      "confidence": "high",
+      "source": "PC Hardware Architecture",
+      "verificationRequired": false,
+      "tags": ["vrm", "motherboard", "power-delivery", "overclocking"]
+    },
+    {
+      "id": "ddr5-architecture",
+      "fact": "DDR5 doubles bandwidth over DDR4 by implementing two independent 32-bit channels per DIMM",
+      "details": "DDR5 uses on-die ECC, integrated voltage regulators (PMIC), and dual channels per stick. Higher base frequencies (4800MHz+) but initially higher latencies. Bandwidth-sensitive workloads benefit significantly.",
+      "confidence": "high",
+      "source": "Memory Architecture",
+      "verificationRequired": false,
+      "tags": ["memory", "ddr5", "bandwidth", "channels"]
+    },
+    {
+      "id": "nvme-gen5-bandwidth",
+      "fact": "NVMe Gen5 SSDs achieve 14GB/s sequential read vs 7GB/s for Gen4",
+      "details": "PCIe 5.0 doubles per-lane bandwidth. Primarily benefits large file transfers and content creation. Gaming load times see diminishing returns past Gen3 speeds due to random IOPS being the bottleneck.",
+      "confidence": "high",
+      "source": "Storage Architecture",
+      "verificationRequired": false,
+      "tags": ["storage", "nvme", "pcie5", "bandwidth"]
+    },
+    {
+      "id": "undervolting-efficiency",
+      "fact": "Undervolting reduces CPU/GPU power consumption and heat while maintaining same performance",
+      "details": "Modern chips are binned conservatively. Finding the lowest stable voltage (typically -50mV to -100mV) reduces power and thermals without affecting clocks. Some motherboards and tools allow automated curve optimization.",
+      "confidence": "high",
+      "source": "Power Optimization",
+      "verificationRequired": false,
+      "tags": ["undervolting", "power", "thermal", "optimization"]
+    },
+    {
+      "id": "pcie-lane-allocation",
+      "fact": "PCIe lane allocation from CPU vs chipset affects bandwidth and latency for expansion cards",
+      "details": "CPU-direct lanes provide lowest latency. Chipset lanes share bandwidth through DMI link. GPU should always use CPU lanes. NVMe drives benefit from CPU lanes for competitive gaming and content creation.",
+      "confidence": "high",
+      "source": "PC Architecture",
+      "verificationRequired": false,
+      "tags": ["pcie", "lanes", "bandwidth", "cpu", "chipset"]
+    },
+    {
+      "id": "ram-dual-channel-requirement",
+      "fact": "Dual-channel memory configuration doubles memory bandwidth and is critical for integrated graphics",
+      "details": "Single DIMM halves available bandwidth. Integrated graphics (AMD APU, Intel UHD) share system RAM and suffer 30-50% FPS loss with single-channel. Always use matched pairs in correct slots.",
+      "confidence": "high",
+      "source": "Memory Configuration",
+      "verificationRequired": false,
+      "tags": ["memory", "dual-channel", "igpu", "bandwidth"]
+    },
+    {
+      "id": "thermal-paste-application",
+      "fact": "Thermal paste bridges microscopic gaps between CPU IHS and cooler for heat transfer",
+      "details": "Pea-sized amount in center spreads under mounting pressure. Too much creates insulating layer, too little leaves air gaps. Quality paste vs cheap can mean 2-5C difference under load.",
+      "confidence": "high",
+      "source": "Thermal Management",
+      "verificationRequired": false,
+      "tags": ["thermal", "thermal-paste", "cooling", "cpu"]
+    },
+    {
+      "id": "aio-vs-air-cooling",
+      "fact": "High-end air coolers match 240mm AIOs in cooling performance with better reliability",
+      "details": "Quality tower coolers like Noctua NH-D15 match or beat 240mm AIOs. AIOs offer better aesthetics and RAM clearance but have pump failure risk. 360mm+ AIOs outperform all air coolers.",
+      "confidence": "high",
+      "source": "Cooling Solutions",
+      "verificationRequired": false,
+      "tags": ["cooling", "aio", "air-cooling", "thermal"]
+    },
+    {
+      "id": "gpu-power-connector-importance",
+      "fact": "Separate PCIe power cables are required for GPU stability; daisy-chaining risks instability",
+      "details": "Modern GPUs have transient spikes exceeding rated TDP. Each 8-pin delivers 150W from PSU. Using separate cables ensures clean power delivery. 12VHPWR connectors must be fully seated to prevent melting.",
+      "confidence": "high",
+      "source": "Power Delivery",
+      "verificationRequired": false,
+      "tags": ["gpu", "power", "pcie-power", "stability"]
+    },
+    {
+      "id": "case-airflow-principles",
+      "fact": "Positive pressure (more intake than exhaust) reduces dust accumulation in PC cases",
+      "details": "Intake through filtered areas, exhaust through unfiltered. Slight positive pressure pushes air out through gaps instead of drawing dusty air in. GPU temps may be 2-5C higher but long-term maintenance is easier.",
+      "confidence": "high",
+      "source": "Case Airflow",
+      "verificationRequired": false,
+      "tags": ["airflow", "case", "dust", "cooling"]
+    }
+  ]
+}

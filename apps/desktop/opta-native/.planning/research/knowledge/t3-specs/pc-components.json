@@ -1,0 +1,102 @@
+{
+  "$schema": "knowledge-schema.json",
+  "tier": 3,
+  "tierName": "specs",
+  "domain": "general",
+  "lastUpdated": "2026-01-18",
+  "confidence": "high",
+  "sources": [
+    {
+      "name": "Gemini Deep Research - In-Depth PC Analysis and Building Guide",
+      "type": "gemini-research",
+      "date": "2026-01-18"
+    }
+  ],
+  "entries": [
+    {
+      "id": "ddr5-base-speed",
+      "fact": "DDR5 JEDEC baseline speed is 4800MT/s, with common kits at 5600-6400MT/s",
+      "details": "DDR4 baseline was 2133MT/s. DDR5 XMP/EXPO profiles typically target 6000-6400MT/s for sweet spot. Intel favors high bandwidth, AMD Ryzen 7000 has sweet spot at ~6000MT/s due to FCLK ratio.",
+      "confidence": "high",
+      "source": "Memory Specifications",
+      "verificationRequired": false,
+      "tags": ["memory", "ddr5", "speeds", "specs"]
+    },
+    {
+      "id": "pcie5-bandwidth-per-lane",
+      "fact": "PCIe 5.0 provides 4GB/s per lane (32GT/s), doubling PCIe 4.0",
+      "details": "x16 slot provides 64GB/s bidirectional. x4 NVMe slot provides 8GB/s. Consumer GPUs don't saturate PCIe 4.0 x16 yet, but NVMe drives benefit from Gen5 x4.",
+      "confidence": "high",
+      "source": "PCIe Specifications",
+      "verificationRequired": false,
+      "tags": ["pcie", "pcie5", "bandwidth", "specs"]
+    },
+    {
+      "id": "12vhpwr-connector-600w",
+      "fact": "12VHPWR connector delivers up to 600W to GPUs through single cable",
+      "details": "16-pin connector replaces multiple 8-pin cables. Requires 90-degree insertion without wobbling. Melting issues from improper seating prompted design revision to 12V-2x6 with improved latching.",
+      "confidence": "high",
+      "source": "Power Specifications",
+      "verificationRequired": false,
+      "tags": ["power", "12vhpwr", "gpu", "connector"]
+    },
+    {
+      "id": "intel-raptor-lake-specs",
+      "fact": "Intel Core i9-14900K: 24 cores (8P+16E), up to 6.0GHz, 253W PL2",
+      "details": "Raptor Lake Refresh uses Intel 7 process. P-cores use Raptor Cove, E-cores use Gracemont. Hybrid architecture requires Thread Director for optimal scheduling.",
+      "confidence": "high",
+      "source": "Intel Specifications",
+      "verificationRequired": true,
+      "tags": ["intel", "cpu", "raptor-lake", "specs"],
+      "applicableTo": ["Intel 14th Gen"]
+    },
+    {
+      "id": "amd-zen4-specs",
+      "fact": "AMD Ryzen 9 7950X: 16 cores (32 threads), up to 5.7GHz, 170W TDP",
+      "details": "Zen 4 on TSMC 5nm with integrated RDNA 2 graphics. Supports DDR5 only, PCIe 5.0. X3D variants add 3D V-Cache for gaming performance.",
+      "confidence": "high",
+      "source": "AMD Specifications",
+      "verificationRequired": true,
+      "tags": ["amd", "cpu", "zen4", "specs"],
+      "applicableTo": ["AMD Ryzen 7000"]
+    },
+    {
+      "id": "nvidia-rtx4090-specs",
+      "fact": "NVIDIA RTX 4090: 16384 CUDA cores, 24GB GDDR6X, 450W TDP, 1008GB/s bandwidth",
+      "details": "Ada Lovelace architecture on TSMC 4N. Features 3rd gen RT cores, 4th gen Tensor cores. DLSS 3 with Frame Generation exclusive to 40-series.",
+      "confidence": "high",
+      "source": "NVIDIA Specifications",
+      "verificationRequired": true,
+      "tags": ["nvidia", "gpu", "rtx4090", "specs"],
+      "applicableTo": ["RTX 4090"]
+    },
+    {
+      "id": "amd-rdna3-specs",
+      "fact": "AMD RX 7900 XTX: 96 CUs, 24GB GDDR6, 355W TDP, 960GB/s bandwidth",
+      "details": "RDNA 3 chiplet design with GCD+MCD. Features 2nd gen RT accelerators and AI accelerators. FSR 3 with Frame Generation available.",
+      "confidence": "high",
+      "source": "AMD GPU Specifications",
+      "verificationRequired": true,
+      "tags": ["amd", "gpu", "rdna3", "specs"],
+      "applicableTo": ["RX 7900 XTX"]
+    },
+    {
+      "id": "nvme-gen5-sequential",
+      "fact": "PCIe 5.0 NVMe SSDs achieve up to 14,000MB/s sequential read",
+      "details": "Samsung 990 Pro (Gen4): 7450MB/s. Crucial T700 (Gen5): 12,400MB/s. Corsair MP700 Pro (Gen5): 14,500MB/s. Gen5 drives run hot, often require heatsinks.",
+      "confidence": "high",
+      "source": "Storage Specifications",
+      "verificationRequired": true,
+      "tags": ["nvme", "ssd", "gen5", "speeds"]
+    },
+    {
+      "id": "cooler-tdp-ratings",
+      "fact": "Quality tower coolers support 200-250W TDP, 360mm AIOs support 350W+",
+      "details": "Noctua NH-D15: ~250W. be quiet! Dark Rock Pro 5: ~250W. Arctic Liquid Freezer II 360: ~350W. Intel/AMD stock coolers inadequate for high-end CPUs.",
+      "confidence": "high",
+      "source": "Cooling Specifications",
+      "verificationRequired": false,
+      "tags": ["cooling", "tdp", "cooler", "specs"]
+    }
+  ]
+}

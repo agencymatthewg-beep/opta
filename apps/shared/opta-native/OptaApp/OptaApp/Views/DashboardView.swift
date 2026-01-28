@@ -1,0 +1,472 @@
+//
+//  DashboardView.swift
+//  OptaApp
+//
+//  Main dashboard view displaying telemetry, Opta Score, and quick actions.
+//  Features obsidian depth hierarchy with branch-energy violet accents.
+//
+
+import SwiftUI
+
+// MARK: - DashboardView
+
+/// The main dashboard displaying real-time system health via OptaCoreManager.
+///
+/// Layout:
+/// - Top: OptaTextView branded header
+/// - Center: OptaRing centerpiece with score overlay
+/// - Middle: 3-column telemetry cards (CPU, Memory, GPU)
+/// - Context: OptaTextZone system status
+/// - Bottom: QuickActions bar
+///
+/// # Usage
+///
+/// ```swift
+/// DashboardView(coreManager: coreManager, renderCoordinator: coordinator)
+/// ```
+struct DashboardView: View {
+
+    // MARK: - Properties
+
+    /// The core manager for state and events
+    @Bindable var coreManager: OptaCoreManager
+
+    /// The render coordinator for the OptaRing (shared from app level)
+    @ObservedObject var renderCoordinator: RenderCoordinator
+
+    /// Reduce motion preference
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    /// Color temperature state from environment
+    @Environment(\.colorTemperature) private var colorTemp
+
+    /// Whether the circular navigation menu is shown
+    @State private var showCircularMenu = false
+
+    // MARK: - Constants
+
+    private let horizontalPadding: CGFloat = 24
+    private let verticalSpacing: CGFloat = 24
+    private let ringSize: CGFloat = 300
+
+    /// Obsidian base color
+    private let obsidianBase = Color(hex: "0A0A0F")
+
+    // MARK: - Body
+
+    var body: some View {
+        GeometryReader { geometry in
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: verticalSpacing) {
+                    // Branded header: OPTA text with ring energy (full brightness - focal point)
+                    optaTextSection
+
+                    // Top section: OptaRing with score overlay (full brightness - focal point)
+                    ringSection
+
+                    // Middle section: Telemetry cards (content layer)
+                    telemetrySection(width: geometry.size.width)
+                        .opacity(reduceMotion ? 1.0 : 0.95)
+                        .padding(.top, 8)
+
+                    // Contextual status message (contextual layer)
+                    textZoneSection
+                        .padding(.horizontal, horizontalPadding)
+                        .opacity(reduceMotion ? 1.0 : 0.9)
+                        .padding(.bottom, 8)
+
+                    // Bottom section: Quick actions
+                    QuickActions(coreManager: coreManager)
+                        .padding(.horizontal, horizontalPadding)
+
+                    // Additional info (ambient layer - most recessed)
+                    statusSection
+                        .opacity(reduceMotion ? 1.0 : 0.85)
+                }
+                .padding(.vertical, verticalSpacing)
+            }
+        }
+        .background(Color(hex: "09090B"))
+        .overlay {
+            if showCircularMenu {
+                CircularMenuView(
+                    isPresented: $showCircularMenu,
+                    sectors: CircularMenuSector.defaultSectors,
+                    onSelect: { sector in
+                        CircularMenuNavigationManager.shared.navigate(sector: sector)
+                    }
+                )
+            }
+        }
+        .onAppear {
+            coreManager.appStarted()
+        }
+    }
+
+    // MARK: - Subviews
+
+    /// Branded OPTA text header with energy-reactive glow
+    private var optaTextSection: some View {
+        OptaTextView(
+            style: .hero,
+            energyLevel: Double(coreManager.viewModel.ring.energy)
+        )
+        .padding(.top, 8)
+    }
+
+    /// OptaRing centerpiece with score overlay
+    private var ringSection: some View {
+        ZStack {
+            // The 3D OptaRing behind everything (Metal NSView - can't be inside Button)
+            OptaRingView(
+                coordinator: renderCoordinator,
+                phase: coreManager.viewModel.ring.phase,
+                intensity: coreManager.viewModel.ring.energy,
+                explodeProgress: coreManager.viewModel.ring.progress,
+                onTap: {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                        showCircularMenu.toggle()
+                    }
+                }
+            )
+            .frame(width: ringSize, height: ringSize)
+
+            // Transparent button overlay on top for reliable click handling
+            Button {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                    showCircularMenu.toggle()
+                }
+            } label: {
+                Circle()
+                    .fill(Color.clear)
+                    .frame(width: ringSize - 20, height: ringSize - 20)
+            }
+            .buttonStyle(.plain)
+            .focusEffectDisabled()
+
+            // Score display (non-interactive)
+            VStack(spacing: 4) {
+                Text("\(coreManager.viewModel.optaScore)")
+                    .font(.system(size: 56, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+                    .contentTransition(.numericText())
+
+                Text(coreManager.viewModel.scoreGrade)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(gradeColor)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 4)
+                    .background(
+                        Capsule()
+                            .fill(obsidianBase)
+                    )
+                    .overlay(
+                        Capsule()
+                            .stroke(gradeColor.opacity(0.3), lineWidth: 1)
+                    )
+
+                if coreManager.viewModel.scoreCalculating {
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        .scaleEffect(0.6)
+                        .padding(.top, 4)
+                }
+            }
+            .allowsHitTesting(false)
+        }
+        .frame(width: ringSize, height: ringSize)
+        .padding(.top, 16)
+    }
+
+    /// Legacy score section (for reference, now integrated into ringSection)
+    private var scoreSection: some View {
+        ScoreDisplay(
+            score: coreManager.viewModel.optaScore,
+            grade: coreManager.viewModel.scoreGrade,
+            isCalculating: coreManager.viewModel.scoreCalculating,
+            animation: coreManager.viewModel.scoreAnimation
+        )
+        .padding(.top, 16)
+    }
+
+    // MARK: - Computed Properties
+
+    /// Contextual system status message zone
+    private var textZoneSection: some View {
+        Group {
+            // Priority: Critical thermal > Memory warning > Stealth mode > Default
+            if coreManager.viewModel.thermalState == .critical {
+                OptaTextZone.error(
+                    text: "High temperature detected",
+                    value: nil
+                )
+            } else if coreManager.viewModel.thermalState == .serious {
+                OptaTextZone.warning(
+                    text: "System running warm",
+                    value: nil
+                )
+            } else if coreManager.viewModel.memoryPressure == .critical {
+                OptaTextZone.error(
+                    text: "Critical memory pressure",
+                    value: Double(coreManager.viewModel.memoryUsage),
+                    valueSuffix: "%"
+                )
+            } else if coreManager.viewModel.memoryPressure == .warning {
+                OptaTextZone.warning(
+                    text: "High memory usage",
+                    value: Double(coreManager.viewModel.memoryUsage),
+                    valueSuffix: "%"
+                )
+            } else if coreManager.viewModel.stealthModeActive {
+                OptaTextZone.success(
+                    text: "Optimization in progress",
+                    value: nil,
+                    trend: .up
+                )
+            } else if let result = coreManager.viewModel.lastStealthResult {
+                OptaTextZone.success(
+                    text: "Optimized \(result.terminatedCount) processes",
+                    value: Double(result.memoryFreedMb),
+                    trend: .up,
+                    valueSuffix: "MB freed"
+                )
+            } else {
+                OptaTextZone(text: "System ready")
+            }
+        }
+        .animation(
+            reduceMotion ? .none : OrganicMotion.organicSpring(for: "dashboard-thermal", intensity: .medium),
+            value: coreManager.viewModel.thermalState.rawValue
+        )
+        .animation(
+            reduceMotion ? .none : OrganicMotion.organicSpring(for: "dashboard-memory", intensity: .medium),
+            value: coreManager.viewModel.memoryPressure.rawValue
+        )
+        .animation(
+            reduceMotion ? .none : OrganicMotion.organicSpring(for: "dashboard-stealth", intensity: .energetic),
+            value: coreManager.viewModel.stealthModeActive
+        )
+    }
+
+    /// Color for grade badge based on grade letter (functional colors preserved)
+    private var gradeColor: Color {
+        switch coreManager.viewModel.scoreGrade {
+        case "S":
+            return Color(hex: "F59E0B")  // Gold
+        case "A":
+            return Color(hex: "10B981")  // Emerald
+        case "B":
+            return Color(hex: "3B82F6")  // Blue
+        case "C":
+            return Color(hex: "8B5CF6")  // Purple
+        case "D":
+            return Color(hex: "F97316")  // Orange
+        default:
+            return Color(hex: "EF4444")  // Red for F
+        }
+    }
+
+    /// Telemetry cards section
+    private func telemetrySection(width: CGFloat) -> some View {
+        let cardSpacing: CGFloat = 12
+        let totalPadding = horizontalPadding * 2
+        let availableWidth = width - totalPadding - (cardSpacing * 2)
+        let cardWidth = availableWidth / 3
+
+        return HStack(spacing: cardSpacing) {
+            // CPU Card
+            TelemetryCard(
+                title: "CPU",
+                value: coreManager.viewModel.cpuUsage,
+                icon: "cpu",
+                color: .blue,
+                history: coreManager.viewModel.cpuHistory
+            )
+            .frame(width: cardWidth)
+
+            // Memory Card
+            TelemetryCard(
+                title: "Memory",
+                value: coreManager.viewModel.memoryUsage,
+                icon: "memorychip",
+                color: colorTemp.violetColor,
+                history: coreManager.viewModel.memoryHistory
+            )
+            .frame(width: cardWidth)
+
+            // GPU Card
+            TelemetryCard(
+                title: "GPU",
+                value: coreManager.viewModel.gpuUsage ?? 0,
+                icon: "gpu",
+                color: .orange,
+                history: coreManager.viewModel.gpuHistory
+            )
+            .frame(width: cardWidth)
+        }
+        .padding(.horizontal, horizontalPadding)
+    }
+
+    /// Status information section with obsidian background
+    private var statusSection: some View {
+        VStack(spacing: 8) {
+            // Thermal state
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(thermalColor)
+                    .frame(width: 8, height: 8)
+                    .shadow(
+                        color: thermalState == .nominal ? colorTemp.tintColor.opacity(colorTemp.glowOpacity * 0.3) : .clear,
+                        radius: 3
+                    )
+
+                Text("Thermal: \(coreManager.viewModel.thermalState.rawValue)")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.white.opacity(0.6))
+
+                Spacer()
+
+                // Memory pressure
+                Circle()
+                    .fill(memoryPressureColor)
+                    .frame(width: 8, height: 8)
+                    .shadow(
+                        color: memoryPressureState == .normal ? colorTemp.tintColor.opacity(colorTemp.glowOpacity * 0.3) : .clear,
+                        radius: 3
+                    )
+
+                Text("Memory: \(coreManager.viewModel.memoryPressure.rawValue)")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.white.opacity(0.6))
+            }
+
+            // Process count
+            HStack {
+                Image(systemName: "gearshape.2")
+                    .font(.system(size: 10))
+                    .foregroundStyle(.white.opacity(0.5))
+
+                Text("\(coreManager.viewModel.processCount) processes")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.white.opacity(0.5))
+
+                Spacer()
+
+                // Game count
+                Image(systemName: "gamecontroller")
+                    .font(.system(size: 10))
+                    .foregroundStyle(.white.opacity(0.5))
+
+                Text("\(coreManager.viewModel.gameCount) games")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.white.opacity(0.5))
+            }
+
+            // Stealth mode status
+            if coreManager.viewModel.stealthModeActive {
+                stealthModeIndicator
+            }
+
+            // Last stealth result
+            if let result = coreManager.viewModel.lastStealthResult {
+                lastStealthResultView(result)
+            }
+        }
+        .padding(.horizontal, horizontalPadding)
+        .padding(.vertical, 16)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(obsidianBase)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(colorTemp.tintColor.opacity(colorTemp.glowOpacity * 0.15), lineWidth: 1)
+        )
+        .padding(.horizontal, horizontalPadding)
+    }
+
+    /// Stealth mode active indicator
+    private var stealthModeIndicator: some View {
+        HStack(spacing: 8) {
+            ProgressView()
+                .progressViewStyle(CircularProgressViewStyle(tint: colorTemp.violetColor))
+                .scaleEffect(0.6)
+
+            Text("Stealth Mode Active")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(colorTemp.violetColor)
+
+            Spacer()
+        }
+        .padding(.top, 8)
+    }
+
+    /// Last stealth result view
+    private func lastStealthResultView(_ result: StealthResultViewModel) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 12))
+                .foregroundStyle(.green)
+
+            Text("Last optimization: \(result.terminatedCount) processes, \(result.memoryFreedMb)MB freed")
+                .font(.system(size: 11))
+                .foregroundStyle(.white.opacity(0.5))
+
+            Spacer()
+        }
+        .padding(.top, 4)
+    }
+
+    // MARK: - Computed Properties
+
+    /// Current thermal state for shadow glow check
+    private var thermalState: ThermalStateViewModel {
+        coreManager.viewModel.thermalState
+    }
+
+    /// Current memory pressure state for shadow glow check
+    private var memoryPressureState: MemoryPressureViewModel {
+        coreManager.viewModel.memoryPressure
+    }
+
+    /// Color for thermal state indicator
+    private var thermalColor: Color {
+        switch coreManager.viewModel.thermalState {
+        case .nominal:
+            return .green
+        case .fair:
+            return .yellow
+        case .serious:
+            return .orange
+        case .critical:
+            return .red
+        }
+    }
+
+    /// Color for memory pressure indicator
+    private var memoryPressureColor: Color {
+        switch coreManager.viewModel.memoryPressure {
+        case .normal:
+            return .green
+        case .warning:
+            return .yellow
+        case .critical:
+            return .red
+        }
+    }
+}
+
+// MARK: - Preview
+
+#if DEBUG
+struct DashboardView_Previews: PreviewProvider {
+    static var previews: some View {
+        // Note: Preview requires OptaCoreManager which needs Rust FFI
+        // This preview will only work when the full app is built
+        Text("DashboardView Preview - Requires OptaCoreManager")
+            .frame(width: 800, height: 600)
+            .background(Color(hex: "09090B"))
+            .preferredColorScheme(.dark)
+    }
+}
+#endif

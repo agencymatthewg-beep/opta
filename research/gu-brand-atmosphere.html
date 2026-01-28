@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Opta Brand Atmosphere Guide</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap');
+
+        :root {
+            --void: #09090b;
+            --surface: #18181b;
+            --elevated: #27272a;
+            --border: #3f3f46;
+            --text-primary: #fafafa;
+            --text-secondary: #a1a1aa;
+            --text-muted: #52525b;
+            --primary: #8b5cf6;
+            --primary-glow: #a855f7;
+            --primary-dim: hsl(265, 50%, 20%);
+            --neon-blue: #3b82f6;
+            --neon-green: #22c55e;
+            --neon-amber: #f59e0b;
+            --neon-red: #ef4444;
+            --neon-cyan: #06b6d4;
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-highlight: rgba(255, 255, 255, 0.04);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Sora', system-ui, -apple-system, sans-serif;
+            background: var(--void);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* Atmospheric Fog */
+        .atmosphere {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .fog-layer {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            animation: breathe 6s ease-in-out infinite;
+        }
+
+        .fog-1 {
+            width: 600px;
+            height: 600px;
+            top: -100px;
+            left: -100px;
+            background: radial-gradient(ellipse, rgba(139, 92, 246, 0.08) 0%, transparent 70%);
+            animation-delay: 0s;
+        }
+
+        .fog-2 {
+            width: 800px;
+            height: 800px;
+            bottom: -200px;
+            right: -200px;
+            background: radial-gradient(ellipse, rgba(59, 130, 246, 0.05) 0%, transparent 70%);
+            animation-delay: -3s;
+        }
+
+        .fog-3 {
+            width: 500px;
+            height: 500px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: radial-gradient(ellipse, rgba(139, 92, 246, 0.06) 0%, transparent 70%);
+            animation-delay: -1.5s;
+        }
+
+        @keyframes breathe {
+            0%, 100% { opacity: 0.6; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.05); }
+        }
+
+        /* Particles */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 50%;
+            animation: drift linear infinite;
+        }
+
+        @keyframes drift {
+            0% { transform: translateY(0) translateX(0); opacity: 0; }
+            10% { opacity: 0.15; }
+            90% { opacity: 0.15; }
+            100% { transform: translateY(-100vh) translateX(30px); opacity: 0; }
+        }
+
+        /* Layout */
+        .container {
+            position: relative;
+            z-index: 2;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 60px 32px;
+        }
+
+        /* Hero */
+        .hero {
+            text-align: center;
+            margin-bottom: 80px;
+            padding: 60px 40px;
+            position: relative;
+        }
+
+        .hero-ring {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 32px;
+            border-radius: 50%;
+            border: 3px solid var(--primary);
+            box-shadow:
+                0 0 30px rgba(139, 92, 246, 0.3),
+                0 0 60px rgba(139, 92, 246, 0.15),
+                inset 0 0 30px rgba(139, 92, 246, 0.1);
+            animation: ring-pulse 4s ease-in-out infinite;
+            position: relative;
+        }
+
+        .hero-ring::after {
+            content: '';
+            position: absolute;
+            inset: 8px;
+            border-radius: 50%;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            animation: ring-spin 20s linear infinite;
+        }
+
+        @keyframes ring-pulse {
+            0%, 100% { box-shadow: 0 0 30px rgba(139, 92, 246, 0.3), 0 0 60px rgba(139, 92, 246, 0.15), inset 0 0 30px rgba(139, 92, 246, 0.1); }
+            50% { box-shadow: 0 0 40px rgba(139, 92, 246, 0.5), 0 0 80px rgba(139, 92, 246, 0.25), inset 0 0 40px rgba(139, 92, 246, 0.2); }
+        }
+
+        @keyframes ring-spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .hero h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, #ffffff 0%, #ffffff 40%, var(--primary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 16px;
+        }
+
+        .hero .subtitle {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            font-weight: 300;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .hero .tagline {
+            margin-top: 24px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+
+        /* Glass Panels */
+        .glass-panel {
+            background: rgba(24, 24, 27, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 32px;
+            margin-bottom: 32px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            transition: border-color 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+                        box-shadow 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .glass-panel:hover {
+            border-color: rgba(139, 92, 246, 0.2);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4),
+                        0 0 30px rgba(139, 92, 246, 0.05);
+        }
+
+        /* Specular highlight */
+        .glass-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+        }
+
+        /* Noise overlay */
+        .glass-panel::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            opacity: 0.03;
+            mix-blend-mode: soft-light;
+            pointer-events: none;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+        }
+
+        /* Section Headers */
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .section-number {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--primary);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            min-width: 24px;
+        }
+
+        .section-header h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+            background: linear-gradient(135deg, #ffffff 0%, var(--primary-glow) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .section-divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--primary), transparent);
+            margin: 48px 0;
+            opacity: 0.3;
+            box-shadow: 0 0 8px rgba(139, 92, 246, 0.3);
+        }
+
+        /* Color Swatches */
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .color-swatch {
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            border: 1px solid var(--glass-border);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+                        box-shadow 0.3s ease;
+        }
+
+        .color-swatch:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
+        }
+
+        .swatch-circle {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            margin: 0 auto 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .swatch-name {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .swatch-hex {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            font-family: 'SF Mono', 'Fira Code', monospace;
+        }
+
+        /* Tables */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+            font-size: 0.85rem;
+        }
+
+        .data-table th {
+            text-align: left;
+            padding: 12px 16px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .data-table td {
+            padding: 12px 16px;
+            color: var(--text-secondary);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .data-table tr:hover td {
+            color: var(--text-primary);
+            background: rgba(139, 92, 246, 0.03);
+        }
+
+        .data-table .label {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        /* Tags/Badges */
+        .tag {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            letter-spacing: 0.02em;
+        }
+
+        .tag-primary {
+            background: rgba(139, 92, 246, 0.15);
+            color: var(--primary-glow);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+        }
+
+        .tag-blue {
+            background: rgba(59, 130, 246, 0.15);
+            color: var(--neon-blue);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        .tag-green {
+            background: rgba(34, 197, 94, 0.15);
+            color: var(--neon-green);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .tag-amber {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--neon-amber);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        /* Description blocks */
+        .description {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.7;
+            margin-bottom: 20px;
+        }
+
+        .description em {
+            color: var(--primary-glow);
+            font-style: normal;
+        }
+
+        .description strong {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        blockquote {
+            border-left: 2px solid var(--primary);
+            padding: 16px 20px;
+            margin: 20px 0;
+            background: rgba(139, 92, 246, 0.04);
+            border-radius: 0 12px 12px 0;
+            color: var(--text-secondary);
+            font-style: italic;
+            font-size: 0.9rem;
+        }
+
+        /* Glass depth demo */
+        .glass-demo {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .glass-level {
+            flex: 1;
+            min-width: 200px;
+            padding: 24px;
+            border-radius: 12px;
+            text-align: center;
+            position: relative;
+        }
+
+        .glass-subtle-demo {
+            background: rgba(24, 24, 27, 0.3);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .glass-content-demo {
+            background: rgba(24, 24, 27, 0.5);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .glass-overlay-demo {
+            background: rgba(24, 24, 27, 0.7);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(139, 92, 246, 0.15);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .glass-level-name {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .glass-level-blur {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        /* Ring states */
+        .ring-states {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .ring-state {
+            text-align: center;
+            padding: 20px 12px;
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .ring-state:hover {
+            transform: scale(1.03);
+        }
+
+        .ring-icon {
+            width: 48px;
+            height: 48px;
+            margin: 0 auto 12px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .ring-dormant .ring-icon {
+            border: 2px solid rgba(139, 92, 246, 0.2);
+            box-shadow: inset 0 0 10px rgba(139, 92, 246, 0.05);
+        }
+
+        .ring-waking .ring-icon {
+            border: 2px solid rgba(139, 92, 246, 0.4);
+            box-shadow: 0 0 15px rgba(139, 92, 246, 0.2), inset 0 0 15px rgba(139, 92, 246, 0.1);
+        }
+
+        .ring-active .ring-icon {
+            border: 2px solid rgba(139, 92, 246, 0.7);
+            box-shadow: 0 0 25px rgba(139, 92, 246, 0.4), inset 0 0 20px rgba(139, 92, 246, 0.2);
+            animation: ring-pulse 2s ease-in-out infinite;
+        }
+
+        .ring-processing .ring-icon {
+            border: 2px solid rgba(168, 85, 247, 0.8);
+            box-shadow: 0 0 35px rgba(168, 85, 247, 0.5), inset 0 0 25px rgba(168, 85, 247, 0.3);
+            animation: ring-pulse 1.5s ease-in-out infinite;
+        }
+
+        .ring-exploding .ring-icon {
+            border: 2px solid rgba(168, 85, 247, 1);
+            box-shadow: 0 0 50px rgba(168, 85, 247, 0.8), 0 0 80px rgba(168, 85, 247, 0.4);
+        }
+
+        .ring-state-name {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .ring-state-desc {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+        }
+
+        /* Motion demo */
+        .spring-presets {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .spring-preset {
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+            background: rgba(24, 24, 27, 0.4);
+        }
+
+        .spring-name {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--primary-glow);
+            margin-bottom: 4px;
+        }
+
+        .spring-params {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            font-family: 'SF Mono', monospace;
+            margin-bottom: 8px;
+        }
+
+        .spring-use {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+        }
+
+        /* Summary quote */
+        .summary-panel {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.08) 0%, rgba(59, 130, 246, 0.04) 100%);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 20px;
+            padding: 40px;
+            margin-top: 48px;
+            text-align: center;
+            box-shadow: 0 0 40px rgba(139, 92, 246, 0.1);
+        }
+
+        .summary-panel p {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            line-height: 1.8;
+            max-width: 700px;
+            margin: 0 auto;
+            font-style: italic;
+        }
+
+        .signature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 16px;
+            margin-top: 32px;
+            text-align: left;
+        }
+
+        .signature-item {
+            padding: 16px;
+            border-radius: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--glass-border);
+        }
+
+        .signature-label {
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: var(--primary);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+
+        .signature-value {
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            font-style: normal;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            margin-top: 60px;
+            padding: 24px;
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            letter-spacing: 0.05em;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container { padding: 32px 16px; }
+            .hero h1 { font-size: 2rem; }
+            .glass-panel { padding: 20px; }
+            .color-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Atmosphere -->
+    <div class="atmosphere">
+        <div class="fog-layer fog-1"></div>
+        <div class="fog-layer fog-2"></div>
+        <div class="fog-layer fog-3"></div>
+    </div>
+
+    <!-- Particles -->
+    <div class="particles" id="particles"></div>
+
+    <div class="container">
+        <!-- Hero -->
+        <div class="hero">
+            <div class="hero-ring"></div>
+            <h1>Opta Brand Atmosphere</h1>
+            <p class="subtitle">A dark, living space where obsidian glass surfaces float at varying depths, lit from within by electric violet plasma.</p>
+            <p class="tagline">Sci-Fi HUD &bull; Apple Refinement &bull; Linear Sophistication</p>
+        </div>
+
+        <!-- Section 1: The Void -->
+        <div class="glass-panel">
+            <div class="section-header">
+                <span class="section-number">01</span>
+                <h2>The Void</h2>
+            </div>
+            <p class="description">
+                The canvas is not black. It's a nearly-imperceptible grey-violet abyss &mdash; <em>#09090b</em>.
+                This prevents OLED black-smear while creating a sense of infinite depth.
+                Nothing floats in nothing; everything floats in a <strong>space</strong>.
+            </p>
+            <div class="color-grid">
+                <div class="color-swatch">
+                    <div class="swatch-circle" style="background: #09090b; border: 1px solid rgba(255,255,255,0.1);"></div>
+                    <div class="swatch-name">Void</div>
+                    <div class="swatch-hex">#09090b</div>
+                </div>
+                <div class="color-swatch">
+                    <div class="swatch-circle" style="background: #18181b;"></div>
+                    <div class="swatch-name">Surface</div>
+                    <div class="swatch-hex">#18181b</div>
+                </div>
+                <div class="color-swatch">
+                    <div class="swatch-circle" style="background: #27272a;"></div>
+                    <div class="swatch-name">Elevated</div>
+                    <div class="swatch-hex">#27272a</div>
+                </div>
+                <div class="color-swatch">
+                    <div class="swatch-circle" style="background: #3f3f46;"></div>
+                    <div class="swatch-name">Border</div>
+                    <div class="swatch-hex">#3f3f46</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-divider"></div>
+
+        <!-- Section 2: The Energy -->
+        <div class="glass-panel">
+            <div class="section-header">
+                <span class="section-number">02</span>
+                <h2>The Energy</h2>
+            </div>
+            <p class="description">
+                Opta's core energy is <em>Electric Violet</em> &mdash; the plasma that runs through the machine.
+                It pulses. It glows. It responds. <strong>Neon is sacred</strong> &mdash; it signals active states only.
+            </p>
+            <div class="color-grid">
+                <div class="color-swatch">
+                    <div class="swatch-circle" style="background: #8b5cf6; box-shadow: 0 0 20px rgba(139,92,246,0.4);"></div>
+                    <div class="swatch-name">Primary</div>
+                    <div class="swatch-hex">#8B5CF6</div>
+                </div>
+                <div class="color-swatch">
+                    <div class="swatch-circle" style="background: #a855f7; box-shadow: 0 0 20px rgba(168,85,247,0.4);"></div>
+                    <div class="swatch-name">Glow</div>
+                    <div class="swatch-hex">#A855F7</div>
+                </div>
+                <div class="color-swatch">
+                    <div class="swatch-circle" style="background: #3b82f6; box-shadow: 0 0 15px rgba(59,130,246,0.3);"></div>
+                    <div class="swatch-name">Blue</div>
+                    <div class="swatch-hex">#3B82F6</div>
+                </div>
+                <div class="color-swatch">
+                    <div class="swatch-circle" style="background: #22c55e; box-shadow: 0 0 15px rgba(34,197,94,0.3);"></div>
+                    <div class="swatch-name">Green</div>
+                    <div class="swatch-hex">#22C55E</div>
+                </div>
+                <div class="color-swatch">
+                    <div class="swatch-circle" style="background: #f59e0b; box-shadow: 0 0 15px rgba(245,158,11,0.3);"></div>
+                    <div class="swatch-name">Amber</div>
+                    <div class="swatch-hex">#F59E0B</div>
+                </div>
+                <div class="color-swatch">
+                    <div class="swatch-circle" style="background: #ef4444; box-shadow: 0 0 15px rgba(239,68,68,0.3);"></div>
+                    <div class="swatch-name">Red</div>
+                    <div class="swatch-hex">#EF4444</div>
+                </div>
+                <div class="color-swatch">
+                    <div class="swatch-circle" style="background: #06b6d4; box-shadow: 0 0 15px rgba(6,182,212,0.3);"></div>
+                    <div class="swatch-name">Cyan</div>
+                    <div class="swatch-hex">#06B6D4</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-divider"></div>
+
+        <!-- Section 3: The Glass -->
+        <div class="glass-panel">
+            <div class="section-header">
+                <span class="section-number">03</span>
+                <h2>The Glass</h2>
+            </div>
+            <p class="description">
+                Surfaces aren't solid &mdash; they're translucent obsidian glass with optical properties.
+                Four layers create each panel: <strong>Backdrop</strong>, <strong>Blur</strong>, <strong>Noise</strong>, <strong>Specular</strong>.
+            </p>
+            <div class="glass-demo">
+                <div class="glass-level glass-subtle-demo">
+                    <div class="glass-level-name">Subtle</div>
+                    <div class="glass-level-blur">8px blur &bull; 12pt radius</div>
+                </div>
+                <div class="glass-level glass-content-demo">
+                    <div class="glass-level-name">Content</div>
+                    <div class="glass-level-blur">12px blur &bull; 16pt radius</div>
+                </div>
+                <div class="glass-level glass-overlay-demo">
+                    <div class="glass-level-name">Overlay</div>
+                    <div class="glass-level-blur">20px blur &bull; 24pt radius</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-divider"></div>
+
+        <!-- Section 4: The Ring -->
+        <div class="glass-panel">
+            <div class="section-header">
+                <span class="section-number">04</span>
+                <h2>The Ring</h2>
+            </div>
+            <p class="description">
+                The Opta Ring is the <strong>soul</strong> of the application &mdash; a glassmorphism torus that lives, breathes, and responds.
+                It replaces spinners. It replaces loading indicators. It <em>IS</em> the feedback.
+            </p>
+            <div class="ring-states">
+                <div class="ring-state ring-dormant">
+                    <div class="ring-icon"></div>
+                    <div class="ring-state-name">Dormant</div>
+                    <div class="ring-state-desc">Dark glass, slow spin</div>
+                </div>
+                <div class="ring-state ring-waking">
+                    <div class="ring-icon"></div>
+                    <div class="ring-state-name">Waking</div>
+                    <div class="ring-state-desc">Springs to attention</div>
+                </div>
+                <div class="ring-state ring-active">
+                    <div class="ring-icon"></div>
+                    <div class="ring-state-name">Active</div>
+                    <div class="ring-state-desc">Plasma swirls within</div>
+                </div>
+                <div class="ring-state ring-processing">
+                    <div class="ring-icon"></div>
+                    <div class="ring-state-name">Processing</div>
+                    <div class="ring-state-desc">Intense glow, attracts</div>
+                </div>
+                <div class="ring-state ring-exploding">
+                    <div class="ring-icon"></div>
+                    <div class="ring-state-name">Exploding</div>
+                    <div class="ring-state-desc">Particle burst, bloom</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-divider"></div>
+
+        <!-- Section 5: The Motion -->
+        <div class="glass-panel">
+            <div class="section-header">
+                <span class="section-number">05</span>
+                <h2>The Motion</h2>
+            </div>
+            <p class="description">
+                <strong>All motion is physics-based.</strong> No linear easing. No duration-based timing.
+                Elements don't appear &mdash; they <em>ignite</em>. Lists don't load &mdash; they <em>stagger</em>.
+                Motion feels smokey, fluid, organic &mdash; never mechanical.
+            </p>
+            <div class="spring-presets">
+                <div class="spring-preset">
+                    <div class="spring-name">Quick</div>
+                    <div class="spring-params">response: 0.3, damping: 0.7</div>
+                    <div class="spring-use">Buttons, toggles, taps</div>
+                </div>
+                <div class="spring-preset">
+                    <div class="spring-name">Gentle</div>
+                    <div class="spring-params">response: 0.5, damping: 0.8</div>
+                    <div class="spring-use">Page changes, reveals</div>
+                </div>
+                <div class="spring-preset">
+                    <div class="spring-name">Page</div>
+                    <div class="spring-params">response: 0.6, damping: 0.85</div>
+                    <div class="spring-use">Sheets, full-screen</div>
+                </div>
+                <div class="spring-preset">
+                    <div class="spring-name">Bounce</div>
+                    <div class="spring-params">response: 0.4, damping: 0.5</div>
+                    <div class="spring-use">Success, celebrations</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-divider"></div>
+
+        <!-- Section 6: The Atmosphere -->
+        <div class="glass-panel">
+            <div class="section-header">
+                <span class="section-number">06</span>
+                <h2>The Atmosphere</h2>
+            </div>
+            <p class="description">
+                <strong>Particles</strong> drift as ambient dust motes. <strong>Fog</strong> breathes in radial layers.
+                During processing, particles flow toward the ring. Fog intensifies and shifts from
+                deep <em>#1A0A2E</em> to vivid <em>#9333EA</em>. The environment is alive.
+            </p>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Ring State</th>
+                        <th>Fog Color</th>
+                        <th>Fog Opacity</th>
+                        <th>Breathing</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="label">Dormant</td>
+                        <td>#1A0A2E</td>
+                        <td>5-15%</td>
+                        <td>4s cycle</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Waking</td>
+                        <td>#2D1B4E</td>
+                        <td>10-20%</td>
+                        <td>3s cycle</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Active</td>
+                        <td>#3B1D5A</td>
+                        <td>15-25%</td>
+                        <td>3s cycle</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Processing</td>
+                        <td>#9333EA</td>
+                        <td>20-30%</td>
+                        <td>2s + pulse</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Exploding</td>
+                        <td>#C084FC</td>
+                        <td>50-80%</td>
+                        <td>Flash + fade</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section-divider"></div>
+
+        <!-- Section 7: The Sound -->
+        <div class="glass-panel">
+            <div class="section-header">
+                <span class="section-number">07</span>
+                <h2>The Sound</h2>
+            </div>
+            <p class="description">
+                Audio is <em>crystalline + spatial</em> &mdash; glass-like chimes floating in an echoing void.
+                Beautiful tones in infinite dark. Never annoying on repeat.
+            </p>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Moment</th>
+                        <th>Character</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td class="label">Ring ignition</td><td>Deep hum building to crystalline chime</td></tr>
+                    <tr><td class="label">Page transition</td><td>Soft whoosh with spatial reverb</td></tr>
+                    <tr><td class="label">Button click</td><td>Subtle glass tap</td></tr>
+                    <tr><td class="label">Success</td><td>Ascending crystalline tones</td></tr>
+                    <tr><td class="label">Menu open</td><td>Soft whoosh (0.4 volume)</td></tr>
+                    <tr><td class="label">Error</td><td>Low soft tone, never alarming</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section-divider"></div>
+
+        <!-- Section 8: Typography -->
+        <div class="glass-panel">
+            <div class="section-header">
+                <span class="section-number">08</span>
+                <h2>The Typography</h2>
+            </div>
+            <p class="description">
+                <strong>macOS:</strong> Sora &mdash; geometric, modern, futuristic.
+                <strong>iOS:</strong> SF Pro with Dynamic Type.
+                Headings use the <em>Moonlight Gradient</em> &mdash; text that seems lit from within.
+            </p>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Role</th>
+                        <th>Size</th>
+                        <th>Weight</th>
+                        <th>Tracking</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td class="label">Display</td><td>34pt / 3rem</td><td>Bold 700</td><td>-0.02em</td></tr>
+                    <tr><td class="label">Title</td><td>22pt / 2.25rem</td><td>Semibold 600</td><td>-0.01em</td></tr>
+                    <tr><td class="label">Headline</td><td>17pt / 1.125rem</td><td>Semibold 600</td><td>0</td></tr>
+                    <tr><td class="label">Body</td><td>15pt / 0.875rem</td><td>Regular 400</td><td>0</td></tr>
+                    <tr><td class="label">Caption</td><td>13pt / 0.75rem</td><td>Medium 500</td><td>0</td></tr>
+                    <tr><td class="label">Label</td><td>11pt</td><td>Medium 500</td><td>+0.05em</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section-divider"></div>
+
+        <!-- Section 9: Brand Voice -->
+        <div class="glass-panel">
+            <div class="section-header">
+                <span class="section-number">09</span>
+                <h2>The Voice</h2>
+            </div>
+            <p class="description">
+                <strong>The Friendly Expert.</strong> Calm and confident, never urgent or alarming.
+                Factual but warm, never cold or robotic. Educational when helpful, never patronizing.
+            </p>
+            <blockquote>
+                "This optimization couldn't complete because [reason]. Here's what you can try: [options]"
+            </blockquote>
+            <p class="description" style="margin-top: 16px;">
+                <span class="tag tag-primary">BANNED</span> "risk", "danger", "threat", "revolutionary", "game-changing", "you need", "act now"
+            </p>
+        </div>
+
+        <div class="section-divider"></div>
+
+        <!-- Section 10: Theme Variants -->
+        <div class="glass-panel">
+            <div class="section-header">
+                <span class="section-number">10</span>
+                <h2>Theme Variants</h2>
+            </div>
+            <p class="description">
+                The obsidian glass base and void remain constant. Only the <em>accent energy</em> shifts.
+            </p>
+            <div class="color-grid">
+                <div class="color-swatch" style="border-color: rgba(139,92,246,0.3);">
+                    <div class="swatch-circle" style="background: #8b5cf6; box-shadow: 0 0 15px rgba(139,92,246,0.4);"></div>
+                    <div class="swatch-name">Obsidian</div>
+                    <div class="swatch-hex">Default</div>
+                </div>
+                <div class="color-swatch">
+                    <div class="swatch-circle" style="background: #3b82f6; box-shadow: 0 0 15px rgba(59,130,246,0.3);"></div>
+                    <div class="swatch-name">Ocean</div>
+                    <div class="swatch-hex">Calm, cool</div>
+                </div>
+                <div class="color-swatch">
+                    <div class="swatch-circle" style="background: #22c55e; box-shadow: 0 0 15px rgba(34,197,94,0.3);"></div>
+                    <div class="swatch-name">Forest</div>
+                    <div class="swatch-hex">Natural, organic</div>
+                </div>
+                <div class="color-swatch">
+                    <div class="swatch-circle" style="background: #f97316; box-shadow: 0 0 15px rgba(249,115,22,0.3);"></div>
+                    <div class="swatch-name">Sunset</div>
+                    <div class="swatch-hex">Warm, bold</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary -->
+        <div class="summary-panel">
+            <p>A dark, living space where obsidian glass surfaces float at varying depths, lit from within by electric violet plasma. Particles drift through atmospheric fog that breathes with the rhythm of computation. The Ring &mdash; a sentient glass torus &mdash; watches, responds, and rests in obsidian stillness. The UI is not a tool &mdash; it is an artifact that awakens.</p>
+            <div class="signature-grid">
+                <div class="signature-item">
+                    <div class="signature-label">Color Signature</div>
+                    <div class="signature-value">#09090b void, #8B5CF6 plasma, #18181b glass, white@10% edges</div>
+                </div>
+                <div class="signature-item">
+                    <div class="signature-label">Motion Signature</div>
+                    <div class="signature-value">Spring physics, ignition entries, staggered reveals, deep glow hovers</div>
+                </div>
+                <div class="signature-item">
+                    <div class="signature-label">Material Signature</div>
+                    <div class="signature-value">3-layer glass depth, obsidian surfaces, specular highlights, noise grain</div>
+                </div>
+                <div class="signature-item">
+                    <div class="signature-label">Sound Signature</div>
+                    <div class="signature-value">Crystalline chimes, spatial reverb, glass taps, ascending tones</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            OPTA BRAND ATMOSPHERE GUIDE &bull; V1.0 &bull; GENERATED BY /GU
+        </div>
+    </div>
+
+    <script>
+        // Generate ambient particles
+        const particlesContainer = document.getElementById('particles');
+        for (let i = 0; i < 40; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.top = Math.random() * 100 + '%';
+            particle.style.animationDuration = (15 + Math.random() * 25) + 's';
+            particle.style.animationDelay = -(Math.random() * 30) + 's';
+            particle.style.width = (1 + Math.random() * 2) + 'px';
+            particle.style.height = particle.style.width;
+            if (Math.random() > 0.7) {
+                particle.style.background = 'rgba(139, 92, 246, 0.12)';
+            }
+            particlesContainer.appendChild(particle);
+        }
+    </script>
+</body>
+</html>

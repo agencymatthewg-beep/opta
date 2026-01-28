@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vercel + GitHub Setup | Opta Life Manager</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --void: #09090b;
+            --surface: #18181b;
+            --elevated: #27272a;
+            --border: #3f3f46;
+            --text-primary: #fafafa;
+            --text-secondary: #a1a1aa;
+            --text-muted: #52525b;
+            --primary: #8b5cf6;
+            --primary-glow: #a855f7;
+            --neon-blue: #3b82f6;
+            --neon-green: #22c55e;
+            --neon-amber: #f59e0b;
+            --neon-red: #ef4444;
+            --vercel: #000000;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--void);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+            opacity: 0.03;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 3rem 2rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .header h1 {
+            font-family: 'Sora', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #fafafa 0%, #a78bfa 50%, #6366f1 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .header .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .step-container {
+            margin-bottom: 2rem;
+        }
+
+        .step {
+            background: linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 1.5rem 2rem;
+            margin-bottom: 1rem;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .step:hover {
+            border-color: rgba(139, 92, 246, 0.3);
+            transform: translateX(4px);
+        }
+
+        .step::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+        }
+
+        .step-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .step-number {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--primary), #6366f1);
+            border-radius: 10px;
+            font-family: 'Sora', sans-serif;
+            font-weight: 700;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        .step-title {
+            font-family: 'Sora', sans-serif;
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .step-content {
+            margin-left: 56px;
+            color: var(--text-secondary);
+        }
+
+        .step-content p {
+            margin-bottom: 0.75rem;
+        }
+
+        .code-block {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            font-size: 0.875rem;
+            color: var(--neon-green);
+            margin: 0.75rem 0;
+            overflow-x: auto;
+        }
+
+        .highlight {
+            background: rgba(139, 92, 246, 0.2);
+            padding: 0.125rem 0.375rem;
+            border-radius: 4px;
+            color: var(--primary-glow);
+            font-weight: 500;
+        }
+
+        .warning-box {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-radius: 10px;
+            padding: 1rem;
+            margin: 1rem 0;
+            font-size: 0.9rem;
+        }
+
+        .warning-box strong {
+            color: var(--neon-amber);
+        }
+
+        .success-box {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 10px;
+            padding: 1rem;
+            margin: 1rem 0;
+            font-size: 0.9rem;
+        }
+
+        .success-box strong {
+            color: var(--neon-green);
+        }
+
+        .env-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            font-size: 0.875rem;
+        }
+
+        .env-table th, .env-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .env-table th {
+            color: var(--text-muted);
+            font-weight: 500;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+        }
+
+        .env-table code {
+            background: var(--surface);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+
+        .neon-divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--primary), transparent);
+            margin: 2.5rem 0;
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.4);
+        }
+
+        .benefits-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        @media (max-width: 600px) {
+            .benefits-grid { grid-template-columns: 1fr; }
+        }
+
+        .benefit-card {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 1.25rem;
+        }
+
+        .benefit-card h4 {
+            font-family: 'Sora', sans-serif;
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+            color: var(--neon-green);
+        }
+
+        .benefit-card p {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .checklist {
+            list-style: none;
+            margin: 1rem 0;
+        }
+
+        .checklist li {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+            font-size: 0.9rem;
+        }
+
+        .checklist li::before {
+            content: '>';
+            color: var(--primary);
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+
+        .action-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .action-link:hover {
+            color: var(--primary-glow);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>Vercel + GitHub Setup</h1>
+            <p class="subtitle">Complete guide for deploying Opta Life Manager with automatic CI/CD</p>
+        </header>
+
+        <!-- Why Vercel + GitHub -->
+        <section class="step" style="border-color: rgba(34, 197, 94, 0.3);">
+            <div class="step-header">
+                <div class="step-number" style="background: linear-gradient(135deg, var(--neon-green), #16a34a);">+</div>
+                <h3 class="step-title">Why This Setup?</h3>
+            </div>
+            <div class="step-content" style="margin-left: 0;">
+                <p>Connecting GitHub to Vercel gives you the best developer experience for scaling:</p>
+                <div class="benefits-grid">
+                    <div class="benefit-card">
+                        <h4>Auto Deployments</h4>
+                        <p>Every git push automatically deploys. No CLI commands needed.</p>
+                    </div>
+                    <div class="benefit-card">
+                        <h4>Preview URLs</h4>
+                        <p>Every branch/PR gets its own preview URL for testing.</p>
+                    </div>
+                    <div class="benefit-card">
+                        <h4>Instant Rollbacks</h4>
+                        <p>One-click rollback to any previous deployment.</p>
+                    </div>
+                    <div class="benefit-card">
+                        <h4>No Rate Limits</h4>
+                        <p>Git-based deploys bypass CLI upload limits.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="neon-divider"></div>
+
+        <!-- Step 1 -->
+        <div class="step-container">
+            <div class="step">
+                <div class="step-header">
+                    <div class="step-number">1</div>
+                    <h3 class="step-title">Connect GitHub Account</h3>
+                </div>
+                <div class="step-content">
+                    <p>On the Vercel dashboard (<a href="https://vercel.com/new" class="action-link" target="_blank">vercel.com/new</a>):</p>
+                    <ul class="checklist">
+                        <li>Click <span class="highlight">Continue with GitHub</span></li>
+                        <li>Authorize Vercel to access your GitHub account</li>
+                        <li>Select <span class="highlight">All repositories</span> or just <span class="highlight">agencymatthewg-beep/opta</span></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="step-container">
+            <div class="step">
+                <div class="step-header">
+                    <div class="step-number">2</div>
+                    <h3 class="step-title">Import Repository</h3>
+                </div>
+                <div class="step-content">
+                    <p>Find and select your repository:</p>
+                    <ul class="checklist">
+                        <li>Search for <span class="highlight">opta</span> in the repository list</li>
+                        <li>Click <span class="highlight">Import</span> next to <code>agencymatthewg-beep/opta</code></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="step-container">
+            <div class="step">
+                <div class="step-header">
+                    <div class="step-number">3</div>
+                    <h3 class="step-title">Configure Project Settings</h3>
+                </div>
+                <div class="step-content">
+                    <p>Set these critical configuration options:</p>
+
+                    <div class="warning-box">
+                        <strong>Important:</strong> You must set the Root Directory since the app is in a subfolder.
+                    </div>
+
+                    <table class="env-table">
+                        <tr>
+                            <th>Setting</th>
+                            <th>Value</th>
+                        </tr>
+                        <tr>
+                            <td>Project Name</td>
+                            <td><code>opta-life-manager</code></td>
+                        </tr>
+                        <tr>
+                            <td>Framework Preset</td>
+                            <td><code>Next.js</code> (auto-detected)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Root Directory</strong></td>
+                            <td><code>opta-life-manager</code></td>
+                        </tr>
+                        <tr>
+                            <td>Build Command</td>
+                            <td><code>npm run build</code> (default)</td>
+                        </tr>
+                        <tr>
+                            <td>Output Directory</td>
+                            <td>Leave empty (Next.js default)</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="step-container">
+            <div class="step">
+                <div class="step-header">
+                    <div class="step-number">4</div>
+                    <h3 class="step-title">Add Environment Variables</h3>
+                </div>
+                <div class="step-content">
+                    <p>Expand "Environment Variables" and add these (get values from your <code>.env.local</code>):</p>
+
+                    <table class="env-table">
+                        <tr>
+                            <th>Variable</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                        <tr>
+                            <td><code>AUTH_SECRET</code></td>
+                            <td>Yes</td>
+                            <td>NextAuth secret key</td>
+                        </tr>
+                        <tr>
+                            <td><code>AUTH_GOOGLE_ID</code></td>
+                            <td>Yes</td>
+                            <td>Google OAuth Client ID</td>
+                        </tr>
+                        <tr>
+                            <td><code>AUTH_GOOGLE_SECRET</code></td>
+                            <td>Yes</td>
+                            <td>Google OAuth Client Secret</td>
+                        </tr>
+                        <tr>
+                            <td><code>GEMINI_API_KEY</code></td>
+                            <td>For AI</td>
+                            <td>Google Gemini API key</td>
+                        </tr>
+                        <tr>
+                            <td><code>TODOIST_CLIENT_ID</code></td>
+                            <td>Optional</td>
+                            <td>Todoist integration</td>
+                        </tr>
+                        <tr>
+                            <td><code>TODOIST_CLIENT_SECRET</code></td>
+                            <td>Optional</td>
+                            <td>Todoist integration</td>
+                        </tr>
+                    </table>
+
+                    <div class="code-block">
+# Generate a new AUTH_SECRET:
+openssl rand -base64 32</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 5 -->
+        <div class="step-container">
+            <div class="step">
+                <div class="step-header">
+                    <div class="step-number">5</div>
+                    <h3 class="step-title">Deploy</h3>
+                </div>
+                <div class="step-content">
+                    <ul class="checklist">
+                        <li>Click <span class="highlight">Deploy</span></li>
+                        <li>Wait 2-3 minutes for the build to complete</li>
+                        <li>You'll get a URL like <code>opta-life-manager-xxx.vercel.app</code></li>
+                    </ul>
+
+                    <div class="success-box">
+                        <strong>Success!</strong> Your app is now live with automatic deployments enabled.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="neon-divider"></div>
+
+        <!-- Step 6 -->
+        <div class="step-container">
+            <div class="step">
+                <div class="step-header">
+                    <div class="step-number">6</div>
+                    <h3 class="step-title">Add Custom Domain</h3>
+                </div>
+                <div class="step-content">
+                    <p>Connect <span class="highlight">lm.optamize.biz</span> to your deployment:</p>
+                    <ul class="checklist">
+                        <li>Go to your project dashboard on Vercel</li>
+                        <li>Click <span class="highlight">Settings</span> > <span class="highlight">Domains</span></li>
+                        <li>Enter <code>lm.optamize.biz</code> and click Add</li>
+                        <li>Vercel will show DNS configuration needed</li>
+                    </ul>
+
+                    <div class="warning-box">
+                        <strong>DNS Setup:</strong> You'll need to add a CNAME record in Cloudflare:
+                        <div class="code-block">Type: CNAME
+Name: lm
+Target: cname.vercel-dns.com
+Proxy: DNS only (grey cloud)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 7 -->
+        <div class="step-container">
+            <div class="step">
+                <div class="step-header">
+                    <div class="step-number">7</div>
+                    <h3 class="step-title">Update Google OAuth</h3>
+                </div>
+                <div class="step-content">
+                    <p>Add your new domain to Google Cloud Console:</p>
+                    <ul class="checklist">
+                        <li>Go to <a href="https://console.cloud.google.com/apis/credentials" class="action-link" target="_blank">Google Cloud Console > Credentials</a></li>
+                        <li>Edit your OAuth 2.0 Client ID</li>
+                        <li>Add to Authorized JavaScript origins:</li>
+                    </ul>
+                    <div class="code-block">https://lm.optamize.biz</div>
+                    <ul class="checklist">
+                        <li>Add to Authorized redirect URIs:</li>
+                    </ul>
+                    <div class="code-block">https://lm.optamize.biz/api/auth/callback/google</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="neon-divider"></div>
+
+        <!-- Future Expansion -->
+        <section class="step" style="border-color: rgba(139, 92, 246, 0.3);">
+            <div class="step-header">
+                <div class="step-number" style="background: linear-gradient(135deg, var(--primary), #6366f1);">*</div>
+                <h3 class="step-title">Future Expansion Ready</h3>
+            </div>
+            <div class="step-content" style="margin-left: 0;">
+                <p>With this setup, you can easily add more apps:</p>
+                <table class="env-table">
+                    <tr>
+                        <th>Subdomain</th>
+                        <th>Purpose</th>
+                        <th>Root Directory</th>
+                    </tr>
+                    <tr>
+                        <td><code>lm.optamize.biz</code></td>
+                        <td>Life Manager (this app)</td>
+                        <td><code>opta-life-manager</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>app.optamize.biz</code></td>
+                        <td>Future: Main web app</td>
+                        <td><code>opta-web</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>api.optamize.biz</code></td>
+                        <td>Future: API service</td>
+                        <td><code>opta-api</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>docs.optamize.biz</code></td>
+                        <td>Future: Documentation</td>
+                        <td><code>opta-docs</code></td>
+                    </tr>
+                </table>
+                <p style="margin-top: 1rem;">Each can be a separate Vercel project from the same monorepo, or separate repos as you scale.</p>
+            </div>
+        </section>
+
+        <footer class="footer">
+            <p>Opta Life Manager | Vercel + GitHub Setup Guide</p>
+        </footer>
+    </div>
+</body>
+</html>

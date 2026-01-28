@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Changelog | Optamize</title>
+    <meta name="description" content="See what's new in Opta apps. Version history and release notes.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <link rel="canonical" href="https://optamize.biz/changelog.html">
+    <style>
+        .page-content {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 8rem 2rem 4rem;
+        }
+
+        .page-content h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #fff, var(--primary-glow));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .page-content .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.125rem;
+            margin-bottom: 3rem;
+        }
+
+        .app-filter {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 0.5rem 1rem;
+            background: var(--glass-bg);
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.875rem;
+        }
+
+        .filter-btn:hover {
+            border-color: var(--primary);
+            color: var(--text-primary);
+        }
+
+        .filter-btn.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+
+        .changelog-entry {
+            background: var(--glass-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
+        }
+
+        .changelog-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .app-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 100px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .app-badge.macos {
+            background: rgba(139, 92, 246, 0.2);
+            color: #a78bfa;
+        }
+
+        .app-badge.scan {
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+        }
+
+        .app-badge.lm {
+            background: rgba(34, 197, 94, 0.2);
+            color: #4ade80;
+        }
+
+        .version-number {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .release-date {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+
+        .changelog-content h3 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.75rem;
+        }
+
+        .changelog-content ul {
+            padding-left: 1.25rem;
+            margin-bottom: 1rem;
+        }
+
+        .changelog-content li {
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            line-height: 1.6;
+        }
+
+        .change-type {
+            display: inline-block;
+            font-size: 0.7rem;
+            padding: 0.125rem 0.5rem;
+            border-radius: 4px;
+            margin-right: 0.5rem;
+            font-weight: 500;
+        }
+
+        .change-type.new {
+            background: rgba(34, 197, 94, 0.2);
+            color: #4ade80;
+        }
+
+        .change-type.improved {
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+        }
+
+        .change-type.fixed {
+            background: rgba(245, 158, 11, 0.2);
+            color: #fbbf24;
+        }
+
+        .back-link {
+            position: fixed;
+            top: 1.5rem;
+            left: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.875rem;
+            padding: 0.5rem 1rem;
+            background: var(--glass-bg);
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
+            transition: all 0.2s ease;
+            z-index: 100;
+        }
+
+        .back-link:hover {
+            color: var(--text-primary);
+            border-color: var(--primary);
+        }
+    </style>
+</head>
+<body>
+    <a href="#main-content" class="skip-link sr-only">Skip to main content</a>
+
+    <a href="/" class="back-link">
+        <span>&larr;</span>
+        <span>Home</span>
+    </a>
+
+    <main id="main-content" class="page-content">
+        <h1>Changelog</h1>
+        <p class="subtitle">See what's new across all Opta apps.</p>
+
+        <div class="app-filter">
+            <button class="filter-btn active" data-filter="all">All Apps</button>
+            <button class="filter-btn" data-filter="macos">Opta MacOS</button>
+            <button class="filter-btn" data-filter="scan">Opta Scan</button>
+            <button class="filter-btn" data-filter="lm">Opta LM</button>
+        </div>
+
+        <div class="changelog-list">
+            <article class="changelog-entry" data-app="lm">
+                <div class="changelog-header">
+                    <span class="app-badge lm">Opta LM</span>
+                    <span class="version-number">Phase 4</span>
+                    <span class="release-date">January 2025</span>
+                </div>
+                <div class="changelog-content">
+                    <ul>
+                        <li><span class="change-type new">New</span>Advanced notification settings with granular control</li>
+                        <li><span class="change-type new">New</span>Background sync manager for seamless updates</li>
+                        <li><span class="change-type new">New</span>Health insights from Apple Health integration</li>
+                        <li><span class="change-type improved">Improved</span>Dashboard card layouts and animations</li>
+                        <li><span class="change-type improved">Improved</span>Task sync reliability with Todoist</li>
+                    </ul>
+                </div>
+            </article>
+
+            <article class="changelog-entry" data-app="macos">
+                <div class="changelog-header">
+                    <span class="app-badge macos">Opta MacOS</span>
+                    <span class="version-number">Phase 97</span>
+                    <span class="release-date">January 2025</span>
+                </div>
+                <div class="changelog-content">
+                    <ul>
+                        <li><span class="change-type new">New</span>Conflict detection service for system tools</li>
+                        <li><span class="change-type new">New</span>Power stone ring UI with dynamic animations</li>
+                        <li><span class="change-type improved">Improved</span>Radial menu layout with wide tracking typography</li>
+                        <li><span class="change-type improved">Improved</span>Chess AI performance and move quality</li>
+                        <li><span class="change-type fixed">Fixed</span>Memory leak in telemetry polling</li>
+                    </ul>
+                </div>
+            </article>
+
+            <article class="changelog-entry" data-app="scan">
+                <div class="changelog-header">
+                    <span class="app-badge scan">Opta Scan</span>
+                    <span class="version-number">v2.0</span>
+                    <span class="release-date">December 2024</span>
+                </div>
+                <div class="changelog-content">
+                    <ul>
+                        <li><span class="change-type new">New</span>Completely redesigned UI with glass aesthetic</li>
+                        <li><span class="change-type new">New</span>Multi-page document scanning</li>
+                        <li><span class="change-type new">New</span>Improved OCR with better accuracy</li>
+                        <li><span class="change-type improved">Improved</span>Edge detection now works in low light</li>
+                        <li><span class="change-type improved">Improved</span>Export options now include PDF/A</li>
+                        <li><span class="change-type fixed">Fixed</span>Crash when scanning oversized documents</li>
+                    </ul>
+                </div>
+            </article>
+
+            <article class="changelog-entry" data-app="macos">
+                <div class="changelog-header">
+                    <span class="app-badge macos">Opta MacOS</span>
+                    <span class="version-number">Phase 83</span>
+                    <span class="release-date">December 2024</span>
+                </div>
+                <div class="changelog-content">
+                    <ul>
+                        <li><span class="change-type new">New</span>Obsidian panel system for UI components</li>
+                        <li><span class="change-type new">New</span>System defaults optimizer</li>
+                        <li><span class="change-type improved">Improved</span>Thermal monitoring accuracy</li>
+                        <li><span class="change-type fixed">Fixed</span>GPU telemetry on M3 chips</li>
+                    </ul>
+                </div>
+            </article>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-brand">
+                <span class="footer-logo">◈</span>
+                <span>Optamize</span>
+            </div>
+            <div class="footer-links">
+                <a href="/privacy.html">Privacy</a>
+                <a href="/support.html">Support</a>
+                <a href="/changelog.html">Changelog</a>
+            </div>
+            <div class="footer-copyright">
+                © 2025 Optamize. The pursuit of optimal.
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/main.js"></script>
+    <script>
+        // Changelog filter
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Update active button
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+
+                const filter = btn.dataset.filter;
+                document.querySelectorAll('.changelog-entry').forEach(entry => {
+                    if (filter === 'all' || entry.dataset.app === filter) {
+                        entry.style.display = 'block';
+                    } else {
+                        entry.style.display = 'none';
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Opta LM - Life Management Assistant | Optamize</title>
+    <meta name="description" content="Your intelligent life management assistant. Calendar sync, smart notifications, task management, and health insights - all in one beautiful app.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+    <link rel="canonical" href="https://optamize.biz/apps/lm.html">
+    <style>
+        .app-hero {
+            min-height: 70vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 6rem 2rem 4rem;
+            position: relative;
+        }
+
+        .app-icon-large {
+            width: 120px;
+            height: 120px;
+            background: linear-gradient(135deg, #22c55e, #4ade80);
+            border-radius: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 20px 60px rgba(34, 197, 94, 0.4);
+            animation: float 4s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .app-hero h1 {
+            font-size: clamp(2.5rem, 6vw, 4rem);
+            font-weight: 700;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #fff, #4ade80);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .app-hero .tagline {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin-bottom: 2rem;
+        }
+
+        .platform-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--glass-bg);
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 0.875rem 2rem;
+            border-radius: 12px;
+            font-weight: 500;
+            font-size: 1rem;
+            text-decoration: none;
+            transition: all 0.3s var(--ease-spring);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #22c55e, #4ade80);
+            color: white;
+            border: none;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 40px rgba(34, 197, 94, 0.4);
+        }
+
+        .btn-secondary {
+            background: var(--glass-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
+        }
+
+        .btn-secondary:hover {
+            background: var(--surface);
+            border-color: #22c55e;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 4rem 2rem;
+        }
+
+        .feature-detail-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
+            transition: all 0.3s var(--ease-out);
+        }
+
+        .feature-detail-card:hover {
+            border-color: #22c55e;
+            transform: translateY(-4px);
+        }
+
+        .feature-detail-card .icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .feature-detail-card h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .feature-detail-card p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .integrations-section {
+            padding: 4rem 2rem;
+            text-align: center;
+        }
+
+        .integrations-section h2 {
+            font-size: 2rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .integrations-section p {
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto 3rem;
+        }
+
+        .integrations-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1.5rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .integration-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem 1.5rem;
+            background: var(--glass-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
+        }
+
+        .integration-badge .icon {
+            font-size: 1.5rem;
+        }
+
+        .integration-badge span {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .back-link {
+            position: fixed;
+            top: 1.5rem;
+            left: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.875rem;
+            padding: 0.5rem 1rem;
+            background: var(--glass-bg);
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
+            transition: all 0.2s ease;
+            z-index: 100;
+        }
+
+        .back-link:hover {
+            color: var(--text-primary);
+            border-color: #22c55e;
+        }
+
+        .beta-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            background: rgba(245, 158, 11, 0.2);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-radius: 100px;
+            font-size: 0.75rem;
+            color: #f59e0b;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <a href="/" class="back-link">
+        <span>&larr;</span>
+        <span>All Apps</span>
+    </a>
+
+    <main role="main">
+    <section class="app-hero">
+        <div class="app-icon-large">✨</div>
+        <div class="beta-badge">Phase 4 Complete</div>
+        <div class="platform-badge">
+            <span>📱</span>
+            <span>iOS 17+</span>
+        </div>
+        <h1>Opta LM</h1>
+        <p class="tagline">Your intelligent life management assistant. Calendar sync, smart notifications, task management, and health insights - unified in one beautiful app.</p>
+        <div class="cta-buttons">
+            <a href="https://apps.apple.com" class="btn btn-primary" target="_blank" rel="noopener noreferrer">
+                <span>🍎</span>
+                <span>Coming Soon</span>
+            </a>
+            <a href="#features" class="btn btn-secondary">
+                <span>Preview</span>
+            </a>
+        </div>
+    </section>
+
+    <section id="features" class="features-grid">
+        <div class="feature-detail-card">
+            <div class="icon">📅</div>
+            <h3>Calendar Sync</h3>
+            <p>Unified view of all your calendars. Google Calendar and Apple Calendar integration with smart conflict detection.</p>
+        </div>
+        <div class="feature-detail-card">
+            <div class="icon">🔔</div>
+            <h3>Smart Notifications</h3>
+            <p>Context-aware alerts that understand when and how to reach you. Granular control over every notification type.</p>
+        </div>
+        <div class="feature-detail-card">
+            <div class="icon">✅</div>
+            <h3>Task Management</h3>
+            <p>Todoist integration with intelligent prioritization. See your tasks alongside your calendar.</p>
+        </div>
+        <div class="feature-detail-card">
+            <div class="icon">❤️</div>
+            <h3>Health Insights</h3>
+            <p>Apple Health integration surfaces relevant metrics. Understand how your health affects your productivity.</p>
+        </div>
+        <div class="feature-detail-card">
+            <div class="icon">🎯</div>
+            <h3>Focus Dashboard</h3>
+            <p>See your day at a glance. Weather, upcoming events, priority tasks, and health metrics in one view.</p>
+        </div>
+        <div class="feature-detail-card">
+            <div class="icon">🔄</div>
+            <h3>Background Sync</h3>
+            <p>Always up to date. Intelligent background refresh keeps everything current without draining battery.</p>
+        </div>
+    </section>
+
+    <section class="integrations-section">
+        <h2>Powerful Integrations</h2>
+        <p>Opta LM connects with the tools you already use, bringing everything into one unified experience.</p>
+        <div class="integrations-grid">
+            <div class="integration-badge">
+                <span class="icon">📅</span>
+                <span>Google Calendar</span>
+            </div>
+            <div class="integration-badge">
+                <span class="icon">🍎</span>
+                <span>Apple Calendar</span>
+            </div>
+            <div class="integration-badge">
+                <span class="icon">✅</span>
+                <span>Todoist</span>
+            </div>
+            <div class="integration-badge">
+                <span class="icon">❤️</span>
+                <span>Apple Health</span>
+            </div>
+            <div class="integration-badge">
+                <span class="icon">📝</span>
+                <span>Apple Reminders</span>
+            </div>
+            <div class="integration-badge">
+                <span class="icon">🌤️</span>
+                <span>Weather</span>
+            </div>
+        </div>
+    </section>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-brand">
+                <span class="footer-logo">◈</span>
+                <span>Optamize</span>
+            </div>
+            <div class="footer-links">
+                <a href="/privacy.html">Privacy</a>
+                <a href="/support.html">Support</a>
+                <a href="/changelog.html">Changelog</a>
+            </div>
+            <div class="footer-copyright">
+                © 2025 Optamize. The pursuit of optimal.
+            </div>
+        </div>
+    </footer>
+
+    <script src="../js/main.js"></script>
+</body>
+</html>

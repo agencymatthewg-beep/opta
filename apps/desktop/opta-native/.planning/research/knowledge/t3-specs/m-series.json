@@ -1,0 +1,140 @@
+{
+  "$schema": "knowledge-schema.json",
+  "tier": 3,
+  "tierName": "specs",
+  "domain": "general",
+  "lastUpdated": "2026-01-18",
+  "confidence": "high",
+  "sources": [
+    {
+      "name": "Apple Official Specifications",
+      "type": "official-docs",
+      "date": "2024"
+    },
+    {
+      "name": "Gemini Deep Research",
+      "type": "gemini-research",
+      "date": "2026-01-18"
+    }
+  ],
+  "entries": [
+    {
+      "id": "m1-base-specs",
+      "fact": "M1: 4P+4E cores (8 total), 7-8 GPU cores, 8-16GB unified memory, 68.25 GB/s bandwidth",
+      "confidence": "high",
+      "source": "Apple specs",
+      "verificationRequired": false,
+      "tags": ["m1", "specs"],
+      "applicableTo": ["M1"],
+      "numericValue": { "value": 8, "unit": "CPU cores" }
+    },
+    {
+      "id": "m1-pro-specs",
+      "fact": "M1 Pro: 6-8P+2E cores (8-10 total), 14-16 GPU cores, 16-32GB memory, 200 GB/s bandwidth",
+      "confidence": "high",
+      "source": "Apple specs",
+      "verificationRequired": false,
+      "tags": ["m1-pro", "specs"],
+      "applicableTo": ["M1 Pro"]
+    },
+    {
+      "id": "m1-max-specs",
+      "fact": "M1 Max: 8P+2E cores (10 total), 24-32 GPU cores, 32-64GB memory, 400 GB/s bandwidth",
+      "confidence": "high",
+      "source": "Apple specs",
+      "verificationRequired": false,
+      "tags": ["m1-max", "specs"],
+      "applicableTo": ["M1 Max"]
+    },
+    {
+      "id": "m2-base-specs",
+      "fact": "M2: 4P+4E cores (8 total), 8-10 GPU cores, 8-24GB memory, 100 GB/s bandwidth",
+      "confidence": "high",
+      "source": "Apple specs",
+      "verificationRequired": false,
+      "tags": ["m2", "specs"],
+      "applicableTo": ["M2"]
+    },
+    {
+      "id": "m2-pro-specs",
+      "fact": "M2 Pro: 6-8P+4E cores (10-12 total), 16-19 GPU cores, 16-32GB memory, 200 GB/s bandwidth",
+      "confidence": "high",
+      "source": "Apple specs",
+      "verificationRequired": false,
+      "tags": ["m2-pro", "specs"],
+      "applicableTo": ["M2 Pro"]
+    },
+    {
+      "id": "m2-max-specs",
+      "fact": "M2 Max: 8P+4E cores (12 total), 30-38 GPU cores, 32-96GB memory, 400 GB/s bandwidth",
+      "confidence": "high",
+      "source": "Apple specs",
+      "verificationRequired": false,
+      "tags": ["m2-max", "specs"],
+      "applicableTo": ["M2 Max"]
+    },
+    {
+      "id": "m2-ultra-specs",
+      "fact": "M2 Ultra: 16P+8E cores (24 total), 60-76 GPU cores, 64-192GB memory, 800 GB/s bandwidth",
+      "confidence": "high",
+      "source": "Apple specs",
+      "verificationRequired": false,
+      "tags": ["m2-ultra", "specs"],
+      "applicableTo": ["M2 Ultra"]
+    },
+    {
+      "id": "m3-base-specs",
+      "fact": "M3: 4P+4E cores (8 total), 10 GPU cores, 8-24GB memory, 100 GB/s bandwidth, 3nm process",
+      "confidence": "high",
+      "source": "Apple specs",
+      "verificationRequired": false,
+      "tags": ["m3", "specs", "3nm"],
+      "applicableTo": ["M3"]
+    },
+    {
+      "id": "m3-pro-specs",
+      "fact": "M3 Pro: 5-6P+6E cores (11-12 total), 14-18 GPU cores, 18-36GB memory, 150 GB/s bandwidth",
+      "confidence": "high",
+      "source": "Apple specs",
+      "verificationRequired": false,
+      "tags": ["m3-pro", "specs"],
+      "applicableTo": ["M3 Pro"]
+    },
+    {
+      "id": "m3-max-specs",
+      "fact": "M3 Max: 10-12P+4E cores (14-16 total), 30-40 GPU cores, 36-128GB memory, 300-400 GB/s bandwidth",
+      "confidence": "high",
+      "source": "Apple specs",
+      "verificationRequired": false,
+      "tags": ["m3-max", "specs"],
+      "applicableTo": ["M3 Max"]
+    },
+    {
+      "id": "m4-base-specs",
+      "fact": "M4: 4P+6E cores (10 total), 10 GPU cores, 16-32GB memory, 120 GB/s bandwidth, 3nm 2nd gen",
+      "confidence": "high",
+      "source": "Apple specs",
+      "verificationRequired": false,
+      "tags": ["m4", "specs"],
+      "applicableTo": ["M4"]
+    },
+    {
+      "id": "m4-pro-specs",
+      "fact": "M4 Pro: 10P+4E cores (14 total), 20 GPU cores, 24-64GB memory, 273 GB/s bandwidth",
+      "confidence": "high",
+      "source": "Apple specs",
+      "verificationRequired": false,
+      "tags": ["m4-pro", "specs"],
+      "applicableTo": ["M4 Pro"]
+    },
+    {
+      "id": "m3-ray-tracing",
+      "fact": "M3 series introduced hardware-accelerated ray tracing support in Apple Silicon",
+      "confidence": "high",
+      "source": "Apple announcement",
+      "verificationRequired": false,
+      "tags": ["m3", "ray-tracing", "gpu"],
+      "applicableTo": ["M3", "M3 Pro", "M3 Max", "M4", "M4 Pro"]
+    }
+  ]
+}

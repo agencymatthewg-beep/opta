@@ -1,0 +1,12 @@
+{
+  "/_global-error/page": "app/_global-error/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
+  "/api/mobile/ai/route": "app/api/mobile/ai/route.js",
+  "/api/mobile/auth/route": "app/api/mobile/auth/route.js",
+  "/api/mobile/calendar/route": "app/api/mobile/calendar/route.js",
+  "/api/mobile/email/route": "app/api/mobile/email/route.js",
+  "/api/mobile/tasks/route": "app/api/mobile/tasks/route.js",
+  "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/page": "app/page.js"
+}

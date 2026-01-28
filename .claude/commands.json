@@ -1,0 +1,60 @@
+{
+  "$schema": "https://claude.ai/schemas/commands-v1.json",
+  "version": "1.0",
+  "description": "Opta folder-level commands (all Opta projects)",
+  "commands": {
+    "/gu": {
+      "description": "Generate visual guide with Gemini (Mermaid diagram)",
+      "type": "skill",
+      "action": "gemini",
+      "args": "Create a comprehensive visual diagram using Mermaid syntax showing: {{prompt}}. Use graph TD format with color coding, clear hierarchy, and detailed labels. Output ONLY the mermaid code block.",
+      "options": {
+        "model": "gemini-2.5-flash"
+      }
+    },
+    "/design": {
+      "description": "Show Opta design system",
+      "type": "tool",
+      "action": "Read",
+      "params": {
+        "file_path": "1. Apps/2. Desktop/1. Opta Native/DESIGN_SYSTEM.md"
+      }
+    },
+    "/status": {
+      "description": "Check Opta project status across all apps",
+      "type": "composite",
+      "steps": [
+        {
+          "type": "bash",
+          "action": "echo '=== Git Status ===' && git status -s"
+        },
+        {
+          "type": "bash",
+          "action": "echo '\\n=== Planning Status ===' && cat .planning/STATE.md 2>/dev/null || echo 'No STATE.md found'"
+        }
+      ]
+    },
+    "/rust": {
+      "description": "Navigate to Rust core and show info",
+      "type": "bash",
+      "action": "cd \"1. Apps/4. Shared/1. opta-native\" && pwd && echo '\\n=== Workspace Members ===' && cargo metadata --no-deps --format-version 1 | jq -r '.workspace_members[]' 2>/dev/null || ls -la"
+    },
+    "/apps": {
+      "description": "List all Opta apps",
+      "type": "bash",
+      "action": "echo '=== iOS Apps ===' && ls -1 '1. Apps/1. iOS' 2>/dev/null && echo '\\n=== Desktop Apps ===' && ls -1 '1. Apps/2. Desktop' 2>/dev/null && echo '\\n=== Web Apps ===' && ls -1 '1. Apps/3. Web' 2>/dev/null"
+    },
+    "/research": {
+      "description": "Search Gemini Deep Research files",
+      "type": "bash",
+      "action": "find '2. Gemini Deep Research' -name '*.html' -o -name '*.md' 2>/dev/null | head -20"
+    }
+  },
+  "aliases": {
+    "/g": "/gu",
+    "/s": "/status",
+    "/d": "/design",
+    "/r": "/rust",
+    "/a": "/apps"
+  }
+}

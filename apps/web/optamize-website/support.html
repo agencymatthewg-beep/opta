@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Support | Optamize</title>
+    <meta name="description" content="Get help with Opta apps. FAQs, contact information, and troubleshooting guides.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <link rel="canonical" href="https://optamize.biz/support.html">
+    <style>
+        .page-content {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 8rem 2rem 4rem;
+        }
+
+        .page-content h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #fff, var(--primary-glow));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .page-content .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.125rem;
+            margin-bottom: 3rem;
+        }
+
+        .contact-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .contact-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            text-align: center;
+            backdrop-filter: blur(20px);
+            transition: all 0.3s var(--ease-out);
+        }
+
+        .contact-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-4px);
+        }
+
+        .contact-card .icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .contact-card h3 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .contact-card p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .contact-card a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .contact-card a:hover {
+            text-decoration: underline;
+        }
+
+        .faq-section h2 {
+            font-size: 1.75rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: var(--text-primary);
+        }
+
+        .faq-item {
+            background: var(--glass-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            overflow: hidden;
+        }
+
+        .faq-question {
+            width: 100%;
+            padding: 1.25rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 500;
+            color: var(--text-primary);
+            background: transparent;
+            border: none;
+            text-align: left;
+            font-size: inherit;
+            font-family: inherit;
+        }
+
+        .faq-question:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .faq-question:focus {
+            outline: 2px solid var(--primary);
+            outline-offset: -2px;
+        }
+
+        .faq-arrow {
+            transition: transform 0.2s ease;
+            color: var(--text-muted);
+        }
+
+        .faq-item.open .faq-arrow {
+            transform: rotate(180deg);
+        }
+
+        .faq-answer {
+            padding: 0 1.25rem;
+            max-height: 0;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .faq-item.open .faq-answer {
+            padding: 0 1.25rem 1.25rem;
+            max-height: 500px;
+        }
+
+        .faq-answer p {
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+
+        .back-link {
+            position: fixed;
+            top: 1.5rem;
+            left: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.875rem;
+            padding: 0.5rem 1rem;
+            background: var(--glass-bg);
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            backdrop-filter: blur(20px);
+            transition: all 0.2s ease;
+            z-index: 100;
+        }
+
+        .back-link:hover {
+            color: var(--text-primary);
+            border-color: var(--primary);
+        }
+    </style>
+</head>
+<body>
+    <a href="#main-content" class="skip-link sr-only">Skip to main content</a>
+
+    <a href="/" class="back-link">
+        <span>&larr;</span>
+        <span>Home</span>
+    </a>
+
+    <main id="main-content" class="page-content">
+        <h1>Support</h1>
+        <p class="subtitle">We're here to help you get the most out of Opta apps.</p>
+
+        <div class="contact-cards">
+            <div class="contact-card">
+                <div class="icon">📧</div>
+                <h3>Email</h3>
+                <p>For general questions and feedback</p>
+                <a href="mailto:support@optamize.biz">support@optamize.biz</a>
+            </div>
+            <div class="contact-card">
+                <div class="icon">🐛</div>
+                <h3>Bug Reports</h3>
+                <p>Found an issue? Let us know</p>
+                <a href="mailto:bugs@optamize.biz">bugs@optamize.biz</a>
+            </div>
+            <div class="contact-card">
+                <div class="icon">💡</div>
+                <h3>Feature Requests</h3>
+                <p>Have an idea? We'd love to hear it</p>
+                <a href="mailto:ideas@optamize.biz">ideas@optamize.biz</a>
+            </div>
+        </div>
+
+        <section class="faq-section">
+            <h2>Frequently Asked Questions</h2>
+
+            <div class="faq-item">
+                <button class="faq-question" aria-expanded="false">
+                    <span>Is my data sent to the cloud?</span>
+                    <span class="faq-arrow">▼</span>
+                </button>
+                <div class="faq-answer">
+                    <p>No. All Opta apps process data locally on your device. We don't have servers that store your personal data. If you enable iCloud sync, that goes through Apple's infrastructure - never through us.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <button class="faq-question" aria-expanded="false">
+                    <span>What are the system requirements?</span>
+                    <span class="faq-arrow">▼</span>
+                </button>
+                <div class="faq-answer">
+                    <p><strong>Opta MacOS:</strong> macOS 13 (Ventura) or later, Apple Silicon or Intel processor<br>
+                    <strong>Opta Scan:</strong> iOS 16 or later<br>
+                    <strong>Opta LM:</strong> iOS 17 or later</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <button class="faq-question" aria-expanded="false">
+                    <span>How do I export my data?</span>
+                    <span class="faq-arrow">▼</span>
+                </button>
+                <div class="faq-answer">
+                    <p>Each app has an export option in Settings. You can export your data in standard formats (JSON, PDF, etc.) that work with other apps and services.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <button class="faq-question" aria-expanded="false">
+                    <span>Do you offer refunds?</span>
+                    <span class="faq-arrow">▼</span>
+                </button>
+                <div class="faq-answer">
+                    <p>Purchases through the App Store are subject to Apple's refund policy. You can request a refund through Apple's Report a Problem page within 14 days of purchase.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <button class="faq-question" aria-expanded="false">
+                    <span>Can I use Opta MacOS on multiple Macs?</span>
+                    <span class="faq-arrow">▼</span>
+                </button>
+                <div class="faq-answer">
+                    <p>Yes! A single purchase covers all Macs signed into your Apple ID. No subscription, no device limits.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-brand">
+                <span class="footer-logo">◈</span>
+                <span>Optamize</span>
+            </div>
+            <div class="footer-links">
+                <a href="/privacy.html">Privacy</a>
+                <a href="/support.html">Support</a>
+                <a href="/changelog.html">Changelog</a>
+            </div>
+            <div class="footer-copyright">
+                © 2025 Optamize. The pursuit of optimal.
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/main.js"></script>
+    <script>
+        // FAQ accordion
+        document.querySelectorAll('.faq-question').forEach(question => {
+            question.addEventListener('click', () => {
+                const item = question.parentElement;
+                const isOpen = item.classList.toggle('open');
+                question.setAttribute('aria-expanded', isOpen);
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,404 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0D3C42EC66BA98574ED77AB0 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6051D2BA26596890B63467A7 /* NotificationService.swift */; };
+		A1000001233F000100000001 /* OptaMiniApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000002233F000100000001 /* OptaMiniApp.swift */; };
+		A1000003233F000100000001 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000004233F000100000001 /* ContentView.swift */; };
+		A1000005233F000100000001 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000006233F000100000001 /* AppDelegate.swift */; };
+		A1000007233F000200000001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1000008233F000200000001 /* Assets.xcassets */; };
+		A1000022233F000300000001 /* OptaApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000020233F000300000001 /* OptaApp.swift */; };
+		A1000023233F000300000001 /* ProcessMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000021233F000300000001 /* ProcessMonitor.swift */; };
+		A1000030233F000500000001 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000031233F000500000001 /* SettingsView.swift */; };
+		A1000032233F000500000001 /* GeneralSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000033233F000500000001 /* GeneralSettingsView.swift */; };
+		A1000034233F000500000001 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000035233F000500000001 /* AboutView.swift */; };
+		A1000036233F000500000001 /* LoginItemManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000037233F000500000001 /* LoginItemManager.swift */; };
+		A1000040233F000600000001 /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000041233F000600000001 /* DesignSystem.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		6051D2BA26596890B63467A7 /* NotificationService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
+		A1000002233F000100000001 /* OptaMiniApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptaMiniApp.swift; sourceTree = "<group>"; };
+		A1000004233F000100000001 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		A1000006233F000100000001 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		A1000008233F000200000001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A1000009233F000100000001 /* OptaMini.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OptaMini.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A100000A233F000200000001 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A100000B233F000200000001 /* OptaMini.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = OptaMini.entitlements; sourceTree = "<group>"; };
+		A1000020233F000300000001 /* OptaApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptaApp.swift; sourceTree = "<group>"; };
+		A1000021233F000300000001 /* ProcessMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessMonitor.swift; sourceTree = "<group>"; };
+		A1000031233F000500000001 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		A1000033233F000500000001 /* GeneralSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneralSettingsView.swift; sourceTree = "<group>"; };
+		A1000035233F000500000001 /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
+		A1000037233F000500000001 /* LoginItemManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginItemManager.swift; sourceTree = "<group>"; };
+		A1000041233F000600000001 /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A100000C233F000100000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A100000D233F000100000001 = {
+			isa = PBXGroup;
+			children = (
+				A100000E233F000100000001 /* OptaMini */,
+				A100000F233F000100000001 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A100000E233F000100000001 /* OptaMini */ = {
+			isa = PBXGroup;
+			children = (
+				A1000002233F000100000001 /* OptaMiniApp.swift */,
+				A1000006233F000100000001 /* AppDelegate.swift */,
+				A1000004233F000100000001 /* ContentView.swift */,
+				A1000024233F000300000001 /* Models */,
+				A1000025233F000300000001 /* Services */,
+				A1000038233F000500000001 /* Views */,
+				A1000042233F000600000001 /* Utilities */,
+				A1000008233F000200000001 /* Assets.xcassets */,
+				A100000A233F000200000001 /* Info.plist */,
+				A100000B233F000200000001 /* OptaMini.entitlements */,
+			);
+			path = OptaMini;
+			sourceTree = "<group>";
+		};
+		A100000F233F000100000001 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A1000009233F000100000001 /* OptaMini.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A1000024233F000300000001 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				A1000020233F000300000001 /* OptaApp.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		A1000025233F000300000001 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				A1000021233F000300000001 /* ProcessMonitor.swift */,
+				A1000037233F000500000001 /* LoginItemManager.swift */,
+				6051D2BA26596890B63467A7 /* NotificationService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		A1000038233F000500000001 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				A1000031233F000500000001 /* SettingsView.swift */,
+				A1000033233F000500000001 /* GeneralSettingsView.swift */,
+				A1000035233F000500000001 /* AboutView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		A1000042233F000600000001 /* Utilities */ = {
+			isa = PBXGroup;
+			children = (
+				A1000041233F000600000001 /* DesignSystem.swift */,
+			);
+			path = Utilities;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A1000010233F000100000001 /* OptaMini */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A1000011233F000200000001 /* Build configuration list for PBXNativeTarget "OptaMini" */;
+			buildPhases = (
+				A1000012233F000100000001 /* Sources */,
+				A100000C233F000100000001 /* Frameworks */,
+				A1000013233F000100000001 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = OptaMini;
+			productName = OptaMini;
+			productReference = A1000009233F000100000001 /* OptaMini.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A1000014233F000100000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					A1000010233F000100000001 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+				};
+			};
+			buildConfigurationList = A1000015233F000200000001 /* Build configuration list for PBXProject "OptaMini" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = A100000D233F000100000001;
+			productRefGroup = A100000F233F000100000001 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A1000010233F000100000001 /* OptaMini */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A1000013233F000100000001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1000007233F000200000001 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A1000012233F000100000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1000001233F000100000001 /* OptaMiniApp.swift in Sources */,
+				A1000003233F000100000001 /* ContentView.swift in Sources */,
+				A1000005233F000100000001 /* AppDelegate.swift in Sources */,
+				A1000022233F000300000001 /* OptaApp.swift in Sources */,
+				A1000023233F000300000001 /* ProcessMonitor.swift in Sources */,
+				A1000030233F000500000001 /* SettingsView.swift in Sources */,
+				A1000032233F000500000001 /* GeneralSettingsView.swift in Sources */,
+				A1000034233F000500000001 /* AboutView.swift in Sources */,
+				A1000036233F000500000001 /* LoginItemManager.swift in Sources */,
+				A1000040233F000600000001 /* DesignSystem.swift in Sources */,
+				0D3C42EC66BA98574ED77AB0 /* NotificationService.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		A1000016233F000200000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		A1000017233F000200000001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		A1000018233F000200000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = OptaMini/OptaMini.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = OptaMini/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Opta Mini";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.opta.OptaMini;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		A1000019233F000200000001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = OptaMini/OptaMini.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = OptaMini/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Opta Mini";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.opta.OptaMini;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A1000011233F000200000001 /* Build configuration list for PBXNativeTarget "OptaMini" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A1000018233F000200000001 /* Debug */,
+				A1000019233F000200000001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A1000015233F000200000001 /* Build configuration list for PBXProject "OptaMini" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A1000016233F000200000001 /* Debug */,
+				A1000017233F000200000001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = A1000014233F000100000001 /* Project object */;
+}

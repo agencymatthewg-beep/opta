@@ -1,0 +1,705 @@
+{
+  "$schema": "settings-schema.json",
+  "domain": "apple-silicon",
+  "subDomain": "macos-gaming",
+  "lastUpdated": "2026-01-18",
+  "lastVerified": "2026-01-18",
+  "confidence": "high",
+  "sources": [
+    {
+      "name": "Gemini Deep Research - Apple Silicon GPU Architecture",
+      "type": "gemini-research",
+      "date": "2026-01-18"
+    },
+    {
+      "name": "Apple Developer Documentation - Metal Performance",
+      "type": "official-docs",
+      "url": "https://developer.apple.com/documentation/metal",
+      "date": "2024"
+    },
+    {
+      "name": "Apple Silicon Gaming Performance Analysis",
+      "type": "benchmark",
+      "date": "2025"
+    }
+  ],
+  "settings": [
+    {
+      "id": "metalfx-temporal-exclusive",
+      "type": "dependency",
+      "settings": [
+        { "category": "upscaling", "setting": "metalfx", "value": "temporal" },
+        { "category": "metal", "setting": "api-version", "value": "metal3" }
+      ],
+      "relationship": "MetalFX Temporal upscaling is exclusive to macOS and requires Metal 3 API",
+      "direction": "requires",
+      "bidirectional": false,
+      "impact": {
+        "performance": { "value": 45, "min": 30, "max": 60 },
+        "quality": { "value": -5, "min": -10, "max": 0 }
+      },
+      "confidence": "high",
+      "platforms": ["macos"],
+      "hardware": ["M1", "M1 Pro", "M1 Max", "M2", "M2 Pro", "M2 Max", "M3", "M3 Pro", "M3 Max", "M4", "M4 Pro", "M4 Max"],
+      "tags": ["metalfx", "upscaling", "temporal", "macos-exclusive"],
+      "source": "Apple Developer Documentation",
+      "sourceDate": "2024",
+      "recommendations": [
+        "MetalFX Temporal provides DLSS-like quality on Apple Silicon",
+        "Uses motion vectors for temporal reconstruction",
+        "Best choice for native macOS games supporting it"
+      ]
+    },
+    {
+      "id": "metalfx-temporal-vs-spatial",
+      "type": "tradeoff",
+      "settings": [
+        { "category": "upscaling", "setting": "metalfx", "value": "temporal" },
+        { "category": "upscaling", "setting": "metalfx", "value": "spatial" }
+      ],
+      "relationship": "MetalFX Temporal uses motion vectors for better quality; Spatial is faster but lower quality",
+      "direction": "affects",
+      "bidirectional": true,
+      "impact": {
+        "performance": { "value": -10, "min": -5, "max": -15 },
+        "quality": { "value": 20, "min": 15, "max": 30 }
+      },
+      "confidence": "high",
+      "platforms": ["macos"],
+      "tags": ["metalfx", "temporal", "spatial", "quality-performance"],
+      "source": "Apple MetalFX Documentation",
+      "sourceDate": "2024",
+      "recommendations": [
+        "Temporal: Better quality, requires motion vectors from game",
+        "Spatial: Faster, works with any game, lower quality",
+        "Use Temporal when available, Spatial as fallback"
+      ]
+    },
+    {
+      "id": "metal-triple-buffering-latency",
+      "type": "tradeoff",
+      "settings": [
+        { "category": "metal", "setting": "triple-buffering", "value": "on" },
+        { "category": "performance", "setting": "input-latency" }
+      ],
+      "relationship": "Metal triple buffering reduces tearing and stuttering but adds ~16ms input latency",
+      "direction": "affects",
+      "bidirectional": false,
+      "impact": {
+        "performance": { "value": 5, "min": 0, "max": 10 },
+        "latency": { "value": -15, "min": -10, "max": -20 }
+      },
+      "confidence": "high",
+      "platforms": ["macos"],
+      "tags": ["metal", "triple-buffering", "latency", "vsync"],
+      "source": "Apple Metal Best Practices",
+      "sourceDate": "2024",
+      "recommendations": [
+        "Disable for competitive games where latency matters",
+        "Keep enabled for cinematic/story games",
+        "Works well with ProMotion's variable refresh"
+      ]
+    },
+    {
+      "id": "metal-shader-precompilation",
+      "type": "tradeoff",
+      "settings": [
+        { "category": "metal", "setting": "shader-compilation", "value": "precompile" },
+        { "category": "metal", "setting": "shader-compilation", "value": "jit" }
+      ],
+      "relationship": "Shader precompilation eliminates in-game stuttering but increases initial load time",
+      "direction": "affects",
+      "bidirectional": true,
+      "impact": {
+        "performance": { "value": 15, "min": 10, "max": 25 },
+        "latency": { "value": 5, "min": 0, "max": 10 }
+      },
+      "confidence": "medium",
+      "platforms": ["macos"],
+      "tags": ["metal", "shaders", "compilation", "stuttering"],
+      "source": "Gemini Deep Research",
+      "sourceDate": "2026",
+      "recommendations": [
+        "Prefer games with shader precompilation on first launch",
+        "JIT compilation causes microstutters on first shader use",
+        "Some games cache shaders after first playthrough"
+      ]
+    },
+    {
+      "id": "high-power-mode-thermal-unlock",
+      "type": "synergy",
+      "settings": [
+        { "category": "power", "setting": "high-power-mode", "value": "on" },
+        { "category": "performance", "setting": "thermal-headroom" }
+      ],
+      "relationship": "High Power Mode on MacBook Pro unlocks additional thermal headroom, allowing sustained higher clocks",
+      "direction": "enhances",
+      "bidirectional": false,
+      "conditions": [
+        {
+          "parameter": "device",
+          "operator": "in",
+          "value": ["MacBook Pro 14", "MacBook Pro 16"]
+        },
+        {
+          "parameter": "power_source",
+          "operator": "eq",
+          "value": "plugged_in"
+        }
+      ],
+      "impact": {
+        "performance": { "value": 15, "min": 10, "max": 20 },
+        "power": { "value": -25, "min": -20, "max": -35 }
+      },
+      "confidence": "high",
+      "platforms": ["macos"],
+      "hardware": ["M1 Pro", "M1 Max", "M2 Pro", "M2 Max", "M3 Pro", "M3 Max", "M4 Pro", "M4 Max"],
+      "tags": ["high-power-mode", "thermal", "sustained-performance", "macbook-pro"],
+      "source": "Apple Support Documentation",
+      "sourceDate": "2024",
+      "recommendations": [
+        "Enable for gaming sessions on MacBook Pro when plugged in",
+        "16-inch model has more thermal headroom than 14-inch",
+        "Fans will run louder but performance is consistent"
+      ]
+    },
+    {
+      "id": "high-power-mode-high-settings",
+      "type": "synergy",
+      "settings": [
+        { "category": "power", "setting": "high-power-mode", "value": "on" },
+        { "category": "quality", "setting": "preset", "value": "high" }
+      ],
+      "relationship": "High Power Mode enables sustained High/Ultra settings on MacBook Pro when plugged in",
+      "direction": "enhances",
+      "bidirectional": false,
+      "conditions": [
+        {
+          "parameter": "power_source",
+          "operator": "eq",
+          "value": "plugged_in"
+        }
+      ],
+      "impact": {
+        "performance": { "value": 10, "min": 5, "max": 15 }
+      },
+      "confidence": "high",
+      "platforms": ["macos"],
+      "hardware": ["M3 Pro", "M3 Max", "M4 Pro", "M4 Max"],
+      "tags": ["high-power-mode", "quality-preset", "sustained"],
+      "source": "Apple Silicon Gaming Analysis",
+      "sourceDate": "2025",
+      "recommendations": [
+        "High settings sustainable with High Power Mode enabled",
+        "Without it, thermal throttling may reduce to Medium equivalent",
+        "Always recommend High Power Mode for gaming"
+      ]
+    },
+    {
+      "id": "low-power-mode-impact",
+      "type": "tradeoff",
+      "settings": [
+        { "category": "power", "setting": "low-power-mode", "value": "on" },
+        { "category": "performance", "setting": "gpu-clocks" }
+      ],
+      "relationship": "Low Power Mode reduces P-core clocks and limits GPU frequency for battery life",
+      "direction": "affects",
+      "bidirectional": false,
+      "impact": {
+        "performance": { "value": -40, "min": -30, "max": -50 },
+        "power": { "value": 35, "min": 25, "max": 45 }
+      },
+      "confidence": "high",
+      "platforms": ["macos"],
+      "tags": ["low-power-mode", "battery", "performance-reduction"],
+      "source": "macOS Power Management",
+      "sourceDate": "2024",
+      "recommendations": [
+        "Never enable Low Power Mode for gaming",
+        "Opta should warn if Low Power Mode detected",
+        "Performance reduction is dramatic (30-50%)"
+      ]
+    },
+    {
+      "id": "automatic-power-mode-gaming",
+      "type": "tradeoff",
+      "settings": [
+        { "category": "power", "setting": "power-mode", "value": "automatic" },
+        { "category": "performance", "setting": "gaming-workload" }
+      ],
+      "relationship": "Automatic power mode may not immediately recognize gaming workloads, causing initial throttling",
+      "direction": "affects",
+      "bidirectional": false,
+      "impact": {
+        "performance": { "value": -10, "min": -5, "max": -20 }
+      },
+      "confidence": "medium",
+      "platforms": ["macos"],
+      "tags": ["automatic-mode", "power-management", "workload-detection"],
+      "source": "Gemini Deep Research",
+      "sourceDate": "2026",
+      "recommendations": [
+        "Manually select High Power Mode before launching games",
+        "Automatic mode takes ~30s to detect sustained GPU load",
+        "Some lighter games may never trigger high-performance mode"
+      ]
+    },
+    {
+      "id": "promotion-120hz-gpu-headroom",
+      "type": "tradeoff",
+      "settings": [
+        { "category": "display", "setting": "refresh-rate", "value": "120" },
+        { "category": "performance", "setting": "gpu-headroom" }
+      ],
+      "relationship": "ProMotion 120Hz requires twice the GPU headroom compared to 60Hz for smooth gameplay",
+      "direction": "affects",
+      "bidirectional": false,
+      "conditions": [
+        {
+          "parameter": "display_type",
+          "operator": "eq",
+          "value": "promotion"
+        }
+      ],
+      "impact": {
+        "performance": { "value": -40, "min": -30, "max": -50 }
+      },
+      "confidence": "high",
+      "platforms": ["macos"],
+      "hardware": ["MacBook Pro 14", "MacBook Pro 16", "Pro Display XDR"],
+      "tags": ["promotion", "120hz", "refresh-rate", "gpu-target"],
+      "source": "Apple ProMotion Documentation",
+      "sourceDate": "2024",
+      "recommendations": [
+        "Lower settings to achieve 120fps for ProMotion benefit",
+        "120Hz worth it for smoother input response",
+        "Consider 60Hz lock if GPU can't maintain 90fps+"
+      ]
+    },
+    {
+      "id": "promotion-vrr-synergy",
+      "type": "synergy",
+      "settings": [
+        { "category": "display", "setting": "vrr", "value": "on" },
+        { "category": "display", "setting": "promotion", "value": "on" }
+      ],
+      "relationship": "VRR with ProMotion provides smooth variable frame rates from 24Hz to 120Hz without tearing",
+      "direction": "enhances",
+      "bidirectional": true,
+      "impact": {
+        "quality": { "value": 20, "min": 15, "max": 30 },
+        "latency": { "value": 10, "min": 5, "max": 15 }
+      },
+      "confidence": "high",
+      "platforms": ["macos"],
+      "hardware": ["MacBook Pro 14", "MacBook Pro 16"],
+      "tags": ["vrr", "promotion", "adaptive-sync", "smooth"],
+      "source": "Apple Display Technology",
+      "sourceDate": "2024",
+      "recommendations": [
+        "Always enable VRR when available for gaming",
+        "Eliminates tearing without vsync latency penalty",
+        "Works with both native and external VRR displays"
+      ]
+    },
+    {
+      "id": "60hz-lock-battery-saving",
+      "type": "synergy",
+      "settings": [
+        { "category": "display", "setting": "refresh-rate", "value": "60" },
+        { "category": "power", "setting": "battery-life" }
+      ],
+      "relationship": "Locking to 60Hz on ProMotion displays saves significant power and is easier for GPU to hit",
+      "direction": "enhances",
+      "bidirectional": false,
+      "impact": {
+        "performance": { "value": 25, "min": 15, "max": 35 },
+        "power": { "value": 20, "min": 15, "max": 30 }
+      },
+      "confidence": "high",
+      "platforms": ["macos"],
+      "hardware": ["MacBook Pro 14", "MacBook Pro 16"],
+      "tags": ["60hz", "battery", "power-saving", "framerate-target"],
+      "source": "Battery Optimization Guide",
+      "sourceDate": "2025",
+      "recommendations": [
+        "Lock to 60Hz for battery gaming sessions",
+        "Higher settings become viable at 60fps target",
+        "Use 120Hz only when plugged in"
+      ]
+    },
+    {
+      "id": "promotion-dlss-120fps",
+      "type": "synergy",
+      "settings": [
+        { "category": "display", "setting": "promotion", "value": "on" },
+        { "category": "upscaling", "setting": "metalfx", "value": "performance" }
+      ],
+      "relationship": "MetalFX Performance mode enables 120fps gameplay on ProMotion displays at visual cost",
+      "direction": "enhances",
+      "bidirectional": false,
+      "impact": {
+        "performance": { "value": 50, "min": 40, "max": 65 },
+        "quality": { "value": -20, "min": -15, "max": -30 }
+      },
+      "confidence": "medium",
+      "platforms": ["macos"],
+      "hardware": ["M3 Pro", "M3 Max", "M4 Pro", "M4 Max"],
+      "tags": ["promotion", "metalfx", "120fps", "upscaling"],
+      "source": "Gemini Deep Research",
+      "sourceDate": "2026",
+      "recommendations": [
+        "MetalFX Performance + ProMotion = smooth 120fps achievable",
+        "Visual quality reduction noticeable but responsive feel worth it",
+        "Best for fast-paced competitive games"
+      ]
+    },
+    {
+      "id": "unified-memory-texture-impact",
+      "type": "tradeoff",
+      "settings": [
+        { "category": "graphics", "setting": "texture-quality", "value": "ultra" },
+        { "category": "performance", "setting": "unified-memory" }
+      ],
+      "relationship": "No separate VRAM on Apple Silicon - Ultra textures directly compete with system memory",
+      "direction": "affects",
+      "bidirectional": false,
+      "impact": {
+        "vram": { "value": -35, "min": -25, "max": -50 }
+      },
+      "confidence": "high",
+      "platforms": ["macos"],
+      "tags": ["unified-memory", "textures", "vram", "system-impact"],
+      "source": "Apple Silicon Architecture",
+      "sourceDate": "2024",
+      "recommendations": [
+        "Monitor memory pressure, not just GPU usage",
+        "Ultra textures on 8GB Mac can cause swap",
+        "Unified memory means GPU and CPU compete for same pool"
+      ]
+    },
+    {
+      "id": "8gb-texture-limit",
+      "type": "tradeoff",
+      "settings": [
+        { "category": "performance", "setting": "unified-memory", "valueRange": { "max": 8 } },
+        { "category": "graphics", "setting": "texture-quality" }
+      ],
+      "relationship": "8GB unified memory Macs should limit textures to Medium to avoid memory pressure",
+      "direction": "affects",
+      "bidirectional": false,
+      "conditions": [
+        {
+          "parameter": "unified_memory",
+          "operator": "lte",
+          "value": 8,
+          "unit": "GB"
+        }
+      ],
+      "impact": {
+        "vram": { "value": -40, "min": -30, "max": -50 },
+        "performance": { "value": -25, "min": -15, "max": -40 }
+      },
+      "confidence": "high",
+      "platforms": ["macos"],
+      "hardware": ["M1", "M2", "M3", "M4"],
+      "tags": ["8gb", "memory-limit", "textures", "constraint"],
+      "source": "macOS Memory Management",
+      "sourceDate": "2024",
+      "recommendations": [
+        "8GB: Medium textures maximum, Low preferred",
+        "Watch Activity Monitor for memory pressure",
+        "High textures will cause stuttering from swap"
+      ]
+    },
+    {
+      "id": "16gb-ultra-textures",
+      "type": "synergy",
+      "settings": [
+        { "category": "performance", "setting": "unified-memory", "valueRange": { "min": 16 } },
+        { "category": "graphics", "setting": "texture-quality", "value": "ultra" }
+      ],
+      "relationship": "16GB+ unified memory allows Ultra texture quality without memory pressure",
+      "direction": "enhances",
+      "bidirectional": false,
+      "conditions": [
+        {
+          "parameter": "unified_memory",
+          "operator": "gte",
+          "value": 16,
+          "unit": "GB"
+        }
+      ],
+      "impact": {
+        "quality": { "value": 25, "min": 20, "max": 35 }
+      },
+      "confidence": "high",
+      "platforms": ["macos"],
+      "hardware": ["M1 Pro", "M1 Max", "M2 Pro", "M2 Max", "M3 Pro", "M3 Max", "M4 Pro", "M4 Max"],
+      "tags": ["16gb", "ultra-textures", "memory-comfortable"],
+      "source": "Apple Silicon Gaming Analysis",
+      "sourceDate": "2025",
+      "recommendations": [
+        "16GB: Ultra textures safe for most games",
+        "32GB+: Ultra textures + high-res assets + RT comfortable",
+        "Memory bandwidth not a bottleneck at these capacities"
+      ]
+    },
+    {
+      "id": "memory-pressure-warning",
+      "type": "dependency",
+      "settings": [
+        { "category": "performance", "setting": "memory-pressure" },
+        { "category": "graphics", "setting": "settings-adjustment" }
+      ],
+      "relationship": "macOS memory pressure indicator serves as early warning for VRAM-like exhaustion",
+      "direction": "requires",
+      "bidirectional": false,
+      "impact": {
+        "performance": { "value": -50, "min": -30, "max": -70 }
+      },
+      "confidence": "high",
+      "platforms": ["macos"],
+      "tags": ["memory-pressure", "monitoring", "early-warning", "swap"],
+      "source": "macOS Performance Monitoring",
+      "sourceDate": "2024",
+      "recommendations": [
+        "Opta should monitor memory pressure level",
+        "Yellow pressure: reduce texture quality",
+        "Red pressure: immediate settings reduction needed"
+      ]
+    },
+    {
+      "id": "macbook-air-fanless-throttle",
+      "type": "tradeoff",
+      "settings": [
+        { "category": "performance", "setting": "thermal-design", "value": "fanless" },
+        { "category": "graphics", "setting": "settings-quality" }
+      ],
+      "relationship": "MacBook Air fanless design causes aggressive throttling with high graphics settings",
+      "direction": "affects",
+      "bidirectional": false,
+      "conditions": [
+        {
+          "parameter": "device",
+          "operator": "eq",
+          "value": "MacBook Air"
+        }
+      ],
+      "impact": {
+        "performance": { "value": -35, "min": -25, "max": -50 }
+      },
+      "confidence": "high",
+      "platforms": ["macos"],
+      "hardware": ["M1", "M2", "M3"],
+      "tags": ["macbook-air", "fanless", "thermal-throttle", "sustained"],
+      "source": "MacBook Air Thermal Analysis",
+      "sourceDate": "2025",
+      "recommendations": [
+        "MacBook Air: Medium settings maximum for sustained play",
+        "High settings work briefly then throttle to Medium",
+        "Use cooling pad for extended gaming sessions"
+      ]
+    },
+    {
+      "id": "macbook-pro-sustained-high",
+      "type": "synergy",
+      "settings": [
+        { "category": "performance", "setting": "thermal-design", "value": "active-cooling" },
+        { "category": "graphics", "setting": "settings-quality", "value": "high" }
+      ],
+      "relationship": "MacBook Pro active cooling enables sustained High settings without thermal throttling",
+      "direction": "enhances",
+      "bidirectional": false,
+      "conditions": [
+        {
+          "parameter": "device",
+          "operator": "in",
+          "value": ["MacBook Pro 14", "MacBook Pro 16"]
+        }
+      ],
+      "impact": {
+        "performance": { "value": 20, "min": 15, "max": 30 }
+      },
+      "confidence": "high",
+      "platforms": ["macos"],
+      "hardware": ["M3 Pro", "M3 Max", "M4 Pro", "M4 Max"],
+      "tags": ["macbook-pro", "active-cooling", "sustained", "high-settings"],
+      "source": "MacBook Pro Thermal Design",
+      "sourceDate": "2024",
+      "recommendations": [
+        "MacBook Pro 14/16 can sustain High settings indefinitely",
+        "16-inch has better thermal headroom than 14-inch",
+        "High Power Mode further improves sustained performance"
+      ]
+    },
+    {
+      "id": "mac-studio-no-thermal-concern",
+      "type": "synergy",
+      "settings": [
+        { "category": "performance", "setting": "thermal-design", "value": "desktop-cooling" },
+        { "category": "graphics", "setting": "settings-quality", "value": "ultra" }
+      ],
+      "relationship": "Mac Studio and Mac Pro have desktop-class cooling with no thermal concerns",
+      "direction": "enhances",
+      "bidirectional": false,
+      "conditions": [
+        {
+          "parameter": "device",
+          "operator": "in",
+          "value": ["Mac Studio", "Mac Pro"]
+        }
+      ],
+      "impact": {
+        "performance": { "value": 25, "min": 20, "max": 35 }
+      },
+      "confidence": "high",
+      "platforms": ["macos"],
+      "hardware": ["M2 Max", "M2 Ultra", "M3 Max", "M4 Max"],
+      "tags": ["mac-studio", "mac-pro", "desktop", "no-throttle"],
+      "source": "Apple Desktop Performance",
+      "sourceDate": "2024",
+      "recommendations": [
+        "Mac Studio/Pro: Max out settings based on GPU, not thermals",
+        "No throttling concerns even with extended sessions",
+        "Ultra chip variants have exceptional sustained performance"
+      ]
+    },
+    {
+      "id": "gptk-translation-overhead",
+      "type": "tradeoff",
+      "settings": [
+        { "category": "metal", "setting": "translation-layer", "value": "gptk" },
+        { "category": "performance", "setting": "native-equivalent" }
+      ],
+      "relationship": "Game Porting Toolkit adds ~20-30% overhead from DirectX to Metal translation",
+      "direction": "affects",
+      "bidirectional": false,
+      "impact": {
+        "performance": { "value": -25, "min": -15, "max": -35 }
+      },
+      "confidence": "medium",
+      "platforms": ["macos"],
+      "tags": ["gptk", "translation", "directx", "wine", "crossover"],
+      "source": "GPTK Performance Analysis",
+      "sourceDate": "2025",
+      "recommendations": [
+        "Native Metal ports always preferred over GPTK",
+        "GPTK overhead varies significantly by game",
+        "Some DX12 games translate better than DX11"
+      ]
+    },
+    {
+      "id": "gptk-memory-overhead",
+      "type": "tradeoff",
+      "settings": [
+        { "category": "metal", "setting": "translation-layer", "value": "gptk" },
+        { "category": "performance", "setting": "memory-usage" }
+      ],
+      "relationship": "GPTK translation layers add memory overhead from maintaining DirectX and Metal state",
+      "direction": "affects",
+      "bidirectional": false,
+      "impact": {
+        "vram": { "value": -20, "min": -15, "max": -30 }
+      },
+      "confidence": "medium",
+      "platforms": ["macos"],
+      "tags": ["gptk", "memory", "translation-overhead", "dual-state"],
+      "source": "Gemini Deep Research",
+      "sourceDate": "2026",
+      "recommendations": [
+        "Add 2-4GB memory requirement for GPTK games",
+        "Reduce texture quality one tier for GPTK vs native",
+        "16GB minimum recommended for GPTK gaming"
+      ]
+    },
+    {
+      "id": "metal-async-compute",
+      "type": "synergy",
+      "settings": [
+        { "category": "metal", "setting": "async-compute", "value": "on" },
+        { "category": "performance", "setting": "gpu-utilization" }
+      ],
+      "relationship": "Metal async compute enables parallel GPU workloads for better utilization",
+      "direction": "enhances",
+      "bidirectional": false,
+      "impact": {
+        "performance": { "value": 12, "min": 5, "max": 20 }
+      },
+      "confidence": "medium",
+      "platforms": ["macos"],
+      "hardware": ["M1", "M1 Pro", "M1 Max", "M2", "M2 Pro", "M2 Max", "M3", "M3 Pro", "M3 Max", "M4", "M4 Pro", "M4 Max"],
+      "tags": ["metal", "async-compute", "parallelization", "utilization"],
+      "source": "Apple Metal Optimization Guide",
+      "sourceDate": "2024",
+      "recommendations": [
+        "Enable async compute when available in games",
+        "Improves GPU utilization during mixed workloads",
+        "Particularly beneficial for RT + raster hybrid rendering"
+      ]
+    },
+    {
+      "id": "external-display-performance",
+      "type": "tradeoff",
+      "settings": [
+        { "category": "display", "setting": "output", "value": "external" },
+        { "category": "performance", "setting": "gpu-overhead" }
+      ],
+      "relationship": "External displays add GPU overhead for display engine, especially at high refresh rates",
+      "direction": "affects",
+      "bidirectional": false,
+      "conditions": [
+        {
+          "parameter": "external_display_count",
+          "operator": "gte",
+          "value": 1
+        }
+      ],
+      "impact": {
+        "performance": { "value": -8, "min": -5, "max": -15 }
+      },
+      "confidence": "medium",
+      "platforms": ["macos"],
+      "tags": ["external-display", "gpu-overhead", "display-engine"],
+      "source": "macOS Display Performance",
+      "sourceDate": "2025",
+      "recommendations": [
+        "Close laptop lid when gaming on external for best performance",
+        "Multiple external displays compound overhead",
+        "4K 120Hz external has highest overhead"
+      ]
+    },
+    {
+      "id": "notch-safe-area-fullscreen",
+      "type": "tradeoff",
+      "settings": [
+        { "category": "display", "setting": "fullscreen-mode" },
+        { "category": "display", "setting": "notch-handling" }
+      ],
+      "relationship": "MacBook notch may require safe area handling or letterboxing in fullscreen games",
+      "direction": "affects",
+      "bidirectional": false,
+      "conditions": [
+        {
+          "parameter": "device_has_notch",
+          "operator": "eq",
+          "value": true
+        }
+      ],
+      "impact": {
+        "quality": { "value": -5, "min": -3, "max": -10 }
+      },
+      "confidence": "high",
+      "platforms": ["macos"],
+      "hardware": ["MacBook Pro 14", "MacBook Pro 16", "MacBook Air M2", "MacBook Air M3"],
+      "tags": ["notch", "fullscreen", "safe-area", "letterbox"],
+      "source": "macOS UI Guidelines",
+      "sourceDate": "2024",
+      "recommendations": [
+        "Most games handle notch automatically",
+        "Some games may show black bar at top",
+        "External display avoids notch concerns entirely"
+      ]
+    }
+  ]
+}

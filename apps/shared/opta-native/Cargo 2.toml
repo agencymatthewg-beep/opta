@@ -1,0 +1,72 @@
+[workspace]
+resolver = "2"
+members = [
+    "opta-core",
+    "opta-ui",
+    "opta-render",
+    "opta-shared",
+]
+
+[workspace.package]
+version = "8.0.0-alpha.1"
+edition = "2021"
+authors = ["Matthew Byrden"]
+license = "Proprietary"
+repository = "https://github.com/matthewbyrden/opta"
+
+[workspace.dependencies]
+# Crux - Elm Architecture for Rust
+crux_core = "0.8"
+crux_http = "0.9"
+crux_time = "0.4"
+crux_platform = "0.4"
+
+# UniFFI - FFI bindings for Swift/Kotlin
+uniffi = { version = "0.28", features = ["cli", "tokio"] }
+
+# wgpu - GPU rendering
+wgpu = { version = "0.20", default-features = false }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Async runtime
+tokio = { version = "1.36", features = ["rt-multi-thread", "sync", "time", "macros"] }
+
+# Error handling
+thiserror = "1.0"
+anyhow = "1.0"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = "0.3"
+
+# SQLite persistence
+rusqlite = { version = "0.31", features = ["bundled"] }
+
+# Animation
+rive-rs = "0.2"
+
+# Text rendering
+cosmic-text = "0.11"
+
+# Math
+glam = { version = "0.27", features = ["serde"] }
+nalgebra = "0.32"
+
+# Internal crates
+opta-shared = { path = "opta-shared" }
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+debug = false
+incremental = false
+overflow-checks = false
+
+[profile.release.package."*"]
+opt-level = "z"

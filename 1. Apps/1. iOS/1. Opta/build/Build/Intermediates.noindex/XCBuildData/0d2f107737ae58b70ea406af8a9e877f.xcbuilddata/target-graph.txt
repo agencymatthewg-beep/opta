@@ -1,2 +1,0 @@
-Target dependency graph (1 target)
-Target 'Opta Scan' in project 'Opta Scan' (no dependencies)

@@ -1,0 +1,799 @@
+{
+  "$schema": "synergy-schema.json",
+  "domain": "thermal",
+  "subDomain": "apple-silicon-thermal-profiles",
+  "lastUpdated": "2026-01-18",
+  "lastVerified": "2026-01-18",
+  "confidence": "high",
+  "sources": [
+    {
+      "name": "Gemini Deep Research - Apple Silicon Thermal Management",
+      "type": "gemini-research",
+      "date": "2026-01-18"
+    },
+    {
+      "name": "Apple Silicon Architecture Documentation",
+      "type": "official-docs",
+      "date": "2024"
+    },
+    {
+      "name": "Independent Thermal Testing",
+      "type": "benchmark",
+      "date": "2024"
+    }
+  ],
+  "interactions": [
+    {
+      "id": "m-series-tj-max-threshold",
+      "type": "bottleneck",
+      "components": ["cpu:apple-silicon", "thermal:junction-temp"],
+      "relationship": "Apple Silicon chips have a Tj max around 100-105C with active throttling beginning at 95C to prevent damage",
+      "conditions": [
+        {
+          "parameter": "cpu_temperature",
+          "operator": "gte",
+          "value": 95,
+          "unit": "celsius"
+        }
+      ],
+      "impact": {
+        "performance": { "value": -20, "min": -10, "max": -40 },
+        "thermal": { "value": 0 },
+        "power": { "value": -15 }
+      },
+      "confidence": "high",
+      "applicableTo": ["M1", "M1 Pro", "M1 Max", "M2", "M2 Pro", "M2 Max", "M3", "M3 Pro", "M3 Max", "M4", "M4 Pro", "M4 Max"],
+      "tags": ["thermal-limit", "throttling", "tj-max", "cpu"],
+      "source": "Apple Silicon Thermal Design",
+      "sourceDate": "2024"
+    },
+    {
+      "id": "gpu-thermal-throttle-onset",
+      "type": "bottleneck",
+      "components": ["gpu:apple-silicon-gpu", "thermal:junction-temp"],
+      "relationship": "GPU throttling begins when GPU cluster temperature exceeds 90C, reducing clock speeds progressively",
+      "conditions": [
+        {
+          "parameter": "gpu_temperature",
+          "operator": "gte",
+          "value": 90,
+          "unit": "celsius"
+        }
+      ],
+      "impact": {
+        "performance": { "value": -25, "min": -15, "max": -45 },
+        "thermal": { "value": 0 },
+        "power": { "value": -20 }
+      },
+      "confidence": "high",
+      "applicableTo": ["M1", "M1 Pro", "M1 Max", "M2", "M2 Pro", "M2 Max", "M3", "M3 Pro", "M3 Max", "M4", "M4 Pro", "M4 Max"],
+      "tags": ["thermal-limit", "throttling", "gpu", "clock-reduction"],
+      "source": "Thermal Testing Data",
+      "sourceDate": "2024"
+    },
+    {
+      "id": "fanless-sustained-load-throttle",
+      "type": "bottleneck",
+      "components": ["thermal:passive-cooling", "cpu:apple-silicon", "gpu:apple-silicon-gpu"],
+      "relationship": "Fanless MacBook Air throttles after 10-15 minutes of sustained heavy load as chassis heat-soaks",
+      "conditions": [
+        {
+          "parameter": "workload_duration",
+          "operator": "gte",
+          "value": 10,
+          "unit": "minutes"
+        },
+        {
+          "parameter": "cpu_utilization",
+          "operator": "gte",
+          "value": 80,
+          "unit": "percent"
+        }
+      ],
+      "impact": {
+        "performance": { "value": -35, "min": -20, "max": -50 },
+        "thermal": { "value": 30 },
+        "power": { "value": -25 }
+      },
+      "confidence": "high",
+      "applicableTo": ["MacBook Air M1", "MacBook Air M2", "MacBook Air M3", "MacBook Air M4"],
+      "tags": ["fanless", "passive-cooling", "macbook-air", "sustained-load", "heat-soak"],
+      "source": "Thermal Testing",
+      "sourceDate": "2024",
+      "mitigations": [
+        "Take breaks during intensive tasks",
+        "Use laptop stand for improved airflow under chassis",
+        "Avoid direct sunlight or warm ambient environments",
+        "Reduce workload intensity for longer sessions"
+      ]
+    },
+    {
+      "id": "p-core-thermal-migration",
+      "type": "synergy",
+      "components": ["cpu:p-core", "cpu:e-core", "thermal:junction-temp"],
+      "relationship": "macOS migrates threads from P-cores to E-cores under thermal pressure, maintaining functionality at reduced performance",
+      "conditions": [
+        {
+          "parameter": "cpu_temperature",
+          "operator": "gte",
+          "value": 90,
+          "unit": "celsius"
+        }
+      ],
+      "impact": {
+        "performance": { "value": -20, "min": -10, "max": -30 },
+        "thermal": { "value": -15 },
+        "power": { "value": -25 }
+      },
+      "confidence": "high",
+      "applicableTo": ["M1", "M1 Pro", "M1 Max", "M2", "M2 Pro", "M2 Max", "M3", "M3 Pro", "M3 Max", "M4", "M4 Pro", "M4 Max"],
+      "tags": ["p-core", "e-core", "thread-migration", "thermal-management"],
+      "source": "macOS Scheduler",
+      "sourceDate": "2024"
+    },
+    {
+      "id": "macbook-pro-14-sustained-thermal",
+      "type": "synergy",
+      "components": ["thermal:active-cooling", "cpu:apple-silicon", "gpu:apple-silicon-gpu"],
+      "relationship": "MacBook Pro 14-inch maintains near-peak performance for extended periods with active cooling and larger thermal mass",
+      "conditions": [
+        {
+          "parameter": "ambient_temperature",
+          "operator": "lte",
+          "value": 25,
+          "unit": "celsius"
+        }
+      ],
+      "impact": {
+        "performance": { "value": -5, "min": 0, "max": -15 },
+        "thermal": { "value": 15 },
+        "power": { "value": 10 }
+      },
+      "confidence": "high",
+      "applicableTo": ["MacBook Pro 14 M1 Pro", "MacBook Pro 14 M1 Max", "MacBook Pro 14 M2 Pro", "MacBook Pro 14 M2 Max", "MacBook Pro 14 M3 Pro", "MacBook Pro 14 M3 Max", "MacBook Pro 14 M4 Pro", "MacBook Pro 14 M4 Max"],
+      "tags": ["macbook-pro-14", "active-cooling", "sustained-performance"],
+      "source": "Benchmark Testing",
+      "sourceDate": "2024"
+    },
+    {
+      "id": "macbook-pro-16-thermal-advantage",
+      "type": "synergy",
+      "components": ["thermal:active-cooling", "cpu:apple-silicon", "gpu:apple-silicon-gpu"],
+      "relationship": "MacBook Pro 16-inch has larger thermal mass and fan capacity, sustaining maximum performance longer than 14-inch",
+      "conditions": [
+        {
+          "parameter": "ambient_temperature",
+          "operator": "lte",
+          "value": 28,
+          "unit": "celsius"
+        }
+      ],
+      "impact": {
+        "performance": { "value": 5, "min": 0, "max": 10 },
+        "thermal": { "value": -10 },
+        "power": { "value": 5 }
+      },
+      "confidence": "high",
+      "applicableTo": ["MacBook Pro 16 M1 Pro", "MacBook Pro 16 M1 Max", "MacBook Pro 16 M2 Pro", "MacBook Pro 16 M2 Max", "MacBook Pro 16 M3 Pro", "MacBook Pro 16 M3 Max", "MacBook Pro 16 M4 Pro", "MacBook Pro 16 M4 Max"],
+      "tags": ["macbook-pro-16", "thermal-mass", "sustained-performance", "best-laptop-thermal"],
+      "source": "Benchmark Testing",
+      "sourceDate": "2024"
+    },
+    {
+      "id": "mac-studio-desktop-cooling",
+      "type": "synergy",
+      "components": ["thermal:desktop-cooling", "cpu:apple-silicon", "gpu:apple-silicon-gpu"],
+      "relationship": "Mac Studio's desktop-class cooling rarely throttles, maintaining boost clocks indefinitely under normal conditions",
+      "conditions": [
+        {
+          "parameter": "ambient_temperature",
+          "operator": "lte",
+          "value": 30,
+          "unit": "celsius"
+        }
+      ],
+      "impact": {
+        "performance": { "value": 10, "min": 5, "max": 15 },
+        "thermal": { "value": -20 },
+        "power": { "value": 15 }
+      },
+      "confidence": "high",
+      "applicableTo": ["Mac Studio M1 Max", "Mac Studio M1 Ultra", "Mac Studio M2 Max", "Mac Studio M2 Ultra", "Mac Studio M4 Max"],
+      "tags": ["mac-studio", "desktop-cooling", "sustained-performance", "no-throttle"],
+      "source": "Benchmark Testing",
+      "sourceDate": "2024"
+    },
+    {
+      "id": "mac-mini-compact-thermal",
+      "type": "neutral",
+      "components": ["thermal:compact-active-cooling", "cpu:apple-silicon"],
+      "relationship": "Mac Mini provides active cooling in compact form factor, with occasional throttling under extreme sustained loads",
+      "conditions": [
+        {
+          "parameter": "cpu_utilization",
+          "operator": "eq",
+          "value": 100,
+          "unit": "percent"
+        },
+        {
+          "parameter": "workload_duration",
+          "operator": "gte",
+          "value": 30,
+          "unit": "minutes"
+        }
+      ],
+      "impact": {
+        "performance": { "value": -10, "min": -5, "max": -20 },
+        "thermal": { "value": 10 },
+        "power": { "value": 5 }
+      },
+      "confidence": "medium",
+      "applicableTo": ["Mac Mini M1", "Mac Mini M2", "Mac Mini M2 Pro", "Mac Mini M4", "Mac Mini M4 Pro"],
+      "tags": ["mac-mini", "compact-cooling", "occasional-throttle"],
+      "source": "Benchmark Testing",
+      "sourceDate": "2024"
+    },
+    {
+      "id": "mac-pro-maximum-cooling",
+      "type": "synergy",
+      "components": ["thermal:tower-cooling", "cpu:apple-silicon", "gpu:apple-silicon-gpu"],
+      "relationship": "Mac Pro tower design provides maximum cooling capacity, enabling sustained maximum performance in all conditions",
+      "conditions": [],
+      "impact": {
+        "performance": { "value": 15, "min": 10, "max": 20 },
+        "thermal": { "value": -30 },
+        "power": { "value": 20 }
+      },
+      "confidence": "high",
+      "applicableTo": ["Mac Pro M2 Ultra"],
+      "tags": ["mac-pro", "tower-cooling", "maximum-sustained-performance"],
+      "source": "Apple Specs",
+      "sourceDate": "2024"
+    },
+    {
+      "id": "ambient-temperature-impact",
+      "type": "bottleneck",
+      "components": ["thermal:ambient", "cpu:apple-silicon", "gpu:apple-silicon-gpu"],
+      "relationship": "High ambient temperatures (above 30C) reduce thermal headroom, causing earlier and more aggressive throttling",
+      "conditions": [
+        {
+          "parameter": "ambient_temperature",
+          "operator": "gte",
+          "value": 30,
+          "unit": "celsius"
+        }
+      ],
+      "impact": {
+        "performance": { "value": -15, "min": -5, "max": -30 },
+        "thermal": { "value": 20 },
+        "power": { "value": -10 }
+      },
+      "confidence": "high",
+      "applicableTo": ["M1", "M1 Pro", "M1 Max", "M2", "M2 Pro", "M2 Max", "M3", "M3 Pro", "M3 Max", "M4", "M4 Pro", "M4 Max"],
+      "tags": ["ambient-temperature", "thermal-headroom", "environmental"],
+      "source": "Thermal Physics",
+      "sourceDate": "2024",
+      "mitigations": [
+        "Use air conditioning to lower room temperature",
+        "Avoid direct sunlight on the device",
+        "Position device away from heat sources",
+        "Use in well-ventilated areas"
+      ]
+    },
+    {
+      "id": "gpu-clock-progressive-reduction",
+      "type": "bottleneck",
+      "components": ["gpu:apple-silicon-gpu", "thermal:junction-temp"],
+      "relationship": "GPU clocks reduce progressively from maximum to minimum in steps as thermal limits approach",
+      "formula": {
+        "expression": "(100 - temperature) / 10 * base_reduction",
+        "variables": {
+          "temperature": "Current GPU temperature in celsius",
+          "base_reduction": "Performance reduction per step (typically 5%)"
+        },
+        "outputUnit": "percent_reduction"
+      },
+      "conditions": [
+        {
+          "parameter": "gpu_temperature",
+          "operator": "range",
+          "value": { "min": 85, "max": 100 }
+        }
+      ],
+      "impact": {
+        "performance": { "value": -30, "min": -10, "max": -50 },
+        "thermal": { "value": -10 },
+        "power": { "value": -20 }
+      },
+      "confidence": "medium",
+      "applicableTo": ["M1", "M1 Pro", "M1 Max", "M2", "M2 Pro", "M2 Max", "M3", "M3 Pro", "M3 Max", "M4", "M4 Pro", "M4 Max"],
+      "tags": ["gpu", "clock-stepping", "progressive-throttle"],
+      "source": "Performance Testing",
+      "sourceDate": "2024"
+    },
+    {
+      "id": "high-power-mode-fan-preemption",
+      "type": "synergy",
+      "components": ["thermal:fan-curve", "power:high-power-mode", "cpu:apple-silicon", "gpu:apple-silicon-gpu"],
+      "relationship": "High Power Mode spins fans preemptively, maintaining lower temperatures and sustaining boost clocks longer",
+      "conditions": [
+        {
+          "parameter": "power_mode",
+          "operator": "eq",
+          "value": "high_power"
+        }
+      ],
+      "impact": {
+        "performance": { "value": 15, "min": 5, "max": 25 },
+        "thermal": { "value": -20 },
+        "power": { "value": 25 }
+      },
+      "confidence": "high",
+      "applicableTo": ["MacBook Pro 14 M4 Pro", "MacBook Pro 14 M4 Max", "MacBook Pro 16 M4 Pro", "MacBook Pro 16 M4 Max", "Mac Mini M4 Pro"],
+      "tags": ["high-power-mode", "fan-curve", "sustained-boost", "gaming"],
+      "source": "macOS Power Management",
+      "sourceDate": "2024"
+    },
+    {
+      "id": "fan-speed-acoustic-tradeoff",
+      "type": "neutral",
+      "components": ["thermal:fan-speed", "thermal:acoustic-level"],
+      "relationship": "Higher fan speeds improve cooling but increase acoustic noise, which may be undesirable in quiet environments",
+      "conditions": [
+        {
+          "parameter": "fan_speed",
+          "operator": "gte",
+          "value": 80,
+          "unit": "percent"
+        }
+      ],
+      "impact": {
+        "performance": { "value": 5 },
+        "thermal": { "value": -15 },
+        "power": { "value": 5 }
+      },
+      "confidence": "high",
+      "applicableTo": ["MacBook Pro 14", "MacBook Pro 16", "Mac Mini", "Mac Studio", "Mac Pro"],
+      "tags": ["fan-noise", "acoustic", "cooling-tradeoff"],
+      "source": "User Testing",
+      "sourceDate": "2024"
+    },
+    {
+      "id": "laptop-stand-airflow-improvement",
+      "type": "synergy",
+      "components": ["thermal:external-cooling", "thermal:airflow"],
+      "relationship": "Elevating laptop with a stand improves airflow under chassis, reducing temperatures by 3-8C under load",
+      "conditions": [
+        {
+          "parameter": "device_elevated",
+          "operator": "eq",
+          "value": true
+        }
+      ],
+      "impact": {
+        "performance": { "value": 5, "min": 0, "max": 10 },
+        "thermal": { "value": -10, "min": -5, "max": -15 },
+        "power": { "value": 0 }
+      },
+      "confidence": "medium",
+      "applicableTo": ["MacBook Air M1", "MacBook Air M2", "MacBook Air M3", "MacBook Air M4", "MacBook Pro 14", "MacBook Pro 16"],
+      "tags": ["laptop-stand", "external-cooling", "airflow-improvement"],
+      "source": "User Testing",
+      "sourceDate": "2024",
+      "mitigations": ["Use angled laptop stand to improve passive airflow"]
+    },
+    {
+      "id": "gaming-session-thermal-curve",
+      "type": "bottleneck",
+      "components": ["gpu:apple-silicon-gpu", "cpu:apple-silicon", "thermal:session-duration"],
+      "relationship": "Gaming sessions show progressive performance reduction: full power (0-15 min), mild throttle (15-45 min), significant throttle (45+ min) on laptops",
+      "conditions": [
+        {
+          "parameter": "workload_type",
+          "operator": "eq",
+          "value": "gaming"
+        }
+      ],
+      "impact": {
+        "performance": { "value": -20, "min": 0, "max": -40 },
+        "thermal": { "value": 25 },
+        "power": { "value": 15 }
+      },
+      "confidence": "medium",
+      "applicableTo": ["MacBook Air M2", "MacBook Air M3", "MacBook Air M4", "MacBook Pro 14", "MacBook Pro 16"],
+      "tags": ["gaming", "session-duration", "progressive-throttle"],
+      "source": "Gaming Benchmarks",
+      "sourceDate": "2024",
+      "mitigations": [
+        "Enable High Power Mode for MacBook Pro",
+        "Take periodic breaks during long sessions",
+        "Use external cooling solutions",
+        "Lower graphics settings for sustained performance"
+      ]
+    },
+    {
+      "id": "m3-3nm-thermal-efficiency",
+      "type": "synergy",
+      "components": ["cpu:m3-generation", "thermal:process-node"],
+      "relationship": "M3's 3nm process provides better thermal efficiency, allowing higher clocks at lower temperatures than M2",
+      "conditions": [],
+      "impact": {
+        "performance": { "value": 10, "min": 5, "max": 15 },
+        "thermal": { "value": -10, "min": -5, "max": -15 },
+        "power": { "value": -10 }
+      },
+      "confidence": "high",
+      "applicableTo": ["M3", "M3 Pro", "M3 Max"],
+      "tags": ["3nm", "process-improvement", "thermal-efficiency"],
+      "source": "Apple Announcements",
+      "sourceDate": "2023"
+    },
+    {
+      "id": "m4-thermal-density-improvement",
+      "type": "synergy",
+      "components": ["cpu:m4-generation", "thermal:process-node"],
+      "relationship": "M4's second-generation 3nm process further improves thermal density, with better performance per watt than M3",
+      "conditions": [],
+      "impact": {
+        "performance": { "value": 15, "min": 10, "max": 20 },
+        "thermal": { "value": -15, "min": -10, "max": -20 },
+        "power": { "value": -15 }
+      },
+      "confidence": "high",
+      "applicableTo": ["M4", "M4 Pro", "M4 Max"],
+      "tags": ["3nm-gen2", "thermal-density", "efficiency-leader"],
+      "source": "Apple Announcements",
+      "sourceDate": "2024"
+    },
+    {
+      "id": "external-cooling-pad-effectiveness",
+      "type": "synergy",
+      "components": ["thermal:external-cooling", "thermal:cooling-pad"],
+      "relationship": "Active cooling pads can reduce temperatures by 5-12C but effectiveness varies by design and device",
+      "conditions": [
+        {
+          "parameter": "cooling_pad_active",
+          "operator": "eq",
+          "value": true
+        }
+      ],
+      "impact": {
+        "performance": { "value": 8, "min": 2, "max": 15 },
+        "thermal": { "value": -15, "min": -8, "max": -20 },
+        "power": { "value": 0 }
+      },
+      "confidence": "low",
+      "applicableTo": ["MacBook Air M2", "MacBook Air M3", "MacBook Air M4", "MacBook Pro 14", "MacBook Pro 16"],
+      "tags": ["cooling-pad", "external-cooling", "variable-effectiveness"],
+      "source": "User Reports",
+      "sourceDate": "2024"
+    },
+    {
+      "id": "dust-accumulation-thermal-degradation",
+      "type": "bottleneck",
+      "components": ["thermal:fan-vents", "thermal:dust"],
+      "relationship": "Dust accumulation in vents reduces cooling efficiency over time, causing higher temperatures and earlier throttling",
+      "conditions": [
+        {
+          "parameter": "device_age",
+          "operator": "gte",
+          "value": 12,
+          "unit": "months"
+        }
+      ],
+      "impact": {
+        "performance": { "value": -10, "min": -5, "max": -20 },
+        "thermal": { "value": 15, "min": 5, "max": 25 },
+        "power": { "value": 5 }
+      },
+      "confidence": "medium",
+      "applicableTo": ["MacBook Pro 14", "MacBook Pro 16", "Mac Mini", "Mac Studio", "Mac Pro"],
+      "tags": ["dust", "maintenance", "vent-cleaning", "degradation"],
+      "source": "Maintenance Guides",
+      "sourceDate": "2024",
+      "mitigations": [
+        "Use compressed air to clean vents periodically",
+        "Keep device in clean environment",
+        "Consider professional cleaning for severe buildup"
+      ]
+    },
+    {
+      "id": "low-power-mode-thermal-relief",
+      "type": "synergy",
+      "components": ["power:low-power-mode", "thermal:junction-temp", "cpu:apple-silicon"],
+      "relationship": "Low Power Mode reduces maximum clock speeds, providing significant thermal relief at cost of peak performance",
+      "conditions": [
+        {
+          "parameter": "power_mode",
+          "operator": "eq",
+          "value": "low_power"
+        }
+      ],
+      "impact": {
+        "performance": { "value": -25, "min": -15, "max": -35 },
+        "thermal": { "value": -30, "min": -20, "max": -40 },
+        "power": { "value": -40 }
+      },
+      "confidence": "high",
+      "applicableTo": ["MacBook Air M1", "MacBook Air M2", "MacBook Air M3", "MacBook Air M4", "MacBook Pro 14", "MacBook Pro 16"],
+      "tags": ["low-power-mode", "thermal-relief", "battery-extension"],
+      "source": "macOS Power Management",
+      "sourceDate": "2024"
+    },
+    {
+      "id": "simultaneous-cpu-gpu-load-thermal",
+      "type": "bottleneck",
+      "components": ["cpu:apple-silicon", "gpu:apple-silicon-gpu", "thermal:shared-heatsink"],
+      "relationship": "Simultaneous high CPU and GPU load competes for shared thermal budget, causing faster throttling than either alone",
+      "conditions": [
+        {
+          "parameter": "cpu_utilization",
+          "operator": "gte",
+          "value": 80,
+          "unit": "percent"
+        },
+        {
+          "parameter": "gpu_utilization",
+          "operator": "gte",
+          "value": 80,
+          "unit": "percent"
+        }
+      ],
+      "impact": {
+        "performance": { "value": -25, "min": -15, "max": -40 },
+        "thermal": { "value": 30 },
+        "power": { "value": 25 }
+      },
+      "confidence": "high",
+      "applicableTo": ["M1", "M1 Pro", "M1 Max", "M2", "M2 Pro", "M2 Max", "M3", "M3 Pro", "M3 Max", "M4", "M4 Pro", "M4 Max"],
+      "tags": ["combined-load", "thermal-budget", "shared-cooling"],
+      "source": "Workload Testing",
+      "sourceDate": "2024",
+      "mitigations": [
+        "Stagger CPU and GPU intensive tasks when possible",
+        "Close background applications during heavy workloads",
+        "Use High Power Mode on supported devices"
+      ]
+    },
+    {
+      "id": "clamshell-mode-thermal-impact",
+      "type": "bottleneck",
+      "components": ["thermal:clamshell-mode", "thermal:keyboard-venting"],
+      "relationship": "Running MacBook in clamshell mode reduces passive cooling through keyboard, increasing temperatures by 3-5C",
+      "conditions": [
+        {
+          "parameter": "clamshell_mode",
+          "operator": "eq",
+          "value": true
+        }
+      ],
+      "impact": {
+        "performance": { "value": -5, "min": 0, "max": -10 },
+        "thermal": { "value": 8, "min": 5, "max": 12 },
+        "power": { "value": 0 }
+      },
+      "confidence": "medium",
+      "applicableTo": ["MacBook Air M1", "MacBook Air M2", "MacBook Air M3", "MacBook Air M4", "MacBook Pro 14", "MacBook Pro 16"],
+      "tags": ["clamshell", "docked-mode", "reduced-venting"],
+      "source": "User Testing",
+      "sourceDate": "2024",
+      "mitigations": [
+        "Use vertical laptop stand for better airflow",
+        "Position exhaust vents away from obstructions",
+        "Consider desktop Mac for sustained docked use"
+      ]
+    },
+    {
+      "id": "ssd-thermal-throttle-rare",
+      "type": "neutral",
+      "components": ["storage:internal-ssd", "thermal:junction-temp"],
+      "relationship": "Internal SSD thermal throttling is rare on Macs but can occur during sustained heavy read/write with high CPU/GPU load",
+      "conditions": [
+        {
+          "parameter": "ssd_temperature",
+          "operator": "gte",
+          "value": 70,
+          "unit": "celsius"
+        }
+      ],
+      "impact": {
+        "performance": { "value": -5, "min": 0, "max": -15 },
+        "thermal": { "value": 5 },
+        "power": { "value": 0 }
+      },
+      "confidence": "low",
+      "applicableTo": ["M1", "M2", "M3", "M4"],
+      "tags": ["ssd", "storage-throttle", "rare-condition"],
+      "source": "Stress Testing",
+      "sourceDate": "2024"
+    }
+  ],
+  "heuristics": [
+    {
+      "id": "thermal-throttling-detection",
+      "name": "Thermal Throttling Detection",
+      "description": "How to detect when thermal limits are affecting performance",
+      "indicators": [
+        "CPU/GPU temperature > 95C sustained",
+        "Clock speeds dropping from base frequency",
+        "Performance degradation after 10-15 minutes of load",
+        "Fan noise at maximum (on models with fans)",
+        "Frame rate drops during gaming without GPU reaching 100%",
+        "SMC thermal state changes visible in monitoring tools"
+      ],
+      "remediation": [
+        "Improve ambient airflow around the device",
+        "Use laptop stand to elevate device for better chassis cooling",
+        "Check for dust in vents (MacBook Pro, Mac Studio)",
+        "Reduce workload (lower settings, close background apps)",
+        "Consider Low Power Mode for less aggressive clocks",
+        "Enable High Power Mode on MacBook Pro for better fan response"
+      ],
+      "applicableTo": ["all"],
+      "confidence": "high"
+    },
+    {
+      "id": "fanless-mac-optimization",
+      "name": "Fanless Mac Optimization",
+      "description": "Best practices for optimizing performance on MacBook Air (fanless design)",
+      "indicators": [
+        "Chassis becoming warm to touch during extended use",
+        "Performance drops after 10-15 minutes of heavy load",
+        "UI stuttering during sustained intensive tasks"
+      ],
+      "remediation": [
+        "Take 5-10 minute breaks every 30-45 minutes during intensive tasks",
+        "Use laptop stand to improve passive airflow under chassis",
+        "Avoid direct sunlight or warm ambient environments",
+        "Reduce workload intensity for longer sustained sessions",
+        "For gaming: Lower graphics settings to reduce heat generation",
+        "Position in air-conditioned or well-ventilated room",
+        "Avoid placing on soft surfaces (beds, couches) that block ventilation"
+      ],
+      "applicableTo": ["MacBook Air M1", "MacBook Air M2", "MacBook Air M3", "MacBook Air M4"],
+      "confidence": "high"
+    },
+    {
+      "id": "long-gaming-session-management",
+      "name": "Long Gaming Session Management",
+      "description": "Strategies for maintaining performance during extended gaming sessions",
+      "indicators": [
+        "Frame rates declining after first 15-20 minutes",
+        "Fan noise increasing to maximum",
+        "Game stuttering or micro-freezes appearing"
+      ],
+      "remediation": [
+        "Enable High Power Mode before starting game (MacBook Pro)",
+        "Use frame rate limiter to cap at 60fps for sustained performance",
+        "Lower graphics settings proactively to prevent thermal limit",
+        "Take periodic 5-minute breaks to allow thermal recovery",
+        "Use external monitor to keep laptop lid open for keyboard venting",
+        "Position laptop with clear airflow at exhaust ports",
+        "Consider external cooling solution for marathon sessions"
+      ],
+      "applicableTo": ["MacBook Air M2", "MacBook Air M3", "MacBook Air M4", "MacBook Pro 14", "MacBook Pro 16"],
+      "confidence": "high"
+    },
+    {
+      "id": "ambient-temperature-recommendations",
+      "name": "Ambient Temperature Recommendations",
+      "description": "Environmental conditions for optimal thermal performance",
+      "indicators": [
+        "Room temperature above 25C/77F",
+        "Device in direct sunlight",
+        "Poor room ventilation",
+        "Device near heat-producing equipment"
+      ],
+      "remediation": [
+        "Ideal ambient temperature: 18-24C (64-75F)",
+        "Maximum recommended: 30C (86F) before significant impact",
+        "Use air conditioning during summer months for intensive work",
+        "Position device away from windows with direct sunlight",
+        "Avoid placing near other heat-producing devices (monitors, gaming consoles)",
+        "Ensure room has adequate ventilation",
+        "Consider desk fan for localized airflow improvement"
+      ],
+      "applicableTo": ["all"],
+      "confidence": "high"
+    },
+    {
+      "id": "external-cooling-effectiveness",
+      "name": "External Cooling Effectiveness",
+      "description": "Guide to external cooling solutions and their effectiveness",
+      "indicators": [
+        "Frequent thermal throttling even in good ambient conditions",
+        "Need for sustained performance beyond device thermal limits"
+      ],
+      "remediation": [
+        "Laptop stands: Most effective simple solution, 3-8C reduction",
+        "Active cooling pads: Variable effectiveness (5-12C), dependent on design",
+        "Avoid cooling pads that blow air at bottom (Apple laptops vent at hinge)",
+        "Metal laptop stands conduct heat better than plastic",
+        "Vertical docks can improve MacBook Pro cooling by exposing vents",
+        "For MacBook Air: Stand with open bottom for chassis heat dissipation",
+        "Consider desktop Mac for workloads requiring sustained high performance"
+      ],
+      "applicableTo": ["MacBook Air", "MacBook Pro 14", "MacBook Pro 16"],
+      "confidence": "medium"
+    }
+  ],
+  "formFactorProfiles": {
+    "macbook-air": {
+      "cooling": "passive",
+      "coolingDetails": "Fanless design using aluminum chassis as heatsink",
+      "sustainedLoad": "10-15 minutes before throttling begins",
+      "throttleSeverity": "moderate-to-severe",
+      "bestFor": ["Light gaming", "Productivity", "Web browsing", "Video streaming", "Burst workloads"],
+      "notIdealFor": ["Extended gaming sessions", "Sustained video export", "Long compile jobs"],
+      "thermalAdvice": "Take breaks during intensive tasks, ensure airflow under device, avoid warm environments",
+      "maxRecommendedAmbient": "25C",
+      "generations": ["M1", "M2", "M3", "M4"]
+    },
+    "macbook-pro-14": {
+      "cooling": "active",
+      "coolingDetails": "Dual-fan system with heat pipes, good thermal mass for size",
+      "sustainedLoad": "Sustained with minor throttle after 30+ minutes under extreme load",
+      "throttleSeverity": "mild",
+      "bestFor": ["Gaming", "Video editing", "Development", "Creative work", "Sustained workloads"],
+      "notIdealFor": ["Tasks requiring absolute sustained maximum performance"],
+      "thermalAdvice": "Keep vents clear, elevate if possible, use High Power Mode for gaming",
+      "maxRecommendedAmbient": "28C",
+      "generations": ["M1 Pro", "M1 Max", "M2 Pro", "M2 Max", "M3 Pro", "M3 Max", "M4 Pro", "M4 Max"]
+    },
+    "macbook-pro-16": {
+      "cooling": "active",
+      "coolingDetails": "Larger dual-fan system with greater thermal mass than 14-inch",
+      "sustainedLoad": "Best laptop sustained performance, minimal throttling",
+      "throttleSeverity": "minimal",
+      "bestFor": ["Extended gaming", "Professional video work", "3D rendering", "Development", "All sustained workloads"],
+      "notIdealFor": [],
+      "thermalAdvice": "Best laptop for sustained performance, keep vents clear, High Power Mode optional",
+      "maxRecommendedAmbient": "30C",
+      "generations": ["M1 Pro", "M1 Max", "M2 Pro", "M2 Max", "M3 Pro", "M3 Max", "M4 Pro", "M4 Max"]
+    },
+    "mac-mini": {
+      "cooling": "active-compact",
+      "coolingDetails": "Single fan in compact enclosure, adequate for most workloads",
+      "sustainedLoad": "Occasional throttling under sustained 100% load",
+      "throttleSeverity": "mild",
+      "bestFor": ["Desktop workstation", "Development", "Home server", "Productivity"],
+      "notIdealFor": ["Sustained maximum CPU utilization for hours"],
+      "thermalAdvice": "Position with clearance around device, avoid enclosed spaces, dust periodically",
+      "maxRecommendedAmbient": "30C",
+      "generations": ["M1", "M2", "M2 Pro", "M4", "M4 Pro"]
+    },
+    "mac-studio": {
+      "cooling": "desktop-class",
+      "coolingDetails": "Large fan array with substantial thermal mass, rarely throttles",
+      "sustainedLoad": "Maintains boost clocks indefinitely under normal conditions",
+      "throttleSeverity": "none-to-minimal",
+      "bestFor": ["Professional workstation", "Video production", "3D rendering", "Development", "AI/ML work"],
+      "notIdealFor": [],
+      "thermalAdvice": "Ensure adequate ventilation, clean dust intake periodically",
+      "maxRecommendedAmbient": "32C",
+      "generations": ["M1 Max", "M1 Ultra", "M2 Max", "M2 Ultra", "M4 Max"]
+    },
+    "mac-pro": {
+      "cooling": "tower-class",
+      "coolingDetails": "Maximum cooling capacity with large fans and extensive thermal headroom",
+      "sustainedLoad": "Maintains maximum performance indefinitely",
+      "throttleSeverity": "none",
+      "bestFor": ["Enterprise workloads", "Maximum sustained performance", "8K video production", "Scientific computing"],
+      "notIdealFor": [],
+      "thermalAdvice": "Standard data center or office environment sufficient",
+      "maxRecommendedAmbient": "35C",
+      "generations": ["M2 Ultra"]
+    },
+    "imac": {
+      "cooling": "active-integrated",
+      "coolingDetails": "Integrated fan system within display enclosure",
+      "sustainedLoad": "Good sustained performance with quiet operation",
+      "throttleSeverity": "mild",
+      "bestFor": ["Desktop productivity", "Creative work", "Consumer workloads"],
+      "notIdealFor": ["Maximum sustained performance workloads"],
+      "thermalAdvice": "Ensure rear ventilation is unobstructed",
+      "maxRecommendedAmbient": "30C",
+      "generations": ["M1", "M3", "M4"]
+    }
+  }
+}

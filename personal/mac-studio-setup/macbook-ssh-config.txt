@@ -1,0 +1,21 @@
+# Add this to your MacBook's ~/.ssh/config
+# Run: nano ~/.ssh/config (or code ~/.ssh/config)
+
+Host mac-studio
+    HostName mac-studio.local
+    User matthewbyrden
+    # Forward Ollama API to local port
+    LocalForward 11434 localhost:11434
+    # Forward Syncthing UI to local port
+    LocalForward 8384 localhost:8384
+    # Keep connection alive
+    ServerAliveInterval 60
+    ServerAliveCountMax 3
+
+# Usage:
+#   ssh mac-studio           - Connect with port forwarding
+#   ssh -N mac-studio        - Just forward ports (no shell)
+#
+# After connecting, access:
+#   Ollama API: http://localhost:11434
+#   Syncthing:  http://localhost:8384

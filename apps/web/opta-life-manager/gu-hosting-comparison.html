@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Hosting Comparison | Opta Life Manager</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --void: #09090b;
+            --surface: #18181b;
+            --elevated: #27272a;
+            --border: #3f3f46;
+            --text-primary: #fafafa;
+            --text-secondary: #a1a1aa;
+            --text-muted: #52525b;
+            --primary: #8b5cf6;
+            --primary-glow: #a855f7;
+            --neon-blue: #3b82f6;
+            --neon-green: #22c55e;
+            --neon-amber: #f59e0b;
+            --neon-red: #ef4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--void);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Noise overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+            opacity: 0.03;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 3rem 2rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .header h1 {
+            font-family: 'Sora', sans-serif;
+            font-size: 3rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #fafafa 0%, #a78bfa 50%, #6366f1 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1rem;
+            text-shadow: 0 0 60px rgba(139, 92, 246, 0.3);
+        }
+
+        .header .subtitle {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: rgba(139, 92, 246, 0.15);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 100px;
+            font-size: 0.875rem;
+            color: var(--primary);
+            margin-bottom: 1.5rem;
+        }
+
+        /* Glass Panel */
+        .glass-panel {
+            background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .glass-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        }
+
+        /* Section Headers */
+        .section-header {
+            font-family: 'Sora', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .section-header .icon {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(139, 92, 246, 0.2);
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        /* Divider */
+        .neon-divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--primary), transparent);
+            margin: 3rem 0;
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.5);
+        }
+
+        /* Platform Cards */
+        .platforms-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        @media (max-width: 900px) {
+            .platforms-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .platform-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 1.5rem;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .platform-card:hover {
+            border-color: rgba(139, 92, 246, 0.3);
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+
+        .platform-card.recommended {
+            border-color: var(--neon-green);
+            box-shadow: 0 0 30px rgba(34, 197, 94, 0.15);
+        }
+
+        .platform-card.blocked {
+            border-color: var(--neon-red);
+            opacity: 0.7;
+        }
+
+        .platform-card.needs-changes {
+            border-color: var(--neon-amber);
+        }
+
+        .platform-logo {
+            font-family: 'Sora', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .platform-card.recommended .platform-logo {
+            color: var(--neon-green);
+        }
+
+        .platform-card.blocked .platform-logo {
+            color: var(--neon-red);
+        }
+
+        .platform-card.needs-changes .platform-logo {
+            color: var(--neon-amber);
+        }
+
+        .platform-tagline {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.375rem 0.75rem;
+            border-radius: 100px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            margin-bottom: 1rem;
+        }
+
+        .status-badge.recommended {
+            background: rgba(34, 197, 94, 0.15);
+            color: var(--neon-green);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .status-badge.blocked {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--neon-red);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .status-badge.warning {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--neon-amber);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .feature-list {
+            list-style: none;
+            margin-bottom: 1.5rem;
+        }
+
+        .feature-list li {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .feature-list li::before {
+            content: '>';
+            color: var(--primary);
+            font-weight: bold;
+        }
+
+        /* Pricing Table */
+        .pricing-section {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .pricing-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.25rem;
+        }
+
+        .pricing-value {
+            font-family: 'Sora', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .pricing-note {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+        }
+
+        /* Info Box */
+        .info-box {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin: 1.5rem 0;
+        }
+
+        .info-box h4 {
+            font-family: 'Sora', sans-serif;
+            font-size: 1rem;
+            color: var(--neon-blue);
+            margin-bottom: 0.5rem;
+        }
+
+        .info-box p {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        /* Warning Box */
+        .warning-box {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin: 1.5rem 0;
+        }
+
+        .warning-box h4 {
+            font-family: 'Sora', sans-serif;
+            font-size: 1rem;
+            color: var(--neon-red);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .warning-box p {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        /* Success Box */
+        .success-box {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin: 1.5rem 0;
+        }
+
+        .success-box h4 {
+            font-family: 'Sora', sans-serif;
+            font-size: 1rem;
+            color: var(--neon-green);
+            margin-bottom: 0.5rem;
+        }
+
+        .success-box p {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        /* Comparison Table */
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .comparison-table th {
+            font-family: 'Sora', sans-serif;
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 500;
+        }
+
+        .comparison-table td {
+            font-size: 0.9375rem;
+        }
+
+        .comparison-table tr:hover td {
+            background: rgba(255,255,255,0.02);
+        }
+
+        .check {
+            color: var(--neon-green);
+        }
+
+        .cross {
+            color: var(--neon-red);
+        }
+
+        .partial {
+            color: var(--neon-amber);
+        }
+
+        /* Recommendation */
+        .recommendation {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 16px;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .recommendation h3 {
+            font-family: 'Sora', sans-serif;
+            font-size: 1.5rem;
+            color: var(--neon-green);
+            margin-bottom: 1rem;
+        }
+
+        .recommendation p {
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto 1.5rem;
+        }
+
+        .action-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.875rem 1.5rem;
+            background: var(--neon-green);
+            color: var(--void);
+            font-family: 'Sora', sans-serif;
+            font-weight: 600;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .action-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(34, 197, 94, 0.3);
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            margin-top: 4rem;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+
+        .footer .opta-logo {
+            font-family: 'Sora', sans-serif;
+            font-weight: 700;
+            background: linear-gradient(135deg, #fafafa, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Animated glow */
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(34, 197, 94, 0.2); }
+            50% { box-shadow: 0 0 40px rgba(34, 197, 94, 0.4); }
+        }
+
+        .platform-card.recommended {
+            animation: pulse-glow 3s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="badge">Deployment Guide</div>
+            <h1>Web Hosting Comparison</h1>
+            <p class="subtitle">Understanding your options for deploying Opta Life Manager to lm.optamize.biz</p>
+        </header>
+
+        <!-- Current Situation -->
+        <section class="glass-panel">
+            <h2 class="section-header">
+                <span class="icon">!</span>
+                Current Situation
+            </h2>
+
+            <div class="warning-box">
+                <h4>Vercel Rate Limit Hit</h4>
+                <p>The Vercel CLI is returning "Too many requests - more than 5000" errors on the free tier. This is blocking direct deployment via the command line. We need an alternative approach.</p>
+            </div>
+
+            <div class="info-box">
+                <h4>What We're Deploying</h4>
+                <p>Opta Life Manager - A Next.js 15 web application with authentication, calendar, email, tasks, and AI features. Target URL: <strong>lm.optamize.biz</strong></p>
+            </div>
+        </section>
+
+        <div class="neon-divider"></div>
+
+        <!-- Platform Comparison -->
+        <section>
+            <h2 class="section-header">
+                <span class="icon">vs</span>
+                Platform Comparison
+            </h2>
+
+            <div class="platforms-grid">
+                <!-- Vercel -->
+                <div class="platform-card blocked">
+                    <div class="status-badge blocked">Currently Blocked</div>
+                    <div class="platform-logo">Vercel</div>
+                    <p class="platform-tagline">The native platform for Next.js apps</p>
+
+                    <ul class="feature-list">
+                        <li>Best Next.js integration (same company)</li>
+                        <li>Automatic serverless functions</li>
+                        <li>Edge network worldwide</li>
+                        <li>Preview deployments per branch</li>
+                        <li>Built-in analytics</li>
+                    </ul>
+
+                    <div class="warning-box" style="margin: 0;">
+                        <h4>Why Blocked?</h4>
+                        <p>Free tier CLI upload limit exceeded. Alternative: Connect via GitHub in the Vercel dashboard.</p>
+                    </div>
+
+                    <div class="pricing-section">
+                        <div class="pricing-label">Free Tier</div>
+                        <div class="pricing-value">$0/mo</div>
+                        <div class="pricing-note">100GB bandwidth, limited builds</div>
+                    </div>
+                </div>
+
+                <!-- Netlify -->
+                <div class="platform-card recommended">
+                    <div class="status-badge recommended">Recommended</div>
+                    <div class="platform-logo">Netlify</div>
+                    <p class="platform-tagline">Deploy modern web projects with ease</p>
+
+                    <ul class="feature-list">
+                        <li>Excellent Next.js support</li>
+                        <li>Simple CLI deployment</li>
+                        <li>Custom domains + free SSL</li>
+                        <li>Serverless functions included</li>
+                        <li>No code changes required</li>
+                    </ul>
+
+                    <div class="success-box" style="margin: 0;">
+                        <h4>Why Recommended?</h4>
+                        <p>Works out of the box with our Next.js app. No rate limits blocking us. Quick setup.</p>
+                    </div>
+
+                    <div class="pricing-section">
+                        <div class="pricing-label">Free Tier</div>
+                        <div class="pricing-value">$0/mo</div>
+                        <div class="pricing-note">100GB bandwidth, 300 build min/mo</div>
+                    </div>
+                </div>
+
+                <!-- Cloudflare -->
+                <div class="platform-card needs-changes">
+                    <div class="status-badge warning">Needs Code Changes</div>
+                    <div class="platform-logo">Cloudflare Pages</div>
+                    <p class="platform-tagline">Ultra-fast edge network hosting</p>
+
+                    <ul class="feature-list">
+                        <li>Fastest global CDN</li>
+                        <li>Unlimited bandwidth (free!)</li>
+                        <li>Excellent DDoS protection</li>
+                        <li>Already hosting optamize.biz</li>
+                        <li>Workers for serverless</li>
+                    </ul>
+
+                    <div class="info-box" style="margin: 0; background: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.3);">
+                        <h4 style="color: var(--neon-amber);">What's Required?</h4>
+                        <p>All API routes need <code>export const runtime = 'edge';</code> added. Some Node.js APIs may not work.</p>
+                    </div>
+
+                    <div class="pricing-section">
+                        <div class="pricing-label">Free Tier</div>
+                        <div class="pricing-value">$0/mo</div>
+                        <div class="pricing-note">Unlimited bandwidth, 500 builds/mo</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="neon-divider"></div>
+
+        <!-- Feature Comparison Table -->
+        <section class="glass-panel">
+            <h2 class="section-header">
+                <span class="icon">=</span>
+                Feature Comparison
+            </h2>
+
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>Vercel</th>
+                        <th>Netlify</th>
+                        <th>Cloudflare</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Next.js 15 Support</td>
+                        <td class="check">Native</td>
+                        <td class="check">Yes</td>
+                        <td class="partial">Edge only</td>
+                    </tr>
+                    <tr>
+                        <td>CLI Deployment</td>
+                        <td class="cross">Rate Limited</td>
+                        <td class="check">Working</td>
+                        <td class="partial">Needs changes</td>
+                    </tr>
+                    <tr>
+                        <td>Custom Domain</td>
+                        <td class="check">Free SSL</td>
+                        <td class="check">Free SSL</td>
+                        <td class="check">Free SSL</td>
+                    </tr>
+                    <tr>
+                        <td>Serverless Functions</td>
+                        <td class="check">Node.js</td>
+                        <td class="check">Node.js</td>
+                        <td class="partial">Workers (Edge)</td>
+                    </tr>
+                    <tr>
+                        <td>Free Bandwidth</td>
+                        <td>100GB/mo</td>
+                        <td>100GB/mo</td>
+                        <td class="check">Unlimited</td>
+                    </tr>
+                    <tr>
+                        <td>Build Minutes</td>
+                        <td>6000/mo</td>
+                        <td>300/mo</td>
+                        <td>500/mo</td>
+                    </tr>
+                    <tr>
+                        <td>Code Changes Needed</td>
+                        <td class="check">None</td>
+                        <td class="check">None</td>
+                        <td class="cross">Yes (11 files)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <div class="neon-divider"></div>
+
+        <!-- What is Netlify -->
+        <section class="glass-panel">
+            <h2 class="section-header">
+                <span class="icon">?</span>
+                What is Netlify?
+            </h2>
+
+            <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
+                Netlify is a cloud platform for hosting web applications. Think of it as a specialized web server that:
+            </p>
+
+            <ul class="feature-list" style="margin-left: 1rem;">
+                <li><strong>Hosts your app 24/7</strong> - Your app is always online, accessible from anywhere</li>
+                <li><strong>Handles traffic spikes</strong> - Automatically scales when many people visit</li>
+                <li><strong>Provides free SSL</strong> - Secure HTTPS connection included</li>
+                <li><strong>Global CDN</strong> - Fast loading worldwide via edge servers</li>
+                <li><strong>Continuous deployment</strong> - Push code, it deploys automatically</li>
+            </ul>
+
+            <div class="info-box">
+                <h4>Why Do You Need It?</h4>
+                <p>To make lm.optamize.biz work, your Life Manager app needs to be running on a server somewhere on the internet. Netlify provides that server (for free) and connects it to your custom domain.</p>
+            </div>
+        </section>
+
+        <div class="neon-divider"></div>
+
+        <!-- Costs Breakdown -->
+        <section class="glass-panel">
+            <h2 class="section-header">
+                <span class="icon">$</span>
+                Cost Breakdown
+            </h2>
+
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Tier</th>
+                        <th>Vercel</th>
+                        <th>Netlify</th>
+                        <th>Cloudflare</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Free</strong></td>
+                        <td>$0/mo</td>
+                        <td>$0/mo</td>
+                        <td>$0/mo</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Pro/Starter</strong></td>
+                        <td>$20/mo</td>
+                        <td>$19/mo</td>
+                        <td>$5/mo</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Team/Business</strong></td>
+                        <td>$40/mo/member</td>
+                        <td>$99/mo</td>
+                        <td>$20/mo</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="success-box">
+                <h4>For Personal Use: Free Tier is Plenty</h4>
+                <p>All three platforms offer generous free tiers. For a personal Life Manager app, you'll likely never need to pay. Netlify's free tier includes 100GB bandwidth and 300 build minutes per month - more than enough.</p>
+            </div>
+        </section>
+
+        <div class="neon-divider"></div>
+
+        <!-- Recommendation -->
+        <section class="recommendation">
+            <h3>Recommendation: Use Netlify</h3>
+            <p>
+                For deploying Opta Life Manager to lm.optamize.biz right now, Netlify is the fastest path forward.
+                No code changes, no rate limits, free tier is sufficient, and it just works with Next.js.
+            </p>
+            <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+                Simply authorize Netlify in the browser popup, and deployment will proceed automatically.
+            </p>
+            <a href="https://app.netlify.com" class="action-button" target="_blank">
+                Open Netlify Dashboard
+            </a>
+        </section>
+
+        <!-- Alternative -->
+        <section class="glass-panel" style="margin-top: 2rem;">
+            <h2 class="section-header">
+                <span class="icon">+</span>
+                Alternative: Vercel via GitHub
+            </h2>
+            <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+                If you prefer Vercel (better for Next.js long-term), you can bypass the CLI rate limit by connecting your GitHub repository directly in the Vercel dashboard:
+            </p>
+            <ol style="color: var(--text-secondary); margin-left: 1.5rem;">
+                <li style="margin-bottom: 0.5rem;">Go to <a href="https://vercel.com/new" style="color: var(--primary);">vercel.com/new</a></li>
+                <li style="margin-bottom: 0.5rem;">Import your GitHub repository (agencymatthewg-beep/opta)</li>
+                <li style="margin-bottom: 0.5rem;">Set root directory to <code>opta-life-manager</code></li>
+                <li style="margin-bottom: 0.5rem;">Deploy and add lm.optamize.biz as custom domain</li>
+            </ol>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="opta-logo">OPTA</div>
+            <p>Visual Guide | Generated for Life Manager Deployment</p>
+        </footer>
+    </div>
+</body>
+</html>

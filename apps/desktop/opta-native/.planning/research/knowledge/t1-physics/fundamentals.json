@@ -1,0 +1,50 @@
+{
+  "$schema": "knowledge-schema.json",
+  "tier": 1,
+  "tierName": "physics",
+  "domain": "general",
+  "lastUpdated": "2026-01-18",
+  "confidence": "high",
+  "sources": [
+    {
+      "name": "Computer Architecture Fundamentals",
+      "type": "official-docs",
+      "date": "2024"
+    }
+  ],
+  "entries": [
+    {
+      "id": "power-thermal-relationship",
+      "fact": "Power consumption directly correlates with heat generation (P = IV, heat = power not doing useful work)",
+      "confidence": "high",
+      "source": "Physics fundamentals",
+      "verificationRequired": false,
+      "tags": ["thermal", "power", "efficiency"]
+    },
+    {
+      "id": "memory-bandwidth-formula",
+      "fact": "Memory bandwidth = Bus width (bits) × Clock speed (Hz) × Transfers per clock / 8 (for bytes)",
+      "confidence": "high",
+      "source": "Computer architecture",
+      "verificationRequired": false,
+      "tags": ["memory", "bandwidth", "formula"]
+    },
+    {
+      "id": "frame-time-fps-relationship",
+      "fact": "Frame time (ms) = 1000 / FPS. 60 FPS = 16.67ms, 120 FPS = 8.33ms per frame",
+      "confidence": "high",
+      "source": "Graphics fundamentals",
+      "verificationRequired": false,
+      "tags": ["fps", "frame-time", "performance"]
+    },
+    {
+      "id": "resolution-pixel-scaling",
+      "fact": "Pixel count scales quadratically with resolution: 4K has 4x pixels of 1080p, not 2x",
+      "details": "1080p = 2.07M pixels, 1440p = 3.69M pixels (1.78x), 4K = 8.29M pixels (4x)",
+      "confidence": "high",
+      "source": "Display mathematics",
+      "verificationRequired": false,
+      "tags": ["resolution", "pixels", "scaling"]
+    }
+  ]
+}

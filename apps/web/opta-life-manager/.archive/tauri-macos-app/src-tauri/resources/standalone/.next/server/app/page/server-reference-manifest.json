@@ -1,0 +1,200 @@
+{
+  "node": {
+    "0092b1868fe79796ead58518b1ea078c9fdddd8303": {
+      "workers": {
+        "app/page": {
+          "moduleId": 35845,
+          "async": false,
+          "exportedName": "login",
+          "filename": "Documents/Opta/opta-life-manager/lib/auth-actions.ts"
+        }
+      },
+      "layer": {
+        "app/page": "action-browser"
+      },
+      "exportedName": "login",
+      "filename": "Documents/Opta/opta-life-manager/lib/auth-actions.ts"
+    },
+    "0093e9ea00107e92a2088a8f6d2cf4675611da35eb": {
+      "workers": {
+        "app/page": {
+          "moduleId": 35845,
+          "async": false,
+          "exportedName": "logout",
+          "filename": "Documents/Opta/opta-life-manager/lib/auth-actions.ts"
+        }
+      },
+      "layer": {
+        "app/page": "action-browser"
+      },
+      "exportedName": "logout",
+      "filename": "Documents/Opta/opta-life-manager/lib/auth-actions.ts"
+    },
+    "70db23543c9b363bbaacda68ede50e57afcac5713f": {
+      "workers": {
+        "app/page": {
+          "moduleId": 35845,
+          "async": false,
+          "exportedName": "createEvent",
+          "filename": "Documents/Opta/opta-life-manager/lib/actions.ts"
+        }
+      },
+      "layer": {
+        "app/page": "action-browser"
+      },
+      "exportedName": "createEvent",
+      "filename": "Documents/Opta/opta-life-manager/lib/actions.ts"
+    },
+    "0062e85e5e4323f9364085e599494ad98099b6504d": {
+      "workers": {
+        "app/page": {
+          "moduleId": 35845,
+          "async": false,
+          "exportedName": "getCalendarEvents",
+          "filename": "Documents/Opta/opta-life-manager/lib/actions.ts"
+        }
+      },
+      "layer": {
+        "app/page": "action-browser"
+      },
+      "exportedName": "getCalendarEvents",
+      "filename": "Documents/Opta/opta-life-manager/lib/actions.ts"
+    },
+    "004b7ffd5c355881a34307e80ad77fe8ef8490c4ff": {
+      "workers": {
+        "app/page": {
+          "moduleId": 35845,
+          "async": false,
+          "exportedName": "getUnreadEmails",
+          "filename": "Documents/Opta/opta-life-manager/lib/actions.ts"
+        }
+      },
+      "layer": {
+        "app/page": "action-browser"
+      },
+      "exportedName": "getUnreadEmails",
+      "filename": "Documents/Opta/opta-life-manager/lib/actions.ts"
+    },
+    "6069bd97cb6f0167df79640b898553f11d43b0b815": {
+      "workers": {
+        "app/page": {
+          "moduleId": 35845,
+          "async": false,
+          "exportedName": "getSystemBriefing",
+          "filename": "Documents/Opta/opta-life-manager/lib/ai-summary.ts"
+        }
+      },
+      "layer": {
+        "app/page": "action-browser"
+      },
+      "exportedName": "getSystemBriefing",
+      "filename": "Documents/Opta/opta-life-manager/lib/ai-summary.ts"
+    },
+    "604b6474db5705bdeadbbd6754d08327fbfa5284f0": {
+      "workers": {
+        "app/page": {
+          "moduleId": 35845,
+          "async": false,
+          "exportedName": "processAiCommand",
+          "filename": "Documents/Opta/opta-life-manager/lib/ai-commander.ts"
+        }
+      },
+      "layer": {
+        "app/page": "action-browser"
+      },
+      "exportedName": "processAiCommand",
+      "filename": "Documents/Opta/opta-life-manager/lib/ai-commander.ts"
+    },
+    "40105f3324e07927deb5ab171682ee27136df0e056": {
+      "workers": {
+        "app/page": {
+          "moduleId": 35845,
+          "async": false,
+          "exportedName": "getCalendarEventsForDays",
+          "filename": "Documents/Opta/opta-life-manager/lib/actions.ts"
+        }
+      },
+      "layer": {
+        "app/page": "action-browser"
+      },
+      "exportedName": "getCalendarEventsForDays",
+      "filename": "Documents/Opta/opta-life-manager/lib/actions.ts"
+    },
+    "00b081b6ed4c79efdabf061559e233d1fa40dd7e03": {
+      "workers": {
+        "app/page": {
+          "moduleId": 35845,
+          "async": false,
+          "exportedName": "getTodoistDashboardData",
+          "filename": "Documents/Opta/opta-life-manager/lib/todoist.ts"
+        }
+      },
+      "layer": {
+        "app/page": "action-browser"
+      },
+      "exportedName": "getTodoistDashboardData",
+      "filename": "Documents/Opta/opta-life-manager/lib/todoist.ts"
+    },
+    "60527a398e909dab4aa486f155f4762cf6fa35916e": {
+      "workers": {
+        "app/page": {
+          "moduleId": 35845,
+          "async": false,
+          "exportedName": "createTodoistTask",
+          "filename": "Documents/Opta/opta-life-manager/lib/todoist.ts"
+        }
+      },
+      "layer": {
+        "app/page": "action-browser"
+      },
+      "exportedName": "createTodoistTask",
+      "filename": "Documents/Opta/opta-life-manager/lib/todoist.ts"
+    },
+    "40ee08fc96d853a6bb726a8c46e79172903841fc49": {
+      "workers": {
+        "app/page": {
+          "moduleId": 35845,
+          "async": false,
+          "exportedName": "completeTodoistTask",
+          "filename": "Documents/Opta/opta-life-manager/lib/todoist.ts"
+        }
+      },
+      "layer": {
+        "app/page": "action-browser"
+      },
+      "exportedName": "completeTodoistTask",
+      "filename": "Documents/Opta/opta-life-manager/lib/todoist.ts"
+    },
+    "00ac4579273b3a8a04608fe2a0d96e12249be3b8a2": {
+      "workers": {
+        "app/page": {
+          "moduleId": 35845,
+          "async": false,
+          "exportedName": "getWeather",
+          "filename": "Documents/Opta/opta-life-manager/lib/weather.ts"
+        }
+      },
+      "layer": {
+        "app/page": "action-browser"
+      },
+      "exportedName": "getWeather",
+      "filename": "Documents/Opta/opta-life-manager/lib/weather.ts"
+    },
+    "40b2c8500802719db619136a9121b3bf7d3562e415": {
+      "workers": {
+        "app/page": {
+          "moduleId": 35845,
+          "async": false,
+          "exportedName": "getNews",
+          "filename": "Documents/Opta/opta-life-manager/lib/news.ts"
+        }
+      },
+      "layer": {
+        "app/page": "action-browser"
+      },
+      "exportedName": "getNews",
+      "filename": "Documents/Opta/opta-life-manager/lib/news.ts"
+    }
+  },
+  "edge": {}
+}

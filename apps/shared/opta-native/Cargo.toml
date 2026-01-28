@@ -1,0 +1,69 @@
+[workspace]
+resolver = "2"
+members = [
+    "opta-core",
+    "opta-shared",
+    "opta-render",  # wgpu rendering (Phase 60)
+    # Future crates:
+    # "opta-ui",      # UI components (Phase 63)
+]
+
+[workspace.package]
+version = "8.0.0-alpha"
+edition = "2021"
+authors = ["Matthew Byrden <matt@opta.app>"]
+license = "MIT"
+
+[workspace.dependencies]
+# Crux - Elm Architecture for Rust
+crux_core = "0.8"
+crux_http = "0.9"
+
+# UniFFI - FFI bindings for Swift/Kotlin
+uniffi = { version = "0.28", features = ["cli", "tokio"] }
+
+# wgpu - GPU abstraction (Metal backend for Apple platforms)
+wgpu = "24.0"
+raw-window-handle = "0.6"
+pollster = "0.4"
+
+# Buffer memory layout
+bytemuck = { version = "1.20", features = ["derive"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Async runtime
+tokio = { version = "1.36", features = ["rt-multi-thread", "sync", "time", "macros"] }
+
+# Database
+rusqlite = { version = "0.31", features = ["bundled"] }
+
+# Math
+glam = { version = "0.27", features = ["serde"] }
+
+# Error handling
+thiserror = "1.0"
+anyhow = "1.0"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Time
+chrono = { version = "0.4", features = ["serde"] }
+
+# UUID generation
+uuid = { version = "1.7", features = ["v4", "serde"] }
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = "debuginfo"
+
+[profile.dev]
+opt-level = 0
+debug = true

@@ -1,0 +1,684 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		027922F4E7E3C97440EB8CE2 /* Animations.swift in Sources */ = {isa = PBXBuildFile; fileRef = E635DC92B5C5B2A3EF165C42 /* Animations.swift */; };
+		0C4E948B51B7AFBB97D0CA68 /* DashboardCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C44A63C7BE273A45FB35A2E /* DashboardCards.swift */; };
+		0FF13CB7A246D087CE97404F /* Task.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F5117D5D5935F5AD3D319BA /* Task.swift */; };
+		14F1F3624F68025586E2966C /* Color+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 232FEDE85CC8DA66A322CECD /* Color+Extensions.swift */; };
+		2C051E677F68FD42A9B6B700 /* QuietHoursSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D699BF237A0408DE25AE4DA /* QuietHoursSheet.swift */; };
+		2CB26AE88AE008239A7AA847 /* NotificationTypeRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDE22A7D1258FDE55AC428EE /* NotificationTypeRow.swift */; };
+		36B73EF9DC2A3EA2ABC18DB9 /* BriefingWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03CECD8D8592FB2666597895 /* BriefingWidget.swift */; };
+		3792267DD158C64F70DFF933 /* EnhancedComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = E720F0613897F825ACABA4A6 /* EnhancedComponents.swift */; };
+		3CF069CB5647D9E07FC0A582 /* CreateEventIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 419A045F1A783B93D38C89E7 /* CreateEventIntent.swift */; };
+		3E10C0ADD3B6E290E371B4F4 /* OptaWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = C83482146D084C4D8A36E519 /* OptaWidgets.swift */; };
+		44CB92FC0CEBF5B31D9E25DE /* Date+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA95198A3B9B4142CA3CA18A /* Date+Extensions.swift */; };
+		46A842A441DCD30451C95DD8 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = DF6970CE2A1933ACF53F6C6D /* GoogleSignInSwift */; };
+		52B8BF103D2AF2164DCF69F1 /* AuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05637FA696D9471B7362E647 /* AuthManager.swift */; };
+		583E3AADD7F0A292EEC1D04F /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88D00EDCF6EC641E7996635D /* DashboardView.swift */; };
+		60841C19B45B22F6B95DE941 /* ViewModifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0235C38A45D298D302E6DBA4 /* ViewModifiers.swift */; };
+		62C8436924D03BB5F0B8A273 /* NotificationHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DED6C10D4DC8921974DEBA2 /* NotificationHistory.swift */; };
+		64886FCA65858E4344DFB190 /* NotificationHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C812B697C43955891714A9B /* NotificationHistoryView.swift */; };
+		64D2F3B24F69BBCC04A55B84 /* UIComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FF672F63701DB27E0184EA5 /* UIComponents.swift */; };
+		65E5B09CDD90FF909C8240C0 /* AppServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9005BE1FABFFF23B91D04A2 /* AppServices.swift */; };
+		6CCA1912D8CB8306171779BF /* AskOptaIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CBB39C3BF1D64D0E390C1C9 /* AskOptaIntent.swift */; };
+		6DC2C3B942F1988BA0176319 /* TasksListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D75F0A279D6D8E4ED2DAF513 /* TasksListView.swift */; };
+		6DC9A07AEA13F8396FA65DBF /* APIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D6AA62A6F86872F83579E5B /* APIService.swift */; };
+		7C0FC3969AC770AD66B92014 /* LocalAIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC51D830002AF9411C035A7D /* LocalAIService.swift */; };
+		835F24E237F3516ACB0D7182 /* AIResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = A213A82F965221215F7A1E98 /* AIResponse.swift */; };
+		842B4BC7567660C01293E81B /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BAC72D14BE55FAF25748436 /* OnboardingView.swift */; };
+		86A88DF0C836A24ADDBF0200 /* GetBriefingIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96450F73513CB51DCD8EAEC1 /* GetBriefingIntent.swift */; };
+		8D01965FF956AA850A13039B /* CalendarWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7D777DF57A6533E3F3593E0 /* CalendarWidget.swift */; };
+		93A60BE5EF60509FFDE7002D /* CalendarListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BD585D14FBA665050A60CE0 /* CalendarListView.swift */; };
+		97FA1B1BFEB4771A515A2966 /* CalendarEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29EA62B2EAF669AAF27093A3 /* CalendarEvent.swift */; };
+		9A3DA95EB736EA2B0E3D5502 /* AddTaskIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1116DDCCEEA11CF37629CC46 /* AddTaskIntent.swift */; };
+		9DAB0229FEC2898479CD17F6 /* QuickActionsWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFA9AF702B409C80E3C92F05 /* QuickActionsWidget.swift */; };
+		B3A124BDD681F130F7703707 /* NotificationTestSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7CBD4947CC19A4D4F0092DE /* NotificationTestSheet.swift */; };
+		B49B61F4CCE0FC06084050C5 /* NotificationSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72510360CA6792CA52485DB5 /* NotificationSettings.swift */; };
+		C6DF98BF01058CD723F08579 /* Email.swift in Sources */ = {isa = PBXBuildFile; fileRef = 661183856645C8BCCD950038 /* Email.swift */; };
+		CD50F59128573858FBB94DCD /* Date+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE90DD4A5E4AC8ECADF5FB66 /* Date+Extensions.swift */; };
+		D354BA16EC3AA2AAE2F635FB /* TasksWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 751B498377766CD739882518 /* TasksWidget.swift */; };
+		D54CA44D1A4C147B72E0C0CB /* WeatherService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 493E2100B47007D760DF1389 /* WeatherService.swift */; };
+		DBE352D94C1C3AD1492C3880 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A66BA3DF13B75D4BBBE9FF39 /* SettingsView.swift */; };
+		DC53A79EC7DB9EBAB061F46D /* NotificationSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37FA078373646CAE0371D572 /* NotificationSettingsView.swift */; };
+		DDF8CEEBA32BCDC22EBF2B3E /* OptaLMiOSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A0157CB2BE9D304AAAF0698 /* OptaLMiOSApp.swift */; };
+		E205E461A97E6B94DC8BD0F0 /* OptaChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DC1571049DD55FE8A9BB458 /* OptaChatView.swift */; };
+		E86EFDC0D370F02F9F9CAFB5 /* NotificationSettingsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78EE66BD41F1D63657313BFA /* NotificationSettingsManager.swift */; };
+		F0C72234E150F524A8C9249F /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = A91E024FBAC85EA41EABFB8A /* GoogleSignIn */; };
+		F97315530A2D17874A80D831 /* OptaAppIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = F836695F9FDC1B6820EF5947 /* OptaAppIntents.swift */; };
+		FD7E659089209E71B3F90F22 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C9E446D282E8462A2BEEA32A /* Assets.xcassets */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		0235C38A45D298D302E6DBA4 /* ViewModifiers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewModifiers.swift; sourceTree = "<group>"; };
+		02C498F0BD0027AC0F016976 /* GoogleService.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = GoogleService.xcconfig; sourceTree = "<group>"; };
+		02D3E6DD798C16F79BDEE0B2 /* TodoistModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = TodoistModels.swift; path = OptaLMiOS/Models/TodoistModels.swift; sourceTree = "<group>"; };
+		03CECD8D8592FB2666597895 /* BriefingWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BriefingWidget.swift; sourceTree = "<group>"; };
+		05637FA696D9471B7362E647 /* AuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthManager.swift; sourceTree = "<group>"; };
+		0F5117D5D5935F5AD3D319BA /* Task.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Task.swift; sourceTree = "<group>"; };
+		1116DDCCEEA11CF37629CC46 /* AddTaskIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddTaskIntent.swift; sourceTree = "<group>"; };
+		11649A0E2937824542085CD1 /* HealthService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HealthService.swift; path = OptaLMiOS/Services/HealthService.swift; sourceTree = "<group>"; };
+		215541949BE79FBBB256675D /* CalendarSyncService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = CalendarSyncService.swift; path = OptaLMiOS/Services/CalendarSyncService.swift; sourceTree = "<group>"; };
+		232FEDE85CC8DA66A322CECD /* Color+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Extensions.swift"; sourceTree = "<group>"; };
+		29EA62B2EAF669AAF27093A3 /* CalendarEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarEvent.swift; sourceTree = "<group>"; };
+		2D6AA62A6F86872F83579E5B /* APIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIService.swift; sourceTree = "<group>"; };
+		2FF895B62AD76FA442DD556A /* TodoistAuthSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = TodoistAuthSheet.swift; path = OptaLMiOS/Views/Settings/TodoistAuthSheet.swift; sourceTree = "<group>"; };
+		37FA078373646CAE0371D572 /* NotificationSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationSettingsView.swift; sourceTree = "<group>"; };
+		3A0157CB2BE9D304AAAF0698 /* OptaLMiOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptaLMiOSApp.swift; sourceTree = "<group>"; };
+		3ACAF6DD7E68EF1578EFD5B2 /* SyncStatusView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SyncStatusView.swift; path = OptaLMiOS/Views/Settings/SyncStatusView.swift; sourceTree = "<group>"; };
+		3BB6425E442453BC721A9AE5 /* BackgroundSyncManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = BackgroundSyncManager.swift; path = OptaLMiOS/Services/BackgroundSyncManager.swift; sourceTree = "<group>"; };
+		3DED6C10D4DC8921974DEBA2 /* NotificationHistory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationHistory.swift; sourceTree = "<group>"; };
+		419A045F1A783B93D38C89E7 /* CreateEventIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateEventIntent.swift; sourceTree = "<group>"; };
+		493E2100B47007D760DF1389 /* WeatherService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherService.swift; sourceTree = "<group>"; };
+		4C812B697C43955891714A9B /* NotificationHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationHistoryView.swift; sourceTree = "<group>"; };
+		4D4FAC08CBD0CC5E0BF4D2DF /* RemindersSyncService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = RemindersSyncService.swift; path = OptaLMiOS/Services/RemindersSyncService.swift; sourceTree = "<group>"; };
+		4DC1571049DD55FE8A9BB458 /* OptaChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptaChatView.swift; sourceTree = "<group>"; };
+		5CBB39C3BF1D64D0E390C1C9 /* AskOptaIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AskOptaIntent.swift; sourceTree = "<group>"; };
+		6576B125B14C07882FF187F6 /* SyncState.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SyncState.swift; path = OptaLMiOS/Models/SyncState.swift; sourceTree = "<group>"; };
+		661183856645C8BCCD950038 /* Email.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Email.swift; sourceTree = "<group>"; };
+		6684019BC7BD81525941F3A0 /* EventSource.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = EventSource.swift; path = OptaLMiOS/Models/EventSource.swift; sourceTree = "<group>"; };
+		6B89057C66EB25BC78245CD5 /* TaskSyncCoordinator.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = TaskSyncCoordinator.swift; path = OptaLMiOS/Services/TaskSyncCoordinator.swift; sourceTree = "<group>"; };
+		6BAC72D14BE55FAF25748436 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		6C44A63C7BE273A45FB35A2E /* DashboardCards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardCards.swift; sourceTree = "<group>"; };
+		72510360CA6792CA52485DB5 /* NotificationSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationSettings.swift; sourceTree = "<group>"; };
+		72B6E892FAF5FA9006A18971 /* IntegrationsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = IntegrationsView.swift; path = OptaLMiOS/Views/Settings/IntegrationsView.swift; sourceTree = "<group>"; };
+		751B498377766CD739882518 /* TasksWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TasksWidget.swift; sourceTree = "<group>"; };
+		78EE66BD41F1D63657313BFA /* NotificationSettingsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationSettingsManager.swift; sourceTree = "<group>"; };
+		7FF672F63701DB27E0184EA5 /* UIComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UIComponents.swift; sourceTree = "<group>"; };
+		86820EF3E07ABCC7B18B0E72 /* OptaLMiOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = OptaLMiOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		88D00EDCF6EC641E7996635D /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
+		89324EAC5D3D301DF17A929E /* CalendarSyncSettings.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = CalendarSyncSettings.swift; path = OptaLMiOS/Views/Settings/CalendarSyncSettings.swift; sourceTree = "<group>"; };
+		8BD585D14FBA665050A60CE0 /* CalendarListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarListView.swift; sourceTree = "<group>"; };
+		8D699BF237A0408DE25AE4DA /* QuietHoursSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuietHoursSheet.swift; sourceTree = "<group>"; };
+		96450F73513CB51DCD8EAEC1 /* GetBriefingIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GetBriefingIntent.swift; sourceTree = "<group>"; };
+		A213A82F965221215F7A1E98 /* AIResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIResponse.swift; sourceTree = "<group>"; };
+		A66BA3DF13B75D4BBBE9FF39 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		A7CBD4947CC19A4D4F0092DE /* NotificationTestSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationTestSheet.swift; sourceTree = "<group>"; };
+		A7D777DF57A6533E3F3593E0 /* CalendarWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarWidget.swift; sourceTree = "<group>"; };
+		A9C8478C6C4F24588D1C61D8 /* TaskCacheManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = TaskCacheManager.swift; path = OptaLMiOS/Services/TaskCacheManager.swift; sourceTree = "<group>"; };
+		AFA9AF702B409C80E3C92F05 /* QuickActionsWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickActionsWidget.swift; sourceTree = "<group>"; };
+		B9005BE1FABFFF23B91D04A2 /* AppServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppServices.swift; sourceTree = "<group>"; };
+		BDE22A7D1258FDE55AC428EE /* NotificationTypeRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationTypeRow.swift; sourceTree = "<group>"; };
+		BF0CE73568ED1F040B7B2754 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		C400BB4C345CA3CFE2A1473C /* TodoistService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = TodoistService.swift; path = OptaLMiOS/Services/TodoistService.swift; sourceTree = "<group>"; };
+		C83482146D084C4D8A36E519 /* OptaWidgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptaWidgets.swift; sourceTree = "<group>"; };
+		C9E446D282E8462A2BEEA32A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		CA95198A3B9B4142CA3CA18A /* Date+Extensions.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = "Date+Extensions.swift"; path = "OptaLMiOS/Extensions/Date+Extensions.swift"; sourceTree = "<group>"; };
+		CC51D830002AF9411C035A7D /* LocalAIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalAIService.swift; sourceTree = "<group>"; };
+		D0EFB9774473A060F63D9157 /* HealthModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HealthModels.swift; path = OptaLMiOS/Models/HealthModels.swift; sourceTree = "<group>"; };
+		D75F0A279D6D8E4ED2DAF513 /* TasksListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TasksListView.swift; sourceTree = "<group>"; };
+		D97F076BD27FC2649327272A /* EventKitService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = EventKitService.swift; path = OptaLMiOS/Services/EventKitService.swift; sourceTree = "<group>"; };
+		D9D4D269046D6EE6C7CE13A3 /* HealthInsightsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HealthInsightsView.swift; path = OptaLMiOS/Views/Settings/HealthInsightsView.swift; sourceTree = "<group>"; };
+		E635DC92B5C5B2A3EF165C42 /* Animations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Animations.swift; sourceTree = "<group>"; };
+		E720F0613897F825ACABA4A6 /* EnhancedComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnhancedComponents.swift; sourceTree = "<group>"; };
+		F836695F9FDC1B6820EF5947 /* OptaAppIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptaAppIntents.swift; sourceTree = "<group>"; };
+		FE90DD4A5E4AC8ECADF5FB66 /* Date+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Date+Extensions.swift"; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		2E4EA9D86DC8DD35297B7636 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F0C72234E150F524A8C9249F /* GoogleSignIn in Frameworks */,
+				46A842A441DCD30451C95DD8 /* GoogleSignInSwift in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		0948FB8F60255308C1BBA204 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				2D6AA62A6F86872F83579E5B /* APIService.swift */,
+				B9005BE1FABFFF23B91D04A2 /* AppServices.swift */,
+				05637FA696D9471B7362E647 /* AuthManager.swift */,
+				CC51D830002AF9411C035A7D /* LocalAIService.swift */,
+				78EE66BD41F1D63657313BFA /* NotificationSettingsManager.swift */,
+				493E2100B47007D760DF1389 /* WeatherService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		199D6927F09A06895E25A490 /* Extensions */ = {
+			isa = PBXGroup;
+			children = (
+				E635DC92B5C5B2A3EF165C42 /* Animations.swift */,
+				232FEDE85CC8DA66A322CECD /* Color+Extensions.swift */,
+				FE90DD4A5E4AC8ECADF5FB66 /* Date+Extensions.swift */,
+				E720F0613897F825ACABA4A6 /* EnhancedComponents.swift */,
+				7FF672F63701DB27E0184EA5 /* UIComponents.swift */,
+				0235C38A45D298D302E6DBA4 /* ViewModifiers.swift */,
+			);
+			path = Extensions;
+			sourceTree = "<group>";
+		};
+		2502A78DB53DD45AE2BC5018 /* OptaLMiOS */ = {
+			isa = PBXGroup;
+			children = (
+				02C498F0BD0027AC0F016976 /* GoogleService.xcconfig */,
+			);
+			name = OptaLMiOS;
+			path = .;
+			sourceTree = "<group>";
+		};
+		42F9CEE04BBE3FE045D5C0D1 /* OptaLMiOS */ = {
+			isa = PBXGroup;
+			children = (
+				C9E446D282E8462A2BEEA32A /* Assets.xcassets */,
+				BF0CE73568ED1F040B7B2754 /* Info.plist */,
+				3A0157CB2BE9D304AAAF0698 /* OptaLMiOSApp.swift */,
+				199D6927F09A06895E25A490 /* Extensions */,
+				E798C8132E47FC49AE25A66A /* Intents */,
+				5E4EF2F854A67E985F5CA3FF /* Models */,
+				0948FB8F60255308C1BBA204 /* Services */,
+				C54A8D32D7AC6DF781688CF8 /* Views */,
+				8849A29726CC2F3DCD678606 /* Widgets */,
+			);
+			path = OptaLMiOS;
+			sourceTree = "<group>";
+		};
+		5C2593A1104B518578965282 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				86820EF3E07ABCC7B18B0E72 /* OptaLMiOS.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		5E4EF2F854A67E985F5CA3FF /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				A213A82F965221215F7A1E98 /* AIResponse.swift */,
+				29EA62B2EAF669AAF27093A3 /* CalendarEvent.swift */,
+				661183856645C8BCCD950038 /* Email.swift */,
+				3DED6C10D4DC8921974DEBA2 /* NotificationHistory.swift */,
+				72510360CA6792CA52485DB5 /* NotificationSettings.swift */,
+				0F5117D5D5935F5AD3D319BA /* Task.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		6C67B2AE52080323A19E1BF3 /* Dashboard */ = {
+			isa = PBXGroup;
+			children = (
+				6C44A63C7BE273A45FB35A2E /* DashboardCards.swift */,
+				88D00EDCF6EC641E7996635D /* DashboardView.swift */,
+			);
+			path = Dashboard;
+			sourceTree = "<group>";
+		};
+		854DE814EC93ED192141CE24 /* Calendar */ = {
+			isa = PBXGroup;
+			children = (
+				8BD585D14FBA665050A60CE0 /* CalendarListView.swift */,
+			);
+			path = Calendar;
+			sourceTree = "<group>";
+		};
+		8849A29726CC2F3DCD678606 /* Widgets */ = {
+			isa = PBXGroup;
+			children = (
+				03CECD8D8592FB2666597895 /* BriefingWidget.swift */,
+				A7D777DF57A6533E3F3593E0 /* CalendarWidget.swift */,
+				C83482146D084C4D8A36E519 /* OptaWidgets.swift */,
+				AFA9AF702B409C80E3C92F05 /* QuickActionsWidget.swift */,
+				751B498377766CD739882518 /* TasksWidget.swift */,
+			);
+			path = Widgets;
+			sourceTree = "<group>";
+		};
+		C22C9E53D6473321A3380F57 /* Tasks */ = {
+			isa = PBXGroup;
+			children = (
+				D75F0A279D6D8E4ED2DAF513 /* TasksListView.swift */,
+			);
+			path = Tasks;
+			sourceTree = "<group>";
+		};
+		C54A8D32D7AC6DF781688CF8 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				854DE814EC93ED192141CE24 /* Calendar */,
+				6C67B2AE52080323A19E1BF3 /* Dashboard */,
+				C843AD2D3D60FB5231883BAC /* Onboarding */,
+				D7882E0574455DA827619DF0 /* OptaChat */,
+				DF413A43403D20435D0356BE /* Settings */,
+				C22C9E53D6473321A3380F57 /* Tasks */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		C843AD2D3D60FB5231883BAC /* Onboarding */ = {
+			isa = PBXGroup;
+			children = (
+				6BAC72D14BE55FAF25748436 /* OnboardingView.swift */,
+			);
+			path = Onboarding;
+			sourceTree = "<group>";
+		};
+		C8F06075012C1E624663B5C2 = {
+			isa = PBXGroup;
+			children = (
+				42F9CEE04BBE3FE045D5C0D1 /* OptaLMiOS */,
+				2502A78DB53DD45AE2BC5018 /* OptaLMiOS */,
+				5C2593A1104B518578965282 /* Products */,
+				6684019BC7BD81525941F3A0 /* EventSource.swift */,
+				02D3E6DD798C16F79BDEE0B2 /* TodoistModels.swift */,
+				6576B125B14C07882FF187F6 /* SyncState.swift */,
+				D0EFB9774473A060F63D9157 /* HealthModels.swift */,
+				D97F076BD27FC2649327272A /* EventKitService.swift */,
+				215541949BE79FBBB256675D /* CalendarSyncService.swift */,
+				4D4FAC08CBD0CC5E0BF4D2DF /* RemindersSyncService.swift */,
+				11649A0E2937824542085CD1 /* HealthService.swift */,
+				C400BB4C345CA3CFE2A1473C /* TodoistService.swift */,
+				6B89057C66EB25BC78245CD5 /* TaskSyncCoordinator.swift */,
+				A9C8478C6C4F24588D1C61D8 /* TaskCacheManager.swift */,
+				3BB6425E442453BC721A9AE5 /* BackgroundSyncManager.swift */,
+				CA95198A3B9B4142CA3CA18A /* Date+Extensions.swift */,
+				72B6E892FAF5FA9006A18971 /* IntegrationsView.swift */,
+				2FF895B62AD76FA442DD556A /* TodoistAuthSheet.swift */,
+				89324EAC5D3D301DF17A929E /* CalendarSyncSettings.swift */,
+				D9D4D269046D6EE6C7CE13A3 /* HealthInsightsView.swift */,
+				3ACAF6DD7E68EF1578EFD5B2 /* SyncStatusView.swift */,
+			);
+			indentWidth = 4;
+			sourceTree = "<group>";
+			tabWidth = 4;
+			usesTabs = 0;
+		};
+		D7882E0574455DA827619DF0 /* OptaChat */ = {
+			isa = PBXGroup;
+			children = (
+				4DC1571049DD55FE8A9BB458 /* OptaChatView.swift */,
+			);
+			path = OptaChat;
+			sourceTree = "<group>";
+		};
+		DF413A43403D20435D0356BE /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				4C812B697C43955891714A9B /* NotificationHistoryView.swift */,
+				37FA078373646CAE0371D572 /* NotificationSettingsView.swift */,
+				A7CBD4947CC19A4D4F0092DE /* NotificationTestSheet.swift */,
+				BDE22A7D1258FDE55AC428EE /* NotificationTypeRow.swift */,
+				8D699BF237A0408DE25AE4DA /* QuietHoursSheet.swift */,
+				A66BA3DF13B75D4BBBE9FF39 /* SettingsView.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+		E798C8132E47FC49AE25A66A /* Intents */ = {
+			isa = PBXGroup;
+			children = (
+				1116DDCCEEA11CF37629CC46 /* AddTaskIntent.swift */,
+				5CBB39C3BF1D64D0E390C1C9 /* AskOptaIntent.swift */,
+				419A045F1A783B93D38C89E7 /* CreateEventIntent.swift */,
+				96450F73513CB51DCD8EAEC1 /* GetBriefingIntent.swift */,
+				F836695F9FDC1B6820EF5947 /* OptaAppIntents.swift */,
+			);
+			path = Intents;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		09596D13611D0C637D05BCF2 /* OptaLMiOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C5E797592C70DE1AA6797F65 /* Build configuration list for PBXNativeTarget "OptaLMiOS" */;
+			buildPhases = (
+				631171092761322AA2E36C87 /* Sources */,
+				862196D9ADE7B134E0D3A2BD /* Resources */,
+				2E4EA9D86DC8DD35297B7636 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = OptaLMiOS;
+			packageProductDependencies = (
+				A91E024FBAC85EA41EABFB8A /* GoogleSignIn */,
+				DF6970CE2A1933ACF53F6C6D /* GoogleSignInSwift */,
+			);
+			productName = OptaLMiOS;
+			productReference = 86820EF3E07ABCC7B18B0E72 /* OptaLMiOS.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		D0165C5AC018977ACAABD885 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					09596D13611D0C637D05BCF2 = {
+						DevelopmentTeam = 77PKS547H5;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 9CD6972FE2176DC953BEFFD0 /* Build configuration list for PBXProject "OptaLMiOS" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = C8F06075012C1E624663B5C2;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				D588D893BA2F8A1920F09EAF /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 5C2593A1104B518578965282 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				09596D13611D0C637D05BCF2 /* OptaLMiOS */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		862196D9ADE7B134E0D3A2BD /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FD7E659089209E71B3F90F22 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		631171092761322AA2E36C87 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				835F24E237F3516ACB0D7182 /* AIResponse.swift in Sources */,
+				6DC9A07AEA13F8396FA65DBF /* APIService.swift in Sources */,
+				9A3DA95EB736EA2B0E3D5502 /* AddTaskIntent.swift in Sources */,
+				027922F4E7E3C97440EB8CE2 /* Animations.swift in Sources */,
+				65E5B09CDD90FF909C8240C0 /* AppServices.swift in Sources */,
+				6CCA1912D8CB8306171779BF /* AskOptaIntent.swift in Sources */,
+				52B8BF103D2AF2164DCF69F1 /* AuthManager.swift in Sources */,
+				36B73EF9DC2A3EA2ABC18DB9 /* BriefingWidget.swift in Sources */,
+				97FA1B1BFEB4771A515A2966 /* CalendarEvent.swift in Sources */,
+				93A60BE5EF60509FFDE7002D /* CalendarListView.swift in Sources */,
+				8D01965FF956AA850A13039B /* CalendarWidget.swift in Sources */,
+				14F1F3624F68025586E2966C /* Color+Extensions.swift in Sources */,
+				3CF069CB5647D9E07FC0A582 /* CreateEventIntent.swift in Sources */,
+				0C4E948B51B7AFBB97D0CA68 /* DashboardCards.swift in Sources */,
+				583E3AADD7F0A292EEC1D04F /* DashboardView.swift in Sources */,
+				CD50F59128573858FBB94DCD /* Date+Extensions.swift in Sources */,
+				C6DF98BF01058CD723F08579 /* Email.swift in Sources */,
+				3792267DD158C64F70DFF933 /* EnhancedComponents.swift in Sources */,
+				86A88DF0C836A24ADDBF0200 /* GetBriefingIntent.swift in Sources */,
+				7C0FC3969AC770AD66B92014 /* LocalAIService.swift in Sources */,
+				62C8436924D03BB5F0B8A273 /* NotificationHistory.swift in Sources */,
+				64886FCA65858E4344DFB190 /* NotificationHistoryView.swift in Sources */,
+				B49B61F4CCE0FC06084050C5 /* NotificationSettings.swift in Sources */,
+				E86EFDC0D370F02F9F9CAFB5 /* NotificationSettingsManager.swift in Sources */,
+				DC53A79EC7DB9EBAB061F46D /* NotificationSettingsView.swift in Sources */,
+				B3A124BDD681F130F7703707 /* NotificationTestSheet.swift in Sources */,
+				2CB26AE88AE008239A7AA847 /* NotificationTypeRow.swift in Sources */,
+				842B4BC7567660C01293E81B /* OnboardingView.swift in Sources */,
+				F97315530A2D17874A80D831 /* OptaAppIntents.swift in Sources */,
+				E205E461A97E6B94DC8BD0F0 /* OptaChatView.swift in Sources */,
+				DDF8CEEBA32BCDC22EBF2B3E /* OptaLMiOSApp.swift in Sources */,
+				3E10C0ADD3B6E290E371B4F4 /* OptaWidgets.swift in Sources */,
+				9DAB0229FEC2898479CD17F6 /* QuickActionsWidget.swift in Sources */,
+				2C051E677F68FD42A9B6B700 /* QuietHoursSheet.swift in Sources */,
+				DBE352D94C1C3AD1492C3880 /* SettingsView.swift in Sources */,
+				0FF13CB7A246D087CE97404F /* Task.swift in Sources */,
+				6DC2C3B942F1988BA0176319 /* TasksListView.swift in Sources */,
+				D354BA16EC3AA2AAE2F635FB /* TasksWidget.swift in Sources */,
+				64D2F3B24F69BBCC04A55B84 /* UIComponents.swift in Sources */,
+				60841C19B45B22F6B95DE941 /* ViewModifiers.swift in Sources */,
+				D54CA44D1A4C147B72E0C0CB /* WeatherService.swift in Sources */,
+				44CB92FC0CEBF5B31D9E25DE /* Date+Extensions.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		1348E7885FCCD4212CE228AC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 02C498F0BD0027AC0F016976 /* GoogleService.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 77PKS547H5;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = OptaLMiOS/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.opta.lm.ios;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		2013F28CCEBDBABF3757D0CA /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 02C498F0BD0027AC0F016976 /* GoogleService.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 77PKS547H5;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = OptaLMiOS/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.opta.lm.ios;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		8B72D6DF94D553925B017E97 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = OptaLMiOS/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.opta.lm.ios;
+				PRODUCT_NAME = "Opta LM";
+				SDKROOT = iphoneos;
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		90177EDDFBF556836A6C7EAD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = OptaLMiOS/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.opta.lm.ios;
+				PRODUCT_NAME = "Opta LM";
+				SDKROOT = iphoneos;
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		9CD6972FE2176DC953BEFFD0 /* Build configuration list for PBXProject "OptaLMiOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1348E7885FCCD4212CE228AC /* Debug */,
+				2013F28CCEBDBABF3757D0CA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		C5E797592C70DE1AA6797F65 /* Build configuration list for PBXNativeTarget "OptaLMiOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				90177EDDFBF556836A6C7EAD /* Debug */,
+				8B72D6DF94D553925B017E97 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		D588D893BA2F8A1920F09EAF /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/google/GoogleSignIn-iOS";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 8.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		A91E024FBAC85EA41EABFB8A /* GoogleSignIn */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D588D893BA2F8A1920F09EAF /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignIn;
+		};
+		DF6970CE2A1933ACF53F6C6D /* GoogleSignInSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D588D893BA2F8A1920F09EAF /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignInSwift;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = D0165C5AC018977ACAABD885 /* Project object */;
+}

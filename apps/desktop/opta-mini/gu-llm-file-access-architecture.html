@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM File Access Architecture - Opta Nexus Deep Dive</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --void: #09090b;
+            --surface: #18181b;
+            --elevated: #27272a;
+            --border: #3f3f46;
+            --text-primary: #fafafa;
+            --text-secondary: #a1a1aa;
+            --text-muted: #52525b;
+            --primary: #8b5cf6;
+            --primary-glow: #a855f7;
+            --neon-blue: #3b82f6;
+            --neon-green: #22c55e;
+            --neon-amber: #f59e0b;
+            --neon-red: #ef4444;
+            --neon-cyan: #06b6d4;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--void);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+            opacity: 0.03;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .ambient-glow {
+            position: fixed;
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            filter: blur(150px);
+            opacity: 0.12;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .glow-1 { top: -200px; right: -100px; background: var(--primary); }
+        .glow-2 { bottom: -200px; left: -100px; background: var(--neon-cyan); }
+        .glow-3 { top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--neon-green); opacity: 0.05; }
+
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+            padding: 60px 40px;
+            position: relative;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .header h1 {
+            font-family: 'Sora', sans-serif;
+            font-size: 2.8rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #fafafa 0%, #06b6d4 40%, #8b5cf6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 16px;
+        }
+
+        .header .subtitle {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+        }
+
+        .glass-panel {
+            background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 32px;
+            margin-bottom: 32px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .glass-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        }
+
+        .glass-panel:hover {
+            border-color: rgba(139, 92, 246, 0.3);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .glass-panel h2 {
+            font-family: 'Sora', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .neon-divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--neon-cyan), var(--primary), transparent);
+            margin: 48px 0;
+            box-shadow: 0 0 20px rgba(6, 182, 212, 0.4);
+        }
+
+        /* Key Insight Box */
+        .key-insight {
+            background: linear-gradient(135deg, rgba(6, 182, 212, 0.15), rgba(6, 182, 212, 0.05));
+            border: 1px solid rgba(6, 182, 212, 0.3);
+            border-radius: 16px;
+            padding: 24px 32px;
+            margin: 32px 0;
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+        }
+
+        .key-insight .icon {
+            font-size: 2rem;
+            flex-shrink: 0;
+        }
+
+        .key-insight .content h3 {
+            font-family: 'Sora', sans-serif;
+            color: var(--neon-cyan);
+            margin-bottom: 8px;
+        }
+
+        .key-insight .content p {
+            color: var(--text-secondary);
+        }
+
+        /* Data Flow Diagram */
+        .data-flow {
+            background: var(--surface);
+            border-radius: 16px;
+            padding: 40px;
+            margin: 24px 0;
+            border: 1px solid var(--border);
+            overflow-x: auto;
+        }
+
+        .flow-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .flow-node {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 16px 24px;
+            text-align: center;
+            min-width: 120px;
+            transition: all 0.3s ease;
+        }
+
+        .flow-node.macbook { border-color: var(--neon-blue); background: rgba(59, 130, 246, 0.1); }
+        .flow-node.studio { border-color: var(--primary); background: rgba(139, 92, 246, 0.1); }
+        .flow-node.llm { border-color: var(--neon-green); background: rgba(34, 197, 94, 0.1); }
+        .flow-node.disk { border-color: var(--neon-amber); background: rgba(245, 158, 11, 0.1); }
+        .flow-node.network { border-color: var(--neon-red); background: rgba(239, 68, 68, 0.05); border-style: dashed; }
+
+        .flow-node .icon { font-size: 1.5rem; margin-bottom: 8px; }
+        .flow-node .label { font-size: 0.85rem; color: var(--text-secondary); }
+        .flow-node .sublabel { font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; }
+
+        .flow-arrow {
+            color: var(--text-muted);
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .flow-arrow.fast { color: var(--neon-green); }
+        .flow-arrow.slow { color: var(--neon-red); }
+
+        .speed-label {
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin-top: 4px;
+        }
+
+        .speed-label.fast { background: rgba(34, 197, 94, 0.2); color: var(--neon-green); }
+        .speed-label.slow { background: rgba(239, 68, 68, 0.2); color: var(--neon-red); }
+
+        /* Speed Comparison */
+        .speed-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin: 24px 0;
+        }
+
+        .speed-card {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+        }
+
+        .speed-card .metric {
+            font-family: 'Sora', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .speed-card .metric.green { color: var(--neon-green); }
+        .speed-card .metric.amber { color: var(--neon-amber); }
+        .speed-card .metric.red { color: var(--neon-red); }
+
+        .speed-card .label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+        }
+
+        .speed-card .sublabel {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+        }
+
+        /* Comparison Bar */
+        .comparison-bar {
+            margin: 32px 0;
+        }
+
+        .bar-item {
+            margin: 16px 0;
+        }
+
+        .bar-item .label-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .bar-item .label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .bar-item .value {
+            font-family: 'Sora', sans-serif;
+            font-weight: 600;
+        }
+
+        .bar-track {
+            background: var(--surface);
+            border-radius: 8px;
+            height: 24px;
+            overflow: hidden;
+        }
+
+        .bar-fill {
+            height: 100%;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            transition: width 1s ease;
+        }
+
+        .bar-fill.local { background: linear-gradient(90deg, var(--neon-green), #10b981); width: 100%; }
+        .bar-fill.network { background: linear-gradient(90deg, var(--neon-red), #f87171); width: 1.25%; }
+        .bar-fill.memory { background: linear-gradient(90deg, var(--neon-cyan), #22d3ee); width: 100%; }
+
+        /* Requirements Table */
+        .requirements-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 24px 0;
+        }
+
+        .requirements-table th,
+        .requirements-table td {
+            padding: 16px 20px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .requirements-table th {
+            font-family: 'Sora', sans-serif;
+            font-weight: 600;
+            background: rgba(255,255,255,0.03);
+        }
+
+        .requirements-table td { color: var(--text-secondary); }
+
+        .requirements-table tr:hover td {
+            background: rgba(139, 92, 246, 0.05);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-required { background: rgba(239, 68, 68, 0.2); color: var(--neon-red); }
+        .badge-optional { background: rgba(139, 92, 246, 0.2); color: var(--primary); }
+        .badge-volatile { background: rgba(245, 158, 11, 0.2); color: var(--neon-amber); }
+
+        .size-pill {
+            display: inline-block;
+            padding: 2px 8px;
+            background: var(--surface);
+            border-radius: 4px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-left: 8px;
+        }
+
+        /* Architecture Deep Dive */
+        .arch-diagram {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 32px;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 0.8rem;
+            line-height: 1.7;
+            overflow-x: auto;
+            margin: 24px 0;
+        }
+
+        .arch-diagram pre { color: var(--text-secondary); }
+        .arch-purple { color: var(--primary); font-weight: 600; }
+        .arch-green { color: var(--neon-green); }
+        .arch-blue { color: var(--neon-blue); }
+        .arch-amber { color: var(--neon-amber); }
+        .arch-cyan { color: var(--neon-cyan); }
+        .arch-red { color: var(--neon-red); }
+        .arch-muted { color: var(--text-muted); }
+
+        /* Cons Section */
+        .cons-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin: 24px 0;
+        }
+
+        .cons-card {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 24px;
+        }
+
+        .cons-card h4 {
+            font-family: 'Sora', sans-serif;
+            font-size: 1rem;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .cons-card.con h4 { color: var(--neon-amber); }
+        .cons-card.mitigation h4 { color: var(--neon-green); }
+
+        .cons-card p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* Summary */
+        .summary-box {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(6, 182, 212, 0.05));
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 16px;
+            padding: 32px;
+            margin-top: 40px;
+        }
+
+        .summary-box h3 {
+            font-family: 'Sora', sans-serif;
+            background: linear-gradient(135deg, var(--primary-glow), var(--neon-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 16px;
+        }
+
+        .summary-list {
+            list-style: none;
+        }
+
+        .summary-list li {
+            padding: 8px 0;
+            padding-left: 28px;
+            position: relative;
+            color: var(--text-secondary);
+        }
+
+        .summary-list li::before {
+            content: '→';
+            position: absolute;
+            left: 0;
+            color: var(--primary);
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 60px;
+            padding-top: 32px;
+            border-top: 1px solid var(--border);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        @media (max-width: 900px) {
+            .speed-grid { grid-template-columns: 1fr; }
+            .cons-grid { grid-template-columns: 1fr; }
+            .header h1 { font-size: 2rem; }
+            .container { padding: 40px 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="ambient-glow glow-1"></div>
+    <div class="ambient-glow glow-2"></div>
+    <div class="ambient-glow glow-3"></div>
+
+    <div class="container">
+        <header class="header">
+            <h1>LLM File Access Architecture</h1>
+            <p class="subtitle">How Claude Code reads your files at 800 GB/s</p>
+        </header>
+
+        <!-- Key Insight -->
+        <div class="key-insight">
+            <span class="icon">🔑</span>
+            <div class="content">
+                <h3>The Core Principle</h3>
+                <p>
+                    The LLM doesn't "sync" files — <strong style="color: var(--text-primary);">Claude Code reads them directly from disk</strong>.
+                    When you run Claude Code on the Mac Studio (or route to it), file operations happen at local SSD speed.
+                    This is why your code must live on the Mac Studio, not be synced to it.
+                </p>
+            </div>
+        </div>
+
+        <div class="neon-divider"></div>
+
+        <!-- How It Works -->
+        <div class="glass-panel">
+            <h2><span class="icon">⚡</span> How File Access Actually Works</h2>
+
+            <div class="data-flow">
+                <p style="text-align: center; color: var(--text-muted); margin-bottom: 24px;">When you ask Claude to read or modify a file:</p>
+
+                <div class="flow-row">
+                    <div class="flow-node macbook">
+                        <div class="icon">💻</div>
+                        <div class="label">You (MacBook)</div>
+                        <div class="sublabel">Type a prompt</div>
+                    </div>
+                    <div class="flow-arrow">→</div>
+                    <div class="flow-node studio">
+                        <div class="icon">🔌</div>
+                        <div class="label">VS Code SSH</div>
+                        <div class="sublabel">Terminal on Studio</div>
+                    </div>
+                    <div class="flow-arrow">→</div>
+                    <div class="flow-node studio">
+                        <div class="icon">📡</div>
+                        <div class="label">Claude Code</div>
+                        <div class="sublabel">Running on Studio</div>
+                    </div>
+                </div>
+
+                <div class="flow-row">
+                    <div class="flow-arrow" style="transform: rotate(90deg);">↓</div>
+                </div>
+
+                <div class="flow-row">
+                    <div class="flow-node studio">
+                        <div class="icon">🔀</div>
+                        <div class="label">LiteLLM Proxy</div>
+                        <div class="sublabel">:4000</div>
+                    </div>
+                    <div class="flow-arrow fast">→</div>
+                    <div class="flow-node llm">
+                        <div class="icon">🧠</div>
+                        <div class="label">DeepSeek-70B</div>
+                        <div class="sublabel">llama-server :8080</div>
+                    </div>
+                </div>
+
+                <div class="flow-row">
+                    <div class="flow-arrow" style="transform: rotate(90deg);">↓</div>
+                    <span style="color: var(--text-muted); font-size: 0.8rem; margin-left: 20px;">LLM says: "Read file X"</span>
+                </div>
+
+                <div class="flow-row">
+                    <div class="flow-node studio">
+                        <div class="icon">📖</div>
+                        <div class="label">Read Tool</div>
+                        <div class="sublabel">File system access</div>
+                    </div>
+                    <div class="flow-arrow fast">→</div>
+                    <div class="flow-node disk">
+                        <div class="icon">💾</div>
+                        <div class="label">SSD</div>
+                        <div class="sublabel">~/Projects/Opta/</div>
+                        <div class="speed-label fast">7 GB/s</div>
+                    </div>
+                </div>
+
+                <p style="text-align: center; color: var(--neon-green); margin-top: 24px; font-weight: 600;">
+                    ✓ All file operations happen locally on Mac Studio — no network bottleneck
+                </p>
+            </div>
+        </div>
+
+        <!-- Speed Comparison -->
+        <div class="glass-panel">
+            <h2><span class="icon">🚀</span> Speed Comparison: Local vs Network</h2>
+
+            <div class="speed-grid">
+                <div class="speed-card">
+                    <div class="metric green">7 GB/s</div>
+                    <div class="label">Mac Studio SSD</div>
+                    <div class="sublabel">Local NVMe read speed</div>
+                </div>
+                <div class="speed-card">
+                    <div class="metric amber">800 GB/s</div>
+                    <div class="label">Unified Memory</div>
+                    <div class="sublabel">GPU ↔ CPU bandwidth</div>
+                </div>
+                <div class="speed-card">
+                    <div class="metric red">~100 MB/s</div>
+                    <div class="label">Network (Gigabit)</div>
+                    <div class="sublabel">If files were remote</div>
+                </div>
+            </div>
+
+            <div class="comparison-bar">
+                <div class="bar-item">
+                    <div class="label-row">
+                        <span class="label">Local SSD (Your Setup)</span>
+                        <span class="value" style="color: var(--neon-green);">7,000 MB/s</span>
+                    </div>
+                    <div class="bar-track">
+                        <div class="bar-fill local">70x faster</div>
+                    </div>
+                </div>
+
+                <div class="bar-item">
+                    <div class="label-row">
+                        <span class="label">Network File Share (If synced)</span>
+                        <span class="value" style="color: var(--neon-red);">~100 MB/s</span>
+                    </div>
+                    <div class="bar-track">
+                        <div class="bar-fill network"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="key-insight" style="background: linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(34, 197, 94, 0.05)); border-color: rgba(34, 197, 94, 0.3);">
+                <span class="icon">💡</span>
+                <div class="content">
+                    <h3 style="color: var(--neon-green);">Why This Matters</h3>
+                    <p>
+                        Claude Code uses tools like <code style="background: var(--surface); padding: 2px 6px; border-radius: 4px;">Read</code>,
+                        <code style="background: var(--surface); padding: 2px 6px; border-radius: 4px;">Grep</code>, and
+                        <code style="background: var(--surface); padding: 2px 6px; border-radius: 4px;">Glob</code>
+                        to search and read files. With a large codebase, it might read 100+ files per task.
+                        <br><br>
+                        <strong style="color: var(--text-primary);">Local: 100 files × 100KB = 10MB → 1.4ms</strong><br>
+                        <strong style="color: var(--neon-red);">Network: 100 files × 100KB = 10MB → 100ms + latency</strong>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="neon-divider"></div>
+
+        <!-- What Goes Where -->
+        <div class="glass-panel">
+            <h2><span class="icon">📦</span> What Must Be on Mac Studio (and Why)</h2>
+
+            <table class="requirements-table">
+                <thead>
+                    <tr>
+                        <th>Component</th>
+                        <th>Location</th>
+                        <th>Status</th>
+                        <th>Why</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            <strong>AI Models</strong>
+                            <span class="size-pill">~81 GB</span>
+                        </td>
+                        <td><code>/Users/Shared/Models/</code></td>
+                        <td><span class="badge badge-required">Required</span></td>
+                        <td>LLM loads into GPU memory. Must be local.</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <strong>Source Code</strong>
+                            <span class="size-pill">Variable</span>
+                        </td>
+                        <td><code>~/Projects/Opta/</code></td>
+                        <td><span class="badge badge-required">Required</span></td>
+                        <td>Claude Code reads files via local filesystem tools.</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <strong>llama-server</strong>
+                            <span class="size-pill">~50 MB</span>
+                        </td>
+                        <td><code>~/llama-server</code></td>
+                        <td><span class="badge badge-required">Required</span></td>
+                        <td>The actual LLM inference engine.</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <strong>LiteLLM Proxy</strong>
+                            <span class="size-pill">~20 MB</span>
+                        </td>
+                        <td><code>~/.local/bin/litellm</code></td>
+                        <td><span class="badge badge-required">Required</span></td>
+                        <td>Translates Claude API → OpenAI API format.</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <strong>Build Artifacts</strong>
+                            <span class="size-pill">Up to 64 GB</span>
+                        </td>
+                        <td><code>/Volumes/OptaBuilds/</code></td>
+                        <td><span class="badge badge-volatile">Volatile</span></td>
+                        <td>RAM disk. Clears on restart. Instant builds.</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <strong>Claude Code Config</strong>
+                            <span class="size-pill">~1 MB</span>
+                        </td>
+                        <td><code>~/.claude/</code></td>
+                        <td><span class="badge badge-required">Required</span></td>
+                        <td>MCP servers, skills, settings.</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <strong>Shared Files (Ideas, Assets)</strong>
+                            <span class="size-pill">Variable</span>
+                        </td>
+                        <td><code>~/Shared/</code></td>
+                        <td><span class="badge badge-optional">Optional</span></td>
+                        <td>Non-code files. Can sync via Syncthing if desired.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- The Access Chain -->
+        <div class="glass-panel">
+            <h2><span class="icon">🔗</span> The Complete Access Chain</h2>
+
+            <div class="arch-diagram">
+<pre>
+<span class="arch-muted">┌─────────────────────────────────────────────────────────────────────────────┐</span>
+<span class="arch-muted">│</span>                           <span class="arch-purple">YOUR MACBOOK PRO</span>                                  <span class="arch-muted">│</span>
+<span class="arch-muted">│</span>                                                                             <span class="arch-muted">│</span>
+<span class="arch-muted">│</span>   <span class="arch-blue">VS Code</span> ──── SSH tunnel ────────────────────────────────────┐           <span class="arch-muted">│</span>
+<span class="arch-muted">│</span>                                                                │           <span class="arch-muted">│</span>
+<span class="arch-muted">│</span>   Environment:                                                 │           <span class="arch-muted">│</span>
+<span class="arch-muted">│</span>   ANTHROPIC_BASE_URL=<span class="arch-cyan">http://192.168.1.100:4000</span>                │           <span class="arch-muted">│</span>
+<span class="arch-muted">│</span>   ANTHROPIC_API_KEY=<span class="arch-cyan">sk-local-opta</span>                              │           <span class="arch-muted">│</span>
+<span class="arch-muted">└─────────────────────────────────────────────────────────────────┼───────────┘</span>
+                                                                  │
+                                                                  │ <span class="arch-muted">Network (1 Gbps)</span>
+                                                                  ▼
+<span class="arch-muted">┌─────────────────────────────────────────────────────────────────────────────┐</span>
+<span class="arch-muted">│</span>                           <span class="arch-purple">MAC STUDIO (192.168.1.100)</span>                       <span class="arch-muted">│</span>
+<span class="arch-muted">│</span>                                                                             <span class="arch-muted">│</span>
+<span class="arch-muted">│</span>   <span class="arch-blue">SSH Session</span> (your terminal runs here)                                    <span class="arch-muted">│</span>
+<span class="arch-muted">│</span>        │                                                                    <span class="arch-muted">│</span>
+<span class="arch-muted">│</span>        ▼                                                                    <span class="arch-muted">│</span>
+<span class="arch-muted">│</span>   <span class="arch-green">Claude Code CLI</span> ─────────┐                                               <span class="arch-muted">│</span>
+<span class="arch-muted">│</span>        │                    │                                               <span class="arch-muted">│</span>
+<span class="arch-muted">│</span>        │ <span class="arch-muted">API calls</span>          │ <span class="arch-muted">Tool calls (Read, Grep, etc.)</span>               <span class="arch-muted">│</span>
+<span class="arch-muted">│</span>        ▼                    ▼                                               <span class="arch-muted">│</span>
+<span class="arch-muted">│</span>   <span class="arch-cyan">LiteLLM :4000</span>        <span class="arch-amber">Local Filesystem</span>                                    <span class="arch-muted">│</span>
+<span class="arch-muted">│</span>        │                    │                                               <span class="arch-muted">│</span>
+<span class="arch-muted">│</span>        │ <span class="arch-muted">localhost</span>          │ <span class="arch-green">7 GB/s SSD</span>                                   <span class="arch-muted">│</span>
+<span class="arch-muted">│</span>        ▼                    ▼                                               <span class="arch-muted">│</span>
+<span class="arch-muted">│</span>   <span class="arch-green">llama-server :8080</span>   <span class="arch-amber">~/Projects/Opta/</span>                                    <span class="arch-muted">│</span>
+<span class="arch-muted">│</span>        │                    │                                               <span class="arch-muted">│</span>
+<span class="arch-muted">│</span>        │ <span class="arch-green">800 GB/s</span>           │ <span class="arch-muted">File contents returned to Claude Code</span>       <span class="arch-muted">│</span>
+<span class="arch-muted">│</span>        ▼                    │                                               <span class="arch-muted">│</span>
+<span class="arch-muted">│</span>   <span class="arch-purple">DeepSeek-70B in GPU Memory</span>                                               <span class="arch-muted">│</span>
+<span class="arch-muted">│</span>   <span class="arch-muted">(78GB model + 40GB KV cache)</span>                                             <span class="arch-muted">│</span>
+<span class="arch-muted">│</span>                                                                             <span class="arch-muted">│</span>
+<span class="arch-muted">└─────────────────────────────────────────────────────────────────────────────┘</span>
+
+<span class="arch-green">✓ File reads: LOCAL (7 GB/s)</span>
+<span class="arch-green">✓ LLM inference: LOCAL (800 GB/s memory bandwidth)</span>
+<span class="arch-muted">~ Only your keystrokes go over the network</span>
+</pre>
+            </div>
+        </div>
+
+        <div class="neon-divider"></div>
+
+        <!-- Cons / Trade-offs -->
+        <div class="glass-panel">
+            <h2><span class="icon">⚖️</span> Trade-offs of This Architecture</h2>
+
+            <div class="cons-grid">
+                <div class="cons-card con">
+                    <h4>⚠️ Network Dependency</h4>
+                    <p>You need network access to the Mac Studio to code. No offline coding on MacBook with LLM assistance.</p>
+                </div>
+                <div class="cons-card mitigation">
+                    <h4>✓ Mitigation</h4>
+                    <p>Keep a Git clone on MacBook. Code offline without AI, push when reconnected. Or use <code>claude-cloud</code> alias for Anthropic API.</p>
+                </div>
+
+                <div class="cons-card con">
+                    <h4>⚠️ Single Point of Failure</h4>
+                    <p>If Mac Studio is down, no local LLM. Your code is only on that machine.</p>
+                </div>
+                <div class="cons-card mitigation">
+                    <h4>✓ Mitigation</h4>
+                    <p>Regular Git pushes to GitHub/GitLab. Time Machine backups on Mac Studio. Clone on MacBook as cold backup.</p>
+                </div>
+
+                <div class="cons-card con">
+                    <h4>⚠️ Initial Transfer</h4>
+                    <p>You need to move ~81GB of models + your projects to Mac Studio initially.</p>
+                </div>
+                <div class="cons-card mitigation">
+                    <h4>✓ Mitigation</h4>
+                    <p>One-time setup. Use <code>--skip-models</code> flag and download overnight. Projects transfer via rsync in minutes.</p>
+                </div>
+
+                <div class="cons-card con">
+                    <h4>⚠️ Latency Over Network</h4>
+                    <p>SSH adds ~1-5ms latency per keystroke. Noticeable if connection is poor.</p>
+                </div>
+                <div class="cons-card mitigation">
+                    <h4>✓ Mitigation</h4>
+                    <p>On local gigabit network: imperceptible. Use wired ethernet for best experience. VS Code handles this well.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- What About Syncthing -->
+        <div class="glass-panel">
+            <h2><span class="icon">🔄</span> Where Syncthing Fits (If At All)</h2>
+
+            <div class="arch-diagram">
+<pre>
+<span class="arch-purple">CODE (~/Projects/)</span>
+├── <span class="arch-red">DO NOT SYNC</span> ← LLM needs local access
+├── Edit via VS Code SSH
+└── Version control via Git
+
+<span class="arch-amber">SHARED FILES (~/Shared/)</span>
+├── <span class="arch-green">CAN SYNC</span> ← Not accessed by LLM during coding
+├── Ideas/        → Markdown notes, research
+├── Assets/       → Images, design files
+└── Scratch/      → Temp collaboration files
+
+<span class="arch-cyan">WHY THE DIFFERENCE?</span>
+├── Code: Read 100x per task, needs instant access
+└── Shared: Read occasionally, sync delay acceptable
+</pre>
+            </div>
+
+            <p style="color: var(--text-secondary); margin-top: 16px;">
+                Syncthing is for <strong style="color: var(--text-primary);">convenience</strong> (access notes on your phone),
+                not <strong style="color: var(--text-primary);">functionality</strong>. The LLM workflow works without it.
+            </p>
+        </div>
+
+        <!-- Summary -->
+        <div class="summary-box">
+            <h3>📋 Summary: The Exact Specs</h3>
+            <ul class="summary-list">
+                <li><strong>LLM reads files via:</strong> Local filesystem tools (Read, Grep, Glob) at 7 GB/s SSD speed</li>
+                <li><strong>LLM inference uses:</strong> 800 GB/s unified memory bandwidth (GPU ↔ CPU)</li>
+                <li><strong>Network only carries:</strong> Your keystrokes + API responses (~KB/s)</li>
+                <li><strong>Must be on Mac Studio:</strong> Models (81GB), Code, llama-server, LiteLLM, Claude config</li>
+                <li><strong>Optional on Mac Studio:</strong> Shared files (can sync via Syncthing)</li>
+                <li><strong>Trade-off:</strong> Need network to Mac Studio for AI-assisted coding</li>
+                <li><strong>Mitigation:</strong> Git clone on MacBook for offline, <code>claude-cloud</code> for fallback</li>
+            </ul>
+        </div>
+
+        <footer class="footer">
+            <p>Opta Nexus Architecture Deep Dive • Generated January 2026</p>
+        </footer>
+    </div>
+</body>
+</html>

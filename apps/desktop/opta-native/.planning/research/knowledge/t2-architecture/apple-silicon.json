@@ -1,0 +1,207 @@
+{
+  "$schema": "knowledge-schema.json",
+  "tier": 2,
+  "tierName": "architecture",
+  "domain": "general",
+  "lastUpdated": "2026-01-18",
+  "confidence": "high",
+  "sources": [
+    {
+      "name": "Gemini Deep Research - Apple Mac Capabilities",
+      "type": "gemini-research",
+      "date": "2026-01-18"
+    },
+    {
+      "name": "Gemini Deep Research - Mac Optimization, Gaming, and History",
+      "type": "gemini-research",
+      "date": "2026-01-18"
+    }
+  ],
+  "entries": [
+    {
+      "id": "unified-memory-architecture",
+      "fact": "Apple Silicon uses Unified Memory Architecture (UMA) where CPU, GPU, and Neural Engine share the same memory pool",
+      "details": "Eliminates the CPU-GPU memory copy bottleneck by sharing a single pool of high-bandwidth memory. Traditional computing requires copying data between CPU RAM (DDR) and GPU VRAM (GDDR) via PCIe bus. Apple Silicon integrates all with shared LPDDR memory on the processor package substrate, enabling zero-copy data pipelines.",
+      "confidence": "high",
+      "source": "Apple Silicon Architecture",
+      "verificationRequired": false,
+      "tags": ["memory", "uma", "architecture", "zero-copy"]
+    },
+    {
+      "id": "tbdr-rendering",
+      "fact": "Apple GPUs use Tile-Based Deferred Rendering (TBDR), not Immediate Mode Rendering (IMR) like NVIDIA/AMD",
+      "details": "TBDR processes geometry in tiles, deferring pixel shading until all geometry is binned. This reduces memory bandwidth requirements and enables more efficient use of on-chip memory. Different optimization strategies apply compared to IMR GPUs.",
+      "confidence": "high",
+      "source": "Apple GPU Architecture",
+      "verificationRequired": false,
+      "tags": ["gpu", "rendering", "tbdr", "architecture"]
+    },
+    {
+      "id": "p-core-e-core-design",
+      "fact": "Apple Silicon uses heterogeneous CPU design with Performance (P) cores and Efficiency (E) cores",
+      "details": "P-cores handle demanding single-threaded and burst workloads at high frequencies. E-cores handle background tasks (Spotlight indexing, Time Machine) without waking power-hungry P-cores. E-cores in M4 family offer performance comparable to older-generation P-cores.",
+      "confidence": "high",
+      "source": "Apple Silicon Architecture",
+      "verificationRequired": false,
+      "tags": ["cpu", "cores", "efficiency", "heterogeneous"]
+    },
+    {
+      "id": "metal-api",
+      "fact": "Metal is Apple's low-level graphics API providing direct GPU access with minimal driver overhead",
+      "details": "Supports compute shaders, ray tracing (M3+), and mesh shaders for modern rendering techniques. Native Metal execution bypasses translation overhead and provides direct access to UMA.",
+      "confidence": "high",
+      "source": "Apple Developer Documentation",
+      "verificationRequired": false,
+      "tags": ["gpu", "metal", "api"]
+    },
+    {
+      "id": "soc-integration",
+      "fact": "Apple Silicon integrates CPU, GPU, Neural Engine, memory controller, and I/O on a single chip (SoC)",
+      "details": "Tight integration reduces latency, power consumption, and physical space compared to discrete components",
+      "confidence": "high",
+      "source": "Apple Silicon Architecture",
+      "verificationRequired": false,
+      "tags": ["soc", "integration", "architecture"]
+    },
+    {
+      "id": "neural-engine",
+      "fact": "Apple Neural Engine is a dedicated ML accelerator integrated into Apple Silicon",
+      "details": "M3 Neural Engine: 18 TOPS, M4 Neural Engine: 38 TOPS (60x improvement over A11). Features improved branch prediction logic for non-linear execution patterns in Generative AI models.",
+      "confidence": "high",
+      "source": "Apple Silicon Specs",
+      "verificationRequired": false,
+      "tags": ["neural-engine", "ml", "ai"]
+    },
+    {
+      "id": "media-engine-zero-copy",
+      "fact": "The Media Engine writes decoded video frames directly to unified memory for GPU processing without data copying",
+      "details": "Hardware-accelerated video decode/encode (H.264, HEVC, ProRes) operates as an ASIC on the SoC. Because it shares unified memory with the GPU, color grading and effects can be applied without memory copy operations.",
+      "confidence": "high",
+      "source": "Apple Silicon Architecture",
+      "verificationRequired": false,
+      "tags": ["media-engine", "video", "zero-copy"]
+    },
+    {
+      "id": "ultrafusion-die-interconnect",
+      "fact": "Ultra chip variants connect two Max dies via UltraFusion silicon interposer for doubled resources",
+      "details": "UltraFusion uses a silicon interposer to fuse two Max dies, doubling CPU cores, GPU cores, memory bandwidth, and memory capacity. The Ultra advantage is for workloads requiring capacity over single-thread efficiency.",
+      "confidence": "high",
+      "source": "Apple Silicon Architecture",
+      "verificationRequired": false,
+      "tags": ["ultrafusion", "ultra-chips", "scaling"],
+      "applicableTo": ["M1 Ultra", "M2 Ultra", "M3 Ultra", "M4 Ultra"]
+    },
+    {
+      "id": "ssd-encryption-secure-enclave",
+      "fact": "All SSD data is encrypted on-the-fly by the AES engine in the Secure Enclave with keys that never leave the silicon",
+      "details": "The encryption is transparent to performance but makes data unreadable if NAND chips are physically removed.",
+      "confidence": "high",
+      "source": "Apple Silicon Architecture",
+      "verificationRequired": false,
+      "tags": ["security", "encryption", "secure-enclave"]
+    },
+    {
+      "id": "armv9-sme-transition",
+      "fact": "M4 generation transitioned from proprietary AMX to ARM standard Scalable Matrix Extensions (SME) for matrix operations",
+      "details": "M1-M3 used undocumented Apple Matrix Extensions (AMX) accessible only via Accelerate framework. M4+ uses ARMv9.2-a with SME, enabling developers to target matrix acceleration via standard compiler toolchains.",
+      "confidence": "high",
+      "source": "Apple Silicon Architecture",
+      "verificationRequired": false,
+      "tags": ["cpu", "arm", "sme", "ai-acceleration"],
+      "applicableTo": ["M4", "M4 Pro", "M4 Max", "M5"]
+    },
+    {
+      "id": "dynamic-caching-gpu",
+      "fact": "Dynamic Caching allows GPU to allocate local memory dynamically in real-time instead of reserving fixed blocks",
+      "details": "Introduced in M3 and refined in M4, this hardware feature allocates GPU memory on-demand rather than pre-reserving blocks. Dramatically increases average GPU utilization, especially in geometry-heavy applications.",
+      "confidence": "high",
+      "source": "Apple Silicon Architecture",
+      "verificationRequired": false,
+      "tags": ["gpu", "memory-management", "dynamic-caching"],
+      "applicableTo": ["M3", "M3 Pro", "M3 Max", "M3 Ultra", "M4", "M4 Pro", "M4 Max"]
+    },
+    {
+      "id": "memory-non-upgradable",
+      "fact": "Unified Memory is soldered and non-upgradable - configuration must be chosen at purchase",
+      "details": "UMA design places memory on processor package substrate. The 'Buy Once, Cry Once' rule applies.",
+      "confidence": "high",
+      "source": "Apple Silicon Architecture",
+      "verificationRequired": false,
+      "tags": ["memory", "configuration", "purchase-decision"]
+    },
+    {
+      "id": "swap-memory-fast-ssd",
+      "fact": "macOS aggressively uses high-speed SSD as swap memory, making limited RAM configurations feel responsive",
+      "details": "When physical RAM fills, macOS moves inactive data to the SSD. Because the SSD is extremely fast, swapping is often imperceptible. However, this degrades SSD lifespan over time.",
+      "confidence": "high",
+      "source": "macOS Memory Management",
+      "verificationRequired": false,
+      "tags": ["memory", "swap", "ssd-wear"]
+    },
+    {
+      "id": "fanless-thermal-physics",
+      "fact": "Fanless devices use the chassis as a heatsink and operate on thermal time limits for sustained workloads",
+      "details": "Without active cooling, the aluminum chassis acts as the heatsink. After sustained load (~45 minutes), heat soaking forces downclocking to prevent overheating. Makes fanless devices burst-performance machines.",
+      "confidence": "high",
+      "source": "Apple Thermal Design",
+      "verificationRequired": false,
+      "tags": ["thermal", "fanless", "macbook-air", "throttling"],
+      "applicableTo": ["MacBook Air M2", "MacBook Air M3", "MacBook Air M4"]
+    },
+    {
+      "id": "directx-to-metal-translation",
+      "fact": "GPTK and CrossOver translate DirectX 12 calls to Metal on the fly with a performance penalty",
+      "details": "Translation layers like Game Porting Toolkit 2 and CrossOver 24 enable Windows-only games on Mac by translating DirectX calls. This incurs overhead but opens thousands of Windows games to Mac users.",
+      "confidence": "high",
+      "source": "macOS Gaming Compatibility",
+      "verificationRequired": false,
+      "tags": ["gptk", "crossover", "directx", "metal", "translation"]
+    },
+    {
+      "id": "metalfx-temporal-upscaling",
+      "fact": "MetalFX renders at lower internal resolution and uses ML to reconstruct high-fidelity images",
+      "details": "MetalFX is Apple's temporal upscaling solution. It enables playable frame rates by rendering at lower resolution internally, making it a requirement rather than optional feature for high-refresh gaming.",
+      "confidence": "high",
+      "source": "Apple Gaming Technologies",
+      "verificationRequired": false,
+      "tags": ["metalfx", "upscaling", "gaming", "ml"]
+    },
+    {
+      "id": "macos-game-mode",
+      "fact": "macOS Game Mode pins game threads to P-cores, forces background threads to E-cores, and doubles Bluetooth polling rate",
+      "details": "Triggers automatically upon entering full-screen in a game. Modifies scheduler to prioritize game above all else. Bluetooth rate doubling reduces input latency from 10-15ms to approximately half.",
+      "confidence": "high",
+      "source": "macOS Gaming Features",
+      "verificationRequired": false,
+      "tags": ["macos", "game-mode", "p-cores", "bluetooth-polling"]
+    },
+    {
+      "id": "high-power-mode-fan-curve",
+      "fact": "High Power Mode creates an aggressive fan curve that spins fans before thermal limit is reached",
+      "details": "Found in System Settings > Battery. Spins fans up preemptively, allowing GPU to sustain boost clock for extended periods. Prevents gradual performance degradation seen in Automatic profile.",
+      "confidence": "high",
+      "source": "macOS Power Management",
+      "verificationRequired": false,
+      "tags": ["power-mode", "thermal", "fan", "sustained-performance"],
+      "applicableTo": ["MacBook Pro M4 Pro", "MacBook Pro M4 Max", "Mac Mini M4 Pro"]
+    },
+    {
+      "id": "macos-display-ppi-design",
+      "fact": "macOS is designed for specific pixel densities: ~110 PPI (Standard) and ~220 PPI (Retina)",
+      "details": "Apple designs macOS interfaces for these specific pixel densities. Monitors that fall outside these values create scaling issues with blurry text and UI artifacts when using fractional scaling.",
+      "confidence": "high",
+      "source": "macOS Display Management",
+      "verificationRequired": false,
+      "tags": ["display", "ppi", "retina", "scaling"]
+    },
+    {
+      "id": "fractional-scaling-gpu-penalty",
+      "fact": "macOS fractional scaling renders at higher resolution then downsamples, causing GPU overhead and visual artifacts",
+      "details": "When using scaled resolutions on sub-4K monitors, macOS renders at a higher resolution and downsamples. Results in blurry text, shimmering UI artifacts (moiré patterns), and heavy GPU performance penalty.",
+      "confidence": "high",
+      "source": "macOS Display Management",
+      "verificationRequired": false,
+      "tags": ["display", "scaling", "gpu", "performance", "artifacts"]
+    }
+  ]
+}

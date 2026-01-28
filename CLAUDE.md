@@ -1,70 +1,88 @@
 # Opta Project - Multi-App Workspace
 
-This repository contains two separate Opta applications. Each app has its own Claude configuration and development workflow.
+This repository contains multiple Opta applications. Each app has its own Claude configuration and development workflow.
 
 ---
 
 ## Project Structure
 
 ```
-/Opta/
-├── 1. Apps/
-│   ├── 1. iOS/
-│   │   └── 1. Opta/     ← Mobile app (SwiftUI)
-│   │       ├── .claude/         ← Commands, agents, skills for iOS dev
-│   │       ├── .planning/       ← Roadmap, phases, state for iOS
-│   │       └── CLAUDE.md        ← iOS-specific instructions
-│   │
-│   └── 2. Desktop/
-│       └── 1. Opta Native/  ← Desktop app (Tauri + React)
-│           ├── .claude/         ← Commands, agents, skills for macOS dev
-│           ├── .planning/       ← Roadmap, phases, state for macOS
-│           ├── CLAUDE.md        ← MacOS-specific instructions
-│           └── DESIGN_SYSTEM.md ← UI/UX guidelines
+Opta/
+├── .claude/                  ← Root-level agent config, commands, plugins
+│   ├── commands/             ← Shared Claude commands
+│   ├── agents/               ← Agent definitions
+│   └── plugins/local/        ← Local plugins
 │
-└── 3. Matthew x Opta/   ← Personal and agent configuration
-    ├── 1. personal/     ← Shared personal context (calendar, hardware, goals)
-    ├── 2. project/      ← Cross-cutting Opta context
-    └── 3. agent-config/ ← Agent configuration (.claude, .serena, .opta)
+├── apps/
+│   ├── desktop/
+│   │   ├── opta-native/      ← Main desktop app (Tauri + React)
+│   │   │   ├── .claude/
+│   │   │   ├── .planning/
+│   │   │   ├── CLAUDE.md
+│   │   │   └── DESIGN_SYSTEM.md
+│   │   └── opta-mini/        ← Mini menubar app
+│   │
+│   ├── ios/
+│   │   ├── opta/             ← Main iOS app (SwiftUI)
+│   │   │   ├── .claude/
+│   │   │   ├── .planning/
+│   │   │   └── CLAUDE.md
+│   │   └── opta-lm/          ← Life Manager iOS app
+│   │
+│   ├── shared/               ← Shared code/assets
+│   └── web/                  ← Web applications
+│
+├── personal/                 ← Personal context (calendar, hardware, goals)
+├── project/                  ← Cross-cutting Opta project context
+├── research/                 ← Gemini Deep Research outputs
+└── ideas/                    ← Project ideas and brainstorms
 ```
 
 ---
 
 ## How to Work on Each App
 
-### Opta MacOS (Desktop)
+### Opta Native (Desktop)
 ```bash
-cd "1. Apps/2. Desktop/1. Opta Native"
-# Claude will use 1. Apps/2. Desktop/1. Opta Native/.claude/ and .planning/
+cd apps/desktop/opta-native
+# Claude uses apps/desktop/opta-native/.claude/ and .planning/
 ```
 
 **Tech Stack**: Tauri v2, React 19, TypeScript, Rust, Python MCP Server
 
 ### Opta iOS (Mobile)
 ```bash
-cd "1. Apps/1. iOS/1. Opta"
-# Claude will use 1. Apps/1. iOS/1. Opta/.claude/ and .planning/
+cd apps/ios/opta
+# Claude uses apps/ios/opta/.claude/ and .planning/
 ```
 
 **Tech Stack**: SwiftUI, Rust core (via UniFFI), CoreML
+
+### Opta Mini (Menubar)
+```bash
+cd apps/desktop/opta-mini
+```
+
+**Tech Stack**: SwiftUI, menubar-only interface
 
 ---
 
 ## Shared Resources
 
-These remain at the root level for both apps:
-
 | Resource | Location | Purpose |
 |----------|----------|---------|
-| Personal Context | `3. Matthew x Opta/1. personal/` | Calendar, hardware, goals, profile |
-| Serena Config | `3. Matthew x Opta/3. agent-config/.serena/` | MCP server configuration |
+| Personal Context | `personal/` | Calendar, hardware, goals, profile |
+| Project Context | `project/` | Cross-cutting Opta vision and specs |
+| Research | `research/` | Gemini Deep Research outputs |
+| Ideas | `ideas/` | Project ideas and brainstorms |
+| Root Commands | `.claude/commands/` | Shared Claude commands |
 | Git Repository | `.git/` | Unified version control |
 
 ---
 
 ## Active Agent: opta-optimizer
 
-Both apps use the **opta-optimizer** agent. When working in either app folder, embody Opta's principles:
+All apps use the **opta-optimizer** agent. When working in any app folder, embody Opta's principles:
 
 - Deep research, never surface-level
 - Creative and adaptive thinking
@@ -78,8 +96,8 @@ Both apps use the **opta-optimizer** agent. When working in either app folder, e
 
 At the START of every session:
 
-1. **Identify which app you're working on** (MacOS or iOS)
-2. **Read `3. Matthew x Opta/1. personal/calendar.md`** for today's events and deadlines
+1. **Identify which app you're working on** (Desktop, iOS, Web)
+2. **Read `personal/calendar.md`** for today's events and deadlines
 3. **Check the relevant `.planning/STATE.md`** for current progress
 4. **Deliver a concise session briefing**
 
@@ -87,8 +105,9 @@ At the START of every session:
 
 ## Quick Navigation
 
-- **MacOS Instructions**: `1. Apps/2. Desktop/1. Opta Native/CLAUDE.md`
-- **iOS Instructions**: `1. Apps/1. iOS/1. Opta/CLAUDE.md`
-- **MacOS Roadmap**: `1. Apps/2. Desktop/1. Opta Native/.planning/ROADMAP.md`
-- **iOS Roadmap**: `1. Apps/1. iOS/1. Opta/.planning/ROADMAP.md`
-- **Personal Calendar**: `3. Matthew x Opta/1. personal/calendar.md`
+- **Desktop Instructions**: `apps/desktop/opta-native/CLAUDE.md`
+- **iOS Instructions**: `apps/ios/opta/CLAUDE.md`
+- **Desktop Roadmap**: `apps/desktop/opta-native/.planning/ROADMAP.md`
+- **iOS Roadmap**: `apps/ios/opta/.planning/ROADMAP.md`
+- **Personal Calendar**: `personal/calendar.md`
+- **Project Vision**: `project/vision.md`

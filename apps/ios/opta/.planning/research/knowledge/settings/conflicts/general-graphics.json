@@ -1,0 +1,382 @@
+{
+  "$schema": "settings-schema.json",
+  "domain": "general-graphics",
+  "subDomain": "graphics-conflicts",
+  "lastUpdated": "2026-01-18",
+  "lastVerified": "2026-01-18",
+  "confidence": "high",
+  "sources": [
+    {
+      "name": "Gemini Deep Research - GPU Architecture",
+      "type": "gemini-research",
+      "date": "2026-01-15"
+    },
+    {
+      "name": "Digital Foundry Analysis",
+      "type": "benchmark",
+      "date": "2025-09-01"
+    },
+    {
+      "name": "Unreal Engine Documentation",
+      "type": "official-docs",
+      "url": "https://docs.unrealengine.com",
+      "date": "2025-06-01"
+    },
+    {
+      "name": "Unity Rendering Documentation",
+      "type": "official-docs",
+      "url": "https://docs.unity3d.com/Manual/Graphics.html",
+      "date": "2025-05-15"
+    }
+  ],
+  "settings": [
+    {
+      "id": "rt-shadows-rasterized-shadows-conflict",
+      "type": "conflict",
+      "settings": [
+        { "category": "rt", "setting": "shadows", "value": "on" },
+        { "category": "graphics", "setting": "shadow-type", "value": "shadow-maps" }
+      ],
+      "relationship": "Ray-traced shadows and traditional shadow maps are alternative rendering techniques - games use one or the other for shadow generation",
+      "direction": "excludes",
+      "bidirectional": true,
+      "impact": {
+        "performance": { "value": 20, "min": 10, "max": 35 },
+        "quality": { "value": -15, "min": -5, "max": -25 }
+      },
+      "confidence": "high",
+      "platforms": ["all"],
+      "tags": ["shadows", "ray-tracing", "shadow-maps", "technique-choice"],
+      "source": "Graphics Engine Documentation",
+      "sourceDate": "2025",
+      "recommendations": [
+        "RT shadows provide accurate soft shadows but at significant cost",
+        "Shadow maps are more efficient for most gaming scenarios"
+      ]
+    },
+    {
+      "id": "rt-reflections-ssr-conflict",
+      "type": "conflict",
+      "settings": [
+        { "category": "rt", "setting": "reflections", "value": "on" },
+        { "category": "graphics", "setting": "reflections", "value": "ssr" }
+      ],
+      "relationship": "Ray-traced reflections and Screen Space Reflections are mutually exclusive reflection techniques - enabling both wastes GPU resources",
+      "direction": "excludes",
+      "bidirectional": true,
+      "impact": {
+        "performance": { "value": -15, "min": -10, "max": -25 }
+      },
+      "confidence": "high",
+      "platforms": ["all"],
+      "tags": ["reflections", "ray-tracing", "ssr", "technique-choice"],
+      "source": "Graphics Programming Best Practices",
+      "sourceDate": "2025",
+      "recommendations": [
+        "RT reflections are superior quality but expensive",
+        "SSR is efficient but limited to on-screen information"
+      ]
+    },
+    {
+      "id": "rtao-ssao-conflict",
+      "type": "conflict",
+      "settings": [
+        { "category": "rt", "setting": "ambient-occlusion", "value": "rtao" },
+        { "category": "graphics", "setting": "ambient-occlusion", "value": "ssao" }
+      ],
+      "relationship": "RTAO and SSAO are different ambient occlusion implementations - only one should be active to avoid doubled darkening and performance waste",
+      "direction": "excludes",
+      "bidirectional": true,
+      "impact": {
+        "performance": { "value": -10, "min": -5, "max": -15 },
+        "quality": { "value": -20, "min": -10, "max": -30 }
+      },
+      "confidence": "high",
+      "platforms": ["all"],
+      "tags": ["ambient-occlusion", "rtao", "ssao", "doubled-effect"],
+      "source": "Graphics Engine Documentation",
+      "sourceDate": "2025",
+      "recommendations": [
+        "Choose RTAO for physically accurate occlusion",
+        "SSAO/HBAO+ for better performance"
+      ]
+    },
+    {
+      "id": "ssao-hbao-gtao-conflict",
+      "type": "conflict",
+      "settings": [
+        { "category": "graphics", "setting": "ambient-occlusion", "value": "ssao" },
+        { "category": "graphics", "setting": "ambient-occlusion", "value": "hbao" }
+      ],
+      "relationship": "SSAO, HBAO+, and GTAO are alternative screen-space AO techniques - games offer these as mutually exclusive options",
+      "direction": "excludes",
+      "bidirectional": true,
+      "confidence": "high",
+      "platforms": ["all"],
+      "tags": ["ambient-occlusion", "ssao", "hbao", "gtao", "technique-alternatives"],
+      "source": "NVIDIA HBAO+ Documentation",
+      "sourceDate": "2025",
+      "recommendations": [
+        "HBAO+ provides best quality/performance balance",
+        "GTAO is modern and efficient alternative",
+        "SSAO is legacy but lowest cost"
+      ]
+    },
+    {
+      "id": "planar-reflections-cubemap-conflict",
+      "type": "conflict",
+      "settings": [
+        { "category": "graphics", "setting": "reflection-type", "value": "planar" },
+        { "category": "graphics", "setting": "reflection-type", "value": "cubemap" }
+      ],
+      "relationship": "Planar reflections and cubemap reflections are different reflection capture methods - games use one or the other per surface type",
+      "direction": "excludes",
+      "bidirectional": true,
+      "confidence": "medium",
+      "platforms": ["all"],
+      "tags": ["reflections", "planar", "cubemap", "technique-choice"],
+      "source": "Unreal Engine Documentation",
+      "sourceDate": "2025",
+      "recommendations": [
+        "Planar reflections for accurate water/mirror surfaces",
+        "Cubemaps for general environment reflections"
+      ]
+    },
+    {
+      "id": "per-object-camera-motion-blur-conflict",
+      "type": "conflict",
+      "settings": [
+        { "category": "graphics", "setting": "motion-blur", "value": "per-object" },
+        { "category": "graphics", "setting": "motion-blur", "value": "camera" }
+      ],
+      "relationship": "Per-object motion blur and camera motion blur can conflict when both enabled - some games offer only one type or make them exclusive",
+      "direction": "excludes",
+      "bidirectional": true,
+      "conditions": [
+        {
+          "parameter": "game_engine",
+          "operator": "in",
+          "value": ["id-tech", "frostbite"]
+        }
+      ],
+      "confidence": "medium",
+      "platforms": ["all"],
+      "tags": ["motion-blur", "per-object", "camera", "post-processing"],
+      "source": "Game Engine Analysis",
+      "sourceDate": "2025",
+      "recommendations": [
+        "Per-object blur for fast-moving objects",
+        "Camera blur for cinematic panning effects"
+      ]
+    },
+    {
+      "id": "motion-blur-high-refresh-conflict",
+      "type": "conflict",
+      "settings": [
+        { "category": "graphics", "setting": "motion-blur", "value": "on" },
+        { "category": "display", "setting": "refresh-rate", "valueRange": { "min": 120 } }
+      ],
+      "relationship": "Motion blur simulates persistence at low framerates - at 120Hz+ the display handles motion naturally, making blur redundant and potentially introducing artifacts",
+      "direction": "excludes",
+      "bidirectional": false,
+      "impact": {
+        "quality": { "value": 10, "min": 5, "max": 15 },
+        "performance": { "value": 5, "min": 2, "max": 8 }
+      },
+      "confidence": "high",
+      "platforms": ["all"],
+      "tags": ["motion-blur", "refresh-rate", "high-hz", "redundant"],
+      "source": "Display Technology Analysis",
+      "sourceDate": "2025",
+      "recommendations": [
+        "Disable motion blur at 120Hz and above",
+        "Motion blur most useful at 30-60 FPS"
+      ]
+    },
+    {
+      "id": "multiple-sharpening-conflict",
+      "type": "conflict",
+      "settings": [
+        { "category": "graphics", "setting": "sharpening", "value": "cas" },
+        { "category": "graphics", "setting": "sharpening-secondary", "value": "nis" }
+      ],
+      "relationship": "Stacking multiple sharpening filters (CAS, NIS, RCAS, in-game sharpening) creates over-sharpened artifacts with halos around edges",
+      "direction": "excludes",
+      "bidirectional": true,
+      "impact": {
+        "quality": { "value": -25, "min": -15, "max": -40 }
+      },
+      "confidence": "high",
+      "platforms": ["all"],
+      "tags": ["sharpening", "cas", "nis", "post-processing", "artifacts"],
+      "source": "Image Quality Analysis",
+      "sourceDate": "2025",
+      "recommendations": [
+        "Use only one sharpening solution",
+        "AMD CAS or NVIDIA Image Scaling sharpening, not both"
+      ]
+    },
+    {
+      "id": "film-grain-noise-reduction-conflict",
+      "type": "conflict",
+      "settings": [
+        { "category": "graphics", "setting": "film-grain", "value": "on" },
+        { "category": "graphics", "setting": "noise-reduction", "value": "on" }
+      ],
+      "relationship": "Film grain adds noise for cinematic effect while noise reduction removes it - enabling both wastes GPU cycles fighting each other",
+      "direction": "excludes",
+      "bidirectional": true,
+      "impact": {
+        "performance": { "value": -5, "min": -3, "max": -10 }
+      },
+      "confidence": "high",
+      "platforms": ["all"],
+      "tags": ["film-grain", "noise-reduction", "post-processing", "contradictory"],
+      "source": "Post-Processing Analysis",
+      "sourceDate": "2025",
+      "recommendations": [
+        "Disable noise reduction if film grain is desired",
+        "Film grain typically disabled for competitive games"
+      ]
+    },
+    {
+      "id": "chromatic-aberration-lens-correction-conflict",
+      "type": "conflict",
+      "settings": [
+        { "category": "graphics", "setting": "chromatic-aberration", "value": "on" },
+        { "category": "graphics", "setting": "lens-correction", "value": "on" }
+      ],
+      "relationship": "Chromatic aberration simulates lens imperfection while lens correction removes distortion - opposing effects that can create visual inconsistency",
+      "direction": "excludes",
+      "bidirectional": true,
+      "confidence": "medium",
+      "platforms": ["all"],
+      "tags": ["chromatic-aberration", "lens-correction", "post-processing", "contradictory"],
+      "source": "Cinematography Effect Analysis",
+      "sourceDate": "2025",
+      "recommendations": [
+        "Choose one lens effect style",
+        "CA adds cinematic feel, correction adds clarity"
+      ]
+    },
+    {
+      "id": "custom-settings-preset-conflict",
+      "type": "conflict",
+      "settings": [
+        { "category": "quality", "setting": "individual-setting", "value": "custom" },
+        { "category": "quality", "setting": "preset", "value": "preset-value" }
+      ],
+      "relationship": "Changing any individual graphics setting breaks the quality preset - preset becomes 'Custom' and can no longer guarantee performance targets",
+      "direction": "excludes",
+      "bidirectional": false,
+      "confidence": "high",
+      "platforms": ["all"],
+      "tags": ["presets", "custom", "quality", "settings-management"],
+      "source": "Game Settings UI Patterns",
+      "sourceDate": "2025",
+      "recommendations": [
+        "Use presets for quick setup, custom for fine-tuning",
+        "Some games preserve preset with minor tweaks"
+      ]
+    },
+    {
+      "id": "contact-shadows-ssao-overlap-conflict",
+      "type": "conflict",
+      "settings": [
+        { "category": "graphics", "setting": "contact-shadows", "value": "on" },
+        { "category": "graphics", "setting": "ambient-occlusion", "value": "high" }
+      ],
+      "relationship": "Contact shadows and SSAO both darken areas where objects meet surfaces - high SSAO with contact shadows can cause excessive darkening",
+      "direction": "excludes",
+      "bidirectional": false,
+      "impact": {
+        "quality": { "value": -10, "min": -5, "max": -20 }
+      },
+      "confidence": "medium",
+      "platforms": ["all"],
+      "tags": ["contact-shadows", "ssao", "ambient-occlusion", "overlap"],
+      "source": "Digital Foundry Analysis",
+      "sourceDate": "2025",
+      "recommendations": [
+        "Reduce SSAO intensity when using contact shadows",
+        "Or use one or the other for grounded look"
+      ]
+    },
+    {
+      "id": "dof-bokeh-performance-conflict",
+      "type": "conflict",
+      "settings": [
+        { "category": "graphics", "setting": "depth-of-field", "value": "cinematic" },
+        { "category": "graphics", "setting": "bokeh-shape", "value": "circular" }
+      ],
+      "relationship": "Cinematic depth of field with circular bokeh is extremely GPU intensive - combining both at highest quality can tank performance",
+      "direction": "excludes",
+      "bidirectional": false,
+      "conditions": [
+        {
+          "parameter": "resolution",
+          "operator": "gte",
+          "value": "2560x1440"
+        }
+      ],
+      "impact": {
+        "performance": { "value": -25, "min": -15, "max": -40 }
+      },
+      "confidence": "medium",
+      "platforms": ["all"],
+      "tags": ["depth-of-field", "bokeh", "post-processing", "performance"],
+      "source": "Benchmark Analysis",
+      "sourceDate": "2025",
+      "recommendations": [
+        "Use standard DOF at high resolutions",
+        "Cinematic DOF best at 1080p or with upscaling"
+      ]
+    },
+    {
+      "id": "volumetric-fog-volumetric-lighting-stack-conflict",
+      "type": "conflict",
+      "settings": [
+        { "category": "graphics", "setting": "volumetric-fog", "value": "ultra" },
+        { "category": "graphics", "setting": "volumetric-lighting", "value": "ultra" }
+      ],
+      "relationship": "Volumetric fog and volumetric lighting both perform expensive ray marching - combining both at ultra creates significant performance overhead",
+      "direction": "excludes",
+      "bidirectional": false,
+      "impact": {
+        "performance": { "value": -30, "min": -20, "max": -45 }
+      },
+      "confidence": "high",
+      "platforms": ["all"],
+      "tags": ["volumetric", "fog", "lighting", "ray-marching", "performance"],
+      "source": "Graphics Performance Analysis",
+      "sourceDate": "2025",
+      "recommendations": [
+        "Set one to High and other to Ultra if both desired",
+        "Volumetric lighting often more impactful than fog"
+      ]
+    },
+    {
+      "id": "tessellation-lod-aggressive-conflict",
+      "type": "conflict",
+      "settings": [
+        { "category": "graphics", "setting": "tessellation", "value": "ultra" },
+        { "category": "graphics", "setting": "lod-bias", "value": "aggressive" }
+      ],
+      "relationship": "Ultra tessellation adds geometry detail while aggressive LOD reduces it at distance - conflicting optimization goals that waste GPU work",
+      "direction": "excludes",
+      "bidirectional": false,
+      "impact": {
+        "performance": { "value": -10, "min": -5, "max": -15 }
+      },
+      "confidence": "medium",
+      "platforms": ["all"],
+      "tags": ["tessellation", "lod", "geometry", "optimization"],
+      "source": "Geometry Pipeline Analysis",
+      "sourceDate": "2025",
+      "recommendations": [
+        "Match tessellation and LOD aggressiveness",
+        "Ultra tessellation pairs with normal/quality LOD"
+      ]
+    }
+  ]
+}

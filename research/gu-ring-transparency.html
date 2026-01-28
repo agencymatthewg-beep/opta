@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Opta Ring: Transparent Core Specification</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap');
+
+        :root {
+            --void: #09090b;
+            --surface: #18181b;
+            --elevated: #27272a;
+            --border: #3f3f46;
+            --text-primary: #fafafa;
+            --text-secondary: #a1a1aa;
+            --text-muted: #52525b;
+            --primary: #8b5cf6;
+            --primary-glow: #a855f7;
+            --neon-blue: #3b82f6;
+            --neon-green: #22c55e;
+            --neon-amber: #f59e0b;
+            --neon-red: #ef4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Sora', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--void);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* Noise overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            opacity: 0.03;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 60px 40px;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 80px;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            letter-spacing: 0.15em;
+            background: linear-gradient(180deg, #fafafa 0%, #a855f7 50%, #6366f1 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 60px rgba(139, 92, 246, 0.5);
+            margin-bottom: 16px;
+        }
+
+        .header .subtitle {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            font-weight: 300;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+        }
+
+        .header .badge {
+            margin-top: 24px;
+            display: inline-block;
+            padding: 8px 24px;
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 100px;
+            font-size: 0.875rem;
+            color: var(--neon-red);
+            letter-spacing: 0.1em;
+        }
+
+        /* Glass panels */
+        .glass {
+            background: rgba(24, 24, 27, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 40px;
+            margin-bottom: 40px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .glass::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        }
+
+        /* Section headers */
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .section-header h2 {
+            font-size: 1.75rem;
+            font-weight: 600;
+            background: linear-gradient(90deg, var(--text-primary), var(--primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .section-header .line {
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, var(--primary), transparent);
+            box-shadow: 0 0 10px var(--primary);
+        }
+
+        /* Core Rule */
+        .core-rule {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(139, 92, 246, 0.1));
+            border: 2px solid rgba(239, 68, 68, 0.4);
+            border-radius: 16px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .core-rule h2 {
+            font-size: 1.5rem;
+            color: var(--neon-red);
+            margin-bottom: 20px;
+            letter-spacing: 0.15em;
+        }
+
+        .core-rule p {
+            font-size: 1.25rem;
+            color: var(--text-primary);
+            line-height: 1.8;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .core-rule .emphasis {
+            color: var(--neon-amber);
+            font-weight: 600;
+        }
+
+        /* Demo section with multiple backgrounds */
+        .demo-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            margin: 40px 0;
+        }
+
+        @media (max-width: 900px) {
+            .demo-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .demo-card {
+            border-radius: 16px;
+            padding: 40px 20px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .demo-card.bg-purple {
+            background: linear-gradient(135deg, #581C87, #1e1b4b, #0f172a);
+        }
+
+        .demo-card.bg-image {
+            background:
+                linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)),
+                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23059669'/%3E%3Cstop offset='50%25' style='stop-color:%230d9488'/%3E%3Cstop offset='100%25' style='stop-color:%230891b2'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect fill='url(%23g)' width='400' height='400'/%3E%3Ccircle cx='100' cy='100' r='60' fill='%23ffffff22'/%3E%3Ccircle cx='300' cy='250' r='80' fill='%23ffffff11'/%3E%3C/svg%3E");
+            background-size: cover;
+        }
+
+        .demo-card.bg-white {
+            background: linear-gradient(135deg, #f8fafc, #e2e8f0, #cbd5e1);
+        }
+
+        .demo-card .label {
+            position: absolute;
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            background: rgba(0,0,0,0.6);
+            padding: 4px 12px;
+            border-radius: 100px;
+        }
+
+        /* Transparent ring visualization */
+        .ring-transparent {
+            width: 180px;
+            height: 180px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .ring-transparent .torus {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 35px solid;
+            border-color: #1a1a20;
+            background: transparent; /* KEY: No background! */
+            position: relative;
+            box-shadow:
+                0 0 60px rgba(88, 28, 135, 0.5),
+                inset 0 0 30px rgba(168, 85, 247, 0.15);
+        }
+
+        /* Energy Equator plasma - contained within the torus wall */
+        .ring-transparent .plasma {
+            position: absolute;
+            top: 50%;
+            left: -35px;
+            right: -35px;
+            height: 20px;
+            transform: translateY(-50%);
+            pointer-events: none;
+            /* Clip to only show within the border area */
+            clip-path: polygon(
+                0% 0%,
+                100% 0%,
+                100% 100%,
+                0% 100%
+            );
+        }
+
+        .ring-transparent .plasma::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg,
+                transparent 0%,
+                rgba(168, 85, 247, 0.8) 8%,
+                rgba(255, 255, 255, 0.9) 12%,
+                rgba(168, 85, 247, 0.5) 20%,
+                transparent 35%,
+                transparent 65%,
+                rgba(168, 85, 247, 0.6) 80%,
+                rgba(255, 255, 255, 0.8) 88%,
+                rgba(168, 85, 247, 0.7) 92%,
+                transparent 100%
+            );
+            filter: blur(3px);
+            animation: plasma-pulse 3s ease-in-out infinite;
+        }
+
+        @keyframes plasma-pulse {
+            0%, 100% { opacity: 0.7; }
+            50% { opacity: 1; }
+        }
+
+        /* Glass reflection on torus */
+        .ring-transparent .reflection {
+            position: absolute;
+            top: -35px;
+            left: -35px;
+            right: -35px;
+            bottom: -35px;
+            border-radius: 50%;
+            border: 35px solid transparent;
+            background: linear-gradient(135deg,
+                rgba(255, 255, 255, 0.2) 0%,
+                transparent 30%,
+                transparent 70%,
+                rgba(255, 255, 255, 0.05) 100%
+            );
+            background-clip: padding-box;
+            pointer-events: none;
+        }
+
+        /* Rim light */
+        .ring-transparent .rim {
+            position: absolute;
+            top: -36px;
+            left: -36px;
+            right: -36px;
+            bottom: -36px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            pointer-events: none;
+        }
+
+        /* Diagram section */
+        .diagram-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            align-items: center;
+            margin: 40px 0;
+        }
+
+        @media (max-width: 900px) {
+            .diagram-section {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .diagram-ascii {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            line-height: 1.4;
+            overflow-x: auto;
+        }
+
+        .diagram-ascii .highlight {
+            color: var(--primary);
+        }
+
+        .diagram-ascii .green {
+            color: var(--neon-green);
+        }
+
+        .diagram-ascii .red {
+            color: var(--neon-red);
+        }
+
+        .diagram-explanation h3 {
+            font-size: 1.25rem;
+            margin-bottom: 16px;
+            color: var(--primary);
+        }
+
+        .diagram-explanation p {
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            line-height: 1.8;
+        }
+
+        .diagram-explanation ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .diagram-explanation li {
+            padding: 8px 0;
+            padding-left: 24px;
+            position: relative;
+            color: var(--text-secondary);
+        }
+
+        .diagram-explanation li::before {
+            content: '→';
+            position: absolute;
+            left: 0;
+            color: var(--primary);
+        }
+
+        /* Rules list */
+        .rules-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 24px;
+            margin-top: 32px;
+        }
+
+        .rule-card {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            transition: all 0.3s ease;
+        }
+
+        .rule-card:hover {
+            border-color: var(--primary);
+            box-shadow: 0 0 30px rgba(139, 92, 246, 0.1);
+        }
+
+        .rule-card.do {
+            border-left: 3px solid var(--neon-green);
+        }
+
+        .rule-card.dont {
+            border-left: 3px solid var(--neon-red);
+        }
+
+        .rule-card h4 {
+            font-size: 1rem;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .rule-card.do h4 {
+            color: var(--neon-green);
+        }
+
+        .rule-card.dont h4 {
+            color: var(--neon-red);
+        }
+
+        .rule-card p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.7;
+        }
+
+        /* Code block */
+        .code-block {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 24px 0;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+            font-size: 0.85rem;
+            overflow-x: auto;
+        }
+
+        .code-block .comment {
+            color: var(--text-muted);
+        }
+
+        .code-block .keyword {
+            color: var(--primary);
+        }
+
+        .code-block .value {
+            color: var(--neon-amber);
+        }
+
+        .code-block .important {
+            color: var(--neon-green);
+        }
+
+        /* Comparison visual */
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin: 40px 0;
+        }
+
+        @media (max-width: 768px) {
+            .comparison {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-item {
+            text-align: center;
+        }
+
+        .comparison-item h4 {
+            margin-bottom: 24px;
+            font-size: 1.1rem;
+            letter-spacing: 0.1em;
+        }
+
+        .comparison-item.wrong h4 {
+            color: var(--neon-red);
+        }
+
+        .comparison-item.right h4 {
+            color: var(--neon-green);
+        }
+
+        .comparison-visual {
+            width: 200px;
+            height: 200px;
+            margin: 0 auto;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background:
+                linear-gradient(45deg, #1e3a5f 25%, transparent 25%),
+                linear-gradient(-45deg, #1e3a5f 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #1e3a5f 75%),
+                linear-gradient(-45deg, transparent 75%, #1e3a5f 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            background-color: #0f172a;
+        }
+
+        /* Wrong ring - has center fill */
+        .ring-wrong {
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            border: 30px solid #1a1a20;
+            background: radial-gradient(circle, #09090b 0%, #150a20 100%);
+            box-shadow:
+                0 0 40px rgba(88, 28, 135, 0.5),
+                inset 0 0 40px rgba(168, 85, 247, 0.3);
+        }
+
+        /* Right ring - transparent center */
+        .ring-right {
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            border: 30px solid #1a1a20;
+            background: transparent;
+            box-shadow:
+                0 0 40px rgba(88, 28, 135, 0.5),
+                inset 0 0 20px rgba(168, 85, 247, 0.15);
+            position: relative;
+        }
+
+        .ring-right::after {
+            content: '';
+            position: absolute;
+            top: -30px;
+            left: -30px;
+            right: -30px;
+            bottom: -30px;
+            border-radius: 50%;
+            border: 30px solid transparent;
+            background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent 40%);
+            background-clip: padding-box;
+        }
+
+        .comparison-desc {
+            margin-top: 20px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* Summary box */
+        .summary-box {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(59, 130, 246, 0.05));
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 16px;
+            padding: 32px;
+            margin-top: 40px;
+        }
+
+        .summary-box h3 {
+            font-size: 1.25rem;
+            color: var(--primary);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .summary-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+        }
+
+        .summary-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+        }
+
+        .summary-item .icon {
+            font-size: 1.25rem;
+            flex-shrink: 0;
+        }
+
+        .summary-item p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            margin-top: 80px;
+            padding-top: 40px;
+            border-top: 1px solid var(--border);
+        }
+
+        .footer p {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+
+        .footer .opta {
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        /* Animation for demo rings */
+        .ring-transparent .torus {
+            animation: ring-breathe 4s ease-in-out infinite;
+        }
+
+        @keyframes ring-breathe {
+            0%, 100% {
+                box-shadow:
+                    0 0 50px rgba(88, 28, 135, 0.4),
+                    inset 0 0 25px rgba(168, 85, 247, 0.1);
+            }
+            50% {
+                box-shadow:
+                    0 0 70px rgba(88, 28, 135, 0.6),
+                    inset 0 0 35px rgba(168, 85, 247, 0.2);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>TRANSPARENT CORE</h1>
+            <p class="subtitle">The Ring as a 3D Overlay</p>
+            <span class="badge">CRITICAL DESIGN RULE</span>
+        </header>
+
+        <!-- Core Rule -->
+        <div class="core-rule">
+            <h2>THE FUNDAMENTAL PRINCIPLE</h2>
+            <p>
+                The Opta Ring's <span class="emphasis">center hole must remain completely transparent</span>.
+                All visual elements — obsidian glass, plasma glow, reflections — are contained
+                <span class="emphasis">within the torus wall only</span>. The ring floats as a 3D object,
+                revealing whatever background lies beneath it.
+            </p>
+        </div>
+
+        <!-- Demo across backgrounds -->
+        <section class="glass">
+            <div class="section-header">
+                <h2>Background Independence</h2>
+                <div class="line"></div>
+            </div>
+
+            <p style="color: var(--text-secondary); margin-bottom: 32px; text-align: center;">
+                The ring must work on ANY background — the center is always a window through to the content behind.
+            </p>
+
+            <div class="demo-grid">
+                <div class="demo-card bg-purple">
+                    <div class="ring-transparent">
+                        <div class="torus">
+                            <div class="plasma"></div>
+                            <div class="reflection"></div>
+                            <div class="rim"></div>
+                        </div>
+                    </div>
+                    <span class="label">Purple Gradient</span>
+                </div>
+
+                <div class="demo-card bg-image">
+                    <div class="ring-transparent">
+                        <div class="torus">
+                            <div class="plasma"></div>
+                            <div class="reflection"></div>
+                            <div class="rim"></div>
+                        </div>
+                    </div>
+                    <span class="label">Image Background</span>
+                </div>
+
+                <div class="demo-card bg-white">
+                    <div class="ring-transparent">
+                        <div class="torus" style="border-color: #2a2a35; box-shadow: 0 0 40px rgba(88, 28, 135, 0.3);">
+                            <div class="plasma"></div>
+                            <div class="reflection"></div>
+                            <div class="rim"></div>
+                        </div>
+                    </div>
+                    <span class="label">Light Background</span>
+                </div>
+            </div>
+
+            <p style="color: var(--text-muted); text-align: center; font-size: 0.9rem; margin-top: 16px;">
+                Notice how the center of each ring shows exactly what's behind it — the ring is an overlay, not an opaque object.
+            </p>
+        </section>
+
+        <!-- Anatomy Diagram -->
+        <section class="glass">
+            <div class="section-header">
+                <h2>Ring Anatomy</h2>
+                <div class="line"></div>
+            </div>
+
+            <div class="diagram-section">
+                <div class="diagram-ascii">
+<pre>
+              ┌─────────────────────────────────────┐
+              │                                     │
+              │      <span class="highlight">OUTER EDGE (Rim Light)</span>          │
+              │    ╭─────────────────────────╮      │
+              │    │                         │      │
+              │    │   <span class="highlight">TORUS WALL</span>            │      │
+              │    │   ┌─────────────────┐   │      │
+              │    │   │                 │   │      │
+              │    │   │   <span class="green">TRANSPARENT</span>   │   │      │
+              │    │   │      <span class="green">HOLE</span>       │   │      │
+              │    │   │   <span class="green">(Background</span>   │   │      │
+              │    │   │    <span class="green">visible)</span>     │   │      │
+              │    │   │                 │   │      │
+              │    │   └─────────────────┘   │      │
+              │    │   <span class="highlight">INNER EDGE</span>            │      │
+              │    │                         │      │
+              │    ╰─────────────────────────╯      │
+              │                                     │
+              └─────────────────────────────────────┘
+
+    <span class="red">CONTAINED IN TORUS WALL ONLY:</span>
+    • Obsidian glass material
+    • Energy Equator plasma
+    • Glass reflections
+    • Rim lighting
+    • All glow effects
+
+    <span class="green">THE CENTER HOLE:</span>
+    • 100% transparent
+    • Shows background content
+    • No gradients, no fills
+    • Acts as a cutout/window
+</pre>
+                </div>
+
+                <div class="diagram-explanation">
+                    <h3>The Ring as a 3D PNG</h3>
+                    <p>
+                        Think of the Opta Ring like a donut-shaped PNG with transparency.
+                        The center hole is literally empty — it's a window through to whatever
+                        lies behind the ring.
+                    </p>
+                    <p>
+                        This allows the ring to be placed on top of any content — dashboards,
+                        images, gradients, videos — while maintaining its identity as a 3D floating object.
+                    </p>
+                    <ul>
+                        <li>The torus WALL contains all visual effects</li>
+                        <li>The center HOLE is always transparent</li>
+                        <li>No radial gradients that bleed into center</li>
+                        <li>No ambient glow that fills the hole</li>
+                        <li>The ring can move freely over any surface</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Visual Comparison -->
+        <section class="glass">
+            <div class="section-header">
+                <h2>Visual Comparison</h2>
+                <div class="line"></div>
+            </div>
+
+            <div class="comparison">
+                <div class="comparison-item wrong">
+                    <h4>WRONG: Filled Center</h4>
+                    <div class="comparison-visual">
+                        <div class="ring-wrong"></div>
+                    </div>
+                    <p class="comparison-desc">
+                        The center has a gradient fill. The ring cannot be placed over
+                        content — it obscures what's behind it.
+                    </p>
+                </div>
+
+                <div class="comparison-item right">
+                    <h4>CORRECT: Transparent Center</h4>
+                    <div class="comparison-visual">
+                        <div class="ring-right"></div>
+                    </div>
+                    <p class="comparison-desc">
+                        The center is fully transparent. The checkered pattern
+                        (representing any background) shows through perfectly.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Rules -->
+        <section class="glass">
+            <div class="section-header">
+                <h2>Implementation Rules</h2>
+                <div class="line"></div>
+            </div>
+
+            <div class="rules-grid">
+                <div class="rule-card do">
+                    <h4>DO: Transparent Background</h4>
+                    <p>
+                        Set the ring's center to <code>background: transparent</code> or
+                        <code>background: none</code>. The torus is a hollow tube.
+                    </p>
+                </div>
+
+                <div class="rule-card do">
+                    <h4>DO: Clip Glow to Wall</h4>
+                    <p>
+                        Any glow effects (plasma, ambient) must be clipped or masked to stay
+                        within the torus wall boundaries.
+                    </p>
+                </div>
+
+                <div class="rule-card do">
+                    <h4>DO: Use Border for Torus</h4>
+                    <p>
+                        In CSS, use a thick <code>border</code> to create the torus wall,
+                        not a filled circle with a mask.
+                    </p>
+                </div>
+
+                <div class="rule-card dont">
+                    <h4>DON'T: Radial Gradients Through Center</h4>
+                    <p>
+                        Never use <code>radial-gradient()</code> that extends into the center
+                        of the ring — this creates a visible fill.
+                    </p>
+                </div>
+
+                <div class="rule-card dont">
+                    <h4>DON'T: Inset Box Shadows That Fill</h4>
+                    <p>
+                        Avoid large <code>inset box-shadow</code> values that bleed into
+                        the center. Keep them tight to the wall.
+                    </p>
+                </div>
+
+                <div class="rule-card dont">
+                    <h4>DON'T: Ambient Glow Behind Ring</h4>
+                    <p>
+                        The ambient purple fog should be BEHIND the ring in z-order, not
+                        filling the ring's center.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Code Examples -->
+        <section class="glass">
+            <div class="section-header">
+                <h2>Code Examples</h2>
+                <div class="line"></div>
+            </div>
+
+            <h4 style="color: var(--neon-green); margin-bottom: 12px;">SwiftUI Implementation</h4>
+            <div class="code-block">
+<span class="comment">// CORRECT: Ring as a stroke (hollow center)</span>
+Circle()
+    .strokeBorder(
+        LinearGradient(colors: [.obsidianLight, .black], ...),
+        lineWidth: <span class="value">50</span>
+    )
+    <span class="comment">// The Circle() has NO .fill() - center is transparent</span>
+
+<span class="comment">// CORRECT: Plasma contained in stroke area</span>
+Circle()
+    .strokeBorder(plasmaGradient, lineWidth: <span class="value">4</span>)
+    .padding(<span class="value">25</span>)  <span class="comment">// Inset to stay within torus wall</span>
+            </div>
+
+            <h4 style="color: var(--neon-green); margin-bottom: 12px; margin-top: 32px;">CSS Implementation</h4>
+            <div class="code-block">
+<span class="comment">/* CORRECT: Border creates the torus wall */</span>
+.opta-ring {
+    width: <span class="value">300px</span>;
+    height: <span class="value">300px</span>;
+    border-radius: <span class="value">50%</span>;
+    border: <span class="value">50px</span> solid <span class="value">#1a1a20</span>;
+    <span class="important">background: transparent;</span>  <span class="comment">/* KEY: No fill! */</span>
+}
+
+<span class="comment">/* CORRECT: Glow only on the border, not filling center */</span>
+.opta-ring {
+    box-shadow:
+        <span class="value">0 0 60px</span> rgba(<span class="value">88, 28, 135, 0.5</span>),  <span class="comment">/* Outer glow */</span>
+        inset <span class="value">0 0 20px</span> rgba(<span class="value">168, 85, 247, 0.15</span>);  <span class="comment">/* Subtle inner */</span>
+}
+            </div>
+
+            <h4 style="color: var(--neon-red); margin-bottom: 12px; margin-top: 32px;">What NOT To Do</h4>
+            <div class="code-block">
+<span class="comment">/* WRONG: This fills the center! */</span>
+.opta-ring {
+    background: <span class="value">radial-gradient(circle, #09090b, transparent)</span>;
+    <span class="comment">/* The gradient extends into the center */</span>
+}
+
+<span class="comment">/* WRONG: Large inset shadow bleeds into center */</span>
+.opta-ring {
+    box-shadow: inset <span class="value">0 0 80px</span> rgba(<span class="value">168, 85, 247, 0.4</span>);
+    <span class="comment">/* This creates a visible purple wash in the center */</span>
+}
+            </div>
+        </section>
+
+        <!-- Summary -->
+        <section class="glass">
+            <div class="summary-box">
+                <h3>Quick Reference</h3>
+                <div class="summary-list">
+                    <div class="summary-item">
+                        <span class="icon">🔲</span>
+                        <p><strong>Center = Transparent</strong><br>The donut hole shows the background.</p>
+                    </div>
+                    <div class="summary-item">
+                        <span class="icon">⭕</span>
+                        <p><strong>Wall = All Effects</strong><br>Glass, plasma, glow — only in the torus wall.</p>
+                    </div>
+                    <div class="summary-item">
+                        <span class="icon">🖼️</span>
+                        <p><strong>Works Anywhere</strong><br>Ring floats over any background like a PNG.</p>
+                    </div>
+                    <div class="summary-item">
+                        <span class="icon">✂️</span>
+                        <p><strong>Clip/Mask Glow</strong><br>Ensure plasma doesn't spill into center.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <footer class="footer">
+            <p>
+                <span class="opta">OPTA</span> Ring Transparency Specification
+                <br>
+                Addendum to v2.0 • January 2026
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

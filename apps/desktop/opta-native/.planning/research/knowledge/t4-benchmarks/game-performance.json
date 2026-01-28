@@ -1,0 +1,238 @@
+{
+  "$schema": "knowledge-schema.json",
+  "tier": 4,
+  "tierName": "benchmarks",
+  "domain": "games",
+  "lastUpdated": "2026-01-18",
+  "lastVerified": "2026-01-18",
+  "confidence": "medium",
+  "sources": [
+    {
+      "name": "Gemini Deep Research - Apple Mac Capabilities",
+      "type": "gemini-research",
+      "date": "2026-01-18"
+    },
+    {
+      "name": "Gemini Deep Research - Mac Optimization, Gaming, and History",
+      "type": "gemini-research",
+      "date": "2026-01-18"
+    }
+  ],
+  "entries": [
+    {
+      "id": "resolution-fps-scaling",
+      "fact": "Typical FPS scaling from 1080p baseline: 1440p ~70-75%, 4K ~35-45%",
+      "details": "GPU-bound games show more dramatic scaling; CPU-bound games less affected",
+      "confidence": "medium",
+      "source": "Aggregate benchmarks",
+      "verificationRequired": true,
+      "tags": ["resolution", "fps", "scaling"]
+    },
+    {
+      "id": "m3-pro-1440p-typical",
+      "fact": "M3 Pro at 1440p medium-high settings: 45-70 FPS in modern AAA titles",
+      "confidence": "medium",
+      "source": "Community benchmarks",
+      "verificationRequired": true,
+      "tags": ["m3-pro", "1440p", "performance"],
+      "applicableTo": ["M3 Pro"]
+    },
+    {
+      "id": "thermal-throttle-impact",
+      "fact": "MacBook thermal throttling typically reduces performance 15-30% from peak",
+      "details": "Sustained workloads on MacBook Air see larger drops (30-40%) vs MacBook Pro (15-20%)",
+      "confidence": "medium",
+      "source": "Thermal testing",
+      "verificationRequired": true,
+      "tags": ["thermal", "throttling", "performance"]
+    },
+    {
+      "id": "rosetta2-overhead",
+      "fact": "Rosetta 2 translation typically adds 10-20% overhead for x86 games",
+      "details": "First launch compiles translation cache; subsequent launches faster",
+      "confidence": "medium",
+      "source": "Performance testing",
+      "verificationRequired": true,
+      "tags": ["rosetta", "translation", "overhead"]
+    },
+    {
+      "id": "memory-16gb-gaming",
+      "fact": "16GB unified memory handles most games at medium-high settings without texture swapping",
+      "details": "Some AAA titles with ultra textures may exceed 16GB VRAM-equivalent requirements",
+      "confidence": "medium",
+      "source": "Memory usage testing",
+      "verificationRequired": true,
+      "tags": ["memory", "gaming", "16gb"]
+    },
+    {
+      "id": "shadow-quality-impact",
+      "fact": "Shadow quality Ultra→High typically saves 10-15% GPU load with minimal visual impact",
+      "confidence": "medium",
+      "source": "Settings analysis",
+      "verificationRequired": true,
+      "tags": ["shadows", "settings", "optimization"]
+    },
+    {
+      "id": "vsync-input-lag",
+      "fact": "VSync adds 1-3 frames of input latency (16-50ms at 60Hz)",
+      "details": "Consider frame limiters as alternative for reduced tearing without full VSync latency",
+      "confidence": "high",
+      "source": "Input testing",
+      "verificationRequired": false,
+      "tags": ["vsync", "input-lag", "settings"]
+    },
+    {
+      "id": "geekbench6-m4-max-single",
+      "fact": "M4 Max achieves ~4,025 Geekbench 6 single-core score (Mac Studio) / ~3,915 (MacBook Pro)",
+      "details": "~25% uplift over M3 Ultra and ~40% over M2 Ultra in single-core performance",
+      "confidence": "medium",
+      "source": "Geekbench 6",
+      "verificationRequired": true,
+      "tags": ["benchmark", "geekbench", "single-core", "m4-max"],
+      "applicableTo": ["M4 Max"]
+    },
+    {
+      "id": "geekbench6-m4-max-multi",
+      "fact": "M4 Max achieves ~25,600-25,650 Geekbench 6 multi-core score",
+      "details": "16-core M4 Max is close to 32-core M3 Ultra (28,160) in multi-core due to N3E process efficiency",
+      "confidence": "medium",
+      "source": "Geekbench 6",
+      "verificationRequired": true,
+      "tags": ["benchmark", "geekbench", "multi-core", "m4-max"],
+      "applicableTo": ["M4 Max"]
+    },
+    {
+      "id": "geekbench6-m4-base",
+      "fact": "M4 base achieves ~3,750 single-core, ~14,500 multi-core, ~58,000 Metal GPU in Geekbench 6",
+      "confidence": "medium",
+      "source": "Geekbench 6",
+      "verificationRequired": true,
+      "tags": ["benchmark", "geekbench", "m4"],
+      "applicableTo": ["M4"]
+    },
+    {
+      "id": "macbook-air-thermal-throttle-timeline",
+      "fact": "MacBook Air M4 operates at peak 4.4 GHz for 0-2 minutes, throttles to ~3.0 GHz after 10+ minutes",
+      "details": "0-2 min: Peak 4.4 GHz. 5 min: Heat soak, chassis reaches ~45°C. 10+ min: Performance stabilizes at ~75% of peak",
+      "confidence": "high",
+      "source": "Thermal testing",
+      "verificationRequired": true,
+      "tags": ["benchmark", "thermal", "throttling", "macbook-air", "m4"],
+      "applicableTo": ["M4"]
+    },
+    {
+      "id": "macbook-pro-sustained-frequency",
+      "fact": "MacBook Pro fans maintain CPU at ~85-90°C allowing sustained 4.0 GHz+ operation indefinitely",
+      "details": "Fans ramp to 4000-5000 RPM for thermal management",
+      "confidence": "high",
+      "source": "Thermal testing",
+      "verificationRequired": true,
+      "tags": ["benchmark", "thermal", "sustained", "macbook-pro"],
+      "applicableTo": ["M4 Pro", "M4 Max"]
+    },
+    {
+      "id": "cinebench2024-m4-max-vs-m2-ultra",
+      "fact": "M4 Max scores ~1,800 in Cinebench 2024 GPU vs M2 Ultra's ~1,100",
+      "details": "M4 Max destroys M2 Ultra in rendering despite fewer cores due to hardware ray tracing. M2 calculates rays via software",
+      "confidence": "medium",
+      "source": "Cinebench 2024",
+      "verificationRequired": true,
+      "tags": ["benchmark", "cinebench", "rendering", "ray-tracing", "m4-max", "m2-ultra"],
+      "applicableTo": ["M4 Max", "M2 Ultra"]
+    },
+    {
+      "id": "cyberpunk-m3max-1080p-no-metalfx",
+      "fact": "M3 Max (48GB) achieves 78.35 FPS in Cyberpunk 2077 at 1080p without MetalFX",
+      "confidence": "high",
+      "source": "Technetbooks",
+      "verificationRequired": true,
+      "tags": ["cyberpunk", "fps", "1080p", "m3-max", "benchmark"],
+      "applicableTo": ["M3 Max"]
+    },
+    {
+      "id": "cyberpunk-m3max-1080p-metalfx",
+      "fact": "M3 Max (48GB) achieves 104.46 FPS in Cyberpunk 2077 at 1080p with MetalFX Quality",
+      "details": "MetalFX Quality mode provides +33% FPS improvement (78.35 to 104.46 FPS)",
+      "confidence": "high",
+      "source": "Technetbooks",
+      "verificationRequired": true,
+      "tags": ["cyberpunk", "fps", "1080p", "metalfx", "m3-max", "benchmark"],
+      "applicableTo": ["M3 Max"]
+    },
+    {
+      "id": "cyberpunk-m4max-4k-limitation",
+      "fact": "M4 Max cannot sustain 60 FPS at native 4K in Cyberpunk 2077 without aggressive MetalFX",
+      "details": "Achieves 30-40 FPS in dense urban environments without aggressive MetalFX intervention",
+      "confidence": "high",
+      "source": "PCMag",
+      "verificationRequired": true,
+      "tags": ["cyberpunk", "fps", "4k", "m4-max", "limitation"],
+      "applicableTo": ["M4 Max"]
+    },
+    {
+      "id": "re-village-m4pro-1080p",
+      "fact": "Mac Mini M4 Pro achieves 126 FPS in Resident Evil Village at 1080p Max settings with MetalFX Quality",
+      "confidence": "high",
+      "source": "Gaming benchmarks",
+      "verificationRequired": true,
+      "tags": ["resident-evil", "fps", "1080p", "m4-pro", "mac-mini", "benchmark"],
+      "applicableTo": ["M4 Pro"]
+    },
+    {
+      "id": "re-village-m4pro-1440p",
+      "fact": "Mac Mini M4 Pro achieves 86 FPS in Resident Evil Village at 1440p Max settings with MetalFX Quality",
+      "confidence": "high",
+      "source": "Gaming benchmarks",
+      "verificationRequired": true,
+      "tags": ["resident-evil", "fps", "1440p", "m4-pro", "mac-mini", "benchmark"],
+      "applicableTo": ["M4 Pro"]
+    },
+    {
+      "id": "valheim-m3max-4k-rosetta",
+      "fact": "M3 Max sustains 100-125 FPS in Valheim at 4K resolution through Rosetta 2 translation",
+      "details": "Demonstrates capability of Apple's translation engine. Users often run via Rosetta for mod compatibility",
+      "confidence": "medium",
+      "source": "Reddit community",
+      "verificationRequired": true,
+      "tags": ["valheim", "fps", "4k", "m3-max", "rosetta", "benchmark"],
+      "applicableTo": ["M3 Max"]
+    },
+    {
+      "id": "gtav-m4pro-100fps",
+      "fact": "Grand Theft Auto V achieves 100+ FPS on M4 Pro via CrossOver",
+      "details": "DX11 title benefits from years of Wine/CrossOver optimization work",
+      "confidence": "high",
+      "source": "CrossOver compatibility",
+      "verificationRequired": true,
+      "tags": ["gta5", "fps", "m4-pro", "crossover", "benchmark"],
+      "applicableTo": ["M4 Pro"]
+    },
+    {
+      "id": "reflex-latency-reduction",
+      "fact": "Nvidia Reflex can reduce system latency by up to 50% in GPU-bound scenarios",
+      "details": "Just-in-time rendering approach eliminates render queue latency. Most effective when GPU is bottleneck",
+      "confidence": "high",
+      "source": "Nvidia testing",
+      "verificationRequired": true,
+      "tags": ["benchmark", "reflex", "latency-reduction"]
+    },
+    {
+      "id": "game-mode-hardware-dependency",
+      "fact": "Windows Game Mode impact is negligible on high-end CPUs (Ryzen 9, i9) but critical for stabilizing 1% lows on mid-range hardware",
+      "details": "High core count: background tasks rarely interfere. Mid-range: Game Mode critical for preventing background stealing cycles",
+      "confidence": "high",
+      "source": "Performance testing",
+      "verificationRequired": true,
+      "tags": ["benchmark", "game-mode", "1-percent-lows", "hardware-dependency"]
+    },
+    {
+      "id": "gpu-thermal-limit-83c",
+      "fact": "Modern Nvidia GPUs (RTX 30/40 series) automatically lower clock speed when hitting thermal limit around 83C",
+      "details": "Causes performance inconsistency - makes undervolting preferable to overclocking for thermal margin",
+      "confidence": "high",
+      "source": "Hardware specifications",
+      "verificationRequired": false,
+      "tags": ["benchmark", "thermal-throttling", "83c", "rtx-series"]
+    }
+  ]
+}

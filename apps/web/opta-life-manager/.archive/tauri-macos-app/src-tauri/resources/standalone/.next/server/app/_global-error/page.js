@@ -1,0 +1,12 @@
+var R=require("../../chunks/ssr/[turbopack]_runtime.js")("server/app/_global-error/page.js")
+R.c("server/chunks/ssr/[root-of-the-server]__b4408607._.js")
+R.c("server/chunks/ssr/Documents_Opta_opta-life-manager_ec7e1155._.js")
+R.c("server/chunks/ssr/deabb_next_dist_db01223b._.js")
+R.c("server/chunks/ssr/[root-of-the-server]__973f82e2._.js")
+R.c("server/chunks/ssr/deabb_next_dist_8333bd6c._.js")
+R.c("server/chunks/ssr/deabb_next_dist_871cb0f2._.js")
+R.c("server/chunks/ssr/deabb_ee5551f5._.js")
+R.c("server/chunks/ssr/Documents_Opta_opta-life-manager_app_3ada5340._.js")
+R.c("server/chunks/ssr/10780_opta-life-manager__next-internal_server_app__global-error_page_actions_90efe8bd.js")
+R.m(10698)
+module.exports=R.m(10698).exports
