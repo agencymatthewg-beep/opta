@@ -1,3 +1,0 @@
-module.exports=[27507,(a,b,c)=>{let{createClientModuleProxy:d}=a.r(72014);a.n(d("[project]/Documents/Opta/opta-life-manager/node_modules/next/dist/client/components/builtin/global-error.js <module evaluation>"))},79749,(a,b,c)=>{let{createClientModuleProxy:d}=a.r(72014);a.n(d("[project]/Documents/Opta/opta-life-manager/node_modules/next/dist/client/components/builtin/global-error.js"))},91555,a=>{"use strict";a.i(27507);var b=a.i(79749);a.n(b)}];
-
-//# sourceMappingURL=deabb_next_dist_client_components_builtin_global-error_b7e110da.js.map
