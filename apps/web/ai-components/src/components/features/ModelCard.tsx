@@ -33,68 +33,98 @@ interface ModelCardProps {
   className?: string;
 }
 
+// Vibrant tag styles matching reference image
 const tagStyles: Record<ModelType, { bg: string; text: string; border: string; label: string }> = {
   llm: {
-    bg: "bg-purple-deep/20",
-    text: "text-purple-glow",
-    border: "border-purple-glow/30",
+    bg: "bg-neon-orange/20",
+    text: "text-neon-orange",
+    border: "border-neon-orange/40",
     label: "LLM",
   },
   web: {
-    bg: "bg-neon-cyan/20",
-    text: "text-neon-cyan",
-    border: "border-neon-cyan/30",
-    label: "Web",
-  },
-  cli: {
     bg: "bg-neon-green/20",
     text: "text-neon-green",
-    border: "border-neon-green/30",
+    border: "border-neon-green/40",
+    label: "WEB",
+  },
+  cli: {
+    bg: "bg-purple-glow/20",
+    text: "text-purple-glow",
+    border: "border-purple-glow/40",
     label: "CLI",
   },
   api: {
-    bg: "bg-neon-orange/20",
-    text: "text-neon-orange",
-    border: "border-neon-orange/30",
+    bg: "bg-neon-cyan/20",
+    text: "text-neon-cyan",
+    border: "border-neon-cyan/40",
     label: "API",
   },
   multimodal: {
-    bg: "bg-gradient-to-r from-purple-deep/20 to-neon-cyan/20",
-    text: "text-white",
-    border: "border-white/20",
-    label: "Multimodal",
+    bg: "bg-neon-amber/20",
+    text: "text-neon-amber",
+    border: "border-neon-amber/40",
+    label: "MULTIMODAL",
   },
   embedding: {
     bg: "bg-white/10",
     text: "text-text-secondary",
-    border: "border-white/10",
-    label: "Embedding",
+    border: "border-white/20",
+    label: "EMBEDDING",
   },
   image: {
-    bg: "bg-pink-500/20",
-    text: "text-pink-400",
-    border: "border-pink-400/30",
-    label: "Image",
+    bg: "bg-neon-pink/20",
+    text: "text-neon-pink",
+    border: "border-neon-pink/40",
+    label: "IMAGE",
   },
   audio: {
-    bg: "bg-blue-500/20",
+    bg: "bg-blue-400/20",
     text: "text-blue-400",
-    border: "border-blue-400/30",
-    label: "Audio",
+    border: "border-blue-400/40",
+    label: "AUDIO",
   },
   video: {
-    bg: "bg-red-500/20",
+    bg: "bg-red-400/20",
     text: "text-red-400",
-    border: "border-red-400/30",
-    label: "Video",
+    border: "border-red-400/40",
+    label: "VIDEO",
   },
 };
+
+// Colorful benchmark progress bar colors
+const benchmarkColors = [
+  "from-neon-orange to-neon-amber",
+  "from-neon-cyan to-blue-400",
+  "from-purple-glow to-neon-pink",
+  "from-neon-green to-emerald-400",
+  "from-neon-pink to-neon-coral",
+  "from-neon-amber to-yellow-400",
+];
+
+// Diamond rank badge component
+function DiamondRank({ rank, isExpanded }: { rank: number; isExpanded: boolean }) {
+  return (
+    <motion.div
+      animate={{
+        boxShadow: isExpanded
+          ? "0 0 20px rgba(251, 146, 60, 0.6), 0 0 40px rgba(251, 146, 60, 0.3)"
+          : "0 0 10px rgba(251, 146, 60, 0.3)",
+      }}
+      className="relative w-10 h-10 flex items-center justify-center"
+    >
+      <div className="absolute inset-0 rotate-45 border-2 border-neon-orange bg-neon-orange/20 rounded-sm" />
+      <span className="relative z-10 text-sm font-bold text-white">{rank}</span>
+    </motion.div>
+  );
+}
 
 // Desktop benchmark item for horizontal wings
 function BenchmarkItem({ benchmark, index, side }: { benchmark: BenchmarkScore; index: number; side: "left" | "right" }) {
   const percentage = benchmark.maxScore
     ? (benchmark.score / benchmark.maxScore) * 100
     : benchmark.score;
+
+  const colorIndex = index % benchmarkColors.length;
 
   return (
     <motion.div
@@ -116,7 +146,7 @@ function BenchmarkItem({ benchmark, index, side }: { benchmark: BenchmarkScore; 
           initial={{ width: 0 }}
           animate={{ width: `${Math.min(percentage, 100)}%` }}
           transition={{ delay: index * 0.05 + 0.1, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          className="h-full bg-gradient-to-r from-purple-deep to-purple-glow rounded-full"
+          className={`h-full bg-gradient-to-r ${benchmarkColors[colorIndex]} rounded-full`}
         />
       </div>
     </motion.div>
@@ -128,6 +158,8 @@ function MobileBenchmarkItem({ benchmark, index }: { benchmark: BenchmarkScore; 
   const percentage = benchmark.maxScore
     ? (benchmark.score / benchmark.maxScore) * 100
     : benchmark.score;
+
+  const colorIndex = index % benchmarkColors.length;
 
   return (
     <motion.div
@@ -149,7 +181,7 @@ function MobileBenchmarkItem({ benchmark, index }: { benchmark: BenchmarkScore; 
           initial={{ width: 0 }}
           animate={{ width: `${Math.min(percentage, 100)}%` }}
           transition={{ delay: index * 0.03 + 0.1, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-          className="h-full bg-gradient-to-r from-purple-deep to-purple-glow rounded-full"
+          className={`h-full bg-gradient-to-r ${benchmarkColors[colorIndex]} rounded-full`}
         />
       </div>
     </motion.div>
@@ -176,10 +208,12 @@ export function ModelCard({
   // On mobile, detect if this card is most central on screen
   const isCentral = useCentralCard(cardId, cardRef);
 
+  const isExpanded = isMobile ? isCentral : (isHovered || isPinned);
+
   const statusColors = {
-    active: "bg-neon-green/20 text-neon-green border-neon-green/30",
-    new: "bg-purple-deep/20 text-purple-glow border-purple-glow/30",
-    trending: "bg-neon-orange/20 text-neon-orange border-neon-orange/30",
+    active: "bg-neon-green/20 text-neon-green border-neon-green/40",
+    new: "bg-purple-glow/20 text-purple-glow border-purple-glow/40",
+    trending: "bg-neon-orange/20 text-neon-orange border-neon-orange/40",
   };
 
   // Desktop: show wings on hover or when pinned
@@ -217,28 +251,37 @@ export function ModelCard({
       className={cn(
         "relative group w-full max-w-4xl mx-auto mb-4",
         !isMobile && "cursor-pointer",
-        isPinned && "ring-2 ring-purple-glow/50 rounded-3xl",
         className
       )}
     >
-      {/* Background Glow Effect - enhanced when central on mobile */}
+      {/* Green glow border when expanded */}
+      <AnimatePresence>
+        {isExpanded && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute -inset-0.5 rounded-3xl border-2 border-neon-green/50 pointer-events-none"
+            style={{
+              boxShadow: "0 0 20px rgba(74, 222, 128, 0.3), inset 0 0 20px rgba(74, 222, 128, 0.1)",
+            }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Background Purple Glow Effect */}
       <div className={cn(
         "absolute -inset-0.5 bg-gradient-to-r from-purple-deep to-purple-glow rounded-3xl blur transition duration-500",
-        isMobile
-          ? (isCentral ? "opacity-50" : "opacity-10")
-          : (isPinned ? "opacity-40" : "opacity-20 group-hover:opacity-40")
+        isExpanded ? "opacity-0" : "opacity-20 group-hover:opacity-30"
       )} />
 
       {/* Main Glass Container */}
       <div className={cn(
-        "relative flex flex-col bg-black/40 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl transition-all duration-300",
+        "relative flex flex-col bg-purple-deep/10 backdrop-blur-xl border border-purple-glow/20 rounded-3xl shadow-2xl transition-all duration-300",
         isMobile ? "overflow-hidden" : "overflow-visible",
-        isMobile
-          ? (isCentral ? "border-purple-glow/30" : "border-white/10")
-          : ""
       )}>
         {/* Refractive Light Streak */}
-        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent z-10" />
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent z-10" />
 
         {/* Left Wing - Benchmarks (desktop only) */}
         <AnimatePresence>
@@ -248,7 +291,7 @@ export function ModelCard({
               animate={{ width: "auto", opacity: 1, x: 0 }}
               exit={{ width: 0, opacity: 0, x: 0 }}
               transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              className="absolute right-full top-0 bottom-0 flex items-center bg-black/60 backdrop-blur-xl border border-white/10 border-r-0 rounded-l-3xl overflow-hidden"
+              className="absolute right-full top-0 bottom-0 flex items-center bg-purple-deep/20 backdrop-blur-xl border border-purple-glow/20 border-r-0 rounded-l-3xl overflow-hidden"
               style={{ marginRight: -1 }}
             >
               <div className="flex flex-col gap-2 px-5">
@@ -265,23 +308,20 @@ export function ModelCard({
           "flex flex-col items-center justify-center px-4 md:px-8 py-4",
           !isMobile && "h-[120px]"
         )}>
-          {/* Top Row: Logo + Rank + Name + Company */}
-          <div className="flex items-center gap-2 md:gap-3 mb-2">
-            {/* Company Logo with Rank Badge */}
-            <div className="relative flex-shrink-0">
+          {/* Top Row: Diamond Rank + Logo + Name + Company */}
+          <div className="flex items-center gap-3 md:gap-4 mb-2">
+            {/* Diamond Rank Badge */}
+            <DiamondRank rank={rank} isExpanded={isExpanded} />
+
+            {/* Company Logo */}
+            <div className="flex-shrink-0">
               <CompanyLogo company={company} size={isMobile ? 32 : 40} />
-              {/* Rank Badge */}
-              <div className="absolute -top-1.5 -right-1.5 flex items-center justify-center w-5 h-5 rounded-full bg-gradient-to-br from-purple-deep to-purple-glow border border-white/20 shadow-lg">
-                <span className="text-[10px] font-bold text-white">{rank}</span>
-              </div>
             </div>
 
-            {/* Model Name */}
+            {/* Model Name - Pink/Coral */}
             <h3 className={cn(
               "text-base md:text-lg font-semibold transition-colors duration-300",
-              isMobile
-                ? (isCentral ? "text-purple-glow" : "text-white")
-                : "text-white group-hover:text-purple-glow"
+              isExpanded ? "text-neon-coral" : "text-neon-pink"
             )}>
               {name}
             </h3>
@@ -293,7 +333,7 @@ export function ModelCard({
 
           {/* Bottom Row: Tags + Status + Score */}
           <div className="flex items-center gap-2 md:gap-3 flex-wrap justify-center">
-            {/* Model Type Tags */}
+            {/* Model Type Tags - Colorful */}
             {tags.length > 0 && (
               <div className="flex items-center gap-1.5">
                 {tags.map((tag, index) => {
@@ -332,7 +372,7 @@ export function ModelCard({
 
             {/* Score display */}
             {score !== undefined && (
-              <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/5 border border-white/10">
+              <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-glow/10 border border-purple-glow/30">
                 <span className="text-xs md:text-sm font-mono text-purple-glow">{score}</span>
                 <span className="text-[10px] text-text-muted">pts</span>
               </div>
@@ -354,7 +394,7 @@ export function ModelCard({
                 animate={{ rotate: isPinned ? 45 : 0 }}
                 className={cn(
                   "w-5 h-5 flex items-center justify-center rounded-full transition-colors",
-                  isPinned ? "bg-purple-glow/30 text-purple-glow" : "bg-white/5 text-text-muted"
+                  isPinned ? "bg-neon-green/30 text-neon-green" : "bg-white/5 text-text-muted"
                 )}
               >
                 <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
@@ -375,7 +415,7 @@ export function ModelCard({
               transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
               className="overflow-hidden"
             >
-              <div className="px-4 pb-4 pt-2 border-t border-white/5">
+              <div className="px-4 pb-4 pt-2 border-t border-purple-glow/10">
                 <p className="text-[10px] font-mono text-text-muted uppercase tracking-wider mb-3">
                   Benchmark Scores
                 </p>
@@ -397,7 +437,7 @@ export function ModelCard({
               animate={{ width: "auto", opacity: 1, x: 0 }}
               exit={{ width: 0, opacity: 0, x: 0 }}
               transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              className="absolute left-full top-0 bottom-0 flex items-center bg-black/60 backdrop-blur-xl border border-white/10 border-l-0 rounded-r-3xl overflow-hidden"
+              className="absolute left-full top-0 bottom-0 flex items-center bg-purple-deep/20 backdrop-blur-xl border border-purple-glow/20 border-l-0 rounded-r-3xl overflow-hidden"
               style={{ marginLeft: -1 }}
             >
               <div className="flex flex-col gap-2 px-5">
@@ -410,7 +450,7 @@ export function ModelCard({
         </AnimatePresence>
 
         {/* Bottom gradient fade */}
-        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-purple-deep/30 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-purple-glow/30 to-transparent" />
       </div>
     </motion.div>
   );
