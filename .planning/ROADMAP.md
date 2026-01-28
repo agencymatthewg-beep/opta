@@ -14,7 +14,7 @@ None (no domain skill packages available)
 - Integer phases (1, 2, 3): Planned milestone work
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
-- [ ] **Phase 1: Foundation** - Next.js project setup with Opta design system and layout structure
+- [x] **Phase 1: Foundation** - Next.js project setup with Opta design system and layout structure
 - [ ] **Phase 2: Data Pipeline** - Web scraping infrastructure for AI benchmarks and announcements
 - [ ] **Phase 3: Data Storage** - Database schema, data models, and API routes
 - [ ] **Phase 4: Dashboard Core** - Model comparison views and benchmark visualizations
@@ -32,8 +32,8 @@ None (no domain skill packages available)
 
 Plans:
 - [x] 01-01: Project scaffolding and configuration (2026-01-28)
-- [ ] 01-02: Design system and core components
-- [ ] 01-03: Layout structure and navigation
+- [x] 01-02: Design system and core components (2026-01-28)
+- [x] 01-03: Layout structure and navigation (2026-01-28)
 
 ### Phase 2: Data Pipeline
 **Goal**: Build automated scraping system for Chatbot Arena, official benchmarks (MMLU, HumanEval, GPQA), and provider announcements (OpenAI, Anthropic, Google blogs)
@@ -110,7 +110,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 1/3 | In progress | - |
+| 1. Foundation | 3/3 | Complete | 2026-01-28 |
 | 2. Data Pipeline | 0/3 | Not started | - |
 | 3. Data Storage | 0/3 | Not started | - |
 | 4. Dashboard Core | 0/4 | Not started | - |
