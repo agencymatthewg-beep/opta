@@ -9,6 +9,57 @@
 //
 
 import SwiftUI
+#if os(iOS)
+import UIKit
+#elseif os(macOS)
+import AppKit
+#endif
+
+// MARK: - Reduce Motion Support
+
+/// Reduce Motion compliance utilities
+///
+/// All animations should respect iOS Accessibility > Motion > Reduce Motion setting.
+/// Use ClawdbotMotion methods to conditionally apply animations.
+public enum ClawdbotMotion {
+    /// Check if reduce motion is enabled in system accessibility settings
+    public static var isReduceMotionEnabled: Bool {
+        #if os(iOS)
+        return UIAccessibility.isReduceMotionEnabled
+        #elseif os(macOS)
+        return NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+        #else
+        return false
+        #endif
+    }
+
+    /// Returns animation or nil if reduce motion is enabled
+    /// Use when animation is purely decorative
+    public static func animation(_ animation: Animation) -> Animation? {
+        isReduceMotionEnabled ? nil : animation
+    }
+
+    /// Returns animation or instant if reduce motion is enabled
+    /// Use when state change needs to happen but animation is optional
+    public static func safeAnimation(_ animation: Animation) -> Animation {
+        isReduceMotionEnabled ? .linear(duration: 0) : animation
+    }
+}
+
+// MARK: - Conditional Animation Modifier
+
+public extension View {
+    /// Apply animation only if reduce motion is disabled
+    /// Animation becomes nil when reduce motion is enabled
+    func clawdbotAnimation<V: Equatable>(_ animation: Animation, value: V) -> some View {
+        self.animation(ClawdbotMotion.animation(animation), value: value)
+    }
+
+    /// Apply animation with reduce motion fallback (instant transition)
+    func clawdbotAnimationSafe<V: Equatable>(_ animation: Animation, value: V) -> some View {
+        self.animation(ClawdbotMotion.safeAnimation(animation), value: value)
+    }
+}
 
 // MARK: - Spring Animation Presets
 
