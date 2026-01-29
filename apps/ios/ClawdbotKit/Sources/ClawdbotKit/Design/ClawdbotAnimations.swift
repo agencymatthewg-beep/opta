@@ -410,6 +410,47 @@ public extension EnvironmentValues {
     }
 }
 
+// MARK: - Animation Timing Constants
+
+/// Centralized timing constants for consistent animation durations
+///
+/// These values match the Opta design system specifications.
+/// Use these instead of hardcoding durations for consistency.
+public enum ClawdbotTiming {
+    /// Fast feedback (150ms) - micro-interactions, button press feedback
+    public static let fast: Double = 0.15
+
+    /// Normal interaction (200ms) - standard UI feedback
+    public static let normal: Double = 0.2
+
+    /// Deliberate action (300ms) - toggle switches, selection changes
+    public static let slow: Double = 0.3
+
+    /// Emphasized transition (500ms) - modal presentations, page changes
+    public static let slower: Double = 0.5
+
+    /// Ignition wake-up (800ms) - wake-from-darkness entrance animation
+    public static let ignition: Double = 0.8
+
+    /// Glow pulse cycle (2s) - full breathing cycle duration
+    public static let glowPulse: Double = 2.0
+
+    /// Stagger interval (50ms) - delay between cascading items
+    public static let staggerInterval: Double = 0.05
+
+    /// Message stagger (30ms) - faster stagger for chat messages
+    public static let messageStagger: Double = 0.03
+
+    /// Ring dormant breathe (4s) - idle state breathing animation
+    public static let ringDormant: Double = 4.0
+
+    /// Ring active breathe (3s) - active state breathing animation
+    public static let ringActive: Double = 3.0
+
+    /// Thinking dot interval (300ms) - time between dot bounces
+    public static let thinkingDotInterval: Double = 0.3
+}
+
 // MARK: - Usage Examples Reference
 /*
  // Button press
