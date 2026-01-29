@@ -18,7 +18,7 @@ None (expertise files not available)
 - [x] **Phase 2: Connection Layer** - WebSocket client, state management, reconnection
 - [x] **Phase 3: Message Protocol** - Clawdbot JSON protocol implementation
 - [x] **Phase 4: Chat Core** - Basic chat UI, message list, input field
-- [ ] **Phase 5: Streaming & State** - Real-time streaming, thinking/typing indicators
+- [x] **Phase 5: Streaming & State** - Real-time streaming, thinking/typing indicators
 - [ ] **Phase 6: Rich Output: Text** - Bullet points, code blocks, formatted text
 - [ ] **Phase 7: Rich Output: Visual** - Dynamic tables, graphs, inline images
 - [ ] **Phase 8: GenUI Rendering** - Interactive component loading in chat
@@ -81,9 +81,9 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 05-01: Streaming message rendering
-- [ ] 05-02: Thinking state visualization
-- [ ] 05-03: Typing indicator animation
+- [x] 05-01: Streaming message rendering
+- [x] 05-02: Thinking state visualization
+- [x] 05-03: Typing indicator animation
 
 ### Phase 6: Rich Output: Text
 **Goal**: Support bullet points, code blocks, and formatted text rendering
@@ -176,7 +176,7 @@ Phases execute in numeric order: 1 → 2 → 3 → ... → 12
 | 2. Connection Layer | 3/3 | Complete | 2025-01-30 |
 | 3. Message Protocol | 4/4 | Complete | 2026-01-30 |
 | 4. Chat Core | 3/3 | Complete | 2026-01-30 |
-| 5. Streaming & State | 0/3 | Not started | - |
+| 5. Streaming & State | 3/3 | Complete | 2026-01-30 |
 | 6. Rich Output: Text | 0/3 | Not started | - |
 | 7. Rich Output: Visual | 0/3 | Not started | - |
 | 8. GenUI Rendering | 0/3 | Not started | - |
