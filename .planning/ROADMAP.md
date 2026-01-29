@@ -54,13 +54,13 @@ Plans:
 ### Phase 3: Message Protocol
 **Goal**: Implement Clawdbot JSON message protocol parsing and serialization
 **Depends on**: Phase 2
-**Research**: Unlikely (existing Clawdbot protocol, zero changes to backend)
-**Plans**: TBD
+**Research**: Level 0 (pure internal work, no external dependencies)
 
 Plans:
-- [ ] 03-01: Message type definitions (Codable structs)
-- [ ] 03-02: Protocol encoder/decoder with streaming support
-- [ ] 03-03: Message queue and delivery confirmation
+- [ ] 03-01: Message type definitions (Wave 1) - ChatMessage, ProtocolEnvelope, StreamingChunk
+- [ ] 03-02: Protocol encoder/decoder with streaming support (Wave 2)
+- [ ] 03-03: Message queue and delivery confirmation (Wave 2)
+- [ ] 03-04: Protocol integration with connection layer (Wave 3)
 
 ### Phase 4: Chat Core
 **Goal**: Build basic chat interface with message list, input field, and send functionality
@@ -174,7 +174,7 @@ Phases execute in numeric order: 1 → 2 → 3 → ... → 12
 |-------|----------------|--------|-----------|
 | 1. Foundation | 3/3 | Complete | 2025-01-30 |
 | 2. Connection Layer | 3/3 | Complete | 2025-01-30 |
-| 3. Message Protocol | 0/3 | Not started | - |
+| 3. Message Protocol | 0/4 | Planned | - |
 | 4. Chat Core | 0/3 | Not started | - |
 | 5. Streaming & State | 0/3 | Not started | - |
 | 6. Rich Output: Text | 0/3 | Not started | - |
