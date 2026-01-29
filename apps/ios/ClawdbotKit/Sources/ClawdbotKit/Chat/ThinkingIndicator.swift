@@ -33,12 +33,13 @@ public struct ThinkingIndicator: View {
     public var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                // Animated dots with obsidian active styling
+                // Animated dots with obsidian active styling and glow pulse
                 dotsView
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
                     .obsidianActive()
                     .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .glowPulsePurple(isActive: true)
 
                 // Detail text (e.g., "Searching web...")
                 if let detail = detail {
@@ -51,6 +52,7 @@ public struct ThinkingIndicator: View {
 
             Spacer(minLength: 60)
         }
+        .ignition()  // Wake-from-darkness entrance
         .onAppear {
             startAnimation()
         }
@@ -79,6 +81,9 @@ public struct ThinkingIndicator: View {
 
     /// Start the continuous bounce animation
     private func startAnimation() {
+        // Skip animation if Reduce Motion is enabled
+        guard !ClawdbotMotion.isReduceMotionEnabled else { return }
+
         // Use timer-based animation for smooth staggered effect
         Timer.scheduledTimer(withTimeInterval: 0.3, repeats: true) { _ in
             withAnimation(.easeInOut(duration: 0.2)) {
