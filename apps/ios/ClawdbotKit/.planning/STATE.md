@@ -7,45 +7,41 @@
 
 ## Current Position
 
-Phase: 4 of N (Chat Core)
-Plan: 2/3 complete
-Status: Plan 04-02 complete, ready for 04-03
-Last activity: 2026-01-30 - Completed ChatInputBar integration
-Next action: Execute plan 04-03 (Message Persistence)
+Phase: 5 of N (Streaming & State)
+Plan: 1/N complete
+Status: Plan 05-01 complete, ready for 05-02
+Last activity: 2026-01-29 - Completed streaming UI layer
+Next action: Execute plan 05-02 (Bot State Indicator) when available
 
-Progress: Phase 4 In Progress (Plan 2 of 3 complete)
+Progress: Phase 5 In Progress (Plan 1 complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 5 (3 foundation + 2 chat-core)
+- Total plans completed: 6 (3 foundation + 3 chat-core + 1 streaming-state)
 - Phase 1 duration: ~15 min total
-- Phase 4 (so far): ~24 min (04-01: 12min, 04-02: 12min)
+- Phase 4 duration: ~36 min total
+- Phase 5 (so far): ~6 min (05-01: 6min)
 
 **By Phase:**
 
 | Phase | Plans | Status |
 |-------|-------|--------|
 | 1. Foundation | 3/3 | COMPLETE |
-| 4. Chat Core | 2/3 | IN PROGRESS |
+| 4. Chat Core | 3/3 | COMPLETE |
+| 5. Streaming & State | 1/N | IN PROGRESS |
 
-## Phase 4 Progress
+## Phase 5 Progress
 
-**04-01: Chat View Foundation** - COMPLETE
-- ChatView with ScrollView and message list
-- MessageBubble component with role-based styling
-- ChatViewModel with mock messages
-- Auto-scroll to bottom on new messages
+**05-01: Streaming UI Layer** - COMPLETE
+- streamingChunks PassthroughSubject on ProtocolHandler
+- streamingMessages dictionary on ChatViewModel
+- MessageBubble with streaming initializer and animated cursor
+- ChatView renders streaming messages with auto-scroll
 
-**04-02: Chat Input Bar** - COMPLETE
-- ChatInputBar reusable component
-- safeAreaInset keyboard-aware layout
-- FocusState integration
-- Rapid messaging UX (keyboard stays open)
-
-**04-03: Message Persistence** - PENDING
-- MessageStore actor for persistence
-- Integration with ChatViewModel
+**05-02: Bot State Indicator** - PENDING
+- Thinking/typing status display
+- Integration with BotStateUpdate
 
 ## Accumulated Context
 
@@ -58,12 +54,18 @@ Progress: Phase 4 In Progress (Plan 2 of 3 complete)
 - safeAreaInset(edge: .bottom) for keyboard-aware chat layouts
 - FocusState.Binding pattern for external keyboard control
 - Rapid messaging UX: clear text but keep keyboard open
+- Stream content accumulated in ChatViewModel for SwiftUI reactivity
+- Final chunk removes from streamingMessages (full message arrives via incomingMessages)
+- Scroll position changed from MessageID to String to support streaming IDs
 
 ### Patterns Established
 
 - **ChatInputBar**: Reusable text input with FocusState binding
 - **safeAreaInset**: Standard keyboard-aware layout for chat interfaces
 - **Rapid messaging**: Clear text but keep keyboard open for continued input
+- **Streaming content**: Passed via separate initializer, not message property
+- **Auto-scroll triggers**: On both message count and streaming content changes
+- **StreamingCursor**: Pulsing Circle animation for typing indicator
 
 ### Deferred Issues
 
@@ -79,7 +81,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-30
-Stopped at: Completed Plan 04-02 (Chat Input Bar)
-Resume file: .planning/phases/04-chat-core/04-02-SUMMARY.md
-Next action: Execute plan 04-03 (Message Persistence)
+Last session: 2026-01-29
+Stopped at: Completed Plan 05-01 (Streaming UI Layer)
+Resume file: .planning/phases/05-streaming-state/05-01-SUMMARY.md
+Next action: Execute plan 05-02 (Bot State Indicator) when available
