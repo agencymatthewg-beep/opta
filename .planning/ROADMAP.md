@@ -89,12 +89,12 @@ Plans:
 **Goal**: Support bullet points, code blocks, and formatted text rendering
 **Depends on**: Phase 5
 **Research**: Unlikely (text formatting, Markdown patterns)
-**Plans**: TBD
+**Plans**: 3 (planned)
 
 Plans:
-- [ ] 06-01: Markdown parsing and rendering
-- [ ] 06-02: Code block syntax highlighting
-- [ ] 06-03: Expandable/collapsible sections
+- [ ] 06-01: Markdown parsing and rendering (Wave 1)
+- [ ] 06-02: Code block syntax highlighting (Wave 2)
+- [ ] 06-03: Expandable/collapsible sections (Wave 2)
 
 ### Phase 7: Rich Output: Visual
 **Goal**: Render dynamic tables, interactive graphs, and inline images
@@ -177,7 +177,7 @@ Phases execute in numeric order: 1 → 2 → 3 → ... → 12
 | 3. Message Protocol | 4/4 | Complete | 2026-01-30 |
 | 4. Chat Core | 3/3 | Complete | 2026-01-30 |
 | 5. Streaming & State | 3/3 | Complete | 2026-01-30 |
-| 6. Rich Output: Text | 0/3 | Not started | - |
+| 6. Rich Output: Text | 0/3 | Planned | - |
 | 7. Rich Output: Visual | 0/3 | Not started | - |
 | 8. GenUI Rendering | 0/3 | Not started | - |
 | 9. Multi-Bot Management | 0/3 | Not started | - |

@@ -9,10 +9,10 @@ See: .planning/PROJECT.md (updated 2025-01-29)
 
 ## Current Position
 
-Phase: 5 of 12 (Streaming & State)
-Plan: 3 of 3 complete in current phase
-Status: Phase Complete
-Last activity: 2026-01-30 — Completed Phase 5 (Streaming & State)
+Phase: 6 of 12 (Rich Output: Text)
+Plan: 0 of 3 complete in current phase
+Status: Planned — Ready to Execute
+Last activity: 2026-01-30 — Planned Phase 6 (Rich Output: Text)
 
 Progress: ████████░░ 46%
 
@@ -119,9 +119,9 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-30
-Stopped at: Completed Phase 5 (Streaming & State)
+Stopped at: Planned Phase 6 (Rich Output: Text)
 Resume file: None
-Next action: Plan Phase 6 (Rich Output: Text)
+Next action: Execute Phase 6 (`/gsd:execute-phase 6`)
 
 ## Phase 5 Complete
 
