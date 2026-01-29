@@ -43,14 +43,13 @@ Plans:
 ### Phase 2: Connection Layer
 **Goal**: Implement WebSocket client with connection state management, automatic reconnection, and Tailscale network support
 **Depends on**: Phase 1
-**Research**: Likely (new integration)
-**Research topics**: Swift WebSocket libraries (URLSessionWebSocketTask vs Starscream), reconnection patterns, Combine/async integration
-**Plans**: TBD
+**Research**: Complete
+**Research decision**: URLSessionWebSocketTask (native, no dependencies, mature on iOS 17+)
 
 Plans:
-- [ ] 02-01: WebSocket client implementation
-- [ ] 02-02: Connection state machine and reconnection logic
-- [ ] 02-03: Network reachability and Tailscale detection
+- [ ] 02-01: WebSocket client implementation (Wave 1)
+- [ ] 02-02: Connection state machine and reconnection logic (Wave 2)
+- [ ] 02-03: Network reachability and Tailscale detection (Wave 2)
 
 ### Phase 3: Message Protocol
 **Goal**: Implement Clawdbot JSON message protocol parsing and serialization
@@ -174,7 +173,7 @@ Phases execute in numeric order: 1 → 2 → 3 → ... → 12
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 3/3 | Complete | 2025-01-30 |
-| 2. Connection Layer | 0/3 | Not started | - |
+| 2. Connection Layer | 0/3 | Planned | - |
 | 3. Message Protocol | 0/3 | Not started | - |
 | 4. Chat Core | 0/3 | Not started | - |
 | 5. Streaming & State | 0/3 | Not started | - |

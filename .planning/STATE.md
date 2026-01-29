@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2025-01-29)
 ## Current Position
 
 Phase: 2 of 12 (Connection Layer)
-Plan: Not started
-Status: Ready to plan
-Last activity: 2025-01-30 — Completed Phase 1 (Foundation)
+Plan: 3 plans ready (02-01, 02-02, 02-03)
+Status: Ready to execute
+Last activity: 2025-01-30 — Planned Phase 2 (Connection Layer)
 
 Progress: ████░░░░░░ 8%
 
@@ -66,6 +66,14 @@ None yet.
 ## Session Continuity
 
 Last session: 2025-01-30
-Stopped at: Completed Phase 1 (Foundation)
+Stopped at: Planned Phase 2 (Connection Layer)
 Resume file: None
-Next phase: Phase 2 (Connection Layer) - needs /gsd:plan-phase 2
+Next action: Execute Phase 2 - `/gsd:execute-phase`
+
+## Phase 2 Wave Structure
+
+| Wave | Plan | Dependencies | Status |
+|------|------|--------------|--------|
+| 1 | 02-01: WebSocket client | 01-03 | Pending |
+| 2 | 02-02: State machine | 02-01 | Pending |
+| 2 | 02-03: Network monitor | 02-01 | Pending |
