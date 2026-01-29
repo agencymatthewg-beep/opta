@@ -1,0 +1,265 @@
+@import "tailwindcss";
+
+@theme {
+  /* Core Background - Deep purple-black */
+  --color-opta-bg: #0d0a14;
+  --color-opta-surface: rgba(139, 92, 246, 0.12);
+  --color-opta-border: rgba(139, 92, 246, 0.25);
+
+  /* Vibrant Neon Accents */
+  --color-neon-pink: #f472b6;
+  --color-neon-coral: #fb7185;
+  --color-neon-cyan: #22d3ee;
+  --color-neon-green: #4ade80;
+  --color-neon-orange: #fb923c;
+  --color-neon-amber: #fbbf24;
+  --color-neon-purple: #a855f7;
+
+  /* Purple Glow System - Enhanced */
+  --color-purple-deep: #6d28d9;
+  --color-purple-glow: #8b5cf6;
+  --color-purple-light: #c4b5fd;
+  --color-purple-surface: rgba(109, 40, 217, 0.25);
+
+  /* Text colors */
+  --color-text-primary: #fafafa;
+  --color-text-secondary: #a1a1aa;
+  --color-text-muted: #71717a;
+
+  /* Glass effect colors - More purple tint */
+  --color-glass-bg: rgba(109, 40, 217, 0.15);
+  --color-glass-border: rgba(139, 92, 246, 0.35);
+  --color-glass-hover: rgba(139, 92, 246, 0.25);
+
+  /* Typography - Opta Specification */
+  --font-sans: "Sora", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  /* Opta Typography Scale */
+  --text-hero: 3.5rem;
+  --text-h2: 1.75rem;
+  --text-h3: 1.25rem;
+  --text-subtitle: 1.1rem;
+  --text-badge: 0.8rem;
+  --tracking-hero: 0.12em;
+  --tracking-subtitle: 0.25em;
+  --tracking-badge: 0.15em;
+
+  /* Moonlight Gradient */
+  --gradient-moonlight: linear-gradient(180deg, #fafafa 0%, #a855f7 50%, #6366f1 100%);
+
+  /* Animations */
+  --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@layer base {
+  body {
+    @apply bg-opta-bg text-white antialiased;
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(109, 40, 217, 0.15) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 50%, rgba(139, 92, 246, 0.08) 0%, transparent 40%),
+      radial-gradient(ellipse at 20% 80%, rgba(109, 40, 217, 0.1) 0%, transparent 40%),
+      linear-gradient(180deg, #0d0a14 0%, #0a0812 50%, #0d0a14 100%);
+    min-height: 100vh;
+  }
+
+  /* Smooth scrolling for touch devices */
+  .modal-scroll {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@layer utilities {
+  /* Prevent background scroll when modal is open */
+  .modal-open {
+    overscroll-behavior: contain;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     OPTA TYPOGRAPHY SYSTEM
+     Based on Opta Typography Specification v1.0
+     ═══════════════════════════════════════════════════════════════════ */
+
+  /* Opta Hero Heading - Moonlight gradient with glow */
+  .opta-hero {
+    font-family: var(--font-sans);
+    font-size: var(--text-hero);
+    font-weight: 700;
+    letter-spacing: var(--tracking-hero);
+    line-height: 1.1;
+    background: var(--gradient-moonlight);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: 0 0 80px rgba(139, 92, 246, 0.5);
+  }
+
+  /* Opta Subtitle - Light weight, wide tracking, uppercase */
+  .opta-subtitle {
+    font-family: var(--font-sans);
+    font-size: var(--text-subtitle);
+    font-weight: 300;
+    letter-spacing: var(--tracking-subtitle);
+    text-transform: uppercase;
+    color: var(--color-text-secondary);
+  }
+
+  /* Opta Badge - Pill shape with glass effect */
+  .opta-badge {
+    font-family: var(--font-sans);
+    font-size: var(--text-badge);
+    font-weight: 400;
+    letter-spacing: var(--tracking-badge);
+    color: #8b5cf6;
+    display: inline-block;
+    padding: 6px 16px;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(59, 130, 246, 0.1));
+    border: 1px solid rgba(139, 92, 246, 0.4);
+    border-radius: 100px;
+  }
+
+  /* Opta Section Header with neon accent line */
+  .opta-section-header {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .opta-section-header h2 {
+    font-family: var(--font-sans);
+    font-size: var(--text-h2);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+    background: linear-gradient(90deg, #fafafa, #8b5cf6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .opta-section-header .line {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, #8b5cf6, transparent);
+    box-shadow: 0 0 15px #8b5cf6;
+  }
+
+  /* Opta Accent Line - Glowing divider */
+  .opta-accent-line {
+    width: 200px;
+    height: 2px;
+    margin: 40px auto 0;
+    background: linear-gradient(90deg, transparent, #8b5cf6, transparent);
+    box-shadow: 0 0 20px #8b5cf6;
+  }
+
+  /* Powered by Opta - Subtle branding */
+  .powered-by-opta {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    font-weight: 400;
+    letter-spacing: 0.05em;
+    color: var(--color-text-muted);
+    transition: color 0.2s ease;
+  }
+
+  .powered-by-opta:hover {
+    color: var(--color-text-secondary);
+  }
+
+  .powered-by-opta .opta-mark {
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    background: linear-gradient(180deg, #fafafa 0%, #a855f7 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Animated gradient text */
+  .gradient-text-pink {
+    background: linear-gradient(135deg, #f472b6 0%, #fb7185 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .gradient-text-purple {
+    background: linear-gradient(180deg, #ffffff 0%, #c4b5fd 50%, #818cf8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Glow effects */
+  .glow-pink {
+    box-shadow: 0 0 20px rgba(244, 114, 182, 0.4), 0 0 40px rgba(244, 114, 182, 0.2);
+  }
+
+  .glow-purple {
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.4), 0 0 40px rgba(139, 92, 246, 0.2);
+  }
+
+  .glow-green {
+    box-shadow: 0 0 15px rgba(74, 222, 128, 0.4);
+  }
+
+  .glow-orange {
+    box-shadow: 0 0 15px rgba(251, 146, 60, 0.5), 0 0 30px rgba(251, 146, 60, 0.25);
+  }
+
+  /* Card glass effect */
+  .glass-card {
+    background: linear-gradient(
+      135deg,
+      rgba(109, 40, 217, 0.2) 0%,
+      rgba(139, 92, 246, 0.1) 50%,
+      rgba(109, 40, 217, 0.15) 100%
+    );
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+  }
+
+  .glass-card-expanded {
+    background: linear-gradient(
+      135deg,
+      rgba(109, 40, 217, 0.25) 0%,
+      rgba(139, 92, 246, 0.15) 50%,
+      rgba(109, 40, 217, 0.2) 100%
+    );
+    border: 1px solid rgba(74, 222, 128, 0.4);
+    box-shadow:
+      0 0 30px rgba(74, 222, 128, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  /* Purple ambient glow behind cards */
+  .purple-ambient {
+    box-shadow:
+      0 0 60px rgba(109, 40, 217, 0.3),
+      0 0 100px rgba(139, 92, 246, 0.15);
+  }
+
+  /* Diamond decoration animation */
+  @keyframes float {
+    0%, 100% { transform: translateY(0) rotate(45deg); }
+    50% { transform: translateY(-10px) rotate(45deg); }
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  .animate-pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+}
