@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2025-01-29)
 
 **Core value:** Always know what your bot is doing. Real-time thinking state, typing indicators, and streaming responses with rich output formats.
-**Current focus:** Phase 6.1 — Opta Aesthetic Alignment (Plan 01 Complete)
+**Current focus:** Phase 6.1 COMPLETE — Ready for Phase 6 (Rich Text)
 
 ## Current Position
 
-Phase: 6.1 of 12 (Opta Aesthetic Alignment)
-Plan: 2 of 3 complete in current phase
-Status: In Progress — Plan 01 Complete (Typography System)
-Last activity: 2026-01-30 — Executed Plan 06.1-01 (Typography System)
+Phase: 6.1 of 12 (Opta Aesthetic Alignment) COMPLETE
+Plan: 3 of 3 complete in current phase
+Status: Phase Complete — Design system aligned with Opta Life Manager aesthetic
+Last activity: 2026-01-30 — Executed Plan 06.1-03 (Animation Enhancements)
 
-Progress: ████████░░ 51%
+Progress: █████████░ 55%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 18
-- Average duration: 5.0 min
-- Total execution time: 1.5 hours
+- Total plans completed: 19
+- Average duration: 5.3 min
+- Total execution time: 1.7 hours
 
 **By Phase:**
 
@@ -32,11 +32,11 @@ Progress: ████████░░ 51%
 | 3. Protocol | 4/4 | 10 min | 2.5 min |
 | 4. Chat Core | 3/3 | 11 min | 3.7 min |
 | 5. Streaming | 3/3 | 15 min | 5 min |
-| 6.1. Aesthetic | 2/3 | 14 min | 7 min |
+| 6.1. Aesthetic | 3/3 | 26 min | 8.7 min |
 
 **Recent Trend:**
-- Last 5 plans: 05-02 (5 min), 05-03 (5 min), 06.1-02 (8 min), 06.1-01 (6 min)
-- Trend: Design system plans average ~7 min with typography and glass components
+- Last 5 plans: 05-03 (5 min), 06.1-02 (8 min), 06.1-01 (6 min), 06.1-03 (12 min)
+- Trend: Design system plans average ~8.7 min with complex animation logic
 
 ## Accumulated Context
 
@@ -112,6 +112,13 @@ Recent decisions affecting current work:
 | 06.1-01 | iOS pt sizes: Hero 34, SectionHeader 28, Subsection 20, etc. | Mapped from web rem/px with mobile adjustments |
 | 06.1-01 | tracking = fontSize * emRatio | CSS letter-spacing em to SwiftUI pt conversion |
 | 06.1-01 | Moonlight gradient: top-to-bottom (180deg) | Mimics overhead lighting per specification |
+| 06.1-03 | ClawdbotMotion enum for Reduce Motion | Cross-platform iOS/macOS accessibility detection |
+| 06.1-03 | IgnitionModifier with 0.8s easeOut | Matches design spec for wake-from-darkness |
+| 06.1-03 | GlowPulseModifier with 1s autoreverses | Creates smooth 2s breathing cycle |
+| 06.1-03 | 50ms default stagger interval | Matches design spec (0.05s per item) |
+| 06.1-03 | MessageList encapsulates stagger logic | Reusable component for chat animations |
+| 06.1-03 | ClawdbotTiming enum for durations | Centralized animation timing constants |
+| 06.1-03 | Static glow fallback for Reduce Motion | Visual feedback without motion when accessibility enabled |
 
 ### Deferred Issues
 
@@ -128,11 +135,11 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-30
-Stopped at: Completed Plan 06.1-01 (Typography System)
+Stopped at: Completed Phase 06.1 (Opta Aesthetic Alignment)
 Resume file: None
-Next action: Execute Plan 06.1-03 (Animation Enhancements)
+Next action: Plan Phase 6 (Rich Text) or Phase 7 (Rich Visual)
 
-## Phase 6.1 Progress (Opta Aesthetic Alignment)
+## Phase 6.1 COMPLETE (Opta Aesthetic Alignment)
 
 **06.1-01: Typography System** (Complete)
 - Sora font bundle (5 weights: Light, Regular, Medium, SemiBold, Bold)
@@ -153,8 +160,15 @@ Next action: Execute Plan 06.1-03 (Animation Enhancements)
 - Applied obsidian to ThinkingIndicator
 - 10 new glass tests, 125 total tests pass
 
-**Remaining:**
-- 06.1-03: Animation Enhancements (Ignition, glow pulse, Reduce Motion)
+**06.1-03: Animation Enhancements** (Complete)
+- ClawdbotMotion for Reduce Motion accessibility compliance
+- IgnitionModifier for wake-from-darkness effect (0.8s entrance)
+- GlowPulseModifier for breathing glow (2s cycle)
+- StaggeredIgnitionModifier combining cascade delay + ignition
+- MessageList view with built-in staggered animations
+- ThinkingIndicator with glow pulse and ignition entrance
+- ClawdbotTiming enum with 11 centralized timing constants
+- 40 new animation tests, 181 total tests pass
 
 ## Phase 5 Complete
 
