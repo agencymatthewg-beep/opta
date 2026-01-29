@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2025-01-29)
 ## Current Position
 
 Phase: 3 of 12 (Message Protocol)
-Plan: 1 of 4 complete in current phase
+Plan: 2 of 4 complete in current phase
 Status: In Progress
-Last activity: 2026-01-30 — Completed Plan 03-01 (Message Type Definitions)
+Last activity: 2026-01-30 — Completed Plan 03-02 (Protocol encoder/decoder)
 
-Progress: █████░░░░░ 20%
+Progress: █████░░░░░ 22%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 7
-- Average duration: 6.6 min
-- Total execution time: 0.77 hours
+- Total plans completed: 8
+- Average duration: 6 min
+- Total execution time: 0.78 hours
 
 **By Phase:**
 
@@ -29,11 +29,11 @@ Progress: █████░░░░░ 20%
 |-------|-------|-------|----------|
 | 1. Foundation | 3/3 | 21 min | 7 min |
 | 2. Connection | 3/3 | 22 min | 7.3 min |
-| 3. Protocol | 1/4 | 3 min | 3 min |
+| 3. Protocol | 2/4 | 4 min | 2 min |
 
 **Recent Trend:**
-- Last 5 plans: 02-01 (8 min), 02-03 (8 min), 02-02 (6 min), 03-01 (3 min)
-- Trend: Consistent, accelerating with simpler type definition work
+- Last 5 plans: 02-03 (8 min), 02-02 (6 min), 03-01 (3 min), 03-02 (1 min)
+- Trend: Accelerating with well-defined protocol work
 
 ## Accumulated Context
 
@@ -68,6 +68,10 @@ Recent decisions affecting current work:
 | 03-01 | Generic ProtocolEnvelope<T> | Reusable envelope for any payload type with shared metadata |
 | 03-01 | Actor for StreamingMessageAssembler | Thread-safe chunk aggregation without manual locking |
 | 03-01 | All types Codable + Sendable | Swift concurrency safety for async message handling |
+| 03-02 | Type peeking before full decode | Efficient routing without deserializing full payload |
+| 03-02 | sortedKeys JSON output | Deterministic output for debugging and logging |
+| 03-02 | Unknown message returns .unknown | Forward compatibility for future message types |
+| 03-02 | Streaming chunk fast-path decoder | Real-time performance critical for streaming responses |
 
 ### Deferred Issues
 
@@ -84,25 +88,28 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-30
-Stopped at: Completed Plan 03-01 (Message Type Definitions)
+Stopped at: Completed Plan 03-02 (Protocol encoder/decoder)
 Resume file: None
-Next action: Execute Plan 03-02 (Protocol encoder/decoder)
+Next action: Execute Plan 03-03 (Message queue)
 
 ## Phase 3 Wave Structure
 
 | Wave | Plan | Dependencies | Status |
 |------|------|--------------|--------|
 | 1 | 03-01: Message types | 02-connection | **Complete** |
-| 2 | 03-02: Protocol codec | 03-01 | Pending |
+| 2 | 03-02: Protocol codec | 03-01 | **Complete** |
 | 2 | 03-03: Message queue | 03-01 | Pending |
 | 3 | 03-04: Protocol integration | 03-02, 03-03 | Pending |
 
 ## Phase 3 Progress
 
-1 of 4 plans complete. Message protocol provides so far:
+2 of 4 plans complete. Message protocol provides so far:
 - MessageID, MessageStatus, MessageSender types
 - ChatMessage with thread/reply support
 - ProtocolEnvelope generic wrapper with versioning
 - MessageAck for delivery confirmation
 - BotState for thinking/typing indicators
 - StreamingChunk and StreamingMessageAssembler for streaming responses
+- ProtocolCodec with JSON encoding/decoding and ISO 8601 dates
+- DecodedMessage enum for type-safe message routing
+- Streaming chunk fast-path decoder for real-time performance
