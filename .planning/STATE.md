@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2025-01-29)
 
 **Core value:** Always know what your bot is doing. Real-time thinking state, typing indicators, and streaming responses with rich output formats.
-**Current focus:** Phase 6.1 — Opta Aesthetic Alignment (Plan 02 Complete)
+**Current focus:** Phase 6.1 — Opta Aesthetic Alignment (Plan 01 Complete)
 
 ## Current Position
 
 Phase: 6.1 of 12 (Opta Aesthetic Alignment)
-Plan: 1 of 3 complete in current phase
-Status: In Progress — Plan 02 Complete (Glass Components)
-Last activity: 2026-01-30 — Executed Plan 06.1-02 (Enhanced Glass Components)
+Plan: 2 of 3 complete in current phase
+Status: In Progress — Plan 01 Complete (Typography System)
+Last activity: 2026-01-30 — Executed Plan 06.1-01 (Typography System)
 
-Progress: ████████░░ 49%
+Progress: ████████░░ 51%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 17
+- Total plans completed: 18
 - Average duration: 5.0 min
-- Total execution time: 1.4 hours
+- Total execution time: 1.5 hours
 
 **By Phase:**
 
@@ -32,11 +32,11 @@ Progress: ████████░░ 49%
 | 3. Protocol | 4/4 | 10 min | 2.5 min |
 | 4. Chat Core | 3/3 | 11 min | 3.7 min |
 | 5. Streaming | 3/3 | 15 min | 5 min |
-| 6.1. Aesthetic | 1/3 | 8 min | 8 min |
+| 6.1. Aesthetic | 2/3 | 14 min | 7 min |
 
 **Recent Trend:**
-- Last 5 plans: 05-01 (5 min), 05-02 (5 min), 05-03 (5 min), 06.1-02 (8 min)
-- Trend: Design system plans slightly longer due to multiple new files
+- Last 5 plans: 05-02 (5 min), 05-03 (5 min), 06.1-02 (8 min), 06.1-01 (6 min)
+- Trend: Design system plans average ~7 min with typography and glass components
 
 ## Accumulated Context
 
@@ -108,6 +108,10 @@ Recent decisions affecting current work:
 | 06.1-02 | ObsidianState enum for state machine | Clear semantic states with animation support |
 | 06.1-02 | GlowIntensity enum with sm/md/lg/intense | Consistent glow presets across codebase |
 | 06.1-02 | System font fallback for status badge | Sora font deferred to plan 01 |
+| 06.1-01 | CTFontManagerRegisterGraphicsFont for font registration | Runtime registration for Swift Package (no plist support) |
+| 06.1-01 | iOS pt sizes: Hero 34, SectionHeader 28, Subsection 20, etc. | Mapped from web rem/px with mobile adjustments |
+| 06.1-01 | tracking = fontSize * emRatio | CSS letter-spacing em to SwiftUI pt conversion |
+| 06.1-01 | Moonlight gradient: top-to-bottom (180deg) | Mimics overhead lighting per specification |
 
 ### Deferred Issues
 
@@ -124,11 +128,20 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-30
-Stopped at: Completed Plan 06.1-02 (Enhanced Glass Components)
+Stopped at: Completed Plan 06.1-01 (Typography System)
 Resume file: None
-Next action: Execute Plan 06.1-01 or 06.1-03 (remaining aesthetic alignment plans)
+Next action: Execute Plan 06.1-03 (Animation Enhancements)
 
 ## Phase 6.1 Progress (Opta Aesthetic Alignment)
+
+**06.1-01: Typography System** (Complete)
+- Sora font bundle (5 weights: Light, Regular, Medium, SemiBold, Bold)
+- ClawdbotTypography.swift with Font.sora() extensions
+- MoonlightText gradient view (#fafafa -> #a855f7 -> #6366f1)
+- Tracking modifiers (trackingHero, trackingSubtitle, etc.)
+- Typography style modifiers (optaHeroStyle, optaBodyStyle, etc.)
+- MessageBubble updated with Sora typography
+- 16 new typography tests, 141 total tests pass
 
 **06.1-02: Enhanced Glass Components** (Complete)
 - 3-level glass depth system (.glassSubtle, .glassContent, .glassOverlay)
@@ -141,7 +154,6 @@ Next action: Execute Plan 06.1-01 or 06.1-03 (remaining aesthetic alignment plan
 - 10 new glass tests, 125 total tests pass
 
 **Remaining:**
-- 06.1-01: Typography System (Sora font, MoonlightText)
 - 06.1-03: Animation Enhancements (Ignition, glow pulse, Reduce Motion)
 
 ## Phase 5 Complete
