@@ -185,3 +185,81 @@ public extension View {
         self.tracking(fontSize * 0.05)
     }
 }
+
+// MARK: - Typography Style Modifiers
+
+/// Compound modifiers that apply complete Opta typography styles
+///
+/// These modifiers combine font, tracking, and color in a single call,
+/// matching the Opta Typography Specification exactly.
+public extension View {
+    /// Apply hero style: Sora Bold 34pt, 0.12em tracking, primary text color
+    ///
+    /// Use for page titles and brand moments.
+    /// For gradient hero text, use `MoonlightText` instead.
+    func optaHeroStyle() -> some View {
+        self
+            .font(.soraHero)
+            .tracking(34 * 0.12)
+            .foregroundColor(.clawdbotTextPrimary)
+    }
+
+    /// Apply subtitle style: Sora Light 17pt, 0.25em tracking, uppercase, secondary color
+    ///
+    /// Use for descriptive subtitles under hero headings.
+    func optaSubtitleStyle() -> some View {
+        self
+            .font(.soraSubtitle)
+            .tracking(17 * 0.25)
+            .textCase(.uppercase)
+            .foregroundColor(.clawdbotTextSecondary)
+    }
+
+    /// Apply section header style: Sora SemiBold 28pt, 0.08em tracking, primary color
+    ///
+    /// Use for major section headings in content.
+    func optaSectionHeaderStyle() -> some View {
+        self
+            .font(.soraSectionHeader)
+            .tracking(28 * 0.08)
+            .foregroundColor(.clawdbotTextPrimary)
+    }
+
+    /// Apply subsection style: Sora SemiBold 20pt, 0.05em tracking, primary color
+    ///
+    /// Use for subsection titles within sections.
+    func optaSubsectionStyle() -> some View {
+        self
+            .font(.soraSubsection)
+            .tracking(20 * 0.05)
+            .foregroundColor(.clawdbotTextPrimary)
+    }
+
+    /// Apply body style: Sora Regular 15pt, normal tracking, primary color
+    ///
+    /// Use for paragraph text and content.
+    func optaBodyStyle() -> some View {
+        self
+            .font(.soraBody)
+            .foregroundColor(.clawdbotTextPrimary)
+    }
+
+    /// Apply caption style: Sora Regular 13pt, normal tracking, secondary color
+    ///
+    /// Use for captions and metadata.
+    func optaCaptionStyle() -> some View {
+        self
+            .font(.soraCaption)
+            .foregroundColor(.clawdbotTextSecondary)
+    }
+
+    /// Apply badge style: Sora Regular 12pt, 0.15em tracking, purple color
+    ///
+    /// Use for version tags and status badges.
+    func optaBadgeStyle() -> some View {
+        self
+            .font(.soraBadge)
+            .tracking(12 * 0.15)
+            .foregroundColor(.clawdbotPurple)
+    }
+}
