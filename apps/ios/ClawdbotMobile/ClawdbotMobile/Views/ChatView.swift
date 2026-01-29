@@ -16,12 +16,19 @@ import ClawdbotKit
 /// - Auto-scroll to bottom on new messages
 /// - Connection status indicator in toolbar
 /// - Uses scrollPosition(id:anchor:) for programmatic scroll control
+/// - ChatInputBar with keyboard-aware layout via safeAreaInset
 struct ChatView: View {
     /// Chat view model (initialized with placeholder for now)
     @State private var viewModel: ChatViewModel
 
     /// Current scroll position tracking
     @State private var scrollPosition: MessageID?
+
+    /// Input text for message composition
+    @State private var inputText = ""
+
+    /// Focus state for keyboard management
+    @FocusState private var isInputFocused: Bool
 
     /// Initialize with a protocol handler
     /// - Parameter protocolHandler: The protocol handler for message operations
@@ -67,6 +74,30 @@ struct ChatView: View {
                 scrollPosition = viewModel.messages.last?.id
             }
         }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            VStack(spacing: 0) {
+                Divider()
+                ChatInputBar(
+                    text: $inputText,
+                    isFocused: $isInputFocused,
+                    onSend: sendMessage,
+                    isEnabled: viewModel.connectionState == .connected
+                )
+            }
+        }
+    }
+
+    // MARK: - Send Message
+
+    /// Send the current input text as a message
+    private func sendMessage() {
+        let text = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return }
+        inputText = ""  // Clear input immediately for rapid messaging
+        Task {
+            await viewModel.send(text)
+        }
+        // Keep keyboard open - do NOT set isInputFocused = false
     }
 
     // MARK: - Connection Status
