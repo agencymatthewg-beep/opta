@@ -169,6 +169,73 @@ public extension View {
     }
 }
 
+// MARK: - Ignition Animation
+
+/// Ignition state for wake-from-darkness effect
+///
+/// Elements "wake from darkness" with:
+/// - Opacity: 0 -> 1
+/// - Scale: 0.98 -> 1.0
+/// - Brightness: darkened -> normal
+///
+/// Respects Reduce Motion accessibility setting.
+public struct IgnitionModifier: ViewModifier {
+    let isVisible: Bool
+    let delay: Double
+
+    @State private var hasAppeared = false
+
+    public func body(content: Content) -> some View {
+        content
+            .opacity(effectiveOpacity)
+            .scaleEffect(effectiveScale)
+            .brightness(effectiveBrightness)
+            .onAppear {
+                guard !ClawdbotMotion.isReduceMotionEnabled else {
+                    hasAppeared = true
+                    return
+                }
+
+                DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                    withAnimation(.easeOut(duration: 0.8)) {
+                        hasAppeared = true
+                    }
+                }
+            }
+    }
+
+    private var effectiveOpacity: Double {
+        if ClawdbotMotion.isReduceMotionEnabled { return 1 }
+        return (isVisible && hasAppeared) ? 1 : 0
+    }
+
+    private var effectiveScale: CGFloat {
+        if ClawdbotMotion.isReduceMotionEnabled { return 1 }
+        return (isVisible && hasAppeared) ? 1 : 0.98
+    }
+
+    private var effectiveBrightness: Double {
+        if ClawdbotMotion.isReduceMotionEnabled { return 0 }
+        return (isVisible && hasAppeared) ? 0 : -0.2
+    }
+}
+
+public extension View {
+    /// Ignition animation - elements wake from darkness
+    ///
+    /// Applies a 0.8s entrance animation with:
+    /// - Opacity: 0 -> 1
+    /// - Scale: 0.98 -> 1.0
+    /// - Brightness: darkened -> normal
+    ///
+    /// - Parameters:
+    ///   - isVisible: Whether the content should be visible
+    ///   - delay: Optional delay before animation starts
+    func ignition(isVisible: Bool = true, delay: Double = 0) -> some View {
+        modifier(IgnitionModifier(isVisible: isVisible, delay: delay))
+    }
+}
+
 // MARK: - Usage Examples Reference
 /*
  // Button press
@@ -195,4 +262,10 @@ public extension View {
  .animation(.physicsSpring(.bouncy), value: someValue)
  .springScale(isPressed: isPressed)
  .springOffset(x: dragOffset, spring: .snappy)
+
+ // Ignition animation
+ ContentView()
+     .ignition()  // Basic wake-from-darkness
+ ContentView()
+     .ignition(delay: 0.2)  // With 200ms delay
  */
