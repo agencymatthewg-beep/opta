@@ -15,6 +15,7 @@ import ClawdbotKit
 /// - ScrollView with LazyVStack for efficient message rendering
 /// - Auto-scroll to bottom on new messages
 /// - Real-time streaming message display
+/// - Thinking indicator when bot is processing
 /// - Connection status indicator in toolbar
 /// - Uses scrollPosition(id:anchor:) for programmatic scroll control
 /// - ChatInputBar with keyboard-aware layout via safeAreaInset
@@ -34,6 +35,14 @@ struct ChatView: View {
     /// Sorted streaming message IDs for consistent ordering
     private var sortedStreamingIDs: [String] {
         viewModel.streamingMessages.keys.sorted()
+    }
+
+    /// Whether to show the thinking indicator
+    /// Shows when bot is thinking or using a tool (but not when already streaming)
+    private var showThinkingIndicator: Bool {
+        let isThinkingOrTool = viewModel.botState == .thinking || viewModel.botState == .toolUse
+        let notStreaming = viewModel.streamingMessages.isEmpty
+        return isThinkingOrTool && notStreaming
     }
 
     /// Initialize with a protocol handler
@@ -71,14 +80,22 @@ struct ChatView: View {
                 }
 
                 // Streaming messages (actively being received)
+                // Typing cursor shows only when botState is .typing (not thinking/toolUse)
                 ForEach(sortedStreamingIDs, id: \.self) { messageID in
                     if let content = viewModel.streamingMessages[messageID] {
                         MessageBubble(
                             streamingContent: content,
-                            sender: .bot(name: "Clawdbot")
+                            sender: .bot(name: "Clawdbot"),
+                            showTypingCursor: viewModel.botState == .typing
                         )
                         .id("streaming-\(messageID)")
                     }
+                }
+
+                // Thinking indicator (shown before streaming begins)
+                if showThinkingIndicator {
+                    ThinkingIndicator(detail: viewModel.botStateDetail)
+                        .id("thinking-indicator")
                 }
             }
             .padding(.horizontal)
@@ -96,6 +113,10 @@ struct ChatView: View {
         }
         .onChange(of: streamingContentChanged) { _, _ in
             // Auto-scroll as streaming content updates
+            scrollToBottom()
+        }
+        .onChange(of: viewModel.botState) { _, _ in
+            // Auto-scroll when bot state changes (e.g., starts thinking)
             scrollToBottom()
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
@@ -119,8 +140,10 @@ struct ChatView: View {
     /// Scroll to the bottom of the chat
     private func scrollToBottom() {
         withAnimation(.easeOut(duration: 0.2)) {
-            // If streaming, scroll to the streaming message
-            if let lastStreamingID = sortedStreamingIDs.last {
+            // Priority: thinking indicator > streaming message > last message
+            if showThinkingIndicator {
+                scrollPosition = "thinking-indicator"
+            } else if let lastStreamingID = sortedStreamingIDs.last {
                 scrollPosition = "streaming-\(lastStreamingID)"
             } else if let lastMessage = viewModel.messages.last {
                 scrollPosition = lastMessage.id.value
