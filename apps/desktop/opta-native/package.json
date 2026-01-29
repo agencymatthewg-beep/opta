@@ -57,6 +57,7 @@
     "html2canvas": "^1.4.1",
     "lucide-react": "^0.562.0",
     "mcp-gemini-cli": "^0.3.1",
+    "postprocessing": "^6.38.2",
     "react": "^19.1.0",
     "react-chessboard": "^5.8.6",
     "react-dom": "^19.1.0",

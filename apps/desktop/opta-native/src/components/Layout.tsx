@@ -9,7 +9,7 @@ import { ParticleProvider } from '@/contexts/ParticleContext';
 import { Background } from './Background';
 import { RadialNav, UtilityIsland, useRadialNavKeyboard } from './navigation';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { pageContentVariants } from '@/lib/pageTransitions';
+// pageContentVariants available from @/lib/pageTransitions if needed
 import { cn } from '@/lib/utils';
 import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { useNavigationHistory } from '@/hooks/useNavigationHistory';
