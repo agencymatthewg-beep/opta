@@ -13,7 +13,7 @@ import SwiftUI
 /// Layout:
 /// - User messages: right-aligned with clawdbotPurple background
 /// - Bot messages: left-aligned with clawdbotSurface background
-/// - Streaming messages: bot-aligned with pulsing indicator
+/// - Streaming messages: bot-aligned with optional typing cursor
 public struct MessageBubble: View {
     /// The message to display (nil for streaming content)
     private let message: ChatMessage?
@@ -23,6 +23,10 @@ public struct MessageBubble: View {
 
     /// Sender for streaming messages
     private let streamingSender: MessageSender?
+
+    /// Whether to show the typing cursor (blinking vertical bar)
+    /// Only shown when botState is .typing
+    private let showTypingCursor: Bool
 
     /// Whether this bubble shows streaming content
     private var isStreaming: Bool {
@@ -34,16 +38,23 @@ public struct MessageBubble: View {
         self.message = message
         self.streamingContent = nil
         self.streamingSender = nil
+        self.showTypingCursor = false
     }
 
     /// Initialize with streaming content (bot message in progress)
     /// - Parameters:
     ///   - streamingContent: The partial content accumulated so far
     ///   - sender: The bot sender (defaults to generic bot)
-    public init(streamingContent: String, sender: MessageSender = .bot(name: "Clawdbot")) {
+    ///   - showTypingCursor: Whether to show the blinking typing cursor (default: false)
+    public init(
+        streamingContent: String,
+        sender: MessageSender = .bot(name: "Clawdbot"),
+        showTypingCursor: Bool = false
+    ) {
         self.message = nil
         self.streamingContent = streamingContent
         self.streamingSender = sender
+        self.showTypingCursor = showTypingCursor
     }
 
     // MARK: - Computed Properties
@@ -99,14 +110,14 @@ public struct MessageBubble: View {
             }
 
             VStack(alignment: alignment, spacing: 4) {
-                // Message content with streaming cursor
+                // Message content with optional typing cursor
                 HStack(spacing: 0) {
                     Text(displayContent)
                         .foregroundColor(textColor)
 
-                    // Streaming cursor indicator
-                    if isStreaming {
-                        StreamingCursor()
+                    // Typing cursor indicator (only when actively typing)
+                    if showTypingCursor {
+                        TypingCursor()
                     }
                 }
                 .padding(.horizontal, 14)
@@ -171,24 +182,24 @@ public struct MessageBubble: View {
     }
 }
 
-// MARK: - Streaming Cursor
+// MARK: - Typing Cursor
 
-/// Animated cursor shown at end of streaming message
-private struct StreamingCursor: View {
-    @State private var isAnimating = false
+/// Blinking vertical bar cursor shown when bot is actively typing
+///
+/// Matches familiar text editor/chat app typing indicators.
+/// Uses clawdbotPurple color and 0.5s blink animation.
+private struct TypingCursor: View {
+    @State private var isVisible = true
 
     var body: some View {
-        Circle()
-            .fill(Color.clawdbotTextPrimary)
-            .frame(width: 8, height: 8)
-            .opacity(isAnimating ? 1.0 : 0.3)
-            .animation(
-                .easeInOut(duration: 0.5)
-                .repeatForever(autoreverses: true),
-                value: isAnimating
-            )
+        Rectangle()
+            .fill(Color.clawdbotPurple)
+            .frame(width: 2, height: 18)
+            .opacity(isVisible ? 1 : 0)
             .onAppear {
-                isAnimating = true
+                withAnimation(.easeInOut(duration: 0.5).repeatForever()) {
+                    isVisible.toggle()
+                }
             }
     }
 }
@@ -223,10 +234,18 @@ struct MessageBubble_Previews: PreviewProvider {
                 status: .failed
             ))
 
-            // Streaming message preview
+            // Streaming message preview (without cursor - thinking state)
             MessageBubble(
-                streamingContent: "I'm currently typing this response",
-                sender: .bot(name: "Clawdbot")
+                streamingContent: "I'm processing your request",
+                sender: .bot(name: "Clawdbot"),
+                showTypingCursor: false
+            )
+
+            // Streaming message preview (with cursor - typing state)
+            MessageBubble(
+                streamingContent: "I'm actively typing this response",
+                sender: .bot(name: "Clawdbot"),
+                showTypingCursor: true
             )
         }
         .padding()
