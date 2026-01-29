@@ -31,6 +31,13 @@ public actor ClawdbotWebSocket {
     /// Current connection state
     public private(set) var isConnected = false
 
+    // MARK: - Delegate Setter
+
+    /// Set the delegate (for actor-isolated access)
+    public func setDelegate(_ delegate: ClawdbotWebSocketDelegate?) {
+        self.delegate = delegate
+    }
+
     // MARK: - Initialization
 
     public init() {
