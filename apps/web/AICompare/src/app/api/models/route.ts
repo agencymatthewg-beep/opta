@@ -53,10 +53,23 @@ export async function GET() {
 
     // Sort by composite score and assign ranks
     models.sort((a, b) => b.compositeScore - a.compositeScore);
-    models = models.map((model, index) => ({
-      ...model,
-      rank: index + 1,
-    }));
+    models = models.map((model, index) => {
+      const rank = index + 1;
+      // Simulate rank movement for demo (in production, this would come from historical data)
+      // Top 3 are stable, others have random movement
+      let previousRank: number | undefined;
+      if (rank > 3) {
+        const movement = Math.floor(Math.random() * 5) - 2; // -2 to +2
+        if (movement !== 0) {
+          previousRank = Math.max(1, rank + movement);
+        }
+      }
+      return {
+        ...model,
+        rank,
+        previousRank,
+      };
+    });
 
     const response: ModelsApiResponse = {
       models,

@@ -6,7 +6,9 @@ import { SearchBar } from "@/components/features/SearchBar";
 import { FilterPanel, FilterPills } from "@/components/features/FilterPanel";
 import { ComparePanel } from "@/components/features/ComparePanel";
 import { CompareView } from "@/components/features/CompareView";
+import { ModelDetailsModal } from "@/components/features/ModelDetailsModal";
 import { SourceBadgeGroup } from "@/components/features/SourceBadge";
+import { ModelCardSkeletonList, FilterPanelSkeleton, HeroStatsSkeleton } from "@/components/ui/skeleton";
 import { useModels, useFilterOptions } from "@/lib/hooks/useModels";
 import { motion } from "framer-motion";
 import { BarChart3, DollarSign, Newspaper, Trophy, ChevronDown, RefreshCw, AlertCircle } from "lucide-react";
@@ -217,6 +219,9 @@ export default function HomePage() {
   // Filters state
   const [filters, setFilters] = useState<LeaderboardFilters>(DEFAULT_FILTERS);
 
+  // Model details modal state
+  const [selectedModel, setSelectedModel] = useState<AIModel | null>(null);
+
   // Fetch models using SWR
   const { models, allModels, isLoading, isError, error, refresh, source, lastUpdated, isFallback } = useModels({
     filters,
@@ -350,13 +355,13 @@ export default function HomePage() {
           />
         </div>
 
-        {/* Loading State */}
+        {/* Loading State - Skeleton */}
         {isLoading && (
           <div className="max-w-5xl mx-auto relative z-10">
-            <div className="flex flex-col items-center justify-center py-16 gap-4">
-              <div className="w-8 h-8 border-2 border-neon-cyan border-t-transparent rounded-full animate-spin" />
-              <p className="text-text-muted text-sm">Loading models...</p>
+            <div className="mb-4">
+              <div className="h-4 w-32 bg-white/5 rounded animate-pulse" />
             </div>
+            <ModelCardSkeletonList count={6} />
           </div>
         )}
 
@@ -418,6 +423,7 @@ export default function HomePage() {
                 >
                   <ModelCard
                     rank={model.rank}
+                    previousRank={model.previousRank}
                     name={model.name}
                     company={model.company}
                     update={formatTimeAgo(model.lastUpdated)}
@@ -426,6 +432,7 @@ export default function HomePage() {
                     tags={model.tags as { type: "llm" | "web" | "cli" | "api" | "multimodal" | "embedding" | "image" | "audio" | "video" | "code" | "open-source" | "proprietary"; parameters?: string }[]}
                     benchmarks={model.benchmarks}
                     sources={model.sources}
+                    onOpenDetails={() => setSelectedModel(model)}
                   />
                 </motion.div>
               ))}
@@ -441,8 +448,11 @@ export default function HomePage() {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.8 }}
           >
-            <p className="hidden md:block">Hover over a card to view benchmark details - Click to pin</p>
-            <p className="md:hidden">Tap &quot;Show Graph&quot; to expand benchmark details</p>
+            <p className="hidden md:block">Hover over a card to view benchmark details • Click to pin • Details button for full specs</p>
+            <p className="md:hidden flex flex-col gap-1 items-center">
+              <span>Swipe right on a card to view details</span>
+              <span className="text-xs text-text-muted/70">Tap buttons for graphs and full specs</span>
+            </p>
           </motion.div>
         )}
       </section>
@@ -645,6 +655,13 @@ export default function HomePage() {
           </p>
         </div>
       </footer>
+
+      {/* Model Details Modal */}
+      <ModelDetailsModal
+        model={selectedModel}
+        isOpen={!!selectedModel}
+        onClose={() => setSelectedModel(null)}
+      />
     </div>
   );
 }

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useRef, useId } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown } from "lucide-react";
+import { useState, useRef, useId, useCallback } from "react";
+import { motion, AnimatePresence, PanInfo, useMotionValue, useTransform, useAnimation } from "framer-motion";
+import { ChevronDown, Info, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CompanyLogo } from "./CompanyLogo";
 import { useIsMobile } from "@/lib/hooks/useMediaQuery";
@@ -26,6 +26,7 @@ export interface BenchmarkScore {
 
 interface ModelCardProps {
   rank: number;
+  previousRank?: number;
   name: string;
   company: string;
   update?: string;
@@ -35,9 +36,10 @@ interface ModelCardProps {
   benchmarks?: BenchmarkScore[];
   sources?: DataSource[];
   className?: string;
+  onOpenDetails?: () => void;
 }
 
-// Vibrant tag styles
+// Vibrant tag styles - using Opta design tokens only
 const tagStyles: Record<ModelType, { bg: string; text: string; border: string; label: string }> = {
   llm: { bg: "bg-neon-orange/20", text: "text-neon-orange", border: "border-neon-orange/40", label: "LLM" },
   web: { bg: "bg-neon-green/20", text: "text-neon-green", border: "border-neon-green/40", label: "WEB" },
@@ -46,11 +48,11 @@ const tagStyles: Record<ModelType, { bg: string; text: string; border: string; l
   multimodal: { bg: "bg-neon-amber/20", text: "text-neon-amber", border: "border-neon-amber/40", label: "MULTIMODAL" },
   embedding: { bg: "bg-white/10", text: "text-text-secondary", border: "border-white/20", label: "EMBEDDING" },
   image: { bg: "bg-neon-pink/20", text: "text-neon-pink", border: "border-neon-pink/40", label: "IMAGE" },
-  audio: { bg: "bg-blue-400/20", text: "text-blue-400", border: "border-blue-400/40", label: "AUDIO" },
-  video: { bg: "bg-red-400/20", text: "text-red-400", border: "border-red-400/40", label: "VIDEO" },
+  audio: { bg: "bg-neon-cyan/20", text: "text-neon-cyan", border: "border-neon-cyan/40", label: "AUDIO" },
+  video: { bg: "bg-neon-coral/20", text: "text-neon-coral", border: "border-neon-coral/40", label: "VIDEO" },
   code: { bg: "bg-neon-green/20", text: "text-neon-green", border: "border-neon-green/40", label: "CODE" },
-  "open-source": { bg: "bg-emerald-500/20", text: "text-emerald-400", border: "border-emerald-500/40", label: "OPEN" },
-  proprietary: { bg: "bg-slate-500/20", text: "text-slate-400", border: "border-slate-500/40", label: "PROP" },
+  "open-source": { bg: "bg-neon-green/20", text: "text-neon-green", border: "border-neon-green/40", label: "OPEN" },
+  proprietary: { bg: "bg-white/10", text: "text-text-muted", border: "border-glass-border", label: "PROP" },
 };
 
 // Colorful benchmark progress bar colors - using design tokens only
@@ -81,6 +83,42 @@ function DiamondRank({ rank, isExpanded, size = "normal" }: { rank: number; isEx
       <div className="absolute inset-0 rotate-45 border-2 border-neon-orange bg-gradient-to-br from-neon-orange/30 to-neon-orange/10 rounded-sm" />
       <div className="absolute inset-1 rotate-45 border border-neon-orange/20 rounded-sm" />
       <span className={cn("relative z-10 font-bold text-white", fontSize)}>{rank}</span>
+    </motion.div>
+  );
+}
+
+// Trend indicator showing rank movement
+function TrendIndicator({ currentRank, previousRank }: { currentRank: number; previousRank?: number }) {
+  if (previousRank === undefined || previousRank === currentRank) return null;
+
+  const change = previousRank - currentRank;
+  const isUp = change > 0;
+  const absChange = Math.abs(change);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className={cn(
+        "flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold",
+        isUp
+          ? "bg-neon-green/20 text-neon-green"
+          : "bg-neon-coral/20 text-neon-coral"
+      )}
+      title={isUp ? `Up ${absChange} from #${previousRank}` : `Down ${absChange} from #${previousRank}`}
+    >
+      <svg
+        className={cn("w-2.5 h-2.5", !isUp && "rotate-180")}
+        fill="currentColor"
+        viewBox="0 0 20 20"
+      >
+        <path
+          fillRule="evenodd"
+          d="M10 17a.75.75 0 01-.75-.75V5.612L5.29 9.77a.75.75 0 01-1.08-1.04l5.25-5.5a.75.75 0 011.08 0l5.25 5.5a.75.75 0 11-1.08 1.04l-3.96-4.158V16.25A.75.75 0 0110 17z"
+          clipRule="evenodd"
+        />
+      </svg>
+      <span>{absChange}</span>
     </motion.div>
   );
 }
@@ -124,6 +162,7 @@ function BenchmarkItem({ benchmark, index }: { benchmark: BenchmarkScore; index:
 
 export function ModelCard({
   rank,
+  previousRank,
   name,
   company,
   update,
@@ -133,13 +172,31 @@ export function ModelCard({
   benchmarks = [],
   sources = [],
   className,
+  onOpenDetails,
 }: ModelCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [isPinned, setIsPinned] = useState(false);
   const [mobileExpanded, setMobileExpanded] = useState(false);
+  const [isTouching, setIsTouching] = useState(false);
   const isMobile = useIsMobile();
   const cardRef = useRef<HTMLDivElement>(null);
   const cardId = useId();
+
+  // Swipe gesture controls
+  const swipeX = useMotionValue(0);
+  const swipeControls = useAnimation();
+  const swipeOpacity = useTransform(swipeX, [0, 80], [0, 1]);
+  const swipeScale = useTransform(swipeX, [0, 80], [0.8, 1]);
+
+  // Handle swipe gestures on mobile
+  const handleDragEnd = useCallback((_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    if (info.offset.x > 80 && onOpenDetails) {
+      // Swipe right threshold reached - open details
+      onOpenDetails();
+    }
+    // Reset swipe position
+    swipeControls.start({ x: 0 });
+  }, [onOpenDetails, swipeControls]);
 
   // Desktop: hover/pin to expand | Mobile: manual button press only
   const isExpanded = isMobile ? mobileExpanded : (isHovered || isPinned);
@@ -250,9 +307,10 @@ export function ModelCard({
                   <p className="text-xs text-text-secondary">{company}</p>
                 </div>
 
-                {/* Centered Diamond - STATIC */}
-                <div className="mb-3">
+                {/* Centered Diamond with Trend - STATIC */}
+                <div className="mb-3 flex flex-col items-center gap-1">
                   <DiamondRank rank={rank} isExpanded={isExpanded} size="large" />
+                  <TrendIndicator currentRank={rank} previousRank={previousRank} />
                 </div>
 
                 {/* Tags - STATIC */}
@@ -312,6 +370,24 @@ export function ModelCard({
                     <SourceBadgeGroup sources={sources} size="xs" maxVisible={3} />
                   </div>
                 )}
+
+                {/* Details Button - Desktop */}
+                {onOpenDetails && (
+                  <motion.button
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: isExpanded ? 1 : 0 }}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onOpenDetails();
+                    }}
+                    className="mt-3 flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-neon-cyan/10 hover:bg-neon-cyan/20 border border-neon-cyan/30 text-neon-cyan text-xs font-medium uppercase tracking-wider transition-colors"
+                  >
+                    <Info className="w-3.5 h-3.5" />
+                    View Details
+                  </motion.button>
+                )}
               </div>
 
               {/* Right Benchmarks Column - Only visible when expanded */}
@@ -325,12 +401,46 @@ export function ModelCard({
             </div>
           ) : (
             /* Mobile: Compact layout with inline scores, expand button for graphs */
-            <div className="space-y-3">
+            <div className="relative">
+              {/* Swipe Indicator Background - Visible when swiping */}
+              {onOpenDetails && (
+                <motion.div
+                  className="absolute inset-y-0 left-0 flex items-center justify-center w-20 -ml-4 rounded-l-xl bg-neon-cyan/20"
+                  style={{ opacity: swipeOpacity }}
+                >
+                  <motion.div
+                    className="flex flex-col items-center text-neon-cyan"
+                    style={{ scale: swipeScale }}
+                  >
+                    <ChevronRight className="w-6 h-6" />
+                    <span className="text-[10px] font-medium uppercase">Details</span>
+                  </motion.div>
+                </motion.div>
+              )}
+
+              {/* Main Mobile Content - Draggable */}
+              <motion.div
+                className={cn(
+                  "space-y-3 touch-pan-y",
+                  isTouching && "bg-white/[0.02]",
+                  onOpenDetails && "cursor-grab active:cursor-grabbing"
+                )}
+                drag={onOpenDetails ? "x" : false}
+                dragConstraints={{ left: 0, right: 0 }}
+                dragElastic={{ left: 0, right: 0.2 }}
+                style={{ x: swipeX }}
+                animate={swipeControls}
+                onDragEnd={handleDragEnd}
+                onTouchStart={() => setIsTouching(true)}
+                onTouchEnd={() => setIsTouching(false)}
+                transition={{ type: "spring", damping: 20, stiffness: 300 }}
+              >
               {/* Top Row: Name + Diamond + Status */}
               <div className="flex items-center gap-3">
-                {/* Diamond Rank - Left side */}
-                <div className="flex-shrink-0">
+                {/* Diamond Rank with Trend - Left side */}
+                <div className="flex-shrink-0 flex flex-col items-center gap-1">
                   <DiamondRank rank={rank} isExpanded={isExpanded} size="normal" />
+                  <TrendIndicator currentRank={rank} previousRank={previousRank} />
                 </div>
 
                 {/* Model Info - Center */}
@@ -401,32 +511,58 @@ export function ModelCard({
                 </div>
               )}
 
-              {/* Expand Button - Show Graph */}
-              {benchmarks.length > 0 && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setMobileExpanded(!mobileExpanded);
-                  }}
-                  className={cn(
-                    "w-full flex items-center justify-center gap-2 py-2 rounded-lg transition-all",
-                    "min-h-[44px] active:scale-[0.98]",
-                    mobileExpanded
-                      ? "bg-neon-green/20 text-neon-green border border-neon-green/30"
-                      : "bg-purple-glow/10 text-purple-light border border-purple-glow/20 hover:bg-purple-glow/20"
-                  )}
-                >
-                  <span className="text-xs font-medium uppercase tracking-wider">
-                    {mobileExpanded ? "Hide Graph" : "Show Graph"}
-                  </span>
-                  <motion.div
-                    animate={{ rotate: mobileExpanded ? 180 : 0 }}
-                    transition={{ duration: 0.2 }}
+              {/* Action Buttons Row - Mobile */}
+              <div className="flex gap-2">
+                {/* Details Button - Mobile */}
+                {onOpenDetails && (
+                  <motion.button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onOpenDetails();
+                    }}
+                    whileTap={{ scale: 0.95 }}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg min-h-[44px] bg-neon-cyan/10 hover:bg-neon-cyan/20 border border-neon-cyan/30 text-neon-cyan transition-all relative overflow-hidden"
                   >
-                    <ChevronDown className="w-4 h-4" />
-                  </motion.div>
-                </button>
-              )}
+                    <Info className="w-4 h-4" />
+                    <span className="text-xs font-medium uppercase tracking-wider">Details</span>
+                    {/* Subtle pulse highlight */}
+                    <motion.div
+                      className="absolute inset-0 bg-neon-cyan/10 rounded-lg"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: [0, 0.3, 0] }}
+                      transition={{ duration: 2, repeat: 2, delay: 1 }}
+                    />
+                  </motion.button>
+                )}
+
+                {/* Expand Button - Show Graph */}
+                {benchmarks.length > 0 && (
+                  <motion.button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setMobileExpanded(!mobileExpanded);
+                    }}
+                    whileTap={{ scale: 0.95 }}
+                    className={cn(
+                      "flex-1 flex items-center justify-center gap-2 py-2 rounded-lg transition-all",
+                      "min-h-[44px]",
+                      mobileExpanded
+                        ? "bg-neon-green/20 text-neon-green border border-neon-green/30"
+                        : "bg-purple-glow/10 text-purple-light border border-purple-glow/20 hover:bg-purple-glow/20"
+                    )}
+                  >
+                    <span className="text-xs font-medium uppercase tracking-wider">
+                      {mobileExpanded ? "Hide Graph" : "Show Graph"}
+                    </span>
+                    <motion.div
+                      animate={{ rotate: mobileExpanded ? 180 : 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <ChevronDown className="w-4 h-4" />
+                    </motion.div>
+                  </motion.button>
+                )}
+              </div>
 
               {/* Expanded Benchmarks with Progress Bars - Only on button press */}
               <AnimatePresence>
@@ -449,6 +585,7 @@ export function ModelCard({
                   </motion.div>
                 )}
               </AnimatePresence>
+              </motion.div>
             </div>
           )}
         </div>
