@@ -14,6 +14,7 @@ import ClawdbotKit
 /// Features:
 /// - ScrollView with LazyVStack for efficient message rendering
 /// - Auto-scroll to bottom on new messages
+/// - Real-time streaming message display
 /// - Connection status indicator in toolbar
 /// - Uses scrollPosition(id:anchor:) for programmatic scroll control
 /// - ChatInputBar with keyboard-aware layout via safeAreaInset
@@ -21,14 +22,19 @@ struct ChatView: View {
     /// Chat view model (initialized with placeholder for now)
     @State private var viewModel: ChatViewModel
 
-    /// Current scroll position tracking
-    @State private var scrollPosition: MessageID?
+    /// Current scroll position tracking (String to handle both MessageID and streaming IDs)
+    @State private var scrollPosition: String?
 
     /// Input text for message composition
     @State private var inputText = ""
 
     /// Focus state for keyboard management
     @FocusState private var isInputFocused: Bool
+
+    /// Sorted streaming message IDs for consistent ordering
+    private var sortedStreamingIDs: [String] {
+        viewModel.streamingMessages.keys.sorted()
+    }
 
     /// Initialize with a protocol handler
     /// - Parameter protocolHandler: The protocol handler for message operations
@@ -58,9 +64,21 @@ struct ChatView: View {
     private var messageList: some View {
         ScrollView {
             LazyVStack(spacing: 8) {
+                // Completed messages
                 ForEach(viewModel.messages) { message in
                     MessageBubble(message: message)
-                        .id(message.id)
+                        .id(message.id.value)
+                }
+
+                // Streaming messages (actively being received)
+                ForEach(sortedStreamingIDs, id: \.self) { messageID in
+                    if let content = viewModel.streamingMessages[messageID] {
+                        MessageBubble(
+                            streamingContent: content,
+                            sender: .bot(name: "Clawdbot")
+                        )
+                        .id("streaming-\(messageID)")
+                    }
                 }
             }
             .padding(.horizontal)
@@ -70,9 +88,15 @@ struct ChatView: View {
         .scrollPosition(id: $scrollPosition, anchor: .bottom)
         .onChange(of: viewModel.messages.count) { _, _ in
             // Auto-scroll to bottom when new message arrives
-            withAnimation(.easeOut(duration: 0.2)) {
-                scrollPosition = viewModel.messages.last?.id
-            }
+            scrollToBottom()
+        }
+        .onChange(of: viewModel.streamingMessages.count) { _, _ in
+            // Auto-scroll when streaming messages change
+            scrollToBottom()
+        }
+        .onChange(of: streamingContentChanged) { _, _ in
+            // Auto-scroll as streaming content updates
+            scrollToBottom()
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             VStack(spacing: 0) {
@@ -83,6 +107,23 @@ struct ChatView: View {
                     onSend: sendMessage,
                     isEnabled: viewModel.connectionState == .connected
                 )
+            }
+        }
+    }
+
+    /// Computed property to trigger updates when any streaming content changes
+    private var streamingContentChanged: Int {
+        viewModel.streamingMessages.values.reduce(0) { $0 + $1.count }
+    }
+
+    /// Scroll to the bottom of the chat
+    private func scrollToBottom() {
+        withAnimation(.easeOut(duration: 0.2)) {
+            // If streaming, scroll to the streaming message
+            if let lastStreamingID = sortedStreamingIDs.last {
+                scrollPosition = "streaming-\(lastStreamingID)"
+            } else if let lastMessage = viewModel.messages.last {
+                scrollPosition = lastMessage.id.value
             }
         }
     }
