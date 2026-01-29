@@ -416,4 +416,194 @@ final class ChatViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.streamingMessages["stream-a"], "Message A")
         XCTAssertEqual(viewModel.streamingMessages["stream-b"], "Message B")
     }
+
+    // MARK: - Bot State Tests
+
+    func testDefaultBotStateIsIdle() async {
+        // Given: Fresh view model
+        // Then: Default state is idle
+        XCTAssertEqual(viewModel.botState, .idle)
+        XCTAssertNil(viewModel.botStateDetail)
+    }
+
+    func testBotStateUpdateToThinking() async {
+        // Given: Idle bot state
+        XCTAssertEqual(viewModel.botState, .idle)
+
+        // When: Receive thinking state update
+        let json = """
+        {
+            "version": "1.0",
+            "type": "bot.state",
+            "sequence": 20,
+            "payload": {
+                "state": "thinking",
+                "botName": "Clawdbot",
+                "detail": null,
+                "timestamp": "\(ISO8601DateFormatter().string(from: Date()))"
+            },
+            "serverTimestamp": null
+        }
+        """
+        await handler.handleIncoming(json)
+        try? await Task.sleep(for: .milliseconds(50))
+
+        // Then: Bot state is thinking
+        XCTAssertEqual(viewModel.botState, .thinking)
+        XCTAssertNil(viewModel.botStateDetail)
+    }
+
+    func testBotStateUpdateToToolUseWithDetail() async {
+        // Given: Idle bot state
+        XCTAssertEqual(viewModel.botState, .idle)
+
+        // When: Receive tool use state with detail
+        let json = """
+        {
+            "version": "1.0",
+            "type": "bot.state",
+            "sequence": 21,
+            "payload": {
+                "state": "toolUse",
+                "botName": "Clawdbot",
+                "detail": "Searching the web...",
+                "timestamp": "\(ISO8601DateFormatter().string(from: Date()))"
+            },
+            "serverTimestamp": null
+        }
+        """
+        await handler.handleIncoming(json)
+        try? await Task.sleep(for: .milliseconds(50))
+
+        // Then: Bot state is toolUse with detail
+        XCTAssertEqual(viewModel.botState, .toolUse)
+        XCTAssertEqual(viewModel.botStateDetail, "Searching the web...")
+    }
+
+    func testBotStateTransitionThinkingToTyping() async {
+        // Given: Bot in thinking state
+        let thinkingJson = """
+        {
+            "version": "1.0",
+            "type": "bot.state",
+            "sequence": 22,
+            "payload": {
+                "state": "thinking",
+                "botName": "Clawdbot",
+                "detail": null,
+                "timestamp": "\(ISO8601DateFormatter().string(from: Date()))"
+            },
+            "serverTimestamp": null
+        }
+        """
+        await handler.handleIncoming(thinkingJson)
+        try? await Task.sleep(for: .milliseconds(50))
+        XCTAssertEqual(viewModel.botState, .thinking)
+
+        // When: State transitions to typing
+        let typingJson = """
+        {
+            "version": "1.0",
+            "type": "bot.state",
+            "sequence": 23,
+            "payload": {
+                "state": "typing",
+                "botName": "Clawdbot",
+                "detail": null,
+                "timestamp": "\(ISO8601DateFormatter().string(from: Date()))"
+            },
+            "serverTimestamp": null
+        }
+        """
+        await handler.handleIncoming(typingJson)
+        try? await Task.sleep(for: .milliseconds(50))
+
+        // Then: Bot state is typing
+        XCTAssertEqual(viewModel.botState, .typing)
+    }
+
+    func testBotStateReturnToIdle() async {
+        // Given: Bot in thinking state
+        let thinkingJson = """
+        {
+            "version": "1.0",
+            "type": "bot.state",
+            "sequence": 24,
+            "payload": {
+                "state": "thinking",
+                "botName": "Clawdbot",
+                "detail": null,
+                "timestamp": "\(ISO8601DateFormatter().string(from: Date()))"
+            },
+            "serverTimestamp": null
+        }
+        """
+        await handler.handleIncoming(thinkingJson)
+        try? await Task.sleep(for: .milliseconds(50))
+        XCTAssertEqual(viewModel.botState, .thinking)
+
+        // When: State returns to idle
+        let idleJson = """
+        {
+            "version": "1.0",
+            "type": "bot.state",
+            "sequence": 25,
+            "payload": {
+                "state": "idle",
+                "botName": "Clawdbot",
+                "detail": null,
+                "timestamp": "\(ISO8601DateFormatter().string(from: Date()))"
+            },
+            "serverTimestamp": null
+        }
+        """
+        await handler.handleIncoming(idleJson)
+        try? await Task.sleep(for: .milliseconds(50))
+
+        // Then: Bot state is idle
+        XCTAssertEqual(viewModel.botState, .idle)
+    }
+
+    func testBotStateDetailClearsWhenStateChanges() async {
+        // Given: Bot in toolUse state with detail
+        let toolUseJson = """
+        {
+            "version": "1.0",
+            "type": "bot.state",
+            "sequence": 26,
+            "payload": {
+                "state": "toolUse",
+                "botName": "Clawdbot",
+                "detail": "Fetching data...",
+                "timestamp": "\(ISO8601DateFormatter().string(from: Date()))"
+            },
+            "serverTimestamp": null
+        }
+        """
+        await handler.handleIncoming(toolUseJson)
+        try? await Task.sleep(for: .milliseconds(50))
+        XCTAssertEqual(viewModel.botStateDetail, "Fetching data...")
+
+        // When: State changes to idle (no detail)
+        let idleJson = """
+        {
+            "version": "1.0",
+            "type": "bot.state",
+            "sequence": 27,
+            "payload": {
+                "state": "idle",
+                "botName": "Clawdbot",
+                "detail": null,
+                "timestamp": "\(ISO8601DateFormatter().string(from: Date()))"
+            },
+            "serverTimestamp": null
+        }
+        """
+        await handler.handleIncoming(idleJson)
+        try? await Task.sleep(for: .milliseconds(50))
+
+        // Then: Detail is cleared
+        XCTAssertEqual(viewModel.botState, .idle)
+        XCTAssertNil(viewModel.botStateDetail)
+    }
 }

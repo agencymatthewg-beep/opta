@@ -27,6 +27,14 @@ public final class ChatViewModel {
     /// Used for real-time display of bot responses as they arrive chunk-by-chunk.
     public private(set) var streamingMessages: [String: String] = [:]
 
+    /// Current bot processing state
+    /// Shows what the bot is doing: idle, thinking, typing, or using a tool.
+    public private(set) var botState: BotState = .idle
+
+    /// Detail message for tool use (e.g., "Searching web...")
+    /// Only populated when botState is .toolUse
+    public private(set) var botStateDetail: String?
+
     /// Current connection state
     public private(set) var connectionState: ConnectionState = .disconnected
 
@@ -128,9 +136,12 @@ public final class ChatViewModel {
     }
 
     /// Handle bot state update
+    ///
+    /// Updates botState and botStateDetail for UI display.
+    /// The thinking indicator and typing cursor use these values.
     private func handleBotStateUpdate(_ state: BotStateUpdate) {
-        // For future use - thinking indicators, typing status
-        // Will be implemented in Phase 5 (Streaming & State)
+        botState = state.state
+        botStateDetail = state.detail
     }
 
     /// Handle streaming chunk for real-time message display
