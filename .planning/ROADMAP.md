@@ -36,7 +36,7 @@ None (expertise files not available)
 **Plans**: TBD
 
 Plans:
-- [ ] 01-01: Create shared Swift package structure
+- [x] 01-01: Create shared Swift package structure
 - [ ] 01-02: Port design system (OptaColors, OptaAnimations) to shared package
 - [ ] 01-03: Scaffold iOS and macOS app targets
 
@@ -173,7 +173,7 @@ Phases execute in numeric order: 1 → 2 → 3 → ... → 12
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/3 | Not started | - |
+| 1. Foundation | 1/3 | In progress | - |
 | 2. Connection Layer | 0/3 | Not started | - |
 | 3. Message Protocol | 0/3 | Not started | - |
 | 4. Chat Core | 0/3 | Not started | - |
