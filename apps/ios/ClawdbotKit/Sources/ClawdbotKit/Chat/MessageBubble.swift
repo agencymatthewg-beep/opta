@@ -123,8 +123,25 @@ public struct MessageBubble: View {
                 .padding(.horizontal, 14)
                 .padding(.vertical, 10)
                 .background(
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(bubbleBackground)
+                    Group {
+                        if isUserMessage {
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color.clawdbotPurple)
+                        } else {
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color.clawdbotSurface.opacity(0.6))
+                                .background(.ultraThinMaterial)
+                        }
+                    }
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .overlay(
+                    Group {
+                        if !isUserMessage {
+                            RoundedRectangle(cornerRadius: 16)
+                                .stroke(Color.clawdbotBorder.opacity(0.3), lineWidth: 1)
+                        }
+                    }
                 )
 
                 // Status indicator and timestamp (not shown during streaming)
