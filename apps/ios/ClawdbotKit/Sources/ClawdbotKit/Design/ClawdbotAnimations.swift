@@ -313,6 +313,103 @@ public extension View {
     }
 }
 
+// MARK: - Staggered Ignition
+
+/// Combined stagger delay + ignition animation
+///
+/// Combines cascade timing with wake-from-darkness effect:
+/// - Each item delayed by index * staggerInterval
+/// - Each item applies ignition animation
+/// - Default: 50ms per item (matches design spec)
+public struct StaggeredIgnitionModifier: ViewModifier {
+    let index: Int
+    let isVisible: Bool
+    let baseDelay: Double
+    let staggerInterval: Double
+
+    public init(
+        index: Int,
+        isVisible: Bool = true,
+        baseDelay: Double = 0,
+        staggerInterval: Double = 0.05  // 50ms per item
+    ) {
+        self.index = index
+        self.isVisible = isVisible
+        self.baseDelay = baseDelay
+        self.staggerInterval = staggerInterval
+    }
+
+    public func body(content: Content) -> some View {
+        content
+            .ignition(isVisible: isVisible, delay: baseDelay + Double(index) * staggerInterval)
+    }
+}
+
+public extension View {
+    /// Staggered ignition - combines cascade delay with wake-from-darkness
+    ///
+    /// Each item in a list/grid receives a delayed ignition animation,
+    /// creating a cascading reveal effect.
+    ///
+    /// - Parameters:
+    ///   - index: Position in sequence (0-based)
+    ///   - isVisible: Whether content should be visible (default: true)
+    ///   - baseDelay: Initial delay before first item (default: 0)
+    ///   - staggerInterval: Delay between items (default: 0.05 = 50ms)
+    func staggeredIgnition(
+        index: Int,
+        isVisible: Bool = true,
+        baseDelay: Double = 0,
+        staggerInterval: Double = 0.05
+    ) -> some View {
+        modifier(StaggeredIgnitionModifier(
+            index: index,
+            isVisible: isVisible,
+            baseDelay: baseDelay,
+            staggerInterval: staggerInterval
+        ))
+    }
+}
+
+// MARK: - Staggered Container
+
+/// Container that manages staggered animation state for children
+///
+/// Use `StaggeredContainer` to wrap a list of items that should
+/// animate in with staggered ignition. The container provides
+/// an environment value that children can read.
+public struct StaggeredContainer<Content: View>: View {
+    let content: Content
+    @State private var isVisible = false
+
+    public init(@ViewBuilder content: () -> Content) {
+        self.content = content()
+    }
+
+    public var body: some View {
+        content
+            .environment(\.staggeredContainerIsVisible, isVisible)
+            .onAppear {
+                // Small delay to allow layout before animation
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    isVisible = true
+                }
+            }
+    }
+}
+
+// Environment key for stagger visibility
+private struct StaggeredContainerIsVisibleKey: EnvironmentKey {
+    static let defaultValue: Bool = true
+}
+
+public extension EnvironmentValues {
+    var staggeredContainerIsVisible: Bool {
+        get { self[StaggeredContainerIsVisibleKey.self] }
+        set { self[StaggeredContainerIsVisibleKey.self] = newValue }
+    }
+}
+
 // MARK: - Usage Examples Reference
 /*
  // Button press
