@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2025-01-29)
 
 **Core value:** Always know what your bot is doing. Real-time thinking state, typing indicators, and streaming responses with rich output formats.
-**Current focus:** Phase 6.1 — Opta Aesthetic Alignment (Planning Complete)
+**Current focus:** Phase 6.1 — Opta Aesthetic Alignment (Plan 02 Complete)
 
 ## Current Position
 
 Phase: 6.1 of 12 (Opta Aesthetic Alignment)
-Plan: 0 of 3 complete in current phase
-Status: Planned — Ready to Execute
-Last activity: 2026-01-30 — Planned Phase 6.1 (Opta Aesthetic Alignment)
+Plan: 1 of 3 complete in current phase
+Status: In Progress — Plan 02 Complete (Glass Components)
+Last activity: 2026-01-30 — Executed Plan 06.1-02 (Enhanced Glass Components)
 
-Progress: ████████░░ 46%
+Progress: ████████░░ 49%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 16
-- Average duration: 4.9 min
-- Total execution time: 1.3 hours
+- Total plans completed: 17
+- Average duration: 5.0 min
+- Total execution time: 1.4 hours
 
 **By Phase:**
 
@@ -32,10 +32,11 @@ Progress: ████████░░ 46%
 | 3. Protocol | 4/4 | 10 min | 2.5 min |
 | 4. Chat Core | 3/3 | 11 min | 3.7 min |
 | 5. Streaming | 3/3 | 15 min | 5 min |
+| 6.1. Aesthetic | 1/3 | 8 min | 8 min |
 
 **Recent Trend:**
-- Last 5 plans: 04-03 (5 min), 05-01 (5 min), 05-02 (5 min), 05-03 (5 min)
-- Trend: Streaming state features consistent ~5 min per plan
+- Last 5 plans: 05-01 (5 min), 05-02 (5 min), 05-03 (5 min), 06.1-02 (8 min)
+- Trend: Design system plans slightly longer due to multiple new files
 
 ## Accumulated Context
 
@@ -103,6 +104,10 @@ Recent decisions affecting current work:
 | 05-02 | Indicator hidden when streaming | Prevents overlap with typing cursor |
 | 05-03 | TypingCursor as blinking vertical bar | Familiar pattern from text editors, clear visual feedback |
 | 05-03 | showTypingCursor only when botState == .typing | Distinguishes thinking (processing) from typing (generating) |
+| 06.1-02 | SwiftUI Material API for glass blur | Native iOS materials for appropriate blur depths |
+| 06.1-02 | ObsidianState enum for state machine | Clear semantic states with animation support |
+| 06.1-02 | GlowIntensity enum with sm/md/lg/intense | Consistent glow presets across codebase |
+| 06.1-02 | System font fallback for status badge | Sora font deferred to plan 01 |
 
 ### Deferred Issues
 
@@ -119,9 +124,25 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-30
-Stopped at: Planned Phase 6.1 (Opta Aesthetic Alignment)
+Stopped at: Completed Plan 06.1-02 (Enhanced Glass Components)
 Resume file: None
-Next action: Execute Phase 6.1 (`/gsd:execute-phase 6.1`)
+Next action: Execute Plan 06.1-01 or 06.1-03 (remaining aesthetic alignment plans)
+
+## Phase 6.1 Progress (Opta Aesthetic Alignment)
+
+**06.1-02: Enhanced Glass Components** (Complete)
+- 3-level glass depth system (.glassSubtle, .glassContent, .glassOverlay)
+- Obsidian glass variants (.obsidian, .obsidianInteractive, .obsidianActive)
+- OptaStatusBadge component with pulsing glow animation
+- ClawdbotGlowEffects with intensity presets (sm/md/lg/intense)
+- Extended colors: cyan, indigo, pink, coral tokens
+- Applied glass to MessageBubble bot messages
+- Applied obsidian to ThinkingIndicator
+- 10 new glass tests, 125 total tests pass
+
+**Remaining:**
+- 06.1-01: Typography System (Sora font, MoonlightText)
+- 06.1-03: Animation Enhancements (Ignition, glow pulse, Reduce Motion)
 
 ## Phase 5 Complete
 
