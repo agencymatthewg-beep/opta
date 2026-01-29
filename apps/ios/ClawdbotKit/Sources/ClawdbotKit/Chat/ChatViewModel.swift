@@ -23,6 +23,10 @@ public final class ChatViewModel {
     /// All chat messages in conversation
     public private(set) var messages: [ChatMessage] = []
 
+    /// Messages currently being streamed (messageID -> accumulated content)
+    /// Used for real-time display of bot responses as they arrive chunk-by-chunk.
+    public private(set) var streamingMessages: [String: String] = [:]
+
     /// Current connection state
     public private(set) var connectionState: ConnectionState = .disconnected
 
@@ -91,6 +95,14 @@ public final class ChatViewModel {
                 self?.handleBotStateUpdate(state)
             }
             .store(in: &cancellables)
+
+        // Subscribe to streaming chunks for real-time UI updates
+        protocolHandler.streamingChunks
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] chunk in
+                self?.handleStreamingChunk(chunk)
+            }
+            .store(in: &cancellables)
     }
 
     /// Handle incoming message, preventing duplicates
@@ -119,6 +131,23 @@ public final class ChatViewModel {
     private func handleBotStateUpdate(_ state: BotStateUpdate) {
         // For future use - thinking indicators, typing status
         // Will be implemented in Phase 5 (Streaming & State)
+    }
+
+    /// Handle streaming chunk for real-time message display
+    ///
+    /// Accumulates content in streamingMessages dictionary.
+    /// When isFinal arrives, removes from streamingMessages (full message comes via incomingMessages).
+    private func handleStreamingChunk(_ chunk: StreamingChunk) {
+        let messageID = chunk.messageID.value
+
+        if chunk.isFinal {
+            // Final chunk - remove from streaming (full message will arrive via incomingMessages)
+            streamingMessages.removeValue(forKey: messageID)
+        } else {
+            // Accumulate content
+            let existing = streamingMessages[messageID] ?? ""
+            streamingMessages[messageID] = existing + chunk.content
+        }
     }
 
     // MARK: - Send Methods
@@ -192,6 +221,7 @@ public final class ChatViewModel {
     public func clearMessages() {
         messages.removeAll()
         knownMessageIDs.removeAll()
+        streamingMessages.removeAll()
         // Clear persistent storage
         Task { await messageStore.clearHistory() }
     }

@@ -242,4 +242,178 @@ final class ChatViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.messages.count, 2)
         XCTAssertEqual(viewModel.messages[1].replyTo, replyToID)
     }
+
+    // MARK: - Streaming Tests
+
+    func testStreamingChunkAccumulates() async {
+        // Given: Empty streaming messages
+        XCTAssertTrue(viewModel.streamingMessages.isEmpty)
+
+        // When: Receive streaming chunks (non-final)
+        let chunk1 = """
+        {
+            "version": "1.0",
+            "type": "streaming.chunk",
+            "sequence": 10,
+            "payload": {
+                "messageID": {"value": "stream-1"},
+                "chunkIndex": 0,
+                "content": "Hello ",
+                "isFinal": false
+            },
+            "serverTimestamp": null
+        }
+        """
+        await handler.handleIncoming(chunk1)
+
+        // Brief wait for Combine to propagate
+        try? await Task.sleep(for: .milliseconds(50))
+
+        // Then: Content accumulated in streamingMessages
+        XCTAssertEqual(viewModel.streamingMessages["stream-1"], "Hello ")
+    }
+
+    func testStreamingChunksAccumulateContent() async {
+        // Given: Empty streaming messages
+        XCTAssertTrue(viewModel.streamingMessages.isEmpty)
+
+        // When: Receive multiple streaming chunks
+        for (i, content) in ["Hello ", "World", "!"].enumerated() {
+            let isFinal = i == 2
+            let json = """
+            {
+                "version": "1.0",
+                "type": "streaming.chunk",
+                "sequence": \(10 + i),
+                "payload": {
+                    "messageID": {"value": "multi-chunk"},
+                    "chunkIndex": \(i),
+                    "content": "\(content)",
+                    "isFinal": \(isFinal)
+                },
+                "serverTimestamp": null
+            }
+            """
+            await handler.handleIncoming(json)
+            try? await Task.sleep(for: .milliseconds(20))
+        }
+
+        // Brief wait for Combine to propagate
+        try? await Task.sleep(for: .milliseconds(50))
+
+        // Then: Final chunk removes from streaming (message arrives via incomingMessages)
+        XCTAssertNil(viewModel.streamingMessages["multi-chunk"])
+    }
+
+    func testStreamingFinalChunkRemovesFromStreamingMessages() async {
+        // Given: A streaming message in progress
+        let chunk1 = """
+        {
+            "version": "1.0",
+            "type": "streaming.chunk",
+            "sequence": 10,
+            "payload": {
+                "messageID": {"value": "final-test"},
+                "chunkIndex": 0,
+                "content": "Partial ",
+                "isFinal": false
+            },
+            "serverTimestamp": null
+        }
+        """
+        await handler.handleIncoming(chunk1)
+        try? await Task.sleep(for: .milliseconds(50))
+        XCTAssertNotNil(viewModel.streamingMessages["final-test"])
+
+        // When: Final chunk arrives
+        let chunk2 = """
+        {
+            "version": "1.0",
+            "type": "streaming.chunk",
+            "sequence": 11,
+            "payload": {
+                "messageID": {"value": "final-test"},
+                "chunkIndex": 1,
+                "content": "complete!",
+                "isFinal": true
+            },
+            "serverTimestamp": null
+        }
+        """
+        await handler.handleIncoming(chunk2)
+        try? await Task.sleep(for: .milliseconds(50))
+
+        // Then: Removed from streamingMessages
+        XCTAssertNil(viewModel.streamingMessages["final-test"])
+    }
+
+    func testClearMessagesClearsStreamingMessages() async {
+        // Given: A streaming message in progress
+        let chunk = """
+        {
+            "version": "1.0",
+            "type": "streaming.chunk",
+            "sequence": 10,
+            "payload": {
+                "messageID": {"value": "clear-test"},
+                "chunkIndex": 0,
+                "content": "Some content",
+                "isFinal": false
+            },
+            "serverTimestamp": null
+        }
+        """
+        await handler.handleIncoming(chunk)
+        try? await Task.sleep(for: .milliseconds(50))
+        XCTAssertFalse(viewModel.streamingMessages.isEmpty)
+
+        // When: Clear messages
+        viewModel.clearMessages()
+
+        // Then: Streaming messages also cleared
+        XCTAssertTrue(viewModel.streamingMessages.isEmpty)
+    }
+
+    func testMultipleSimultaneousStreams() async {
+        // Given: Empty streaming messages
+        XCTAssertTrue(viewModel.streamingMessages.isEmpty)
+
+        // When: Receive chunks from two different messages
+        let chunk1 = """
+        {
+            "version": "1.0",
+            "type": "streaming.chunk",
+            "sequence": 10,
+            "payload": {
+                "messageID": {"value": "stream-a"},
+                "chunkIndex": 0,
+                "content": "Message A",
+                "isFinal": false
+            },
+            "serverTimestamp": null
+        }
+        """
+        let chunk2 = """
+        {
+            "version": "1.0",
+            "type": "streaming.chunk",
+            "sequence": 11,
+            "payload": {
+                "messageID": {"value": "stream-b"},
+                "chunkIndex": 0,
+                "content": "Message B",
+                "isFinal": false
+            },
+            "serverTimestamp": null
+        }
+        """
+        await handler.handleIncoming(chunk1)
+        await handler.handleIncoming(chunk2)
+        try? await Task.sleep(for: .milliseconds(50))
+
+        // Then: Both streaming messages tracked separately
+        XCTAssertEqual(viewModel.streamingMessages.count, 2)
+        XCTAssertEqual(viewModel.streamingMessages["stream-a"], "Message A")
+        XCTAssertEqual(viewModel.streamingMessages["stream-b"], "Message B")
+    }
 }
