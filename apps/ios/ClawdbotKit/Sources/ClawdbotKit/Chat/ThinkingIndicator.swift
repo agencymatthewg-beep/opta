@@ -33,14 +33,12 @@ public struct ThinkingIndicator: View {
     public var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                // Animated dots
+                // Animated dots with obsidian active styling
                 dotsView
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
-                    .background(
-                        RoundedRectangle(cornerRadius: 16)
-                            .fill(Color.clawdbotSurface)
-                    )
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .obsidianActive()
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
 
                 // Detail text (e.g., "Searching web...")
                 if let detail = detail {
