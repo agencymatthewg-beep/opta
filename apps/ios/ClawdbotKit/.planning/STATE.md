@@ -8,20 +8,20 @@
 ## Current Position
 
 Phase: 5 of N (Streaming & State)
-Plan: 1/N complete
-Status: Plan 05-01 complete, ready for 05-02
-Last activity: 2026-01-29 - Completed streaming UI layer
-Next action: Execute plan 05-02 (Bot State Indicator) when available
+Plan: 3/N complete
+Status: Plan 05-03 complete, Phase 5 streaming/state work done
+Last activity: 2026-01-29 - Completed typing indicator animation
+Next action: Execute next phase when available
 
-Progress: Phase 5 In Progress (Plan 1 complete)
+Progress: Phase 5 Complete (Plans 1-3)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 6 (3 foundation + 3 chat-core + 1 streaming-state)
+- Total plans completed: 9 (3 foundation + 3 chat-core + 3 streaming-state)
 - Phase 1 duration: ~15 min total
 - Phase 4 duration: ~36 min total
-- Phase 5 (so far): ~6 min (05-01: 6min)
+- Phase 5 duration: ~10 min (05-01: 6min, 05-02: ~1min pre-work, 05-03: 4min)
 
 **By Phase:**
 
@@ -29,7 +29,7 @@ Progress: Phase 5 In Progress (Plan 1 complete)
 |-------|-------|--------|
 | 1. Foundation | 3/3 | COMPLETE |
 | 4. Chat Core | 3/3 | COMPLETE |
-| 5. Streaming & State | 1/N | IN PROGRESS |
+| 5. Streaming & State | 3/3 | COMPLETE |
 
 ## Phase 5 Progress
 
@@ -39,9 +39,17 @@ Progress: Phase 5 In Progress (Plan 1 complete)
 - MessageBubble with streaming initializer and animated cursor
 - ChatView renders streaming messages with auto-scroll
 
-**05-02: Bot State Indicator** - PENDING
-- Thinking/typing status display
-- Integration with BotStateUpdate
+**05-02: Bot State Indicator** - COMPLETE
+- botState and botStateDetail properties on ChatViewModel
+- ThinkingIndicator component with bouncing dots animation
+- ChatView shows thinking indicator when thinking/toolUse state
+- Auto-scroll on botState changes
+
+**05-03: Typing Indicator Animation** - COMPLETE
+- TypingCursor component with blinking vertical bar
+- showTypingCursor parameter for MessageBubble streaming initializer
+- Cursor shows only when botState == .typing
+- All 115 tests passing
 
 ## Accumulated Context
 
@@ -57,6 +65,8 @@ Progress: Phase 5 In Progress (Plan 1 complete)
 - Stream content accumulated in ChatViewModel for SwiftUI reactivity
 - Final chunk removes from streamingMessages (full message arrives via incomingMessages)
 - Scroll position changed from MessageID to String to support streaming IDs
+- TypingCursor uses 2x18pt Rectangle with 0.5s blink animation
+- Cursor shows only when botState == .typing (not during thinking/toolUse)
 
 ### Patterns Established
 
@@ -64,8 +74,10 @@ Progress: Phase 5 In Progress (Plan 1 complete)
 - **safeAreaInset**: Standard keyboard-aware layout for chat interfaces
 - **Rapid messaging**: Clear text but keep keyboard open for continued input
 - **Streaming content**: Passed via separate initializer, not message property
-- **Auto-scroll triggers**: On both message count and streaming content changes
-- **StreamingCursor**: Pulsing Circle animation for typing indicator
+- **Auto-scroll triggers**: On message count, streaming content, and botState changes
+- **ThinkingIndicator**: Three bouncing dots for thinking/toolUse states
+- **TypingCursor**: Blinking vertical bar cursor for typing state
+- **State-driven visibility**: UI elements show/hide based on botState enum
 
 ### Deferred Issues
 
@@ -82,6 +94,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-29
-Stopped at: Completed Plan 05-01 (Streaming UI Layer)
-Resume file: .planning/phases/05-streaming-state/05-01-SUMMARY.md
-Next action: Execute plan 05-02 (Bot State Indicator) when available
+Stopped at: Completed Plan 05-03 (Typing Indicator Animation)
+Resume file: .planning/phases/05-streaming-state/05-03-SUMMARY.md
+Next action: Execute next phase when available
