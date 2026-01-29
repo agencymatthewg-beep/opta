@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2025-01-29)
 
 **Core value:** Always know what your bot is doing. Real-time thinking state, typing indicators, and streaming responses with rich output formats.
-**Current focus:** Phase 2 — Connection Layer (COMPLETE)
+**Current focus:** Phase 3 — Message Protocol (In Progress)
 
 ## Current Position
 
-Phase: 2 of 12 (Connection Layer) - COMPLETE
-Plan: 02-01 complete, 02-02 complete, 02-03 complete
-Status: Phase 2 Complete - Ready for Phase 3
-Last activity: 2026-01-30 — Completed Plan 02-02 (Connection State Machine)
+Phase: 3 of 12 (Message Protocol)
+Plan: 1 of 4 complete in current phase
+Status: In Progress
+Last activity: 2026-01-30 — Completed Plan 03-01 (Message Type Definitions)
 
-Progress: █████░░░░░ 17%
+Progress: █████░░░░░ 20%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 6
-- Average duration: 7.2 min
-- Total execution time: 0.72 hours
+- Total plans completed: 7
+- Average duration: 6.6 min
+- Total execution time: 0.77 hours
 
 **By Phase:**
 
@@ -29,10 +29,11 @@ Progress: █████░░░░░ 17%
 |-------|-------|-------|----------|
 | 1. Foundation | 3/3 | 21 min | 7 min |
 | 2. Connection | 3/3 | 22 min | 7.3 min |
+| 3. Protocol | 1/4 | 3 min | 3 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-03 (8 min), 02-01 (8 min), 02-03 (8 min), 02-02 (6 min)
-- Trend: Consistent, slightly faster
+- Last 5 plans: 02-01 (8 min), 02-03 (8 min), 02-02 (6 min), 03-01 (3 min)
+- Trend: Consistent, accelerating with simpler type definition work
 
 ## Accumulated Context
 
@@ -62,6 +63,11 @@ Recent decisions affecting current work:
 | 02-03 | CurrentValueSubject for state caching | Combine publishers for reactive UI |
 | 02-03 | Tailscale CGNAT range 100.x.x.x | Standard Tailscale IP detection |
 | 02-03 | 3-second Tailscale reachability timeout | Fast VPN should respond quickly |
+| 03-01 | MessageID as struct (not raw String) | Type safety with ExpressibleByStringLiteral convenience |
+| 03-01 | MessageSender custom Codable | Enum with associated value needs explicit coding for bot name |
+| 03-01 | Generic ProtocolEnvelope<T> | Reusable envelope for any payload type with shared metadata |
+| 03-01 | Actor for StreamingMessageAssembler | Thread-safe chunk aggregation without manual locking |
+| 03-01 | All types Codable + Sendable | Swift concurrency safety for async message handling |
 
 ### Deferred Issues
 
@@ -78,22 +84,25 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-30
-Stopped at: Completed Plan 02-02 (Connection State Machine) - Phase 2 Complete
+Stopped at: Completed Plan 03-01 (Message Type Definitions)
 Resume file: None
-Next action: Begin Phase 3 (Message Layer)
+Next action: Execute Plan 03-02 (Protocol encoder/decoder)
 
-## Phase 2 Wave Structure
+## Phase 3 Wave Structure
 
 | Wave | Plan | Dependencies | Status |
 |------|------|--------------|--------|
-| 1 | 02-01: WebSocket client | 01-03 | **Complete** |
-| 2 | 02-02: State machine | 02-01 | **Complete** |
-| 2 | 02-03: Network monitor | 02-01 | **Complete** |
+| 1 | 03-01: Message types | 02-connection | **Complete** |
+| 2 | 03-02: Protocol codec | 03-01 | Pending |
+| 2 | 03-03: Message queue | 03-01 | Pending |
+| 3 | 03-04: Protocol integration | 03-02, 03-03 | Pending |
 
-## Phase 2 Summary
+## Phase 3 Progress
 
-All 3 plans complete. Connection layer provides:
-- ClawdbotWebSocket actor for raw WebSocket operations
-- ConnectionManager with state machine and reconnection
-- NetworkMonitor with NWPathMonitor and Tailscale detection
-- Combine publishers for reactive SwiftUI binding
+1 of 4 plans complete. Message protocol provides so far:
+- MessageID, MessageStatus, MessageSender types
+- ChatMessage with thread/reply support
+- ProtocolEnvelope generic wrapper with versioning
+- MessageAck for delivery confirmation
+- BotState for thinking/typing indicators
+- StreamingChunk and StreamingMessageAssembler for streaming responses

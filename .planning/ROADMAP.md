@@ -16,7 +16,7 @@ None (expertise files not available)
 
 - [x] **Phase 1: Foundation** - Project structure, shared packages, design system
 - [x] **Phase 2: Connection Layer** - WebSocket client, state management, reconnection
-- [ ] **Phase 3: Message Protocol** - Clawdbot JSON protocol implementation
+- [ ] **Phase 3: Message Protocol** - Clawdbot JSON protocol implementation (In Progress)
 - [ ] **Phase 4: Chat Core** - Basic chat UI, message list, input field
 - [ ] **Phase 5: Streaming & State** - Real-time streaming, thinking/typing indicators
 - [ ] **Phase 6: Rich Output: Text** - Bullet points, code blocks, formatted text
@@ -57,7 +57,7 @@ Plans:
 **Research**: Level 0 (pure internal work, no external dependencies)
 
 Plans:
-- [ ] 03-01: Message type definitions (Wave 1) - ChatMessage, ProtocolEnvelope, StreamingChunk
+- [x] 03-01: Message type definitions (Wave 1) - ChatMessage, ProtocolEnvelope, StreamingChunk
 - [ ] 03-02: Protocol encoder/decoder with streaming support (Wave 2)
 - [ ] 03-03: Message queue and delivery confirmation (Wave 2)
 - [ ] 03-04: Protocol integration with connection layer (Wave 3)
@@ -174,7 +174,7 @@ Phases execute in numeric order: 1 → 2 → 3 → ... → 12
 |-------|----------------|--------|-----------|
 | 1. Foundation | 3/3 | Complete | 2025-01-30 |
 | 2. Connection Layer | 3/3 | Complete | 2025-01-30 |
-| 3. Message Protocol | 0/4 | Planned | - |
+| 3. Message Protocol | 1/4 | In Progress | - |
 | 4. Chat Core | 0/3 | Not started | - |
 | 5. Streaming & State | 0/3 | Not started | - |
 | 6. Rich Output: Text | 0/3 | Not started | - |
