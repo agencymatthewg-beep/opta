@@ -21,7 +21,11 @@ extension NSImage {
 private enum MenuConstants {
     static let websiteURL = "https://optamize.biz"
     static let lifeManagerURL = "https://lm.optamize.biz"
+    static let aiCompareURL = "https://aicomp.optamize.biz"
     static let accessibilityLabel = "Opta Mini"
+
+    /// All Opta website URLs to open with "Open All"
+    static let allWebsiteURLs = [websiteURL, aiCompareURL, lifeManagerURL]
 
     enum StatusIndicator {
         static let running = "●"
@@ -331,49 +335,25 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let runningCount = monitor.runningCount
         let totalCount = OptaApp.allApps.count
 
+        // Status indicator only - no bulk actions here
         let countItem = NSMenuItem()
         countItem.title = "\(runningCount) of \(totalCount) running"
         countItem.isEnabled = false
         menu.addItem(countItem)
-
-        // Launch All (when not all apps are running)
-        if runningCount < totalCount {
-            let launchAllItem = NSMenuItem(
-                title: "Launch All Opta Apps",
-                action: #selector(launchAllApps),
-                keyEquivalent: "L"
-            )
-            launchAllItem.keyEquivalentModifierMask = [.command, .shift]
-            launchAllItem.target = self
-            launchAllItem.image = NSImage(systemSymbolName: MenuConstants.Icons.launchAll, accessibilityDescription: "Launch All")
-            menu.addItem(launchAllItem)
-        }
-
-        // Quit All (when apps are running)
-        if runningCount > 0 {
-            let quitAllItem = NSMenuItem(
-                title: "Quit All Opta Apps",
-                action: #selector(quitAllApps),
-                keyEquivalent: "Q"
-            )
-            quitAllItem.keyEquivalentModifierMask = [.command, .shift]
-            quitAllItem.target = self
-            quitAllItem.image = NSImage(systemSymbolName: MenuConstants.Icons.quitAll, accessibilityDescription: "Quit All")
-            menu.addItem(quitAllItem)
-        }
     }
 
     @MainActor
     private func addWebsiteSection(to menu: NSMenu) {
-        let websiteItem = NSMenuItem(
-            title: "Open Optamize Website",
-            action: #selector(openWebsite),
+        // Open ALL Opta websites in one click
+        let openAllItem = NSMenuItem(
+            title: "Open All Opta Websites",
+            action: #selector(openAllWebsites),
             keyEquivalent: "o"
         )
-        websiteItem.keyEquivalentModifierMask = [.command, .shift]
-        websiteItem.target = self
-        websiteItem.image = NSImage(systemSymbolName: MenuConstants.Icons.website, accessibilityDescription: "Website")
-        menu.addItem(websiteItem)
+        openAllItem.keyEquivalentModifierMask = [.command, .shift]
+        openAllItem.target = self
+        openAllItem.image = NSImage(systemSymbolName: MenuConstants.Icons.website, accessibilityDescription: "Open All Websites")
+        menu.addItem(openAllItem)
 
         let copyLinkItem = NSMenuItem(
             title: "Copy Website Link",
@@ -388,13 +368,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @MainActor
     private func addFooterSection(to menu: NSMenu) {
-        // Icon Color Submenu
-        let iconColorItem = NSMenuItem(title: "Icon Color", action: nil, keyEquivalent: "")
-        iconColorItem.image = NSImage(systemSymbolName: "paintbrush", accessibilityDescription: "Icon Color")
-        iconColorItem.submenu = buildIconColorSubmenu()
-        menu.addItem(iconColorItem)
-
-        // Notifications Toggle
+        // Notifications Toggle only (Icon Color removed per design spec)
         let notificationsEnabled = UserDefaults.standard.bool(forKey: "notificationsEnabled")
         let notifyItem = NSMenuItem(
             title: "Notifications",
@@ -408,15 +382,27 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         menu.addItem(NSMenuItem.separator())
 
+        // Footer actions - ALWAYS at bottom
         let restartItem = NSMenuItem(
             title: "Restart Opta Mini",
             action: #selector(restartOptaMini),
             keyEquivalent: "r"
         )
-        restartItem.keyEquivalentModifierMask = [.command, .shift]
+        restartItem.keyEquivalentModifierMask = [.option, .command]
         restartItem.target = self
         restartItem.image = NSImage(systemSymbolName: MenuConstants.Icons.restart, accessibilityDescription: "Restart")
         menu.addItem(restartItem)
+
+        // Quit All Opta Apps
+        let quitAllItem = NSMenuItem(
+            title: "Quit All Opta Apps",
+            action: #selector(quitAllApps),
+            keyEquivalent: "Q"
+        )
+        quitAllItem.keyEquivalentModifierMask = [.command, .shift]
+        quitAllItem.target = self
+        quitAllItem.image = NSImage(systemSymbolName: MenuConstants.Icons.quitAll, accessibilityDescription: "Quit All")
+        menu.addItem(quitAllItem)
 
         let quitItem = NSMenuItem(
             title: "Quit Opta Mini",
@@ -463,50 +449,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    // MARK: - Icon Color
-
-    @MainActor
-    private func buildIconColorSubmenu() -> NSMenu {
-        let submenu = NSMenu()
-        let currentColor = MenuBarIconColor.current
-
-        for color in MenuBarIconColor.allCases {
-            let item = NSMenuItem(
-                title: color.displayName,
-                action: #selector(changeIconColor(_:)),
-                keyEquivalent: ""
-            )
-            item.target = self
-            item.representedObject = color
-            item.state = (color == currentColor) ? .on : .off
-
-            // Create a colored circle indicator for each option
-            if let circleImage = NSImage(systemSymbolName: "circle.fill", accessibilityDescription: color.displayName) {
-                if color.isTemplate {
-                    circleImage.isTemplate = true
-                } else {
-                    circleImage.isTemplate = false
-                    let tintedImage = circleImage.tinted(with: color.color)
-                    item.image = tintedImage
-                }
-                if color.isTemplate {
-                    item.image = circleImage
-                }
-            }
-
-            submenu.addItem(item)
-        }
-
-        return submenu
-    }
-
-    @MainActor
-    @objc private func changeIconColor(_ sender: NSMenuItem) {
-        guard let color = sender.representedObject as? MenuBarIconColor else { return }
-        MenuBarIconColor.save(color)
-        updateMenuBarIcon()
-        rebuildMenu()
-    }
+    // MARK: - Settings Actions
 
     @MainActor
     @objc private func toggleNotifications() {
@@ -526,6 +469,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
         } else {
             NSApp.sendAction(Selector(("showPreferencesWindow:")), to: nil, from: nil)
+        }
+    }
+
+    @objc private func openAllWebsites() {
+        // Open all Opta websites in one click
+        for urlString in MenuConstants.allWebsiteURLs {
+            if let url = URL(string: urlString) {
+                NSWorkspace.shared.open(url)
+            }
         }
     }
 
