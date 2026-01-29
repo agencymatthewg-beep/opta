@@ -18,10 +18,16 @@ interface CentralCardContextType {
 
 const CentralCardContext = createContext<CentralCardContextType | null>(null);
 
+// Proximity threshold - card must be within this distance of center to be considered "central"
+const CENTRAL_THRESHOLD = 150; // pixels from viewport center
+// Throttle interval for scroll handling (16ms = ~60fps)
+const THROTTLE_MS = 16;
+
 export function CentralCardProvider({ children }: { children: ReactNode }) {
   const [centralCardId, setCentralCardId] = useState<string | null>(null);
   const cardsRef = useRef<Map<string, HTMLElement>>(new Map());
   const rafRef = useRef<number | null>(null);
+  const lastScrollTime = useRef<number>(0);
 
   const calculateCentralCard = useCallback(() => {
     const cards = cardsRef.current;
@@ -40,7 +46,8 @@ export function CentralCardProvider({ children }: { children: ReactNode }) {
       const distance = Math.abs(cardCenter - viewportCenter);
 
       // Only consider cards that are at least partially visible
-      if (rect.bottom > 0 && rect.top < window.innerHeight) {
+      // AND within the threshold distance of center
+      if (rect.bottom > 0 && rect.top < window.innerHeight && distance < CENTRAL_THRESHOLD) {
         if (distance < closestDistance) {
           closestDistance = distance;
           closestId = id;
@@ -52,6 +59,13 @@ export function CentralCardProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const handleScroll = useCallback(() => {
+    // Throttle scroll events on high-refresh-rate displays
+    const now = Date.now();
+    if (now - lastScrollTime.current < THROTTLE_MS) {
+      return;
+    }
+    lastScrollTime.current = now;
+
     if (rafRef.current) {
       cancelAnimationFrame(rafRef.current);
     }

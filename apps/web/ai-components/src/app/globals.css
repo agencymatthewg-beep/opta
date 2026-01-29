@@ -44,11 +44,48 @@
     @apply bg-opta-bg text-white antialiased;
     background: linear-gradient(180deg, #0a0a0f 0%, #0f0a1a 100%);
     min-height: 100vh;
+    /* Safe area inset for notched devices */
+    padding-bottom: env(safe-area-inset-bottom);
   }
 
   /* Smooth scrolling for touch devices */
   .modal-scroll {
     -webkit-overflow-scrolling: touch;
+  }
+
+  /* Reduced motion preference - accessibility */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /* Glass card styles */
+  .glass-card {
+    background: rgba(139, 92, 246, 0.08);
+    border: 1px solid rgba(139, 92, 246, 0.2);
+  }
+
+  .glass-card-expanded {
+    background: rgba(139, 92, 246, 0.12);
+    border: 1px solid rgba(139, 92, 246, 0.35);
+  }
+
+  /* Mobile bottom navigation */
+  .mobile-nav {
+    padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));
+  }
+
+  /* Sticky header with safe area */
+  .sticky-header {
+    padding-top: env(safe-area-inset-top);
   }
 }
 
@@ -99,9 +136,29 @@
 
   .animate-float {
     animation: float 3s ease-in-out infinite;
+    will-change: transform;
   }
 
   .animate-pulse-glow {
     animation: pulse-glow 2s ease-in-out infinite;
+    will-change: opacity;
+  }
+
+  /* GPU acceleration hints for animations */
+  .gpu-accelerated {
+    will-change: transform, opacity;
+    transform: translateZ(0);
+  }
+
+  /* Horizontal scroll indicator for mobile */
+  .scroll-hint-x::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 40px;
+    background: linear-gradient(to right, transparent, var(--color-opta-bg));
+    pointer-events: none;
   }
 }

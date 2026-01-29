@@ -1,5 +1,6 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
+import { Providers } from "@/components/providers/Providers";
 import "./globals.css";
 
 const inter = Inter({
@@ -18,6 +19,12 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -26,9 +33,11 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark scroll-smooth">
       <body className={`${inter.variable} font-sans antialiased bg-opta-bg`}>
-        <main className="min-h-screen">
-          {children}
-        </main>
+        <Providers>
+          <main className="min-h-screen">
+            {children}
+          </main>
+        </Providers>
       </body>
     </html>
   );

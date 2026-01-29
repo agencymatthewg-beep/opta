@@ -92,7 +92,7 @@ function BenchmarkItem({ benchmark, index }: { benchmark: BenchmarkScore; index:
       className="flex flex-col gap-1"
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="text-[10px] text-text-secondary">{benchmark.name}</span>
+        <span className="text-xs text-text-secondary">{benchmark.name}</span>
         <span className="text-xs font-mono text-white">
           {benchmark.score}
           {benchmark.maxScore && <span className="text-text-muted">/{benchmark.maxScore}</span>}
@@ -157,9 +157,19 @@ export function ModelCard({
       onHoverStart={isMobile ? undefined : () => setIsHovered(true)}
       onHoverEnd={isMobile ? undefined : () => setIsHovered(false)}
       onClick={handleClick}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          handleClick();
+        }
+      }}
       transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+      role={benchmarks.length > 0 ? "button" : undefined}
+      tabIndex={benchmarks.length > 0 ? 0 : undefined}
+      aria-expanded={benchmarks.length > 0 ? isExpanded : undefined}
+      aria-label={`${name} by ${company}, ranked #${rank}${isExpanded ? ", expanded to show benchmarks" : ""}`}
       className={cn(
-        "relative group w-full max-w-4xl mx-auto",
+        "relative group w-full max-w-4xl mx-auto focus:outline-none focus-visible:ring-2 focus-visible:ring-neon-cyan focus-visible:ring-offset-2 focus-visible:ring-offset-opta-bg rounded-2xl",
         !isMobile && benchmarks.length > 0 && "cursor-pointer",
         className
       )}
@@ -237,7 +247,7 @@ export function ModelCard({
                       <span
                         key={index}
                         className={cn(
-                          "px-2 py-0.5 text-[10px] font-medium rounded-full border uppercase tracking-wider",
+                          "px-2 py-0.5 text-[11px] font-medium rounded-full border uppercase tracking-wider",
                           style.bg, style.text, style.border
                         )}
                       >
@@ -249,17 +259,17 @@ export function ModelCard({
 
                 {/* Score + Status - STATIC */}
                 <div className="flex items-center gap-2 mt-2">
-                  {update && <span className="text-[10px] text-text-muted font-mono">{update}</span>}
+                  {update && <span className="text-[11px] text-text-muted font-mono">{update}</span>}
 
                   {score !== undefined && (
                     <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-glow/10 border border-purple-glow/30">
                       <span className="text-sm font-mono text-purple-glow">{score}</span>
-                      <span className="text-[10px] text-text-muted">pts</span>
+                      <span className="text-[11px] text-text-muted">pts</span>
                     </div>
                   )}
 
                   <span className={cn(
-                    "px-2 py-0.5 text-[10px] font-medium rounded-full border uppercase tracking-wider",
+                    "px-2 py-0.5 text-[11px] font-medium rounded-full border uppercase tracking-wider",
                     statusColors[status]
                   )}>
                     {status}
@@ -315,7 +325,7 @@ export function ModelCard({
                       <span
                         key={index}
                         className={cn(
-                          "px-2 py-0.5 text-[10px] font-medium rounded-full border uppercase tracking-wider",
+                          "px-2 py-0.5 text-[11px] font-medium rounded-full border uppercase tracking-wider",
                           style.bg, style.text, style.border
                         )}
                       >
@@ -326,11 +336,11 @@ export function ModelCard({
                   {score !== undefined && (
                     <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-glow/10 border border-purple-glow/30">
                       <span className="text-sm font-mono text-purple-glow">{score}</span>
-                      <span className="text-[10px] text-text-muted">pts</span>
+                      <span className="text-[11px] text-text-muted">pts</span>
                     </div>
                   )}
                   <span className={cn(
-                    "px-2 py-0.5 text-[10px] font-medium rounded-full border uppercase tracking-wider",
+                    "px-2 py-0.5 text-[11px] font-medium rounded-full border uppercase tracking-wider",
                     statusColors[status]
                   )}>
                     {status}
@@ -348,7 +358,7 @@ export function ModelCard({
                     transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                     className="border-t border-purple-glow/20 pt-4 overflow-hidden"
                   >
-                    <p className="text-[10px] font-mono text-purple-light uppercase tracking-wider mb-3 text-center">
+                    <p className="text-xs font-mono text-purple-light uppercase tracking-wider mb-3 text-center">
                       Benchmark Scores
                     </p>
                     <div className="space-y-3">

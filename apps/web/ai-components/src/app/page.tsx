@@ -323,22 +323,65 @@ const newsData = [
   },
 ];
 
-// Sticky navigation component
+// Sticky navigation component (desktop only - mobile uses bottom nav)
 function StickyNav() {
   return (
     <motion.nav
       initial={{ y: -100 }}
       animate={{ y: 0 }}
-      className="fixed top-0 left-0 right-0 z-50 bg-opta-bg/80 backdrop-blur-xl border-b border-glass-border"
+      className="fixed top-0 left-0 right-0 z-50 bg-opta-bg/80 backdrop-blur-xl border-b border-glass-border sticky-header"
     >
       <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
         <span className="text-xl font-bold text-white">AI Comp</span>
+        {/* Desktop navigation - hidden on mobile */}
         <div className="hidden md:flex items-center gap-6">
-          <a href="#models" className="text-sm text-text-secondary hover:text-white transition-colors">Models</a>
-          <a href="#benchmarks" className="text-sm text-text-secondary hover:text-white transition-colors">Benchmarks</a>
-          <a href="#pricing" className="text-sm text-text-secondary hover:text-white transition-colors">Pricing</a>
-          <a href="#news" className="text-sm text-text-secondary hover:text-white transition-colors">News</a>
+          <a href="#models" className="min-h-[44px] min-w-[44px] flex items-center justify-center text-sm text-text-secondary hover:text-white transition-colors">Models</a>
+          <a href="#benchmarks" className="min-h-[44px] min-w-[44px] flex items-center justify-center text-sm text-text-secondary hover:text-white transition-colors">Benchmarks</a>
+          <a href="#pricing" className="min-h-[44px] min-w-[44px] flex items-center justify-center text-sm text-text-secondary hover:text-white transition-colors">Pricing</a>
+          <a href="#news" className="min-h-[44px] min-w-[44px] flex items-center justify-center text-sm text-text-secondary hover:text-white transition-colors">News</a>
         </div>
+      </div>
+    </motion.nav>
+  );
+}
+
+// Mobile bottom navigation (visible on mobile only)
+function MobileBottomNav() {
+  return (
+    <motion.nav
+      initial={{ y: 100 }}
+      animate={{ y: 0 }}
+      className="fixed bottom-0 left-0 right-0 z-50 bg-opta-bg/95 backdrop-blur-xl border-t border-glass-border md:hidden mobile-nav"
+    >
+      <div className="flex items-stretch justify-around">
+        <a
+          href="#models"
+          className="flex-1 flex flex-col items-center justify-center gap-1 py-3 min-h-[56px] text-text-secondary hover:text-neon-cyan active:text-neon-cyan transition-colors"
+        >
+          <Trophy className="w-5 h-5" />
+          <span className="text-xs">Models</span>
+        </a>
+        <a
+          href="#benchmarks"
+          className="flex-1 flex flex-col items-center justify-center gap-1 py-3 min-h-[56px] text-text-secondary hover:text-neon-green active:text-neon-green transition-colors"
+        >
+          <BarChart3 className="w-5 h-5" />
+          <span className="text-xs">Benchmarks</span>
+        </a>
+        <a
+          href="#pricing"
+          className="flex-1 flex flex-col items-center justify-center gap-1 py-3 min-h-[56px] text-text-secondary hover:text-neon-amber active:text-neon-amber transition-colors"
+        >
+          <DollarSign className="w-5 h-5" />
+          <span className="text-xs">Pricing</span>
+        </a>
+        <a
+          href="#news"
+          className="flex-1 flex flex-col items-center justify-center gap-1 py-3 min-h-[56px] text-text-secondary hover:text-neon-coral active:text-neon-coral transition-colors"
+        >
+          <Newspaper className="w-5 h-5" />
+          <span className="text-xs">News</span>
+        </a>
       </div>
     </motion.nav>
   );
@@ -346,9 +389,12 @@ function StickyNav() {
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen relative">
-      {/* Sticky Navigation */}
+    <div className="min-h-screen relative pb-20 md:pb-0">
+      {/* Sticky Navigation (desktop) */}
       <StickyNav />
+
+      {/* Mobile Bottom Navigation */}
+      <MobileBottomNav />
 
       {/* Background decorative diamonds */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
@@ -506,7 +552,9 @@ export default function HomePage() {
           iconColor="text-neon-amber"
         />
 
-        <div className="max-w-4xl mx-auto overflow-x-auto">
+        <div className="max-w-4xl mx-auto overflow-x-auto relative scroll-hint-x md:scroll-hint-x-none">
+          {/* Mobile scroll hint */}
+          <p className="text-xs text-text-muted mb-2 md:hidden text-center">← Scroll horizontally to see all columns →</p>
           <motion.table
             className="w-full"
             initial={{ opacity: 0 }}
