@@ -236,6 +236,83 @@ public extension View {
     }
 }
 
+// MARK: - Glow Pulse Animation
+
+/// Pulsing glow effect for activity indication
+///
+/// Creates a rhythmic "breathing" glow effect with:
+/// - 2s ease-in-out infinite cycle
+/// - Oscillating shadow opacity (0.3 +/- 0.2)
+/// - Oscillating shadow radius (12 +/- 8)
+///
+/// Respects Reduce Motion accessibility setting.
+public struct GlowPulseModifier: ViewModifier {
+    let color: Color
+    let isActive: Bool
+
+    @State private var isPulsing = false
+
+    public func body(content: Content) -> some View {
+        content
+            .shadow(
+                color: color.opacity(isActive && !ClawdbotMotion.isReduceMotionEnabled ? pulseOpacity : (isActive ? 0.3 : 0)),
+                radius: isActive && !ClawdbotMotion.isReduceMotionEnabled ? pulseRadius : (isActive ? 12 : 0)
+            )
+            .onAppear {
+                guard isActive && !ClawdbotMotion.isReduceMotionEnabled else { return }
+                startPulsing()
+            }
+            .onChange(of: isActive) { _, newValue in
+                if newValue && !ClawdbotMotion.isReduceMotionEnabled {
+                    startPulsing()
+                }
+            }
+    }
+
+    private var pulseOpacity: Double {
+        isPulsing ? 0.5 : 0.3
+    }
+
+    private var pulseRadius: CGFloat {
+        isPulsing ? 20 : 12
+    }
+
+    private func startPulsing() {
+        withAnimation(.easeInOut(duration: 1).repeatForever(autoreverses: true)) {
+            isPulsing = true
+        }
+    }
+}
+
+public extension View {
+    /// Glow pulse animation for activity indication
+    ///
+    /// Creates a 2s breathing glow effect with oscillating opacity and radius.
+    /// When Reduce Motion is enabled, shows static glow without animation.
+    ///
+    /// - Parameters:
+    ///   - color: The glow color (default: clawdbotPurple)
+    ///   - isActive: Whether the glow should be active
+    func glowPulse(color: Color = .clawdbotPurple, isActive: Bool = true) -> some View {
+        modifier(GlowPulseModifier(color: color, isActive: isActive))
+    }
+
+    /// Purple glow pulse (most common)
+    func glowPulsePurple(isActive: Bool = true) -> some View {
+        glowPulse(color: .clawdbotPurple, isActive: isActive)
+    }
+
+    /// Cyan glow pulse
+    func glowPulseCyan(isActive: Bool = true) -> some View {
+        glowPulse(color: .clawdbotCyan, isActive: isActive)
+    }
+
+    /// Green glow pulse
+    func glowPulseGreen(isActive: Bool = true) -> some View {
+        glowPulse(color: .clawdbotGreen, isActive: isActive)
+    }
+}
+
 // MARK: - Usage Examples Reference
 /*
  // Button press
