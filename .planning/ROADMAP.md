@@ -15,7 +15,7 @@ None (expertise files not available)
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
 - [x] **Phase 1: Foundation** - Project structure, shared packages, design system
-- [ ] **Phase 2: Connection Layer** - WebSocket client, state management, reconnection
+- [x] **Phase 2: Connection Layer** - WebSocket client, state management, reconnection
 - [ ] **Phase 3: Message Protocol** - Clawdbot JSON protocol implementation
 - [ ] **Phase 4: Chat Core** - Basic chat UI, message list, input field
 - [ ] **Phase 5: Streaming & State** - Real-time streaming, thinking/typing indicators
@@ -47,9 +47,9 @@ Plans:
 **Research decision**: URLSessionWebSocketTask (native, no dependencies, mature on iOS 17+)
 
 Plans:
-- [ ] 02-01: WebSocket client implementation (Wave 1)
-- [ ] 02-02: Connection state machine and reconnection logic (Wave 2)
-- [ ] 02-03: Network reachability and Tailscale detection (Wave 2)
+- [x] 02-01: WebSocket client implementation (Wave 1)
+- [x] 02-02: Connection state machine and reconnection logic (Wave 2)
+- [x] 02-03: Network reachability and Tailscale detection (Wave 2)
 
 ### Phase 3: Message Protocol
 **Goal**: Implement Clawdbot JSON message protocol parsing and serialization
@@ -173,7 +173,7 @@ Phases execute in numeric order: 1 → 2 → 3 → ... → 12
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 3/3 | Complete | 2025-01-30 |
-| 2. Connection Layer | 0/3 | Planned | - |
+| 2. Connection Layer | 3/3 | Complete | 2025-01-30 |
 | 3. Message Protocol | 0/3 | Not started | - |
 | 4. Chat Core | 0/3 | Not started | - |
 | 5. Streaming & State | 0/3 | Not started | - |
