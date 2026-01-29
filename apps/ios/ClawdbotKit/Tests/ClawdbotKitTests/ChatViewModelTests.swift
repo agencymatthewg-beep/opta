@@ -14,18 +14,30 @@ final class ChatViewModelTests: XCTestCase {
 
     var handler: ProtocolHandler!
     var viewModel: ChatViewModel!
+    var messageStore: MessageStore!
     var cancellables: Set<AnyCancellable>!
+    var testConversationId: String!
 
     override func setUp() async throws {
+        // Use unique conversation ID per test to prevent cross-contamination
+        testConversationId = "test_viewmodel_\(UUID().uuidString)"
+        messageStore = MessageStore(conversationId: testConversationId)
         handler = ProtocolHandler()
-        viewModel = ChatViewModel(protocolHandler: handler)
+        viewModel = ChatViewModel(protocolHandler: handler, messageStore: messageStore)
         cancellables = Set<AnyCancellable>()
+
+        // Wait for initial history load to complete
+        try? await Task.sleep(for: .milliseconds(50))
     }
 
     override func tearDown() async throws {
+        // Clean up test store
+        await messageStore.clearHistory()
         cancellables = nil
         viewModel = nil
+        messageStore = nil
         handler = nil
+        testConversationId = nil
     }
 
     // MARK: - Send Tests
@@ -210,9 +222,9 @@ final class ChatViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.connectionState, .connected)
     }
 
-    func testInitialLoadingState() async {
-        // Given: New view model
-        // Then: Not loading
+    func testLoadingStateCompletesAfterInit() async {
+        // Given: View model that was set up in setUp (which waited for load)
+        // Then: No longer loading (history load completed)
         XCTAssertFalse(viewModel.isLoading)
     }
 
