@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2025-01-29)
 
 **Core value:** Always know what your bot is doing. Real-time thinking state, typing indicators, and streaming responses with rich output formats.
-**Current focus:** Phase 4 — Chat Core Complete
+**Current focus:** Phase 5 — Streaming & State (Wave 2)
 
 ## Current Position
 
-Phase: 4 of 12 (Chat Core)
-Plan: 3 of 3 complete in current phase
-Status: Phase Complete
-Last activity: 2026-01-30 — Completed Plan 04-03 (Message Persistence)
+Phase: 5 of 12 (Streaming & State)
+Plan: 2 of 3 complete in current phase
+Status: In Progress
+Last activity: 2026-01-30 — Completed Plan 05-02 (Thinking State Visualization)
 
-Progress: ███████░░░ 38%
+Progress: ███████▒░░ 42%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 13
-- Average duration: 5.1 min
-- Total execution time: 1.1 hours
+- Total plans completed: 15
+- Average duration: 5.0 min
+- Total execution time: 1.25 hours
 
 **By Phase:**
 
@@ -31,10 +31,11 @@ Progress: ███████░░░ 38%
 | 2. Connection | 3/3 | 22 min | 7.3 min |
 | 3. Protocol | 4/4 | 10 min | 2.5 min |
 | 4. Chat Core | 3/3 | 11 min | 3.7 min |
+| 5. Streaming | 2/3 | 10 min | 5 min |
 
 **Recent Trend:**
-- Last 5 plans: 03-04 (3 min), 04-01 (6 min), 04-02 (from context), 04-03 (5 min)
-- Trend: Persistence/testing faster than UI layout work
+- Last 5 plans: 04-02 (from context), 04-03 (5 min), 05-01 (5 min), 05-02 (5 min)
+- Trend: Streaming state features consistent ~5 min per plan
 
 ## Accumulated Context
 
@@ -94,6 +95,12 @@ Recent decisions affecting current work:
 | 04-03 | ISO8601 date encoding | Matches ProtocolCodec, consistent JSON format |
 | 04-03 | 1000 message history limit | Prevents memory pressure on long conversations |
 | 04-03 | knownMessageIDs Set for deduplication | O(1) lookup prevents double entries on reconnect |
+| 05-01 | streamingMessages dictionary for partial content | Maps messageID -> accumulated text for real-time display |
+| 05-01 | handleStreamingChunk removes on isFinal | Cleanup streaming state when full message arrives |
+| 05-02 | botState as BotState enum | Type-safe state for SwiftUI binding |
+| 05-02 | botStateDetail for tool descriptions | Shows "Searching web..." during toolUse |
+| 05-02 | Timer-based staggered animation | Smooth sequential dot bounce in ThinkingIndicator |
+| 05-02 | Indicator hidden when streaming | Prevents overlap with typing cursor |
 
 ### Deferred Issues
 
@@ -110,9 +117,37 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-30
-Stopped at: Completed Phase 4 (Chat Core)
+Stopped at: Completed Phase 5 Plan 02 (Thinking State Visualization)
 Resume file: None
-Next action: Plan Phase 5 (Streaming & State)
+Next action: Execute Phase 5 Plan 03 (Typing Indicator)
+
+## Phase 5 In Progress
+
+2 of 3 plans complete. Streaming & State provides:
+
+**05-01: Streaming Message Rendering**
+- streamingChunks Combine publisher on ProtocolHandler
+- ChatViewModel streamingMessages dictionary for partial content
+- handleStreamingChunk accumulates content, removes on isFinal
+- MessageBubble streaming initializer with animated cursor
+- ChatView displays streaming messages in real-time
+- Auto-scroll triggers on streaming content changes
+- 8 new streaming tests
+
+**05-02: Thinking State Visualization**
+- ChatViewModel botState and botStateDetail properties
+- handleBotStateUpdate() processes state from ProtocolHandler
+- ThinkingIndicator SwiftUI component with animated dots
+- Timer-based staggered animation for bounce effect
+- Optional detail text for tool use (e.g., "Searching web...")
+- ChatView shows indicator when thinking/toolUse (not streaming)
+- Auto-scroll on botState changes
+- 6 new bot state tests
+- 115 total tests pass
+
+**05-03: Typing Indicator (NEXT)**
+- Typing cursor in MessageBubble when botState == .typing
+- Blinking vertical bar animation
 
 ## Phase 4 Complete
 
