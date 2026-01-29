@@ -19,7 +19,7 @@ None (expertise files not available)
 - [x] **Phase 3: Message Protocol** - Clawdbot JSON protocol implementation
 - [x] **Phase 4: Chat Core** - Basic chat UI, message list, input field
 - [x] **Phase 5: Streaming & State** - Real-time streaming, thinking/typing indicators
-- [ ] **Phase 6.1: Opta Aesthetic Alignment** - INSERTED: Typography (Sora), glass components, animations
+- [x] **Phase 6.1: Opta Aesthetic Alignment** - INSERTED: Typography (Sora), glass components, animations
 - [ ] **Phase 6: Rich Output: Text** - Bullet points, code blocks, formatted text
 - [ ] **Phase 7: Rich Output: Visual** - Dynamic tables, graphs, inline images
 - [ ] **Phase 8: GenUI Rendering** - Interactive component loading in chat
@@ -93,9 +93,9 @@ Plans:
 **Plans**: 3 (planned)
 
 Plans:
-- [ ] 06.1-01: Typography System - Sora font, MoonlightText, tracking (Wave 1)
-- [ ] 06.1-02: Glass Components - 3-level glass, obsidian, status badge (Wave 1)
-- [ ] 06.1-03: Animation Enhancements - Ignition, glow pulse, Reduce Motion (Wave 2)
+- [x] 06.1-01: Typography System - Sora font, MoonlightText, tracking (Wave 1)
+- [x] 06.1-02: Glass Components - 3-level glass, obsidian, status badge (Wave 1)
+- [x] 06.1-03: Animation Enhancements - Ignition, glow pulse, Reduce Motion (Wave 2)
 
 ### Phase 6: Rich Output: Text
 **Goal**: Support bullet points, code blocks, and formatted text rendering
@@ -189,7 +189,7 @@ Phases execute in numeric order: 1 → 2 → 3 → ... → 12
 | 3. Message Protocol | 4/4 | Complete | 2026-01-30 |
 | 4. Chat Core | 3/3 | Complete | 2026-01-30 |
 | 5. Streaming & State | 3/3 | Complete | 2026-01-30 |
-| 6.1. Opta Aesthetic Alignment | 0/3 | Planned | - |
+| 6.1. Opta Aesthetic Alignment | 3/3 | Complete | 2026-01-30 |
 | 6. Rich Output: Text | 0/3 | Not started | - |
 | 7. Rich Output: Visual | 0/3 | Not started | - |
 | 8. GenUI Rendering | 0/3 | Not started | - |
