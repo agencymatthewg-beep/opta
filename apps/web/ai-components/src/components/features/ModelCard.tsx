@@ -2,10 +2,10 @@
 
 import { useState, useRef, useId } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CompanyLogo } from "./CompanyLogo";
 import { useIsMobile } from "@/lib/hooks/useMediaQuery";
-import { useCentralCard } from "@/lib/hooks/useCentralCard";
 
 // Model type definitions
 export type ModelType = "llm" | "web" | "cli" | "api" | "multimodal" | "embedding" | "image" | "audio" | "video";
@@ -123,12 +123,13 @@ export function ModelCard({
 }: ModelCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [isPinned, setIsPinned] = useState(false);
+  const [mobileExpanded, setMobileExpanded] = useState(false);
   const isMobile = useIsMobile();
   const cardRef = useRef<HTMLDivElement>(null);
   const cardId = useId();
 
-  const isCentral = useCentralCard(cardId, cardRef);
-  const isExpanded = isMobile ? isCentral : (isHovered || isPinned);
+  // Desktop: hover/pin to expand | Mobile: manual button press only
+  const isExpanded = isMobile ? mobileExpanded : (isHovered || isPinned);
   const showBenchmarks = isExpanded && benchmarks.length > 0;
 
   const statusColors = {
@@ -301,46 +302,36 @@ export function ModelCard({
               </div>
             </div>
           ) : (
-            /* Mobile: Vertical stack - STATIC header, animated benchmarks */
-            <div className="space-y-4">
-              {/* Header: STATIC - Name + Diamond + Tags (always visible, no animation) */}
-              <div className="text-center">
-                <h3 className={cn(
-                  "text-lg font-semibold transition-colors inline-flex items-center gap-2 mb-2",
-                  isExpanded ? "text-neon-coral" : "text-neon-pink"
-                )}>
-                  <CompanyLogo company={company} size={20} />
-                  {name}
-                  <span className="text-text-secondary text-sm font-normal">• {company}</span>
-                </h3>
-
-                <div className="flex justify-center mb-3">
-                  <DiamondRank rank={rank} isExpanded={isExpanded} size="large" />
+            /* Mobile: Compact layout with inline scores, expand button for graphs */
+            <div className="space-y-3">
+              {/* Top Row: Name + Diamond + Status */}
+              <div className="flex items-center gap-3">
+                {/* Diamond Rank - Left side */}
+                <div className="flex-shrink-0">
+                  <DiamondRank rank={rank} isExpanded={isExpanded} size="normal" />
                 </div>
 
-                <div className="flex items-center justify-center gap-1.5 flex-wrap">
-                  {tags.map((tag, index) => {
-                    const style = tagStyles[tag.type];
-                    return (
-                      <span
-                        key={index}
-                        className={cn(
-                          "px-2 py-0.5 text-[11px] font-medium rounded-full border uppercase tracking-wider",
-                          style.bg, style.text, style.border
-                        )}
-                      >
-                        {style.label}
-                      </span>
-                    );
-                  })}
+                {/* Model Info - Center */}
+                <div className="flex-1 min-w-0">
+                  <h3 className={cn(
+                    "text-base font-semibold transition-colors flex items-center gap-1.5 truncate",
+                    isExpanded ? "text-neon-coral" : "text-neon-pink"
+                  )}>
+                    <CompanyLogo company={company} size={18} />
+                    <span className="truncate">{name}</span>
+                  </h3>
+                  <p className="text-xs text-text-secondary truncate">{company}</p>
+                </div>
+
+                {/* Score + Status - Right side */}
+                <div className="flex-shrink-0 flex items-center gap-1.5">
                   {score !== undefined && (
-                    <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-glow/10 border border-purple-glow/30">
+                    <div className="flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-purple-glow/10 border border-purple-glow/30">
                       <span className="text-sm font-mono text-purple-glow">{score}</span>
-                      <span className="text-[11px] text-text-muted">pts</span>
                     </div>
                   )}
                   <span className={cn(
-                    "px-2 py-0.5 text-[11px] font-medium rounded-full border uppercase tracking-wider",
+                    "px-1.5 py-0.5 text-[10px] font-medium rounded-full border uppercase",
                     statusColors[status]
                   )}>
                     {status}
@@ -348,7 +339,64 @@ export function ModelCard({
                 </div>
               </div>
 
-              {/* Benchmarks Section - Only this part animates */}
+              {/* Tags Row */}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {tags.map((tag, index) => {
+                  const style = tagStyles[tag.type];
+                  return (
+                    <span
+                      key={index}
+                      className={cn(
+                        "px-2 py-0.5 text-[10px] font-medium rounded-full border uppercase tracking-wider",
+                        style.bg, style.text, style.border
+                      )}
+                    >
+                      {style.label}
+                    </span>
+                  );
+                })}
+              </div>
+
+              {/* Inline Benchmark Scores - Always visible, compact grid */}
+              {benchmarks.length > 0 && (
+                <div className="grid grid-cols-3 gap-x-3 gap-y-1.5 pt-2 border-t border-purple-glow/10">
+                  {benchmarks.map((benchmark) => (
+                    <div key={benchmark.name} className="flex items-center justify-between gap-1">
+                      <span className="text-[10px] text-text-muted truncate">{benchmark.name}</span>
+                      <span className="text-xs font-mono text-white">{benchmark.score}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Expand Button - Show Graph */}
+              {benchmarks.length > 0 && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setMobileExpanded(!mobileExpanded);
+                  }}
+                  className={cn(
+                    "w-full flex items-center justify-center gap-2 py-2 rounded-lg transition-all",
+                    "min-h-[44px] active:scale-[0.98]",
+                    mobileExpanded
+                      ? "bg-neon-green/20 text-neon-green border border-neon-green/30"
+                      : "bg-purple-glow/10 text-purple-light border border-purple-glow/20 hover:bg-purple-glow/20"
+                  )}
+                >
+                  <span className="text-xs font-medium uppercase tracking-wider">
+                    {mobileExpanded ? "Hide Graph" : "Show Graph"}
+                  </span>
+                  <motion.div
+                    animate={{ rotate: mobileExpanded ? 180 : 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <ChevronDown className="w-4 h-4" />
+                  </motion.div>
+                </button>
+              )}
+
+              {/* Expanded Benchmarks with Progress Bars - Only on button press */}
               <AnimatePresence>
                 {showBenchmarks && (
                   <motion.div
@@ -359,7 +407,7 @@ export function ModelCard({
                     className="border-t border-purple-glow/20 pt-4 overflow-hidden"
                   >
                     <p className="text-xs font-mono text-purple-light uppercase tracking-wider mb-3 text-center">
-                      Benchmark Scores
+                      Benchmark Breakdown
                     </p>
                     <div className="space-y-3">
                       {benchmarks.map((benchmark, index) => (
