@@ -79,3 +79,72 @@ public extension Font {
     /// Badge font (12pt regular) - iOS equivalent of 0.8rem
     static var soraBadge: Font { .sora(12, weight: .regular) }
 }
+
+// MARK: - Moonlight Gradient Text
+
+/// Gradient text view matching Opta Life Manager hero style
+///
+/// Displays text with the signature Moonlight gradient (white -> violet -> indigo)
+/// and atmospheric purple glow shadow.
+///
+/// Usage:
+/// ```swift
+/// MoonlightText("OPTA")
+/// MoonlightText("Custom", size: 24, weight: .semibold)
+/// ```
+public struct MoonlightText: View {
+    let text: String
+    let size: CGFloat
+    let weight: Font.Weight
+    let tracking: CGFloat
+
+    /// Create a MoonlightText view
+    /// - Parameters:
+    ///   - text: The text to display
+    ///   - size: Font size in points (default: 34pt for hero)
+    ///   - weight: Font weight (default: .bold)
+    ///   - tracking: Letter spacing as em ratio (default: 0.12 for hero style)
+    public init(
+        _ text: String,
+        size: CGFloat = 34,
+        weight: Font.Weight = .bold,
+        tracking: CGFloat = 0.12
+    ) {
+        self.text = text
+        self.size = size
+        self.weight = weight
+        self.tracking = tracking
+    }
+
+    public var body: some View {
+        Text(text)
+            .font(.sora(size, weight: weight))
+            .tracking(size * tracking)
+            .foregroundStyle(LinearGradient.moonlight)
+            .shadow(color: .clawdbotPurple.opacity(0.5), radius: 40, x: 0, y: 0)
+    }
+}
+
+// MARK: - Moonlight Gradient Definition
+
+public extension LinearGradient {
+    /// The signature Opta moonlight gradient (white -> violet -> indigo)
+    ///
+    /// Gradient stops:
+    /// - 0%: #fafafa (White)
+    /// - 50%: #a855f7 (Electric Violet)
+    /// - 100%: #6366f1 (Indigo)
+    ///
+    /// Direction: top to bottom (180deg), mimicking overhead lighting
+    static var moonlight: LinearGradient {
+        LinearGradient(
+            colors: [
+                Color(hex: "fafafa"),
+                Color(hex: "a855f7"),
+                Color(hex: "6366f1")
+            ],
+            startPoint: .top,
+            endPoint: .bottom
+        )
+    }
+}
