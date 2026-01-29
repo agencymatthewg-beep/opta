@@ -55,6 +55,9 @@ public actor ProtocolHandler {
     /// Publisher for bot state updates
     public nonisolated let botStateUpdates = PassthroughSubject<BotStateUpdate, Never>()
 
+    /// Publisher for streaming chunks (for real-time UI updates)
+    public nonisolated let streamingChunks = PassthroughSubject<StreamingChunk, Never>()
+
     // MARK: - Initialization
 
     public init(queueConfig: MessageQueueConfig = .default) {
@@ -138,6 +141,7 @@ public actor ProtocolHandler {
                 let chunk = envelope.payload
                 await assembler.addChunk(chunk)
                 delegate?.protocolHandler(self, didReceiveChunk: chunk)
+                streamingChunks.send(chunk)
 
                 // Check if stream is complete
                 if chunk.isFinal {

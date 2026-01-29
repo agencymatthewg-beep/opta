@@ -6,6 +6,7 @@
 //
 
 import XCTest
+import Combine
 @testable import ClawdbotKit
 
 /// Mock delegate for testing
@@ -41,11 +42,19 @@ final class ProtocolHandlerTests: XCTestCase {
 
     var handler: ProtocolHandler!
     var delegate: MockProtocolDelegate!
+    var cancellables: Set<AnyCancellable>!
 
     override func setUp() async throws {
         handler = ProtocolHandler()
         delegate = MockProtocolDelegate()
+        cancellables = Set<AnyCancellable>()
         await handler.setDelegate(delegate)
+    }
+
+    override func tearDown() async throws {
+        cancellables = nil
+        delegate = nil
+        handler = nil
     }
 
     // MARK: - Incoming Message Tests
@@ -247,5 +256,85 @@ final class ProtocolHandlerTests: XCTestCase {
         // Content should be empty after reset
         content = await handler.streamingContent(for: "reset-test")
         XCTAssertTrue(content.isEmpty)
+    }
+
+    // MARK: - Combine Publisher Tests
+
+    func testStreamingChunksPublisher() async {
+        // Given: Subscribe to streaming chunks publisher
+        var receivedChunks: [StreamingChunk] = []
+        let expectation = XCTestExpectation(description: "Receive streaming chunk via publisher")
+
+        handler.streamingChunks
+            .sink { chunk in
+                receivedChunks.append(chunk)
+                expectation.fulfill()
+            }
+            .store(in: &cancellables)
+
+        // When: Send a streaming chunk
+        let json = """
+        {
+            "version": "1.0",
+            "type": "streaming.chunk",
+            "sequence": 10,
+            "payload": {
+                "messageID": {"value": "publisher-test"},
+                "chunkIndex": 0,
+                "content": "Test chunk content",
+                "isFinal": false
+            },
+            "serverTimestamp": null
+        }
+        """
+
+        await handler.handleIncoming(json)
+
+        // Then: Chunk received via publisher
+        await fulfillment(of: [expectation], timeout: 1.0)
+        XCTAssertEqual(receivedChunks.count, 1)
+        XCTAssertEqual(receivedChunks.first?.content, "Test chunk content")
+        XCTAssertEqual(receivedChunks.first?.messageID.value, "publisher-test")
+    }
+
+    func testStreamingChunksPublisherReceivesMultipleChunks() async {
+        // Given: Subscribe to streaming chunks publisher
+        var receivedChunks: [StreamingChunk] = []
+        let expectation = XCTestExpectation(description: "Receive multiple streaming chunks")
+        expectation.expectedFulfillmentCount = 3
+
+        handler.streamingChunks
+            .sink { chunk in
+                receivedChunks.append(chunk)
+                expectation.fulfill()
+            }
+            .store(in: &cancellables)
+
+        // When: Send multiple streaming chunks
+        for i in 0..<3 {
+            let json = """
+            {
+                "version": "1.0",
+                "type": "streaming.chunk",
+                "sequence": \(10 + i),
+                "payload": {
+                    "messageID": {"value": "multi-chunk-test"},
+                    "chunkIndex": \(i),
+                    "content": "Chunk \(i)",
+                    "isFinal": \(i == 2 ? "true" : "false")
+                },
+                "serverTimestamp": null
+            }
+            """
+            await handler.handleIncoming(json)
+        }
+
+        // Then: All chunks received via publisher
+        await fulfillment(of: [expectation], timeout: 1.0)
+        XCTAssertEqual(receivedChunks.count, 3)
+        XCTAssertEqual(receivedChunks[0].content, "Chunk 0")
+        XCTAssertEqual(receivedChunks[1].content, "Chunk 1")
+        XCTAssertEqual(receivedChunks[2].content, "Chunk 2")
+        XCTAssertTrue(receivedChunks[2].isFinal)
     }
 }
