@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2025-01-29)
 
 **Core value:** Always know what your bot is doing. Real-time thinking state, typing indicators, and streaming responses with rich output formats.
-**Current focus:** Phase 3 — Message Protocol (Complete)
+**Current focus:** Phase 4 — Chat Core (Plan 1 of 3 Complete)
 
 ## Current Position
 
-Phase: 3 of 12 (Message Protocol)
-Plan: 4 of 4 complete in current phase
-Status: Phase Complete
-Last activity: 2026-01-30 — Completed Plan 03-04 (Protocol integration)
+Phase: 4 of 12 (Chat Core)
+Plan: 1 of 3 complete in current phase
+Status: In Progress
+Last activity: 2026-01-30 — Completed Plan 04-01 (Chat UI Foundation)
 
-Progress: ██████░░░░ 28%
+Progress: ██████░░░░ 31%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 10
-- Average duration: 5.3 min
-- Total execution time: 0.88 hours
+- Total plans completed: 11
+- Average duration: 5.4 min
+- Total execution time: 0.98 hours
 
 **By Phase:**
 
@@ -30,10 +30,11 @@ Progress: ██████░░░░ 28%
 | 1. Foundation | 3/3 | 21 min | 7 min |
 | 2. Connection | 3/3 | 22 min | 7.3 min |
 | 3. Protocol | 4/4 | 10 min | 2.5 min |
+| 4. Chat Core | 1/3 | 6 min | 6 min |
 
 **Recent Trend:**
-- Last 5 plans: 03-01 (3 min), 03-02 (1 min), 03-03 (3 min), 03-04 (3 min)
-- Trend: Fast execution with well-defined protocol work
+- Last 5 plans: 03-02 (1 min), 03-03 (3 min), 03-04 (3 min), 04-01 (6 min)
+- Trend: UI work taking slightly longer than protocol layer
 
 ## Accumulated Context
 
@@ -80,6 +81,12 @@ Recent decisions affecting current work:
 | 03-04 | Dual delegate + Combine pattern | SwiftUI uses Combine, UIKit uses delegate - supports both |
 | 03-04 | Auto-pong for ping messages | Maintains heartbeat without manual intervention |
 | 03-04 | Unknown messages logged not errored | Forward compatibility for future message types |
+| 04-01 | @Observable @MainActor for ChatViewModel | Simplest iOS 17+ pattern for SwiftUI binding with thread safety |
+| 04-01 | Combine .receive(on: DispatchQueue.main) | UI updates must happen on main thread |
+| 04-01 | Optimistic append before await send | Instant visual feedback per research recommendations |
+| 04-01 | Duplicate handling by MessageID | Prevents double entries when server echoes message back |
+| 04-01 | scrollPosition(id:anchor:) API | iOS 17+ declarative scroll control |
+| 04-01 | clawdbotPurple for user, clawdbotSurface for bot | Consistent with ClawdbotColors design system |
 
 ### Deferred Issues
 
@@ -96,29 +103,27 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-30
-Stopped at: Completed Plan 03-04 (Protocol integration) - Phase 3 Complete
+Stopped at: Completed Plan 04-01 (Chat UI Foundation)
 Resume file: None
-Next action: Plan Phase 4 (Chat Core)
+Next action: Plan 04-02 (Chat Input Bar)
 
-## Phase 3 Complete
+## Phase 4 Progress
 
-All 4 plans complete. Message protocol provides:
-- MessageID, MessageStatus, MessageSender types
-- ChatMessage with thread/reply support
-- ProtocolEnvelope generic wrapper with versioning
-- MessageAck for delivery confirmation
-- BotState for thinking/typing indicators
-- StreamingChunk and StreamingMessageAssembler for streaming responses
-- ProtocolCodec with JSON encoding/decoding and ISO 8601 dates
-- DecodedMessage enum for type-safe message routing
-- Streaming chunk fast-path decoder for real-time performance
-- OutgoingMessageQueue actor for thread-safe message queue management
-- MessageQueueConfig for retry behavior configuration
-- QueuedMessage with status tracking
-- Exponential backoff retry logic for failed sends
-- Combine publisher for SwiftUI queue status binding
-- ProtocolHandler actor coordinating all protocol components
-- ProtocolHandlerDelegate for event callbacks
-- Combine publishers (incomingMessages, botStateUpdates) for SwiftUI
-- Auto-pong heartbeat response
-- Protocol version 1.0.0 with ClawdbotProtocol namespace
+Plan 04-01 complete. Chat UI foundation provides:
+- ChatViewModel as @MainActor @Observable wrapping ProtocolHandler
+- Combine subscriptions for incomingMessages and botStateUpdates
+- Optimistic update pattern with .pending status
+- Duplicate message handling by MessageID
+- MessageBubble SwiftUI view with sender-based styling
+- User messages right-aligned with clawdbotPurple
+- Bot messages left-aligned with clawdbotSurface
+- Status indicators for pending/sent/delivered/failed
+- ChatView with NavigationStack and scrollable message list
+- Auto-scroll to bottom using scrollPosition(id:anchor:)
+- Connection status indicator in toolbar
+- ClawdbotChat namespace module
+- 11 new tests for ChatViewModel (91 total tests pass)
+
+Remaining in Phase 4:
+- 04-02: Chat Input Bar (safeAreaInset, send button, @FocusState)
+- 04-03: Message Persistence (in-memory store with future SQLite/SwiftData)
