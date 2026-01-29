@@ -17,7 +17,7 @@ None (expertise files not available)
 - [x] **Phase 1: Foundation** - Project structure, shared packages, design system
 - [x] **Phase 2: Connection Layer** - WebSocket client, state management, reconnection
 - [x] **Phase 3: Message Protocol** - Clawdbot JSON protocol implementation
-- [ ] **Phase 4: Chat Core** - Basic chat UI, message list, input field
+- [x] **Phase 4: Chat Core** - Basic chat UI, message list, input field
 - [ ] **Phase 5: Streaming & State** - Real-time streaming, thinking/typing indicators
 - [ ] **Phase 6: Rich Output: Text** - Bullet points, code blocks, formatted text
 - [ ] **Phase 7: Rich Output: Visual** - Dynamic tables, graphs, inline images
@@ -69,9 +69,9 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 04-01: Chat view layout and message bubbles
-- [ ] 04-02: Message input with keyboard handling
-- [ ] 04-03: Message persistence and history loading
+- [x] 04-01: Chat view layout and message bubbles
+- [x] 04-02: Message input with keyboard handling
+- [x] 04-03: Message persistence and history loading
 
 ### Phase 5: Streaming & State
 **Goal**: Implement real-time streaming responses with thinking state and typing indicators
@@ -175,7 +175,7 @@ Phases execute in numeric order: 1 → 2 → 3 → ... → 12
 | 1. Foundation | 3/3 | Complete | 2025-01-30 |
 | 2. Connection Layer | 3/3 | Complete | 2025-01-30 |
 | 3. Message Protocol | 4/4 | Complete | 2026-01-30 |
-| 4. Chat Core | 0/3 | Not started | - |
+| 4. Chat Core | 3/3 | Complete | 2026-01-30 |
 | 5. Streaming & State | 0/3 | Not started | - |
 | 6. Rich Output: Text | 0/3 | Not started | - |
 | 7. Rich Output: Visual | 0/3 | Not started | - |

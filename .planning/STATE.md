@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2025-01-29)
 
 **Core value:** Always know what your bot is doing. Real-time thinking state, typing indicators, and streaming responses with rich output formats.
-**Current focus:** Phase 4 — Chat Core (Plan 1 of 3 Complete)
+**Current focus:** Phase 4 — Chat Core Complete
 
 ## Current Position
 
 Phase: 4 of 12 (Chat Core)
-Plan: 1 of 3 complete in current phase
-Status: In Progress
-Last activity: 2026-01-30 — Completed Plan 04-01 (Chat UI Foundation)
+Plan: 3 of 3 complete in current phase
+Status: Phase Complete
+Last activity: 2026-01-30 — Completed Plan 04-03 (Message Persistence)
 
-Progress: ██████░░░░ 31%
+Progress: ███████░░░ 38%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 11
-- Average duration: 5.4 min
-- Total execution time: 0.98 hours
+- Total plans completed: 13
+- Average duration: 5.1 min
+- Total execution time: 1.1 hours
 
 **By Phase:**
 
@@ -30,11 +30,11 @@ Progress: ██████░░░░ 31%
 | 1. Foundation | 3/3 | 21 min | 7 min |
 | 2. Connection | 3/3 | 22 min | 7.3 min |
 | 3. Protocol | 4/4 | 10 min | 2.5 min |
-| 4. Chat Core | 1/3 | 6 min | 6 min |
+| 4. Chat Core | 3/3 | 11 min | 3.7 min |
 
 **Recent Trend:**
-- Last 5 plans: 03-02 (1 min), 03-03 (3 min), 03-04 (3 min), 04-01 (6 min)
-- Trend: UI work taking slightly longer than protocol layer
+- Last 5 plans: 03-04 (3 min), 04-01 (6 min), 04-02 (from context), 04-03 (5 min)
+- Trend: Persistence/testing faster than UI layout work
 
 ## Accumulated Context
 
@@ -87,6 +87,13 @@ Recent decisions affecting current work:
 | 04-01 | Duplicate handling by MessageID | Prevents double entries when server echoes message back |
 | 04-01 | scrollPosition(id:anchor:) API | iOS 17+ declarative scroll control |
 | 04-01 | clawdbotPurple for user, clawdbotSurface for bot | Consistent with ClawdbotColors design system |
+| 04-03 | Actor for MessageStore | Swift concurrency safety for file I/O without manual locking |
+| 04-03 | Application Support/Clawdbot/Messages/ directory | Standard iOS/macOS location for app data |
+| 04-03 | One file per conversationId | Prepared for Phase 9 multi-bot conversations |
+| 04-03 | Write-through cache | Memory performance with disk durability |
+| 04-03 | ISO8601 date encoding | Matches ProtocolCodec, consistent JSON format |
+| 04-03 | 1000 message history limit | Prevents memory pressure on long conversations |
+| 04-03 | knownMessageIDs Set for deduplication | O(1) lookup prevents double entries on reconnect |
 
 ### Deferred Issues
 
@@ -103,27 +110,34 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-30
-Stopped at: Completed Plan 04-01 (Chat UI Foundation)
+Stopped at: Completed Phase 4 (Chat Core)
 Resume file: None
-Next action: Plan 04-02 (Chat Input Bar)
+Next action: Plan Phase 5 (Streaming & State)
 
-## Phase 4 Progress
+## Phase 4 Complete
 
-Plan 04-01 complete. Chat UI foundation provides:
+All 3 plans complete. Chat Core provides:
+
+**04-01: Chat UI Foundation**
 - ChatViewModel as @MainActor @Observable wrapping ProtocolHandler
 - Combine subscriptions for incomingMessages and botStateUpdates
 - Optimistic update pattern with .pending status
 - Duplicate message handling by MessageID
 - MessageBubble SwiftUI view with sender-based styling
-- User messages right-aligned with clawdbotPurple
-- Bot messages left-aligned with clawdbotSurface
-- Status indicators for pending/sent/delivered/failed
-- ChatView with NavigationStack and scrollable message list
-- Auto-scroll to bottom using scrollPosition(id:anchor:)
-- Connection status indicator in toolbar
-- ClawdbotChat namespace module
-- 11 new tests for ChatViewModel (91 total tests pass)
+- ChatView with NavigationStack and auto-scroll
 
-Remaining in Phase 4:
-- 04-02: Chat Input Bar (safeAreaInset, send button, @FocusState)
-- 04-03: Message Persistence (in-memory store with future SQLite/SwiftData)
+**04-02: Chat Input Bar**
+- ChatInputBar component with @FocusState keyboard management
+- safeAreaInset integration in ChatView
+- Send button with enable/disable based on text
+- Platform conditionals for iOS-only modifiers
+
+**04-03: Message Persistence**
+- MessageStore actor with file-based JSON persistence
+- Application Support/Clawdbot/Messages/ storage
+- One file per conversationId (multi-bot ready)
+- Write-through cache with in-memory + disk
+- ChatViewModel loads history on init
+- All sent/received messages persisted automatically
+- knownMessageIDs Set for O(1) deduplication
+- 102 tests pass (11 new MessageStore tests)
