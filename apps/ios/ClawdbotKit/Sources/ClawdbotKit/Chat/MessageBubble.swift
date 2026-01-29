@@ -13,20 +13,63 @@ import SwiftUI
 /// Layout:
 /// - User messages: right-aligned with clawdbotPurple background
 /// - Bot messages: left-aligned with clawdbotSurface background
+/// - Streaming messages: bot-aligned with pulsing indicator
 public struct MessageBubble: View {
-    /// The message to display
-    public let message: ChatMessage
+    /// The message to display (nil for streaming content)
+    private let message: ChatMessage?
+
+    /// Streaming content (used when message is nil)
+    private let streamingContent: String?
+
+    /// Sender for streaming messages
+    private let streamingSender: MessageSender?
+
+    /// Whether this bubble shows streaming content
+    private var isStreaming: Bool {
+        streamingContent != nil
+    }
 
     /// Initialize with a chat message
     public init(message: ChatMessage) {
         self.message = message
+        self.streamingContent = nil
+        self.streamingSender = nil
+    }
+
+    /// Initialize with streaming content (bot message in progress)
+    /// - Parameters:
+    ///   - streamingContent: The partial content accumulated so far
+    ///   - sender: The bot sender (defaults to generic bot)
+    public init(streamingContent: String, sender: MessageSender = .bot(name: "Clawdbot")) {
+        self.message = nil
+        self.streamingContent = streamingContent
+        self.streamingSender = sender
     }
 
     // MARK: - Computed Properties
 
+    /// The content to display (from message or streaming)
+    private var displayContent: String {
+        if let streaming = streamingContent {
+            return streaming
+        }
+        return message?.content ?? ""
+    }
+
+    /// The sender (from message or streaming)
+    private var displaySender: MessageSender {
+        if let sender = streamingSender {
+            return sender
+        }
+        return message?.sender ?? .bot(name: "Unknown")
+    }
+
     /// Whether this is a user message
     private var isUserMessage: Bool {
-        if case .user = message.sender {
+        // Streaming messages are always from bot
+        if isStreaming { return false }
+
+        if case .user = displaySender {
             return true
         }
         return false
@@ -56,27 +99,38 @@ public struct MessageBubble: View {
             }
 
             VStack(alignment: alignment, spacing: 4) {
-                // Message content
-                Text(message.content)
-                    .foregroundColor(textColor)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
-                    .background(
-                        RoundedRectangle(cornerRadius: 16)
-                            .fill(bubbleBackground)
-                    )
+                // Message content with streaming cursor
+                HStack(spacing: 0) {
+                    Text(displayContent)
+                        .foregroundColor(textColor)
 
-                // Status indicator and timestamp
-                HStack(spacing: 4) {
-                    // Status icon (only for user messages)
-                    if isUserMessage {
-                        statusIcon
+                    // Streaming cursor indicator
+                    if isStreaming {
+                        StreamingCursor()
                     }
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(bubbleBackground)
+                )
 
-                    // Timestamp
-                    Text(message.timestamp.formatted(date: .omitted, time: .shortened))
-                        .font(.caption2)
-                        .foregroundColor(.clawdbotTextMuted)
+                // Status indicator and timestamp (not shown during streaming)
+                if !isStreaming {
+                    HStack(spacing: 4) {
+                        // Status icon (only for user messages)
+                        if isUserMessage {
+                            statusIcon
+                        }
+
+                        // Timestamp
+                        if let msg = message {
+                            Text(msg.timestamp.formatted(date: .omitted, time: .shortened))
+                                .font(.caption2)
+                                .foregroundColor(.clawdbotTextMuted)
+                        }
+                    }
                 }
             }
 
@@ -100,7 +154,11 @@ public struct MessageBubble: View {
 
     /// Get icon name and color based on message status
     private var statusIconInfo: (name: String, color: Color) {
-        switch message.status {
+        guard let msg = message else {
+            // Streaming messages don't show status
+            return ("circle", .clawdbotTextMuted)
+        }
+        switch msg.status {
         case .pending:
             return ("clock", .clawdbotTextMuted)
         case .sent:
@@ -110,6 +168,28 @@ public struct MessageBubble: View {
         case .failed:
             return ("exclamationmark.triangle", .clawdbotRed)
         }
+    }
+}
+
+// MARK: - Streaming Cursor
+
+/// Animated cursor shown at end of streaming message
+private struct StreamingCursor: View {
+    @State private var isAnimating = false
+
+    var body: some View {
+        Circle()
+            .fill(Color.clawdbotTextPrimary)
+            .frame(width: 8, height: 8)
+            .opacity(isAnimating ? 1.0 : 0.3)
+            .animation(
+                .easeInOut(duration: 0.5)
+                .repeatForever(autoreverses: true),
+                value: isAnimating
+            )
+            .onAppear {
+                isAnimating = true
+            }
     }
 }
 
@@ -142,6 +222,12 @@ struct MessageBubble_Previews: PreviewProvider {
                 sender: .user,
                 status: .failed
             ))
+
+            // Streaming message preview
+            MessageBubble(
+                streamingContent: "I'm currently typing this response",
+                sender: .bot(name: "Clawdbot")
+            )
         }
         .padding()
         .background(Color.clawdbotBackground)
