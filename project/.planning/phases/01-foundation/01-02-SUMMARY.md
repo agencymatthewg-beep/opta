@@ -22,8 +22,8 @@ tech-stack:
   patterns: [cva-variants, forwardRef, oklch-colors, glass-morphism]
 
 key-files:
-  created: [aicomp/src/lib/utils.ts, aicomp/src/components/ui/button.tsx, aicomp/src/components/ui/card.tsx, aicomp/src/components/ui/badge.tsx]
-  modified: [aicomp/src/app/globals.css]
+  created: [apps/web/AICompare/src/lib/utils.ts, apps/web/AICompare/src/components/ui/button.tsx, apps/web/AICompare/src/components/ui/card.tsx, apps/web/AICompare/src/components/ui/badge.tsx]
+  modified: [apps/web/AICompare/src/app/globals.css]
 
 key-decisions:
   - "Used oklch color space for perceptual uniformity across neon accents"
@@ -81,11 +81,11 @@ Each task was committed atomically:
 
 ## Files Created/Modified
 
-- `aicomp/src/app/globals.css` - Tailwind @theme with Opta tokens
-- `aicomp/src/lib/utils.ts` - cn utility function
-- `aicomp/src/components/ui/button.tsx` - Button component with variants
-- `aicomp/src/components/ui/card.tsx` - Card component with subcomponents
-- `aicomp/src/components/ui/badge.tsx` - Badge component with semantic variants
+- `apps/web/AICompare/src/app/globals.css` - Tailwind @theme with Opta tokens
+- `apps/web/AICompare/src/lib/utils.ts` - cn utility function
+- `apps/web/AICompare/src/components/ui/button.tsx` - Button component with variants
+- `apps/web/AICompare/src/components/ui/card.tsx` - Card component with subcomponents
+- `apps/web/AICompare/src/components/ui/badge.tsx` - Badge component with semantic variants
 
 ## Design Tokens Reference
 

@@ -1,4 +1,4 @@
-# aicomp.Optamized.biz
+# AICompare (aicomp.optamize.biz)
 
 ## What This Is
 

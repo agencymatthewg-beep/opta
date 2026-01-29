@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Comp - Data Sourcing & Search Ideas</title>
+    <style>
+        :root {
+            --opta-bg: #0a0a0f;
+            --opta-surface: rgba(139, 92, 246, 0.08);
+            --purple-glow: #a855f7;
+            --neon-pink: #f472b6;
+            --neon-cyan: #22d3ee;
+            --neon-green: #4ade80;
+            --neon-orange: #fb923c;
+            --neon-amber: #fbbf24;
+            --text-primary: #fafafa;
+            --text-secondary: #a1a1aa;
+            --text-muted: #71717a;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(180deg, var(--opta-bg) 0%, #0f0a1a 100%);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding: 2rem;
+            background: var(--opta-surface);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 1rem;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            border-radius: 9999px;
+            margin-bottom: 1rem;
+        }
+
+        .badge-ideas {
+            background: rgba(244, 114, 182, 0.2);
+            color: var(--neon-pink);
+            border: 1px solid rgba(244, 114, 182, 0.4);
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #ffffff 0%, #c4b5fd 50%, var(--purple-glow) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .section {
+            margin-bottom: 3rem;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+        }
+
+        .section-icon {
+            width: 2.5rem;
+            height: 2.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.5rem;
+            font-size: 1.25rem;
+        }
+
+        .icon-cyan { background: rgba(34, 211, 238, 0.2); }
+        .icon-green { background: rgba(74, 222, 128, 0.2); }
+        .icon-orange { background: rgba(251, 146, 60, 0.2); }
+        .icon-pink { background: rgba(244, 114, 182, 0.2); }
+        .icon-purple { background: rgba(168, 85, 247, 0.2); }
+        .icon-amber { background: rgba(251, 191, 36, 0.2); }
+
+        h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .ideas-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .idea-card {
+            background: var(--opta-surface);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .idea-card:hover {
+            border-color: rgba(139, 92, 246, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 40px rgba(139, 92, 246, 0.15);
+        }
+
+        .idea-card h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .idea-card p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .idea-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .tag {
+            font-size: 0.7rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 0.25rem;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .tag-api { background: rgba(34, 211, 238, 0.2); color: var(--neon-cyan); }
+        .tag-scraping { background: rgba(251, 146, 60, 0.2); color: var(--neon-orange); }
+        .tag-realtime { background: rgba(74, 222, 128, 0.2); color: var(--neon-green); }
+        .tag-ui { background: rgba(244, 114, 182, 0.2); color: var(--neon-pink); }
+        .tag-search { background: rgba(168, 85, 247, 0.2); color: var(--purple-glow); }
+        .tag-critical { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+        .tag-nice { background: rgba(251, 191, 36, 0.2); color: var(--neon-amber); }
+
+        .highlight-card {
+            border-color: var(--neon-green);
+            background: rgba(74, 222, 128, 0.05);
+        }
+
+        .priority-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .priority-high { background: #ef4444; }
+        .priority-medium { background: var(--neon-amber); }
+        .priority-low { background: var(--neon-cyan); }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(139, 92, 246, 0.15);
+        }
+
+        .comparison-table th {
+            color: var(--text-muted);
+            font-weight: 500;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .comparison-table td {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .comparison-table tr:hover td {
+            background: rgba(139, 92, 246, 0.05);
+        }
+
+        .source-name {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .pros { color: var(--neon-green); }
+        .cons { color: #f87171; }
+
+        .architecture-diagram {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 1rem;
+            padding: 2rem;
+            margin: 1.5rem 0;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.4;
+            overflow-x: auto;
+        }
+
+        .flow-label {
+            color: var(--neon-cyan);
+        }
+
+        .flow-component {
+            color: var(--neon-pink);
+        }
+
+        .flow-arrow {
+            color: var(--text-muted);
+        }
+
+        .flow-data {
+            color: var(--neon-green);
+        }
+
+        .summary-box {
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.1) 0%, rgba(244, 114, 182, 0.1) 100%);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .summary-box h3 {
+            color: var(--neon-pink);
+            margin-bottom: 1rem;
+        }
+
+        .summary-list {
+            list-style: none;
+        }
+
+        .summary-list li {
+            padding: 0.5rem 0;
+            padding-left: 1.5rem;
+            position: relative;
+            color: var(--text-secondary);
+        }
+
+        .summary-list li::before {
+            content: ">";
+            position: absolute;
+            left: 0;
+            color: var(--purple-glow);
+            font-weight: bold;
+        }
+
+        @media (max-width: 768px) {
+            body { padding: 1rem; }
+            h1 { font-size: 1.75rem; }
+            .ideas-grid { grid-template-columns: 1fr; }
+            .architecture-diagram { font-size: 0.7rem; padding: 1rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <span class="badge badge-ideas">Ideas Report</span>
+            <h1>AI Comp Data Sourcing & Search</h1>
+            <p class="subtitle">Comprehensive strategies for up-to-date, accurate AI model data with source attribution and search capabilities</p>
+        </header>
+
+        <!-- SECTION 1: DATA SOURCES -->
+        <section class="section">
+            <div class="section-header">
+                <div class="section-icon icon-cyan">📊</div>
+                <h2>Data Source Options</h2>
+            </div>
+
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Source</th>
+                        <th>Data Type</th>
+                        <th>Update Frequency</th>
+                        <th>Reliability</th>
+                        <th>Effort</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="source-name">Hugging Face API</span></td>
+                        <td>Benchmarks, Model Info</td>
+                        <td>Real-time</td>
+                        <td class="pros">High</td>
+                        <td class="pros">Low</td>
+                    </tr>
+                    <tr>
+                        <td><span class="source-name">LMSys Chatbot Arena</span></td>
+                        <td>ELO Ratings, User Votes</td>
+                        <td>Daily</td>
+                        <td class="pros">High</td>
+                        <td>Medium</td>
+                    </tr>
+                    <tr>
+                        <td><span class="source-name">Papers With Code</span></td>
+                        <td>Academic Benchmarks</td>
+                        <td>Weekly</td>
+                        <td class="pros">High</td>
+                        <td>Medium</td>
+                    </tr>
+                    <tr>
+                        <td><span class="source-name">Provider APIs</span></td>
+                        <td>Pricing, Rate Limits</td>
+                        <td>On-demand</td>
+                        <td class="pros">Authoritative</td>
+                        <td class="cons">High</td>
+                    </tr>
+                    <tr>
+                        <td><span class="source-name">Artificial Analysis</span></td>
+                        <td>Speed, Quality, Price</td>
+                        <td>Weekly</td>
+                        <td class="pros">High</td>
+                        <td>Medium</td>
+                    </tr>
+                    <tr>
+                        <td><span class="source-name">OpenRouter API</span></td>
+                        <td>Unified Pricing/Access</td>
+                        <td>Real-time</td>
+                        <td class="pros">High</td>
+                        <td class="pros">Low</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- SECTION 2: REAL-TIME DATA INTEGRATION -->
+        <section class="section">
+            <div class="section-header">
+                <div class="section-icon icon-green">⚡</div>
+                <h2>Real-Time Data Integration Ideas</h2>
+            </div>
+
+            <div class="ideas-grid">
+                <div class="idea-card highlight-card">
+                    <h3><span class="priority-indicator priority-high"></span> Hugging Face Open LLM Leaderboard API</h3>
+                    <p>Direct integration with HF's leaderboard API for real-time benchmark scores. Covers MMLU, ARC, HellaSwag, TruthfulQA, Winogrande, and GSM8K with daily updates.</p>
+                    <div class="idea-tags">
+                        <span class="tag tag-api">API</span>
+                        <span class="tag tag-realtime">Real-time</span>
+                        <span class="tag tag-critical">Critical</span>
+                    </div>
+                </div>
+
+                <div class="idea-card highlight-card">
+                    <h3><span class="priority-indicator priority-high"></span> LMSys Chatbot Arena Integration</h3>
+                    <p>Scrape or API-access the Chatbot Arena ELO ratings. These human-preference rankings are highly trusted in the AI community and updated frequently.</p>
+                    <div class="idea-tags">
+                        <span class="tag tag-scraping">Scraping</span>
+                        <span class="tag tag-realtime">Real-time</span>
+                        <span class="tag tag-critical">Critical</span>
+                    </div>
+                </div>
+
+                <div class="idea-card">
+                    <h3><span class="priority-indicator priority-medium"></span> Provider Pricing Aggregator</h3>
+                    <p>Build a cron job that fetches pricing from OpenAI, Anthropic, Google, Mistral, Cohere APIs directly. Store historical pricing for trend analysis.</p>
+                    <div class="idea-tags">
+                        <span class="tag tag-api">API</span>
+                        <span class="tag tag-realtime">Daily Sync</span>
+                    </div>
+                </div>
+
+                <div class="idea-card">
+                    <h3><span class="priority-indicator priority-medium"></span> OpenRouter Meta-API</h3>
+                    <p>Use OpenRouter's API to get unified pricing across 100+ models. They normalize pricing and provide availability status in real-time.</p>
+                    <div class="idea-tags">
+                        <span class="tag tag-api">API</span>
+                        <span class="tag tag-realtime">Real-time</span>
+                    </div>
+                </div>
+
+                <div class="idea-card">
+                    <h3><span class="priority-indicator priority-low"></span> GitHub Release Monitor</h3>
+                    <p>Monitor GitHub releases for open-source models (Llama, Mistral, Qwen). Auto-detect new versions and fetch associated benchmarks from model cards.</p>
+                    <div class="idea-tags">
+                        <span class="tag tag-api">GitHub API</span>
+                        <span class="tag tag-nice">Nice-to-have</span>
+                    </div>
+                </div>
+
+                <div class="idea-card">
+                    <h3><span class="priority-indicator priority-low"></span> RSS/Atom Feed Aggregator</h3>
+                    <p>Subscribe to AI research blogs, arXiv cs.CL, and provider announcement feeds. Auto-parse for new model releases and benchmark claims.</p>
+                    <div class="idea-tags">
+                        <span class="tag tag-scraping">Feeds</span>
+                        <span class="tag tag-nice">Nice-to-have</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="architecture-diagram">
+<span class="flow-label">DATA PIPELINE ARCHITECTURE</span>
+
+<span class="flow-component">┌─────────────────────────────────────────────────────────────────────┐</span>
+<span class="flow-component">│                        EXTERNAL SOURCES                              │</span>
+<span class="flow-component">├─────────────────┬─────────────────┬─────────────────┬───────────────┤</span>
+<span class="flow-component">│  Hugging Face   │   LMSys Arena   │  Provider APIs  │  OpenRouter   │</span>
+<span class="flow-component">│    API (HF)     │   (Scrape/API)  │  (Direct Fetch) │    (Meta)     │</span>
+<span class="flow-component">└────────┬────────┴────────┬────────┴────────┬────────┴───────┬───────┘</span>
+         <span class="flow-arrow">│                     │                     │                │</span>
+         <span class="flow-arrow">▼                     ▼                     ▼                ▼</span>
+<span class="flow-component">┌─────────────────────────────────────────────────────────────────────┐</span>
+<span class="flow-component">│                     DATA NORMALIZATION LAYER                         │</span>
+<span class="flow-component">│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐              │</span>
+<span class="flow-component">│  │ Schema Map   │  │ Unit Convert │  │ Deduplication│              │</span>
+<span class="flow-component">│  │ (normalize)  │  │ ($/1M tokens)│  │ (merge)      │              │</span>
+<span class="flow-component">│  └──────────────┘  └──────────────┘  └──────────────┘              │</span>
+<span class="flow-component">└────────────────────────────┬────────────────────────────────────────┘</span>
+                            <span class="flow-arrow">│</span>
+                            <span class="flow-arrow">▼</span>
+<span class="flow-component">┌─────────────────────────────────────────────────────────────────────┐</span>
+<span class="flow-component">│                     UNIFIED DATA STORE                               │</span>
+<span class="flow-component">│  ┌──────────────────────────────────────────────────────────────┐  │</span>
+<span class="flow-component">│  │ <span class="flow-data">models[]</span> - name, company, benchmarks[], pricing, sources[]    │  │</span>
+<span class="flow-component">│  │ <span class="flow-data">benchmarks[]</span> - name, description, leaderModels[], methodology │  │</span>
+<span class="flow-component">│  │ <span class="flow-data">sources[]</span> - url, fetchedAt, confidence, rawData              │  │</span>
+<span class="flow-component">│  │ <span class="flow-data">history[]</span> - timestamp, modelId, field, oldValue, newValue    │  │</span>
+<span class="flow-component">│  └──────────────────────────────────────────────────────────────┘  │</span>
+<span class="flow-component">└────────────────────────────┬────────────────────────────────────────┘</span>
+                            <span class="flow-arrow">│</span>
+                            <span class="flow-arrow">▼</span>
+<span class="flow-component">┌─────────────────────────────────────────────────────────────────────┐</span>
+<span class="flow-component">│                     AI COMP FRONTEND                                 │</span>
+<span class="flow-component">│  [Leaderboard] [Search] [Compare] [News] [Source Attribution]       │</span>
+<span class="flow-component">└─────────────────────────────────────────────────────────────────────┘</span>
+            </div>
+        </section>
+
+        <!-- SECTION 3: SOURCE ATTRIBUTION -->
+        <section class="section">
+            <div class="section-header">
+                <div class="section-icon icon-pink">🔗</div>
+                <h2>Source Attribution System Ideas</h2>
+            </div>
+
+            <div class="ideas-grid">
+                <div class="idea-card highlight-card">
+                    <h3><span class="priority-indicator priority-high"></span> Inline Source Badges</h3>
+                    <p>Display small clickable badges next to each data point (e.g., [HF] for Hugging Face, [LMS] for LMSys). Clicking opens source in new tab with exact URL.</p>
+                    <div class="idea-tags">
+                        <span class="tag tag-ui">UI</span>
+                        <span class="tag tag-critical">Critical</span>
+                    </div>
+                </div>
+
+                <div class="idea-card highlight-card">
+                    <h3><span class="priority-indicator priority-high"></span> "Last Updated" Timestamps</h3>
+                    <p>Show relative timestamps ("2h ago", "Yesterday") for each data field. Users can see data freshness at a glance. Tooltip shows exact UTC datetime.</p>
+                    <div class="idea-tags">
+                        <span class="tag tag-ui">UI</span>
+                        <span class="tag tag-critical">Critical</span>
+                    </div>
+                </div>
+
+                <div class="idea-card">
+                    <h3><span class="priority-indicator priority-medium"></span> Source Confidence Indicators</h3>
+                    <p>Rate source reliability (Official API = High, Scraped = Medium, User Submitted = Low). Display as color-coded dots or shield icons.</p>
+                    <div class="idea-tags">
+                        <span class="tag tag-ui">UI</span>
+                        <span class="tag tag-nice">Enhancement</span>
+                    </div>
+                </div>
+
+                <div class="idea-card">
+                    <h3><span class="priority-indicator priority-medium"></span> Data Provenance Modal</h3>
+                    <p>Click any data point to see full provenance: original source URL, fetch timestamp, transformation applied, historical values. Full audit trail.</p>
+                    <div class="idea-tags">
+                        <span class="tag tag-ui">Modal</span>
+                        <span class="tag tag-nice">Enhancement</span>
+                    </div>
+                </div>
+
+                <div class="idea-card">
+                    <h3><span class="priority-indicator priority-low"></span> Methodology Explainers</h3>
+                    <p>For each benchmark, provide expandable "How is this measured?" sections explaining the methodology, dataset used, and known limitations.</p>
+                    <div class="idea-tags">
+                        <span class="tag tag-ui">Educational</span>
+                    </div>
+                </div>
+
+                <div class="idea-card">
+                    <h3><span class="priority-indicator priority-low"></span> Community Corrections</h3>
+                    <p>Allow users to flag potentially incorrect data and submit corrections with source URLs. Moderated queue for verification before updates.</p>
+                    <div class="idea-tags">
+                        <span class="tag tag-ui">Community</span>
+                        <span class="tag tag-nice">Future</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 4: SEARCH & COMPARISON -->
+        <section class="section">
+            <div class="section-header">
+                <div class="section-icon icon-purple">🔍</div>
+                <h2>Model Search & Comparison Ideas</h2>
+            </div>
+
+            <div class="ideas-grid">
+                <div class="idea-card highlight-card">
+                    <h3><span class="priority-indicator priority-high"></span> Universal Model Search</h3>
+                    <p>Search bar that queries across all models: by name, company, capability, parameter count, license type. Fuzzy matching for typos ("claud" → "Claude").</p>
+                    <div class="idea-tags">
+                        <span class="tag tag-search">Search</span>
+                        <span class="tag tag-critical">Critical</span>
+                    </div>
+                </div>
+
+                <div class="idea-card highlight-card">
+                    <h3><span class="priority-indicator priority-high"></span> Side-by-Side Comparison</h3>
+                    <p>Select 2-4 models to compare in columns. Show all benchmarks, pricing, context windows, release dates aligned for easy scanning. Export as PNG/PDF.</p>
+                    <div class="idea-tags">
+                        <span class="tag tag-ui">Comparison</span>
+                        <span class="tag tag-critical">Critical</span>
+                    </div>
+                </div>
+
+                <div class="idea-card highlight-card">
+                    <h3><span class="priority-indicator priority-high"></span> Advanced Filters Panel</h3>
+                    <p>Filter by: Company, Model Type (LLM/Image/Audio), Context Length (min/max), Price Range, Benchmark Score Thresholds, Open Source vs Proprietary.</p>
+                    <div class="idea-tags">
+                        <span class="tag tag-search">Filters</span>
+                        <span class="tag tag-critical">Critical</span>
+                    </div>
+                </div>
+
+                <div class="idea-card">
+                    <h3><span class="priority-indicator priority-medium"></span> Natural Language Queries</h3>
+                    <p>"Find me the best coding model under $5/1M tokens" → AI-parsed into filters. Uses Claude/GPT to interpret user intent and return relevant results.</p>
+                    <div class="idea-tags">
+                        <span class="tag tag-search">NLP</span>
+                        <span class="tag tag-api">AI-Powered</span>
+                    </div>
+                </div>
+
+                <div class="idea-card">
+                    <h3><span class="priority-indicator priority-medium"></span> Use Case Recommendations</h3>
+                    <p>User selects use case (Coding, Creative Writing, Analysis, Chat) and budget → system recommends top 3 models with reasoning.</p>
+                    <div class="idea-tags">
+                        <span class="tag tag-search">Recommendations</span>
+                        <span class="tag tag-ui">Wizard</span>
+                    </div>
+                </div>
+
+                <div class="idea-card">
+                    <h3><span class="priority-indicator priority-medium"></span> Benchmark-Weighted Scoring</h3>
+                    <p>Let users customize benchmark weights. "I care 50% about coding, 30% math, 20% general" → recalculates custom composite scores on-the-fly.</p>
+                    <div class="idea-tags">
+                        <span class="tag tag-ui">Custom Scores</span>
+                    </div>
+                </div>
+
+                <div class="idea-card">
+                    <h3><span class="priority-indicator priority-low"></span> Price Calculator</h3>
+                    <p>Input expected monthly tokens (input/output split) → calculates estimated cost per model. Helps users understand real-world costs.</p>
+                    <div class="idea-tags">
+                        <span class="tag tag-ui">Calculator</span>
+                    </div>
+                </div>
+
+                <div class="idea-card">
+                    <h3><span class="priority-indicator priority-low"></span> Model Family Trees</h3>
+                    <p>Visualize model lineages: GPT-3 → GPT-3.5 → GPT-4 → GPT-4o. Shows evolution and helps users understand versioning.</p>
+                    <div class="idea-tags">
+                        <span class="tag tag-ui">Visualization</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 5: DATA MODEL SCHEMA -->
+        <section class="section">
+            <div class="section-header">
+                <div class="section-icon icon-amber">📐</div>
+                <h2>Proposed Data Model Schema</h2>
+            </div>
+
+            <div class="architecture-diagram">
+<span class="flow-label">TYPESCRIPT INTERFACES</span>
+
+<span class="flow-data">interface AIModel {</span>
+  id: string;                    <span class="flow-arrow">// Unique identifier</span>
+  name: string;                  <span class="flow-arrow">// "Claude 3.5 Sonnet"</span>
+  company: string;               <span class="flow-arrow">// "Anthropic"</span>
+  family: string;                <span class="flow-arrow">// "Claude 3.5"</span>
+  releaseDate: Date;
+
+  <span class="flow-component">// Capabilities</span>
+  modalities: Modality[];        <span class="flow-arrow">// ["text", "image", "code"]</span>
+  contextWindow: number;         <span class="flow-arrow">// 200000</span>
+  maxOutputTokens: number;
+  supportsStreaming: boolean;
+  supportsFunctionCalling: boolean;
+
+  <span class="flow-component">// Benchmarks with Sources</span>
+  benchmarks: BenchmarkScore[];
+
+  <span class="flow-component">// Pricing with Sources</span>
+  pricing: {
+    input: number;               <span class="flow-arrow">// Per 1M tokens</span>
+    output: number;
+    source: DataSource;
+  };
+
+  <span class="flow-component">// Access Information</span>
+  access: {
+    api: boolean;
+    web: boolean;
+    cli: boolean;
+    openSource: boolean;
+    license?: string;
+  };
+
+  <span class="flow-component">// Metadata</span>
+  sources: DataSource[];         <span class="flow-arrow">// All sources for this model</span>
+  lastUpdated: Date;
+<span class="flow-data">}</span>
+
+<span class="flow-data">interface BenchmarkScore {</span>
+  benchmarkId: string;           <span class="flow-arrow">// "mmlu", "humaneval"</span>
+  score: number;
+  maxScore?: number;
+  percentile?: number;
+  source: DataSource;
+  measuredAt: Date;
+<span class="flow-data">}</span>
+
+<span class="flow-data">interface DataSource {</span>
+  id: string;
+  name: string;                  <span class="flow-arrow">// "Hugging Face Open LLM Leaderboard"</span>
+  type: "api" | "scrape" | "official" | "user";
+  url: string;                   <span class="flow-arrow">// Direct link to data</span>
+  confidence: "high" | "medium" | "low";
+  fetchedAt: Date;
+  rawData?: object;              <span class="flow-arrow">// Original response for audit</span>
+<span class="flow-data">}</span>
+
+<span class="flow-data">interface Benchmark {</span>
+  id: string;                    <span class="flow-arrow">// "mmlu"</span>
+  name: string;                  <span class="flow-arrow">// "MMLU"</span>
+  fullName: string;              <span class="flow-arrow">// "Massive Multitask Language Understanding"</span>
+  description: string;
+  methodology: string;
+  datasetSize: number;
+  categories: string[];          <span class="flow-arrow">// ["knowledge", "reasoning"]</span>
+  sourceUrl: string;             <span class="flow-arrow">// Link to original paper/dataset</span>
+<span class="flow-data">}</span>
+            </div>
+        </section>
+
+        <!-- SECTION 6: IMPLEMENTATION PRIORITY -->
+        <section class="section">
+            <div class="section-header">
+                <div class="section-icon icon-orange">🎯</div>
+                <h2>Implementation Priority Matrix</h2>
+            </div>
+
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>Impact</th>
+                        <th>Effort</th>
+                        <th>Priority</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="source-name">Hugging Face API Integration</span></td>
+                        <td class="pros">High - Real benchmark data</td>
+                        <td class="pros">Low - Good API docs</td>
+                        <td><span class="priority-indicator priority-high"></span> P0</td>
+                    </tr>
+                    <tr>
+                        <td><span class="source-name">Source Attribution UI</span></td>
+                        <td class="pros">High - Trust & transparency</td>
+                        <td class="pros">Low - UI work</td>
+                        <td><span class="priority-indicator priority-high"></span> P0</td>
+                    </tr>
+                    <tr>
+                        <td><span class="source-name">Universal Search</span></td>
+                        <td class="pros">High - Core UX</td>
+                        <td>Medium - Index needed</td>
+                        <td><span class="priority-indicator priority-high"></span> P0</td>
+                    </tr>
+                    <tr>
+                        <td><span class="source-name">Side-by-Side Compare</span></td>
+                        <td class="pros">High - Key differentiator</td>
+                        <td>Medium - New component</td>
+                        <td><span class="priority-indicator priority-high"></span> P1</td>
+                    </tr>
+                    <tr>
+                        <td><span class="source-name">LMSys Arena Integration</span></td>
+                        <td class="pros">High - Trusted rankings</td>
+                        <td>Medium - Scraping</td>
+                        <td><span class="priority-indicator priority-medium"></span> P1</td>
+                    </tr>
+                    <tr>
+                        <td><span class="source-name">Advanced Filters</span></td>
+                        <td>Medium - Power users</td>
+                        <td class="pros">Low - Standard UI</td>
+                        <td><span class="priority-indicator priority-medium"></span> P1</td>
+                    </tr>
+                    <tr>
+                        <td><span class="source-name">OpenRouter Integration</span></td>
+                        <td>Medium - Pricing accuracy</td>
+                        <td class="pros">Low - Simple API</td>
+                        <td><span class="priority-indicator priority-medium"></span> P2</td>
+                    </tr>
+                    <tr>
+                        <td><span class="source-name">NL Query Search</span></td>
+                        <td>Medium - Wow factor</td>
+                        <td class="cons">High - AI integration</td>
+                        <td><span class="priority-indicator priority-low"></span> P3</td>
+                    </tr>
+                    <tr>
+                        <td><span class="source-name">Community Corrections</span></td>
+                        <td>Low - Scale feature</td>
+                        <td class="cons">High - Moderation needed</td>
+                        <td><span class="priority-indicator priority-low"></span> P3</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <div class="summary-box">
+            <h3>Key Takeaways</h3>
+            <ul class="summary-list">
+                <li><strong>Start with Hugging Face</strong> - Best API, most comprehensive benchmark data, high trust</li>
+                <li><strong>Source attribution is non-negotiable</strong> - Every data point needs a clickable source and timestamp</li>
+                <li><strong>Search & Compare are core features</strong> - These differentiate AI Comp from static leaderboards</li>
+                <li><strong>Normalize everything</strong> - Different sources use different units, schemas; unified data layer is critical</li>
+                <li><strong>Keep history</strong> - Store all historical data for trend analysis and audit trails</li>
+                <li><strong>Progressive enhancement</strong> - Start with API sources, add scraping later for broader coverage</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

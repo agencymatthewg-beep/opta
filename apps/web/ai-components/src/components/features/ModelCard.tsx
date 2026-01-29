@@ -6,9 +6,11 @@ import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CompanyLogo } from "./CompanyLogo";
 import { useIsMobile } from "@/lib/hooks/useMediaQuery";
+import { InlineSourceBadge, SourceBadgeGroup } from "./SourceBadge";
+import type { DataSource } from "@/lib/types";
 
 // Model type definitions
-export type ModelType = "llm" | "web" | "cli" | "api" | "multimodal" | "embedding" | "image" | "audio" | "video";
+export type ModelType = "llm" | "web" | "cli" | "api" | "multimodal" | "embedding" | "image" | "audio" | "video" | "open-source" | "proprietary" | "code";
 
 export interface ModelTag {
   type: ModelType;
@@ -19,6 +21,7 @@ export interface BenchmarkScore {
   name: string;
   score: number;
   maxScore?: number;
+  source?: DataSource;
 }
 
 interface ModelCardProps {
@@ -26,10 +29,11 @@ interface ModelCardProps {
   name: string;
   company: string;
   update?: string;
-  status?: "active" | "new" | "trending";
+  status?: "active" | "new" | "trending" | "deprecated" | "beta";
   score?: number;
   tags?: ModelTag[];
   benchmarks?: BenchmarkScore[];
+  sources?: DataSource[];
   className?: string;
 }
 
@@ -44,6 +48,9 @@ const tagStyles: Record<ModelType, { bg: string; text: string; border: string; l
   image: { bg: "bg-neon-pink/20", text: "text-neon-pink", border: "border-neon-pink/40", label: "IMAGE" },
   audio: { bg: "bg-blue-400/20", text: "text-blue-400", border: "border-blue-400/40", label: "AUDIO" },
   video: { bg: "bg-red-400/20", text: "text-red-400", border: "border-red-400/40", label: "VIDEO" },
+  code: { bg: "bg-neon-green/20", text: "text-neon-green", border: "border-neon-green/40", label: "CODE" },
+  "open-source": { bg: "bg-emerald-500/20", text: "text-emerald-400", border: "border-emerald-500/40", label: "OPEN" },
+  proprietary: { bg: "bg-slate-500/20", text: "text-slate-400", border: "border-slate-500/40", label: "PROP" },
 };
 
 // Colorful benchmark progress bar colors
@@ -93,10 +100,15 @@ function BenchmarkItem({ benchmark, index }: { benchmark: BenchmarkScore; index:
     >
       <div className="flex items-center justify-between gap-2">
         <span className="text-xs text-text-secondary">{benchmark.name}</span>
-        <span className="text-xs font-mono text-white">
-          {benchmark.score}
-          {benchmark.maxScore && <span className="text-text-muted">/{benchmark.maxScore}</span>}
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs font-mono text-white">
+            {benchmark.score}
+            {benchmark.maxScore && <span className="text-text-muted">/{benchmark.maxScore}</span>}
+          </span>
+          {benchmark.source && (
+            <InlineSourceBadge source={benchmark.source} />
+          )}
+        </div>
       </div>
       <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
         <motion.div
@@ -119,6 +131,7 @@ export function ModelCard({
   score,
   tags = [],
   benchmarks = [],
+  sources = [],
   className,
 }: ModelCardProps) {
   const [isHovered, setIsHovered] = useState(false);
@@ -136,6 +149,8 @@ export function ModelCard({
     active: "bg-neon-green/20 text-neon-green border-neon-green/40",
     new: "bg-purple-glow/20 text-purple-glow border-purple-glow/40",
     trending: "bg-neon-orange/20 text-neon-orange border-neon-orange/40",
+    deprecated: "bg-zinc-500/20 text-zinc-400 border-zinc-500/40",
+    beta: "bg-neon-cyan/20 text-neon-cyan border-neon-cyan/40",
   };
 
   // Split benchmarks for left/right columns
@@ -290,6 +305,13 @@ export function ModelCard({
                     </motion.div>
                   )}
                 </div>
+
+                {/* Data Sources Attribution */}
+                {sources.length > 0 && (
+                  <div className="mt-2">
+                    <SourceBadgeGroup sources={sources} size="xs" maxVisible={3} />
+                  </div>
+                )}
               </div>
 
               {/* Right Benchmarks Column - Only visible when expanded */}
@@ -363,9 +385,19 @@ export function ModelCard({
                   {benchmarks.map((benchmark) => (
                     <div key={benchmark.name} className="flex items-center justify-between gap-1">
                       <span className="text-[10px] text-text-muted truncate">{benchmark.name}</span>
-                      <span className="text-xs font-mono text-white">{benchmark.score}</span>
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs font-mono text-white">{benchmark.score}</span>
+                        {benchmark.source && <InlineSourceBadge source={benchmark.source} />}
+                      </div>
                     </div>
                   ))}
+                </div>
+              )}
+
+              {/* Data Sources Attribution - Mobile */}
+              {sources.length > 0 && (
+                <div className="flex items-center justify-end pt-1">
+                  <SourceBadgeGroup sources={sources} size="xs" maxVisible={2} />
                 </div>
               )}
 

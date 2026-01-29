@@ -20,8 +20,8 @@ tech-stack:
   patterns: [client-components, responsive-layout, glass-sidebar, grid-dashboard]
 
 key-files:
-  created: [aicomp/src/components/layout/sidebar.tsx, aicomp/src/components/layout/header.tsx]
-  modified: [aicomp/src/app/layout.tsx, aicomp/src/app/page.tsx]
+  created: [apps/web/AICompare/src/components/layout/sidebar.tsx, apps/web/AICompare/src/components/layout/header.tsx]
+  modified: [apps/web/AICompare/src/app/layout.tsx, apps/web/AICompare/src/app/page.tsx]
 
 key-decisions:
   - "Client component for sidebar to handle mobile toggle state"
@@ -99,10 +99,10 @@ Each task was committed atomically:
 
 ## Files Created/Modified
 
-- `aicomp/src/components/layout/sidebar.tsx` - Glass sidebar with navigation
-- `aicomp/src/components/layout/header.tsx` - Header with search placeholder
-- `aicomp/src/app/layout.tsx` - Root layout with sidebar integration
-- `aicomp/src/app/page.tsx` - Dashboard page with sample cards
+- `apps/web/AICompare/src/components/layout/sidebar.tsx` - Glass sidebar with navigation
+- `apps/web/AICompare/src/components/layout/header.tsx` - Header with search placeholder
+- `apps/web/AICompare/src/app/layout.tsx` - Root layout with sidebar integration
+- `apps/web/AICompare/src/app/page.tsx` - Dashboard page with sample cards
 
 ## Layout Structure Reference
 

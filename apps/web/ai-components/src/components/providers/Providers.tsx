@@ -2,6 +2,7 @@
 
 import { ReactNode } from "react";
 import { CentralCardProvider } from "@/lib/hooks/useCentralCard";
+import { CompareProvider } from "@/lib/context/CompareContext";
 
 /**
  * Client-side providers wrapper
@@ -10,7 +11,9 @@ import { CentralCardProvider } from "@/lib/hooks/useCentralCard";
 export function Providers({ children }: { children: ReactNode }) {
   return (
     <CentralCardProvider>
-      {children}
+      <CompareProvider>
+        {children}
+      </CompareProvider>
     </CentralCardProvider>
   );
 }

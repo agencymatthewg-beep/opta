@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Complete organization of the Opta multi-app workspace - Desktop, iOS, Web, and shared resources">
+    <meta name="theme-color" content="#8b5cf6">
+    <title>Opta Folder Structure - Visual Guide</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Core Colors */
+            --void: #09090b;
+            --surface: #18181b;
+            --elevated: #27272a;
+            --border: #3f3f46;
+            --text-primary: #fafafa;
+            --text-secondary: #a1a1aa;
+            --text-muted: #52525b;
+            --primary: #8b5cf6;
+            --primary-glow: #a855f7;
+
+            /* Neon Accents */
+            --neon-blue: #3b82f6;
+            --neon-green: #22c55e;
+            --neon-amber: #f59e0b;
+            --neon-red: #ef4444;
+            --neon-pink: #ec4899;
+            --neon-cyan: #06b6d4;
+
+            /* Spacing Scale */
+            --space-xs: 4px;
+            --space-sm: 8px;
+            --space-md: 16px;
+            --space-lg: 24px;
+            --space-xl: 32px;
+            --space-2xl: 40px;
+            --space-3xl: 60px;
+
+            /* Border Radius */
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--void);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* Noise overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            opacity: 0.03;
+            pointer-events: none;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+            z-index: 50;
+        }
+
+        /* Particle container */
+        .particles {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: -1;
+        }
+
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: var(--primary);
+            border-radius: 50%;
+            opacity: 0.3;
+            animation: float 20s infinite ease-in-out;
+            will-change: transform, opacity;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) translateX(0); opacity: 0.3; }
+            50% { transform: translateY(-100px) translateX(50px); opacity: 0.6; }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: var(--space-2xl) var(--space-lg);
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: var(--space-3xl);
+        }
+
+        .header h1 {
+            font-family: 'Sora', sans-serif;
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            font-weight: 700;
+            background: linear-gradient(135deg, #fafafa 0%, var(--primary) 50%, #6366f1 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: var(--space-md);
+        }
+
+        .header .subtitle {
+            font-size: clamp(0.9rem, 2vw, 1.1rem);
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .header .date {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: var(--space-md);
+        }
+
+        /* Glass Panel Base */
+        .glass-panel {
+            background: linear-gradient(135deg, rgba(39, 39, 42, 0.6) 0%, rgba(24, 24, 27, 0.8) 100%);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--radius-lg);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .glass-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: var(--space-md);
+            margin-bottom: var(--space-2xl);
+        }
+
+        .stat-card {
+            padding: var(--space-lg);
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .stat-value {
+            font-family: 'Sora', sans-serif;
+            font-size: clamp(1.75rem, 4vw, 2.5rem);
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-top: var(--space-sm);
+        }
+
+        /* Section Styles */
+        .section {
+            margin-bottom: var(--space-xl);
+        }
+
+        .section-padded {
+            padding: var(--space-xl);
+        }
+
+        .section-spaced {
+            margin-top: var(--space-2xl);
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+            margin-bottom: var(--space-lg);
+            padding-bottom: var(--space-md);
+            border-bottom: 1px solid rgba(139, 92, 246, 0.3);
+            position: relative;
+        }
+
+        .section-header::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 100px;
+            height: 2px;
+            background: linear-gradient(90deg, var(--primary), transparent);
+            box-shadow: 0 0 20px var(--primary);
+        }
+
+        .section-header-flat {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .section-header-flat::after {
+            display: none;
+        }
+
+        .section-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            box-shadow: 0 0 30px rgba(139, 92, 246, 0.3);
+            flex-shrink: 0;
+        }
+
+        /* Icon Gradients */
+        .icon-primary { background: linear-gradient(135deg, var(--primary), #6366f1); }
+        .icon-desktop { background: linear-gradient(135deg, var(--neon-blue), var(--primary)); }
+        .icon-menubar { background: linear-gradient(135deg, var(--neon-cyan), var(--neon-blue)); }
+        .icon-ios { background: linear-gradient(135deg, var(--neon-green), var(--neon-cyan)); }
+        .icon-ios-lm { background: linear-gradient(135deg, var(--neon-pink), var(--primary)); }
+        .icon-web { background: linear-gradient(135deg, var(--neon-amber), var(--neon-red)); }
+        .icon-ai { background: linear-gradient(135deg, var(--primary), var(--neon-pink)); }
+        .icon-shared { background: linear-gradient(135deg, var(--neon-amber), var(--neon-red)); }
+        .icon-research { background: linear-gradient(135deg, var(--neon-green), var(--neon-cyan)); }
+        .icon-project { background: linear-gradient(135deg, var(--primary), var(--neon-blue)); }
+        .icon-personal { background: linear-gradient(135deg, var(--neon-pink), var(--primary)); }
+        .icon-config { background: linear-gradient(135deg, var(--neon-amber), var(--neon-red)); }
+
+        .section-title {
+            font-family: 'Sora', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .section-desc {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        /* App Grid */
+        .app-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+            gap: var(--space-lg);
+            margin-top: var(--space-lg);
+        }
+
+        /* Two Column Grid */
+        .two-col-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr));
+            gap: var(--space-lg);
+            margin-top: var(--space-2xl);
+        }
+
+        /* App Card */
+        .app-card {
+            padding: var(--space-lg);
+            transition: all 0.3s ease;
+        }
+
+        .app-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(139, 92, 246, 0.2);
+            border-color: rgba(139, 92, 246, 0.3);
+        }
+
+        .app-card-header {
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+            margin-bottom: var(--space-md);
+        }
+
+        .app-card-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .app-card-title {
+            font-family: 'Sora', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .app-card-path {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-family: 'SF Mono', Monaco, Consolas, monospace;
+        }
+
+        .app-card-tech {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: var(--space-md);
+        }
+
+        .tech-tag {
+            padding: var(--space-xs) 10px;
+            font-size: 0.7rem;
+            border-radius: var(--radius-md);
+            background: rgba(139, 92, 246, 0.15);
+            color: var(--primary);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+        }
+
+        /* Deep Tree (folder structure) */
+        .deep-tree {
+            font-family: 'SF Mono', Monaco, Consolas, monospace;
+            font-size: 0.8rem;
+            line-height: 1.8;
+            padding: var(--space-lg);
+            background: rgba(9, 9, 11, 0.5);
+            border-radius: var(--radius-md);
+            margin-top: var(--space-md);
+            white-space: pre;
+            overflow-x: auto;
+        }
+
+        .deep-tree-compact {
+            font-size: 0.75rem;
+            padding: var(--space-md);
+        }
+
+        .deep-tree .folder-line { color: var(--text-secondary); }
+        .deep-tree .folder-name-mono { color: var(--neon-blue); }
+        .deep-tree .file-name { color: var(--text-muted); }
+
+        /* Legend */
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-md);
+            padding: var(--space-lg);
+            margin-top: var(--space-2xl);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+            flex-shrink: 0;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: var(--space-2xl);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .footer-brand {
+            font-family: 'Sora', sans-serif;
+            font-weight: 600;
+            background: linear-gradient(135deg, var(--primary), #6366f1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Animation */
+        @keyframes glow-pulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(139, 92, 246, 0.3); }
+            50% { box-shadow: 0 0 40px rgba(139, 92, 246, 0.5); }
+        }
+
+        .glow-animation {
+            animation: glow-pulse 3s infinite ease-in-out;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: var(--space-lg) var(--space-md);
+            }
+
+            .section-padded {
+                padding: var(--space-lg);
+            }
+
+            .section-header {
+                flex-wrap: wrap;
+            }
+
+            .section-icon {
+                width: 40px;
+                height: 40px;
+                font-size: 1.2rem;
+            }
+
+            .section-title {
+                font-size: 1.25rem;
+            }
+
+            .deep-tree {
+                font-size: 0.7rem;
+                padding: var(--space-md);
+            }
+
+            .stats-bar {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats-bar {
+                grid-template-columns: 1fr 1fr;
+                gap: var(--space-sm);
+            }
+
+            .stat-card {
+                padding: var(--space-md);
+            }
+
+            .stat-label {
+                font-size: 0.7rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Particle Background -->
+    <div class="particles" aria-hidden="true"></div>
+
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>Opta Folder Structure</h1>
+            <p class="subtitle">Complete organization of the Opta multi-app workspace - Desktop, iOS, Web, and shared resources</p>
+            <p class="date">Generated: January 29, 2026</p>
+        </header>
+
+        <!-- Stats Bar -->
+        <div class="stats-bar" role="list" aria-label="Project statistics">
+            <article class="glass-panel stat-card" role="listitem">
+                <div class="stat-value">6</div>
+                <div class="stat-label">Applications</div>
+            </article>
+            <article class="glass-panel stat-card" role="listitem">
+                <div class="stat-value">3</div>
+                <div class="stat-label">Platforms</div>
+            </article>
+            <article class="glass-panel stat-card" role="listitem">
+                <div class="stat-value">180+</div>
+                <div class="stat-label">Directories</div>
+            </article>
+            <article class="glass-panel stat-card" role="listitem">
+                <div class="stat-value">7</div>
+                <div class="stat-label">Research Areas</div>
+            </article>
+        </div>
+
+        <!-- Root Level Overview -->
+        <section class="section glass-panel section-padded">
+            <header class="section-header section-header-flat">
+                <div class="section-icon icon-primary">
+                    <span>Opta</span>
+                </div>
+                <div>
+                    <h2 class="section-title">Root Level Structure</h2>
+                    <p class="section-desc">Top-level organization of the Opta workspace</p>
+                </div>
+            </header>
+            <pre class="deep-tree" role="img" aria-label="Root folder structure"><code><span class="folder-name-mono">Opta/</span>
+<span class="folder-line">├── </span><span class="folder-name-mono">.claude/</span>              <span class="file-name">← Root agent config, commands, plugins</span>
+<span class="folder-line">├── </span><span class="folder-name-mono">.github/</span>              <span class="file-name">← GitHub workflows & CI/CD</span>
+<span class="folder-line">├── </span><span class="folder-name-mono">.planning/</span>            <span class="file-name">← Root planning documents</span>
+<span class="folder-line">├── </span><span class="folder-name-mono">.vscode/</span>              <span class="file-name">← VS Code workspace settings</span>
+<span class="folder-line">├── </span><span class="folder-name-mono">apps/</span>                 <span class="file-name">← All applications (Desktop, iOS, Web, Shared)</span>
+<span class="folder-line">├── </span><span class="folder-name-mono">ideas/</span>                <span class="file-name">← Project ideas and brainstorms</span>
+<span class="folder-line">├── </span><span class="folder-name-mono">personal/</span>             <span class="file-name">← Personal context (calendar, hardware, goals)</span>
+<span class="folder-line">├── </span><span class="folder-name-mono">project/</span>              <span class="file-name">← Cross-cutting project documentation</span>
+<span class="folder-line">├── </span><span class="folder-name-mono">research/</span>             <span class="file-name">← Gemini Deep Research outputs</span>
+<span class="folder-line">├── </span><span class="file-name">CLAUDE.md</span>             <span class="file-name">← Root Claude instructions</span>
+<span class="folder-line">└── </span><span class="file-name">README.md</span>             <span class="file-name">← Project overview</span></code></pre>
+        </section>
+
+        <!-- Apps Section -->
+        <section class="section section-spaced">
+            <header class="section-header">
+                <div class="section-icon icon-desktop glow-animation">
+                    <span style="font-size: 1.2rem;">apps/</span>
+                </div>
+                <div>
+                    <h2 class="section-title">Applications</h2>
+                    <p class="section-desc">All Opta applications organized by platform</p>
+                </div>
+            </header>
+
+            <div class="app-grid">
+                <!-- Opta Native Desktop -->
+                <article class="glass-panel app-card">
+                    <header class="app-card-header">
+                        <div class="app-card-icon icon-desktop">💻</div>
+                        <div>
+                            <h3 class="app-card-title">Opta Native</h3>
+                            <p class="app-card-path">apps/desktop/opta-native/</p>
+                        </div>
+                    </header>
+                    <pre class="deep-tree deep-tree-compact" role="img" aria-label="Opta Native folder structure"><code><span class="folder-name-mono">opta-native/</span>
+<span class="folder-line">├── </span><span class="folder-name-mono">.claude/</span>           <span class="file-name">← Agent config & commands</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">agents/</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">commands/</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">output-styles/</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">quick-memory/</span>
+<span class="folder-line">│   └── </span><span class="folder-name-mono">skills/</span>
+<span class="folder-line">├── </span><span class="folder-name-mono">.planning/</span>         <span class="file-name">← Project planning</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">assessments/</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">docs/</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">foundations/</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">phases/</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">reports/</span>
+<span class="folder-line">│   └── </span><span class="folder-name-mono">research/</span>
+<span class="folder-line">├── </span><span class="folder-name-mono">.agent/</span>            <span class="file-name">← Agent metrics & cache</span>
+<span class="folder-line">├── </span><span class="folder-name-mono">src/</span>               <span class="file-name">← React frontend</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">assets/</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">components/</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">contexts/</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">data/</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">hooks/</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">lib/</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">pages/</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">types/</span>
+<span class="folder-line">│   └── </span><span class="folder-name-mono">utils/</span>
+<span class="folder-line">├── </span><span class="folder-name-mono">src-tauri/</span>         <span class="file-name">← Rust backend</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">capabilities/</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">binaries/</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">dmg/</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">gen/</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">icons/</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">schemas/</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">src/</span>
+<span class="folder-line">│   └── </span><span class="folder-name-mono">swift-plugin/</span>
+<span class="folder-line">├── </span><span class="folder-name-mono">OptaNative/</span>        <span class="file-name">← Xcode Swift modules</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">Helper/</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">Modules/</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">Shared/</span>
+<span class="folder-line">│   └── </span><span class="folder-name-mono">SMC/</span>
+<span class="folder-line">├── </span><span class="folder-name-mono">mcp-server/</span>        <span class="file-name">← Python MCP server</span>
+<span class="folder-line">├── </span><span class="folder-name-mono">scripts/</span>           <span class="file-name">← Build & CLI scripts</span>
+<span class="folder-line">├── </span><span class="folder-name-mono">docs/</span>
+<span class="folder-line">├── </span><span class="folder-name-mono">prompts/</span>
+<span class="folder-line">├── </span><span class="folder-name-mono">public/</span>
+<span class="folder-line">├── </span><span class="folder-name-mono">schemas/</span>
+<span class="folder-line">└── </span><span class="folder-name-mono">specs/</span></code></pre>
+                    <div class="app-card-tech">
+                        <span class="tech-tag">Tauri v2</span>
+                        <span class="tech-tag">React 19</span>
+                        <span class="tech-tag">TypeScript</span>
+                        <span class="tech-tag">Rust</span>
+                        <span class="tech-tag">Swift</span>
+                        <span class="tech-tag">Python MCP</span>
+                    </div>
+                </article>
+
+                <!-- Opta Mini -->
+                <article class="glass-panel app-card">
+                    <header class="app-card-header">
+                        <div class="app-card-icon icon-menubar">📱</div>
+                        <div>
+                            <h3 class="app-card-title">Opta Mini</h3>
+                            <p class="app-card-path">apps/desktop/opta-mini/</p>
+                        </div>
+                    </header>
+                    <pre class="deep-tree deep-tree-compact" role="img" aria-label="Opta Mini folder structure"><code><span class="folder-name-mono">opta-mini/</span>
+<span class="folder-line">├── </span><span class="folder-name-mono">.planning/</span>
+<span class="folder-line">│   └── </span><span class="folder-name-mono">phases/</span>
+<span class="folder-line">├── </span><span class="folder-name-mono">OptaMini/</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">Assets.xcassets/</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">Models/</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">Services/</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">Utilities/</span>
+<span class="folder-line">│   └── </span><span class="folder-name-mono">Views/</span>
+<span class="folder-line">└── </span><span class="folder-name-mono">OptaMini.xcodeproj/</span></code></pre>
+                    <div class="app-card-tech">
+                        <span class="tech-tag">SwiftUI</span>
+                        <span class="tech-tag">macOS Menubar</span>
+                    </div>
+                </article>
+
+                <!-- Opta iOS -->
+                <article class="glass-panel app-card">
+                    <header class="app-card-header">
+                        <div class="app-card-icon icon-ios">📲</div>
+                        <div>
+                            <h3 class="app-card-title">Opta iOS (Main)</h3>
+                            <p class="app-card-path">apps/ios/1. Opta/</p>
+                        </div>
+                    </header>
+                    <pre class="deep-tree deep-tree-compact" role="img" aria-label="Opta iOS folder structure"><code><span class="folder-name-mono">1. Opta/</span>
+<span class="folder-line">├── </span><span class="folder-name-mono">.claude/</span>           <span class="file-name">← Agent config</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">agents/</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">commands/</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">output-styles/</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">quick-memory/</span>
+<span class="folder-line">│   └── </span><span class="folder-name-mono">skills/</span>
+<span class="folder-line">├── </span><span class="folder-name-mono">.planning/</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">assessments/</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">milestones/</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">phases/</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">reports/</span>
+<span class="folder-line">│   └── </span><span class="folder-name-mono">research/</span>
+<span class="folder-line">├── </span><span class="folder-name-mono">.agent/</span>
+<span class="folder-line">├── </span><span class="folder-name-mono">Opta/</span>              <span class="file-name">← Main app source</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">Assets.xcassets/</span>
+<span class="folder-line">│   └── </span><span class="folder-name-mono">Preview Content/</span>
+<span class="folder-line">├── </span><span class="folder-name-mono">Opta Scan/</span>         <span class="file-name">← Scanner feature</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">Design/</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">Gestures/</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">Models/</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">Services/</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">Shaders/</span>
+<span class="folder-line">│   └── </span><span class="folder-name-mono">Views/</span>
+<span class="folder-line">├── </span><span class="folder-name-mono">packages/</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">api/</span>
+<span class="folder-line">│   └── </span><span class="folder-name-mono">shared/</span>
+<span class="folder-line">└── </span><span class="folder-name-mono">apps/mobile/</span></code></pre>
+                    <div class="app-card-tech">
+                        <span class="tech-tag">SwiftUI</span>
+                        <span class="tech-tag">CoreML</span>
+                        <span class="tech-tag">Metal Shaders</span>
+                    </div>
+                </article>
+
+                <!-- Opta LM iOS -->
+                <article class="glass-panel app-card">
+                    <header class="app-card-header">
+                        <div class="app-card-icon icon-ios-lm">✨</div>
+                        <div>
+                            <h3 class="app-card-title">Opta LM iOS</h3>
+                            <p class="app-card-path">apps/ios/3. Opta LM iOS/</p>
+                        </div>
+                    </header>
+                    <pre class="deep-tree deep-tree-compact" role="img" aria-label="Opta LM iOS folder structure"><code><span class="folder-name-mono">3. Opta LM iOS/</span>
+<span class="folder-line">├── </span><span class="folder-name-mono">.claude/</span>
+<span class="folder-line">├── </span><span class="folder-name-mono">Design/</span>
+<span class="folder-line">├── </span><span class="folder-name-mono">OptaLMiOS/</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">Assets.xcassets/</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">Extensions/</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">Intents/</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">Models/</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">Services/</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">Views/</span>
+<span class="folder-line">│   └── </span><span class="folder-name-mono">Widgets/</span>
+<span class="folder-line">└── </span><span class="folder-name-mono">OptaLMiOS.xcodeproj/</span></code></pre>
+                    <div class="app-card-tech">
+                        <span class="tech-tag">SwiftUI</span>
+                        <span class="tech-tag">Widgets</span>
+                        <span class="tech-tag">Intents</span>
+                    </div>
+                </article>
+
+                <!-- Opta Life Manager Web -->
+                <article class="glass-panel app-card">
+                    <header class="app-card-header">
+                        <div class="app-card-icon icon-web">🌐</div>
+                        <div>
+                            <h3 class="app-card-title">Opta Life Manager</h3>
+                            <p class="app-card-path">apps/web/opta-life-manager/</p>
+                        </div>
+                    </header>
+                    <pre class="deep-tree deep-tree-compact" role="img" aria-label="Opta Life Manager folder structure"><code><span class="folder-name-mono">opta-life-manager/</span>
+<span class="folder-line">├── </span><span class="folder-name-mono">.archive/</span>
+<span class="folder-line">│   └── </span><span class="folder-name-mono">tauri-macos-app/</span>
+<span class="folder-line">├── </span><span class="folder-name-mono">.claude/</span>
+<span class="folder-line">├── </span><span class="folder-name-mono">app/</span>
+<span class="folder-line">│   └── </span><span class="folder-name-mono">api/</span>
+<span class="folder-line">├── </span><span class="folder-name-mono">components/</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">ui/</span>
+<span class="folder-line">│   └── </span><span class="folder-name-mono">widgets/</span>
+<span class="folder-line">├── </span><span class="folder-name-mono">contextsHooks/</span>
+<span class="folder-line">├── </span><span class="folder-name-mono">lib/</span>
+<span class="folder-line">├── </span><span class="folder-name-mono">public/</span>
+<span class="folder-line">└── </span><span class="folder-name-mono">types/</span></code></pre>
+                    <div class="app-card-tech">
+                        <span class="tech-tag">Next.js</span>
+                        <span class="tech-tag">React</span>
+                        <span class="tech-tag">TypeScript</span>
+                        <span class="tech-tag">Vercel</span>
+                    </div>
+                </article>
+
+                <!-- AICompare Web -->
+                <article class="glass-panel app-card">
+                    <header class="app-card-header">
+                        <div class="app-card-icon icon-ai">🤖</div>
+                        <div>
+                            <h3 class="app-card-title">AICompare</h3>
+                            <p class="app-card-path">apps/web/AICompare/</p>
+                        </div>
+                    </header>
+                    <pre class="deep-tree deep-tree-compact" role="img" aria-label="AICompare folder structure"><code><span class="folder-name-mono">AICompare/</span>
+<span class="folder-line">├── </span><span class="folder-name-mono">public/</span>
+<span class="folder-line">└── </span><span class="folder-name-mono">src/</span>
+<span class="folder-line">    ├── </span><span class="folder-name-mono">app/</span>
+<span class="folder-line">    ├── </span><span class="folder-name-mono">components/</span>
+<span class="folder-line">    ├── </span><span class="folder-name-mono">lib/</span>
+<span class="folder-line">    └── </span><span class="folder-name-mono">styles/</span></code></pre>
+                    <div class="app-card-tech">
+                        <span class="tech-tag">Next.js</span>
+                        <span class="tech-tag">React</span>
+                        <span class="tech-tag">TypeScript</span>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <!-- Shared Resources Section -->
+        <section class="section glass-panel section-padded section-spaced">
+            <header class="section-header">
+                <div class="section-icon icon-shared">📦</div>
+                <div>
+                    <h2 class="section-title">Shared Resources</h2>
+                    <p class="section-desc">Cross-platform code and design assets</p>
+                </div>
+            </header>
+            <pre class="deep-tree" role="img" aria-label="Shared resources folder structure"><code><span class="folder-name-mono">apps/shared/</span>
+<span class="folder-line">├── </span><span class="folder-name-mono">opta-native/</span>              <span class="file-name">← Rust core libraries</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">opta-core/</span>            <span class="file-name">← Core Rust logic</span>
+<span class="folder-line">│   │   └── </span><span class="folder-name-mono">src/</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">opta-render/</span>          <span class="file-name">← wgpu rendering</span>
+<span class="folder-line">│   │   ├── </span><span class="folder-name-mono">shaders/</span>
+<span class="folder-line">│   │   ├── </span><span class="folder-name-mono">src/</span>
+<span class="folder-line">│   │   └── </span><span class="folder-name-mono">tests/</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">opta-shared/</span>          <span class="file-name">← Shared types & utils</span>
+<span class="folder-line">│   │   └── </span><span class="folder-name-mono">src/</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">OptaApp/</span>              <span class="file-name">← Swift wrapper</span>
+<span class="folder-line">│   │   ├── </span><span class="folder-name-mono">OptaApp/</span>
+<span class="folder-line">│   │   └── </span><span class="folder-name-mono">scripts/</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">.serena/</span>              <span class="file-name">← Serena cache & memories</span>
+<span class="folder-line">│   └── </span><span class="folder-name-mono">scripts/</span>
+<span class="folder-line">│</span>
+<span class="folder-line">└── </span><span class="folder-name-mono">design-assets/</span>            <span class="file-name">← Design system assets</span>
+<span class="folder-line">    ├── </span><span class="folder-name-mono">Opta Aesthetic Vision/</span>
+<span class="folder-line">    │   ├── </span><span class="folder-name-mono">Active/</span>
+<span class="folder-line">    │   ├── </span><span class="folder-name-mono">animation-frames/</span>
+<span class="folder-line">    │   └── </span><span class="folder-name-mono">Extra and Development/</span>
+<span class="folder-line">    ├── </span><span class="folder-name-mono">animation-frames/</span>
+<span class="folder-line">    ├── </span><span class="folder-name-mono">design-specs/</span>
+<span class="folder-line">    ├── </span><span class="folder-name-mono">icons/</span>
+<span class="folder-line">    └── </span><span class="folder-name-mono">logos/</span></code></pre>
+        </section>
+
+        <!-- Research Section -->
+        <section class="section glass-panel section-padded section-spaced">
+            <header class="section-header">
+                <div class="section-icon icon-research">🔬</div>
+                <div>
+                    <h2 class="section-title">Research</h2>
+                    <p class="section-desc">Gemini Deep Research outputs organized by platform</p>
+                </div>
+            </header>
+            <pre class="deep-tree" role="img" aria-label="Research folder structure"><code><span class="folder-name-mono">research/</span>
+<span class="folder-line">└── </span><span class="folder-name-mono">Gemini Deep Research/</span>
+<span class="folder-line">    ├── </span><span class="folder-name-mono">All-Platforms/</span>
+<span class="folder-line">    │   ├── </span><span class="folder-name-mono">AI-ML/</span>              <span class="file-name">← Cross-platform AI/ML research</span>
+<span class="folder-line">    │   ├── </span><span class="folder-name-mono">Architecture/</span>       <span class="file-name">← System architecture patterns</span>
+<span class="folder-line">    │   ├── </span><span class="folder-name-mono">Distribution/</span>       <span class="file-name">← App distribution strategies</span>
+<span class="folder-line">    │   ├── </span><span class="folder-name-mono">Native-Features/</span>    <span class="file-name">← Native platform capabilities</span>
+<span class="folder-line">    │   └── </span><span class="folder-name-mono">UI-UX/</span>              <span class="file-name">← UI/UX best practices</span>
+<span class="folder-line">    │</span>
+<span class="folder-line">    ├── </span><span class="folder-name-mono">Apple-Platforms/</span>
+<span class="folder-line">    │   ├── </span><span class="folder-name-mono">Architecture/</span>
+<span class="folder-line">    │   ├── </span><span class="folder-name-mono">Graphics-wgpu/</span>      <span class="file-name">← wgpu on Apple Silicon</span>
+<span class="folder-line">    │   └── </span><span class="folder-name-mono">UI-UX/</span>
+<span class="folder-line">    │</span>
+<span class="folder-line">    ├── </span><span class="folder-name-mono">macOS/</span>
+<span class="folder-line">    │   ├── </span><span class="folder-name-mono">AI-ML/</span>              <span class="file-name">← macOS-specific ML research</span>
+<span class="folder-line">    │   └── </span><span class="folder-name-mono">Platform-Capabilities/</span>
+<span class="folder-line">    │</span>
+<span class="folder-line">    ├── </span><span class="folder-name-mono">iOS/</span>
+<span class="folder-line">    │   ├── </span><span class="folder-name-mono">AI-ML/</span>
+<span class="folder-line">    │   └── </span><span class="folder-name-mono">Distribution/</span>
+<span class="folder-line">    │</span>
+<span class="folder-line">    ├── </span><span class="folder-name-mono">Mobile/</span>
+<span class="folder-line">    │   └── </span><span class="folder-name-mono">Optimization/</span>       <span class="file-name">← Mobile performance optimization</span>
+<span class="folder-line">    │</span>
+<span class="folder-line">    └── </span><span class="folder-name-mono">Windows/</span>
+<span class="folder-line">        ├── </span><span class="folder-name-mono">Graphics-wgpu/</span>
+<span class="folder-line">        ├── </span><span class="folder-name-mono">Hardware/</span>
+<span class="folder-line">        └── </span><span class="folder-name-mono">Integration/</span></code></pre>
+        </section>
+
+        <!-- Project & Personal Section -->
+        <div class="two-col-grid">
+            <!-- Project Section -->
+            <section class="section glass-panel section-padded">
+                <header class="section-header">
+                    <div class="section-icon icon-project">📋</div>
+                    <div>
+                        <h2 class="section-title">Project</h2>
+                        <p class="section-desc">Cross-cutting documentation</p>
+                    </div>
+                </header>
+                <pre class="deep-tree" role="img" aria-label="Project folder structure"><code><span class="folder-name-mono">project/</span>
+<span class="folder-line">├── </span><span class="folder-name-mono">.planning/</span>
+<span class="folder-line">│   ├── </span><span class="folder-name-mono">codebase/</span>         <span class="file-name">← Architecture docs</span>
+<span class="folder-line">│   └── </span><span class="folder-name-mono">phases/</span>
+<span class="folder-line">│       ├── </span><span class="folder-name-mono">01-foundation/</span>
+<span class="folder-line">│       ├── </span><span class="folder-name-mono">02-data-pipeline/</span>
+<span class="folder-line">│       ├── </span><span class="folder-name-mono">03-data-storage/</span>
+<span class="folder-line">│       ├── </span><span class="folder-name-mono">04-dashboard-core/</span>
+<span class="folder-line">│       ├── </span><span class="folder-name-mono">05-ai-analysis/</span>
+<span class="folder-line">│       ├── </span><span class="folder-name-mono">06-interactive-chat/</span>
+<span class="folder-line">│       └── </span><span class="folder-name-mono">07-polish-launch/</span>
+<span class="folder-line">│</span>
+<span class="folder-line">└── </span><span class="folder-name-mono">reorganization-docs/</span>
+<span class="folder-line">    └── </span><span class="folder-name-mono">claude-code-export/</span>
+<span class="folder-line">        └── </span><span class="folder-name-mono">commands/</span></code></pre>
+            </section>
+
+            <!-- Personal Section -->
+            <section class="section glass-panel section-padded">
+                <header class="section-header">
+                    <div class="section-icon icon-personal">👤</div>
+                    <div>
+                        <h2 class="section-title">Personal</h2>
+                        <p class="section-desc">Personal context & setup</p>
+                    </div>
+                </header>
+                <pre class="deep-tree" role="img" aria-label="Personal folder structure"><code><span class="folder-name-mono">personal/</span>
+<span class="folder-line">├── </span><span class="folder-name-mono">studio-setup/</span>       <span class="file-name">← Mac Studio config</span>
+<span class="folder-line">├── </span><span class="folder-name-mono">mac-studio-setup/</span>   <span class="file-name">← Setup scripts</span>
+<span class="folder-line">├── </span><span class="file-name">calendar.md</span>         <span class="file-name">← Daily events</span>
+<span class="folder-line">├── </span><span class="file-name">hardware.md</span>         <span class="file-name">← Hardware specs</span>
+<span class="folder-line">├── </span><span class="file-name">profile.md</span>          <span class="file-name">← User profile</span>
+<span class="folder-line">└── </span><span class="file-name">workflows.md</span>        <span class="file-name">← Workflow docs</span></code></pre>
+            </section>
+        </div>
+
+        <!-- Configuration Section -->
+        <section class="section glass-panel section-padded section-spaced">
+            <header class="section-header">
+                <div class="section-icon icon-config">⚙️</div>
+                <div>
+                    <h2 class="section-title">Configuration</h2>
+                    <p class="section-desc">Root-level Claude and workspace configuration</p>
+                </div>
+            </header>
+            <pre class="deep-tree" role="img" aria-label="Configuration folder structure"><code><span class="folder-name-mono">.claude/</span>                        <span class="file-name">← Root agent configuration</span>
+<span class="folder-line">├── </span><span class="folder-name-mono">agents/</span>                 <span class="file-name">← Agent definitions</span>
+<span class="folder-line">├── </span><span class="folder-name-mono">commands/</span>               <span class="file-name">← Shared Claude commands</span>
+<span class="folder-line">│   └── </span><span class="folder-name-mono">gsd/</span>               <span class="file-name">← GSD workflow commands</span>
+<span class="folder-line">└── </span><span class="folder-name-mono">plugins/</span>
+<span class="folder-line">    └── </span><span class="folder-name-mono">local/</span>             <span class="file-name">← Local plugins</span>
+
+<span class="folder-name-mono">.github/</span>
+<span class="folder-line">└── </span><span class="folder-name-mono">workflows/</span>              <span class="file-name">← CI/CD workflows</span>
+
+<span class="folder-name-mono">.vscode/</span>                        <span class="file-name">← VS Code workspace settings</span>
+
+<span class="folder-name-mono">ideas/</span>                          <span class="file-name">← Project ideas & brainstorms</span></code></pre>
+        </section>
+
+        <!-- Legend -->
+        <aside class="glass-panel legend" aria-label="Color legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background: var(--neon-blue);"></div>
+                <span>Desktop Apps</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: var(--neon-green);"></div>
+                <span>iOS Apps</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: var(--neon-amber);"></div>
+                <span>Web Apps</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: var(--primary);"></div>
+                <span>Shared/Core</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: var(--neon-cyan);"></div>
+                <span>Research</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: var(--neon-pink);"></div>
+                <span>Personal</span>
+            </div>
+        </aside>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Generated by <span class="footer-brand">Opta</span> Visual Guide System</p>
+            <p style="margin-top: var(--space-sm); font-size: 0.75rem;">Multi-platform AI-powered productivity suite</p>
+        </footer>
+    </div>
+
+    <script>
+        // Initialize particles on DOM ready
+        document.addEventListener('DOMContentLoaded', () => {
+            const particleContainer = document.querySelector('.particles');
+            const particleCount = 50;
+
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 20 + 's';
+                particle.style.animationDuration = (15 + Math.random() * 10) + 's';
+                particleContainer.appendChild(particle);
+            }
+
+            // Throttled parallax effect
+            let ticking = false;
+            document.addEventListener('mousemove', (e) => {
+                if (!ticking) {
+                    requestAnimationFrame(() => {
+                        const particles = particleContainer.querySelectorAll('.particle');
+                        const x = e.clientX / window.innerWidth;
+                        const y = e.clientY / window.innerHeight;
+
+                        particles.forEach((particle, i) => {
+                            const speed = (i % 3 + 1) * 0.5;
+                            particle.style.transform = `translate(${x * speed * 20}px, ${y * speed * 20}px)`;
+                        });
+                        ticking = false;
+                    });
+                    ticking = true;
+                }
+            });
+        });
+    </script>
+</body>
+</html>

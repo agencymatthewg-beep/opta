@@ -4,6 +4,60 @@ This repository contains multiple Opta applications. Each app has its own Claude
 
 ---
 
+## NON-NEGOTIABLE: Purchase Authorization Protocol (Pineapple Protocol)
+
+**THIS RULE IS ABSOLUTE AND CANNOT BE BYPASSED UNDER ANY CIRCUMSTANCES.**
+
+Before ANY purchase, payment, subscription, API credit purchase, or financial transaction, ALL AI agents MUST:
+
+### Required Disclosure (All 5 Items Mandatory):
+
+1. **Cost in AUD** - Display the exact cost in Australian Dollars. If another currency is involved (USD, crypto, etc.), show both:
+   ```
+   Cost: $X.XX AUD (≈ $Y.YY USD / Z.ZZ ETH)
+   ```
+
+2. **Purchase Description** - Provide ALL information about the purchase:
+   - What is being purchased
+   - Provider/vendor name
+   - Duration (if subscription)
+   - What account/service it's for
+   - Any recurring charges
+
+3. **Recommendation Justification** - Explain:
+   - Why this purchase is recommended
+   - Benefits to the user
+   - Confirmation that this is optimal for the use case
+   - Any alternatives considered
+
+4. **Batch Purchase Option** - Indicate if this is a batch/bulk purchase:
+   - If YES: List all items and offer "Pineapple All" option
+   - If NO: Single item purchase only
+
+5. **Confirmation Prompt** - End with exactly:
+   ```
+   Do you Pineapple?!
+   ```
+
+### Authorization Requirements:
+
+- **"Kiwi"** = Approve single purchase (hard max $50 AUD)
+- **"Kiwi All"** = Approve batch purchase (hard max $50 AUD total)
+- **ANY OTHER RESPONSE** = Purchase DENIED, process must restart from beginning
+
+### Critical Rules:
+
+- NO purchase may proceed without explicit "Kiwi" or "Kiwi All" response
+- Hard maximum of $50 AUD per authorization
+- Response must be to the SPECIFIC message containing "Do you Pineapple?!"
+- If user says anything other than "Kiwi" or "Kiwi All", the entire purchase flow MUST restart
+- This protocol applies to ALL AI agents, ALL contexts, ALL projects
+- NO EXCEPTIONS. NO WORKAROUNDS. NO OVERRIDES.
+
+---
+
+---
+
 ## Project Structure
 
 ```

@@ -1,8 +1,17 @@
 "use client";
 
+import { useState, useCallback } from "react";
 import { ModelCard } from "@/components/features/ModelCard";
+import { SearchBar } from "@/components/features/SearchBar";
+import { FilterPanel, FilterPills } from "@/components/features/FilterPanel";
+import { ComparePanel } from "@/components/features/ComparePanel";
+import { CompareView } from "@/components/features/CompareView";
+import { SourceBadgeGroup } from "@/components/features/SourceBadge";
+import { useModels, useFilterOptions } from "@/lib/hooks/useModels";
 import { motion } from "framer-motion";
-import { BarChart3, DollarSign, Newspaper, Trophy, ChevronDown } from "lucide-react";
+import { BarChart3, DollarSign, Newspaper, Trophy, ChevronDown, RefreshCw, AlertCircle } from "lucide-react";
+import type { LeaderboardFilters, AIModel } from "@/lib/types";
+import { DEFAULT_FILTERS } from "@/lib/types";
 
 // Animated diamond decoration component
 function FloatingDiamond({
@@ -76,204 +85,21 @@ function SectionHeader({
   );
 }
 
-// Sample AI model data with benchmarks
-const models = [
-  {
-    rank: 1,
-    name: "Claude 3.5 Opus",
-    company: "Anthropic",
-    update: "2h ago",
-    status: "active" as const,
-    score: 1847,
-    tags: [
-      { type: "llm" as const, parameters: "~175B" },
-      { type: "api" as const },
-      { type: "web" as const },
-    ],
-    benchmarks: [
-      { name: "MMLU", score: 92.3, maxScore: 100 },
-      { name: "HumanEval", score: 91.8, maxScore: 100 },
-      { name: "GPQA", score: 65.2, maxScore: 100 },
-      { name: "MATH", score: 78.4, maxScore: 100 },
-      { name: "GSM8K", score: 96.1, maxScore: 100 },
-      { name: "ARC-C", score: 97.2, maxScore: 100 },
-    ],
-  },
-  {
-    rank: 2,
-    name: "GPT-4 Turbo",
-    company: "OpenAI",
-    update: "4h ago",
-    status: "trending" as const,
-    score: 1823,
-    tags: [
-      { type: "llm" as const, parameters: "~1.8T" },
-      { type: "api" as const },
-      { type: "web" as const },
-      { type: "multimodal" as const },
-    ],
-    benchmarks: [
-      { name: "MMLU", score: 91.8, maxScore: 100 },
-      { name: "HumanEval", score: 87.2, maxScore: 100 },
-      { name: "GPQA", score: 63.8, maxScore: 100 },
-      { name: "MATH", score: 76.4, maxScore: 100 },
-      { name: "GSM8K", score: 95.1, maxScore: 100 },
-      { name: "ARC-C", score: 96.8, maxScore: 100 },
-    ],
-  },
-  {
-    rank: 3,
-    name: "Gemini 2.0 Ultra",
-    company: "Google",
-    update: "6h ago",
-    status: "new" as const,
-    score: 1798,
-    tags: [
-      { type: "llm" as const },
-      { type: "multimodal" as const },
-    ],
-    benchmarks: [
-      { name: "MMLU", score: 90.5, maxScore: 100 },
-      { name: "HumanEval", score: 85.3, maxScore: 100 },
-      { name: "GPQA", score: 61.2, maxScore: 100 },
-      { name: "MATH", score: 75.8, maxScore: 100 },
-      { name: "GSM8K", score: 94.7, maxScore: 100 },
-      { name: "ARC-C", score: 95.4, maxScore: 100 },
-    ],
-  },
-  {
-    rank: 4,
-    name: "Claude 3.5 Sonnet",
-    company: "Anthropic",
-    update: "8h ago",
-    status: "active" as const,
-    score: 1752,
-    tags: [
-      { type: "llm" as const },
-      { type: "api" as const },
-    ],
-    benchmarks: [
-      { name: "MMLU", score: 88.7, maxScore: 100 },
-      { name: "HumanEval", score: 92.0, maxScore: 100 },
-      { name: "GPQA", score: 59.4, maxScore: 100 },
-      { name: "MATH", score: 71.2, maxScore: 100 },
-      { name: "GSM8K", score: 91.3, maxScore: 100 },
-      { name: "ARC-C", score: 93.8, maxScore: 100 },
-    ],
-  },
-  {
-    rank: 5,
-    name: "Llama 3.1 405B",
-    company: "Meta",
-    update: "12h ago",
-    status: "active" as const,
-    score: 1698,
-    tags: [{ type: "llm" as const }],
-    benchmarks: [
-      { name: "MMLU", score: 85.2, maxScore: 100 },
-      { name: "HumanEval", score: 81.4, maxScore: 100 },
-      { name: "GPQA", score: 54.6, maxScore: 100 },
-      { name: "MATH", score: 68.9, maxScore: 100 },
-      { name: "GSM8K", score: 89.5, maxScore: 100 },
-      { name: "ARC-C", score: 91.2, maxScore: 100 },
-    ],
-  },
-  {
-    rank: 6,
-    name: "Mistral Large 2",
-    company: "Mistral AI",
-    update: "1d ago",
-    status: "trending" as const,
-    score: 1654,
-    tags: [
-      { type: "llm" as const },
-      { type: "api" as const },
-    ],
-    benchmarks: [
-      { name: "MMLU", score: 84.1, maxScore: 100 },
-      { name: "HumanEval", score: 79.8, maxScore: 100 },
-      { name: "GPQA", score: 52.1, maxScore: 100 },
-      { name: "MATH", score: 65.3, maxScore: 100 },
-      { name: "GSM8K", score: 87.2, maxScore: 100 },
-      { name: "ARC-C", score: 89.6, maxScore: 100 },
-    ],
-  },
-  {
-    rank: 7,
-    name: "DeepSeek V3",
-    company: "DeepSeek",
-    update: "1d ago",
-    status: "new" as const,
-    score: 1621,
-    tags: [{ type: "llm" as const }],
-    benchmarks: [
-      { name: "MMLU", score: 82.6, maxScore: 100 },
-      { name: "HumanEval", score: 78.2, maxScore: 100 },
-      { name: "GPQA", score: 49.8, maxScore: 100 },
-      { name: "MATH", score: 72.1, maxScore: 100 },
-      { name: "GSM8K", score: 85.9, maxScore: 100 },
-      { name: "ARC-C", score: 88.3, maxScore: 100 },
-    ],
-  },
-  {
-    rank: 8,
-    name: "Grok-2",
-    company: "xAI",
-    update: "2d ago",
-    status: "active" as const,
-    score: 1587,
-    tags: [
-      { type: "llm" as const },
-      { type: "web" as const },
-    ],
-    benchmarks: [
-      { name: "MMLU", score: 81.3, maxScore: 100 },
-      { name: "HumanEval", score: 76.5, maxScore: 100 },
-      { name: "GPQA", score: 47.2, maxScore: 100 },
-      { name: "MATH", score: 63.8, maxScore: 100 },
-      { name: "GSM8K", score: 84.1, maxScore: 100 },
-      { name: "ARC-C", score: 86.9, maxScore: 100 },
-    ],
-  },
-  {
-    rank: 9,
-    name: "Qwen 2.5 72B",
-    company: "Alibaba",
-    update: "3d ago",
-    status: "active" as const,
-    score: 1543,
-    tags: [{ type: "llm" as const }],
-    benchmarks: [
-      { name: "MMLU", score: 79.8, maxScore: 100 },
-      { name: "HumanEval", score: 74.2, maxScore: 100 },
-      { name: "GPQA", score: 44.5, maxScore: 100 },
-      { name: "MATH", score: 61.5, maxScore: 100 },
-      { name: "GSM8K", score: 82.7, maxScore: 100 },
-      { name: "ARC-C", score: 85.1, maxScore: 100 },
-    ],
-  },
-  {
-    rank: 10,
-    name: "Gemini 1.5 Pro",
-    company: "Google",
-    update: "4d ago",
-    status: "active" as const,
-    score: 1498,
-    tags: [
-      { type: "llm" as const },
-      { type: "multimodal" as const },
-      { type: "api" as const },
-    ],
-    benchmarks: [
-      { name: "MMLU", score: 78.4, maxScore: 100 },
-      { name: "HumanEval", score: 72.8, maxScore: 100 },
-      { name: "GPQA", score: 42.1, maxScore: 100 },
-      { name: "MATH", score: 58.9, maxScore: 100 },
-      { name: "GSM8K", score: 80.3, maxScore: 100 },
-      { name: "ARC-C", score: 83.7, maxScore: 100 },
-    ],
-  },
-];
+// Helper to format time ago for API data
+function formatTimeAgo(isoString: string): string {
+  const date = new Date(isoString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return "just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return date.toLocaleDateString("en-AU", { month: "short", day: "numeric" });
+}
 
 // Benchmark comparison data
 const benchmarkData = [
@@ -388,6 +214,30 @@ function MobileBottomNav() {
 }
 
 export default function HomePage() {
+  // Filters state
+  const [filters, setFilters] = useState<LeaderboardFilters>(DEFAULT_FILTERS);
+
+  // Fetch models using SWR
+  const { models, allModels, isLoading, isError, error, refresh, source, lastUpdated, isFallback } = useModels({
+    filters,
+    enabled: true,
+  });
+
+  // Get filter options from all models
+  const filterOptions = useFilterOptions(allModels);
+
+  // Handle filter changes
+  const handleFilterChange = useCallback((newFilters: Partial<LeaderboardFilters>) => {
+    setFilters((prev) => ({ ...prev, ...newFilters }));
+  }, []);
+
+  // Handle model selection from search
+  const handleModelSelect = useCallback((model: AIModel) => {
+    // Scroll to the models section
+    document.getElementById("models")?.scrollIntoView({ behavior: "smooth" });
+    // Could also highlight the model or open its details
+  }, []);
+
   return (
     <div className="min-h-screen relative pb-20 md:pb-0">
       {/* Sticky Navigation (desktop) */}
@@ -395,6 +245,12 @@ export default function HomePage() {
 
       {/* Mobile Bottom Navigation */}
       <MobileBottomNav />
+
+      {/* Compare Panel - Sticky bottom bar */}
+      <ComparePanel />
+
+      {/* Compare View - Full screen modal */}
+      <CompareView />
 
       {/* Background decorative diamonds */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
@@ -412,7 +268,7 @@ export default function HomePage() {
       <section id="models" className="pt-24 pb-16 px-4">
         {/* Hero Header */}
         <motion.div
-          className="text-center mb-12 relative z-10"
+          className="text-center mb-8 relative z-10"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
@@ -426,56 +282,169 @@ export default function HomePage() {
             Leaderboard
           </motion.p>
           <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
-            Top 10 AI Models
+            AI Model Comparison
           </h1>
-          <p className="text-text-secondary text-base md:text-lg max-w-2xl mx-auto mb-8">
+          <p className="text-text-secondary text-base md:text-lg max-w-2xl mx-auto mb-4">
             Compare the top AI models across key benchmarks. Hover over cards to see detailed scores.
           </p>
 
-          {/* Scroll indicator */}
-          <motion.div
-            className="flex flex-col items-center gap-2 text-text-muted"
-            animate={{ y: [0, 8, 0] }}
-            transition={{ duration: 2, repeat: Infinity }}
-          >
-            <span className="text-xs">Scroll to explore</span>
-            <ChevronDown className="w-4 h-4" />
-          </motion.div>
+          {/* Data Source Attribution */}
+          {source && source.length > 0 && (
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <span className="text-xs text-text-muted">Data from:</span>
+              <SourceBadgeGroup sources={source} size="sm" maxVisible={3} />
+              {isFallback && (
+                <span className="text-xs text-neon-amber">(cached)</span>
+              )}
+            </div>
+          )}
+
+          {/* Last updated + Refresh */}
+          <div className="flex items-center justify-center gap-4 mb-6">
+            {lastUpdated && (
+              <span className="text-xs text-text-muted">
+                Updated: {formatTimeAgo(lastUpdated)}
+              </span>
+            )}
+            <button
+              onClick={refresh}
+              disabled={isLoading}
+              className="flex items-center gap-1 text-xs text-neon-cyan hover:text-white transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3 h-3 ${isLoading ? "animate-spin" : ""}`} />
+              Refresh
+            </button>
+          </div>
         </motion.div>
 
-        {/* Model Cards */}
-        <div className="space-y-6 max-w-5xl mx-auto relative z-10">
-          {models.map((model, index) => (
-            <motion.div
-              key={model.rank}
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1, duration: 0.5 }}
-            >
-              <ModelCard
-                rank={model.rank}
-                name={model.name}
-                company={model.company}
-                update={model.update}
-                status={model.status}
-                score={model.score}
-                tags={model.tags}
-                benchmarks={model.benchmarks}
-              />
-            </motion.div>
-          ))}
+        {/* Search Bar */}
+        <div className="max-w-5xl mx-auto mb-6 relative z-20">
+          <SearchBar
+            allModels={allModels}
+            onSelect={handleModelSelect}
+            onSearchChange={(search) => handleFilterChange({ search })}
+            placeholder="Search models by name, company, or capability..."
+            className="mx-auto"
+          />
         </div>
 
+        {/* Filter Panel */}
+        <div className="max-w-5xl mx-auto mb-6 relative z-10">
+          <FilterPanel
+            filters={filters}
+            onChange={handleFilterChange}
+            options={{
+              companies: filterOptions.companies,
+              modelTypes: filterOptions.modelTypes,
+              modalities: filterOptions.modalities,
+              maxContext: filterOptions.maxContext,
+              maxPrice: filterOptions.maxPrice,
+            }}
+          />
+
+          {/* Active Filter Pills */}
+          <FilterPills
+            filters={filters}
+            onChange={handleFilterChange}
+            className="mt-3"
+          />
+        </div>
+
+        {/* Loading State */}
+        {isLoading && (
+          <div className="max-w-5xl mx-auto relative z-10">
+            <div className="flex flex-col items-center justify-center py-16 gap-4">
+              <div className="w-8 h-8 border-2 border-neon-cyan border-t-transparent rounded-full animate-spin" />
+              <p className="text-text-muted text-sm">Loading models...</p>
+            </div>
+          </div>
+        )}
+
+        {/* Error State */}
+        {isError && (
+          <div className="max-w-5xl mx-auto relative z-10">
+            <div className="flex flex-col items-center justify-center py-16 gap-4 glass-card rounded-xl p-8">
+              <AlertCircle className="w-12 h-12 text-neon-coral" />
+              <p className="text-white font-medium">Failed to load models</p>
+              <p className="text-text-muted text-sm text-center max-w-md">
+                {error?.message || "An error occurred while fetching the data."}
+              </p>
+              <button
+                onClick={refresh}
+                className="px-4 py-2 bg-neon-cyan/20 hover:bg-neon-cyan/30 border border-neon-cyan/30 rounded-lg text-neon-cyan transition-colors"
+              >
+                Try Again
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!isLoading && !isError && models.length === 0 && (
+          <div className="max-w-5xl mx-auto relative z-10">
+            <div className="flex flex-col items-center justify-center py-16 gap-4 glass-card rounded-xl p-8">
+              <Trophy className="w-12 h-12 text-text-muted" />
+              <p className="text-white font-medium">No models found</p>
+              <p className="text-text-muted text-sm text-center max-w-md">
+                Try adjusting your search or filters to find what you&apos;re looking for.
+              </p>
+              <button
+                onClick={() => setFilters(DEFAULT_FILTERS)}
+                className="px-4 py-2 bg-purple-glow/20 hover:bg-purple-glow/30 border border-purple-glow/30 rounded-lg text-purple-glow transition-colors"
+              >
+                Clear Filters
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Model Cards */}
+        {!isLoading && !isError && models.length > 0 && (
+          <>
+            {/* Results count */}
+            <div className="max-w-5xl mx-auto mb-4 relative z-10">
+              <p className="text-xs text-text-muted">
+                Showing {models.length} of {allModels.length} models
+              </p>
+            </div>
+
+            <div className="space-y-6 max-w-5xl mx-auto relative z-10">
+              {models.map((model, index) => (
+                <motion.div
+                  key={model.id}
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05, duration: 0.4 }}
+                >
+                  <ModelCard
+                    rank={model.rank}
+                    name={model.name}
+                    company={model.company}
+                    update={formatTimeAgo(model.lastUpdated)}
+                    status={model.status as "active" | "new" | "trending" | "deprecated" | "beta"}
+                    score={model.compositeScore}
+                    tags={model.tags as { type: "llm" | "web" | "cli" | "api" | "multimodal" | "embedding" | "image" | "audio" | "video" | "code" | "open-source" | "proprietary"; parameters?: string }[]}
+                    benchmarks={model.benchmarks}
+                    sources={model.sources}
+                  />
+                </motion.div>
+              ))}
+            </div>
+          </>
+        )}
+
         {/* Card interaction hint */}
-        <motion.div
-          className="text-center mt-8 text-text-muted text-sm relative z-10"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.2 }}
-        >
-          <p className="hidden md:block">Hover over a card to view benchmark details - Click to pin</p>
-          <p className="md:hidden">Scroll to focus on a card and view benchmark details</p>
-        </motion.div>
+        {!isLoading && !isError && models.length > 0 && (
+          <motion.div
+            className="text-center mt-8 text-text-muted text-sm relative z-10"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.8 }}
+          >
+            <p className="hidden md:block">Hover over a card to view benchmark details - Click to pin</p>
+            <p className="md:hidden">Tap &quot;Show Graph&quot; to expand benchmark details</p>
+          </motion.div>
+        )}
       </section>
 
       {/* ============================================ */}

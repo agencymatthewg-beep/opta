@@ -1,4 +1,4 @@
-# Roadmap: aicomp.Optamized.biz
+# Roadmap: AICompare (aicomp.optamize.biz)
 
 ## Overview
 

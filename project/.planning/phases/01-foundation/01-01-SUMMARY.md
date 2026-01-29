@@ -20,7 +20,7 @@ tech-stack:
   patterns: [app-router, src-directory, component-subdirectories]
 
 key-files:
-  created: [aicomp/package.json, aicomp/tsconfig.json, aicomp/next.config.ts, aicomp/src/app/layout.tsx, aicomp/src/app/page.tsx]
+  created: [apps/web/AICompare/package.json, apps/web/AICompare/tsconfig.json, apps/web/AICompare/next.config.ts, apps/web/AICompare/src/app/layout.tsx, apps/web/AICompare/src/app/page.tsx]
   modified: []
 
 key-decisions:
@@ -54,7 +54,7 @@ completed: 2026-01-28
 
 ## Accomplishments
 
-- Created Next.js 16.1.6 project with App Router and Turbopack in aicomp/ directory
+- Created Next.js 16.1.6 project with App Router and Turbopack in apps/web/AICompare/ directory
 - Set up organized directory structure: components/{ui,layout,features}/, lib/, styles/
 - Installed all design system dependencies: Radix UI primitives, CVA, tailwind-merge, Framer Motion, Lucide
 
@@ -68,15 +68,15 @@ Each task was committed atomically:
 
 ## Files Created/Modified
 
-- `aicomp/package.json` - Project manifest with all dependencies
-- `aicomp/tsconfig.json` - TypeScript configuration with path aliases
-- `aicomp/next.config.ts` - Next.js configuration
-- `aicomp/src/app/layout.tsx` - Root layout with metadata
-- `aicomp/src/app/page.tsx` - Home page component
-- `aicomp/src/app/globals.css` - Global Tailwind styles
-- `aicomp/src/components/{ui,layout,features}/` - Component directories
-- `aicomp/src/lib/` - Utilities directory
-- `aicomp/src/styles/` - Styles directory
+- `apps/web/AICompare/package.json` - Project manifest with all dependencies
+- `apps/web/AICompare/tsconfig.json` - TypeScript configuration with path aliases
+- `apps/web/AICompare/next.config.ts` - Next.js configuration
+- `apps/web/AICompare/src/app/layout.tsx` - Root layout with metadata
+- `apps/web/AICompare/src/app/page.tsx` - Home page component
+- `apps/web/AICompare/src/app/globals.css` - Global Tailwind styles
+- `apps/web/AICompare/src/components/{ui,layout,features}/` - Component directories
+- `apps/web/AICompare/src/lib/` - Utilities directory
+- `apps/web/AICompare/src/styles/` - Styles directory
 
 ## Decisions Made
 
