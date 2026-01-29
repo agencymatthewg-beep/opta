@@ -148,3 +148,40 @@ public extension LinearGradient {
         )
     }
 }
+
+// MARK: - Tracking Modifiers
+
+/// View modifiers for Opta Typography letter-spacing presets
+///
+/// CSS `letter-spacing: 0.12em` translates to SwiftUI tracking = fontSize * 0.12
+public extension View {
+    /// Hero tracking (0.12em equivalent)
+    /// - Parameter fontSize: The font size for tracking calculation (default: 34pt hero size)
+    func trackingHero(fontSize: CGFloat = 34) -> some View {
+        self.tracking(fontSize * 0.12)
+    }
+
+    /// Subtitle tracking (0.25em equivalent)
+    /// - Parameter fontSize: The font size for tracking calculation (default: 17pt subtitle size)
+    func trackingSubtitle(fontSize: CGFloat = 17) -> some View {
+        self.tracking(fontSize * 0.25)
+    }
+
+    /// Section header tracking (0.08em equivalent)
+    /// - Parameter fontSize: The font size for tracking calculation (default: 28pt header size)
+    func trackingSectionHeader(fontSize: CGFloat = 28) -> some View {
+        self.tracking(fontSize * 0.08)
+    }
+
+    /// Badge tracking (0.15em equivalent)
+    /// - Parameter fontSize: The font size for tracking calculation (default: 12pt badge size)
+    func trackingBadge(fontSize: CGFloat = 12) -> some View {
+        self.tracking(fontSize * 0.15)
+    }
+
+    /// Subsection tracking (0.05em equivalent)
+    /// - Parameter fontSize: The font size for tracking calculation (default: 20pt subsection size)
+    func trackingSubsection(fontSize: CGFloat = 20) -> some View {
+        self.tracking(fontSize * 0.05)
+    }
+}
