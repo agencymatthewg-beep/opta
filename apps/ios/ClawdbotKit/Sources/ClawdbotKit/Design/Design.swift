@@ -13,6 +13,7 @@
 //  - ClawdbotGlassModifiers.swift: 3-level glass system + obsidian variants
 //  - ClawdbotGlowEffects.swift: Glow intensity modifiers
 //  - OptaStatusBadge.swift: Status indicator badge component
+//  - ClawdbotTypography.swift: Sora font integration with Moonlight gradient
 //
 //  Created by Matthew Byrden
 //
@@ -26,5 +27,6 @@ public enum ClawdbotDesign {
 
     /// Design system version (tracks design token changes)
     /// v1.1.0: Added glass, obsidian, glow effects, status badge
-    public static let version = "1.1.0"
+    /// v1.2.0: Added Sora typography, MoonlightText, tracking modifiers
+    public static let version = "1.2.0"
 }
