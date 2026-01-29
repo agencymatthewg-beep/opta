@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { Sidebar } from "@/components/layout/sidebar";
-import { Header } from "@/components/layout/header";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -10,8 +8,14 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "AI Comp - AI Intelligence Hub",
-  description: "Compare AI models, benchmarks, and pricing across providers",
+  title: "AI Model Rankings | aicomp.optamize.biz",
+  description: "Compare the top AI models across key benchmarks. Live rankings, performance scores, pricing, and industry news.",
+  keywords: ["AI models", "LLM comparison", "GPT-4", "Claude", "Gemini", "benchmarks", "MMLU", "HumanEval", "AI pricing"],
+  openGraph: {
+    title: "AI Model Rankings",
+    description: "Compare the top AI models across key benchmarks",
+    type: "website",
+  },
 };
 
 export default function RootLayout({
@@ -20,15 +24,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" className="dark scroll-smooth">
       <body className={`${inter.variable} font-sans antialiased bg-opta-bg`}>
-        <div className="flex min-h-screen">
-          <Sidebar />
-          <main className="flex-1 ml-0 md:ml-60">
-            <Header title="Dashboard" />
-            <div className="p-6">{children}</div>
-          </main>
-        </div>
+        <main className="min-h-screen">
+          {children}
+        </main>
       </body>
     </html>
   );

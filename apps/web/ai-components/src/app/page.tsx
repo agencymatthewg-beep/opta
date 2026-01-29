@@ -2,6 +2,7 @@
 
 import { ModelCard } from "@/components/features/ModelCard";
 import { motion } from "framer-motion";
+import { BarChart3, DollarSign, Newspaper, Trophy, ChevronDown } from "lucide-react";
 
 // Animated diamond decoration component
 function FloatingDiamond({
@@ -38,9 +39,39 @@ function FloatingDiamond({
       className={className}
       style={{ width: size, height: size }}
     >
-      <div
-        className={`w-full h-full rotate-45 border-2 ${colorClasses[color]}`}
-      />
+      <div className={`w-full h-full rotate-45 border-2 ${colorClasses[color]}`} />
+    </motion.div>
+  );
+}
+
+// Section header component
+function SectionHeader({
+  id,
+  icon: Icon,
+  title,
+  subtitle,
+  iconColor = "text-neon-cyan"
+}: {
+  id: string;
+  icon: React.ElementType;
+  title: string;
+  subtitle: string;
+  iconColor?: string;
+}) {
+  return (
+    <motion.div
+      id={id}
+      className="text-center mb-10 pt-20 -mt-20"
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.5 }}
+    >
+      <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full bg-glass-bg border border-glass-border mb-4 ${iconColor}`}>
+        <Icon className="w-4 h-4" />
+        <span className="text-sm font-medium uppercase tracking-wider">{title}</span>
+      </div>
+      <p className="text-text-secondary max-w-xl mx-auto">{subtitle}</p>
     </motion.div>
   );
 }
@@ -244,9 +275,81 @@ const models = [
   },
 ];
 
-export default function ModelsPage() {
+// Benchmark comparison data
+const benchmarkData = [
+  { name: "MMLU", description: "Massive Multitask Language Understanding", top: "Claude 3.5 Opus", topScore: 92.3 },
+  { name: "HumanEval", description: "Code Generation Benchmark", top: "Claude 3.5 Sonnet", topScore: 92.0 },
+  { name: "GPQA", description: "Graduate-Level Science QA", top: "Claude 3.5 Opus", topScore: 65.2 },
+  { name: "MATH", description: "Mathematical Problem Solving", top: "Claude 3.5 Opus", topScore: 78.4 },
+  { name: "GSM8K", description: "Grade School Math", top: "Claude 3.5 Opus", topScore: 96.1 },
+  { name: "ARC-C", description: "AI2 Reasoning Challenge", top: "Claude 3.5 Opus", topScore: 97.2 },
+];
+
+// Pricing data
+const pricingData = [
+  { model: "Claude 3.5 Opus", provider: "Anthropic", input: "$15.00", output: "$75.00", context: "200K" },
+  { model: "GPT-4 Turbo", provider: "OpenAI", input: "$10.00", output: "$30.00", context: "128K" },
+  { model: "Gemini 2.0 Ultra", provider: "Google", input: "$7.00", output: "$21.00", context: "1M" },
+  { model: "Claude 3.5 Sonnet", provider: "Anthropic", input: "$3.00", output: "$15.00", context: "200K" },
+  { model: "Llama 3.1 405B", provider: "Meta (via API)", input: "$2.50", output: "$10.00", context: "128K" },
+  { model: "Mistral Large 2", provider: "Mistral AI", input: "$2.00", output: "$6.00", context: "128K" },
+];
+
+// News data
+const newsData = [
+  {
+    date: "Jan 28, 2025",
+    title: "Claude 3.5 Opus Takes #1 Spot",
+    summary: "Anthropic's latest model surpasses GPT-4 Turbo in comprehensive benchmark testing.",
+    tag: "Rankings"
+  },
+  {
+    date: "Jan 26, 2025",
+    title: "DeepSeek V3 Debuts in Top 10",
+    summary: "Chinese AI lab DeepSeek releases competitive new model with strong math capabilities.",
+    tag: "New Model"
+  },
+  {
+    date: "Jan 24, 2025",
+    title: "Google Announces Gemini 2.0 Ultra",
+    summary: "Next-generation multimodal model with 1M context window enters beta testing.",
+    tag: "Announcement"
+  },
+  {
+    date: "Jan 22, 2025",
+    title: "OpenAI Reduces GPT-4 Turbo Pricing",
+    summary: "API prices drop 20% as competition heats up in the LLM market.",
+    tag: "Pricing"
+  },
+];
+
+// Sticky navigation component
+function StickyNav() {
   return (
-    <div className="min-h-screen relative overflow-hidden">
+    <motion.nav
+      initial={{ y: -100 }}
+      animate={{ y: 0 }}
+      className="fixed top-0 left-0 right-0 z-50 bg-opta-bg/80 backdrop-blur-xl border-b border-glass-border"
+    >
+      <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+        <span className="text-xl font-bold text-white">AI Comp</span>
+        <div className="hidden md:flex items-center gap-6">
+          <a href="#models" className="text-sm text-text-secondary hover:text-white transition-colors">Models</a>
+          <a href="#benchmarks" className="text-sm text-text-secondary hover:text-white transition-colors">Benchmarks</a>
+          <a href="#pricing" className="text-sm text-text-secondary hover:text-white transition-colors">Pricing</a>
+          <a href="#news" className="text-sm text-text-secondary hover:text-white transition-colors">News</a>
+        </div>
+      </div>
+    </motion.nav>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <div className="min-h-screen relative">
+      {/* Sticky Navigation */}
+      <StickyNav />
+
       {/* Background decorative diamonds */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <FloatingDiamond className="absolute top-20 left-[10%]" delay={0} size={16} color="neon-orange" />
@@ -255,70 +358,276 @@ export default function ModelsPage() {
         <FloatingDiamond className="absolute top-[45%] right-[8%]" delay={1.5} size={14} color="neon-pink" />
         <FloatingDiamond className="absolute top-[60%] left-[12%]" delay={2} size={8} color="neon-orange" />
         <FloatingDiamond className="absolute top-[75%] right-[20%]" delay={2.5} size={16} color="neon-cyan" />
-        <FloatingDiamond className="absolute bottom-40 left-[8%]" delay={3} size={12} color="neon-purple" />
-        <FloatingDiamond className="absolute bottom-20 right-[12%]" delay={3.5} size={10} color="neon-pink" />
       </div>
 
-      {/* Header */}
-      <motion.div
-        className="text-center mb-12 relative z-10"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-      >
-        {/* LEADERBOARD label */}
-        <motion.p
-          className="text-sm md:text-base font-semibold tracking-[0.3em] uppercase mb-4 gradient-text-pink"
+      {/* ============================================ */}
+      {/* SECTION 1: HERO / LEADERBOARD (Models) */}
+      {/* ============================================ */}
+      <section id="models" className="pt-24 pb-16 px-4">
+        {/* Hero Header */}
+        <motion.div
+          className="text-center mb-12 relative z-10"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <motion.p
+            className="text-sm md:text-base font-semibold tracking-[0.3em] uppercase mb-4 gradient-text-pink"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+          >
+            Leaderboard
+          </motion.p>
+          <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
+            Top 10 AI Models
+          </h1>
+          <p className="text-text-secondary text-base md:text-lg max-w-2xl mx-auto mb-8">
+            Compare the top AI models across key benchmarks. Hover over cards to see detailed scores.
+          </p>
+
+          {/* Scroll indicator */}
+          <motion.div
+            className="flex flex-col items-center gap-2 text-text-muted"
+            animate={{ y: [0, 8, 0] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          >
+            <span className="text-xs">Scroll to explore</span>
+            <ChevronDown className="w-4 h-4" />
+          </motion.div>
+        </motion.div>
+
+        {/* Model Cards */}
+        <div className="space-y-6 max-w-5xl mx-auto relative z-10">
+          {models.map((model, index) => (
+            <motion.div
+              key={model.rank}
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1, duration: 0.5 }}
+            >
+              <ModelCard
+                rank={model.rank}
+                name={model.name}
+                company={model.company}
+                update={model.update}
+                status={model.status}
+                score={model.score}
+                tags={model.tags}
+                benchmarks={model.benchmarks}
+              />
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Card interaction hint */}
+        <motion.div
+          className="text-center mt-8 text-text-muted text-sm relative z-10"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
+          transition={{ delay: 1.2 }}
         >
-          Leaderboard
-        </motion.p>
+          <p className="hidden md:block">Hover over a card to view benchmark details - Click to pin</p>
+          <p className="md:hidden">Scroll to focus on a card and view benchmark details</p>
+        </motion.div>
+      </section>
 
-        {/* Main title */}
-        <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
-          Top 10 AI Models
-        </h1>
+      {/* ============================================ */}
+      {/* SECTION 2: BENCHMARKS */}
+      {/* ============================================ */}
+      <section id="benchmarks" className="py-16 px-4 bg-gradient-to-b from-transparent via-purple-deep/5 to-transparent">
+        <SectionHeader
+          id="benchmarks-header"
+          icon={BarChart3}
+          title="Benchmarks"
+          subtitle="Understanding the metrics that matter for AI model evaluation"
+          iconColor="text-neon-green"
+        />
 
-        <p className="text-text-secondary text-base md:text-lg max-w-2xl mx-auto">
-          Compare the top AI models across key benchmarks. Hover over cards to see detailed scores.
-        </p>
-      </motion.div>
+        <div className="max-w-4xl mx-auto">
+          {/* Benchmark cards */}
+          <div className="grid gap-4 md:grid-cols-2">
+            {benchmarkData.map((benchmark, index) => (
+              <motion.div
+                key={benchmark.name}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+                className="glass-card p-5 rounded-xl"
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <h3 className="text-lg font-semibold text-white">{benchmark.name}</h3>
+                    <p className="text-xs text-text-muted">{benchmark.description}</p>
+                  </div>
+                  <span className="text-2xl font-bold text-neon-green">{benchmark.topScore}%</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Trophy className="w-4 h-4 text-neon-orange" />
+                  <span className="text-text-secondary">Leader:</span>
+                  <span className="text-neon-pink font-medium">{benchmark.top}</span>
+                </div>
+                {/* Progress bar showing top score */}
+                <div className="mt-3 h-1.5 bg-white/5 rounded-full overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    whileInView={{ width: `${benchmark.topScore}%` }}
+                    viewport={{ once: true }}
+                    transition={{ delay: index * 0.1 + 0.3, duration: 0.8 }}
+                    className="h-full bg-gradient-to-r from-neon-green to-neon-cyan rounded-full"
+                  />
+                </div>
+              </motion.div>
+            ))}
+          </div>
 
-      {/* Model Cards */}
-      <div className="space-y-6 max-w-5xl mx-auto px-4 relative z-10">
-        {models.map((model, index) => (
-          <motion.div
-            key={model.rank}
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1, duration: 0.5 }}
+          {/* Methodology note */}
+          <motion.p
+            className="text-center text-xs text-text-muted mt-8"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
           >
-            <ModelCard
-              rank={model.rank}
-              name={model.name}
-              company={model.company}
-              update={model.update}
-              status={model.status}
-              score={model.score}
-              tags={model.tags}
-              benchmarks={model.benchmarks}
-            />
-          </motion.div>
-        ))}
-      </div>
+            Benchmarks sourced from official papers, Hugging Face Open LLM Leaderboard, and provider documentation.
+          </motion.p>
+        </div>
+      </section>
 
-      {/* Footer hint */}
-      <motion.div
-        className="text-center mt-12 text-text-muted text-sm relative z-10"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1.2 }}
-      >
-        <p className="hidden md:block">Hover over a card to view benchmark details • Click to pin</p>
-        <p className="md:hidden">Scroll to focus on a card and view benchmark details</p>
-      </motion.div>
+      {/* ============================================ */}
+      {/* SECTION 3: PRICING */}
+      {/* ============================================ */}
+      <section id="pricing" className="py-16 px-4">
+        <SectionHeader
+          id="pricing-header"
+          icon={DollarSign}
+          title="Pricing"
+          subtitle="Compare API pricing across top AI model providers (per 1M tokens)"
+          iconColor="text-neon-amber"
+        />
+
+        <div className="max-w-4xl mx-auto overflow-x-auto">
+          <motion.table
+            className="w-full"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+          >
+            <thead>
+              <tr className="border-b border-glass-border">
+                <th className="text-left py-3 px-4 text-xs font-medium text-text-muted uppercase tracking-wider">Model</th>
+                <th className="text-left py-3 px-4 text-xs font-medium text-text-muted uppercase tracking-wider">Provider</th>
+                <th className="text-right py-3 px-4 text-xs font-medium text-text-muted uppercase tracking-wider">Input</th>
+                <th className="text-right py-3 px-4 text-xs font-medium text-text-muted uppercase tracking-wider">Output</th>
+                <th className="text-right py-3 px-4 text-xs font-medium text-text-muted uppercase tracking-wider">Context</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pricingData.map((item, index) => (
+                <motion.tr
+                  key={item.model}
+                  initial={{ opacity: 0, x: -20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.05 }}
+                  className="border-b border-glass-border/50 hover:bg-glass-hover transition-colors"
+                >
+                  <td className="py-4 px-4">
+                    <span className="font-medium text-white">{item.model}</span>
+                  </td>
+                  <td className="py-4 px-4 text-text-secondary text-sm">{item.provider}</td>
+                  <td className="py-4 px-4 text-right">
+                    <span className="font-mono text-neon-green">{item.input}</span>
+                  </td>
+                  <td className="py-4 px-4 text-right">
+                    <span className="font-mono text-neon-orange">{item.output}</span>
+                  </td>
+                  <td className="py-4 px-4 text-right">
+                    <span className="text-text-secondary">{item.context}</span>
+                  </td>
+                </motion.tr>
+              ))}
+            </tbody>
+          </motion.table>
+        </div>
+
+        <motion.p
+          className="text-center text-xs text-text-muted mt-6 max-w-2xl mx-auto"
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+        >
+          Prices shown are per 1 million tokens. Actual costs may vary based on usage tier, region, and special agreements.
+        </motion.p>
+      </section>
+
+      {/* ============================================ */}
+      {/* SECTION 4: NEWS */}
+      {/* ============================================ */}
+      <section id="news" className="py-16 px-4 bg-gradient-to-b from-transparent via-purple-deep/5 to-transparent">
+        <SectionHeader
+          id="news-header"
+          icon={Newspaper}
+          title="Latest News"
+          subtitle="Stay updated with the latest developments in AI models and benchmarks"
+          iconColor="text-neon-coral"
+        />
+
+        <div className="max-w-3xl mx-auto space-y-4">
+          {newsData.map((item, index) => (
+            <motion.article
+              key={index}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: index * 0.1 }}
+              className="glass-card p-5 rounded-xl hover:border-purple-glow/40 transition-colors cursor-pointer group"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className="text-xs text-text-muted">{item.date}</span>
+                    <span className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-purple-glow/20 text-purple-glow border border-purple-glow/30">
+                      {item.tag}
+                    </span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-white group-hover:text-neon-pink transition-colors mb-1">
+                    {item.title}
+                  </h3>
+                  <p className="text-sm text-text-secondary">{item.summary}</p>
+                </div>
+              </div>
+            </motion.article>
+          ))}
+        </div>
+      </section>
+
+      {/* ============================================ */}
+      {/* FOOTER */}
+      {/* ============================================ */}
+      <footer className="py-12 px-4 border-t border-glass-border">
+        <div className="max-w-4xl mx-auto text-center">
+          <p className="text-2xl font-bold text-white mb-2">AI Comp</p>
+          <p className="text-text-muted text-sm mb-6">
+            Comparing AI models so you don&apos;t have to.
+          </p>
+
+          {/* Quick links */}
+          <div className="flex items-center justify-center gap-6 mb-6">
+            <a href="#models" className="text-sm text-text-secondary hover:text-neon-cyan transition-colors">Models</a>
+            <a href="#benchmarks" className="text-sm text-text-secondary hover:text-neon-cyan transition-colors">Benchmarks</a>
+            <a href="#pricing" className="text-sm text-text-secondary hover:text-neon-cyan transition-colors">Pricing</a>
+            <a href="#news" className="text-sm text-text-secondary hover:text-neon-cyan transition-colors">News</a>
+          </div>
+
+          <p className="text-xs text-text-muted">
+            Data sourced from official benchmarks and provider APIs. Updated daily.
+          </p>
+          <p className="text-xs text-text-muted mt-2">
+            &copy; 2025 aicomp.optamize.biz
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }
