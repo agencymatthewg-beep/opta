@@ -13,6 +13,7 @@ import Combine
 ///
 /// Wraps ProtocolHandler actor and exposes state for SwiftUI views.
 /// All UI updates happen on MainActor via Combine's receive(on:).
+/// Includes message persistence via MessageStore for conversation continuity.
 @Observable
 @MainActor
 public final class ChatViewModel {
@@ -25,21 +26,49 @@ public final class ChatViewModel {
     /// Current connection state
     public private(set) var connectionState: ConnectionState = .disconnected
 
-    /// Whether a send operation is in progress
+    /// Whether a send operation or history load is in progress
     public private(set) var isLoading: Bool = false
 
     // MARK: - Private Properties
 
     private let protocolHandler: ProtocolHandler
+    private let messageStore: MessageStore
     private var cancellables = Set<AnyCancellable>()
+
+    /// Set of known message IDs for deduplication
+    private var knownMessageIDs: Set<String> = []
 
     // MARK: - Initialization
 
-    /// Initialize with a ProtocolHandler
-    /// - Parameter protocolHandler: The protocol handler for message operations
-    public init(protocolHandler: ProtocolHandler) {
+    /// Initialize with a ProtocolHandler and optional MessageStore
+    /// - Parameters:
+    ///   - protocolHandler: The protocol handler for message operations
+    ///   - messageStore: Store for message persistence (default: MessageStore())
+    public init(
+        protocolHandler: ProtocolHandler,
+        messageStore: MessageStore = MessageStore()
+    ) {
         self.protocolHandler = protocolHandler
+        self.messageStore = messageStore
         observeMessages()
+        loadHistory()
+    }
+
+    // MARK: - History Loading
+
+    /// Load message history from persistence
+    ///
+    /// Called during initialization to restore conversation continuity.
+    /// Sets isLoading during load operation.
+    private func loadHistory() {
+        Task {
+            isLoading = true
+            let stored = await messageStore.loadMessages()
+            messages = stored
+            // Populate known IDs for deduplication
+            knownMessageIDs = Set(stored.map { $0.id.value })
+            isLoading = false
+        }
     }
 
     // MARK: - Combine Observation
@@ -66,14 +95,24 @@ public final class ChatViewModel {
 
     /// Handle incoming message, preventing duplicates
     private func handleIncomingMessage(_ message: ChatMessage) {
-        // Check for duplicate by MessageID
-        if let existingIndex = messages.firstIndex(where: { $0.id == message.id }) {
-            // Update existing message (e.g., status change from pending to delivered)
-            messages[existingIndex] = message
-        } else {
-            // New message, append
-            messages.append(message)
+        // Deduplication: check if we've already seen this message
+        let messageIDValue = message.id.value
+        guard !knownMessageIDs.contains(messageIDValue) else {
+            // Update existing message if it exists (e.g., status change from pending to delivered)
+            if let existingIndex = messages.firstIndex(where: { $0.id == message.id }) {
+                messages[existingIndex] = message
+                // Persist the update
+                Task { await messageStore.save(message) }
+            }
+            return
         }
+
+        // New message - add to known IDs, append to list, and persist
+        knownMessageIDs.insert(messageIDValue)
+        messages.append(message)
+
+        // Persist incoming message asynchronously
+        Task { await messageStore.save(message) }
     }
 
     /// Handle bot state update
@@ -90,8 +129,9 @@ public final class ChatViewModel {
     /// Uses optimistic update pattern:
     /// 1. Create message with .pending status
     /// 2. Append to messages immediately (instant feedback)
-    /// 3. Send via ProtocolHandler
-    /// 4. Status updated when server confirms
+    /// 3. Persist to MessageStore
+    /// 4. Send via ProtocolHandler
+    /// 5. Status updated when server confirms
     public func send(_ text: String) async {
         guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
 
@@ -105,8 +145,14 @@ public final class ChatViewModel {
             status: .pending
         )
 
+        // Track message ID for deduplication
+        knownMessageIDs.insert(message.id.value)
+
         // Optimistic update - append BEFORE sending
         messages.append(message)
+
+        // Persist to store (non-blocking)
+        Task { await messageStore.save(message) }
 
         // Send via protocol handler
         await protocolHandler.send(message: message)
@@ -129,15 +175,25 @@ public final class ChatViewModel {
             replyTo: replyTo
         )
 
+        // Track message ID for deduplication
+        knownMessageIDs.insert(message.id.value)
+
         messages.append(message)
+
+        // Persist to store (non-blocking)
+        Task { await messageStore.save(message) }
+
         await protocolHandler.send(message: message)
     }
 
     // MARK: - State Management
 
-    /// Clear all messages
+    /// Clear all messages and history
     public func clearMessages() {
         messages.removeAll()
+        knownMessageIDs.removeAll()
+        // Clear persistent storage
+        Task { await messageStore.clearHistory() }
     }
 
     /// Update connection state (called by connection layer)
