@@ -11,6 +11,7 @@
 		CB000003AAAA000100000001 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB000004AAAA000100000001 /* ContentView.swift */; };
 		CB000007AAAA000200000001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CB000008AAAA000200000001 /* Assets.xcassets */; };
 		CB000050AAAA000300000001 /* ClawdbotKit in Frameworks */ = {isa = PBXBuildFile; productRef = CB000051AAAA000300000001 /* ClawdbotKit */; };
+		CB000060AAAA000400000001 /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB000061AAAA000400000001 /* ChatView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -19,6 +20,7 @@
 		CB000008AAAA000200000001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		CB000009AAAA000100000001 /* ClawdbotMobile.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ClawdbotMobile.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CB00000AAAAA000200000001 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		CB000061AAAA000400000001 /* ChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -46,10 +48,19 @@
 			children = (
 				CB000002AAAA000100000001 /* ClawdbotMobileApp.swift */,
 				CB000004AAAA000100000001 /* ContentView.swift */,
+				CB000062AAAA000400000001 /* Views */,
 				CB000008AAAA000200000001 /* Assets.xcassets */,
 				CB00000AAAAA000200000001 /* Info.plist */,
 			);
 			path = ClawdbotMobile;
+			sourceTree = "<group>";
+		};
+		CB000062AAAA000400000001 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				CB000061AAAA000400000001 /* ChatView.swift */,
+			);
+			path = Views;
 			sourceTree = "<group>";
 		};
 		CB00000FAAAA000100000001 /* Products */ = {
@@ -137,6 +148,7 @@
 			files = (
 				CB000001AAAA000100000001 /* ClawdbotMobileApp.swift in Sources */,
 				CB000003AAAA000100000001 /* ContentView.swift in Sources */,
+				CB000060AAAA000400000001 /* ChatView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
