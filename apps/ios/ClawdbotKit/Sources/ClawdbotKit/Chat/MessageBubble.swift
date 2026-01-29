@@ -222,6 +222,66 @@ private struct TypingCursor: View {
     }
 }
 
+// MARK: - Message List with Ignition
+
+/// A view that displays a list of messages with staggered ignition animation
+///
+/// Usage:
+/// ```swift
+/// MessageList(messages: viewModel.messages)
+/// ```
+///
+/// Messages appear with cascading wake-from-darkness animation,
+/// creating a premium entrance effect. Respects Reduce Motion.
+public struct MessageList: View {
+    let messages: [ChatMessage]
+    let streamingMessages: [String: String]
+    let botState: BotState
+
+    /// Initialize message list with messages and streaming state
+    /// - Parameters:
+    ///   - messages: Array of chat messages to display
+    ///   - streamingMessages: Dictionary of messageID -> partial content
+    ///   - botState: Current bot state for typing cursor
+    public init(
+        messages: [ChatMessage],
+        streamingMessages: [String: String] = [:],
+        botState: BotState = .idle
+    ) {
+        self.messages = messages
+        self.streamingMessages = streamingMessages
+        self.botState = botState
+    }
+
+    public var body: some View {
+        ScrollView {
+            LazyVStack(spacing: 12) {
+                // Regular messages with staggered ignition
+                ForEach(Array(messages.enumerated()), id: \.element.id) { index, message in
+                    MessageBubble(message: message)
+                        .staggeredIgnition(
+                            index: index,
+                            isVisible: true,
+                            staggerInterval: 0.03  // Faster stagger for messages
+                        )
+                }
+
+                // Streaming messages
+                ForEach(Array(streamingMessages.keys.sorted()), id: \.self) { messageID in
+                    if let content = streamingMessages[messageID] {
+                        MessageBubble(
+                            streamingContent: content,
+                            showTypingCursor: botState == .typing
+                        )
+                        .ignition()
+                    }
+                }
+            }
+            .padding(.horizontal)
+        }
+    }
+}
+
 // MARK: - Preview
 
 #if DEBUG
@@ -269,6 +329,31 @@ struct MessageBubble_Previews: PreviewProvider {
         .padding()
         .background(Color.clawdbotBackground)
         .previewLayout(.sizeThatFits)
+    }
+}
+
+struct MessageList_Previews: PreviewProvider {
+    static var previews: some View {
+        let messages = [
+            ChatMessage(
+                content: "Hello! How can I help you today?",
+                sender: .bot(name: "Clawdbot"),
+                status: .delivered
+            ),
+            ChatMessage(
+                content: "What's the weather like?",
+                sender: .user,
+                status: .delivered
+            ),
+            ChatMessage(
+                content: "The weather is sunny and warm today!",
+                sender: .bot(name: "Clawdbot"),
+                status: .delivered
+            )
+        ]
+
+        MessageList(messages: messages)
+            .background(Color.clawdbotBackground)
     }
 }
 #endif
