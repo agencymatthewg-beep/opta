@@ -113,6 +113,7 @@ public struct MessageBubble: View {
                 // Message content with optional typing cursor
                 HStack(spacing: 0) {
                     Text(displayContent)
+                        .font(.soraBody)
                         .foregroundColor(textColor)
 
                     // Typing cursor indicator (only when actively typing)
@@ -155,7 +156,7 @@ public struct MessageBubble: View {
                         // Timestamp
                         if let msg = message {
                             Text(msg.timestamp.formatted(date: .omitted, time: .shortened))
-                                .font(.caption2)
+                                .font(.soraCaption)
                                 .foregroundColor(.clawdbotTextMuted)
                         }
                     }
@@ -176,7 +177,7 @@ public struct MessageBubble: View {
         let (iconName, iconColor) = statusIconInfo
 
         Image(systemName: iconName)
-            .font(.caption2)
+            .font(.soraCaption)
             .foregroundColor(iconColor)
     }
 
