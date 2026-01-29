@@ -68,6 +68,19 @@ public extension Color {
     static let clawdbotGreen = Color(hex: "22c55e")      // Success, positive
     static let clawdbotAmber = Color(hex: "f59e0b")      // Warning, attention
     static let clawdbotRed = Color(hex: "ef4444")        // Error, destructive
+
+    // Extended palette
+    /// Cyan accent color (info/cool accent)
+    static let clawdbotCyan = Color(red: 6/255, green: 182/255, blue: 212/255)  // #06b6d4
+
+    /// Indigo color (gradient end)
+    static let clawdbotIndigo = Color(red: 99/255, green: 102/255, blue: 241/255)  // #6366f1
+
+    /// Pink accent (optional highlights)
+    static let clawdbotPink = Color(red: 236/255, green: 72/255, blue: 153/255)  // #ec4899
+
+    /// Coral accent (warm highlights)
+    static let clawdbotCoral = Color(red: 251/255, green: 113/255, blue: 133/255)  // #fb7185
 }
 
 // MARK: - Gradients
