@@ -4,29 +4,24 @@
 //
 //  Connection module for Clawdbot native apps.
 //
-//  Future Purpose:
-//  This module will contain WebSocket connection infrastructure:
-//  - WebSocket client (URLSessionWebSocketTask or Starscream)
-//  - Connection state machine (connecting, connected, disconnected, reconnecting)
-//  - Automatic reconnection with exponential backoff
-//  - Tailscale network detection and handling
-//  - Network reachability monitoring
-//  - Connection health and ping/pong handling
+//  This module contains WebSocket connection infrastructure:
+//  - ClawdbotWebSocket: Core WebSocket client (URLSessionWebSocketTask)
+//  - ClawdbotMessage: Message types (text/data)
+//  - ClawdbotWebSocketError: Connection errors
 //
-//  This will be implemented in Phase 2 (Connection Layer).
-//
-//  Created by Matthew Byrden
+//  State machine and reconnection: ConnectionManager (Plan 02-02)
+//  Network reachability: NetworkMonitor (Plan 02-03)
 //
 
 import Foundation
 
 /// Connection infrastructure namespace for Clawdbot apps
 public enum ClawdbotConnection {
-    /// Module status - will be populated in Phase 2
-    public static let status = "placeholder"
+    /// Module version
+    public static let version = "0.2.0"
 
-    /// Possible connection states (preview)
-    public enum State: String {
+    /// Connection states for state machine (implemented in Plan 02-02)
+    public enum State: String, Sendable {
         case disconnected
         case connecting
         case connected
