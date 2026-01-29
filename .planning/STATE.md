@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2025-01-29)
 
 **Core value:** Always know what your bot is doing. Real-time thinking state, typing indicators, and streaming responses with rich output formats.
-**Current focus:** Phase 5 — Streaming & State Complete
+**Current focus:** Phase 6.1 — Opta Aesthetic Alignment (Planning Complete)
 
 ## Current Position
 
-Phase: 6 of 12 (Rich Output: Text)
+Phase: 6.1 of 12 (Opta Aesthetic Alignment)
 Plan: 0 of 3 complete in current phase
 Status: Planned — Ready to Execute
-Last activity: 2026-01-30 — Planned Phase 6 (Rich Output: Text)
+Last activity: 2026-01-30 — Planned Phase 6.1 (Opta Aesthetic Alignment)
 
 Progress: ████████░░ 46%
 
@@ -119,9 +119,9 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-30
-Stopped at: Planned Phase 6 (Rich Output: Text)
+Stopped at: Planned Phase 6.1 (Opta Aesthetic Alignment)
 Resume file: None
-Next action: Execute Phase 6 (`/gsd:execute-phase 6`)
+Next action: Execute Phase 6.1 (`/gsd:execute-phase 6.1`)
 
 ## Phase 5 Complete
 
