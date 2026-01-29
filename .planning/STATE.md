@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2025-01-29)
 
 **Core value:** Always know what your bot is doing. Real-time thinking state, typing indicators, and streaming responses with rich output formats.
-**Current focus:** Phase 3 — Message Protocol (In Progress)
+**Current focus:** Phase 3 — Message Protocol (Complete)
 
 ## Current Position
 
 Phase: 3 of 12 (Message Protocol)
-Plan: 2 of 4 complete in current phase
-Status: In Progress
-Last activity: 2026-01-30 — Completed Plan 03-02 (Protocol encoder/decoder)
+Plan: 4 of 4 complete in current phase
+Status: Phase Complete
+Last activity: 2026-01-30 — Completed Plan 03-04 (Protocol integration)
 
-Progress: █████░░░░░ 22%
+Progress: ██████░░░░ 28%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 8
-- Average duration: 6 min
-- Total execution time: 0.78 hours
+- Total plans completed: 10
+- Average duration: 5.3 min
+- Total execution time: 0.88 hours
 
 **By Phase:**
 
@@ -29,11 +29,11 @@ Progress: █████░░░░░ 22%
 |-------|-------|-------|----------|
 | 1. Foundation | 3/3 | 21 min | 7 min |
 | 2. Connection | 3/3 | 22 min | 7.3 min |
-| 3. Protocol | 2/4 | 4 min | 2 min |
+| 3. Protocol | 4/4 | 10 min | 2.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 02-03 (8 min), 02-02 (6 min), 03-01 (3 min), 03-02 (1 min)
-- Trend: Accelerating with well-defined protocol work
+- Last 5 plans: 03-01 (3 min), 03-02 (1 min), 03-03 (3 min), 03-04 (3 min)
+- Trend: Fast execution with well-defined protocol work
 
 ## Accumulated Context
 
@@ -72,6 +72,14 @@ Recent decisions affecting current work:
 | 03-02 | sortedKeys JSON output | Deterministic output for debugging and logging |
 | 03-02 | Unknown message returns .unknown | Forward compatibility for future message types |
 | 03-02 | Streaming chunk fast-path decoder | Real-time performance critical for streaming responses |
+| 03-03 | Actor for OutgoingMessageQueue | Thread-safe queue management matching ConnectionManager pattern |
+| 03-03 | Delegate pattern for send triggering | Decouples queue from transport layer |
+| 03-03 | Exponential backoff retries | Same pattern as reconnection (base * 2^attempt, capped at max) |
+| 03-03 | Combine publisher for queue state | SwiftUI binding for queue status display |
+| 03-04 | ProtocolHandler actor as coordinator | Single entry point combines codec, queue, and assembler |
+| 03-04 | Dual delegate + Combine pattern | SwiftUI uses Combine, UIKit uses delegate - supports both |
+| 03-04 | Auto-pong for ping messages | Maintains heartbeat without manual intervention |
+| 03-04 | Unknown messages logged not errored | Forward compatibility for future message types |
 
 ### Deferred Issues
 
@@ -88,22 +96,13 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-30
-Stopped at: Completed Plan 03-02 (Protocol encoder/decoder)
+Stopped at: Completed Plan 03-04 (Protocol integration) - Phase 3 Complete
 Resume file: None
-Next action: Execute Plan 03-03 (Message queue)
+Next action: Plan Phase 4 (Chat Core)
 
-## Phase 3 Wave Structure
+## Phase 3 Complete
 
-| Wave | Plan | Dependencies | Status |
-|------|------|--------------|--------|
-| 1 | 03-01: Message types | 02-connection | **Complete** |
-| 2 | 03-02: Protocol codec | 03-01 | **Complete** |
-| 2 | 03-03: Message queue | 03-01 | Pending |
-| 3 | 03-04: Protocol integration | 03-02, 03-03 | Pending |
-
-## Phase 3 Progress
-
-2 of 4 plans complete. Message protocol provides so far:
+All 4 plans complete. Message protocol provides:
 - MessageID, MessageStatus, MessageSender types
 - ChatMessage with thread/reply support
 - ProtocolEnvelope generic wrapper with versioning
@@ -113,3 +112,13 @@ Next action: Execute Plan 03-03 (Message queue)
 - ProtocolCodec with JSON encoding/decoding and ISO 8601 dates
 - DecodedMessage enum for type-safe message routing
 - Streaming chunk fast-path decoder for real-time performance
+- OutgoingMessageQueue actor for thread-safe message queue management
+- MessageQueueConfig for retry behavior configuration
+- QueuedMessage with status tracking
+- Exponential backoff retry logic for failed sends
+- Combine publisher for SwiftUI queue status binding
+- ProtocolHandler actor coordinating all protocol components
+- ProtocolHandlerDelegate for event callbacks
+- Combine publishers (incomingMessages, botStateUpdates) for SwiftUI
+- Auto-pong heartbeat response
+- Protocol version 1.0.0 with ClawdbotProtocol namespace
