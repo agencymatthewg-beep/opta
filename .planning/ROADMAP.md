@@ -111,14 +111,13 @@ Plans:
 ### Phase 7: Rich Output: Visual
 **Goal**: Render dynamic tables, interactive graphs, and inline images
 **Depends on**: Phase 6
-**Research**: Likely (library evaluation)
-**Research topics**: Swift Charts API, third-party alternatives, dynamic table sizing strategies, image caching
-**Plans**: TBD
+**Research**: Complete (Swift Charts native to iOS 16+, URLSession for image loading)
+**Plans**: 3 (planned)
 
 Plans:
-- [ ] 07-01: Dynamic table component
-- [ ] 07-02: Interactive graph rendering (Swift Charts)
-- [ ] 07-03: Inline image loading and caching
+- [ ] 07-01: Dynamic table component (Wave 1)
+- [ ] 07-02: Interactive graph rendering with Swift Charts (Wave 2)
+- [ ] 07-03: Inline image loading and caching (Wave 2)
 
 ### Phase 8: GenUI Rendering
 **Goal**: Load and render interactive GenUI components within chat messages
