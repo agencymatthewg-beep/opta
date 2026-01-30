@@ -112,7 +112,7 @@ public struct MessageBubble: View {
             VStack(alignment: alignment, spacing: 4) {
                 // Message content with optional typing cursor
                 HStack(alignment: .bottom, spacing: 0) {
-                    MarkdownContent(content: displayContent, textColor: textColor)
+                    MarkdownContent(content: displayContent, textColor: textColor, isStreaming: isStreaming)
                         .font(.soraBody)
 
                     // Typing cursor indicator (only when actively typing)
