@@ -16,6 +16,10 @@ public enum ContentBlock: Equatable {
     case paragraph(String)
     /// A bullet list with items
     case bulletList([String])
+    /// A fenced code block with optional language hint
+    case codeBlock(code: String, language: String?)
+    /// A collapsible/expandable section with nested content
+    case collapsible(summary: String, content: [ContentBlock], isOpen: Bool)
 }
 
 // MARK: - MarkdownContent View
@@ -61,18 +65,89 @@ public struct MarkdownContent: View {
 
     // MARK: - Block Parsing
 
-    /// Parse content into blocks (paragraphs and lists)
+    /// Parse content into blocks (paragraphs, lists, code blocks, and collapsible sections)
     /// - Parameter content: Raw markdown content
     /// - Returns: Array of ContentBlock
     func parseBlocks(_ content: String) -> [ContentBlock] {
-        let sanitized = sanitizeForStreaming(content)
+        // First, extract collapsible sections and replace with placeholders
+        let (processedContent, collapsibleBlocks) = extractCollapsibleBlocks(content)
+
+        let sanitized = sanitizeForStreaming(processedContent)
         let lines = sanitized.components(separatedBy: "\n")
         var blocks: [ContentBlock] = []
         var currentParagraph: [String] = []
         var currentBulletList: [String] = []
+        var inCodeBlock = false
+        var codeBlockLines: [String] = []
+        var codeBlockLanguage: String?
 
         for line in lines {
             let trimmed = line.trimmingCharacters(in: .whitespaces)
+
+            // Check for collapsible placeholder
+            if trimmed.hasPrefix("__COLLAPSIBLE_PLACEHOLDER_") && trimmed.hasSuffix("__") {
+                // Flush any pending content
+                if !currentParagraph.isEmpty {
+                    blocks.append(.paragraph(currentParagraph.joined(separator: "\n")))
+                    currentParagraph = []
+                }
+                if !currentBulletList.isEmpty {
+                    blocks.append(.bulletList(currentBulletList))
+                    currentBulletList = []
+                }
+
+                // Extract index from placeholder
+                let startIndex = trimmed.index(trimmed.startIndex, offsetBy: 26)
+                let endIndex = trimmed.index(trimmed.endIndex, offsetBy: -2)
+                if startIndex < endIndex,
+                   let index = Int(trimmed[startIndex..<endIndex]),
+                   index < collapsibleBlocks.count {
+                    blocks.append(collapsibleBlocks[index])
+                }
+                continue
+            }
+
+            // Check for code block fences
+            if trimmed.hasPrefix("```") {
+                if inCodeBlock {
+                    // End of code block
+                    // Flush any pending content first
+                    if !currentParagraph.isEmpty {
+                        blocks.append(.paragraph(currentParagraph.joined(separator: "\n")))
+                        currentParagraph = []
+                    }
+                    if !currentBulletList.isEmpty {
+                        blocks.append(.bulletList(currentBulletList))
+                        currentBulletList = []
+                    }
+
+                    blocks.append(.codeBlock(code: codeBlockLines.joined(separator: "\n"), language: codeBlockLanguage))
+                    codeBlockLines = []
+                    codeBlockLanguage = nil
+                    inCodeBlock = false
+                } else {
+                    // Start of code block
+                    // Flush any pending content
+                    if !currentParagraph.isEmpty {
+                        blocks.append(.paragraph(currentParagraph.joined(separator: "\n")))
+                        currentParagraph = []
+                    }
+                    if !currentBulletList.isEmpty {
+                        blocks.append(.bulletList(currentBulletList))
+                        currentBulletList = []
+                    }
+
+                    inCodeBlock = true
+                    let langPart = String(trimmed.dropFirst(3)).trimmingCharacters(in: .whitespaces)
+                    codeBlockLanguage = langPart.isEmpty ? nil : langPart
+                }
+                continue
+            }
+
+            if inCodeBlock {
+                codeBlockLines.append(line)
+                continue
+            }
 
             if isBulletLine(trimmed) {
                 // Flush any pending paragraph
@@ -101,6 +176,10 @@ public struct MarkdownContent: View {
         }
 
         // Flush remaining content
+        if inCodeBlock {
+            // Unclosed code block during streaming - render what we have
+            blocks.append(.codeBlock(code: codeBlockLines.joined(separator: "\n"), language: codeBlockLanguage))
+        }
         if !currentBulletList.isEmpty {
             blocks.append(.bulletList(currentBulletList))
         }
@@ -114,6 +193,96 @@ public struct MarkdownContent: View {
         }
 
         return blocks
+    }
+
+    /// Extract collapsible blocks from content and replace with placeholders
+    /// - Parameter content: Raw content potentially containing <details> tags
+    /// - Returns: Tuple of (processed content with placeholders, array of collapsible blocks)
+    private func extractCollapsibleBlocks(_ content: String) -> (String, [ContentBlock]) {
+        var result = content
+        var collapsibleBlocks: [ContentBlock] = []
+
+        // Pattern: <details>\s*<summary>Title</summary>Content</details>
+        // Also handles optional "open" attribute: <details open>
+        let pattern = #"<details(\s+open)?>\s*<summary>(.*?)</summary>([\s\S]*?)</details>"#
+
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
+            return (content, [])
+        }
+
+        // Find all matches (process from end to avoid index shifts)
+        let range = NSRange(content.startIndex..., in: content)
+        let matches = regex.matches(in: content, options: [], range: range)
+
+        // Process matches in reverse order to maintain correct indices
+        for match in matches.reversed() {
+            guard let fullRange = Range(match.range, in: result),
+                  let openAttrRange = Range(match.range(at: 1), in: result),
+                  let summaryRange = Range(match.range(at: 2), in: result),
+                  let contentRange = Range(match.range(at: 3), in: result) else {
+                // Try without open attribute
+                guard let fullRange = Range(match.range, in: result),
+                      let summaryRange = Range(match.range(at: 2), in: result),
+                      let contentRange = Range(match.range(at: 3), in: result) else {
+                    continue
+                }
+
+                let summary = String(result[summaryRange]).trimmingCharacters(in: .whitespacesAndNewlines)
+                let innerContent = String(result[contentRange]).trimmingCharacters(in: .whitespacesAndNewlines)
+
+                // Parse nested content recursively
+                let nestedBlocks = parseNestedContent(innerContent)
+
+                let collapsibleBlock = ContentBlock.collapsible(
+                    summary: summary,
+                    content: nestedBlocks,
+                    isOpen: false
+                )
+
+                let placeholderIndex = collapsibleBlocks.count
+                collapsibleBlocks.insert(collapsibleBlock, at: 0)
+                result.replaceSubrange(fullRange, with: "__COLLAPSIBLE_PLACEHOLDER_\(placeholderIndex)__")
+                continue
+            }
+
+            let isOpen = !result[openAttrRange].isEmpty
+            let summary = String(result[summaryRange]).trimmingCharacters(in: .whitespacesAndNewlines)
+            let innerContent = String(result[contentRange]).trimmingCharacters(in: .whitespacesAndNewlines)
+
+            // Parse nested content recursively
+            let nestedBlocks = parseNestedContent(innerContent)
+
+            let collapsibleBlock = ContentBlock.collapsible(
+                summary: summary,
+                content: nestedBlocks,
+                isOpen: isOpen
+            )
+
+            let placeholderIndex = collapsibleBlocks.count
+            collapsibleBlocks.insert(collapsibleBlock, at: 0)
+            result.replaceSubrange(fullRange, with: "__COLLAPSIBLE_PLACEHOLDER_\(placeholderIndex)__")
+        }
+
+        return (result, collapsibleBlocks)
+    }
+
+    /// Parse nested content within collapsible sections
+    /// - Parameter content: Inner content of collapsible block
+    /// - Returns: Array of ContentBlock parsed from the content
+    private func parseNestedContent(_ content: String) -> [ContentBlock] {
+        // Create a temporary MarkdownContent to parse nested blocks
+        // This handles recursive collapsible sections
+        let tempView = MarkdownContent(content: content, textColor: baseTextColor)
+        return tempView.parseBlocks(content)
+    }
+
+    /// Check if content has incomplete/partial collapsible blocks (during streaming)
+    /// - Parameter content: Content to check
+    /// - Returns: True if there's an unclosed <details> tag
+    func isPartialCollapsible(_ content: String) -> Bool {
+        let openCount = content.components(separatedBy: "<details").count - 1
+        let closeCount = content.components(separatedBy: "</details>").count - 1
+        return openCount > closeCount
     }
 
     /// Check if a line is a bullet list item
