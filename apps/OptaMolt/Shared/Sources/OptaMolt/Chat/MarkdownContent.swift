@@ -316,6 +316,24 @@ public struct MarkdownContent: View {
                 inTable = false
             }
 
+            // Check for standalone image line
+            if isImageLine(trimmed) {
+                // Flush any pending content
+                if !currentParagraph.isEmpty {
+                    blocks.append(.paragraph(currentParagraph.joined(separator: "\n")))
+                    currentParagraph = []
+                }
+                if !currentBulletList.isEmpty {
+                    blocks.append(.bulletList(currentBulletList))
+                    currentBulletList = []
+                }
+                // Parse and add the image
+                if let imageData = parseImageFromLine(trimmed) {
+                    blocks.append(.image(imageData))
+                }
+                continue
+            }
+
             if isBulletLine(trimmed) {
                 // Flush any pending paragraph
                 if !currentParagraph.isEmpty {
@@ -489,6 +507,111 @@ public struct MarkdownContent: View {
             return String(line.dropFirst(2))
         }
         return line
+    }
+
+    // MARK: - Image Parsing
+
+    /// Check if a line is a standalone markdown image
+    /// Pattern: ![alt text](url) or ![alt text](url "title")
+    private func isImageLine(_ line: String) -> Bool {
+        let trimmed = line.trimmingCharacters(in: .whitespaces)
+        // Must start with ![ and contain ]( and end with )
+        guard trimmed.hasPrefix("![") && trimmed.contains("](") && trimmed.hasSuffix(")") else {
+            return false
+        }
+        // Simple validation - should have balanced brackets
+        return parseImageFromLine(trimmed) != nil
+    }
+
+    /// Parse a markdown image from a line
+    /// - Parameter line: The line containing ![alt](url) or ![alt](url "title")
+    /// - Returns: ImageData if successfully parsed, nil otherwise
+    private func parseImageFromLine(_ line: String) -> ImageData? {
+        let trimmed = line.trimmingCharacters(in: .whitespaces)
+
+        // Pattern: ![alt text](url) or ![alt text](url "title")
+        // Use regex for robust parsing
+        let pattern = #"!\[(.*?)\]\((\S+?)(?:\s+["\'](.+?)["\']\s*)?\)"#
+
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
+            return nil
+        }
+
+        let range = NSRange(trimmed.startIndex..., in: trimmed)
+        guard let match = regex.firstMatch(in: trimmed, options: [], range: range) else {
+            return nil
+        }
+
+        // Extract alt text
+        let altText: String
+        if let altRange = Range(match.range(at: 1), in: trimmed) {
+            altText = String(trimmed[altRange])
+        } else {
+            altText = ""
+        }
+
+        // Extract URL
+        guard let urlRange = Range(match.range(at: 2), in: trimmed) else {
+            return nil
+        }
+        let urlString = String(trimmed[urlRange])
+        guard let url = URL(string: urlString) else {
+            return nil
+        }
+
+        // Extract optional title/caption
+        let caption: String?
+        if match.range(at: 3).location != NSNotFound,
+           let captionRange = Range(match.range(at: 3), in: trimmed) {
+            caption = String(trimmed[captionRange])
+        } else {
+            caption = nil
+        }
+
+        return ImageData(url: url, altText: altText, caption: caption)
+    }
+
+    /// Extract all inline images from a paragraph and return as separate blocks
+    /// - Parameter text: Paragraph text that may contain inline images
+    /// - Returns: Array of ContentBlocks (paragraphs and images interleaved)
+    private func extractImagesFromParagraph(_ text: String) -> [ContentBlock] {
+        let pattern = #"!\[(.*?)\]\((\S+?)(?:\s+["\'](.+?)["\']\s*)?\)"#
+
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
+            return [.paragraph(text)]
+        }
+
+        var blocks: [ContentBlock] = []
+        var lastEnd = text.startIndex
+        let nsRange = NSRange(text.startIndex..., in: text)
+        let matches = regex.matches(in: text, options: [], range: nsRange)
+
+        for match in matches {
+            guard let fullRange = Range(match.range, in: text) else { continue }
+
+            // Add preceding text as paragraph if not empty
+            let precedingText = String(text[lastEnd..<fullRange.lowerBound])
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            if !precedingText.isEmpty {
+                blocks.append(.paragraph(precedingText))
+            }
+
+            // Parse the image
+            if let imageData = parseImageFromLine(String(text[fullRange])) {
+                blocks.append(.image(imageData))
+            }
+
+            lastEnd = fullRange.upperBound
+        }
+
+        // Add remaining text after last image
+        let remainingText = String(text[lastEnd...])
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        if !remainingText.isEmpty {
+            blocks.append(.paragraph(remainingText))
+        }
+
+        return blocks.isEmpty ? [.paragraph(text)] : blocks
     }
 
     // MARK: - Chart Parsing
