@@ -8,6 +8,24 @@
 
 import SwiftUI
 
+// MARK: - Image Data Model
+
+/// Represents parsed image data from markdown
+public struct ImageData: Equatable {
+    /// The image URL (remote URL or data URL)
+    public let url: URL
+    /// Alternative text for accessibility
+    public let altText: String
+    /// Optional caption (from markdown title)
+    public let caption: String?
+
+    public init(url: URL, altText: String, caption: String? = nil) {
+        self.url = url
+        self.altText = altText
+        self.caption = caption
+    }
+}
+
 // MARK: - Table Data Model
 
 /// Represents parsed table data from markdown
@@ -33,6 +51,47 @@ public struct TableData: Equatable {
     }
 }
 
+// MARK: - Chart Data Model
+
+/// Represents parsed chart data from JSON in code blocks
+public struct ChartData: Equatable, Codable {
+    /// The type of chart to render
+    public let type: ChartType
+    /// Optional chart title
+    public let title: String?
+    /// Data points for the chart
+    public let data: [ChartDataPoint]
+
+    /// Chart type options
+    public enum ChartType: String, Codable, Equatable {
+        case bar
+        case line
+        case pie
+    }
+
+    /// A single data point in the chart
+    public struct ChartDataPoint: Equatable, Codable {
+        /// Label for this data point (category name)
+        public let label: String
+        /// Numeric value for this data point
+        public let value: Double
+        /// Optional hex color (e.g., "#FF5733")
+        public let color: String?
+
+        public init(label: String, value: Double, color: String? = nil) {
+            self.label = label
+            self.value = value
+            self.color = color
+        }
+    }
+
+    public init(type: ChartType, title: String?, data: [ChartDataPoint]) {
+        self.type = type
+        self.title = title
+        self.data = data
+    }
+}
+
 // MARK: - Content Block Types
 
 /// Represents a parsed block of markdown content
@@ -47,6 +106,10 @@ public enum ContentBlock: Equatable {
     case collapsible(summary: String, content: [ContentBlock], isOpen: Bool)
     /// A markdown table with headers, rows, and column alignments
     case table(TableData)
+    /// An interactive chart (bar, line, or pie)
+    case chart(ChartData)
+    /// An inline image with URL, alt text, and optional caption
+    case image(ImageData)
 }
 
 // MARK: - MarkdownContent View
@@ -159,7 +222,18 @@ public struct MarkdownContent: View {
                         currentBulletList = []
                     }
 
-                    blocks.append(.codeBlock(code: codeBlockLines.joined(separator: "\n"), language: codeBlockLanguage))
+                    // Check if this is a chart code block
+                    if codeBlockLanguage?.lowercased() == "chart" {
+                        let code = codeBlockLines.joined(separator: "\n")
+                        if let chartData = parseChartJSON(code) {
+                            blocks.append(.chart(chartData))
+                        } else {
+                            // Failed to parse as chart, fall back to code block
+                            blocks.append(.codeBlock(code: code, language: codeBlockLanguage))
+                        }
+                    } else {
+                        blocks.append(.codeBlock(code: codeBlockLines.joined(separator: "\n"), language: codeBlockLanguage))
+                    }
                     codeBlockLines = []
                     codeBlockLanguage = nil
                     inCodeBlock = false
@@ -417,6 +491,25 @@ public struct MarkdownContent: View {
         return line
     }
 
+    // MARK: - Chart Parsing
+
+    /// Parse JSON content as ChartData
+    /// - Parameter json: JSON string from a chart code block
+    /// - Returns: ChartData if parsing succeeds, nil otherwise
+    private func parseChartJSON(_ json: String) -> ChartData? {
+        let trimmed = json.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+
+        do {
+            let decoder = JSONDecoder()
+            let data = Data(trimmed.utf8)
+            return try decoder.decode(ChartData.self, from: data)
+        } catch {
+            // Failed to parse - return nil to fall back to code block
+            return nil
+        }
+    }
+
     // MARK: - Table Parsing
 
     /// Check if a line looks like a table row (contains pipes)
@@ -583,6 +676,12 @@ public struct MarkdownContent: View {
         case .table(let data):
             // TableView will be implemented in Task 3 - placeholder for now
             TableView(data: data, textColor: baseTextColor)
+                .padding(.vertical, 4)
+        case .chart(let chartData):
+            ChartView(data: chartData)
+                .padding(.vertical, 8)
+        case .image(let data):
+            AsyncImageView(data: data)
                 .padding(.vertical, 4)
         }
     }

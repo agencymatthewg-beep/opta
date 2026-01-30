@@ -342,6 +342,13 @@ struct CollapsibleBlockView: View {
 
         case .table(let tableData):
             TableView(data: tableData, textColor: textColor)
+
+        case .chart(let chartData):
+            ChartView(data: chartData)
+
+        case .image(let imageData):
+            // Image rendering - AsyncImageView will render this
+            AsyncImageView(data: imageData)
         }
     }
 

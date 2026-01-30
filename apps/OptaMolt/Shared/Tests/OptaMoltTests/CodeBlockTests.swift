@@ -198,6 +198,10 @@ final class CodeBlockTests: XCTestCase {
                 break
             case .table:
                 break
+            case .chart:
+                break
+            case .image:
+                break
             }
         }
 
