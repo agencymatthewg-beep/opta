@@ -192,12 +192,16 @@ public struct CodeBlockView: View {
 
     private var codeContent: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            Text(displayedCode)
-                .font(.system(.footnote, design: .monospaced))
-                .foregroundColor(.optaTextPrimary)
+            Text(highlightedCode)
                 .textSelection(.enabled)
                 .fixedSize(horizontal: false, vertical: true)
         }
+    }
+
+    /// Get syntax-highlighted attributed string for the displayed code
+    private var highlightedCode: AttributedString {
+        let effectiveLanguage = language ?? SyntaxHighlighter.detectLanguage(from: code)
+        return SyntaxHighlighter.highlight(displayedCode, language: effectiveLanguage)
     }
 
     // MARK: - Expand Footer
