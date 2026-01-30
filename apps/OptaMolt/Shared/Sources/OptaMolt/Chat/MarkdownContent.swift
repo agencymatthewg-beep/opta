@@ -220,7 +220,11 @@ public struct MarkdownContent: View {
         let matches = regex.matches(in: content, options: [], range: range)
 
         // Process matches in reverse order to maintain correct indices
-        for match in matches.reversed() {
+        // Track original match index for correct placeholder numbering
+        for (reverseIndex, match) in matches.reversed().enumerated() {
+            // Calculate the original forward index for the placeholder
+            let placeholderIndex = matches.count - 1 - reverseIndex
+
             guard let fullRange = Range(match.range, in: result),
                   let openAttrRange = Range(match.range(at: 1), in: result),
                   let summaryRange = Range(match.range(at: 2), in: result),
@@ -244,7 +248,6 @@ public struct MarkdownContent: View {
                     isOpen: false
                 )
 
-                let placeholderIndex = collapsibleBlocks.count
                 collapsibleBlocks.insert(collapsibleBlock, at: 0)
                 result.replaceSubrange(fullRange, with: "__COLLAPSIBLE_PLACEHOLDER_\(placeholderIndex)__")
                 continue
@@ -263,7 +266,6 @@ public struct MarkdownContent: View {
                 isOpen: isOpen
             )
 
-            let placeholderIndex = collapsibleBlocks.count
             collapsibleBlocks.insert(collapsibleBlock, at: 0)
             result.replaceSubrange(fullRange, with: "__COLLAPSIBLE_PLACEHOLDER_\(placeholderIndex)__")
         }
