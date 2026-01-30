@@ -339,6 +339,9 @@ struct CollapsibleBlockView: View {
                 textColor: textColor,
                 isStreaming: isStreaming
             )
+
+        case .table(let tableData):
+            TableView(data: tableData, textColor: textColor)
         }
     }
 

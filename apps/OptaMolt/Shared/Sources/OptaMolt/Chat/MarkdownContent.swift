@@ -8,6 +8,31 @@
 
 import SwiftUI
 
+// MARK: - Table Data Model
+
+/// Represents parsed table data from markdown
+public struct TableData: Equatable {
+    /// Column headers
+    public let headers: [String]
+    /// Table rows (each row is an array of cell values)
+    public let rows: [[String]]
+    /// Column alignments (one per column)
+    public let alignments: [TableAlignment]
+
+    /// Column alignment options
+    public enum TableAlignment: Equatable {
+        case left
+        case center
+        case right
+    }
+
+    public init(headers: [String], rows: [[String]], alignments: [TableAlignment]) {
+        self.headers = headers
+        self.rows = rows
+        self.alignments = alignments
+    }
+}
+
 // MARK: - Content Block Types
 
 /// Represents a parsed block of markdown content
@@ -20,6 +45,8 @@ public enum ContentBlock: Equatable {
     case codeBlock(code: String, language: String?)
     /// A collapsible/expandable section with nested content
     case collapsible(summary: String, content: [ContentBlock], isOpen: Bool)
+    /// A markdown table with headers, rows, and column alignments
+    case table(TableData)
 }
 
 // MARK: - MarkdownContent View
@@ -342,6 +369,10 @@ public struct MarkdownContent: View {
                 isStreaming: isStreaming
             )
             .padding(.vertical, 4)
+        case .table(let data):
+            // TableView will be implemented in Task 3 - placeholder for now
+            TableView(data: data, textColor: baseTextColor)
+                .padding(.vertical, 4)
         }
     }
 
