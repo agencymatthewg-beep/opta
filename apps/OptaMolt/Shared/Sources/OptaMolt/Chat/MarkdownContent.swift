@@ -513,6 +513,13 @@ public struct MarkdownContent: View {
         return TableData(headers: headers, rows: rows, alignments: alignments)
     }
 
+    /// Check if a line looks like a partial table row (starts with | but doesn't end with |)
+    /// Used for streaming detection
+    private func isPartialTableRow(_ line: String) -> Bool {
+        let trimmed = line.trimmingCharacters(in: .whitespaces)
+        return trimmed.hasPrefix("|") && !trimmed.hasSuffix("|") && trimmed.count > 1
+    }
+
     /// Check if content has an incomplete table (for streaming detection)
     /// - Parameter content: Content to check
     /// - Returns: True if there's a table header without complete data
@@ -523,6 +530,12 @@ public struct MarkdownContent: View {
 
         for line in lines {
             let trimmed = line.trimmingCharacters(in: .whitespaces)
+
+            // Check for partial row (incomplete during streaming)
+            if trimmed.hasPrefix("|") && !trimmed.hasSuffix("|") && trimmed.count > 1 {
+                return true  // Partial row being typed
+            }
+
             if trimmed.hasPrefix("|") && trimmed.hasSuffix("|") {
                 if !foundHeader {
                     foundHeader = true
