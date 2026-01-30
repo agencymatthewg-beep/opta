@@ -2,6 +2,7 @@ import SwiftUI
 
 struct DashboardView: View {
     @StateObject private var viewModel = DashboardViewModel()
+    @ObservedObject private var clawdbotService = ClawdbotService.shared
     @EnvironmentObject var authManager: AuthManager
     @State private var showBriefingSheet = false
     @State private var showHealthInsights = false
@@ -97,9 +98,15 @@ struct DashboardView: View {
     private var headerSection: some View {
         HStack {
             GreetingHeader(userName: authManager.currentUser?.name ?? "there")
-            
+
             Spacer()
-            
+
+            // Clawdbot connection indicator (only when enabled)
+            if clawdbotService.isEnabled {
+                ClawdbotHeaderIndicator(service: clawdbotService)
+                    .padding(.trailing, 8)
+            }
+
             // Profile button with notification badge
             Button {
                 HapticManager.shared.impact(.light)
@@ -623,6 +630,162 @@ class DashboardViewModel: ObservableObject {
         }
     }
     */
+}
+
+// MARK: - Clawdbot Header Indicator
+
+struct ClawdbotHeaderIndicator: View {
+    @ObservedObject var service: ClawdbotService
+    @State private var showingPopover = false
+
+    var body: some View {
+        Button {
+            HapticManager.shared.impact(.light)
+            showingPopover = true
+        } label: {
+            HStack(spacing: 6) {
+                Circle()
+                    .fill(service.connectionState.color)
+                    .frame(width: 8, height: 8)
+                    .optaGlow(service.connectionState.color, radius: 4)
+
+                Image(systemName: "terminal.fill")
+                    .font(.subheadline)
+                    .foregroundColor(service.isConnected ? .optaNeonCyan : .optaTextMuted)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(
+                Capsule()
+                    .fill(Color.optaGlassBackground)
+                    .overlay(
+                        Capsule()
+                            .stroke(Color.optaGlassBorder, lineWidth: 1)
+                    )
+            )
+        }
+        .popover(isPresented: $showingPopover) {
+            ClawdbotQuickStatus(service: service)
+                .presentationCompactAdaptation(.popover)
+        }
+    }
+}
+
+struct ClawdbotQuickStatus: View {
+    @ObservedObject var service: ClawdbotService
+    @Environment(\.dismiss) var dismiss
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            // Header
+            HStack {
+                Image(systemName: "terminal.fill")
+                    .foregroundColor(.optaNeonCyan)
+                Text("Clawdbot")
+                    .font(.headline)
+                    .foregroundColor(.optaTextPrimary)
+                Spacer()
+            }
+
+            Divider()
+                .background(Color.optaGlassBorder)
+
+            // Status
+            HStack {
+                Text("Status")
+                    .foregroundColor(.optaTextSecondary)
+                Spacer()
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(service.connectionState.color)
+                        .frame(width: 8, height: 8)
+                    Text(service.connectionState.displayText)
+                        .foregroundColor(service.connectionState.color)
+                }
+            }
+            .font(.subheadline)
+
+            // Bot State (when connected)
+            if service.isConnected {
+                HStack {
+                    Text("Bot State")
+                        .foregroundColor(.optaTextSecondary)
+                    Spacer()
+                    Text(service.botState.displayText)
+                        .foregroundColor(.optaTextPrimary)
+                }
+                .font(.subheadline)
+
+                HStack {
+                    Text("Messages")
+                        .foregroundColor(.optaTextSecondary)
+                    Spacer()
+                    Text("\(service.messages.count)")
+                        .foregroundColor(.optaTextPrimary)
+                }
+                .font(.subheadline)
+            }
+
+            Divider()
+                .background(Color.optaGlassBorder)
+
+            // Quick Actions
+            if service.isConnected {
+                Button {
+                    HapticManager.shared.impact(.medium)
+                    Task {
+                        await service.disconnect()
+                    }
+                    dismiss()
+                } label: {
+                    HStack {
+                        Image(systemName: "wifi.slash")
+                        Text("Disconnect")
+                    }
+                    .font(.subheadline)
+                    .foregroundColor(.optaNeonRed)
+                    .frame(maxWidth: .infinity)
+                }
+            } else if service.connectionState != .connecting {
+                Button {
+                    HapticManager.shared.impact(.medium)
+                    Task {
+                        await service.connect()
+                    }
+                    dismiss()
+                } label: {
+                    HStack {
+                        Image(systemName: "wifi")
+                        Text("Connect")
+                    }
+                    .font(.subheadline)
+                    .foregroundColor(.optaNeonCyan)
+                    .frame(maxWidth: .infinity)
+                }
+                .disabled(service.serverURL.isEmpty)
+            } else {
+                HStack {
+                    ProgressView()
+                        .tint(.optaNeonCyan)
+                    Text("Connecting...")
+                        .font(.subheadline)
+                        .foregroundColor(.optaTextMuted)
+                }
+                .frame(maxWidth: .infinity)
+            }
+
+            // Error message
+            if let error = service.lastError {
+                Text(error)
+                    .font(.caption)
+                    .foregroundColor(.optaNeonRed)
+                    .lineLimit(2)
+            }
+        }
+        .padding()
+        .frame(minWidth: 240)
+        .background(Color.optaVoid)
+    }
 }
 
 #Preview {

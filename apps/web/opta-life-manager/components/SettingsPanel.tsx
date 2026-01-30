@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Eye, EyeOff, Save, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { X, Eye, EyeOff, Save, CheckCircle2, AlertCircle, Loader2, Bot, Wifi, RotateCcw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useClawdbotConfig } from "@/contextsHooks/ClawdbotContext";
 
 interface SettingField {
   key: string;
@@ -57,6 +58,9 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Clawdbot settings
+  const { config: clawdbotConfig, setEnabled, setServerUrl, setAutoConnect, resetToDefaults } = useClawdbotConfig();
 
   useEffect(() => {
     if (isOpen) {
@@ -191,6 +195,106 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                 </div>
               ) : (
                 <>
+                  {/* Clawdbot Integration Section */}
+                  <div className="mb-8 pb-6 border-b border-glass-border">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Bot className="w-4 h-4 text-neon-cyan" />
+                      <h3 className="text-sm font-bold text-text-primary">Clawdbot Integration</h3>
+                    </div>
+                    <p className="text-[11px] text-text-muted mb-4 leading-relaxed">
+                      Connect to your Clawdbot server for AI-powered life management.
+                      Disable to revert to standard Opta Life functionality.
+                    </p>
+
+                    {/* Enable toggle */}
+                    <div className="flex items-center justify-between py-3 border-b border-glass-border/50">
+                      <div>
+                        <label className="text-sm font-medium text-text-primary">Enable Clawdbot</label>
+                        <p className="text-[10px] text-text-muted mt-0.5">Show Clawdbot widget on dashboard</p>
+                      </div>
+                      <button
+                        onClick={() => setEnabled(!clawdbotConfig.enabled)}
+                        className={cn(
+                          "relative w-11 h-6 rounded-full transition-colors",
+                          clawdbotConfig.enabled ? "bg-neon-cyan" : "bg-white/10"
+                        )}
+                      >
+                        <motion.div
+                          className="absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow-sm"
+                          animate={{ x: clawdbotConfig.enabled ? 20 : 0 }}
+                          transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                        />
+                      </button>
+                    </div>
+
+                    {/* Server URL - only shown when enabled */}
+                    <AnimatePresence>
+                      {clawdbotConfig.enabled && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <div className="space-y-4 pt-4">
+                            {/* Server URL */}
+                            <div className="space-y-2">
+                              <label className="text-sm font-medium text-text-primary">Server URL</label>
+                              <p className="text-[10px] text-text-muted">
+                                WebSocket server address (e.g., ws://192.168.1.100:8080)
+                              </p>
+                              <div className="relative">
+                                <Wifi className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+                                <input
+                                  type="text"
+                                  value={clawdbotConfig.serverUrl}
+                                  onChange={(e) => setServerUrl(e.target.value)}
+                                  placeholder="ws://your-server:8080"
+                                  className="w-full bg-white/5 border border-glass-border rounded-lg pl-10 pr-3 py-2.5 text-sm text-text-primary focus:outline-none focus:border-neon-cyan/50 focus:ring-1 focus:ring-neon-cyan/20 placeholder:text-text-muted/50 transition-all font-mono"
+                                />
+                              </div>
+                            </div>
+
+                            {/* Auto-connect toggle */}
+                            <div className="flex items-center justify-between py-2">
+                              <div>
+                                <label className="text-sm font-medium text-text-primary">Auto-connect</label>
+                                <p className="text-[10px] text-text-muted mt-0.5">Automatically connect on page load</p>
+                              </div>
+                              <button
+                                onClick={() => setAutoConnect(!clawdbotConfig.autoConnect)}
+                                className={cn(
+                                  "relative w-11 h-6 rounded-full transition-colors",
+                                  clawdbotConfig.autoConnect ? "bg-neon-green" : "bg-white/10"
+                                )}
+                              >
+                                <motion.div
+                                  className="absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow-sm"
+                                  animate={{ x: clawdbotConfig.autoConnect ? 20 : 0 }}
+                                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                                />
+                              </button>
+                            </div>
+
+                            {/* Reset button */}
+                            <button
+                              onClick={resetToDefaults}
+                              className="flex items-center gap-2 text-xs text-text-muted hover:text-text-secondary transition-colors"
+                            >
+                              <RotateCcw className="w-3 h-3" />
+                              Reset to defaults
+                            </button>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+
+                  {/* API Keys Section Header */}
+                  <div className="flex items-center gap-2 mb-4">
+                    <h3 className="text-sm font-bold text-text-primary">API Keys</h3>
+                  </div>
+
                   {/* Fields */}
                   <div className="space-y-5">
                     {SETTINGS_FIELDS.map((field) => (

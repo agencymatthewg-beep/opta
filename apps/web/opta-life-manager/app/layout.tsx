@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Sora } from "next/font/google";
 import { TaskProvider } from "@/contextsHooks/TaskContext";
+import { ClawdbotProvider } from "@/contextsHooks/ClawdbotContext";
 import { SmoothScroll } from "@/components/SmoothScroll";
 import { Atmosphere } from "@/components/Atmosphere";
 import { CustomCursor } from "@/components/CustomCursor";
@@ -13,7 +14,7 @@ const sora = Sora({
 });
 
 export const metadata: Metadata = {
-  title: "Opta Life Manager",
+  title: "Opta Life",
   description: "Personal dashboard for the Opta ecosystem",
   manifest: "/manifest.json",
   icons: {
@@ -29,7 +30,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Opta LM",
+    title: "Opta Life",
   },
 };
 
@@ -43,13 +44,15 @@ export default function RootLayout({
       <body className={`${sora.variable} antialiased overflow-x-hidden bg-void text-text-primary selection:bg-primary selection:text-white`}>
         <SmoothScroll>
           <TaskProvider>
-            <Atmosphere />
-            <CustomCursor />
-            <CinematicIntro>
-              <div className="relative z-10">
-                {children}
-              </div>
-            </CinematicIntro>
+            <ClawdbotProvider>
+              <Atmosphere />
+              <CustomCursor />
+              <CinematicIntro>
+                <div className="relative z-10">
+                  {children}
+                </div>
+              </CinematicIntro>
+            </ClawdbotProvider>
           </TaskProvider>
         </SmoothScroll>
       </body>

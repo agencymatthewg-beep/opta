@@ -2,11 +2,36 @@ import SwiftUI
 
 struct IntegrationsView: View {
     @StateObject private var viewModel = IntegrationsViewModel()
+    @ObservedObject private var clawdbotService = ClawdbotService.shared
     @State private var showTodoistAuth = false
     @State private var showSyncStatus = false
     @State private var showCalendarSettings = false
     @State private var showHealthInsights = false
     @State private var showingSyncAll = false
+
+    // Clawdbot status helpers
+    private var clawdbotStatusText: String {
+        if !clawdbotService.isEnabled {
+            return "Disabled"
+        }
+        switch clawdbotService.connectionState {
+        case .connected:
+            return "Connected"
+        case .connecting:
+            return "Connecting..."
+        case .reconnecting:
+            return "Reconnecting..."
+        case .disconnected:
+            return clawdbotService.serverURL.isEmpty ? "Not configured" : "Disconnected"
+        }
+    }
+
+    private var clawdbotStatusColor: Color {
+        if !clawdbotService.isEnabled {
+            return .optaTextMuted
+        }
+        return clawdbotService.connectionState.color
+    }
 
     var body: some View {
         ZStack {
@@ -272,6 +297,107 @@ struct IntegrationsView: View {
                             .foregroundColor(.optaTextMuted)
                     } else {
                         Text("Connect your Todoist account for seamless task synchronization.")
+                            .foregroundColor(.optaTextMuted)
+                    }
+                }
+
+                // Clawdbot AI Section
+                Section {
+                    HStack {
+                        Image(systemName: "terminal.fill")
+                            .font(.title2)
+                            .foregroundColor(.optaNeonCyan)
+                            .frame(width: 40)
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Clawdbot")
+                                .font(.headline)
+                                .foregroundColor(.optaTextPrimary)
+
+                            Text(clawdbotStatusText)
+                                .font(.caption)
+                                .foregroundColor(clawdbotStatusColor)
+                        }
+
+                        Spacer()
+
+                        Toggle("", isOn: Binding(
+                            get: { clawdbotService.isEnabled },
+                            set: { clawdbotService.setEnabled($0) }
+                        ))
+                        .labelsHidden()
+                        .tint(.optaNeonCyan)
+                        .onChange(of: clawdbotService.isEnabled) { _, _ in
+                            HapticManager.shared.impact(.light)
+                        }
+                    }
+                    .listRowBackground(Color.optaGlassBackground)
+
+                    if clawdbotService.isEnabled {
+                        // Connection Status
+                        HStack {
+                            Circle()
+                                .fill(clawdbotService.connectionState.color)
+                                .frame(width: 8, height: 8)
+                                .optaGlow(clawdbotService.connectionState.color, radius: 4)
+
+                            Text(clawdbotService.connectionState.displayText)
+                                .font(.subheadline)
+                                .foregroundColor(.optaTextSecondary)
+
+                            Spacer()
+
+                            if clawdbotService.isConnected {
+                                Button {
+                                    HapticManager.shared.impact(.medium)
+                                    Task {
+                                        await clawdbotService.disconnect()
+                                    }
+                                } label: {
+                                    Text("Disconnect")
+                                        .font(.caption)
+                                        .foregroundColor(.optaNeonRed)
+                                }
+                            } else if clawdbotService.connectionState != .connecting {
+                                Button {
+                                    HapticManager.shared.impact(.medium)
+                                    Task {
+                                        await clawdbotService.connect()
+                                    }
+                                } label: {
+                                    Text("Connect")
+                                        .font(.caption)
+                                        .foregroundColor(.optaNeonCyan)
+                                }
+                                .disabled(clawdbotService.serverURL.isEmpty)
+                            } else {
+                                ProgressView()
+                                    .tint(.optaNeonCyan)
+                            }
+                        }
+                        .listRowBackground(Color.optaGlassBackground)
+
+                        // Settings Navigation
+                        NavigationLink {
+                            ClawdbotSettingsView()
+                        } label: {
+                            HStack {
+                                Image(systemName: "gearshape")
+                                    .foregroundColor(.optaTextSecondary)
+                                Text("Server Settings")
+                                    .foregroundColor(.optaTextPrimary)
+                            }
+                        }
+                        .listRowBackground(Color.optaGlassBackground)
+                    }
+                } header: {
+                    Text("AI Assistant")
+                } footer: {
+                    if clawdbotService.isEnabled {
+                        Text("Connect to your Clawdbot server for AI-powered life management. Requires a server running on your local network or via Tailscale.")
+                            .foregroundColor(.optaTextMuted)
+                    } else {
+                        Text("Enable Clawdbot to add AI assistant capabilities to Opta.")
                             .foregroundColor(.optaTextMuted)
                     }
                 }

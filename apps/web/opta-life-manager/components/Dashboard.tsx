@@ -11,9 +11,11 @@ import {
   Newspaper,
   Lightbulb,
   Settings,
+  Bot,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTasks } from "@/contextsHooks/TaskContext";
+import { useClawdbotEnabled } from "@/contextsHooks/ClawdbotContext";
 import { SignIn, SignOut } from "@/components/AuthButtons";
 import { CalendarWidget } from "@/components/CalendarWidget";
 import { GmailWidget } from "@/components/GmailWidget";
@@ -25,7 +27,8 @@ import { TodoistWidget } from "@/components/TodoistWidget";
 import { WeatherWidget } from "@/components/WeatherWidget";
 import { NewsWidget } from "@/components/NewsWidget";
 import { SmartInsightsWidget } from "@/components/SmartInsightsWidget";
-import { motion, Variants } from "framer-motion";
+import { ClawdbotWidget } from "@/components/clawdbot";
+import { motion, Variants, AnimatePresence } from "framer-motion";
 import { MagneticButton } from "@/components/MagneticButton";
 import { SettingsPanel } from "@/components/SettingsPanel";
 
@@ -61,6 +64,7 @@ export default function Dashboard({ session }: { session: Session | null }) {
   const [activeHighlight, setActiveHighlight] = useState<string | null>(null);
   const [briefing, setBriefing] = useState("Initializing system intelligence...");
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const clawdbotEnabled = useClawdbotEnabled();
 
   const scrollToWidget = (id: string) => {
     const element = document.getElementById(id);
@@ -174,7 +178,11 @@ export default function Dashboard({ session }: { session: Session | null }) {
                 <ActionButton icon={<Mail className="w-4 h-4" />} label="Email" onClick={() => scrollToWidget('widget-inbox')} />
                 <ActionButton icon={<Cloud className="w-4 h-4" />} label="Weather" onClick={() => scrollToWidget('widget-weather')} />
                 <ActionButton icon={<Newspaper className="w-4 h-4" />} label="News" onClick={() => scrollToWidget('widget-news')} />
-                <ActionButton icon={<Lightbulb className="w-4 h-4" />} label="Insights" onClick={() => scrollToWidget('widget-insights')} />
+                {clawdbotEnabled ? (
+                  <ActionButton icon={<Bot className="w-4 h-4" />} label="Clawdbot" onClick={() => scrollToWidget('widget-clawdbot')} />
+                ) : (
+                  <ActionButton icon={<Lightbulb className="w-4 h-4" />} label="Insights" onClick={() => scrollToWidget('widget-insights')} />
+                )}
               </div>
             </motion.div>
           </div>
@@ -263,6 +271,29 @@ export default function Dashboard({ session }: { session: Session | null }) {
 
           {/* Right Column */}
           <div className="lg:col-span-3 space-y-6">
+            {/* Clawdbot Widget - Only shown when enabled */}
+            <AnimatePresence>
+              {clawdbotEnabled && (
+                <motion.div
+                  variants={itemVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
+                  id="widget-clawdbot"
+                  className={cn(
+                    "glass-panel p-5 scroll-mt-24 transition-all duration-500",
+                    activeHighlight === 'widget-clawdbot' ? "ring-2 ring-neon-cyan shadow-[0_0_30px_rgba(6,182,212,0.3)] bg-white/10" : ""
+                  )}
+                >
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-xs font-bold text-text-muted uppercase tracking-[0.15em]">Clawdbot</h3>
+                    <div className="w-2 h-2 rounded-full bg-neon-cyan animate-pulse" />
+                  </div>
+                  <ClawdbotWidget />
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             <motion.div
               variants={itemVariants}
               id="widget-insights"
