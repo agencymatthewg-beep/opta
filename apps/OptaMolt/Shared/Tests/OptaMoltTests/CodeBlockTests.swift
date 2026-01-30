@@ -196,6 +196,8 @@ final class CodeBlockTests: XCTestCase {
                 bulletListCount += 1
             case .collapsible:
                 break
+            case .table:
+                break
             }
         }
 
