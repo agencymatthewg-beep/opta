@@ -44,13 +44,18 @@ public struct MarkdownContent: View {
     /// Base text color for non-formatted text
     let baseTextColor: Color
 
+    /// Whether the content is currently streaming (affects code block rendering)
+    let isStreaming: Bool
+
     /// Initialize with markdown content
     /// - Parameters:
     ///   - content: The markdown string to render
     ///   - textColor: Base color for text (default: optaTextPrimary)
-    public init(content: String, textColor: Color = .optaTextPrimary) {
+    ///   - isStreaming: Whether content is actively streaming (default: false)
+    public init(content: String, textColor: Color = .optaTextPrimary, isStreaming: Bool = false) {
         self.content = content
         self.baseTextColor = textColor
+        self.isStreaming = isStreaming
     }
 
     public var body: some View {
@@ -272,7 +277,7 @@ public struct MarkdownContent: View {
     private func parseNestedContent(_ content: String) -> [ContentBlock] {
         // Create a temporary MarkdownContent to parse nested blocks
         // This handles recursive collapsible sections
-        let tempView = MarkdownContent(content: content, textColor: baseTextColor)
+        let tempView = MarkdownContent(content: content, textColor: baseTextColor, isStreaming: isStreaming)
         return tempView.parseBlocks(content)
     }
 
@@ -283,6 +288,14 @@ public struct MarkdownContent: View {
         let openCount = content.components(separatedBy: "<details").count - 1
         let closeCount = content.components(separatedBy: "</details>").count - 1
         return openCount > closeCount
+    }
+
+    /// Check if content has an unclosed code block (for streaming detection)
+    /// - Parameter content: Content to check
+    /// - Returns: True if there's an unclosed ``` marker
+    static func hasPartialCodeBlock(_ content: String) -> Bool {
+        let openCount = content.components(separatedBy: "```").count - 1
+        return openCount % 2 == 1  // Odd number means unclosed
     }
 
     /// Check if a line is a bullet list item
@@ -312,6 +325,21 @@ public struct MarkdownContent: View {
             renderParagraph(text)
         case .bulletList(let items):
             renderBulletList(items)
+        case .codeBlock(let code, let language):
+            // Determine if this specific code block is still streaming
+            // (if it's the last block and content is streaming with partial code)
+            let isPartialBlock = isStreaming && MarkdownContent.hasPartialCodeBlock(content)
+            CodeBlockView(code: code, language: language, isStreaming: isPartialBlock)
+                .padding(.vertical, 4)
+        case .collapsible(let summary, let nestedContent, let isOpen):
+            CollapsibleBlockView(
+                summary: summary,
+                content: nestedContent,
+                initiallyOpen: isOpen,
+                textColor: baseTextColor,
+                isStreaming: isStreaming
+            )
+            .padding(.vertical, 4)
         }
     }
 
@@ -534,41 +562,71 @@ public struct MarkdownContent: View {
 #if DEBUG
 struct MarkdownContent_Previews: PreviewProvider {
     static var previews: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            // Basic formatting
-            MarkdownContent(content: "**Bold** and *italic* text")
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                // Basic formatting
+                MarkdownContent(content: "**Bold** and *italic* text")
 
-            // Inline code
-            MarkdownContent(content: "Use `print()` to debug")
+                // Inline code
+                MarkdownContent(content: "Use `print()` to debug")
 
-            // Links
-            MarkdownContent(content: "Visit [Apple](https://apple.com) for more")
+                // Links
+                MarkdownContent(content: "Visit [Apple](https://apple.com) for more")
 
-            // Bullet list
-            MarkdownContent(content: """
-                Features:
-                - Fast rendering
-                - Streaming support
-                - Beautiful styling
-                """)
+                // Bullet list
+                MarkdownContent(content: """
+                    Features:
+                    - Fast rendering
+                    - Streaming support
+                    - Beautiful styling
+                    """)
 
-            // Mixed content
-            MarkdownContent(content: """
-                Here's a **bold** statement with `code`.
+                // Code block with language
+                MarkdownContent(content: """
+                    Here's some Swift code:
 
-                Key points:
-                - First *important* item
-                - Second item with `inline code`
-                - Third item
+                    ```swift
+                    func greet(name: String) -> String {
+                        return "Hello, \\(name)!"
+                    }
+                    ```
 
-                That's all!
-                """)
+                    That's it!
+                    """)
 
-            // Streaming incomplete (shouldn't crash)
-            MarkdownContent(content: "This is **incomplete bold")
-            MarkdownContent(content: "This is [incomplete link](http://")
+                // Code block without language
+                MarkdownContent(content: """
+                    Generic code:
+                    ```
+                    npm install
+                    npm run dev
+                    ```
+                    """)
+
+                // Mixed content
+                MarkdownContent(content: """
+                    Here's a **bold** statement with `code`.
+
+                    Key points:
+                    - First *important* item
+                    - Second item with `inline code`
+                    - Third item
+
+                    That's all!
+                    """)
+
+                // Streaming code block (incomplete)
+                MarkdownContent(
+                    content: "```python\nprint('streaming",
+                    isStreaming: true
+                )
+
+                // Streaming incomplete (shouldn't crash)
+                MarkdownContent(content: "This is **incomplete bold")
+                MarkdownContent(content: "This is [incomplete link](http://")
+            }
+            .padding()
         }
-        .padding()
         .background(Color.optaBackground)
         .previewLayout(.sizeThatFits)
     }
