@@ -113,6 +113,12 @@ public struct MarkdownContent: View {
         var codeBlockLines: [String] = []
         var codeBlockLanguage: String?
 
+        // Table parsing state
+        var inTable = false
+        var tableHeaderLine: String?
+        var tableSeparatorLine: String?
+        var tableDataLines: [String] = []
+
         for line in lines {
             let trimmed = line.trimmingCharacters(in: .whitespaces)
 
@@ -181,6 +187,61 @@ public struct MarkdownContent: View {
                 continue
             }
 
+            // Table detection
+            if isTableRow(trimmed) {
+                // Flush any pending content before starting table
+                if !inTable {
+                    if !currentParagraph.isEmpty {
+                        blocks.append(.paragraph(currentParagraph.joined(separator: "\n")))
+                        currentParagraph = []
+                    }
+                    if !currentBulletList.isEmpty {
+                        blocks.append(.bulletList(currentBulletList))
+                        currentBulletList = []
+                    }
+                }
+
+                if tableHeaderLine == nil {
+                    // First row is the header
+                    tableHeaderLine = trimmed
+                    inTable = true
+                } else if tableSeparatorLine == nil && isTableSeparator(trimmed) {
+                    // Second row should be separator
+                    tableSeparatorLine = trimmed
+                } else if tableSeparatorLine == nil {
+                    // Second row is not a separator - this isn't a table, treat as regular content
+                    // Flush what we have as paragraph
+                    if let header = tableHeaderLine {
+                        currentParagraph.append(header)
+                    }
+                    currentParagraph.append(trimmed)
+                    tableHeaderLine = nil
+                    inTable = false
+                } else {
+                    // Data row
+                    tableDataLines.append(trimmed)
+                }
+                continue
+            } else if inTable {
+                // Non-table line ends the table
+                if let header = tableHeaderLine,
+                   let tableData = parseTable(headerLine: header, separatorLine: tableSeparatorLine, dataLines: tableDataLines) {
+                    blocks.append(.table(tableData))
+                } else if let header = tableHeaderLine {
+                    // Couldn't parse as table - treat as paragraph
+                    currentParagraph.append(header)
+                    if let sep = tableSeparatorLine {
+                        currentParagraph.append(sep)
+                    }
+                    currentParagraph.append(contentsOf: tableDataLines)
+                }
+                // Reset table state
+                tableHeaderLine = nil
+                tableSeparatorLine = nil
+                tableDataLines = []
+                inTable = false
+            }
+
             if isBulletLine(trimmed) {
                 // Flush any pending paragraph
                 if !currentParagraph.isEmpty {
@@ -211,6 +272,18 @@ public struct MarkdownContent: View {
         if inCodeBlock {
             // Unclosed code block during streaming - render what we have
             blocks.append(.codeBlock(code: codeBlockLines.joined(separator: "\n"), language: codeBlockLanguage))
+        }
+        // Flush remaining table
+        if inTable {
+            if let header = tableHeaderLine,
+               let tableData = parseTable(headerLine: header, separatorLine: tableSeparatorLine, dataLines: tableDataLines) {
+                blocks.append(.table(tableData))
+            } else if let header = tableHeaderLine {
+                // Incomplete table during streaming - render header-only table
+                if let tableData = parseTable(headerLine: header, separatorLine: tableSeparatorLine, dataLines: []) {
+                    blocks.append(.table(tableData))
+                }
+            }
         }
         if !currentBulletList.isEmpty {
             blocks.append(.bulletList(currentBulletList))
@@ -342,6 +415,131 @@ public struct MarkdownContent: View {
             return String(line.dropFirst(2))
         }
         return line
+    }
+
+    // MARK: - Table Parsing
+
+    /// Check if a line looks like a table row (contains pipes)
+    private func isTableRow(_ line: String) -> Bool {
+        let trimmed = line.trimmingCharacters(in: .whitespaces)
+        return trimmed.hasPrefix("|") && trimmed.hasSuffix("|") && trimmed.count > 2
+    }
+
+    /// Check if a line is a table separator row (e.g., |---|:---:|---:|)
+    private func isTableSeparator(_ line: String) -> Bool {
+        let trimmed = line.trimmingCharacters(in: .whitespaces)
+        guard trimmed.hasPrefix("|") && trimmed.hasSuffix("|") else { return false }
+
+        // Split by | and check each cell
+        let cells = trimmed.split(separator: "|", omittingEmptySubsequences: false)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+
+        guard !cells.isEmpty else { return false }
+
+        // Each cell should match the pattern: :?-+:? (dashes with optional colons)
+        for cell in cells {
+            let pattern = #"^:?-{1,}:?$"#
+            guard cell.range(of: pattern, options: .regularExpression) != nil else {
+                return false
+            }
+        }
+        return true
+    }
+
+    /// Parse a table row into cell values
+    private func parseTableRow(_ line: String) -> [String] {
+        let trimmed = line.trimmingCharacters(in: .whitespaces)
+
+        // Remove leading and trailing pipes
+        var inner = trimmed
+        if inner.hasPrefix("|") { inner = String(inner.dropFirst()) }
+        if inner.hasSuffix("|") { inner = String(inner.dropLast()) }
+
+        // Split by | and trim each cell
+        return inner.split(separator: "|", omittingEmptySubsequences: false)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+    }
+
+    /// Parse alignment from separator row
+    /// - Parameter line: The separator row (e.g., |:---|:---:|---:|)
+    /// - Returns: Array of TableAlignment values
+    private func parseTableAlignments(_ line: String) -> [TableData.TableAlignment] {
+        let cells = parseTableRow(line)
+        return cells.map { cell in
+            let hasLeftColon = cell.hasPrefix(":")
+            let hasRightColon = cell.hasSuffix(":")
+            if hasLeftColon && hasRightColon {
+                return .center
+            } else if hasRightColon {
+                return .right
+            } else {
+                return .left
+            }
+        }
+    }
+
+    /// Parse table lines into TableData
+    /// - Parameters:
+    ///   - headerLine: The header row
+    ///   - separatorLine: The separator row (for alignments)
+    ///   - dataLines: The data rows
+    /// - Returns: TableData if valid, nil otherwise
+    private func parseTable(headerLine: String, separatorLine: String?, dataLines: [String]) -> TableData? {
+        let headers = parseTableRow(headerLine)
+        guard !headers.isEmpty else { return nil }
+
+        let alignments: [TableData.TableAlignment]
+        if let sep = separatorLine {
+            alignments = parseTableAlignments(sep)
+        } else {
+            // Default to left alignment for all columns
+            alignments = Array(repeating: .left, count: headers.count)
+        }
+
+        // Parse data rows, ensuring column count matches headers
+        let rows = dataLines.compactMap { line -> [String]? in
+            let cells = parseTableRow(line)
+            guard !cells.isEmpty else { return nil }
+            // Pad or truncate to match header count
+            if cells.count < headers.count {
+                return cells + Array(repeating: "", count: headers.count - cells.count)
+            } else if cells.count > headers.count {
+                return Array(cells.prefix(headers.count))
+            }
+            return cells
+        }
+
+        return TableData(headers: headers, rows: rows, alignments: alignments)
+    }
+
+    /// Check if content has an incomplete table (for streaming detection)
+    /// - Parameter content: Content to check
+    /// - Returns: True if there's a table header without complete data
+    static func hasPartialTable(_ content: String) -> Bool {
+        let lines = content.components(separatedBy: "\n")
+        var foundHeader = false
+        var foundSeparator = false
+
+        for line in lines {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            if trimmed.hasPrefix("|") && trimmed.hasSuffix("|") {
+                if !foundHeader {
+                    foundHeader = true
+                } else if !foundSeparator {
+                    // Check if this is a separator
+                    let pattern = #"^\|(\s*:?-+:?\s*\|)+$"#
+                    if trimmed.range(of: pattern, options: .regularExpression) != nil {
+                        foundSeparator = true
+                    }
+                }
+            } else if foundHeader && !foundSeparator {
+                // Non-table line after header but before separator - likely incomplete
+                return true
+            }
+        }
+
+        return foundHeader && !foundSeparator
     }
 
     // MARK: - Block Rendering
