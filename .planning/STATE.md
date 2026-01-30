@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2025-01-29)
 
 **Core value:** Always know what your bot is doing. Real-time thinking state, typing indicators, and streaming responses with rich output formats.
-**Current focus:** Phase 6.1 COMPLETE — Ready for Phase 6 (Rich Text)
+**Current focus:** Phase 6 COMPLETE — Ready for Phase 7 (Rich Visual)
 
 ## Current Position
 
-Phase: 6.1 of 12 (Opta Aesthetic Alignment) COMPLETE
+Phase: 6 of 12 (Rich Output: Text) COMPLETE
 Plan: 3 of 3 complete in current phase
-Status: Phase Complete — Design system aligned with Opta Life Manager aesthetic
-Last activity: 2026-01-30 — Executed Plan 06.1-03 (Animation Enhancements)
+Status: Phase Complete — Markdown, code blocks, and collapsible sections implemented
+Last activity: 2026-01-30 — Executed Phase 6 (Rich Output: Text)
 
-Progress: █████████░ 55%
+Progress: █████████░ 58%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 19
-- Average duration: 5.3 min
-- Total execution time: 1.7 hours
+- Total plans completed: 22
+- Average duration: 5.5 min
+- Total execution time: 2.0 hours
 
 **By Phase:**
 
@@ -33,10 +33,11 @@ Progress: █████████░ 55%
 | 4. Chat Core | 3/3 | 11 min | 3.7 min |
 | 5. Streaming | 3/3 | 15 min | 5 min |
 | 6.1. Aesthetic | 3/3 | 26 min | 8.7 min |
+| 6. Rich Text | 3/3 | 18 min | 6 min |
 
 **Recent Trend:**
-- Last 5 plans: 05-03 (5 min), 06.1-02 (8 min), 06.1-01 (6 min), 06.1-03 (12 min)
-- Trend: Design system plans average ~8.7 min with complex animation logic
+- Last 5 plans: 06.1-03 (12 min), 06-01 (6 min), 06-02 (6 min), 06-03 (6 min)
+- Trend: Rich text plans executed efficiently with parallel Wave 2
 
 ## Accumulated Context
 
@@ -53,7 +54,7 @@ Recent decisions affecting current work:
 | 01-02 | #if os(iOS) for haptics | Cross-platform support with no-op macOS stub |
 | 01-02 | @_exported import SwiftUI in colors | Automatic re-export for cleaner imports |
 | 01-03 | iOS 17 / macOS 14 minimum | Required for modern SwiftUI features |
-| 01-03 | Local package dependency for ClawdbotKit | Enables shared code without publishing |
+| 01-03 | Local package dependency for OptaMolt | Enables shared code without publishing |
 | 01-03 | App Sandbox with network entitlement | Security + WebSocket support for Phase 2 |
 | 02-01 | URLSessionWebSocketTask (Apple native) | No third-party deps, iOS 17+ mature API |
 | 02-01 | Actor for ClawdbotWebSocket | Swift concurrency safety for shared state |
@@ -135,9 +136,36 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-30
-Stopped at: Completed Phase 06.1 (Opta Aesthetic Alignment)
+Stopped at: Completed Phase 6 (Rich Output: Text)
 Resume file: None
-Next action: Plan Phase 6 (Rich Text) or Phase 7 (Rich Visual)
+Next action: Plan Phase 7 (Rich Output: Visual)
+
+## Phase 6 COMPLETE (Rich Output: Text)
+
+**06-01: Markdown Parsing and Rendering** (Complete)
+- MarkdownContent SwiftUI view component
+- ContentBlock enum (paragraph, bulletList, codeBlock, collapsible)
+- Bold, italic, inline code, links rendering with AttributedString
+- Bullet list rendering with HStack alignment
+- Streaming resilience for incomplete markdown
+- 26 new markdown tests
+
+**06-02: Code Block Syntax Highlighting** (Complete)
+- CodeBlockView with syntax highlighting
+- SyntaxHighlighter supporting 9 languages (Swift, Python, JS, Rust, Go, JSON, Shell, HTML, CSS)
+- Copy-to-clipboard with visual feedback
+- Language detection and labels
+- Streaming indicator for partial code blocks
+- Auto-collapse for >15 lines
+- 20 new tests (10 CodeBlock + 10 SyntaxHighlighter)
+
+**06-03: Expandable/Collapsible Sections** (Complete)
+- CollapsibleSection generic view with spring animations
+- `<details>/<summary>` HTML tag detection
+- Rotating chevron (90-degree animation)
+- Nested content support with recursive parsing
+- StreamingCollapsibleSection for loading states
+- 26 new collapsible tests
 
 ## Phase 6.1 COMPLETE (Opta Aesthetic Alignment)
 

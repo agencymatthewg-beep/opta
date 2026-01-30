@@ -1,4 +1,4 @@
-# Roadmap: Clawdbot Native Apps
+# Roadmap: OptaMolt
 
 ## Overview
 
@@ -20,7 +20,7 @@ None (expertise files not available)
 - [x] **Phase 4: Chat Core** - Basic chat UI, message list, input field
 - [x] **Phase 5: Streaming & State** - Real-time streaming, thinking/typing indicators
 - [x] **Phase 6.1: Opta Aesthetic Alignment** - INSERTED: Typography (Sora), glass components, animations
-- [ ] **Phase 6: Rich Output: Text** - Bullet points, code blocks, formatted text
+- [x] **Phase 6: Rich Output: Text** - Bullet points, code blocks, formatted text
 - [ ] **Phase 7: Rich Output: Visual** - Dynamic tables, graphs, inline images
 - [ ] **Phase 8: GenUI Rendering** - Interactive component loading in chat
 - [ ] **Phase 9: Multi-Bot Management** - Bot switcher, discovery, device indicators
@@ -87,7 +87,7 @@ Plans:
 - [x] 05-03: Typing indicator animation
 
 ### Phase 6.1: Opta Aesthetic Alignment (INSERTED)
-**Goal**: Align ClawdbotKit with Opta Life Manager aesthetic - Typography, glass components, animations
+**Goal**: Align OptaMolt with Opta Life Manager aesthetic - Typography, glass components, animations
 **Depends on**: Phase 5
 **Research**: Complete (Opta Typography specification, DESIGN_SYSTEM.md v5.0)
 **Plans**: 3 (planned)
@@ -104,9 +104,9 @@ Plans:
 **Plans**: 3 (planned)
 
 Plans:
-- [ ] 06-01: Markdown parsing and rendering (Wave 1)
-- [ ] 06-02: Code block syntax highlighting (Wave 2)
-- [ ] 06-03: Expandable/collapsible sections (Wave 2)
+- [x] 06-01: Markdown parsing and rendering (Wave 1)
+- [x] 06-02: Code block syntax highlighting (Wave 2)
+- [x] 06-03: Expandable/collapsible sections (Wave 2)
 
 ### Phase 7: Rich Output: Visual
 **Goal**: Render dynamic tables, interactive graphs, and inline images
@@ -190,7 +190,7 @@ Phases execute in numeric order: 1 → 2 → 3 → ... → 12
 | 4. Chat Core | 3/3 | Complete | 2026-01-30 |
 | 5. Streaming & State | 3/3 | Complete | 2026-01-30 |
 | 6.1. Opta Aesthetic Alignment | 3/3 | Complete | 2026-01-30 |
-| 6. Rich Output: Text | 0/3 | Not started | - |
+| 6. Rich Output: Text | 3/3 | Complete | 2026-01-30 |
 | 7. Rich Output: Visual | 0/3 | Not started | - |
 | 8. GenUI Rendering | 0/3 | Not started | - |
 | 9. Multi-Bot Management | 0/3 | Not started | - |
