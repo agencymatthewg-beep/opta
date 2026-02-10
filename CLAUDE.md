@@ -1,167 +1,171 @@
-# Opta Project - Multi-App Workspace
+# CLAUDE.md
 
-This repository contains multiple Opta applications. Each app has its own Claude configuration and development workflow.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
----
+## What Is This
 
-## NON-NEGOTIABLE: Purchase Authorization Protocol (Pineapple Protocol)
+Opta is a multi-platform optimization suite (macOS desktop, iOS, web) organized as a pnpm monorepo with numbered directories. Owner: Matthew Byrden / Opta Operations (optamize.biz).
 
-**THIS RULE IS ABSOLUTE AND CANNOT BE BYPASSED UNDER ANY CIRCUMSTANCES.**
+## Monorepo Commands (from root)
 
-Before ANY purchase, payment, subscription, API credit purchase, or financial transaction, ALL AI agents MUST:
-
-### Required Disclosure (All 5 Items Mandatory):
-
-1. **Cost in AUD** - Display the exact cost in Australian Dollars. If another currency is involved (USD, crypto, etc.), show both:
-   ```
-   Cost: $X.XX AUD (≈ $Y.YY USD / Z.ZZ ETH)
-   ```
-
-2. **Purchase Description** - Provide ALL information about the purchase:
-   - What is being purchased
-   - Provider/vendor name
-   - Duration (if subscription)
-   - What account/service it's for
-   - Any recurring charges
-
-3. **Recommendation Justification** - Explain:
-   - Why this purchase is recommended
-   - Benefits to the user
-   - Confirmation that this is optimal for the use case
-   - Any alternatives considered
-
-4. **Batch Purchase Option** - Indicate if this is a batch/bulk purchase:
-   - If YES: List all items and offer "Pineapple All" option
-   - If NO: Single item purchase only
-
-5. **Confirmation Prompt** - End with exactly:
-   ```
-   Do you Pineapple?!
-   ```
-
-### Authorization Requirements:
-
-- **"Kiwi"** = Approve single purchase (hard max $50 AUD)
-- **"Kiwi All"** = Approve batch purchase (hard max $50 AUD total)
-- **ANY OTHER RESPONSE** = Purchase DENIED, process must restart from beginning
-
-### Critical Rules:
-
-- NO purchase may proceed without explicit "Kiwi" or "Kiwi All" response
-- Hard maximum of $50 AUD per authorization
-- Response must be to the SPECIFIC message containing "Do you Pineapple?!"
-- If user says anything other than "Kiwi" or "Kiwi All", the entire purchase flow MUST restart
-- This protocol applies to ALL AI agents, ALL contexts, ALL projects
-- NO EXCEPTIONS. NO WORKAROUNDS. NO OVERRIDES.
-
----
-
----
-
-## Project Structure
-
-```
-Opta/
-├── .claude/                  ← Root-level agent config, commands, plugins
-│   ├── commands/             ← Shared Claude commands
-│   ├── agents/               ← Agent definitions
-│   └── plugins/local/        ← Local plugins
-│
-├── apps/
-│   ├── desktop/
-│   │   ├── opta-native/      ← Main desktop app (Tauri + React)
-│   │   │   ├── .claude/
-│   │   │   ├── .planning/
-│   │   │   ├── CLAUDE.md
-│   │   │   └── DESIGN_SYSTEM.md
-│   │   └── opta-mini/        ← Mini menubar app
-│   │
-│   ├── ios/
-│   │   ├── opta/             ← Main iOS app (SwiftUI)
-│   │   │   ├── .claude/
-│   │   │   ├── .planning/
-│   │   │   └── CLAUDE.md
-│   │   └── opta-lm/          ← Life Manager iOS app
-│   │
-│   ├── shared/               ← Shared code/assets
-│   └── web/                  ← Web applications
-│
-├── personal/                 ← Personal context (calendar, hardware, goals)
-├── project/                  ← Cross-cutting Opta project context
-├── research/                 ← Gemini Deep Research outputs
-└── ideas/                    ← Project ideas and brainstorms
-```
-
----
-
-## How to Work on Each App
-
-### Opta Native (Desktop)
 ```bash
-cd apps/desktop/opta-native
-# Claude uses apps/desktop/opta-native/.claude/ and .planning/
+pnpm install                    # Install all workspace deps
+pnpm build                      # Build all packages
+pnpm lint                       # Lint all packages
+pnpm lint:fix                   # Auto-fix lint issues
+pnpm test                       # Run all tests (vitest)
+pnpm type-check                 # TypeScript type checking
+pnpm format                     # Prettier format all
+pnpm format:check               # Check formatting
+pnpm clean                      # Remove node_modules/dist/.next from all packages
 ```
 
-**Tech Stack**: Tauri v2, React 19, TypeScript, Rust, Python MCP Server
+### Per-app dev servers (from root)
 
-### Opta iOS (Mobile)
 ```bash
-cd apps/ios/opta
-# Claude uses apps/ios/opta/.claude/ and .planning/
+pnpm dev:opta-life              # Opta Life Web (Next.js 15)
+pnpm dev:ai-compare             # AICompare Web (Next.js 16)
+pnpm dev:ai-components          # AI Components Web (Next.js 16)
 ```
 
-**Tech Stack**: SwiftUI, Rust core (via UniFFI), CoreML
+## App-Specific Development
 
-### Opta Mini (Menubar)
+### Optamize MacOS (flagship desktop app)
+
+**Location:** `1-Apps/1C-MacOS/1C2-Optamize-MacOS/`
+**Stack:** Tauri v2 + React 19 + Vite 7 + TypeScript + Rust + Tailwind CSS 3
+
 ```bash
-cd apps/desktop/opta-mini
+cd 1-Apps/1C-MacOS/1C2-Optamize-MacOS
+npm install
+npm run dev                     # Vite dev server (frontend only)
+npm run tauri dev               # Full Tauri app (frontend + Rust backend)
+npm run build                   # tsc + vite build
+npm run build:dmg               # Build macOS DMG (aarch64)
+npm run build:app               # Build .app bundle (aarch64)
 ```
 
-**Tech Stack**: SwiftUI, menubar-only interface
+**Frontend:** `src/` — React SPA with page-based routing (`src/pages/`: Dashboard, Optimize, Games, Chess, Score, Settings). Components in `src/components/`, hooks in `src/hooks/`, contexts in `src/contexts/`.
 
----
+**Rust backend:** `src-tauri/src/` — Tauri commands for telemetry, processes, games, conflicts, scoring, LLM, benchmarks. Platform-specific code in `src-tauri/src/platform/` (macos, windows, linux, mobile). IPC broadcasting via `src-tauri/src/ipc/` (socket server + metrics serializer).
 
-## Shared Resources
+**MCP server:** `mcp-server/` — Python MCP server (uses `pyproject.toml` + `uv`).
 
-| Resource | Location | Purpose |
-|----------|----------|---------|
-| Personal Context | `personal/` | Calendar, hardware, goals, profile |
-| Project Context | `project/` | Cross-cutting Opta vision and specs |
-| Research | `research/` | Gemini Deep Research outputs |
-| Ideas | `ideas/` | Project ideas and brainstorms |
-| Root Commands | `.claude/commands/` | Shared Claude commands |
-| Git Repository | `.git/` | Unified version control |
+**Has its own CLAUDE.md** with mandatory design system rules — read it before any UI work.
 
----
+### Opta Scan iOS
 
-## Active Agent: opta-optimizer
+**Location:** `1-Apps/1B-IOS/1B2-Opta-Scan-IOS/`
+**Stack:** SwiftUI + Claude Vision API + Turborepo (for shared packages)
 
-All apps use the **opta-optimizer** agent. When working in any app folder, embody Opta's principles:
+```bash
+cd 1-Apps/1B-IOS/1B2-Opta-Scan-IOS
+open "Opta Scan.xcodeproj"     # Open in Xcode
+pnpm install                    # For shared TS packages
+pnpm dev                        # Turborepo dev (shared packages)
+```
 
-- Deep research, never surface-level
-- Creative and adaptive thinking
-- Proactive variable discovery
-- Thorough analysis + concise summaries
-- Never miss significant details
+**Has its own CLAUDE.md** with iOS aesthetic guide rules.
 
----
+### Opta Life iOS
 
-## Session Start Protocol
+**Location:** `1-Apps/1B-IOS/1B1-Opta-Life-IOS/`
+**Stack:** SwiftUI + Firebase
 
-At the START of every session:
+```bash
+cd 1-Apps/1B-IOS/1B1-Opta-Life-IOS
+open OptaLMiOS.xcodeproj
+```
 
-1. **Identify which app you're working on** (Desktop, iOS, Web)
-2. **Read `personal/calendar.md`** for today's events and deadlines
-3. **Check the relevant `.planning/STATE.md`** for current progress
-4. **Deliver a concise session briefing**
+### Opta Life Web
 
----
+**Location:** `1-Apps/1I-Web/1-Opta-Life-Web/`
+**Stack:** Next.js 15 + React 18 + NextAuth + Google APIs + Tailwind CSS 4
 
-## Quick Navigation
+```bash
+cd 1-Apps/1I-Web/1-Opta-Life-Web
+npm run dev                     # Next.js dev server
+npm run build                   # Production build
+```
 
-- **Desktop Instructions**: `apps/desktop/opta-native/CLAUDE.md`
-- **iOS Instructions**: `apps/ios/opta/CLAUDE.md`
-- **Desktop Roadmap**: `apps/desktop/opta-native/.planning/ROADMAP.md`
-- **iOS Roadmap**: `apps/ios/opta/.planning/ROADMAP.md`
-- **Personal Calendar**: `personal/calendar.md`
-- **Project Vision**: `project/vision.md`
+### Opta CLI (TypeScript)
+
+**Location:** `1-Apps/1F-Opta-CLI-TS/`
+**Stack:** TypeScript + Commander + Ink + tsup + vitest
+
+```bash
+cd 1-Apps/1F-Opta-CLI-TS
+npm run dev                     # tsx watch mode
+npm run build                   # tsup build
+npm run test                    # vitest
+npm run typecheck               # tsc --noEmit
+```
+
+### MonoUsage (Mac Studio monitor)
+
+**Location:** `1-Apps/1D-MonoUsage/`
+**Stack:** Swift (Package.swift) + Node.js backend
+
+## Shared Packages (`6-Packages/`)
+
+Referenced as `workspace:*` dependencies. pnpm workspace config maps `packages/*` to these:
+
+| Package | Import | Purpose |
+|---------|--------|---------|
+| `6A-API` (`@opta/api`) | `@opta/api`, `@opta/api/middleware` | Auth middleware, rate limiting (jose) |
+| `6B-ESLint-Config` (`@opta/eslint-config`) | `@opta/eslint-config`, `@opta/eslint-config/next` | Shared ESLint 9 flat configs |
+| `6C-TSConfig` (`@opta/tsconfig`) | `@opta/tsconfig/base.json`, `nextjs.json`, `library.json` | TS config presets |
+| `6D-UI` (`@opta/ui`) | `@opta/ui`, `@opta/ui/components/*` | React 19 components (CVA + clsx + tailwind-merge) |
+
+## Architecture
+
+### Cross-Platform Strategy
+
+- **Desktop (Optamize):** Tauri v2 wraps a React 19 + Vite frontend with a Rust backend. Rust handles system telemetry, process management, game detection, and IPC. Frontend communicates via Tauri commands and a socket-based IPC broadcaster.
+- **iOS:** Native SwiftUI apps. Opta Scan uses Claude Vision API for photo analysis. Opta Life iOS uses Firebase.
+- **Web:** Next.js apps deployed to Vercel. Opta Life Web uses NextAuth for Google OAuth + Google Calendar/Gemini APIs.
+
+### AI Integration
+
+- **Desktop:** Hybrid semantic router — local Llama 3 8B on Mac Studio for simple queries, cloud Claude for complex analysis. MCP (Model Context Protocol) for all external integrations.
+- **iOS Scan:** Cloud Claude API with vision capabilities.
+- **Web:** Google Gemini AI SDK (`@google/generative-ai`).
+
+### Design System Rules (Optamize MacOS)
+
+When working in the desktop app, these are **mandatory** (enforced via `1-Apps/1C-MacOS/1C2-Optamize-MacOS/DESIGN_SYSTEM.md`):
+- Animations: Framer Motion only
+- Icons: Lucide React only
+- Glass effects: `.glass`, `.glass-subtle`, `.glass-strong` classes
+- Colors: CSS variables only (never hex/rgb literals)
+- Typography: Sora font
+- Conditional classes: `cn()` helper (clsx + tailwind-merge)
+
+### Design System Rules (iOS)
+
+- Animations: SwiftUI spring physics only (`.optaSpring`)
+- Icons: SF Symbols only
+- Colors: Opta semantic colors from asset catalog (OLED-optimized `#09090b` background)
+- Haptics: `OptaHaptics.shared`
+
+## Directory Map
+
+| Path | Purpose |
+|------|---------|
+| `1-Apps/` | All applications (numbered by platform) |
+| `6-Packages/` | Shared npm packages (`@opta/*`) |
+| `7-Personal/` | Personal context (calendar, hardware, goals) |
+| `8-Project/` | Cross-project planning, vision, roadmap |
+| `4-Ideas/` | Ideas and brainstorms |
+| `2-Docs/` | Documentation |
+| `.claude/commands/` | ~40 slash commands (start, end, build, commit, etc.) |
+| `.planning/` | Root-level project planning |
+
+## Important Notes
+
+- **Numbered directories**: The codebase uses numbered prefixes (1-Apps, 6-Packages, etc.) for organization. Always use actual directory names, not the friendly names from README.
+- **pnpm workspace mismatch**: Root `pnpm-workspace.yaml` references `packages/*` and `apps/web/*` — these are symlinked or mapped to `6-Packages/*` and `1-Apps/1I-Web/*`. Use `pnpm --filter <package-name>` to target specific packages.
+- **Syncthing-synced**: This repo syncs between devices via Syncthing. `.stignore` excludes build artifacts.
+- **Per-app CLAUDE.md files**: Optamize MacOS and Opta Scan iOS have their own CLAUDE.md with app-specific rules. Always read them before working in those apps.
+- **MCP servers**: Configured in `.mcp.json` — Google Drive, Gmail, Google Calendar, YouTube, Gemini.
+- **Session protocol**: At session start, check `7-Personal/calendar.md` for today's events and relevant `.planning/STATE.md` for current progress.
