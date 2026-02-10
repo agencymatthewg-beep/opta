@@ -1,5 +1,11 @@
 # Opta - Multi-Platform Optimization Suite
 
+## Quick Context
+- Opta: documentation and resources
+- Contains: guides, examples, and reference materials
+- Use for: implementation and troubleshooting
+
+
 A comprehensive system optimization suite spanning iOS, Desktop, and Web platforms.
 
 ## Project Structure

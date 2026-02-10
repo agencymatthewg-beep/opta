@@ -1,0 +1,15 @@
+{
+  "name": "monousage-backend",
+  "version": "2.0.0",
+  "description": "MonoUsage backend — fetches API usage data for the menubar app",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "fetch": "node scripts/fetch-apis.js",
+    "sync-keys": "node scripts/sync-keys.js",
+    "refresh": "node scripts/refresh-all.js"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.3"
+  }
+}

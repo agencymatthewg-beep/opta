@@ -1,0 +1,77 @@
+{
+  "anthropic": {
+    "name": "Anthropic",
+    "type": "api",
+    "status": "invalid_key",
+    "usage": null,
+    "limit": null,
+    "currency": "USD",
+    "percent": null,
+    "color": "red",
+    "note": "Key rejected"
+  },
+  "minimax_shared": {
+    "name": "MiniMax Shared",
+    "type": "api",
+    "status": "no_key",
+    "usage": null,
+    "limit": null,
+    "currency": "CNY",
+    "percent": null,
+    "color": "gray"
+  },
+  "minimax_coding": {
+    "name": "MiniMax Coding",
+    "type": "api",
+    "status": "no_key",
+    "usage": null,
+    "limit": null,
+    "currency": "CNY",
+    "percent": null,
+    "color": "gray"
+  },
+  "openrouter": {
+    "name": "OpenRouter",
+    "type": "api",
+    "status": "no_key",
+    "usage": null,
+    "limit": null,
+    "currency": "USD",
+    "percent": null,
+    "color": "gray"
+  },
+  "perplexity": {
+    "name": "Perplexity",
+    "type": "api",
+    "status": "no_key",
+    "usage": null,
+    "limit": null,
+    "currency": "USD",
+    "percent": null,
+    "color": "gray"
+  },
+  "claude_code_matt": {
+    "name": "Claude Code (Matt)",
+    "type": "subscription",
+    "account": "matthew@xpulsenetwork.com",
+    "status": "active",
+    "usage": null,
+    "limit": null,
+    "currency": null,
+    "percent": null,
+    "color": "blue",
+    "note": "Check provider dashboard"
+  },
+  "claude_code_yjs": {
+    "name": "Claude Code (YJS)",
+    "type": "subscription",
+    "account": "official@yellowjacket.biz",
+    "status": "active",
+    "usage": null,
+    "limit": null,
+    "currency": null,
+    "percent": null,
+    "color": "blue",
+    "note": "Check provider dashboard"
+  }
+}

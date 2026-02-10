@@ -1,4 +1,0 @@
-module optaFFI {
-    header "opta_coreFFI.h"
-    export *
-}

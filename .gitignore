@@ -130,12 +130,25 @@ Desktop.ini
 # =========================
 # Project Specific
 # =========================
+# MCP config (contains API keys)
+.mcp.json
+
 # Playwright MCP (regenerated)
 .playwright-mcp/
 
 # Wrangler (Cloudflare local)
 .wrangler/
 
+# Stale package manager lock files (pnpm is canonical)
+bun.lock
+package-lock.json
+
+# Editor auto-generated (wrong language tooling)
+.clj-kondo/
+.lsp/
+.serena/
+
 # Syncthing
 .stfolder/
 .stversions/
+.aider*

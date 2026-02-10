@@ -1,0 +1,35 @@
+{
+  "name": "opta",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "workspaces": [
+    "6-Packages/*",
+    "1-Apps/1I-Web/*"
+  ],
+  "scripts": {
+    "dev:ai-components": "pnpm --filter aicomp dev",
+    "dev:ai-compare": "pnpm --filter ai-compare dev",
+    "dev:opta-life": "pnpm --filter opta-life-manager dev",
+    "build": "pnpm -r build",
+    "build:ai-components": "pnpm --filter aicomp build",
+    "build:ai-compare": "pnpm --filter ai-compare build",
+    "build:opta-life": "pnpm --filter opta-life-manager build",
+    "lint": "pnpm -r lint",
+    "lint:fix": "pnpm -r lint --fix",
+    "type-check": "pnpm -r type-check",
+    "format": "prettier --write \"**/*.{js,mjs,ts,tsx,json,md}\"",
+    "format:check": "prettier --check \"**/*.{js,mjs,ts,tsx,json,md}\"",
+    "test": "pnpm -r test:run",
+    "clean": "pnpm -r exec rm -rf node_modules dist .next out .turbo",
+    "prepare": "echo 'Ready to develop'"
+  },
+  "devDependencies": {
+    "prettier": "^3.4.0",
+    "typescript": "^5"
+  },
+  "engines": {
+    "node": ">=18",
+    "pnpm": ">=9"
+  }
+}

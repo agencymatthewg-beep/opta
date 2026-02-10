@@ -1,0 +1,30 @@
+{
+  "name": "@opta/eslint-config",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Shared ESLint configuration for Opta monorepo",
+  "main": "./base.mjs",
+  "exports": {
+    ".": "./base.mjs",
+    "./base": "./base.mjs",
+    "./next": "./next.mjs"
+  },
+  "scripts": {
+    "lint": "eslint ."
+  },
+  "peerDependencies": {
+    "eslint": "^9",
+    "eslint-config-next": ">=15.0.0",
+    "typescript": "^5"
+  },
+  "peerDependenciesMeta": {
+    "eslint-config-next": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/eslint": "^9",
+    "eslint": "^9",
+    "typescript": "^5"
+  }
+}

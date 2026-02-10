@@ -9,23 +9,23 @@ When this command is invoked, open all Opta projects:
 ### Xcode Projects
 1. **Opta Mini** (menubar app)
    ```bash
-   open /Users/matthewbyrden/Documents/Opta/apps/desktop/opta-mini/OptaMini.xcodeproj
+   open ~/Synced/Opta/1-Apps/1C-MacOS/1C1-Opta-Mini/OptaMini.xcodeproj
    ```
 
 2. **Opta iOS** (if exists)
    ```bash
-   open /Users/matthewbyrden/Documents/Opta/apps/ios/opta/*.xcodeproj 2>/dev/null || true
+   open ~/Synced/Opta/1-Apps/1B-IOS/1B1-Opta-Life-IOS/*.xcodeproj 2>/dev/null || true
    ```
 
 ### VS Code Projects
 3. **Opta Native** (Tauri desktop app)
    ```bash
-   code /Users/matthewbyrden/Documents/Opta/apps/desktop/opta-native
+   code ~/Synced/Opta/1-Apps/1C-MacOS/1C2-Optamize-MacOS
    ```
 
 4. **AICompare** (Next.js web app)
    ```bash
-   code /Users/matthewbyrden/Documents/Opta/apps/web/AICompare
+   code ~/Synced/Opta/1-Apps/1I-Web/1I4-AICompare
    ```
 
 ## Execution
@@ -33,9 +33,9 @@ When this command is invoked, open all Opta projects:
 Run all open commands in parallel to launch quickly:
 
 ```bash
-open /Users/matthewbyrden/Documents/Opta/apps/desktop/opta-mini/OptaMini.xcodeproj &
-code /Users/matthewbyrden/Documents/Opta/apps/desktop/opta-native &
-code /Users/matthewbyrden/Documents/Opta/apps/web/AICompare &
+open ~/Synced/Opta/1-Apps/1C-MacOS/1C1-Opta-Mini/OptaMini.xcodeproj &
+code ~/Synced/Opta/1-Apps/1C-MacOS/1C2-Optamize-MacOS &
+code ~/Synced/Opta/1-Apps/1I-Web/1I4-AICompare &
 wait
 ```
 

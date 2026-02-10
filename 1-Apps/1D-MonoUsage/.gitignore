@@ -1,0 +1,4 @@
+.build
+.DS_Store
+backend/.env
+backend/node_modules
