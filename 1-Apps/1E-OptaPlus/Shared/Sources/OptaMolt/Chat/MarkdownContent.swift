@@ -11,7 +11,7 @@ import SwiftUI
 // MARK: - Image Data Model
 
 /// Represents parsed image data from markdown
-public struct ImageData: Equatable {
+public struct ImageData: Equatable, Sendable {
     /// The image URL (remote URL or data URL)
     public let url: URL
     /// Alternative text for accessibility
@@ -29,7 +29,7 @@ public struct ImageData: Equatable {
 // MARK: - Table Data Model
 
 /// Represents parsed table data from markdown
-public struct TableData: Equatable {
+public struct TableData: Equatable, Sendable {
     /// Column headers
     public let headers: [String]
     /// Table rows (each row is an array of cell values)
@@ -38,7 +38,7 @@ public struct TableData: Equatable {
     public let alignments: [TableAlignment]
 
     /// Column alignment options
-    public enum TableAlignment: Equatable {
+    public enum TableAlignment: Equatable, Sendable {
         case left
         case center
         case right
@@ -54,7 +54,7 @@ public struct TableData: Equatable {
 // MARK: - Chart Data Model
 
 /// Represents parsed chart data from JSON in code blocks
-public struct ChartData: Equatable, Codable {
+public struct ChartData: Equatable, Codable, Sendable {
     /// The type of chart to render
     public let type: ChartType
     /// Optional chart title
@@ -63,14 +63,14 @@ public struct ChartData: Equatable, Codable {
     public let data: [ChartDataPoint]
 
     /// Chart type options
-    public enum ChartType: String, Codable, Equatable {
+    public enum ChartType: String, Codable, Equatable, Sendable {
         case bar
         case line
         case pie
     }
 
     /// A single data point in the chart
-    public struct ChartDataPoint: Equatable, Codable {
+    public struct ChartDataPoint: Equatable, Codable, Sendable {
         /// Label for this data point (category name)
         public let label: String
         /// Numeric value for this data point
@@ -95,7 +95,7 @@ public struct ChartData: Equatable, Codable {
 // MARK: - Content Block Types
 
 /// Represents a parsed block of markdown content
-public enum ContentBlock: Equatable {
+public enum ContentBlock: Equatable, Sendable {
     /// A paragraph of text (may contain inline formatting)
     case paragraph(String)
     /// A bullet list with items
@@ -148,13 +148,19 @@ public struct MarkdownContent: View {
         self.isStreaming = isStreaming
     }
 
-    public var body: some View {
-        let blocks = parseBlocks(content)
+    @State private var blocks: [ContentBlock] = []
 
+    public var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             ForEach(Array(blocks.enumerated()), id: \.offset) { _, block in
                 renderBlock(block)
             }
+        }
+        .onAppear {
+            blocks = parseBlocks(content)
+        }
+        .onChange(of: content) { _, newContent in
+            blocks = parseBlocks(newContent)
         }
     }
 
@@ -198,6 +204,8 @@ public struct MarkdownContent: View {
                 }
 
                 // Extract index from placeholder
+                // "__COLLAPSIBLE_PLACEHOLDER_" is 26 chars, "__" suffix is 2 chars, need at least 29 (26 + 1 digit + 2)
+                guard trimmed.count >= 29 else { continue }
                 let startIndex = trimmed.index(trimmed.startIndex, offsetBy: 26)
                 let endIndex = trimmed.index(trimmed.endIndex, offsetBy: -2)
                 if startIndex < endIndex,
@@ -396,6 +404,9 @@ public struct MarkdownContent: View {
     /// - Parameter content: Raw content potentially containing <details> tags
     /// - Returns: Tuple of (processed content with placeholders, array of collapsible blocks)
     private func extractCollapsibleBlocks(_ content: String) -> (String, [ContentBlock]) {
+        // Guard against regex DoS on very large inputs
+        guard content.count < 50_000 else { return (content, []) }
+
         var result = content
         var collapsibleBlocks: [ContentBlock] = []
 
