@@ -65,9 +65,33 @@ struct WindowRoot: View {
         _windowState = StateObject(wrappedValue: WindowState(botId: initialBotId))
     }
     
+    private var windowTitle: String {
+        guard let bot = windowState.selectedBot(in: appState) else {
+            return "OptaPlus"
+        }
+        let vm = appState.viewModel(for: bot)
+        switch vm.connectionState {
+        case .connected:
+            return "OptaPlus — \(bot.name)"
+        case .connecting, .reconnecting:
+            return "OptaPlus — Connecting…"
+        case .disconnected:
+            return "OptaPlus"
+        }
+    }
+    
     var body: some View {
         ContentView()
             .environmentObject(windowState)
+            .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { _ in
+                // Update NSWindow title for hidden title bar mode
+                if let window = NSApp.keyWindow {
+                    let title = windowTitle
+                    if window.title != title {
+                        window.title = title
+                    }
+                }
+            }
             .onAppear {
                 // If no bot pre-selected, use the default
                 if windowState.selectedBotId == nil {
@@ -83,6 +107,7 @@ struct WindowRoot: View {
 struct OptaPlusMacOSApp: App {
     @StateObject private var appState = AppState()
     @StateObject private var animPrefs = AnimationPreferences.shared
+    @StateObject private var notificationManager = NotificationManager.shared
     @AppStorage("optaplus.textAlignment") private var textAlignmentRaw: String = MessageTextAlignment.centeredExpanding.rawValue
     @Environment(\.openWindow) private var openWindow
 
@@ -143,6 +168,22 @@ struct OptaPlusMacOSApp: App {
                 .environmentObject(animPrefs)
                 .environment(\.animationLevel, animPrefs.level)
                 .environment(\.messageTextAlignment, textAlignment)
+        }
+    }
+    
+    init() {
+        // Request notification permission on first launch
+        NotificationManager.shared.requestPermission()
+        
+        // Clear badge when app becomes active
+        NotificationCenter.default.addObserver(
+            forName: NSApplication.didBecomeActiveNotification,
+            object: nil,
+            queue: .main
+        ) { _ in
+            Task { @MainActor in
+                NotificationManager.shared.clearBadge()
+            }
         }
     }
 }

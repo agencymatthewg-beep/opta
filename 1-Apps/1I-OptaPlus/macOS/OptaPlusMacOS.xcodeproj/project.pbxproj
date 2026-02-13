@@ -13,6 +13,7 @@
 		CD000072CCCC000100000001 /* ContextPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD000073CCCC000100000001 /* ContextPanel.swift */; };
 		CD000080DDDD000100000001 /* AmbientBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD000081DDDD000100000001 /* AmbientBackground.swift */; };
 		CD000082DDDD000100000001 /* LoadingSplash.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD000083DDDD000100000001 /* LoadingSplash.swift */; };
+		NF000001AAAA000100000001 /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = NF000002AAAA000100000001 /* NotificationManager.swift */; };
 		CD000074CCCC000100000001 /* AnimationSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD000075CCCC000100000001 /* AnimationSystem.swift */; };
 		CD000090EEEE000100000001 /* ChatTextInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD000091EEEE000100000001 /* ChatTextInput.swift */; };
 		CD000092EEEE000100000001 /* TelegramAuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD000093EEEE000100000001 /* TelegramAuthView.swift */; };
@@ -32,6 +33,7 @@
 		CD000073CCCC000100000001 /* ContextPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContextPanel.swift; sourceTree = "<group>"; };
 		CD000081DDDD000100000001 /* AmbientBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AmbientBackground.swift; sourceTree = "<group>"; };
 		CD000083DDDD000100000001 /* LoadingSplash.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingSplash.swift; sourceTree = "<group>"; };
+		NF000002AAAA000100000001 /* NotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
 		CD000075CCCC000100000001 /* AnimationSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimationSystem.swift; sourceTree = "<group>"; };
 		CD000091EEEE000100000001 /* ChatTextInput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatTextInput.swift; sourceTree = "<group>"; };
 		CD000093EEEE000100000001 /* TelegramAuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelegramAuthView.swift; sourceTree = "<group>"; };
@@ -68,6 +70,7 @@
 				CD000081DDDD000100000001 /* AmbientBackground.swift */,
 				CD000083DDDD000100000001 /* LoadingSplash.swift */,
 				CD000075CCCC000100000001 /* AnimationSystem.swift */,
+				NF000002AAAA000100000001 /* NotificationManager.swift */,
 				CD000091EEEE000100000001 /* ChatTextInput.swift */,
 				CD000093EEEE000100000001 /* TelegramAuthView.swift */,
 				CD000008BBBB000200000001 /* Assets.xcassets */,
@@ -168,6 +171,7 @@
 				CD000080DDDD000100000001 /* AmbientBackground.swift in Sources */,
 				CD000082DDDD000100000001 /* LoadingSplash.swift in Sources */,
 				CD000074CCCC000100000001 /* AnimationSystem.swift in Sources */,
+				NF000001AAAA000100000001 /* NotificationManager.swift in Sources */,
 				CD000090EEEE000100000001 /* ChatTextInput.swift in Sources */,
 				CD000092EEEE000100000001 /* TelegramAuthView.swift in Sources */,
 			);

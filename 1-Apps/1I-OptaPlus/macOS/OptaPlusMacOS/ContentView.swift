@@ -399,7 +399,7 @@ struct ChatContainerView: View {
                             .animation(.spring(response: 0.35, dampingFraction: 0.85), value: viewModel.messages.count)
                             .animation(.spring(response: 0.3, dampingFraction: 0.9), value: viewModel.streamingContent.isEmpty)
                         }
-                        .onChange(of: viewModel.messages.count) { _, _ in
+                        .onChange(of: viewModel.messages.count) { oldCount, newCount in
                             if isAtBottom {
                                 withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) {
                                     proxy.scrollTo("bottom", anchor: .bottom)
@@ -408,6 +408,11 @@ struct ChatContainerView: View {
                                 withAnimation(.spring(response: 0.3)) {
                                     showNewMessagesPill = true
                                 }
+                            }
+                            // Notify for new bot messages
+                            if newCount > oldCount, let last = viewModel.messages.last,
+                               case .bot(let name) = last.sender {
+                                NotificationManager.shared.notifyIfNeeded(botName: name, message: last.content)
                             }
                         }
                         .onChange(of: viewModel.streamingContent) { _, _ in
@@ -1749,10 +1754,10 @@ struct BotDetailEditor: View {
                 task.resume()
                 
                 // Try to receive a message within 5 seconds
-                let result = try await withThrowingTaskGroup(of: Bool.self) { group in
+                let _ = try await withThrowingTaskGroup(of: Bool.self) { group in
                     group.addTask {
-                        // Try sending a ping
-                        try await task.sendPing()
+                        // Try receiving a message (the gateway sends hello)
+                        let _ = try await task.receive()
                         return true
                     }
                     group.addTask {
