@@ -267,9 +267,7 @@ struct BotDetailEditor: View {
                 Button(action: testConnection) {
                     HStack(spacing: 6) {
                         if case .testing = testResult {
-                            ProgressView()
-                                .scaleEffect(0.6)
-                                .frame(width: 14, height: 14)
+                            OptaLoader(size: 14, lineWidth: 1.5)
                         } else {
                             Image(systemName: "antenna.radiowaves.left.and.right")
                                 .font(.system(size: 12))
@@ -739,9 +737,7 @@ struct ConnectionToast: View {
                     .font(.system(size: 12))
                     .foregroundColor(.optaGreen)
             } else {
-                ProgressView()
-                    .scaleEffect(0.5)
-                    .frame(width: 12, height: 12)
+                OptaLoader(size: 12, lineWidth: 1.5, color: .optaPrimary)
             }
             
             Text(text)

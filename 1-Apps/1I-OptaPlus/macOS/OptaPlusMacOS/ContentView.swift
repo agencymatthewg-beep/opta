@@ -946,6 +946,36 @@ struct ChatContainerView: View {
         }
     }
     
+    private func handleSlashCommand(_ cmd: SlashCommand) {
+        switch cmd.name {
+        case "/clear":
+            viewModel.showClearConfirmation = true
+        case "/export":
+            ChatExporter.saveWithPanel(
+                messages: viewModel.messages,
+                botName: viewModel.botConfig.name,
+                format: .markdown
+            )
+        case "/pin":
+            if let last = viewModel.messages.last {
+                PinManager.shared.togglePin(last.id, botId: viewModel.botConfig.id)
+            }
+        case "/search":
+            showMessageSearch = true
+        case "/theme":
+            break // Could open theme settings
+        case "/dashboard":
+            NotificationCenter.default.post(name: .toggleDashboard, object: nil)
+        case "/shortcuts":
+            // Post notification or set state for keyboard shortcuts
+            break
+        case "/template":
+            break // TODO: template picker
+        default:
+            break
+        }
+    }
+
     private var searchMatches: [ChatMessage] {
         guard !searchQuery.trimmingCharacters(in: .whitespaces).isEmpty else { return [] }
         let q = searchQuery.lowercased()
@@ -1266,6 +1296,9 @@ struct ChatHeaderView: View {
                         .font(.sora(16, weight: .semibold))
                         .foregroundColor(.optaTextPrimary)
                     
+                    // Connection security indicator
+                    ConnectionSecurityBadge(host: viewModel.botConfig.host)
+                    
                     if let session = viewModel.activeSession {
                         SessionBadge(session: session, accentColor: accentColor)
                             .transition(.scale(scale: 0.8).combined(with: .opacity))
@@ -1501,6 +1534,9 @@ struct ChatInputBar: View {
     let sessionMode: SessionMode
     let onSend: () -> Void
     let onAbort: () -> Void
+    var onUpArrow: (() -> Void)? = nil
+    var onDownArrow: (() -> Void)? = nil
+    var onSaveTemplate: ((String) -> Void)? = nil
 
     @State private var glowPhase: CGFloat = 0
     @State private var sendScale: CGFloat = 1
@@ -1718,6 +1754,7 @@ struct AddBotSheet: View {
     @State private var host = "127.0.0.1"
     @State private var port = "18793"
     @State private var token = ""
+    @State private var showToken = false
     @State private var emoji = "🤖"
     @State private var sessionKey = "main"
     
@@ -1737,7 +1774,34 @@ struct AddBotSheet: View {
                 LabeledField("Name", text: $name, placeholder: "My Bot")
                 LabeledField("Host", text: $host, placeholder: "127.0.0.1", validation: hostValidation)
                 LabeledField("Port", text: $port, placeholder: "18793", validation: portValidation)
-                LabeledField("Token", text: $token, placeholder: "Gateway auth token")
+                // Token with show/hide
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Token")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(.optaTextMuted)
+                    HStack(spacing: 6) {
+                        Group {
+                            if showToken {
+                                TextField("Gateway auth token", text: $token)
+                            } else {
+                                SecureField("Gateway auth token", text: $token)
+                            }
+                        }
+                        .textFieldStyle(.plain)
+                        .font(.system(size: 13))
+                        .foregroundColor(.optaTextPrimary)
+                        .padding(8)
+                        .background(RoundedRectangle(cornerRadius: 8).fill(Color.optaElevated))
+                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.optaBorder, lineWidth: 1))
+                        
+                        Button(action: { showToken.toggle() }) {
+                            Image(systemName: showToken ? "eye.slash" : "eye")
+                                .font(.system(size: 12))
+                                .foregroundColor(.optaTextMuted)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
                 LabeledField("Emoji", text: $emoji, placeholder: "🤖")
             }
             
