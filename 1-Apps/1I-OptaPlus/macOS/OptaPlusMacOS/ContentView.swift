@@ -445,6 +445,7 @@ struct BotRow: View {
 // MARK: - Bot Accent Color
 
 /// Bridge from OptaMolt's `BotState` to the local `BotActivityState` used by `AmbientBackground`.
+@MainActor
 func ambientState(from botState: BotState) -> BotActivityState {
     switch botState {
     case .idle: return .idle
@@ -453,6 +454,7 @@ func ambientState(from botState: BotState) -> BotActivityState {
     }
 }
 
+@MainActor
 func botAccentColor(for bot: BotConfig) -> Color {
     let tm = ThemeManager.shared
     if let hex = tm.botAccentOverrides[bot.id] {
