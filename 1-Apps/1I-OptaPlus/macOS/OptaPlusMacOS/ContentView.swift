@@ -518,6 +518,9 @@ struct ChatContainerView: View {
     @State private var connectionToastIsSuccess = false
     @State private var previousConnectionState: ConnectionState?
     @State private var scrollToMessageId: String? = nil
+    @State private var showSlashPopup = false
+    @State private var showTemplatePicker = false
+    @State private var inputHistory: InputHistory?
     
     // Convert agent events to thinking events for the overlay
     private var thinkingEvents: [ThinkingEvent] {
@@ -864,12 +867,17 @@ struct ChatContainerView: View {
             }
             isInputFocused = true
             previousConnectionState = viewModel.connectionState
+            if inputHistory == nil { inputHistory = InputHistory(botId: viewModel.botConfig.id) }
             
             // Save window state periodically
             if let window = NSApp.keyWindow {
                 WindowStatePersistence.saveFrame(window.frame)
                 WindowStatePersistence.saveSelectedBot(viewModel.botConfig.id)
             }
+        }
+        .onChange(of: inputText) { _, newText in
+            showSlashPopup = newText.hasPrefix("/") && newText.count < 20
+            inputHistory?.reset()
         }
         .onReceive(NotificationCenter.default.publisher(for: .optaPlusFocusInput)) { _ in
             isInputFocused = true
@@ -946,6 +954,87 @@ struct ChatContainerView: View {
         }
     }
     
+    // MARK: - Input Area (extracted to reduce body complexity)
+
+    @ViewBuilder
+    private var inputAreaView: some View {
+        // Quick action chips when empty & connected
+        if viewModel.messages.isEmpty && !viewModel.isLoading && viewModel.connectionState == .connected {
+            QuickActionsView { prompt in inputText = prompt }
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+        }
+
+        // Slash command popup
+        if showSlashPopup {
+            SlashCommandPopup(
+                query: inputText,
+                onSelect: { cmd in
+                    handleSlashCommand(cmd)
+                    showSlashPopup = false
+                    inputText = ""
+                },
+                onDismiss: { showSlashPopup = false }
+            )
+            .transition(.move(edge: .bottom).combined(with: .opacity))
+            .padding(.horizontal, 16)
+        }
+
+        // Template picker
+        if showTemplatePicker {
+            TemplatePickerView(
+                botName: viewModel.botConfig.name,
+                onSelect: { text in
+                    inputText = text
+                    showTemplatePicker = false
+                },
+                onDismiss: { showTemplatePicker = false }
+            )
+            .transition(.move(edge: .bottom).combined(with: .opacity))
+            .padding(.horizontal, 16)
+        }
+
+        // Reply preview above input
+        if let replyMsg = viewModel.replyingTo {
+            ReplyInputPreview(message: replyMsg) {
+                viewModel.replyingTo = nil
+            }
+        }
+
+        // Floating input bar
+        ChatInputBar(
+            text: $inputText,
+            attachments: $pendingAttachments,
+            isFocused: $isInputFocused,
+            isStreaming: viewModel.botState != .idle,
+            sessionMode: viewModel.activeSession?.mode ?? .direct,
+            onSend: {
+                let text = inputText
+                let files = pendingAttachments
+                inputText = ""
+                pendingAttachments = []
+                inputHistory?.record(text)
+                SoundManager.shared.play(.sendMessage)
+                Task { await viewModel.send(text, attachments: files) }
+            },
+            onAbort: {
+                Task { await viewModel.abort() }
+            },
+            onUpArrow: {
+                if let hist = inputHistory, let text = hist.up(currentText: inputText) {
+                    inputText = text
+                }
+            },
+            onDownArrow: {
+                if let hist = inputHistory, let text = hist.down() {
+                    inputText = text
+                }
+            },
+            onSaveTemplate: { text in
+                MessageTemplateManager.shared.add(name: String(text.prefix(30)), content: text)
+            }
+        )
+    }
+
     private func handleSlashCommand(_ cmd: SlashCommand) {
         switch cmd.name {
         case "/clear":
