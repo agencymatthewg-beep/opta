@@ -73,12 +73,13 @@ public struct CodeBlockView: View {
                 expandFooter
             }
         }
-        .background(Color.optaSurface)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .background(Color(red: 0x08/255, green: 0x08/255, blue: 0x08/255))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
         .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.optaBorder.opacity(0.5), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(Color.optaBorder.opacity(0.3), lineWidth: 0.5)
         )
+        .shadow(color: Color.black.opacity(0.2), radius: 8, y: 2)
     }
 
     // MARK: - Computed Properties
@@ -164,6 +165,7 @@ public struct CodeBlockView: View {
                     .font(.caption)
             }
             .foregroundColor(copied ? .optaGreen : .optaTextSecondary)
+            .shadow(color: copied ? Color.optaGreen.opacity(0.4) : Color.optaPrimary.opacity(0.2), radius: 4)
         }
         .buttonStyle(.plain)
     }
@@ -194,6 +196,7 @@ public struct CodeBlockView: View {
     private var codeContent: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             Text(highlightedCode)
+                .font(.system(size: 13, design: .monospaced))
                 .textSelection(.enabled)
                 .fixedSize(horizontal: false, vertical: true)
         }

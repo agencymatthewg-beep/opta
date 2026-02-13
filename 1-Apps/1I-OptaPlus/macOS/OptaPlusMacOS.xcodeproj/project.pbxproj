@@ -183,6 +183,7 @@
 				NF000001AAAA000100000001 /* NotificationManager.swift in Sources */,
 				CD000090EEEE000100000001 /* ChatTextInput.swift in Sources */,
 				CD000092EEEE000100000001 /* TelegramAuthView.swift in Sources */,
+				BP000001FFFF000100000001 /* BotProfileSheet.swift in Sources */,
 				PH000001FFFF000100000001 /* CommandPalette.swift in Sources */,
 				PH000003FFFF000100000001 /* KeyboardShortcuts.swift in Sources */,
 			);

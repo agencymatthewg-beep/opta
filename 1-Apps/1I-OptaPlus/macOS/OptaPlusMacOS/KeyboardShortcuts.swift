@@ -97,7 +97,8 @@ struct KeyboardShortcutsView: View {
                     .padding(20)
                 }
             }
-            .frame(width: 520, maxHeight: 420)
+            .frame(width: 520)
+            .frame(maxHeight: 420)
             .background(
                 RoundedRectangle(cornerRadius: 16)
                     .fill(.ultraThinMaterial)

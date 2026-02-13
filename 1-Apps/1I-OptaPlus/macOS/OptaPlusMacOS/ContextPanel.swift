@@ -204,6 +204,7 @@ struct ContextPanel: View {
                         )
                 )
                 .shadow(color: Color.black.opacity(0.25), radius: 20, y: 6)
+                .shadow(color: Color.optaPrimary.opacity(0.08), radius: 16, y: 0)
                 .scaleEffect(panelScale, anchor: .topTrailing)
                 .opacity(panelOpacity)
                 .onAppear {

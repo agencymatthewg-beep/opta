@@ -345,13 +345,13 @@ public struct MessageBubble: View {
     @ViewBuilder
     private var bubbleBackground: some View {
         if isUserMessage {
-            // User: violet gradient glass
+            // User: violet → darker violet gradient glass
             RoundedRectangle(cornerRadius: bubbleRadius)
                 .fill(
                     LinearGradient(
                         colors: [
-                            Color.optaPrimary.opacity(0.85),
-                            Color.optaPrimary.opacity(0.65)
+                            Color.optaPrimary.opacity(0.9),
+                            Color.optaIndigo.opacity(0.7)
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
@@ -385,9 +385,18 @@ public struct MessageBubble: View {
                     lineWidth: 1
                 )
         } else {
-            // Glass border for bot messages
-            RoundedRectangle(cornerRadius: bubbleRadius)
-                .stroke(Color.optaBorder.opacity(0.2), lineWidth: 0.5)
+            // Glass border + inner shadow for bot messages (glass depth illusion)
+            ZStack {
+                RoundedRectangle(cornerRadius: bubbleRadius)
+                    .stroke(Color.optaBorder.opacity(0.2), lineWidth: 0.5)
+                
+                // Subtle inner shadow
+                RoundedRectangle(cornerRadius: bubbleRadius)
+                    .stroke(Color.black.opacity(0.15), lineWidth: 1)
+                    .blur(radius: 3)
+                    .offset(y: 1)
+                    .clipShape(RoundedRectangle(cornerRadius: bubbleRadius))
+            }
         }
     }
     

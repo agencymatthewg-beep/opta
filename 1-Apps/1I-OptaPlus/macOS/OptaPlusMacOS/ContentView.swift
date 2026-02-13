@@ -17,56 +17,164 @@ struct ContentView: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var windowState: WindowState
     @EnvironmentObject var animPrefs: AnimationPreferences
+
+    @State private var showCommandPalette = false
+    @State private var showKeyboardShortcuts = false
+    @State private var showMessageSearch = false
+    @State private var botSwitchOverlay: String? = nil
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Custom drag handle for hidden title bar
-            WindowDragHandle()
-            
-            NavigationSplitView {
-                SidebarView()
-            } detail: {
-                if let bot = windowState.selectedBot(in: appState) {
-                    let vm = appState.viewModel(for: bot)
-                    ZStack {
-                        // Ambient background responds to bot state
-                        AmbientBackground(
-                            botAccentColor: botAccentColor(for: bot),
-                            botState: ambientState(from: vm.botState),
-                            isConnected: vm.connectionState == .connected
-                        )
-                        
-                        ChatContainerView(viewModel: vm)
-                    }
-                } else {
-                    ZStack {
-                        AmbientBackground(
-                            botAccentColor: .optaPrimary,
-                            botState: .idle,
-                            isConnected: false
-                        )
-                        EmptyStateView()
+        ZStack {
+            VStack(spacing: 0) {
+                // Custom drag handle for hidden title bar
+                WindowDragHandle()
+                
+                NavigationSplitView {
+                    SidebarView()
+                } detail: {
+                    if let bot = windowState.selectedBot(in: appState) {
+                        let vm = appState.viewModel(for: bot)
+                        ZStack {
+                            // Ambient background responds to bot state
+                            AmbientBackground(
+                                botAccentColor: botAccentColor(for: bot),
+                                botState: ambientState(from: vm.botState),
+                                isConnected: vm.connectionState == .connected
+                            )
+                            
+                            ChatContainerView(viewModel: vm, showMessageSearch: $showMessageSearch)
+                        }
+                    } else {
+                        ZStack {
+                            AmbientBackground(
+                                botAccentColor: .optaPrimary,
+                                botState: .idle,
+                                isConnected: false
+                            )
+                            EmptyStateView()
+                        }
                     }
                 }
+                .background(Color.optaVoid)
+                .navigationSplitViewStyle(.balanced)
             }
-            .background(Color.optaVoid)
-            .navigationSplitViewStyle(.balanced)
+
+            // Command Palette overlay
+            if showCommandPalette {
+                CommandPaletteView(
+                    isPresented: $showCommandPalette,
+                    onSearchMessages: { showMessageSearch = true },
+                    onToggleSessions: {
+                        if let vm = windowState.selectedViewModel(in: appState) {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                vm.isSessionDrawerOpen.toggle()
+                            }
+                        }
+                    }
+                )
+                .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                .zIndex(100)
+            }
+
+            // Keyboard Shortcuts overlay
+            if showKeyboardShortcuts {
+                KeyboardShortcutsView(isPresented: $showKeyboardShortcuts)
+                    .zIndex(101)
+            }
+
+            // Bot Switch HUD overlay
+            if let botName = botSwitchOverlay {
+                BotSwitchHUD(botName: botName)
+                    .transition(.opacity.combined(with: .scale(scale: 0.9)))
+                    .zIndex(102)
+            }
         }
+        .animation(.spring(response: 0.25, dampingFraction: 0.85), value: showCommandPalette)
+        .animation(.spring(response: 0.25, dampingFraction: 0.85), value: showKeyboardShortcuts)
+        .animation(.easeInOut(duration: 0.2), value: botSwitchOverlay != nil)
+        .background {
+            // Hidden buttons for keyboard shortcuts
+            Group {
+                Button("") { showCommandPalette.toggle() }
+                    .keyboardShortcut("p", modifiers: .command)
+                Button("") { showMessageSearch.toggle() }
+                    .keyboardShortcut("f", modifiers: .command)
+                Button("") { showKeyboardShortcuts.toggle() }
+                    .keyboardShortcut("/", modifiers: .command)
+            }
+            .frame(width: 0, height: 0)
+            .opacity(0)
+        }
+        .onChange(of: windowState.selectedBotId) { oldId, newId in
+            guard let newId, oldId != nil, oldId != newId,
+                  let bot = appState.bots.first(where: { $0.id == newId }) else { return }
+            showBotSwitchHUD(bot.emoji + " " + bot.name)
+        }
+    }
+
+    private func showBotSwitchHUD(_ name: String) {
+        botSwitchOverlay = name
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+            withAnimation(.easeOut(duration: 0.3)) {
+                botSwitchOverlay = nil
+            }
+        }
+    }
+}
+
+// MARK: - Bot Switch HUD
+
+struct BotSwitchHUD: View {
+    let botName: String
+
+    var body: some View {
+        VStack {
+            Spacer()
+            Text(botName)
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundColor(.optaTextPrimary)
+                .padding(.horizontal, 24)
+                .padding(.vertical, 14)
+                .background(
+                    RoundedRectangle(cornerRadius: 14)
+                        .fill(.ultraThinMaterial)
+                        .shadow(color: Color.optaPrimary.opacity(0.2), radius: 16, y: 4)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14)
+                        .stroke(Color.optaPrimary.opacity(0.2), lineWidth: 1)
+                )
+            Spacer().frame(height: 80)
+        }
+        .allowsHitTesting(false)
     }
 }
 
 // MARK: - Window Drag Handle
 
 /// Invisible drag area at the top of the window for hidden title bar.
+/// Drag handle animates opacity based on mouse proximity.
 struct WindowDragHandle: View {
+    @State private var isHovered = false
+
     var body: some View {
         Color.clear
             .frame(height: 28)
-            .background(.ultraThinMaterial.opacity(0.01))
+            .background(
+                LinearGradient(
+                    colors: [Color.optaPrimary.opacity(0.02), .clear],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
             .overlay(alignment: .center) {
                 Capsule()
-                    .fill(Color.optaTextMuted.opacity(0.2))
+                    .fill(Color.optaTextMuted.opacity(isHovered ? 0.4 : 0.15))
                     .frame(width: 36, height: 4)
+                    .animation(.easeInOut(duration: 0.25), value: isHovered)
+            }
+            .onHover { hovering in
+                isHovered = hovering
             }
     }
 }
@@ -144,7 +252,20 @@ struct SidebarView: View {
         }
         .listStyle(.sidebar)
         .scrollContentBackground(.hidden)
-        .background(Color.optaVoid)
+        .background(
+            LinearGradient(
+                colors: [Color.optaVoid, Color.optaVoid.opacity(0.95), Color.optaElevated.opacity(0.3)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        )
+        .safeAreaInset(edge: .bottom) {
+            Text("OPTA+")
+                .font(.system(size: 9, weight: .bold, design: .monospaced))
+                .foregroundColor(.optaTextMuted.opacity(0.3))
+                .frame(maxWidth: .infinity)
+                .padding(.bottom, 8)
+        }
         .sheet(isPresented: $showingAddBot) {
             AddBotSheet()
                 .environmentObject(appState)
@@ -167,6 +288,7 @@ struct BotRow: View {
     @ObservedObject var viewModel: ChatViewModel
     @State private var isHovered = false
     @State private var breatheScale: CGFloat = 1.0
+    @State private var showBotProfile = false
     
     private var accentColor: Color {
         botAccentColor(for: bot)
@@ -253,8 +375,20 @@ struct BotRow: View {
         .padding(.horizontal, 6)
         .background(
             RoundedRectangle(cornerRadius: 8)
-                .fill(accentColor.opacity(isHovered ? 0.05 : 0))
+                .fill(isHovered ? Color.optaSurface.opacity(0.4) : Color.clear)
+                .background(Material.ultraThinMaterial.opacity(isHovered ? 0.3 : 0))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
         )
+        .overlay(alignment: .leading) {
+            // Active bot left accent bar
+            if viewModel.connectionState == .connected {
+                RoundedRectangle(cornerRadius: 1)
+                    .fill(accentColor)
+                    .frame(width: 2, height: 24)
+                    .shadow(color: accentColor.opacity(0.5), radius: 4)
+                    .padding(.leading, -2)
+            }
+        }
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.2)) {
                 isHovered = hovering
@@ -263,6 +397,14 @@ struct BotRow: View {
         .hoverScale(1.02)
         .animation(.spring(response: 0.3, dampingFraction: 0.8), value: viewModel.connectionState)
         .animation(.spring(response: 0.3, dampingFraction: 0.8), value: viewModel.botState)
+        .contextMenu {
+            Button { showBotProfile = true } label: {
+                Label("Bot Info", systemImage: "info.circle")
+            }
+        }
+        .sheet(isPresented: $showBotProfile) {
+            BotProfileSheet(viewModel: viewModel)
+        }
     }
     
     private var statusText: String {
@@ -302,6 +444,7 @@ func botAccentColor(for bot: BotConfig) -> Color {
 
 struct ChatContainerView: View {
     @ObservedObject var viewModel: ChatViewModel
+    @Binding var showMessageSearch: Bool
     @State private var inputText = ""
     @State private var pendingAttachments: [ChatAttachment] = []
     @FocusState private var isInputFocused: Bool
@@ -309,6 +452,8 @@ struct ChatContainerView: View {
     @State private var isDragTarget = false
     @State private var isAtBottom = true
     @State private var showNewMessagesPill = false
+    @State private var searchQuery = ""
+    @State private var currentMatchIndex = 0
     @State private var newMessageCount = 0
     @State private var showConnectionToast = false
     @State private var connectionToastText = ""
@@ -377,6 +522,22 @@ struct ChatContainerView: View {
                 // Base chat layer
                 VStack(spacing: 0) {
                     ChatHeaderView(viewModel: viewModel)
+
+                    // Message search bar
+                    if showMessageSearch {
+                        MessageSearchBar(
+                            query: $searchQuery,
+                            currentIndex: $currentMatchIndex,
+                            totalMatches: searchMatches.count,
+                            onDismiss: {
+                                withAnimation(.spring(response: 0.25)) {
+                                    showMessageSearch = false
+                                    searchQuery = ""
+                                }
+                            }
+                        )
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                    }
                     
                     // Messages area (no divider — floating design)
                     ScrollViewReader { proxy in
@@ -514,6 +675,15 @@ struct ChatContainerView: View {
                         }
                     }
                     
+                    .mask(
+                        VStack(spacing: 0) {
+                            LinearGradient(colors: [.clear, .white], startPoint: .top, endPoint: .bottom)
+                                .frame(height: 40)
+                            Color.white
+                            LinearGradient(colors: [.white, .clear], startPoint: .top, endPoint: .bottom)
+                                .frame(height: 40)
+                        }
+                    )
                     .overlay {
                         ThinkingOverlay(
                             viewModel: viewModel,
@@ -629,8 +799,16 @@ struct ChatContainerView: View {
                 }
             }
         }
+        .animation(.spring(response: 0.25, dampingFraction: 0.85), value: showMessageSearch)
         .onKeyPress(.escape) {
-            // Escape: abort streaming > close drawer > close settings > unfocus
+            // Escape: close search > abort streaming > close drawer > close settings > unfocus
+            if showMessageSearch {
+                withAnimation(.spring(response: 0.25)) {
+                    showMessageSearch = false
+                    searchQuery = ""
+                }
+                return .handled
+            }
             if viewModel.botState != .idle {
                 Task { await viewModel.abort() }
                 return .handled
@@ -649,6 +827,12 @@ struct ChatContainerView: View {
         }
     }
     
+    private var searchMatches: [ChatMessage] {
+        guard !searchQuery.trimmingCharacters(in: .whitespaces).isEmpty else { return [] }
+        let q = searchQuery.lowercased()
+        return viewModel.messages.filter { $0.content.lowercased().contains(q) }
+    }
+
     private func handleDrop(_ providers: [NSItemProvider]) {
         for provider in providers {
             if provider.hasItemConformingToTypeIdentifier("public.file-url") {
@@ -683,6 +867,73 @@ struct ChatContainerView: View {
         if bytes < 1024 { return "\(bytes)B" }
         if bytes < 1024 * 1024 { return String(format: "%.1fKB", Double(bytes) / 1024) }
         return String(format: "%.1fMB", Double(bytes) / (1024 * 1024))
+    }
+}
+
+// MARK: - Message Search Bar
+
+struct MessageSearchBar: View {
+    @Binding var query: String
+    @Binding var currentIndex: Int
+    let totalMatches: Int
+    let onDismiss: () -> Void
+    @FocusState private var isFocused: Bool
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 12))
+                .foregroundColor(.optaTextMuted)
+
+            TextField("Search messages…", text: $query)
+                .textFieldStyle(.plain)
+                .font(.system(size: 13))
+                .foregroundColor(.optaTextPrimary)
+                .focused($isFocused)
+                .onAppear { isFocused = true }
+
+            if !query.isEmpty {
+                Text(totalMatches > 0 ? "\(min(currentIndex + 1, totalMatches)) of \(totalMatches)" : "No results")
+                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                    .foregroundColor(totalMatches > 0 ? .optaTextSecondary : .optaTextMuted)
+
+                Button(action: {
+                    if totalMatches > 0 { currentIndex = (currentIndex - 1 + totalMatches) % totalMatches }
+                }) {
+                    Image(systemName: "chevron.up")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(.optaTextSecondary)
+                }
+                .buttonStyle(.plain)
+                .disabled(totalMatches == 0)
+
+                Button(action: {
+                    if totalMatches > 0 { currentIndex = (currentIndex + 1) % totalMatches }
+                }) {
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(.optaTextSecondary)
+                }
+                .buttonStyle(.plain)
+                .disabled(totalMatches == 0)
+            }
+
+            Button(action: onDismiss) {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.system(size: 14))
+                    .foregroundColor(.optaTextMuted)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+        .background(
+            Color.optaSurface.opacity(0.6)
+                .background(.ultraThinMaterial)
+        )
+        .onChange(of: query) { _, _ in
+            currentIndex = 0
+        }
     }
 }
 
@@ -746,7 +997,23 @@ struct SessionDrawerView: View {
             
             Spacer()
         }
-        .background(Color.optaSurface.opacity(0.4))
+        .background(
+            ZStack {
+                Color.optaSurface.opacity(0.4)
+                    .background(.ultraThinMaterial)
+                // Subtle top highlight
+                VStack {
+                    LinearGradient(
+                        colors: [Color.white.opacity(0.03), .clear],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    .frame(height: 1)
+                    Spacer()
+                }
+            }
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 0))
         .sheet(isPresented: $showingNewSession) {
             NewSessionSheet(viewModel: viewModel)
         }
@@ -874,7 +1141,13 @@ struct NewSessionSheet: View {
         }
         .padding(24)
         .frame(width: 360)
-        .background(Color.optaSurface)
+        .background(
+            ZStack {
+                Color.optaSurface.opacity(0.7)
+                    .background(.ultraThinMaterial)
+                Color.optaPrimary.opacity(0.02)
+            }
+        )
         .preferredColorScheme(.dark)
     }
 }
@@ -1054,6 +1327,7 @@ struct ChatHeaderView: View {
     @ObservedObject var viewModel: ChatViewModel
     @State private var connGlow: CGFloat = 0
     @State private var connectingPulse: CGFloat = 1.0
+    @State private var showBotProfile = false
     
     private var accentColor: Color {
         botAccentColor(for: viewModel.botConfig)
@@ -1065,8 +1339,15 @@ struct ChatHeaderView: View {
     
     var body: some View {
         HStack(spacing: 12) {
-            Text(viewModel.botConfig.emoji)
-                .font(.title2)
+            Button(action: { showBotProfile = true }) {
+                Text(viewModel.botConfig.emoji)
+                    .font(.title2)
+            }
+            .buttonStyle(.plain)
+            .help("Bot Info")
+            .sheet(isPresented: $showBotProfile) {
+                BotProfileSheet(viewModel: viewModel)
+            }
             
             VStack(alignment: .leading, spacing: 1) {
                 HStack(spacing: 6) {
@@ -1520,7 +1801,14 @@ struct AddBotSheet: View {
         }
         .padding(24)
         .frame(width: 400)
-        .background(Color.optaSurface)
+        .background(
+            ZStack {
+                Color.optaSurface.opacity(0.7)
+                    .background(.ultraThinMaterial)
+                // Violet tint
+                Color.optaPrimary.opacity(0.02)
+            }
+        )
         .preferredColorScheme(.dark)
     }
 }
