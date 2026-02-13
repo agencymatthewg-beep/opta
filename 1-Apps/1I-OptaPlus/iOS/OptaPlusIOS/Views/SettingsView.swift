@@ -15,7 +15,7 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             List {
-                Section("Bots") {
+                Section {
                     ForEach(appState.bots) { bot in
                         Button {
                             editingBot = bot
@@ -50,17 +50,70 @@ struct SettingsView: View {
                             .foregroundColor(.optaPrimary)
                     }
                     .listRowBackground(Color.optaSurface)
+                } header: {
+                    Label("Bots", systemImage: "cpu")
+                        .foregroundColor(.optaTextSecondary)
                 }
 
-                Section("About") {
+                Section {
                     HStack {
-                        Text("Version")
+                        Label("Theme", systemImage: "paintbrush.fill")
+                            .foregroundColor(.optaTextSecondary)
+                        Spacer()
+                        Text("Cinematic Void")
+                            .foregroundColor(.optaTextMuted)
+                    }
+                    .listRowBackground(Color.optaSurface)
+
+                    HStack {
+                        Label("Reduce Motion", systemImage: "figure.walk")
+                            .foregroundColor(.optaTextSecondary)
+                        Spacer()
+                        Text(UIAccessibility.isReduceMotionEnabled ? "On" : "Off")
+                            .foregroundColor(.optaTextMuted)
+                    }
+                    .listRowBackground(Color.optaSurface)
+                } header: {
+                    Label("Appearance", systemImage: "sparkles")
+                        .foregroundColor(.optaTextSecondary)
+                }
+
+                Section {
+                    HStack {
+                        Label("Version", systemImage: "info.circle")
                             .foregroundColor(.optaTextSecondary)
                         Spacer()
                         Text("0.1.0")
                             .foregroundColor(.optaTextMuted)
                     }
                     .listRowBackground(Color.optaSurface)
+
+                    HStack {
+                        Label("Build", systemImage: "hammer")
+                            .foregroundColor(.optaTextSecondary)
+                        Spacer()
+                        Text(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "1")
+                            .foregroundColor(.optaTextMuted)
+                    }
+                    .listRowBackground(Color.optaSurface)
+
+                    HStack {
+                        Label("Design System", systemImage: "paintpalette")
+                            .foregroundColor(.optaTextSecondary)
+                        Spacer()
+                        Text("OptaMolt")
+                            .foregroundColor(.optaTextMuted)
+                    }
+                    .listRowBackground(Color.optaSurface)
+                } header: {
+                    Label("About OptaPlus", systemImage: "star.fill")
+                        .foregroundColor(.optaTextSecondary)
+                } footer: {
+                    Text("OptaPlus — Premium AI Chat Client")
+                        .font(.caption2)
+                        .foregroundColor(.optaTextMuted)
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 8)
                 }
             }
             .scrollContentBackground(.hidden)
@@ -100,6 +153,24 @@ struct BotEditSheet: View {
     @State private var port: String = ""
     @State private var token: String = ""
     @State private var emoji: String = "🤖"
+    @State private var testResult: ConnectionTestResult = .idle
+
+    private enum ConnectionTestResult {
+        case idle, testing, success, failure(String)
+    }
+
+    private var isPortValid: Bool {
+        guard let p = Int(port) else { return false }
+        return p > 0 && p <= 65535
+    }
+
+    private var isHostValid: Bool {
+        !host.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private var canSave: Bool {
+        !name.isEmpty && isHostValid && isPortValid
+    }
 
     var body: some View {
         NavigationStack {
@@ -109,15 +180,61 @@ struct BotEditSheet: View {
                     TextField("Emoji", text: $emoji)
                 }
 
-                Section("Connection") {
+                Section {
                     TextField("Host", text: $host)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
-                    TextField("Port", text: $port)
-                        .keyboardType(.numberPad)
+                    HStack {
+                        TextField("Port", text: $port)
+                            .keyboardType(.numberPad)
+                        if !port.isEmpty && !isPortValid {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .foregroundColor(.optaAmber)
+                                .font(.caption)
+                        }
+                    }
                     SecureField("Token", text: $token)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
+                } header: {
+                    Text("Connection")
+                } footer: {
+                    if !port.isEmpty && !isPortValid {
+                        Text("Port must be 1–65535")
+                            .font(.caption2)
+                            .foregroundColor(.optaAmber)
+                    }
+                }
+
+                Section("Test") {
+                    Button {
+                        testConnection()
+                    } label: {
+                        HStack {
+                            Label("Test Connection", systemImage: "bolt.fill")
+                            Spacer()
+                            switch testResult {
+                            case .idle:
+                                EmptyView()
+                            case .testing:
+                                ProgressView()
+                                    .tint(.optaPrimary)
+                            case .success:
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundColor(.optaGreen)
+                            case .failure:
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundColor(.optaRed)
+                            }
+                        }
+                    }
+                    .disabled(!canSave)
+
+                    if case .failure(let msg) = testResult {
+                        Text(msg)
+                            .font(.caption)
+                            .foregroundColor(.optaRed)
+                    }
                 }
             }
             .scrollContentBackground(.hidden)
@@ -142,7 +259,7 @@ struct BotEditSheet: View {
                         onSave(config)
                         dismiss()
                     }
-                    .disabled(name.isEmpty || host.isEmpty || port.isEmpty)
+                    .disabled(!canSave)
                 }
             }
             .onAppear {
@@ -153,6 +270,28 @@ struct BotEditSheet: View {
                     token = bot.token
                     emoji = bot.emoji
                 }
+            }
+        }
+    }
+
+    private func testConnection() {
+        testResult = .testing
+        let h = host.trimmingCharacters(in: .whitespacesAndNewlines)
+        let p = Int(port) ?? 18793
+        Task {
+            do {
+                let url = URL(string: "http://\(h):\(p)/health")!
+                let (_, response) = try await URLSession.shared.data(from: url)
+                if let http = response as? HTTPURLResponse, http.statusCode == 200 {
+                    testResult = .success
+                    UINotificationFeedbackGenerator().notificationOccurred(.success)
+                } else {
+                    testResult = .failure("Unexpected response")
+                    UINotificationFeedbackGenerator().notificationOccurred(.error)
+                }
+            } catch {
+                testResult = .failure(error.localizedDescription)
+                UINotificationFeedbackGenerator().notificationOccurred(.error)
             }
         }
     }

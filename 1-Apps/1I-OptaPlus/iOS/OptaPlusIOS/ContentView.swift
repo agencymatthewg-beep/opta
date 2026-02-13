@@ -20,14 +20,14 @@ struct ContentView: View {
             ChatTab()
                 .environmentObject(appState)
                 .tabItem {
-                    Label("Chat", systemImage: "bubble.left.and.bubble.right.fill")
+                    Label("Chat", systemImage: selectedTab == .chat ? "bubble.left.and.bubble.right.fill" : "bubble.left.and.bubble.right")
                 }
                 .tag(Tab.chat)
 
             SettingsView()
                 .environmentObject(appState)
                 .tabItem {
-                    Label("Settings", systemImage: "gearshape.fill")
+                    Label("Settings", systemImage: selectedTab == .settings ? "gearshape.fill" : "gearshape")
                 }
                 .tag(Tab.settings)
         }

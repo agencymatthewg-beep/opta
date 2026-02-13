@@ -55,13 +55,63 @@ struct ChatView: View {
     let botConfig: BotConfig
     @State private var messageText = ""
     @State private var showThinkingExpanded = false
+    @State private var showConnectionToast = false
+    @State private var connectionToastMessage = ""
+    @State private var isAtBottom = true
+    @State private var unreadCount = 0
 
     var body: some View {
         ZStack(alignment: .top) {
             Color.optaVoid.ignoresSafeArea()
 
             VStack(spacing: 0) {
-                messageList
+                ZStack(alignment: .bottom) {
+                    ZStack(alignment: .top) {
+                        messageList
+
+                        // Gradient fade at top
+                        LinearGradient(
+                            colors: [Color.optaVoid, Color.optaVoid.opacity(0)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                        .frame(height: 40)
+                        .allowsHitTesting(false)
+                    }
+
+                    // Scroll to bottom FAB
+                    if !isAtBottom {
+                        Button {
+                            isAtBottom = true
+                            unreadCount = 0
+                        } label: {
+                            ZStack(alignment: .topTrailing) {
+                                Image(systemName: "chevron.down")
+                                    .font(.system(size: 14, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .frame(width: 36, height: 36)
+                                    .background(Color.optaPrimary)
+                                    .clipShape(Circle())
+                                    .shadow(color: Color.optaPrimary.opacity(0.4), radius: 8)
+
+                                if unreadCount > 0 {
+                                    Text("\(unreadCount)")
+                                        .font(.caption2.bold())
+                                        .foregroundColor(.white)
+                                        .frame(minWidth: 18, minHeight: 18)
+                                        .background(Color.optaRed)
+                                        .clipShape(Capsule())
+                                        .offset(x: 4, y: -4)
+                                }
+                            }
+                        }
+                        .padding(.trailing, 16)
+                        .padding(.bottom, 8)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                        .transition(.scale.combined(with: .opacity))
+                    }
+                }
+
                 ChatInputBar(
                     text: $messageText,
                     isStreaming: viewModel.botState != .idle,
@@ -70,12 +120,25 @@ struct ChatView: View {
                 )
             }
 
+            // Connection toast
+            if showConnectionToast {
+                Text(connectionToastMessage)
+                    .font(.caption.weight(.medium))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(Capsule().fill(Color.optaGreen.opacity(0.9)))
+                    .padding(.top, 8)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            }
+
             if viewModel.botState == .thinking || !viewModel.agentEvents.isEmpty {
                 ThinkingOverlay(
                     botState: viewModel.botState,
                     events: viewModel.agentEvents,
                     isExpanded: $showThinkingExpanded
                 )
+                .padding(.top, showConnectionToast ? 40 : 0)
             }
         }
         .navigationTitle(botConfig.name)
@@ -102,11 +165,37 @@ struct ChatView: View {
         .onChange(of: viewModel.connectionState) { old, new in
             if old != .connected && new == .connected {
                 UINotificationFeedbackGenerator().notificationOccurred(.success)
+                connectionToastMessage = "Connected to \(botConfig.name)"
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                    showConnectionToast = true
+                }
+                Task {
+                    try? await Task.sleep(nanoseconds: 2_000_000_000)
+                    withAnimation(.easeOut(duration: 0.3)) {
+                        showConnectionToast = false
+                    }
+                }
+            } else if old == .connected && new == .disconnected {
+                connectionToastMessage = "Disconnected"
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                    showConnectionToast = true
+                }
+                Task {
+                    try? await Task.sleep(nanoseconds: 3_000_000_000)
+                    withAnimation(.easeOut(duration: 0.3)) {
+                        showConnectionToast = false
+                    }
+                }
             }
         }
         .onChange(of: viewModel.errorMessage) { _, err in
             if err != nil {
                 UINotificationFeedbackGenerator().notificationOccurred(.error)
+            }
+        }
+        .onChange(of: viewModel.messages.count) { old, new in
+            if new > old && !isAtBottom {
+                unreadCount += (new - old)
             }
         }
     }
@@ -161,10 +250,13 @@ struct ChatView: View {
     private var streamingBubble: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text(viewModel.streamingContent + "▊")
-                    .font(.body)
-                    .foregroundColor(.optaTextPrimary)
-                    .textSelection(.enabled)
+                HStack(spacing: 0) {
+                    Text(viewModel.streamingContent)
+                        .font(.body)
+                        .foregroundColor(.optaTextPrimary)
+                        .textSelection(.enabled)
+                    BlinkingCursor()
+                }
             }
             .padding(12)
             .background(
@@ -280,12 +372,34 @@ struct ChatView: View {
     }
 
     private func scrollToBottom(proxy: ScrollViewProxy) {
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+        let reduceMotion = UIAccessibility.isReduceMotionEnabled
+        let animation: Animation = reduceMotion ? .easeOut(duration: 0.15) : .spring(response: 0.3, dampingFraction: 0.8)
+        withAnimation(animation) {
             if !viewModel.streamingContent.isEmpty {
                 proxy.scrollTo("streaming", anchor: .bottom)
             } else if let last = viewModel.messages.last {
                 proxy.scrollTo(last.id, anchor: .bottom)
             }
         }
+    }
+}
+
+// MARK: - Blinking Cursor
+
+private struct BlinkingCursor: View {
+    @State private var visible = true
+
+    var body: some View {
+        Text("▊")
+            .font(.body)
+            .foregroundColor(.optaPrimary)
+            .opacity(visible ? 1.0 : 0.0)
+            .onAppear {
+                if !UIAccessibility.isReduceMotionEnabled {
+                    withAnimation(.easeInOut(duration: 0.5).repeatForever(autoreverses: true)) {
+                        visible = false
+                    }
+                }
+            }
     }
 }
