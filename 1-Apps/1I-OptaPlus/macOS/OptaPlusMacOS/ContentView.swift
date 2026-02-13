@@ -395,20 +395,12 @@ struct ChatContainerView: View {
                         }
                     }
                     
-                    .overlay(alignment: .bottomLeading) {
-                        if viewModel.botState != .idle {
-                            ThinkingOverlay(
-                                viewModel: viewModel,
-                                events: thinkingEvents,
-                                isActive: true
-                            )
-                            .frame(maxWidth: 280)
-                            .padding(.leading, 12)
-                            .padding(.bottom, 12)
-                            .allowsHitTesting(false)
-                            .transition(.opacity.combined(with: .move(edge: .bottom)))
-                            .animation(.spring(response: 0.3, dampingFraction: 0.85), value: viewModel.botState)
-                        }
+                    .overlay {
+                        ThinkingOverlay(
+                            viewModel: viewModel,
+                            events: thinkingEvents,
+                            isActive: viewModel.botState != .idle
+                        )
                     }
                     
                     // Floating input bar
