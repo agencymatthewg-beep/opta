@@ -116,6 +116,16 @@ struct OptaPlusMacOSApp: App {
                 Divider()
             }
             
+            // Edit → Clear Chat (⌘K)
+            CommandGroup(after: .pasteboard) {
+                Button("Clear Chat") {
+                    if let vm = appState.selectedViewModel {
+                        vm.messages.removeAll()
+                    }
+                }
+                .keyboardShortcut("k", modifiers: .command)
+            }
+
             // Window → Show Bot shortcuts (⌘1 through ⌘6)
             CommandMenu("Bots") {
                 ForEach(Array(appState.bots.prefix(6).enumerated()), id: \.element.id) { index, bot in

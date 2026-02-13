@@ -152,7 +152,7 @@ struct BotRow: View {
     
     var body: some View {
         HStack(spacing: 10) {
-            // Styled bot avatar circle
+            // Styled bot avatar circle with glow
             ZStack {
                 Circle()
                     .fill(accentColor.opacity(0.15))
@@ -161,7 +161,7 @@ struct BotRow: View {
                 Text(bot.emoji)
                     .font(.system(size: 18))
             }
-            .shadow(color: accentColor.opacity(0.4), radius: 8)
+            .shadow(color: accentColor.opacity(isConnected ? 0.5 : 0.2), radius: isConnected ? 10 : 4)
             .scaleEffect(breatheScale)
             .onAppear {
                 if isConnected {
