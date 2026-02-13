@@ -91,7 +91,7 @@ struct ContentView: View {
         }
         .animation(.spring(response: 0.25, dampingFraction: 0.85), value: showCommandPalette)
         .animation(.spring(response: 0.25, dampingFraction: 0.85), value: showKeyboardShortcuts)
-        .animation(.easeInOut(duration: 0.2), value: botSwitchOverlay != nil)
+        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: botSwitchOverlay != nil)
         .background {
             // Hidden buttons for keyboard shortcuts
             Group {
@@ -115,7 +115,7 @@ struct ContentView: View {
     private func showBotSwitchHUD(_ name: String) {
         botSwitchOverlay = name
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-            withAnimation(.easeOut(duration: 0.3)) {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
                 botSwitchOverlay = nil
             }
         }
@@ -171,7 +171,7 @@ struct WindowDragHandle: View {
                 Capsule()
                     .fill(Color.optaTextMuted.opacity(isHovered ? 0.4 : 0.15))
                     .frame(width: 36, height: 4)
-                    .animation(.easeInOut(duration: 0.25), value: isHovered)
+                    .animation(.spring(response: 0.25, dampingFraction: 0.8), value: isHovered)
             }
             .onHover { hovering in
                 isHovered = hovering
@@ -246,6 +246,8 @@ struct SidebarView: View {
                                 .foregroundColor(.optaTextSecondary)
                         }
                         .buttonStyle(.plain)
+                        .accessibilityLabel("Add bot")
+                        .accessibilityHint("Opens the add bot dialog")
                     }
                 }
             }
@@ -276,6 +278,7 @@ struct SidebarView: View {
                     Image(systemName: "gear")
                         .foregroundColor(.optaTextSecondary)
                 }
+                .accessibilityLabel("Settings")
             }
         }
     }
@@ -332,7 +335,7 @@ struct BotRow: View {
                         breatheScale = 1.03
                     }
                 } else {
-                    withAnimation(.easeInOut(duration: 0.3)) {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
                         breatheScale = 1.0
                     }
                 }
@@ -390,7 +393,7 @@ struct BotRow: View {
             }
         }
         .onHover { hovering in
-            withAnimation(.easeInOut(duration: 0.2)) {
+            withAnimation(.spring(response: 0.2, dampingFraction: 0.8)) {
                 isHovered = hovering
             }
         }
@@ -621,6 +624,7 @@ struct ChatContainerView: View {
                             // Notify for new bot messages
                             if newCount > oldCount, let last = viewModel.messages.last,
                                case .bot(let name) = last.sender {
+                                SoundManager.shared.play(.receiveMessage)
                                 NotificationManager.shared.notifyIfNeeded(botName: name, message: last.content)
                             }
                         }
@@ -704,6 +708,7 @@ struct ChatContainerView: View {
                             let files = pendingAttachments
                             inputText = ""
                             pendingAttachments = []
+                            SoundManager.shared.play(.sendMessage)
                             Task { await viewModel.send(text, attachments: files) }
                         },
                         onAbort: {
@@ -785,16 +790,17 @@ struct ChatContainerView: View {
             } else if newState == .connected && wasDisconnectedOrReconnecting {
                 connectionToastText = "Connected to \(viewModel.botConfig.name) ✓"
                 connectionToastIsSuccess = true
+                SoundManager.shared.play(.connected)
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
                     showConnectionToast = true
                 }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                    withAnimation(.easeOut(duration: 0.4)) {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
                         showConnectionToast = false
                     }
                 }
             } else {
-                withAnimation(.easeOut(duration: 0.3)) {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
                     showConnectionToast = false
                 }
             }
@@ -1307,6 +1313,7 @@ struct ErrorBanner: View {
                     .font(.system(size: 14))
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Dismiss error")
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
@@ -1388,6 +1395,7 @@ struct ChatHeaderView: View {
                     .overlay(Capsule().stroke(Color.optaAmber.opacity(0.3), lineWidth: 0.5))
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Reconnect to \(viewModel.botConfig.name)")
                 .transition(.scale(scale: 0.8).combined(with: .opacity))
             }
 
@@ -1403,6 +1411,7 @@ struct ChatHeaderView: View {
                     .scaleEffect(x: viewModel.isSessionDrawerOpen ? -1 : 1)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(viewModel.isSessionDrawerOpen ? "Close sessions panel" : "Open sessions panel")
             .help("Toggle sessions panel")
             
             // Connection indicator with glow ring
@@ -1612,6 +1621,7 @@ struct ChatInputBar: View {
                                 .scaleEffect(1 + 0.08 * glowPhase)
                         }
                         .buttonStyle(.plain)
+                        .accessibilityLabel("Stop generation")
                         .help("Stop generation")
                         .transition(.scale(scale: 0.5).combined(with: .opacity))
                     } else {
@@ -1624,6 +1634,7 @@ struct ChatInputBar: View {
                         }
                         .buttonStyle(.plain)
                         .disabled(!hasContent)
+                        .accessibilityLabel("Send message")
                         .help("Send message (⏎)")
                         .transition(.scale(scale: 0.5).combined(with: .opacity))
                     }
@@ -2168,17 +2179,47 @@ struct GeneralSettingsView: View {
     @EnvironmentObject var animPrefs: AnimationPreferences
     @AppStorage("optaplus.textAlignment") private var textAlignment: String = MessageTextAlignment.centeredExpanding.rawValue
 
+    private var appVersion: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1.0"
+    }
+    private var buildNumber: String {
+        Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
+    }
+
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
-                VStack(spacing: 4) {
-                    Text("OptaPlus v0.1.0")
-                        .font(.system(size: 15, weight: .semibold))
+                // About section
+                VStack(spacing: 8) {
+                    Image(systemName: "bubble.left.and.bubble.right.fill")
+                        .font(.system(size: 36))
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [.optaPrimary, .optaNeonPurple],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+
+                    Text("OptaPlus")
+                        .font(.sora(18, weight: .bold))
                         .foregroundColor(.optaTextPrimary)
+
+                    Text("v\(appVersion) (\(buildNumber))")
+                        .font(.system(size: 12, weight: .medium, design: .monospaced))
+                        .foregroundColor(.optaTextMuted)
 
                     Text("Native OpenClaw chat client")
                         .font(.system(size: 13))
                         .foregroundColor(.optaTextSecondary)
+
+                    Text("Built with SwiftUI • Cinematic Void Design System")
+                        .font(.system(size: 11))
+                        .foregroundColor(.optaTextMuted)
+
+                    Link("GitHub →", destination: URL(string: "https://github.com/optamize/optaplus")!)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(.optaPrimary)
                 }
 
                 Divider().background(Color.optaBorder)

@@ -187,7 +187,7 @@ struct CommandPaletteView: View {
                     }
                     .frame(maxHeight: 320)
                     .onChange(of: selectedIndex) { _, newIdx in
-                        withAnimation(.easeOut(duration: 0.1)) {
+                        withAnimation(.spring(response: 0.15, dampingFraction: 0.8)) {
                             proxy.scrollTo(newIdx, anchor: .center)
                         }
                     }

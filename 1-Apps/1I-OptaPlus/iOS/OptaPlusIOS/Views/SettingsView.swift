@@ -105,6 +105,14 @@ struct SettingsView: View {
                             .foregroundColor(.optaTextMuted)
                     }
                     .listRowBackground(Color.optaSurface)
+
+                    NavigationLink {
+                        AboutView()
+                    } label: {
+                        Label("About OptaPlus", systemImage: "info.circle.fill")
+                            .foregroundColor(.optaPrimary)
+                    }
+                    .listRowBackground(Color.optaSurface)
                 } header: {
                     Label("About OptaPlus", systemImage: "star.fill")
                         .foregroundColor(.optaTextSecondary)

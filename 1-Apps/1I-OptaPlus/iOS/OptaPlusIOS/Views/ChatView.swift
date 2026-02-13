@@ -34,6 +34,22 @@ private func shouldShowTimestamp(messages: [ChatMessage], at index: Int) -> Bool
     return msg.timestamp.timeIntervalSince(prev.timestamp) > 120
 }
 
+private func shouldShowDateSeparator(messages: [ChatMessage], at index: Int) -> Bool {
+    guard index < messages.count else { return false }
+    if index == 0 { return true }
+    let cal = Calendar.current
+    return !cal.isDate(messages[index].timestamp, inSameDayAs: messages[index - 1].timestamp)
+}
+
+private func dateSeparatorText(_ date: Date) -> String {
+    let cal = Calendar.current
+    if cal.isDateInToday(date) { return "Today" }
+    if cal.isDateInYesterday(date) { return "Yesterday" }
+    let f = DateFormatter()
+    f.dateFormat = "EEEE, MMM d"
+    return f.string(from: date)
+}
+
 // MARK: - Timestamp Separator
 
 private struct TimestampSeparator: View {
@@ -45,6 +61,52 @@ private struct TimestampSeparator: View {
             .foregroundColor(.optaTextMuted)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 6)
+    }
+}
+
+// MARK: - Date Separator Pill
+
+private struct DateSeparatorPill: View {
+    let text: String
+
+    var body: some View {
+        Text(text)
+            .font(.caption2.weight(.semibold))
+            .foregroundColor(.optaTextMuted)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 5)
+            .background(Capsule().fill(Color.optaSurface))
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 8)
+    }
+}
+
+// MARK: - Typing Indicator
+
+private struct TypingIndicator: View {
+    @State private var phase = 0
+    private let timer = Timer.publish(every: 0.4, on: .main, in: .common).autoconnect()
+
+    var body: some View {
+        HStack(spacing: 4) {
+            ForEach(0..<3, id: \.self) { i in
+                Circle()
+                    .fill(Color.optaTextMuted)
+                    .frame(width: 6, height: 6)
+                    .offset(y: phase == i ? -4 : 0)
+                    .animation(.spring(response: 0.3, dampingFraction: 0.5), value: phase)
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.optaElevated)
+                .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.optaBorder, lineWidth: 1))
+        )
+        .onReceive(timer) { _ in
+            phase = (phase + 1) % 4
+        }
     }
 }
 
@@ -216,11 +278,24 @@ struct ChatView: View {
 
                     ForEach(Array(viewModel.messages.enumerated()), id: \.element.id) { index, message in
                         VStack(spacing: 4) {
+                            if shouldShowDateSeparator(messages: viewModel.messages, at: index) {
+                                DateSeparatorPill(text: dateSeparatorText(message.timestamp))
+                            }
                             if shouldShowTimestamp(messages: viewModel.messages, at: index) {
                                 TimestampSeparator(date: message.timestamp)
                             }
                             MessageBubble(message: message, botName: botConfig.name)
                                 .id(message.id)
+                        }
+                    }
+
+                    // Typing indicator
+                    if viewModel.botState == .thinking || viewModel.botState == .responding {
+                        if viewModel.streamingContent.isEmpty {
+                            HStack {
+                                TypingIndicator()
+                                Spacer()
+                            }
                         }
                     }
 

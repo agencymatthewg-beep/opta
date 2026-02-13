@@ -35,13 +35,7 @@ struct MessageBubble: View {
             if isEmojiOnly {
                 Text(message.content)
                     .font(.system(size: 48))
-                    .contextMenu {
-                        Button {
-                            UIPasteboard.general.string = message.content
-                        } label: {
-                            Label("Copy", systemImage: "doc.on.doc")
-                        }
-                    }
+                    .contextMenu { messageContextMenu }
             } else {
                 VStack(alignment: isUser ? .trailing : .leading, spacing: 4) {
                     Text(message.content)
@@ -51,16 +45,28 @@ struct MessageBubble: View {
                 }
                 .padding(12)
                 .background(bubbleBackground)
-                .contextMenu {
-                    Button {
-                        UIPasteboard.general.string = message.content
-                    } label: {
-                        Label("Copy", systemImage: "doc.on.doc")
-                    }
-                }
+                .contextMenu { messageContextMenu }
             }
 
             if !isUser { Spacer(minLength: 60) }
+        }
+    }
+
+    @ViewBuilder
+    private var messageContextMenu: some View {
+        Button {
+            UIPasteboard.general.string = message.content
+        } label: {
+            Label("Copy", systemImage: "doc.on.doc")
+        }
+        ShareLink(item: message.content) {
+            Label("Share", systemImage: "square.and.arrow.up")
+        }
+        Divider()
+        Button(role: .destructive) {
+            // Deletion handled by parent — this is a visual placeholder
+        } label: {
+            Label("Delete", systemImage: "trash")
         }
     }
 

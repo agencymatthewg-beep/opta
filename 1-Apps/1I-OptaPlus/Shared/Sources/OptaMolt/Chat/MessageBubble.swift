@@ -8,6 +8,7 @@
 //
 
 import SwiftUI
+import Combine
 #if canImport(AppKit)
 import AppKit
 #elseif canImport(UIKit)
@@ -55,6 +56,8 @@ public struct MessageBubble: View {
 
     @State private var isHovered = false
     @State private var isExpanded = false
+    @State private var relativeTimestamp: String = ""
+    @StateObject private var reactionStore = ReactionStore.shared
 
     // MARK: - Init (message)
     
@@ -258,7 +261,7 @@ public struct MessageBubble: View {
                     }
                 }
                 .onHover { hovering in
-                    withAnimation(.easeInOut(duration: 0.15)) { isHovered = hovering }
+                    withAnimation(.spring(response: 0.2, dampingFraction: 0.8)) { isHovered = hovering }
                 }
                 .if(isUserMessage) { view in
                     view.mask(
@@ -277,6 +280,8 @@ public struct MessageBubble: View {
                 .brightness(isHovered ? 0.03 : 0)
                 .shadow(color: Color.black.opacity(0.3), radius: 12, y: 4)
                 .animation(.spring(response: 0.25, dampingFraction: 0.8), value: isHovered)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(isUserMessage ? "Your message: \(displayContent.prefix(100))" : "\(displaySender.accessibleName) said: \(displayContent.prefix(100))")
                 .contextMenu {
                     Button {
                         copyToClipboard(displayContent)
@@ -294,20 +299,35 @@ public struct MessageBubble: View {
                     removal: .opacity
                 ))
                 
+                // Link previews for URLs in message
+                if !isStreaming, let msg = message {
+                    LinkPreviewsView(text: msg.content)
+                    InlineImageURLsView(text: msg.content)
+                }
+
+                // Reaction pills
+                if let msg = message {
+                    ReactionPillsView(messageId: msg.id, store: reactionStore)
+                }
+
                 // Timestamp row (always visible when not hidden, or show on hover)
                 if !isStreaming && (!hideTimestamp || isHovered) {
                     HStack(spacing: 4) {
                         if isUserMessage {
                             statusIcon
                         }
-                        if let msg = message {
-                            Text(msg.timestamp.formatted(date: .omitted, time: .shortened))
+                        if message != nil {
+                            Text(relativeTimestamp)
                                 .font(.system(size: 9))
                                 .foregroundColor(.optaTextMuted)
                                 .opacity(0.5)
+                                .onAppear { updateRelativeTimestamp() }
+                                .onReceive(Timer.publish(every: 60, on: .main, in: .common).autoconnect()) { _ in
+                                    updateRelativeTimestamp()
+                                }
 
                             // Source badge (e.g. "via Telegram")
-                            if msg.source == .telegram {
+                            if let msg = message, msg.source == .telegram {
                                 HStack(spacing: 3) {
                                     Image(systemName: "paperplane.fill")
                                         .font(.system(size: 8))
@@ -433,12 +453,33 @@ public struct MessageBubble: View {
         #endif
     }
 
+    private func relativeTime(for date: Date) -> String {
+        let now = Date()
+        let interval = now.timeIntervalSince(date)
+        if interval < 60 { return "just now" }
+        if interval < 3600 {
+            let mins = Int(interval / 60)
+            return "\(mins)m ago"
+        }
+        if interval < 86400 {
+            let hours = Int(interval / 3600)
+            return "\(hours)h ago"
+        }
+        return date.formatted(date: .abbreviated, time: .shortened)
+    }
+
+    private func updateRelativeTimestamp() {
+        if let msg = message {
+            relativeTimestamp = relativeTime(for: msg.timestamp)
+        }
+    }
+
     private func statusIconInfo(for status: ChatMessage.MessageStatus) -> (name: String, color: Color) {
         switch status {
         case .pending: return ("clock", .optaTextMuted)
-        case .sent: return ("checkmark", .optaTextSecondary)
-        case .delivered: return ("checkmark.circle", .optaGreen)
-        case .failed: return ("exclamationmark.triangle", .optaRed)
+        case .sent: return ("checkmark", .optaTextSecondary)       // Single check = sent
+        case .delivered: return ("checkmark.circle.fill", .optaGreen) // Filled check = delivered
+        case .failed: return ("exclamationmark.triangle.fill", .optaRed)
         }
     }
 }

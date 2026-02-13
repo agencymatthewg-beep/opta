@@ -10,28 +10,34 @@ import OptaMolt
 struct ContentView: View {
     @EnvironmentObject var appState: AppState
     @State private var selectedTab: Tab = .chat
+    @AppStorage("optaplus.onboardingDone") private var onboardingDone = false
 
     enum Tab {
         case chat, settings
     }
 
     var body: some View {
-        TabView(selection: $selectedTab) {
-            ChatTab()
+        if !onboardingDone && appState.bots.isEmpty {
+            OnboardingView()
                 .environmentObject(appState)
-                .tabItem {
-                    Label("Chat", systemImage: selectedTab == .chat ? "bubble.left.and.bubble.right.fill" : "bubble.left.and.bubble.right")
-                }
-                .tag(Tab.chat)
+        } else {
+            TabView(selection: $selectedTab) {
+                ChatTab()
+                    .environmentObject(appState)
+                    .tabItem {
+                        Label("Chat", systemImage: selectedTab == .chat ? "bubble.left.and.bubble.right.fill" : "bubble.left.and.bubble.right")
+                    }
+                    .tag(Tab.chat)
 
-            SettingsView()
-                .environmentObject(appState)
-                .tabItem {
-                    Label("Settings", systemImage: selectedTab == .settings ? "gearshape.fill" : "gearshape")
-                }
-                .tag(Tab.settings)
+                SettingsView()
+                    .environmentObject(appState)
+                    .tabItem {
+                        Label("Settings", systemImage: selectedTab == .settings ? "gearshape.fill" : "gearshape")
+                    }
+                    .tag(Tab.settings)
+            }
+            .tint(.optaPrimary)
         }
-        .tint(.optaPrimary)
     }
 }
 
@@ -39,7 +45,9 @@ struct ContentView: View {
 
 struct ChatTab: View {
     @EnvironmentObject var appState: AppState
+    @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var columnVisibility: NavigationSplitViewVisibility = .automatic
+    @State private var showSettings = false
 
     var body: some View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
@@ -54,6 +62,11 @@ struct ChatTab: View {
             }
         }
         .navigationSplitViewStyle(.balanced)
+        .onAppear {
+            if sizeClass == .regular {
+                columnVisibility = .all
+            }
+        }
     }
 
     private var emptyState: some View {

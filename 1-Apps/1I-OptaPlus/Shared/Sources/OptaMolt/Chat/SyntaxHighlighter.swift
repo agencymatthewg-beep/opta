@@ -28,6 +28,25 @@ public enum SyntaxHighlighter {
 
     // MARK: - Public API
 
+    // MARK: - Cinematic Void Theme Colors
+
+    /// Violet-tinted keywords matching the Cinematic Void theme
+    public static let keywordColor = Color(red: 0.68, green: 0.45, blue: 1.0)     // Violet keywords
+    /// Green strings
+    public static let stringColor = Color(red: 0.45, green: 0.85, blue: 0.55)      // Emerald green
+    /// Amber numbers
+    public static let numberColor = Color(red: 0.95, green: 0.75, blue: 0.30)      // Warm amber
+    /// Type/class color
+    public static let typeColor = Color(red: 0.40, green: 0.78, blue: 0.90)        // Cyan-tinted
+    /// Comment color
+    public static let commentColor = Color(white: 0.45)                              // Muted gray
+    /// Decorator/attribute color
+    public static let decoratorColor = Color(red: 0.85, green: 0.55, blue: 0.95)   // Light violet
+    /// Variable color
+    public static let variableColor = Color(red: 0.55, green: 0.85, blue: 0.75)    // Teal
+    /// Operator/punctuation
+    public static let operatorColor = Color(red: 0.75, green: 0.65, blue: 0.90)    // Soft violet
+
     /// Highlights code and returns an AttributedString
     /// - Parameters:
     ///   - code: The source code to highlight
@@ -156,19 +175,19 @@ public enum SyntaxHighlighter {
     private static var swiftPatterns: [HighlightPattern] {
         [
             // Comments (lowest priority - apply first)
-            HighlightPattern(#"//.*$"#, color: .optaTextSecondary),
-            HighlightPattern(#"/\*[\s\S]*?\*/"#, color: .optaTextSecondary),
+            HighlightPattern(#"//.*$"#, color: SyntaxHighlighter.commentColor),
+            HighlightPattern(#"/\*[\s\S]*?\*/"#, color: SyntaxHighlighter.commentColor),
 
             // Strings
-            HighlightPattern(#""""[\s\S]*?""""#, color: .optaBlue),  // Multi-line strings
-            HighlightPattern(#""(?:[^"\\]|\\.)*""#, color: .optaBlue),
+            HighlightPattern(#""""[\s\S]*?""""#, color: SyntaxHighlighter.stringColor),  // Multi-line strings
+            HighlightPattern(#""(?:[^"\\]|\\.)*""#, color: SyntaxHighlighter.stringColor),
 
             // Numbers
-            HighlightPattern(#"\b0x[0-9a-fA-F]+\b"#, color: .optaAmber),
-            HighlightPattern(#"\b\d+\.?\d*\b"#, color: .optaAmber),
+            HighlightPattern(#"\b0x[0-9a-fA-F]+\b"#, color: SyntaxHighlighter.numberColor),
+            HighlightPattern(#"\b\d+\.?\d*\b"#, color: SyntaxHighlighter.numberColor),
 
             // Types (PascalCase)
-            HighlightPattern(#"\b[A-Z][a-zA-Z0-9]*\b"#, color: .optaGreen),
+            HighlightPattern(#"\b[A-Z][a-zA-Z0-9]*\b"#, color: SyntaxHighlighter.typeColor),
 
             // Keywords (highest priority - apply last)
             HighlightPattern(
@@ -177,7 +196,7 @@ public enum SyntaxHighlighter {
             ),
 
             // Property wrappers
-            HighlightPattern(#"@\w+"#, color: .optaPurple),
+            HighlightPattern(#"@\w+"#, color: SyntaxHighlighter.keywordColor),
         ].compactMap { $0 }
     }
 
@@ -185,20 +204,20 @@ public enum SyntaxHighlighter {
     private static var pythonPatterns: [HighlightPattern] {
         [
             // Comments
-            HighlightPattern(#"#.*$"#, color: .optaTextSecondary),
+            HighlightPattern(#"#.*$"#, color: SyntaxHighlighter.commentColor),
 
             // Strings (including triple-quoted)
-            HighlightPattern(#"'''[\s\S]*?'''"#, color: .optaBlue),
-            HighlightPattern(#"\"\"\"[\s\S]*?\"\"\""#, color: .optaBlue),
-            HighlightPattern(#"'(?:[^'\\]|\\.)*'"#, color: .optaBlue),
-            HighlightPattern(#""(?:[^"\\]|\\.)*""#, color: .optaBlue),
+            HighlightPattern(#"'''[\s\S]*?'''"#, color: SyntaxHighlighter.stringColor),
+            HighlightPattern(#"\"\"\"[\s\S]*?\"\"\""#, color: SyntaxHighlighter.stringColor),
+            HighlightPattern(#"'(?:[^'\\]|\\.)*'"#, color: SyntaxHighlighter.stringColor),
+            HighlightPattern(#""(?:[^"\\]|\\.)*""#, color: SyntaxHighlighter.stringColor),
 
             // Numbers
-            HighlightPattern(#"\b0x[0-9a-fA-F]+\b"#, color: .optaAmber),
-            HighlightPattern(#"\b\d+\.?\d*\b"#, color: .optaAmber),
+            HighlightPattern(#"\b0x[0-9a-fA-F]+\b"#, color: SyntaxHighlighter.numberColor),
+            HighlightPattern(#"\b\d+\.?\d*\b"#, color: SyntaxHighlighter.numberColor),
 
             // Types (PascalCase)
-            HighlightPattern(#"\b[A-Z][a-zA-Z0-9]*\b"#, color: .optaGreen),
+            HighlightPattern(#"\b[A-Z][a-zA-Z0-9]*\b"#, color: SyntaxHighlighter.typeColor),
 
             // Keywords
             HighlightPattern(
@@ -207,7 +226,7 @@ public enum SyntaxHighlighter {
             ),
 
             // Decorators
-            HighlightPattern(#"@\w+"#, color: .optaPurple),
+            HighlightPattern(#"@\w+"#, color: SyntaxHighlighter.keywordColor),
         ].compactMap { $0 }
     }
 
@@ -215,20 +234,20 @@ public enum SyntaxHighlighter {
     private static var javascriptPatterns: [HighlightPattern] {
         [
             // Comments
-            HighlightPattern(#"//.*$"#, color: .optaTextSecondary),
-            HighlightPattern(#"/\*[\s\S]*?\*/"#, color: .optaTextSecondary),
+            HighlightPattern(#"//.*$"#, color: SyntaxHighlighter.commentColor),
+            HighlightPattern(#"/\*[\s\S]*?\*/"#, color: SyntaxHighlighter.commentColor),
 
             // Strings (including template literals)
-            HighlightPattern(#"`(?:[^`\\]|\\.)*`"#, color: .optaBlue),
-            HighlightPattern(#"'(?:[^'\\]|\\.)*'"#, color: .optaBlue),
-            HighlightPattern(#""(?:[^"\\]|\\.)*""#, color: .optaBlue),
+            HighlightPattern(#"`(?:[^`\\]|\\.)*`"#, color: SyntaxHighlighter.stringColor),
+            HighlightPattern(#"'(?:[^'\\]|\\.)*'"#, color: SyntaxHighlighter.stringColor),
+            HighlightPattern(#""(?:[^"\\]|\\.)*""#, color: SyntaxHighlighter.stringColor),
 
             // Numbers
-            HighlightPattern(#"\b0x[0-9a-fA-F]+\b"#, color: .optaAmber),
-            HighlightPattern(#"\b\d+\.?\d*\b"#, color: .optaAmber),
+            HighlightPattern(#"\b0x[0-9a-fA-F]+\b"#, color: SyntaxHighlighter.numberColor),
+            HighlightPattern(#"\b\d+\.?\d*\b"#, color: SyntaxHighlighter.numberColor),
 
             // Types (PascalCase)
-            HighlightPattern(#"\b[A-Z][a-zA-Z0-9]*\b"#, color: .optaGreen),
+            HighlightPattern(#"\b[A-Z][a-zA-Z0-9]*\b"#, color: SyntaxHighlighter.typeColor),
 
             // Keywords
             HighlightPattern(
@@ -237,7 +256,7 @@ public enum SyntaxHighlighter {
             ),
 
             // Arrow functions
-            HighlightPattern(#"=>"#, color: .optaPurple),
+            HighlightPattern(#"=>"#, color: SyntaxHighlighter.keywordColor),
         ].compactMap { $0 }
     }
 
@@ -245,20 +264,20 @@ public enum SyntaxHighlighter {
     private static var rustPatterns: [HighlightPattern] {
         [
             // Comments
-            HighlightPattern(#"//.*$"#, color: .optaTextSecondary),
-            HighlightPattern(#"/\*[\s\S]*?\*/"#, color: .optaTextSecondary),
+            HighlightPattern(#"//.*$"#, color: SyntaxHighlighter.commentColor),
+            HighlightPattern(#"/\*[\s\S]*?\*/"#, color: SyntaxHighlighter.commentColor),
 
             // Strings
-            HighlightPattern(##"r#"[\s\S]*?"#"##, color: .optaBlue),  // Raw strings
-            HighlightPattern(#""(?:[^"\\]|\\.)*""#, color: .optaBlue),
-            HighlightPattern(#"'(?:[^'\\]|\\.)*'"#, color: .optaBlue),
+            HighlightPattern(##"r#"[\s\S]*?"#"##, color: SyntaxHighlighter.stringColor),  // Raw strings
+            HighlightPattern(#""(?:[^"\\]|\\.)*""#, color: SyntaxHighlighter.stringColor),
+            HighlightPattern(#"'(?:[^'\\]|\\.)*'"#, color: SyntaxHighlighter.stringColor),
 
             // Numbers
-            HighlightPattern(#"\b0x[0-9a-fA-F_]+\b"#, color: .optaAmber),
-            HighlightPattern(#"\b\d[\d_]*\.?[\d_]*\b"#, color: .optaAmber),
+            HighlightPattern(#"\b0x[0-9a-fA-F_]+\b"#, color: SyntaxHighlighter.numberColor),
+            HighlightPattern(#"\b\d[\d_]*\.?[\d_]*\b"#, color: SyntaxHighlighter.numberColor),
 
             // Types (PascalCase)
-            HighlightPattern(#"\b[A-Z][a-zA-Z0-9]*\b"#, color: .optaGreen),
+            HighlightPattern(#"\b[A-Z][a-zA-Z0-9]*\b"#, color: SyntaxHighlighter.typeColor),
 
             // Keywords
             HighlightPattern(
@@ -267,10 +286,10 @@ public enum SyntaxHighlighter {
             ),
 
             // Macros
-            HighlightPattern(#"\w+!"#, color: .optaPurple),
+            HighlightPattern(#"\w+!"#, color: SyntaxHighlighter.keywordColor),
 
             // Lifetimes
-            HighlightPattern(#"'[a-z_]\w*"#, color: .optaPurple),
+            HighlightPattern(#"'[a-z_]\w*"#, color: SyntaxHighlighter.keywordColor),
         ].compactMap { $0 }
     }
 
@@ -278,19 +297,19 @@ public enum SyntaxHighlighter {
     private static var goPatterns: [HighlightPattern] {
         [
             // Comments
-            HighlightPattern(#"//.*$"#, color: .optaTextSecondary),
-            HighlightPattern(#"/\*[\s\S]*?\*/"#, color: .optaTextSecondary),
+            HighlightPattern(#"//.*$"#, color: SyntaxHighlighter.commentColor),
+            HighlightPattern(#"/\*[\s\S]*?\*/"#, color: SyntaxHighlighter.commentColor),
 
             // Strings
-            HighlightPattern(#"`[^`]*`"#, color: .optaBlue),  // Raw strings
-            HighlightPattern(#""(?:[^"\\]|\\.)*""#, color: .optaBlue),
+            HighlightPattern(#"`[^`]*`"#, color: SyntaxHighlighter.stringColor),  // Raw strings
+            HighlightPattern(#""(?:[^"\\]|\\.)*""#, color: SyntaxHighlighter.stringColor),
 
             // Numbers
-            HighlightPattern(#"\b0x[0-9a-fA-F]+\b"#, color: .optaAmber),
-            HighlightPattern(#"\b\d+\.?\d*\b"#, color: .optaAmber),
+            HighlightPattern(#"\b0x[0-9a-fA-F]+\b"#, color: SyntaxHighlighter.numberColor),
+            HighlightPattern(#"\b\d+\.?\d*\b"#, color: SyntaxHighlighter.numberColor),
 
             // Types (PascalCase)
-            HighlightPattern(#"\b[A-Z][a-zA-Z0-9]*\b"#, color: .optaGreen),
+            HighlightPattern(#"\b[A-Z][a-zA-Z0-9]*\b"#, color: SyntaxHighlighter.typeColor),
 
             // Keywords
             HighlightPattern(
@@ -299,7 +318,7 @@ public enum SyntaxHighlighter {
             ),
 
             // Short variable declaration
-            HighlightPattern(#":="#, color: .optaPurple),
+            HighlightPattern(#":="#, color: SyntaxHighlighter.keywordColor),
         ].compactMap { $0 }
     }
 
@@ -307,13 +326,13 @@ public enum SyntaxHighlighter {
     private static var jsonPatterns: [HighlightPattern] {
         [
             // Strings (keys and values)
-            HighlightPattern(#""(?:[^"\\]|\\.)*""#, color: .optaBlue),
+            HighlightPattern(#""(?:[^"\\]|\\.)*""#, color: SyntaxHighlighter.stringColor),
 
             // Numbers
-            HighlightPattern(#"-?\b\d+\.?\d*(?:[eE][+-]?\d+)?\b"#, color: .optaAmber),
+            HighlightPattern(#"-?\b\d+\.?\d*(?:[eE][+-]?\d+)?\b"#, color: SyntaxHighlighter.numberColor),
 
             // Keywords
-            HighlightPattern(#"\b(true|false|null)\b"#, color: .optaPurple),
+            HighlightPattern(#"\b(true|false|null)\b"#, color: SyntaxHighlighter.keywordColor),
         ].compactMap { $0 }
     }
 
@@ -321,17 +340,17 @@ public enum SyntaxHighlighter {
     private static var shellPatterns: [HighlightPattern] {
         [
             // Comments
-            HighlightPattern(#"#.*$"#, color: .optaTextSecondary),
+            HighlightPattern(#"#.*$"#, color: SyntaxHighlighter.commentColor),
 
             // Strings
-            HighlightPattern(#"'[^']*'"#, color: .optaBlue),
-            HighlightPattern(#""(?:[^"\\]|\\.)*""#, color: .optaBlue),
+            HighlightPattern(#"'[^']*'"#, color: SyntaxHighlighter.stringColor),
+            HighlightPattern(#""(?:[^"\\]|\\.)*""#, color: SyntaxHighlighter.stringColor),
 
             // Variables
-            HighlightPattern(#"\$\{?\w+\}?"#, color: .optaGreen),
+            HighlightPattern(#"\$\{?\w+\}?"#, color: SyntaxHighlighter.typeColor),
 
             // Numbers
-            HighlightPattern(#"\b\d+\b"#, color: .optaAmber),
+            HighlightPattern(#"\b\d+\b"#, color: SyntaxHighlighter.numberColor),
 
             // Keywords
             HighlightPattern(
@@ -345,18 +364,18 @@ public enum SyntaxHighlighter {
     private static var htmlPatterns: [HighlightPattern] {
         [
             // Comments
-            HighlightPattern(#"<!--[\s\S]*?-->"#, color: .optaTextSecondary),
+            HighlightPattern(#"<!--[\s\S]*?-->"#, color: SyntaxHighlighter.commentColor),
 
             // Strings (attribute values)
-            HighlightPattern(#""[^"]*""#, color: .optaBlue),
-            HighlightPattern(#"'[^']*'"#, color: .optaBlue),
+            HighlightPattern(#""[^"]*""#, color: SyntaxHighlighter.stringColor),
+            HighlightPattern(#"'[^']*'"#, color: SyntaxHighlighter.stringColor),
 
             // Tags
-            HighlightPattern(#"</?[a-zA-Z][a-zA-Z0-9]*"#, color: .optaPurple),
-            HighlightPattern(#"/?>|<"#, color: .optaPurple),
+            HighlightPattern(#"</?[a-zA-Z][a-zA-Z0-9]*"#, color: SyntaxHighlighter.keywordColor),
+            HighlightPattern(#"/?>|<"#, color: SyntaxHighlighter.keywordColor),
 
             // Attributes
-            HighlightPattern(#"\b[a-zA-Z-]+(?==)"#, color: .optaGreen),
+            HighlightPattern(#"\b[a-zA-Z-]+(?==)"#, color: SyntaxHighlighter.typeColor),
         ].compactMap { $0 }
     }
 
@@ -364,23 +383,23 @@ public enum SyntaxHighlighter {
     private static var cssPatterns: [HighlightPattern] {
         [
             // Comments
-            HighlightPattern(#"/\*[\s\S]*?\*/"#, color: .optaTextSecondary),
+            HighlightPattern(#"/\*[\s\S]*?\*/"#, color: SyntaxHighlighter.commentColor),
 
             // Strings
-            HighlightPattern(#""[^"]*""#, color: .optaBlue),
-            HighlightPattern(#"'[^']*'"#, color: .optaBlue),
+            HighlightPattern(#""[^"]*""#, color: SyntaxHighlighter.stringColor),
+            HighlightPattern(#"'[^']*'"#, color: SyntaxHighlighter.stringColor),
 
             // Colors (hex)
-            HighlightPattern(#"#[0-9a-fA-F]{3,8}\b"#, color: .optaAmber),
+            HighlightPattern(#"#[0-9a-fA-F]{3,8}\b"#, color: SyntaxHighlighter.numberColor),
 
             // Numbers with units
-            HighlightPattern(#"-?\d+\.?\d*(?:px|em|rem|%|vh|vw|deg|s|ms)?\b"#, color: .optaAmber),
+            HighlightPattern(#"-?\d+\.?\d*(?:px|em|rem|%|vh|vw|deg|s|ms)?\b"#, color: SyntaxHighlighter.numberColor),
 
             // Properties
-            HighlightPattern(#"\b[a-z-]+(?=\s*:)"#, color: .optaPurple),
+            HighlightPattern(#"\b[a-z-]+(?=\s*:)"#, color: SyntaxHighlighter.keywordColor),
 
             // Selectors (classes, ids)
-            HighlightPattern(#"[.#][a-zA-Z_-][a-zA-Z0-9_-]*"#, color: .optaGreen),
+            HighlightPattern(#"[.#][a-zA-Z_-][a-zA-Z0-9_-]*"#, color: SyntaxHighlighter.typeColor),
         ].compactMap { $0 }
     }
 
@@ -388,21 +407,21 @@ public enum SyntaxHighlighter {
     private static var genericPatterns: [HighlightPattern] {
         [
             // C-style comments
-            HighlightPattern(#"//.*$"#, color: .optaTextSecondary),
-            HighlightPattern(#"/\*[\s\S]*?\*/"#, color: .optaTextSecondary),
+            HighlightPattern(#"//.*$"#, color: SyntaxHighlighter.commentColor),
+            HighlightPattern(#"/\*[\s\S]*?\*/"#, color: SyntaxHighlighter.commentColor),
             // Hash comments
-            HighlightPattern(#"#.*$"#, color: .optaTextSecondary),
+            HighlightPattern(#"#.*$"#, color: SyntaxHighlighter.commentColor),
 
             // Strings
-            HighlightPattern(#"'(?:[^'\\]|\\.)*'"#, color: .optaBlue),
-            HighlightPattern(#""(?:[^"\\]|\\.)*""#, color: .optaBlue),
+            HighlightPattern(#"'(?:[^'\\]|\\.)*'"#, color: SyntaxHighlighter.stringColor),
+            HighlightPattern(#""(?:[^"\\]|\\.)*""#, color: SyntaxHighlighter.stringColor),
 
             // Numbers
-            HighlightPattern(#"\b0x[0-9a-fA-F]+\b"#, color: .optaAmber),
-            HighlightPattern(#"\b\d+\.?\d*\b"#, color: .optaAmber),
+            HighlightPattern(#"\b0x[0-9a-fA-F]+\b"#, color: SyntaxHighlighter.numberColor),
+            HighlightPattern(#"\b\d+\.?\d*\b"#, color: SyntaxHighlighter.numberColor),
 
             // Types (PascalCase)
-            HighlightPattern(#"\b[A-Z][a-zA-Z0-9]*\b"#, color: .optaGreen),
+            HighlightPattern(#"\b[A-Z][a-zA-Z0-9]*\b"#, color: SyntaxHighlighter.typeColor),
 
             // Common keywords
             HighlightPattern(

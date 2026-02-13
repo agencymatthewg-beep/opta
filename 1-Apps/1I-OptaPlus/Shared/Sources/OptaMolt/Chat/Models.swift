@@ -95,6 +95,14 @@ public enum MessageSender: Equatable, Sendable {
     ///
     /// - Parameter name: The bot's display name shown in the UI.
     case bot(name: String)
+
+    /// Accessible name for VoiceOver.
+    public var accessibleName: String {
+        switch self {
+        case .user: return "You"
+        case .bot(let name): return name
+        }
+    }
 }
 
 // MARK: - Bot State

@@ -128,6 +128,16 @@ public struct CodeBlockView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 6))
             }
 
+            // Line numbers toggle
+            if lineCount > 3 && !isStreaming {
+                Button(action: { withAnimation(.easeInOut(duration: 0.2)) { showLineNumbers.toggle() } }) {
+                    Image(systemName: showLineNumbers ? "list.number" : "list.number")
+                        .font(.caption)
+                        .foregroundColor(showLineNumbers ? .optaPurple : .optaTextMuted)
+                }
+                .buttonStyle(.plain)
+            }
+
             Spacer()
 
             // Streaming indicator
@@ -161,7 +171,7 @@ public struct CodeBlockView: View {
             HStack(spacing: 4) {
                 Image(systemName: copied ? "checkmark" : "doc.on.doc")
                     .font(.caption)
-                Text(copied ? "Copied!" : "Copy")
+                Text(copied ? "Copied ✓" : "Copy")
                     .font(.caption)
             }
             .foregroundColor(copied ? .optaGreen : .optaTextSecondary)
@@ -184,7 +194,7 @@ public struct CodeBlockView: View {
 
         // Reset after delay
         Task { @MainActor in
-            try? await Task.sleep(for: .seconds(2))
+            try? await Task.sleep(for: .seconds(1.5))
             withAnimation(.optaSpring) {
                 copied = false
             }
@@ -193,12 +203,38 @@ public struct CodeBlockView: View {
 
     // MARK: - Code Content
 
+    @State private var showLineNumbers: Bool = false
+
+    private var codeLines: [String] {
+        displayedCode.components(separatedBy: "\n")
+    }
+
     private var codeContent: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            Text(highlightedCode)
-                .font(.system(size: 13, design: .monospaced))
-                .textSelection(.enabled)
-                .fixedSize(horizontal: false, vertical: true)
+            HStack(alignment: .top, spacing: 0) {
+                if showLineNumbers {
+                    VStack(alignment: .trailing, spacing: 0) {
+                        ForEach(Array(codeLines.enumerated()), id: \.offset) { index, _ in
+                            Text("\(index + 1)")
+                                .font(.system(size: 12, design: .monospaced))
+                                .foregroundColor(.optaTextMuted.opacity(0.4))
+                                .frame(minWidth: 28, alignment: .trailing)
+                        }
+                    }
+                    .padding(.trailing, 8)
+                    .padding(.leading, 4)
+                    .overlay(alignment: .trailing) {
+                        Rectangle()
+                            .fill(Color.optaBorder.opacity(0.15))
+                            .frame(width: 0.5)
+                    }
+                }
+
+                Text(highlightedCode)
+                    .font(.system(size: 13, design: .monospaced))
+                    .textSelection(.enabled)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
     }
 

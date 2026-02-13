@@ -10,43 +10,50 @@ import OptaMolt
 struct BotListView: View {
     @EnvironmentObject var appState: AppState
     @State private var searchText = ""
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
     private var filteredBots: [BotConfig] {
         if searchText.isEmpty { return appState.bots }
         return appState.bots.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
     }
 
+    private var columns: [GridItem] {
+        if sizeClass == .regular {
+            return [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
+        }
+        return [GridItem(.flexible())]
+    }
+
     var body: some View {
-        List(filteredBots, selection: Binding(
-            get: { appState.selectedBotId },
-            set: { newId in
-                if let id = newId, let bot = appState.bots.first(where: { $0.id == id }) {
-                    appState.selectBot(bot)
+        ScrollView {
+            LazyVGrid(columns: columns, spacing: 12) {
+                ForEach(filteredBots) { bot in
+                    let vm = appState.viewModel(for: bot)
+                    BotCard(bot: bot, connectionState: vm.connectionState, lastMessage: vm.messages.last)
+                        .onTapGesture {
+                            appState.selectBot(bot)
+                        }
+                        .contextMenu {
+                            Button {
+                                appState.viewModel(for: bot).connect()
+                            } label: {
+                                Label("Connect", systemImage: "bolt.fill")
+                            }
+                            Button {
+                                appState.viewModel(for: bot).disconnect()
+                            } label: {
+                                Label("Disconnect", systemImage: "wifi.slash")
+                            }
+                            Button(role: .destructive) {
+                                appState.removeBot(id: bot.id)
+                            } label: {
+                                Label("Remove", systemImage: "trash")
+                            }
+                        }
                 }
             }
-        )) { bot in
-            let vm = appState.viewModel(for: bot)
-            BotRow(bot: bot, connectionState: vm.connectionState, lastMessage: vm.messages.last)
-                .tag(bot.id)
-                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                    Button(role: .destructive) {
-                        appState.viewModel(for: bot).disconnect()
-                    } label: {
-                        Label("Disconnect", systemImage: "wifi.slash")
-                    }
-                    .tint(.optaRed)
-                }
-                .swipeActions(edge: .leading, allowsFullSwipe: false) {
-                    Button {
-                        appState.viewModel(for: bot).connect()
-                    } label: {
-                        Label("Connect", systemImage: "bolt.fill")
-                    }
-                    .tint(.optaPrimary)
-                }
+            .padding(16)
         }
-        .listStyle(.sidebar)
-        .scrollContentBackground(.hidden)
         .background(Color.optaVoid)
         .navigationTitle("Bots")
         .searchable(text: $searchText, prompt: "Search bots")
@@ -62,55 +69,74 @@ struct BotListView: View {
     }
 }
 
-// MARK: - Bot Row
+// MARK: - Bot Card
 
-struct BotRow: View {
+struct BotCard: View {
     let bot: BotConfig
     let connectionState: ConnectionState
     let lastMessage: ChatMessage?
 
-    var body: some View {
-        HStack(spacing: 12) {
-            BotAvatarView(emoji: bot.emoji, connectionState: connectionState, size: 44)
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text(bot.name)
-                    .font(.headline)
-                    .foregroundColor(.optaTextPrimary)
-
-                Text(connectionStatusText)
-                    .font(.caption2.weight(.medium))
-                    .foregroundColor(statusColor)
-
-                if let msg = lastMessage {
-                    Text(msg.content)
-                        .font(.caption)
-                        .foregroundColor(.optaTextMuted)
-                        .lineLimit(1)
-                }
-            }
-
-            Spacer()
-
-            statusDot
+    private var glowColor: Color {
+        switch connectionState {
+        case .connected: return .optaGreen
+        case .connecting, .reconnecting: return .optaAmber
+        case .disconnected: return .clear
         }
-        .padding(.vertical, 4)
-        .listRowBackground(Color.optaSurface.opacity(0.5))
     }
 
-    private var connectionStatusText: String {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 10) {
+                BotAvatarView(emoji: bot.emoji, connectionState: connectionState, size: 40)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(bot.name)
+                        .font(.headline)
+                        .foregroundColor(.optaTextPrimary)
+
+                    Text(statusText)
+                        .font(.caption2.weight(.medium))
+                        .foregroundColor(statusColor)
+                }
+
+                Spacer()
+
+                Circle()
+                    .fill(statusColor)
+                    .frame(width: 8, height: 8)
+            }
+
+            if let msg = lastMessage {
+                Text(msg.content)
+                    .font(.caption)
+                    .foregroundColor(.optaTextMuted)
+                    .lineLimit(2)
+            } else {
+                Text("No messages yet")
+                    .font(.caption)
+                    .foregroundColor(.optaTextMuted.opacity(0.5))
+                    .italic()
+            }
+        }
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(.ultraThinMaterial)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.optaBorder, lineWidth: 1)
+                )
+        )
+        .shadow(color: glowColor.opacity(0.25), radius: connectionState == .connected ? 8 : 0)
+    }
+
+    private var statusText: String {
         switch connectionState {
         case .connected: return "Connected"
         case .connecting: return "Connecting…"
         case .reconnecting: return "Reconnecting…"
         case .disconnected: return "Offline"
         }
-    }
-
-    private var statusDot: some View {
-        Circle()
-            .fill(statusColor)
-            .frame(width: 8, height: 8)
     }
 
     private var statusColor: Color {

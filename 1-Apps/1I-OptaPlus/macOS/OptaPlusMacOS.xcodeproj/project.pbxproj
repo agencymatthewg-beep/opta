@@ -20,6 +20,7 @@
 		BP000001FFFF000100000001 /* BotProfileSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = BP000002FFFF000100000001 /* BotProfileSheet.swift */; };
 		PH000001FFFF000100000001 /* CommandPalette.swift in Sources */ = {isa = PBXBuildFile; fileRef = PH000002FFFF000100000001 /* CommandPalette.swift */; };
 		PH000003FFFF000100000001 /* KeyboardShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = PH000004FFFF000100000001 /* KeyboardShortcuts.swift */; };
+		SM000001FFFF000100000001 /* SoundManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = SM000002FFFF000100000001 /* SoundManager.swift */; };
 		CD000007BBBB000200000001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CD000008BBBB000200000001 /* Assets.xcassets */; };
 		CD000050BBBB000300000001 /* OptaPlus in Frameworks */ = {isa = PBXBuildFile; productRef = CD000051BBBB000300000001 /* OptaPlus */; };
 		CD000060BBBB000400000001 /* OptaMolt in Frameworks */ = {isa = PBXBuildFile; productRef = CD000061BBBB000400000001 /* OptaMolt */; };
@@ -43,6 +44,7 @@
 		BP000002FFFF000100000001 /* BotProfileSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BotProfileSheet.swift; sourceTree = "<group>"; };
 		PH000002FFFF000100000001 /* CommandPalette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandPalette.swift; sourceTree = "<group>"; };
 		PH000004FFFF000100000001 /* KeyboardShortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardShortcuts.swift; sourceTree = "<group>"; };
+		SM000002FFFF000100000001 /* SoundManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -82,6 +84,7 @@
 				BP000002FFFF000100000001 /* BotProfileSheet.swift */,
 				PH000002FFFF000100000001 /* CommandPalette.swift */,
 				PH000004FFFF000100000001 /* KeyboardShortcuts.swift */,
+				SM000002FFFF000100000001 /* SoundManager.swift */,
 				CD000008BBBB000200000001 /* Assets.xcassets */,
 				CD00000ABBBB000200000001 /* Info.plist */,
 				CD00000BBBBB000200000001 /* OptaPlusMacOS.entitlements */,
@@ -186,6 +189,7 @@
 				BP000001FFFF000100000001 /* BotProfileSheet.swift in Sources */,
 				PH000001FFFF000100000001 /* CommandPalette.swift in Sources */,
 				PH000003FFFF000100000001 /* KeyboardShortcuts.swift in Sources */,
+				SM000001FFFF000100000001 /* SoundManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
