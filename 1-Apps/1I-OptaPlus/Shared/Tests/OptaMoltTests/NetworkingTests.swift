@@ -100,6 +100,6 @@ final class NetworkingTests: XCTestCase {
         let decoded = try JSONDecoder().decode(ConnectParams.self, from: data)
         XCTAssertEqual(decoded.minProtocol, 3)
         XCTAssertEqual(decoded.maxProtocol, 3)
-        XCTAssertEqual(decoded.role, "control")
+        XCTAssertEqual(decoded.role, "operator")
     }
 }
