@@ -120,7 +120,7 @@ public struct CollapsibleSection<Content: View>: View {
             if isStreaming {
                 ProgressView()
                     .scaleEffect(0.7)
-                    .tint(.optaPurple)
+                    .tint(.optaPrimary)
             }
         }
         .padding(.horizontal, 12)
@@ -295,7 +295,7 @@ struct CollapsibleBlockView: View {
             if isStreaming {
                 ProgressView()
                     .scaleEffect(0.7)
-                    .tint(.optaPurple)
+                    .tint(.optaPrimary)
             }
         }
         .padding(.horizontal, 12)

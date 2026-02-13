@@ -101,6 +101,15 @@ public final class ChatViewModel: ObservableObject {
     /// Whether a message is being sent.
     @Published public var isSending = false
     
+    /// Whether earlier messages are being loaded (pagination).
+    @Published public var isLoadingEarlier = false
+    
+    /// Whether there are more messages to load.
+    @Published public var hasEarlierMessages = true
+    
+    /// Number of queued (offline) messages waiting to send.
+    @Published public var queuedMessageCount: Int = 0
+    
     /// Connection state.
     @Published public var connectionState: ConnectionState = .disconnected
     
@@ -147,14 +156,37 @@ public final class ChatViewModel: ObservableObject {
 
     /// Per-session streaming state
     private var sessionStreamContent: [String: String] = [:]
+    
+    /// Offline message queue (FIFO, max 50)
+    private var messageQueue: [(text: String, attachments: [ChatAttachment], messageId: String)] = []
+    private static let maxQueueSize = 50
+    
+    /// UserDefaults key prefixes for session persistence
+    private var sessionListKey: String { "optaplus.sessions.\(botConfig.id)" }
+    private var activeSessionKey: String { "optaplus.activeSession.\(botConfig.id)" }
 
     // MARK: - Init
 
     public init(botConfig: BotConfig, syncCoordinator: SyncCoordinator? = nil) {
         self.botConfig = botConfig
         self.syncCoordinator = syncCoordinator
-        self.sessions = botConfig.sessions
-        self.activeSession = botConfig.sessions.first
+        
+        // Restore persisted sessions or use defaults
+        if let data = UserDefaults.standard.data(forKey: "optaplus.sessions.\(botConfig.id)"),
+           let saved = try? JSONDecoder().decode([ChatSession].self, from: data),
+           !saved.isEmpty {
+            self.sessions = saved
+        } else {
+            self.sessions = botConfig.sessions
+        }
+        
+        // Restore active session
+        if let activeId = UserDefaults.standard.string(forKey: "optaplus.activeSession.\(botConfig.id)"),
+           let match = sessions.first(where: { $0.id == activeId }) {
+            self.activeSession = match
+        } else {
+            self.activeSession = sessions.first
+        }
     }
     
     // MARK: - Connection
@@ -185,6 +217,7 @@ public final class ChatViewModel: ObservableObject {
                 self?.connectionState = state
                 if state == .connected {
                     self?.errorMessage = nil
+                    self?.flushMessageQueue()
                 }
             }
             .store(in: &cancellables)
@@ -232,6 +265,7 @@ public final class ChatViewModel: ObservableObject {
         }
         
         activeSession = session
+        UserDefaults.standard.set(session.id, forKey: activeSessionKey)
         
         // Restore cached messages or load fresh
         if let cached = sessionMessages[session.id] {
@@ -267,6 +301,7 @@ public final class ChatViewModel: ObservableObject {
             mode: mode
         )
         sessions.append(session)
+        persistSessions()
         return session
     }
     
@@ -276,6 +311,7 @@ public final class ChatViewModel: ObservableObject {
         sessions.removeAll { $0.id == session.id }
         sessionMessages.removeValue(forKey: session.id)
         sessionStreamContent.removeValue(forKey: session.id)
+        persistSessions()
         
         // If deleted the active session, switch to first
         if activeSession?.id == session.id {
@@ -292,6 +328,7 @@ public final class ChatViewModel: ObservableObject {
             if activeSession?.id == session.id {
                 activeSession = sessions[idx]
             }
+            persistSessions()
         }
     }
     
@@ -302,25 +339,38 @@ public final class ChatViewModel: ObservableObject {
             if activeSession?.id == session.id {
                 activeSession = sessions[idx]
             }
+            persistSessions()
         }
     }
     
     // MARK: - Chat Actions
     
     /// Load chat history from the gateway for the active session.
-    public func loadHistory() async {
+    /// - Parameter earlier: If true, load earlier messages (pagination). Otherwise load latest.
+    public func loadHistory(earlier: Bool = false) async {
         guard let client = client, let session = activeSession else { return }
         
-        isLoading = true
-        defer { isLoading = false }
+        if earlier {
+            guard !isLoadingEarlier, hasEarlierMessages else { return }
+            isLoadingEarlier = true
+        } else {
+            isLoading = true
+        }
+        defer {
+            if earlier { isLoadingEarlier = false } else { isLoading = false }
+        }
+        
+        let pageSize = 50
+        let beforeId: String? = earlier ? messages.first?.id : nil
         
         do {
             let history = try await client.chatHistory(
                 sessionKey: session.sessionKey,
-                limit: 200
+                limit: pageSize,
+                before: beforeId
             )
             
-            NSLog("[OC-VM] History loaded: \(history.messages.count) messages")
+            NSLog("[OC-VM] History loaded: \(history.messages.count) messages (earlier=\(earlier))")
             let loadedMessages = history.messages.map { msg in
                 ChatMessage(
                     id: msg.id,
@@ -331,20 +381,36 @@ public final class ChatViewModel: ObservableObject {
                 )
             }
             
-            self.messages = loadedMessages
-            sessionMessages[session.id] = loadedMessages
+            if earlier {
+                // Prepend older messages
+                let existingIds = Set(messages.map(\.id))
+                let newMessages = loadedMessages.filter { !existingIds.contains($0.id) }
+                messages.insert(contentsOf: newMessages, at: 0)
+                hasEarlierMessages = loadedMessages.count >= pageSize
+            } else {
+                messages = loadedMessages
+                hasEarlierMessages = loadedMessages.count >= pageSize
+            }
+            
+            sessionMessages[session.id] = messages
             NSLog("[OC-VM] Messages set: \(self.messages.count) total")
         } catch {
             NSLog("[OC-VM] History load FAILED: \(error)")
-            errorMessage = "Failed to load history: \(error.localizedDescription)"
+            handleError(error, context: "load history")
         }
     }
     
+    /// Load earlier messages (pagination trigger).
+    public func loadEarlierMessages() async {
+        await loadHistory(earlier: true)
+    }
+    
     /// Send a message to the bot via the active session.
+    /// If disconnected, queues the message for later delivery.
     public func send(_ text: String, attachments: [ChatAttachment] = []) async {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty || !attachments.isEmpty,
-              let client = client, let session = activeSession else { return }
+              let session = activeSession else { return }
 
         let displayText = trimmed.isEmpty && !attachments.isEmpty
             ? "[\(attachments.count) file\(attachments.count == 1 ? "" : "s")]"
@@ -356,13 +422,19 @@ public final class ChatViewModel: ObservableObject {
         let userMessage = ChatMessage(
             content: displayText,
             sender: .user,
-            status: .sent,
+            status: connectionState == .connected ? .sent : .pending,
             source: .optaplus,
             attachments: attachments
         )
         messages.append(userMessage)
         sessionMessages[session.id] = messages
         NSLog("[OC-VM] User message appended, total messages: \(messages.count)")
+
+        // If disconnected, queue for later
+        guard let client = client, connectionState == .connected else {
+            enqueueMessage(text: trimmed, attachments: attachments, messageId: userMessage.id)
+            return
+        }
 
         isSending = true
         botState = .thinking
@@ -383,6 +455,20 @@ public final class ChatViewModel: ObservableObject {
             NSLog("[OC-VM] Send success, idempotencyKey: \(key)")
             currentIdempotencyKey = key
             isSending = false
+            
+            // Update message status to sent
+            if let idx = messages.lastIndex(where: { $0.id == userMessage.id }) {
+                messages[idx] = ChatMessage(
+                    id: userMessage.id,
+                    content: userMessage.content,
+                    sender: .user,
+                    timestamp: userMessage.timestamp,
+                    status: .sent,
+                    source: .optaplus,
+                    attachments: attachments
+                )
+                sessionMessages[session.id] = messages
+            }
 
             // Dual-channel: mirror to Telegram in synced mode
             if session.mode == .synced, let sync = syncCoordinator {
@@ -393,7 +479,7 @@ public final class ChatViewModel: ObservableObject {
             NSLog("[OC-VM] Send FAILED: \(error)")
             isSending = false
             botState = .idle
-            errorMessage = "Send failed: \(error.localizedDescription)"
+            handleError(error, context: "send message")
 
             // Mark user message as failed
             if let idx = messages.lastIndex(where: { $0.id == userMessage.id }) {
@@ -621,6 +707,92 @@ public final class ChatViewModel: ObservableObject {
         }
         return ""
     }
+    
+    // MARK: - Message Queue (Offline Support)
+    
+    private func enqueueMessage(text: String, attachments: [ChatAttachment], messageId: String) {
+        if messageQueue.count >= Self.maxQueueSize {
+            messageQueue.removeFirst()
+        }
+        messageQueue.append((text: text, attachments: attachments, messageId: messageId))
+        queuedMessageCount = messageQueue.count
+        NSLog("[OC-VM] Message queued (\(messageQueue.count) in queue)")
+    }
+    
+    private func flushMessageQueue() {
+        guard !messageQueue.isEmpty, let client = client, let session = activeSession else { return }
+        let queue = messageQueue
+        messageQueue.removeAll()
+        queuedMessageCount = 0
+        
+        NSLog("[OC-VM] Flushing \(queue.count) queued messages")
+        Task {
+            for item in queue {
+                let wireAttachments: [ChatSendAttachment]? = item.attachments.isEmpty
+                    ? nil
+                    : item.attachments.compactMap { ChatSendAttachment(from: $0) }
+                do {
+                    _ = try await client.chatSend(
+                        sessionKey: session.sessionKey,
+                        message: item.text,
+                        deliver: session.mode.shouldDeliver,
+                        attachments: wireAttachments
+                    )
+                    // Update status from pending to sent
+                    if let idx = messages.lastIndex(where: { $0.id == item.messageId }) {
+                        let msg = messages[idx]
+                        messages[idx] = ChatMessage(
+                            id: msg.id, content: msg.content, sender: msg.sender,
+                            timestamp: msg.timestamp, status: .sent,
+                            source: msg.source, attachments: msg.attachments
+                        )
+                    }
+                } catch {
+                    NSLog("[OC-VM] Queued message send failed: \(error)")
+                    if let idx = messages.lastIndex(where: { $0.id == item.messageId }) {
+                        let msg = messages[idx]
+                        messages[idx] = ChatMessage(
+                            id: msg.id, content: msg.content, sender: msg.sender,
+                            timestamp: msg.timestamp, status: .failed,
+                            source: msg.source, attachments: msg.attachments
+                        )
+                    }
+                }
+            }
+            if let session = activeSession {
+                sessionMessages[session.id] = messages
+            }
+        }
+    }
+    
+    // MARK: - Session Persistence
+    
+    private func persistSessions() {
+        if let data = try? JSONEncoder().encode(sessions) {
+            UserDefaults.standard.set(data, forKey: sessionListKey)
+        }
+        if let activeId = activeSession?.id {
+            UserDefaults.standard.set(activeId, forKey: activeSessionKey)
+        }
+    }
+    
+    // MARK: - Error Recovery
+    
+    private func handleError(_ error: Error, context: String) {
+        if let ocError = error as? OpenClawError {
+            errorMessage = ocError.errorDescription
+            if !ocError.isTransient {
+                NSLog("[OC-VM] Permanent error in \(context): \(ocError)")
+                // Don't auto-retry permanent errors
+                return
+            }
+        } else {
+            errorMessage = "\(context) failed: \(error.localizedDescription)"
+        }
+        NSLog("[OC-VM] Transient error in \(context): \(error)")
+    }
+    
+    // MARK: - Helpers
     
     private func resetStreamState() {
         botState = .idle

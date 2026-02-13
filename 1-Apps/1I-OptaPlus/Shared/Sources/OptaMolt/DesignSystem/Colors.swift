@@ -127,6 +127,29 @@ public extension Color {
     /// Glass highlight — top edge highlight
     /// Hex: rgba(255,255,255,0.03)
     static let optaGlassHighlight = Color.white.opacity(0.03)
+
+    // MARK: Code / Syntax Highlighting
+
+    /// Code block background — slightly lighter than void
+    /// Hex: #080808
+    static let optaCodeBackground = Color(red: 0x08 / 255.0, green: 0x08 / 255.0, blue: 0x08 / 255.0)
+
+    /// Syntax: keywords — violet
+    static let optaSyntaxKeyword = Color(red: 0.68, green: 0.45, blue: 1.0)
+    /// Syntax: strings — emerald green
+    static let optaSyntaxString = Color(red: 0.45, green: 0.85, blue: 0.55)
+    /// Syntax: numbers — warm amber
+    static let optaSyntaxNumber = Color(red: 0.95, green: 0.75, blue: 0.30)
+    /// Syntax: types — cyan-tinted
+    static let optaSyntaxType = Color(red: 0.40, green: 0.78, blue: 0.90)
+    /// Syntax: comments — muted gray
+    static let optaSyntaxComment = Color(white: 0.45)
+    /// Syntax: decorators — light violet
+    static let optaSyntaxDecorator = Color(red: 0.85, green: 0.55, blue: 0.95)
+    /// Syntax: variables — teal
+    static let optaSyntaxVariable = Color(red: 0.55, green: 0.85, blue: 0.75)
+    /// Syntax: operators — soft violet
+    static let optaSyntaxOperator = Color(red: 0.75, green: 0.65, blue: 0.90)
 }
 
 // MARK: - Hex Color Initializer

@@ -11,6 +11,28 @@ import UniformTypeIdentifiers
 import OptaPlus
 import OptaMolt
 
+// MARK: - Drop Type
+
+enum DropType {
+    case file, text, url
+
+    var icon: String {
+        switch self {
+        case .file: return "arrow.down.doc"
+        case .text: return "text.bubble"
+        case .url: return "link"
+        }
+    }
+
+    var label: String {
+        switch self {
+        case .file: return "Drop files to attach"
+        case .text: return "Drop text as message"
+        case .url: return "Drop URL to send"
+        }
+    }
+}
+
 // MARK: - Content View
 
 struct ContentView: View {
@@ -453,6 +475,7 @@ struct ChatContainerView: View {
     @FocusState private var isInputFocused: Bool
     @State private var showContextPanel = false
     @State private var isDragTarget = false
+    @State private var dragType: DropType = .file
     @State private var isAtBottom = true
     @State private var showNewMessagesPill = false
     @State private var searchQuery = ""
@@ -625,7 +648,7 @@ struct ChatContainerView: View {
                             if newCount > oldCount, let last = viewModel.messages.last,
                                case .bot(let name) = last.sender {
                                 SoundManager.shared.play(.receiveMessage)
-                                NotificationManager.shared.notifyIfNeeded(botName: name, message: last.content)
+                                NotificationManager.shared.notifyIfNeeded(botName: name, botId: viewModel.botConfig.id, message: last.content)
                             }
                         }
                         .onChange(of: viewModel.streamingContent) { _, _ in
@@ -754,9 +777,10 @@ struct ChatContainerView: View {
                     .background(.ultraThinMaterial.opacity(0.3))
                     .overlay {
                         VStack(spacing: 8) {
-                            Image(systemName: "arrow.down.doc")
+                            Image(systemName: dragType.icon)
                                 .font(.system(size: 32))
-                            Text("Drop files to attach")
+                                .symbolEffect(.pulse, isActive: true)
+                            Text(dragType.label)
                                 .font(.system(size: 14, weight: .medium))
                         }
                         .foregroundStyle(Color.optaPrimary)
@@ -764,7 +788,7 @@ struct ChatContainerView: View {
                     .transition(.opacity)
             }
         }
-        .onDrop(of: [.fileURL, .image, .pdf], isTargeted: $isDragTarget) { providers in
+        .onDrop(of: [.fileURL, .image, .pdf, .plainText, .url, .utf8PlainText], isTargeted: $isDragTarget) { providers in
             handleDrop(providers)
             return true
         }
@@ -776,6 +800,22 @@ struct ChatContainerView: View {
             }
             isInputFocused = true
             previousConnectionState = viewModel.connectionState
+            
+            // Save window state periodically
+            if let window = NSApp.keyWindow {
+                WindowStatePersistence.saveFrame(window.frame)
+                WindowStatePersistence.saveSelectedBot(viewModel.botConfig.id)
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .optaPlusFocusInput)) { _ in
+            isInputFocused = true
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .optaPlusNotificationReply)) { notification in
+            guard let userInfo = notification.userInfo,
+                  let botId = userInfo["botId"] as? String,
+                  botId == viewModel.botConfig.id,
+                  let text = userInfo["text"] as? String else { return }
+            Task { await viewModel.send(text, attachments: []) }
         }
         .onChange(of: viewModel.connectionState) { oldState, newState in
             let wasDisconnectedOrReconnecting = (previousConnectionState == .reconnecting || previousConnectionState == .connecting)
@@ -841,8 +881,44 @@ struct ChatContainerView: View {
 
     private func handleDrop(_ providers: [NSItemProvider]) {
         for provider in providers {
-            if provider.hasItemConformingToTypeIdentifier("public.file-url") {
-                provider.loadItem(forTypeIdentifier: "public.file-url", options: nil) { item, _ in
+            // Handle plain text drops → send as message
+            if provider.hasItemConformingToTypeIdentifier(UTType.utf8PlainText.identifier),
+               !provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) {
+                provider.loadItem(forTypeIdentifier: UTType.utf8PlainText.identifier, options: nil) { item, _ in
+                    guard let data = item as? Data, let text = String(data: data, encoding: .utf8),
+                          !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+                    Task { @MainActor in
+                        // If it looks like a URL, prefix it
+                        if text.hasPrefix("http://") || text.hasPrefix("https://") {
+                            inputText = text
+                        } else {
+                            inputText = text
+                        }
+                    }
+                }
+                continue
+            }
+
+            // Handle URL drops → paste URL as message text
+            if provider.hasItemConformingToTypeIdentifier(UTType.url.identifier),
+               !provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) {
+                provider.loadItem(forTypeIdentifier: UTType.url.identifier, options: nil) { item, _ in
+                    if let url = item as? URL {
+                        Task { @MainActor in
+                            inputText = url.absoluteString
+                        }
+                    } else if let data = item as? Data, let url = URL(dataRepresentation: data, relativeTo: nil) {
+                        Task { @MainActor in
+                            inputText = url.absoluteString
+                        }
+                    }
+                }
+                continue
+            }
+
+            // Handle file drops
+            if provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) {
+                provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { item, _ in
                     guard let data = item as? Data,
                           let url = URL(dataRepresentation: data, relativeTo: nil) else { return }
 

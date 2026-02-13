@@ -40,4 +40,7 @@ public extension Animation {
     ///
     /// Parameters: response 0.5, dampingFraction 0.85.
     static let optaGentle: Animation = .spring(response: 0.5, dampingFraction: 0.85)
+
+    /// Pulse animation — gentle repeating for loading/active states.
+    static let optaPulse: Animation = .easeInOut(duration: 1.2).repeatForever(autoreverses: true)
 }

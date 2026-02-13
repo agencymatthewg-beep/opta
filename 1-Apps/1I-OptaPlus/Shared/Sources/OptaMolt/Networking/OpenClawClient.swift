@@ -37,6 +37,8 @@ public final class OpenClawClient: ObservableObject {
     @Published public private(set) var state: ConnectionState = .disconnected
     @Published public private(set) var lastError: String?
     @Published public private(set) var hello: [String: Any]?
+    @Published public private(set) var reconnectAttempts: Int = 0
+    @Published public private(set) var latencyMs: Double?
     
     // MARK: - Callbacks
     
@@ -53,6 +55,9 @@ public final class OpenClawClient: ObservableObject {
     private var lastSeq: Int?
     private var connectSent = false
     private var receiveActive = false
+    private var pingTimer: Timer?
+    private var pongDeadlineTask: Task<Void, Never>?
+    private var pingSentAt: Date?
     
     // MARK: - Init
     
@@ -94,6 +99,7 @@ public final class OpenClawClient: ObservableObject {
     
     public func disconnect() {
         isClosed = true
+        stopPingTimer()
         connection?.cancel()
         connection = nil
         flushPending(error: CancellationError())
@@ -112,8 +118,8 @@ public final class OpenClawClient: ObservableObject {
     
     // MARK: - Chat Convenience
     
-    public func chatHistory(sessionKey: String, limit: Int = 200) async throws -> ChatHistoryResponse {
-        let params = ChatHistoryParams(sessionKey: sessionKey, limit: limit)
+    public func chatHistory(sessionKey: String, limit: Int = 200, before: String? = nil) async throws -> ChatHistoryResponse {
+        let params = ChatHistoryParams(sessionKey: sessionKey, limit: limit, before: before)
         let response = try await request("chat.history", params: params)
         return parseChatHistory(response)
     }
@@ -342,8 +348,20 @@ public final class OpenClawClient: ObservableObject {
             let payload = json["payload"].map { AnyCodable($0) }
             handler(.success(payload))
         } else {
-            let errorMsg = (json["error"] as? [String: Any])?["message"] as? String ?? "Request failed"
-            handler(.failure(OpenClawError.requestFailed(errorMsg)))
+            let errorDict = json["error"] as? [String: Any]
+            let errorMsg = errorDict?["message"] as? String ?? "Request failed"
+            let errorCode = errorDict?["code"] as? String ?? ""
+            
+            let error: OpenClawError
+            switch errorCode.uppercased() {
+            case "NOT_PAIRED":
+                error = .notPaired
+            case "AUTH_FAILED", "INVALID_TOKEN", "FORBIDDEN":
+                error = .authenticationFailed(errorMsg)
+            default:
+                error = .requestFailed(errorMsg)
+            }
+            handler(.failure(error))
         }
     }
     
@@ -366,8 +384,10 @@ public final class OpenClawClient: ObservableObject {
             let helloDict = response?.dict ?? [:]
             self.hello = helloDict
             self.backoffMs = 800
+            self.reconnectAttempts = 0
             self.lastError = nil
             setState(.connected)
+            startPingTimer()
             onHello?(helloDict)
         } catch {
             NSLog("[OC] Connect handshake FAILED: \(error)")
@@ -397,14 +417,70 @@ public final class OpenClawClient: ObservableObject {
         }
     }
     
+    // MARK: - Ping/Pong Health Monitoring
+    
+    private func startPingTimer() {
+        stopPingTimer()
+        pingTimer = Timer.scheduledTimer(withTimeInterval: 30.0, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                self?.sendPing()
+            }
+        }
+    }
+    
+    private func stopPingTimer() {
+        pingTimer?.invalidate()
+        pingTimer = nil
+        pongDeadlineTask?.cancel()
+        pongDeadlineTask = nil
+    }
+    
+    private func sendPing() {
+        guard let conn = connection, state == .connected else { return }
+        
+        pingSentAt = Date()
+        let metadata = NWProtocolWebSocket.Metadata(opcode: .ping)
+        metadata.setPongHandler(.main) { [weak self] error in
+            Task { @MainActor in
+                guard let self = self else { return }
+                self.pongDeadlineTask?.cancel()
+                self.pongDeadlineTask = nil
+                if let sentAt = self.pingSentAt {
+                    self.latencyMs = Date().timeIntervalSince(sentAt) * 1000
+                }
+            }
+        }
+        let context = NWConnection.ContentContext(identifier: "ws-ping", metadata: [metadata])
+        conn.send(content: Data(), contentContext: context, isComplete: true, completion: .contentProcessed { _ in })
+        
+        // Deadline: if no pong within 5s, reconnect
+        pongDeadlineTask = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 5_000_000_000)
+            guard !Task.isCancelled else { return }
+            guard let self = self, self.state == .connected else { return }
+            NSLog("[OC] Ping timeout — no pong in 5s, reconnecting")
+            self.latencyMs = nil
+            self.connection?.cancel()
+            self.connection = nil
+            self.flushPending(error: OpenClawError.timeout)
+            self.scheduleReconnect()
+        }
+    }
+    
     // MARK: - Reconnection
     
     private func scheduleReconnect() {
         guard !isClosed else { return }
+        stopPingTimer()
         setState(.reconnecting)
+        reconnectAttempts += 1
         
-        let delay = backoffMs
+        // Exponential backoff with ±20% jitter
+        let jitter = Double.random(in: 0.8...1.2)
+        let delay = backoffMs * jitter
         backoffMs = min(backoffMs * 1.7, 15_000)
+        
+        NSLog("[OC] Reconnect #\(reconnectAttempts) in \(Int(delay))ms (base=\(Int(backoffMs / 1.7)))")
         
         Task {
             try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000))
@@ -508,6 +584,8 @@ public enum OpenClawError: LocalizedError, Sendable {
     case encodingFailed
     case requestFailed(String)
     case timeout
+    case notPaired
+    case authenticationFailed(String)
     
     public var errorDescription: String? {
         switch self {
@@ -515,6 +593,20 @@ public enum OpenClawError: LocalizedError, Sendable {
         case .encodingFailed: return "Failed to encode request"
         case .requestFailed(let msg): return msg
         case .timeout: return "Request timed out"
+        case .notPaired: return "This device is not paired with the gateway. Open OpenClaw settings to pair your device."
+        case .authenticationFailed(let msg): return "Authentication failed: \(msg)"
+        }
+    }
+    
+    /// Whether this error is transient and should be retried.
+    public var isTransient: Bool {
+        switch self {
+        case .notConnected, .timeout: return true
+        case .notPaired, .authenticationFailed: return false
+        case .requestFailed(let msg):
+            let permanent = ["NOT_PAIRED", "AUTH_FAILED", "REJECTED", "FORBIDDEN", "INVALID_TOKEN"]
+            return !permanent.contains(where: { msg.uppercased().contains($0) })
+        case .encodingFailed: return false
         }
     }
 }

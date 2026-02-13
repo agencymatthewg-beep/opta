@@ -203,6 +203,93 @@ public struct GradientFadeModifier: ViewModifier {
     }
 }
 
+// MARK: - Motion Config (Reduce Motion Support)
+
+/// Shared configuration for motion throughout the app.
+/// All views should reference this to respect reduce motion settings.
+public struct MotionConfig {
+    /// Whether to use full animations (false when reduce motion is on).
+    public let animationsEnabled: Bool
+    /// Whether ambient/continuous animations should run.
+    public let ambientEnabled: Bool
+    /// Whether repeating animations (pulse, breathe) should run.
+    public let repeatingEnabled: Bool
+
+    /// Full motion — all animations enabled.
+    public static let full = MotionConfig(animationsEnabled: true, ambientEnabled: true, repeatingEnabled: true)
+    /// Reduced motion — opacity-only transitions, no ambient or repeating.
+    public static let reduced = MotionConfig(animationsEnabled: false, ambientEnabled: false, repeatingEnabled: false)
+
+    /// Create from the accessibility reduce motion setting.
+    public static func from(reduceMotion: Bool) -> MotionConfig {
+        reduceMotion ? .reduced : .full
+    }
+}
+
+// MARK: - Opta Entrance
+
+/// Standard view entrance: fade + slide up + scale with spring.
+public struct OptaEntranceModifier: ViewModifier {
+    @State private var appeared = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    let delay: Double
+
+    public init(delay: Double = 0) { self.delay = delay }
+
+    public func body(content: Content) -> some View {
+        content
+            .opacity(appeared ? 1 : 0)
+            .offset(y: appeared ? 0 : 20)
+            .scaleEffect(appeared ? 1 : 0.95)
+            .onAppear {
+                if reduceMotion {
+                    appeared = true
+                } else {
+                    withAnimation(.optaSpring.delay(delay)) {
+                        appeared = true
+                    }
+                }
+            }
+    }
+}
+
+// MARK: - Opta Exit
+
+/// Standard view exit: fade + slide down + scale.
+public struct OptaExitModifier: ViewModifier {
+    let isPresented: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    public init(isPresented: Bool) { self.isPresented = isPresented }
+
+    public func body(content: Content) -> some View {
+        content
+            .opacity(isPresented ? 1 : 0)
+            .offset(y: isPresented ? 0 : 10)
+            .scaleEffect(isPresented ? 1 : 0.97)
+            .animation(reduceMotion ? .none : .optaSpring, value: isPresented)
+    }
+}
+
+// MARK: - Opta Pulse
+
+/// Gentle repeating opacity pulse for loading/active states.
+public struct OptaPulseModifier: ViewModifier {
+    @State private var isPulsing = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    public func body(content: Content) -> some View {
+        content
+            .opacity(isPulsing && !reduceMotion ? 0.5 : 1.0)
+            .onAppear {
+                guard !reduceMotion else { return }
+                withAnimation(.optaPulse) {
+                    isPulsing = true
+                }
+            }
+    }
+}
+
 // MARK: - View Extension
 
 public extension View {
@@ -236,11 +323,22 @@ public extension View {
     }
 
     /// Fade content to transparent at the specified edges (gradient-to-void dissolve).
-    ///
-    /// - Parameters:
-    ///   - edges: Which edges to fade (`.top`, `.bottom`, `.leading`, `.trailing`, or combinations).
-    ///   - fadeLength: Fraction of view size for fade (default 0.08 = 8%).
     func gradientFade(edges: FadeEdge = .vertical, fadeLength: CGFloat = 0.08) -> some View {
         modifier(GradientFadeModifier(edges: edges, fadeLength: fadeLength))
+    }
+
+    /// Standard view entrance — fade + slide up + scale with spring.
+    func optaEntrance(delay: Double = 0) -> some View {
+        modifier(OptaEntranceModifier(delay: delay))
+    }
+
+    /// Standard view exit — fade + slide down + scale (bind to presentation state).
+    func optaExit(isPresented: Bool) -> some View {
+        modifier(OptaExitModifier(isPresented: isPresented))
+    }
+
+    /// Gentle repeating opacity pulse for loading/active states.
+    func optaPulse() -> some View {
+        modifier(OptaPulseModifier())
     }
 }

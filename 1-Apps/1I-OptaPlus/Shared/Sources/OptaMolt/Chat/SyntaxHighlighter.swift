@@ -31,21 +31,21 @@ public enum SyntaxHighlighter {
     // MARK: - Cinematic Void Theme Colors
 
     /// Violet-tinted keywords matching the Cinematic Void theme
-    public static let keywordColor = Color(red: 0.68, green: 0.45, blue: 1.0)     // Violet keywords
+    public static let keywordColor: Color = .optaSyntaxKeyword
     /// Green strings
-    public static let stringColor = Color(red: 0.45, green: 0.85, blue: 0.55)      // Emerald green
+    public static let stringColor: Color = .optaSyntaxString
     /// Amber numbers
-    public static let numberColor = Color(red: 0.95, green: 0.75, blue: 0.30)      // Warm amber
+    public static let numberColor: Color = .optaSyntaxNumber
     /// Type/class color
-    public static let typeColor = Color(red: 0.40, green: 0.78, blue: 0.90)        // Cyan-tinted
+    public static let typeColor: Color = .optaSyntaxType
     /// Comment color
-    public static let commentColor = Color(white: 0.45)                              // Muted gray
+    public static let commentColor: Color = .optaSyntaxComment
     /// Decorator/attribute color
-    public static let decoratorColor = Color(red: 0.85, green: 0.55, blue: 0.95)   // Light violet
+    public static let decoratorColor: Color = .optaSyntaxDecorator
     /// Variable color
-    public static let variableColor = Color(red: 0.55, green: 0.85, blue: 0.75)    // Teal
+    public static let variableColor: Color = .optaSyntaxVariable
     /// Operator/punctuation
-    public static let operatorColor = Color(red: 0.75, green: 0.65, blue: 0.90)    // Soft violet
+    public static let operatorColor: Color = .optaSyntaxOperator
 
     /// Highlights code and returns an AttributedString
     /// - Parameters:
@@ -192,7 +192,7 @@ public enum SyntaxHighlighter {
             // Keywords (highest priority - apply last)
             HighlightPattern(
                 #"\b(func|var|let|if|else|guard|switch|case|default|for|while|repeat|return|break|continue|import|struct|class|enum|protocol|extension|public|private|internal|fileprivate|open|static|final|override|mutating|throws|throw|try|catch|async|await|actor|some|any|where|in|is|as|self|Self|nil|true|false|init|deinit|subscript|typealias|associatedtype|inout|lazy|weak|unowned|didSet|willSet|get|set)\b"#,
-                color: .optaPurple
+                color: .optaPrimary
             ),
 
             // Property wrappers
@@ -222,7 +222,7 @@ public enum SyntaxHighlighter {
             // Keywords
             HighlightPattern(
                 #"\b(def|class|if|elif|else|for|while|try|except|finally|with|as|import|from|return|yield|raise|break|continue|pass|lambda|and|or|not|in|is|True|False|None|self|async|await|global|nonlocal)\b"#,
-                color: .optaPurple
+                color: .optaPrimary
             ),
 
             // Decorators
@@ -252,7 +252,7 @@ public enum SyntaxHighlighter {
             // Keywords
             HighlightPattern(
                 #"\b(function|const|let|var|if|else|for|while|do|switch|case|default|break|continue|return|throw|try|catch|finally|new|delete|typeof|instanceof|in|of|class|extends|super|this|import|export|from|as|async|await|yield|true|false|null|undefined|void)\b"#,
-                color: .optaPurple
+                color: .optaPrimary
             ),
 
             // Arrow functions
@@ -282,7 +282,7 @@ public enum SyntaxHighlighter {
             // Keywords
             HighlightPattern(
                 #"\b(fn|let|mut|const|static|if|else|match|for|while|loop|break|continue|return|struct|enum|impl|trait|type|where|pub|crate|mod|use|as|self|Self|super|unsafe|async|await|move|ref|true|false|Some|None|Ok|Err)\b"#,
-                color: .optaPurple
+                color: .optaPrimary
             ),
 
             // Macros
@@ -314,7 +314,7 @@ public enum SyntaxHighlighter {
             // Keywords
             HighlightPattern(
                 #"\b(func|var|const|if|else|for|range|switch|case|default|break|continue|return|go|defer|select|chan|map|struct|interface|type|package|import|true|false|nil|make|new|append|len|cap|copy|delete|panic|recover)\b"#,
-                color: .optaPurple
+                color: .optaPrimary
             ),
 
             // Short variable declaration
@@ -355,7 +355,7 @@ public enum SyntaxHighlighter {
             // Keywords
             HighlightPattern(
                 #"\b(if|then|else|elif|fi|for|while|do|done|case|esac|in|function|return|exit|source|export|local|readonly|declare|unset|shift|break|continue|true|false)\b"#,
-                color: .optaPurple
+                color: .optaPrimary
             ),
         ].compactMap { $0 }
     }
@@ -426,7 +426,7 @@ public enum SyntaxHighlighter {
             // Common keywords
             HighlightPattern(
                 #"\b(if|else|for|while|do|switch|case|break|continue|return|function|func|def|class|struct|enum|var|let|const|import|export|from|true|false|null|nil|none|self|this)\b"#,
-                color: .optaPurple
+                color: .optaPrimary
             ),
         ].compactMap { $0 }
     }

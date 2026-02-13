@@ -9,6 +9,7 @@
 
 import SwiftUI
 import Combine
+import Carbon.HIToolbox
 import OptaPlus
 import OptaMolt
 
@@ -162,6 +163,25 @@ struct OptaPlusMacOSApp: App {
             }
         }
         
+        // Menu Bar Extra — mini status panel
+        MenuBarExtra {
+            MenuBarPanel()
+                .environmentObject(appState)
+        } label: {
+            ZStack {
+                Image(systemName: "circle.fill")
+                    .font(.system(size: 12))
+                    .foregroundColor(.purple)
+                if notificationManager.unreadCount > 0 {
+                    Circle()
+                        .fill(Color.red)
+                        .frame(width: 6, height: 6)
+                        .offset(x: 6, y: -6)
+                }
+            }
+        }
+        .menuBarExtraStyle(.window)
+
         Settings {
             SettingsView()
                 .environmentObject(appState)
@@ -175,6 +195,9 @@ struct OptaPlusMacOSApp: App {
         // Request notification permission on first launch
         NotificationManager.shared.requestPermission()
         
+        // Register notification categories with actions
+        NotificationManager.shared.registerCategories()
+        
         // Clear badge when app becomes active
         NotificationCenter.default.addObserver(
             forName: NSApplication.didBecomeActiveNotification,
@@ -185,6 +208,9 @@ struct OptaPlusMacOSApp: App {
                 NotificationManager.shared.clearBadge()
             }
         }
+        
+        // Register global hotkey ⌘⇧O to bring app to front
+        GlobalHotkey.register()
     }
 }
 
@@ -353,4 +379,166 @@ final class AppState: ObservableObject {
         }
         bots = decoded
     }
+
+    // MARK: - Connected Bot Count
+
+    var connectedBotCount: Int {
+        chatViewModels.values.filter { $0.connectionState == .connected }.count
+    }
+
+    /// Latest message preview across all bots.
+    var latestMessagePreview: String? {
+        chatViewModels.values
+            .compactMap { $0.messages.last }
+            .sorted { $0.timestamp > $1.timestamp }
+            .first
+            .map { String($0.content.prefix(60)) }
+    }
+
+    // MARK: - Bulk Actions
+
+    func connectAll() {
+        for bot in bots {
+            let vm = viewModel(for: bot)
+            if vm.connectionState == .disconnected {
+                vm.connect()
+            }
+        }
+    }
+
+    func disconnectAll() {
+        for (_, vm) in chatViewModels {
+            vm.disconnect()
+        }
+    }
+}
+
+// MARK: - Menu Bar Panel
+
+struct MenuBarPanel: View {
+    @EnvironmentObject var appState: AppState
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            // Status header
+            HStack {
+                Image(systemName: "circle.fill")
+                    .font(.system(size: 10))
+                    .foregroundColor(.purple)
+                Text("OptaPlus")
+                    .font(.system(size: 13, weight: .semibold))
+                Spacer()
+                Text("\(appState.connectedBotCount) connected")
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary)
+            }
+
+            Divider()
+
+            // Latest message preview
+            if let preview = appState.latestMessagePreview {
+                Text(preview)
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary)
+                    .lineLimit(2)
+            } else {
+                Text("No messages yet")
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary)
+            }
+
+            Divider()
+
+            // Quick actions
+            Button("Open Main Window") {
+                NSApp.activate(ignoringOtherApps: true)
+                if let window = NSApp.windows.first(where: { $0.isVisible }) {
+                    window.makeKeyAndOrderFront(nil)
+                }
+            }
+
+            Button("Connect All") {
+                appState.connectAll()
+            }
+
+            Button("Disconnect All") {
+                appState.disconnectAll()
+            }
+
+            Divider()
+
+            Button("Quit OptaPlus") {
+                NSApp.terminate(nil)
+            }
+            .keyboardShortcut("q")
+        }
+        .padding(12)
+        .frame(width: 240)
+    }
+}
+
+// MARK: - Window State Persistence
+
+enum WindowStatePersistence {
+    private static let frameKey = "optaplus.windowFrame"
+    private static let sidebarWidthKey = "optaplus.sidebarWidth"
+    private static let selectedBotPerWindowKey = "optaplus.windowSelectedBot"
+
+    static func saveFrame(_ frame: NSRect) {
+        let dict: [String: CGFloat] = [
+            "x": frame.origin.x, "y": frame.origin.y,
+            "w": frame.size.width, "h": frame.size.height
+        ]
+        UserDefaults.standard.set(dict, forKey: frameKey)
+    }
+
+    static func restoreFrame() -> NSRect? {
+        guard let dict = UserDefaults.standard.dictionary(forKey: frameKey) as? [String: CGFloat] else { return nil }
+        guard let x = dict["x"], let y = dict["y"], let w = dict["w"], let h = dict["h"] else { return nil }
+        return NSRect(x: x, y: y, width: w, height: h)
+    }
+
+    static func saveSidebarWidth(_ width: CGFloat) {
+        UserDefaults.standard.set(width, forKey: sidebarWidthKey)
+    }
+
+    static func restoreSidebarWidth() -> CGFloat? {
+        let val = UserDefaults.standard.double(forKey: sidebarWidthKey)
+        return val > 0 ? val : nil
+    }
+
+    static func saveSelectedBot(_ botId: String?, windowId: String = "main") {
+        UserDefaults.standard.set(botId, forKey: "\(selectedBotPerWindowKey).\(windowId)")
+    }
+
+    static func restoreSelectedBot(windowId: String = "main") -> String? {
+        UserDefaults.standard.string(forKey: "\(selectedBotPerWindowKey).\(windowId)")
+    }
+}
+
+// MARK: - Global Hotkey (⌘⇧O)
+
+enum GlobalHotkey {
+    private static var monitor: Any?
+
+    static func register() {
+        monitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { event in
+            // ⌘⇧O
+            if event.modifierFlags.contains([.command, .shift]),
+               event.keyCode == UInt16(kVK_ANSI_O) {
+                Task { @MainActor in
+                    NSApp.activate(ignoringOtherApps: true)
+                    if let window = NSApp.keyWindow ?? NSApp.windows.first(where: { $0.isVisible && $0.canBecomeKey }) {
+                        window.makeKeyAndOrderFront(nil)
+                    }
+                    // Post notification to focus input field
+                    NotificationCenter.default.post(name: .optaPlusFocusInput, object: nil)
+                }
+            }
+        }
+    }
+}
+
+extension Notification.Name {
+    static let optaPlusFocusInput = Notification.Name("optaPlusFocusInput")
 }

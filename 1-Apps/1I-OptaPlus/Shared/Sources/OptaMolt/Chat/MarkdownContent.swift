@@ -872,7 +872,7 @@ public struct MarkdownContent: View {
                 // Monospace styling for inline code
                 result = result + Text(code)
                     .font(.system(.body, design: .monospaced))
-                    .foregroundColor(.optaPurple)
+                    .foregroundColor(.optaPrimary)
             }
         }
 

@@ -73,7 +73,7 @@ public struct CodeBlockView: View {
                 expandFooter
             }
         }
-        .background(Color(red: 0x08/255, green: 0x08/255, blue: 0x08/255))
+        .background(Color.optaCodeBackground)
         .clipShape(RoundedRectangle(cornerRadius: 14))
         .overlay(
             RoundedRectangle(cornerRadius: 14)
@@ -133,7 +133,7 @@ public struct CodeBlockView: View {
                 Button(action: { withAnimation(.easeInOut(duration: 0.2)) { showLineNumbers.toggle() } }) {
                     Image(systemName: showLineNumbers ? "list.number" : "list.number")
                         .font(.caption)
-                        .foregroundColor(showLineNumbers ? .optaPurple : .optaTextMuted)
+                        .foregroundColor(showLineNumbers ? .optaPrimary : .optaTextMuted)
                 }
                 .buttonStyle(.plain)
             }
@@ -145,7 +145,7 @@ public struct CodeBlockView: View {
                 HStack(spacing: 4) {
                     ProgressView()
                         .scaleEffect(0.6)
-                        .tint(.optaPurple)
+                        .tint(.optaPrimary)
                     Text("Streaming...")
                         .font(.caption)
                         .foregroundColor(.optaTextMuted)
@@ -253,7 +253,7 @@ public struct CodeBlockView: View {
                 Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
             }
             .font(.caption)
-            .foregroundColor(.optaPurple)
+            .foregroundColor(.optaPrimary)
         }
         .buttonStyle(.plain)
         .padding(.horizontal, 12)

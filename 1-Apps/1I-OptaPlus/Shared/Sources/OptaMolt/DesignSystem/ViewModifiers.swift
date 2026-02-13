@@ -153,6 +153,128 @@ public extension View {
     }
 }
 
+// MARK: - Glass Variant Aliases
+
+public extension View {
+    /// Glass card — standard glass with 16pt corners. For message bubbles, cards.
+    func glassCard() -> some View {
+        modifier(GlassModifier())
+    }
+
+    /// Glass panel — subtle glass with 12pt corners. For sidebars, table headers.
+    func glassPanel() -> some View {
+        modifier(GlassSubtleModifier())
+    }
+
+    /// Glass sheet — strong glass with 20pt corners, shadow. For modals, sheets.
+    func glassSheet() -> some View {
+        modifier(GlassStrongModifier())
+    }
+
+    /// Glass pill — compact pill-shaped glass for badges, tags.
+    func glassPill() -> some View {
+        self
+            .background(
+                Capsule().fill(.ultraThinMaterial)
+            )
+            .overlay(
+                Capsule()
+                    .stroke(Color.optaGlassBorder.opacity(0.15), lineWidth: 0.5)
+            )
+    }
+}
+
+// MARK: - Glow Border
+
+/// Applies an accent-colored glow border around a rounded rectangle.
+public struct GlowBorderModifier: ViewModifier {
+    let color: Color
+    let cornerRadius: CGFloat
+    let lineWidth: CGFloat
+
+    public init(color: Color, cornerRadius: CGFloat = 16, lineWidth: CGFloat = 1.5) {
+        self.color = color
+        self.cornerRadius = cornerRadius
+        self.lineWidth = lineWidth
+    }
+
+    public func body(content: Content) -> some View {
+        content
+            .overlay(
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .stroke(color.opacity(0.6), lineWidth: lineWidth)
+                    .blur(radius: 3)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .stroke(color.opacity(0.3), lineWidth: lineWidth * 0.5)
+            )
+    }
+}
+
+// MARK: - Void Fade
+
+/// Applies a gradient mask that fades edges to the void (transparent → black).
+/// Unlike `gradientFade` which uses a transparency mask, this overlays void-colored
+/// gradients for use on opaque backgrounds.
+public struct VoidFadeModifier: ViewModifier {
+    let edges: Edge.Set
+    let length: CGFloat
+
+    public init(edges: Edge.Set = .vertical, length: CGFloat = 40) {
+        self.edges = edges
+        self.length = length
+    }
+
+    public func body(content: Content) -> some View {
+        content.overlay {
+            ZStack {
+                if edges.contains(.top) {
+                    VStack {
+                        LinearGradient(colors: [.optaVoid, .clear], startPoint: .top, endPoint: .bottom)
+                            .frame(height: length)
+                        Spacer()
+                    }
+                }
+                if edges.contains(.bottom) {
+                    VStack {
+                        Spacer()
+                        LinearGradient(colors: [.clear, .optaVoid], startPoint: .top, endPoint: .bottom)
+                            .frame(height: length)
+                    }
+                }
+                if edges.contains(.leading) {
+                    HStack {
+                        LinearGradient(colors: [.optaVoid, .clear], startPoint: .leading, endPoint: .trailing)
+                            .frame(width: length)
+                        Spacer()
+                    }
+                }
+                if edges.contains(.trailing) {
+                    HStack {
+                        Spacer()
+                        LinearGradient(colors: [.clear, .optaVoid], startPoint: .leading, endPoint: .trailing)
+                            .frame(width: length)
+                    }
+                }
+            }
+            .allowsHitTesting(false)
+        }
+    }
+}
+
+public extension View {
+    /// Apply an accent-colored glow border.
+    func glowBorder(color: Color = .optaPrimary, cornerRadius: CGFloat = 16, lineWidth: CGFloat = 1.5) -> some View {
+        modifier(GlowBorderModifier(color: color, cornerRadius: cornerRadius, lineWidth: lineWidth))
+    }
+
+    /// Fade edges to the void with overlaid gradients.
+    func voidFade(edges: Edge.Set = .vertical, length: CGFloat = 40) -> some View {
+        modifier(VoidFadeModifier(edges: edges, length: length))
+    }
+}
+
 // MARK: - Ignition Entrance Animation
 
 /// A wake-from-darkness entrance modifier.

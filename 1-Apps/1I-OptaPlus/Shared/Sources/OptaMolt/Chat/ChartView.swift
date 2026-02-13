@@ -253,7 +253,7 @@ public struct ChartView: View {
                     .padding(.vertical, 4)
                     .background(
                         selectedPoint?.label == point.label
-                            ? Color.optaPurple.opacity(0.1)
+                            ? Color.optaPrimary.opacity(0.1)
                             : Color.clear
                     )
                     .cornerRadius(6)
@@ -283,7 +283,7 @@ public struct ChartView: View {
 
                 Text(formatValue(point.value))
                     .font(.sora(13, weight: .semibold))
-                    .foregroundColor(.optaPurple)
+                    .foregroundColor(.optaPrimary)
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
@@ -336,7 +336,7 @@ public struct ChartView: View {
     }
 
     private var defaultColors: [Color] {
-        [.optaPurple, .optaCyan, .optaGreen, .optaIndigo, .optaPink, .optaCoral]
+        [.optaPrimary, .optaCyan, .optaGreen, .optaIndigo, .optaPink, .optaCoral]
     }
 
     // MARK: - Formatting Helpers

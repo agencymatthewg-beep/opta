@@ -71,7 +71,7 @@ public struct AsyncImageView: View {
                         .shimmer()
                         .overlay(
                             ProgressView()
-                                .tint(.optaPurple)
+                                .tint(.optaPrimary)
                         )
                 case .success(let image):
                     image

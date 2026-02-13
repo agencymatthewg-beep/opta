@@ -106,10 +106,12 @@ public struct ConnectAuth: Codable, Sendable {
 public struct ChatHistoryParams: Codable, Sendable {
     public let sessionKey: String
     public let limit: Int
+    public let before: String?
     
-    public init(sessionKey: String, limit: Int = 200) {
+    public init(sessionKey: String, limit: Int = 200, before: String? = nil) {
         self.sessionKey = sessionKey
         self.limit = limit
+        self.before = before
     }
 }
 
