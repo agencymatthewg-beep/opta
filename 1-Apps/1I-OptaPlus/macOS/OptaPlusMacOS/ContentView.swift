@@ -44,6 +44,7 @@ struct ContentView: View {
     @State private var showKeyboardShortcuts = false
     @State private var showMessageSearch = false
     @State private var botSwitchOverlay: String? = nil
+    @State private var showDashboard = false
     
     var body: some View {
         ZStack {
@@ -54,7 +55,11 @@ struct ContentView: View {
                 NavigationSplitView {
                     SidebarView()
                 } detail: {
-                    if let bot = windowState.selectedBot(in: appState) {
+                    if showDashboard {
+                        DashboardView()
+                            .environmentObject(appState)
+                            .environmentObject(windowState)
+                    } else if let bot = windowState.selectedBot(in: appState) {
                         let vm = appState.viewModel(for: bot)
                         ZStack {
                             // Ambient background responds to bot state
@@ -123,13 +128,19 @@ struct ContentView: View {
                     .keyboardShortcut("f", modifiers: .command)
                 Button("") { showKeyboardShortcuts.toggle() }
                     .keyboardShortcut("/", modifiers: .command)
+                Button("") { showDashboard.toggle() }
+                    .keyboardShortcut("d", modifiers: .command)
             }
             .frame(width: 0, height: 0)
             .opacity(0)
         }
+        .onReceive(NotificationCenter.default.publisher(for: .toggleDashboard)) { _ in
+            showDashboard.toggle()
+        }
         .onChange(of: windowState.selectedBotId) { oldId, newId in
             guard let newId, oldId != nil, oldId != newId,
                   let bot = appState.bots.first(where: { $0.id == newId }) else { return }
+            showDashboard = false
             showBotSwitchHUD(bot.emoji + " " + bot.name)
         }
     }
@@ -296,6 +307,16 @@ struct SidebarView: View {
         }
         .toolbar {
             ToolbarItem(placement: .automatic) {
+                Button(action: {
+                    NotificationCenter.default.post(name: .toggleDashboard, object: nil)
+                }) {
+                    Image(systemName: "square.grid.2x2")
+                        .foregroundColor(.optaTextSecondary)
+                }
+                .accessibilityLabel("Dashboard")
+                .help("Dashboard (⌘D)")
+            }
+            ToolbarItem(placement: .automatic) {
                 Button(action: { appState.showingSettings = true }) {
                     Image(systemName: "gear")
                         .foregroundColor(.optaTextSecondary)
@@ -304,6 +325,10 @@ struct SidebarView: View {
             }
         }
     }
+}
+
+extension Notification.Name {
+    static let toggleDashboard = Notification.Name("toggleDashboard")
 }
 
 // MARK: - Bot Row
@@ -351,7 +376,7 @@ struct BotRow: View {
                     }
                 }
             }
-            .onChange(of: isConnected) { connected in
+            .onChange(of: isConnected) { _, connected in
                 if connected {
                     withAnimation(.easeInOut(duration: 2.5).repeatForever(autoreverses: true)) {
                         breatheScale = 1.03
@@ -492,6 +517,7 @@ struct ChatContainerView: View {
     @State private var connectionToastText = ""
     @State private var connectionToastIsSuccess = false
     @State private var previousConnectionState: ConnectionState?
+    @State private var scrollToMessageId: String? = nil
     
     // Convert agent events to thinking events for the overlay
     private var thinkingEvents: [ThinkingEvent] {
@@ -604,14 +630,30 @@ struct ChatContainerView: View {
                                         message: message,
                                         index: index,
                                         total: viewModel.messages.count,
-                                        showTimestamp: shouldShowTimestamp(messages: viewModel.messages, at: index)
+                                        showTimestamp: shouldShowTimestamp(messages: viewModel.messages, at: index),
+                                        allMessages: viewModel.messages,
+                                        botId: viewModel.botConfig.id,
+                                        botName: viewModel.botConfig.name,
+                                        onReply: { msg in viewModel.replyingTo = msg },
+                                        onScrollTo: { id in scrollToMessageId = id }
                                     )
                                         .transition(.asymmetric(
                                             insertion: .move(edge: .bottom).combined(with: .opacity),
                                             removal: .opacity
                                         ))
                                 }
-                                
+
+                                // Enhanced typing indicator
+                                if viewModel.botState == .thinking && viewModel.streamingContent.isEmpty {
+                                    HStack {
+                                        EnhancedTypingIndicator(
+                                            botName: viewModel.botConfig.name,
+                                            isActive: true
+                                        )
+                                        Spacer()
+                                    }
+                                }
+
                                 // Streaming content
                                 if !viewModel.streamingContent.isEmpty {
                                     MessageBubble(
@@ -670,6 +712,14 @@ struct ChatContainerView: View {
                                 }
                             }
                         }
+                        .onChange(of: scrollToMessageId) { _, id in
+                            if let id {
+                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                    proxy.scrollTo(id, anchor: .center)
+                                }
+                                scrollToMessageId = nil
+                            }
+                        }
                         .overlay(alignment: .bottomTrailing) {
                             if showNewMessagesPill {
                                 Button(action: {
@@ -726,6 +776,13 @@ struct ChatContainerView: View {
                         )
                     }
                     
+                    // Reply preview above input
+                    if let replyMsg = viewModel.replyingTo {
+                        ReplyInputPreview(message: replyMsg) {
+                            viewModel.replyingTo = nil
+                        }
+                    }
+
                     // Floating input bar
                     ChatInputBar(
                         text: $inputText,
@@ -1035,267 +1092,6 @@ struct MessageSearchBar: View {
     }
 }
 
-// MARK: - Session Drawer
-
-struct SessionDrawerView: View {
-    @ObservedObject var viewModel: ChatViewModel
-    @State private var showingNewSession = false
-    
-    var body: some View {
-        VStack(spacing: 0) {
-            // Drawer header
-            HStack {
-                Text("SESSIONS")
-                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                    .foregroundColor(.optaTextMuted)
-                
-                Spacer()
-                
-                Button(action: { showingNewSession = true }) {
-                    Image(systemName: "plus.circle")
-                        .font(.system(size: 14))
-                        .foregroundColor(.optaTextSecondary)
-                }
-                .buttonStyle(.plain)
-            }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
-            
-            Divider()
-                .background(Color.optaBorder)
-            
-            // Session list
-            ScrollView {
-                LazyVStack(spacing: 2) {
-                    // Pinned sessions first
-                    ForEach(viewModel.sessions.filter(\.isPinned)) { session in
-                        SessionRow(
-                            session: session,
-                            isActive: viewModel.activeSession?.id == session.id,
-                            onTap: { viewModel.switchSession(session) },
-                            onDelete: { viewModel.deleteSession(session) },
-                            onTogglePin: { viewModel.togglePin(session) }
-                        )
-                    }
-                    
-                    // Unpinned sessions
-                    ForEach(viewModel.sessions.filter { !$0.isPinned }) { session in
-                        SessionRow(
-                            session: session,
-                            isActive: viewModel.activeSession?.id == session.id,
-                            onTap: { viewModel.switchSession(session) },
-                            onDelete: { viewModel.deleteSession(session) },
-                            onTogglePin: { viewModel.togglePin(session) }
-                        )
-                    }
-                }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 6)
-            }
-            
-            Spacer()
-        }
-        .background(
-            ZStack {
-                Color.optaSurface.opacity(0.4)
-                    .background(.ultraThinMaterial)
-                // Subtle top highlight
-                VStack {
-                    LinearGradient(
-                        colors: [Color.white.opacity(0.03), .clear],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                    .frame(height: 1)
-                    Spacer()
-                }
-            }
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 0))
-        .sheet(isPresented: $showingNewSession) {
-            NewSessionSheet(viewModel: viewModel)
-        }
-    }
-}
-
-// MARK: - Session Row
-
-struct SessionRow: View {
-    let session: ChatSession
-    let isActive: Bool
-    let onTap: () -> Void
-    let onDelete: () -> Void
-    let onTogglePin: () -> Void
-    
-    @State private var isHovering = false
-    
-    var body: some View {
-        Button(action: onTap) {
-            HStack(spacing: 8) {
-                // Mode icon
-                Image(systemName: session.mode.icon)
-                    .font(.system(size: 11))
-                    .foregroundColor(sessionModeColor(session.mode))
-                    .frame(width: 16)
-                
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(session.name)
-                        .font(.system(size: 12, weight: isActive ? .semibold : .regular))
-                        .foregroundColor(isActive ? .optaTextPrimary : .optaTextSecondary)
-                        .lineLimit(1)
-                    
-                    Text(session.mode.label)
-                        .font(.system(size: 9))
-                        .foregroundColor(.optaTextMuted)
-                }
-                
-                Spacer()
-                
-                if session.isPinned {
-                    Image(systemName: "pin.fill")
-                        .font(.system(size: 8))
-                        .foregroundColor(.optaTextMuted)
-                        .rotationEffect(.degrees(45))
-                }
-            }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 7)
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(isActive ? Color.optaPrimary.opacity(0.15) : (isHovering ? Color.optaSurface.opacity(0.5) : Color.clear))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(isActive ? Color.optaPrimary.opacity(0.3) : Color.clear, lineWidth: 1)
-            )
-        }
-        .buttonStyle(.plain)
-        .onHover { isHovering = $0 }
-        .contextMenu {
-            Button(action: onTogglePin) {
-                Label(session.isPinned ? "Unpin" : "Pin", systemImage: session.isPinned ? "pin.slash" : "pin")
-            }
-            
-            Divider()
-            
-            Button(role: .destructive, action: onDelete) {
-                Label("Delete", systemImage: "trash")
-            }
-        }
-    }
-}
-
-// MARK: - New Session Sheet
-
-struct NewSessionSheet: View {
-    @ObservedObject var viewModel: ChatViewModel
-    @Environment(\.dismiss) var dismiss
-    
-    @State private var name = ""
-    @State private var selectedMode: SessionMode = .direct
-    
-    var body: some View {
-        VStack(spacing: 20) {
-            Text("New Session")
-                .font(.system(size: 18, weight: .bold))
-                .foregroundColor(.optaTextPrimary)
-            
-            // Name field
-            LabeledField("Name", text: $name, placeholder: "e.g., Research, Coding, Quick Chat")
-            
-            // Mode picker
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Mode")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(.optaTextMuted)
-                
-                ForEach(SessionMode.allCases, id: \.self) { mode in
-                    SessionModeOption(
-                        mode: mode,
-                        isSelected: selectedMode == mode,
-                        onTap: { selectedMode = mode }
-                    )
-                }
-            }
-            
-            HStack {
-                Button("Cancel") { dismiss() }
-                    .keyboardShortcut(.cancelAction)
-                
-                Spacer()
-                
-                Button("Create") {
-                    let session = viewModel.createSession(
-                        name: name.isEmpty ? selectedMode.label : name,
-                        mode: selectedMode
-                    )
-                    viewModel.switchSession(session)
-                    dismiss()
-                }
-                .keyboardShortcut(.defaultAction)
-                .buttonStyle(.borderedProminent)
-                .tint(.optaPrimary)
-            }
-        }
-        .padding(24)
-        .frame(width: 360)
-        .background(
-            ZStack {
-                Color.optaSurface.opacity(0.7)
-                    .background(.ultraThinMaterial)
-                Color.optaPrimary.opacity(0.02)
-            }
-        )
-        .preferredColorScheme(.dark)
-    }
-}
-
-// MARK: - Session Mode Option
-
-struct SessionModeOption: View {
-    let mode: SessionMode
-    let isSelected: Bool
-    let onTap: () -> Void
-    
-    var body: some View {
-        Button(action: onTap) {
-            HStack(spacing: 10) {
-                Image(systemName: mode.icon)
-                    .font(.system(size: 14))
-                    .foregroundColor(sessionModeColor(mode))
-                    .frame(width: 20)
-                
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(mode.label)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(.optaTextPrimary)
-                    
-                    Text(mode.description)
-                        .font(.system(size: 11))
-                        .foregroundColor(.optaTextMuted)
-                }
-                
-                Spacer()
-                
-                if isSelected {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(.optaPrimary)
-                        .font(.system(size: 16))
-                }
-            }
-            .padding(10)
-            .background(
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(isSelected ? Color.optaPrimary.opacity(0.1) : Color.optaElevated)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 10)
-                    .stroke(isSelected ? Color.optaPrimary.opacity(0.4) : Color.optaBorder, lineWidth: 1)
-            )
-        }
-        .buttonStyle(.plain)
-    }
-}
 
 // MARK: - Message Row (with entrance animation)
 
@@ -1304,7 +1100,6 @@ struct SessionModeOption: View {
 /// Format a timestamp for display between message groups.
 func groupTimestamp(_ date: Date) -> String {
     let cal = Calendar.current
-    let now = Date()
     let formatter = DateFormatter()
     formatter.dateFormat = "h:mm a"
     let time = formatter.string(from: date)
@@ -1346,6 +1141,11 @@ struct MessageRow: View {
     let index: Int
     let total: Int
     let showTimestamp: Bool
+    var allMessages: [ChatMessage] = []
+    var botId: String = ""
+    var botName: String = ""
+    var onReply: ((ChatMessage) -> Void)? = nil
+    var onScrollTo: ((String) -> Void)? = nil
     
     @State private var appeared = false
     @State private var floatY: CGFloat = 0
@@ -1357,7 +1157,16 @@ struct MessageRow: View {
             if showTimestamp {
                 TimestampSeparator(date: message.timestamp)
             }
-            MessageBubble(message: message, hideTimestamp: !showTimestamp)
+            MessageBubble(
+                message: message,
+                hideTimestamp: !showTimestamp,
+                allMessages: allMessages,
+                botId: botId,
+                botName: botName,
+                onReply: onReply,
+                onScrollTo: onScrollTo
+            )
+            .id(message.id)
         }
         .opacity(appeared ? 1 : 0)
         .offset(y: appeared ? floatY : 16)
@@ -1427,6 +1236,9 @@ struct ChatHeaderView: View {
     @State private var connGlow: CGFloat = 0
     @State private var connectingPulse: CGFloat = 1.0
     @State private var showBotProfile = false
+    @State private var showPinnedSheet = false
+    @State private var showBookmarksSheet = false
+    @StateObject private var pinManager = PinManager.shared
     
     private var accentColor: Color {
         botAccentColor(for: viewModel.botConfig)
@@ -1491,6 +1303,24 @@ struct ChatHeaderView: View {
                 .transition(.scale(scale: 0.8).combined(with: .opacity))
             }
 
+            // Pinned messages button
+            Button(action: { showPinnedSheet = true }) {
+                Image(systemName: "pin")
+                    .font(.system(size: 12))
+                    .foregroundColor(.optaTextSecondary)
+            }
+            .buttonStyle(.plain)
+            .help("View Pinned Messages")
+
+            // Bookmarks button
+            Button(action: { showBookmarksSheet = true }) {
+                Image(systemName: "bookmark")
+                    .font(.system(size: 12))
+                    .foregroundColor(.optaTextSecondary)
+            }
+            .buttonStyle(.plain)
+            .help("Bookmarks")
+
             // Export menu
             Menu {
                 ForEach(ChatExportFormat.allCases, id: \.rawValue) { format in
@@ -1552,7 +1382,7 @@ struct ChatHeaderView: View {
                     }
                 }
             }
-            .onChange(of: isConnecting) { connecting in
+            .onChange(of: isConnecting) { _, connecting in
                 if connecting {
                     withAnimation(.spring(response: 0.2, dampingFraction: 0.8).repeatForever(autoreverses: true)) {
                         connectingPulse = 1.3
@@ -1594,6 +1424,16 @@ struct ChatHeaderView: View {
                 }
             }
         )
+        .sheet(isPresented: $showPinnedSheet) {
+            PinnedMessagesSheet(
+                messages: pinManager.pinnedMessages(from: viewModel.messages, botId: viewModel.botConfig.id),
+                botName: viewModel.botConfig.name,
+                onScrollTo: { _ in }
+            )
+        }
+        .sheet(isPresented: $showBookmarksSheet) {
+            BookmarksView()
+        }
     }
     
     private var statusText: String {
@@ -1937,770 +1777,6 @@ struct AddBotSheet: View {
     }
 }
 
-// MARK: - Validation Helpers
-
-enum FieldValidation {
-    case valid
-    case invalid(String)
-    
-    var isValid: Bool {
-        if case .valid = self { return true }
-        return false
-    }
-    
-    var errorMessage: String? {
-        if case .invalid(let msg) = self { return msg }
-        return nil
-    }
-}
-
-func validateHostname(_ host: String) -> FieldValidation {
-    let trimmed = host.trimmingCharacters(in: .whitespaces)
-    if trimmed.isEmpty { return .invalid("Hostname is required") }
-    if trimmed.contains(" ") { return .invalid("Hostname cannot contain spaces") }
-    let allowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: ".-_"))
-    if trimmed.unicodeScalars.contains(where: { !allowed.contains($0) }) {
-        return .invalid("Invalid characters in hostname")
-    }
-    return .valid
-}
-
-func validatePort(_ port: String) -> FieldValidation {
-    let trimmed = port.trimmingCharacters(in: .whitespaces)
-    if trimmed.isEmpty { return .invalid("Port is required") }
-    guard let portNum = Int(trimmed) else { return .invalid("Port must be a number") }
-    if portNum < 1 || portNum > 65535 { return .invalid("Port must be 1–65535") }
-    return .valid
-}
-
-struct LabeledField: View {
-    let label: String
-    @Binding var text: String
-    let placeholder: String
-    var validation: FieldValidation?
-    
-    init(_ label: String, text: Binding<String>, placeholder: String, validation: FieldValidation? = nil) {
-        self.label = label
-        self._text = text
-        self.placeholder = placeholder
-        self.validation = validation
-    }
-    
-    private var hasError: Bool {
-        if case .invalid = validation { return true }
-        return false
-    }
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(label)
-                .font(.system(size: 11, weight: .medium))
-                .foregroundColor(.optaTextMuted)
-            
-            TextField(placeholder, text: $text)
-                .textFieldStyle(.plain)
-                .font(.system(size: 13))
-                .foregroundColor(.optaTextPrimary)
-                .padding(8)
-                .background(
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color.optaElevated)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(hasError ? Color.optaRed.opacity(0.6) : Color.optaBorder, lineWidth: 1)
-                )
-            
-            if let errorMsg = validation?.errorMessage {
-                Text(errorMsg)
-                    .font(.system(size: 10))
-                    .foregroundColor(.optaRed)
-                    .transition(.opacity)
-            }
-        }
-        .animation(.spring(response: 0.2), value: hasError)
-    }
-}
-
-// MARK: - Settings View
-
-struct SettingsView: View {
-    @EnvironmentObject var appState: AppState
-
-    var body: some View {
-        TabView {
-            BotsSettingsView()
-                .environmentObject(appState)
-                .tabItem {
-                    Label("Bots", systemImage: "cpu")
-                }
-
-            GeneralSettingsView()
-                .tabItem {
-                    Label("General", systemImage: "gear")
-                }
-
-            TelegramSettingsTab()
-                .environmentObject(appState)
-                .tabItem {
-                    Label("Telegram", systemImage: "paperplane")
-                }
-        }
-        .frame(width: 500, height: 450)
-        .preferredColorScheme(.dark)
-    }
-}
-
-// MARK: - Telegram Settings Tab
-
-struct TelegramSettingsTab: View {
-    @EnvironmentObject var appState: AppState
-
-    var body: some View {
-        // Telegram sync requires TDLibKit — show placeholder until integrated
-        VStack(spacing: 16) {
-            Image(systemName: "paperplane")
-                .font(.system(size: 32))
-                .foregroundColor(.optaTextMuted)
-
-            Text("Telegram Sync")
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(.optaTextSecondary)
-
-            Text("Bidirectional Telegram sync is planned but requires TDLibKit integration.\nMessages sent from OptaPlus will be relayed by the bot.")
-                .font(.system(size: 12))
-                .foregroundColor(.optaTextMuted)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: 300)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-}
-
-struct BotsSettingsView: View {
-    @EnvironmentObject var appState: AppState
-    @State private var selectedBotId: String?
-    
-    var body: some View {
-        HStack(spacing: 0) {
-            List(selection: $selectedBotId) {
-                ForEach(appState.bots) { bot in
-                    HStack {
-                        Text(bot.emoji)
-                        Text(bot.name)
-                            .font(.system(size: 13))
-                    }
-                    .tag(bot.id)
-                }
-            }
-            .frame(width: 160)
-            
-            Divider()
-            
-            if let botId = selectedBotId,
-               let bot = appState.bots.first(where: { $0.id == botId }) {
-                BotDetailEditor(bot: bot) { updated in
-                    appState.updateBot(updated)
-                }
-                .padding()
-            } else {
-                Text("Select a bot to edit")
-                    .foregroundColor(.optaTextMuted)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
-        }
-    }
-}
-
-// MARK: - Connection Test State
-
-enum ConnectionTestResult {
-    case idle
-    case testing
-    case success
-    case failure(String)
-}
-
-struct BotDetailEditor: View {
-    let bot: BotConfig
-    let onSave: (BotConfig) -> Void
-    
-    @State private var name: String
-    @State private var host: String
-    @State private var port: String
-    @State private var token: String
-    @State private var emoji: String
-    @State private var testResult: ConnectionTestResult = .idle
-    @ObservedObject private var themeManager = ThemeManager.shared
-    @State private var botAccentColorBinding: Color = .optaPrimary
-    @State private var hasBotAccentOverride: Bool = false
-    
-    init(bot: BotConfig, onSave: @escaping (BotConfig) -> Void) {
-        self.bot = bot
-        self.onSave = onSave
-        _name = State(initialValue: bot.name)
-        _host = State(initialValue: bot.host)
-        _port = State(initialValue: String(bot.port))
-        _token = State(initialValue: bot.token)
-        _emoji = State(initialValue: bot.emoji)
-    }
-    
-    private var hostValidation: FieldValidation { validateHostname(host) }
-    private var portValidation: FieldValidation { validatePort(port) }
-    private var isFormValid: Bool {
-        !name.isEmpty && hostValidation.isValid && portValidation.isValid
-    }
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            LabeledField("Name", text: $name, placeholder: "Bot name")
-            LabeledField("Host", text: $host, placeholder: "127.0.0.1", validation: hostValidation)
-            LabeledField("Port", text: $port, placeholder: "18793", validation: portValidation)
-            LabeledField("Token", text: $token, placeholder: "Auth token")
-            LabeledField("Emoji", text: $emoji, placeholder: "🤖")
-
-            // Bot accent color
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Text("Accent Color")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(.optaTextMuted)
-                    Spacer()
-                    if hasBotAccentOverride {
-                        Button("Reset") {
-                            themeManager.clearBotAccent(forBotId: bot.id)
-                            hasBotAccentOverride = false
-                            botAccentColorBinding = botAccentColor(for: bot)
-                        }
-                        .font(.system(size: 10))
-                        .foregroundColor(.optaTextMuted)
-                        .buttonStyle(.plain)
-                    }
-                }
-                ColorPicker("", selection: $botAccentColorBinding, supportsOpacity: false)
-                    .labelsHidden()
-                    .onChange(of: botAccentColorBinding) { _, newColor in
-                        themeManager.setBotAccent(newColor, forBotId: bot.id)
-                        hasBotAccentOverride = true
-                    }
-            }
-            .onAppear {
-                hasBotAccentOverride = themeManager.botAccentOverrides[bot.id] != nil
-                botAccentColorBinding = botAccentColor(for: bot)
-            }
-
-            // Connection test
-            HStack(spacing: 10) {
-                Button(action: testConnection) {
-                    HStack(spacing: 6) {
-                        if case .testing = testResult {
-                            ProgressView()
-                                .scaleEffect(0.6)
-                                .frame(width: 14, height: 14)
-                        } else {
-                            Image(systemName: "antenna.radiowaves.left.and.right")
-                                .font(.system(size: 12))
-                        }
-                        Text("Test Connection")
-                            .font(.system(size: 12, weight: .medium))
-                    }
-                    .foregroundColor(.optaTextSecondary)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Color.optaElevated)
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.optaBorder, lineWidth: 1)
-                    )
-                }
-                .buttonStyle(.plain)
-                .disabled(!hostValidation.isValid || !portValidation.isValid || {
-                    if case .testing = testResult { return true }
-                    return false
-                }())
-                
-                switch testResult {
-                case .idle:
-                    EmptyView()
-                case .testing:
-                    EmptyView()
-                case .success:
-                    HStack(spacing: 4) {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(.optaGreen)
-                            .font(.system(size: 14))
-                        Text("Connected")
-                            .font(.system(size: 11))
-                            .foregroundColor(.optaGreen)
-                    }
-                    .transition(.scale(scale: 0.8).combined(with: .opacity))
-                case .failure(let error):
-                    HStack(spacing: 4) {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundColor(.optaRed)
-                            .font(.system(size: 14))
-                        Text(error)
-                            .font(.system(size: 11))
-                            .foregroundColor(.optaRed)
-                            .lineLimit(1)
-                    }
-                    .transition(.scale(scale: 0.8).combined(with: .opacity))
-                }
-            }
-            .animation(.spring(response: 0.3, dampingFraction: 0.8), value: {
-                switch testResult {
-                case .idle: return 0
-                case .testing: return 1
-                case .success: return 2
-                case .failure: return 3
-                }
-            }())
-            
-            Spacer()
-            
-            HStack {
-                Spacer()
-                Button("Save") {
-                    let updated = BotConfig(
-                        id: bot.id,
-                        name: name,
-                        host: host,
-                        port: Int(port) ?? bot.port,
-                        token: token,
-                        emoji: emoji,
-                        sessionKey: bot.sessions.first?.sessionKey ?? "main"
-                    )
-                    onSave(updated)
-                }
-                .keyboardShortcut(.defaultAction)
-                .disabled(!isFormValid)
-            }
-        }
-    }
-    
-    private func testConnection() {
-        testResult = .testing
-        let testHost = host
-        let testPort = Int(port) ?? 0
-        
-        Task {
-            do {
-                let url = URL(string: "ws://\(testHost):\(testPort)")!
-                let session = URLSession(configuration: .default)
-                let task = session.webSocketTask(with: url)
-                task.resume()
-                
-                // Try to receive a message within 5 seconds
-                let _ = try await withThrowingTaskGroup(of: Bool.self) { group in
-                    group.addTask {
-                        // Try receiving a message (the gateway sends hello)
-                        let _ = try await task.receive()
-                        return true
-                    }
-                    group.addTask {
-                        try await Task.sleep(nanoseconds: 5_000_000_000)
-                        throw URLError(.timedOut)
-                    }
-                    let result = try await group.next()!
-                    group.cancelAll()
-                    return result
-                }
-                
-                task.cancel(with: .goingAway, reason: nil)
-                await MainActor.run { testResult = .success }
-            } catch {
-                await MainActor.run {
-                    let msg = error.localizedDescription
-                    testResult = .failure(msg.count > 40 ? String(msg.prefix(40)) + "…" : msg)
-                }
-            }
-        }
-    }
-}
-
-struct GeneralSettingsView: View {
-    @EnvironmentObject var animPrefs: AnimationPreferences
-    @ObservedObject var themeManager: ThemeManager = .shared
-    @AppStorage("optaplus.textAlignment") private var textAlignment: String = MessageTextAlignment.centeredExpanding.rawValue
-
-    @State private var fontScaleIndex: Double = 1
-    @State private var showCustomAccent = false
-
-    private var appVersion: String {
-        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1.0"
-    }
-    private var buildNumber: String {
-        Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
-    }
-
-    var body: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                // About section
-                VStack(spacing: 8) {
-                    Image(systemName: "bubble.left.and.bubble.right.fill")
-                        .font(.system(size: 36))
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [themeManager.effectiveAccent, themeManager.currentTheme.accentGlow],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-
-                    Text("OptaPlus")
-                        .font(.sora(18, weight: .bold))
-                        .foregroundColor(.optaTextPrimary)
-
-                    Text("v\(appVersion) (\(buildNumber))")
-                        .font(.system(size: 12, weight: .medium, design: .monospaced))
-                        .foregroundColor(.optaTextMuted)
-
-                    Text("Native OpenClaw chat client")
-                        .font(.system(size: 13))
-                        .foregroundColor(.optaTextSecondary)
-                }
-
-                Divider().background(Color.optaBorder)
-
-                // Theme picker
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("THEME")
-                        .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                        .foregroundColor(.optaTextMuted)
-
-                    HStack(spacing: 8) {
-                        ForEach(AppTheme.allBuiltIn) { theme in
-                            ThemePreviewCard(
-                                theme: theme,
-                                isSelected: themeManager.currentTheme.id == theme.id,
-                                onTap: { themeManager.currentTheme = theme }
-                            )
-                        }
-                    }
-                }
-
-                // Custom accent color
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Text("CUSTOM ACCENT")
-                            .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                            .foregroundColor(.optaTextMuted)
-
-                        Spacer()
-
-                        if themeManager.customAccentColor != nil {
-                            Button("Reset") {
-                                themeManager.customAccentColor = nil
-                            }
-                            .font(.system(size: 10, weight: .medium))
-                            .foregroundColor(.optaTextMuted)
-                            .buttonStyle(.plain)
-                        }
-                    }
-
-                    ColorPicker(
-                        "Accent Color",
-                        selection: Binding(
-                            get: { themeManager.customAccentColor ?? themeManager.currentTheme.accentColor },
-                            set: { themeManager.customAccentColor = $0 }
-                        ),
-                        supportsOpacity: false
-                    )
-                    .font(.system(size: 12))
-                    .foregroundColor(.optaTextSecondary)
-
-                    Text("Override the theme's accent color with any color you choose.")
-                        .font(.system(size: 11))
-                        .foregroundColor(.optaTextMuted)
-                }
-
-                Divider().background(Color.optaBorder)
-
-                // Font scale
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("FONT SIZE")
-                        .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                        .foregroundColor(.optaTextMuted)
-
-                    HStack {
-                        Text("A")
-                            .font(.system(size: 10))
-                            .foregroundColor(.optaTextMuted)
-                        Slider(value: $fontScaleIndex, in: 0...3, step: 1)
-                            .onChange(of: fontScaleIndex) { _, newVal in
-                                themeManager.fontScale = FontScale(index: newVal)
-                            }
-                        Text("A")
-                            .font(.system(size: 18, weight: .bold))
-                            .foregroundColor(.optaTextMuted)
-                    }
-
-                    Text(themeManager.fontScale.label)
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(.optaTextSecondary)
-                }
-
-                // Chat density
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("CHAT DENSITY")
-                        .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                        .foregroundColor(.optaTextMuted)
-
-                    Picker("Density", selection: $themeManager.chatDensity) {
-                        ForEach(ChatDensity.allCases, id: \.self) { density in
-                            Text(density.label).tag(density)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-
-                    Text("Affects message spacing and bubble size.")
-                        .font(.system(size: 11))
-                        .foregroundColor(.optaTextMuted)
-                }
-
-                Divider().background(Color.optaBorder)
-
-                // Background mode
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("AMBIENT BACKGROUND")
-                        .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                        .foregroundColor(.optaTextMuted)
-
-                    Picker("Background", selection: $themeManager.backgroundMode) {
-                        ForEach(BackgroundMode.allCases, id: \.self) { mode in
-                            Text(mode.label).tag(mode)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-
-                    Text(backgroundModeDescription)
-                        .font(.system(size: 11))
-                        .foregroundColor(.optaTextMuted)
-                }
-
-                Divider().background(Color.optaBorder)
-
-                // Animation level picker
-                AnimationLevelPicker(prefs: animPrefs)
-
-                Divider().background(Color.optaBorder)
-
-                // Text alignment picker
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("MESSAGE ALIGNMENT")
-                        .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                        .foregroundColor(.optaTextMuted)
-
-                    Picker("Alignment", selection: $textAlignment) {
-                        ForEach(MessageTextAlignment.allCases, id: \.rawValue) { alignment in
-                            Text(alignment.label).tag(alignment.rawValue)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-
-                    Text("Controls how chat messages are positioned in the window.")
-                        .font(.system(size: 11))
-                        .foregroundColor(.optaTextMuted)
-                }
-
-                Spacer()
-            }
-            .padding()
-        }
-        .frame(maxWidth: .infinity)
-        .onAppear {
-            fontScaleIndex = themeManager.fontScale.index
-        }
-    }
-
-    private var backgroundModeDescription: String {
-        switch themeManager.backgroundMode {
-        case .on: return "Full ambient particles and gradient orbs."
-        case .off: return "Pure void background — saves GPU."
-        case .subtle: return "Reduced particles and orb opacity."
-        }
-    }
-}
-
-// MARK: - Theme Preview Card
-
-struct ThemePreviewCard: View {
-    let theme: AppTheme
-    let isSelected: Bool
-    let onTap: () -> Void
-
-    var body: some View {
-        Button(action: onTap) {
-            VStack(spacing: 6) {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(theme.backgroundColor)
-                    .frame(height: 40)
-                    .overlay(
-                        Circle()
-                            .fill(theme.accentColor)
-                            .frame(width: 14, height: 14)
-                            .shadow(color: theme.accentColor.opacity(0.6), radius: 6)
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(isSelected ? theme.accentColor : Color.optaBorder, lineWidth: isSelected ? 2 : 0.5)
-                    )
-
-                Text(theme.name)
-                    .font(.system(size: 10, weight: isSelected ? .semibold : .regular))
-                    .foregroundColor(isSelected ? .optaTextPrimary : .optaTextMuted)
-            }
-        }
-        .buttonStyle(.plain)
-    }
-}
-
-// MARK: - Chat Empty State (Bot Selected, No Messages)
-
-struct ChatEmptyState: View {
-    let botName: String
-    let botEmoji: String
-    let isConnected: Bool
-    let onReconnect: () -> Void
-
-    @State private var pulse: CGFloat = 0.9
-
-    var body: some View {
-        VStack(spacing: 16) {
-            Text(botEmoji)
-                .font(.system(size: 56))
-                .scaleEffect(pulse)
-                .onAppear {
-                    withAnimation(.easeInOut(duration: 2.5).repeatForever(autoreverses: true)) {
-                        pulse = 1.05
-                    }
-                }
-
-            if isConnected {
-                Text("Start a conversation with \(botName)")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.optaTextSecondary)
-
-                Text("Type a message below to begin")
-                    .font(.system(size: 13))
-                    .foregroundColor(.optaTextMuted)
-            } else {
-                Text("\(botName) is disconnected")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.optaTextSecondary)
-
-                Button(action: onReconnect) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "arrow.clockwise")
-                            .font(.system(size: 12))
-                        Text("Reconnect")
-                            .font(.system(size: 13, weight: .medium))
-                    }
-                    .foregroundColor(.optaPrimary)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .background(
-                        Capsule().fill(Color.optaPrimary.opacity(0.12))
-                    )
-                    .overlay(Capsule().stroke(Color.optaPrimary.opacity(0.3), lineWidth: 0.5))
-                }
-                .buttonStyle(.plain)
-            }
-        }
-    }
-}
-
-// MARK: - Skeleton Bubble
-
-struct SkeletonBubble: View {
-    let isUser: Bool
-    let width: CGFloat
-    @State private var shimmerOffset: CGFloat = -1
-    
-    var body: some View {
-        HStack {
-            if isUser { Spacer(minLength: 0) }
-            
-            RoundedRectangle(cornerRadius: 18)
-                .fill(Color.optaSurface.opacity(0.4))
-                .frame(maxWidth: width * 600, minHeight: isUser ? 36 : 52)
-                .overlay(
-                    GeometryReader { geo in
-                        LinearGradient(
-                            colors: [.clear, Color.white.opacity(0.04), .clear],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                        .frame(width: geo.size.width * 0.4)
-                        .offset(x: shimmerOffset * geo.size.width)
-                    }
-                    .clipped()
-                )
-                .clipShape(RoundedRectangle(cornerRadius: 18))
-            
-            if !isUser { Spacer(minLength: 0) }
-        }
-        .onAppear {
-            withAnimation(.linear(duration: 1.5).repeatForever(autoreverses: false)) {
-                shimmerOffset = 1.5
-            }
-        }
-    }
-}
-
-// MARK: - Connection Toast
-
-struct ConnectionToast: View {
-    let text: String
-    let isSuccess: Bool
-    @State private var pulse: CGFloat = 0
-    
-    var body: some View {
-        HStack(spacing: 8) {
-            if isSuccess {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 12))
-                    .foregroundColor(.optaGreen)
-            } else {
-                ProgressView()
-                    .scaleEffect(0.5)
-                    .frame(width: 12, height: 12)
-            }
-            
-            Text(text)
-                .font(.system(size: 12, weight: .medium))
-                .foregroundColor(isSuccess ? .optaGreen : .optaTextSecondary)
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
-        .background(
-            Capsule()
-                .fill(.ultraThinMaterial)
-                .shadow(color: Color.black.opacity(0.2), radius: 8, y: 2)
-        )
-        .overlay(
-            Capsule()
-                .stroke(
-                    (isSuccess ? Color.optaGreen : Color.optaAmber).opacity(0.3),
-                    lineWidth: 0.5
-                )
-        )
-    }
-}
-
-// MARK: - Color Helpers
-
-func sessionModeColor(_ mode: SessionMode) -> Color {
-    switch mode {
-    case .synced: return .optaBlue
-    case .direct: return .optaGreen
-    case .isolated: return .optaPrimary
-    }
-}
 
 // MARK: - Preview
 

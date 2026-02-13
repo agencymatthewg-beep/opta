@@ -115,6 +115,21 @@ public final class ChatViewModel: ObservableObject {
     
     /// Last error message.
     @Published public var errorMessage: String?
+
+    /// Uptime tracking: when the current connection was established.
+    @Published public var connectedSince: Date?
+
+    /// Total accumulated uptime across all connections.
+    @Published public var totalUptimeSeconds: TimeInterval = 0
+
+    /// Bot health score.
+    @Published public var health: BotHealth = .unknown
+
+    /// Reconnect count for health tracking.
+    @Published public var reconnectCount: Int = 0
+
+    /// Error count for health tracking.
+    @Published public var errorCount: Int = 0
     
     /// Active run ID for the current generation.
     @Published public var activeRunId: String?
@@ -133,6 +148,9 @@ public final class ChatViewModel: ObservableObject {
     
     /// Whether the session drawer is open.
     @Published public var isSessionDrawerOpen = false
+
+    /// Message currently being replied to (shown above input bar).
+    @Published public var replyingTo: ChatMessage? = nil
     
     // MARK: - Configuration
     
@@ -251,10 +269,38 @@ public final class ChatViewModel: ObservableObject {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] state in
                 NSLog("[OC-VM] State changed: \(state)")
+                let oldState = self?.connectionState
                 self?.connectionState = state
                 if state == .connected {
                     self?.errorMessage = nil
+                    // Uptime tracking
+                    if oldState != .connected {
+                        if self?.connectedSince != nil {
+                            self?.reconnectCount += 1
+                        }
+                        self?.connectedSince = Date()
+                        self?.updateHealth()
+                        ActivityFeedManager.shared.addEvent(
+                            botName: self?.botConfig.name ?? "Bot",
+                            botEmoji: self?.botConfig.emoji ?? "🤖",
+                            message: "connected",
+                            kind: .connected
+                        )
+                    }
                     self?.flushMessageQueue()
+                } else if state == .disconnected, oldState == .connected {
+                    // Accumulate uptime
+                    if let since = self?.connectedSince {
+                        self?.totalUptimeSeconds += Date().timeIntervalSince(since)
+                    }
+                    self?.connectedSince = nil
+                    self?.updateHealth()
+                    ActivityFeedManager.shared.addEvent(
+                        botName: self?.botConfig.name ?? "Bot",
+                        botEmoji: self?.botConfig.emoji ?? "🤖",
+                        message: "disconnected",
+                        kind: .disconnected
+                    )
                 }
             }
             .store(in: &cancellables)
@@ -286,9 +332,15 @@ public final class ChatViewModel: ObservableObject {
     
     /// Disconnect from the bot.
     public func disconnect() {
+        // Accumulate uptime before disconnecting
+        if let since = connectedSince {
+            totalUptimeSeconds += Date().timeIntervalSince(since)
+            connectedSince = nil
+        }
         client?.disconnect()
         client = nil
         connectionState = .disconnected
+        updateHealth()
     }
     
     // MARK: - Session Management
@@ -455,13 +507,18 @@ public final class ChatViewModel: ObservableObject {
 
         NSLog("[OC-VM] Sending message: '\(displayText.prefix(50))' with \(attachments.count) attachments to session '\(session.sessionKey)' mode=\(session.mode.rawValue) deliver=\(session.mode.shouldDeliver)")
 
+        // Capture and clear reply state
+        let replyId = replyingTo?.id
+        replyingTo = nil
+
         // Add user message immediately
         let userMessage = ChatMessage(
             content: displayText,
             sender: .user,
             status: connectionState == .connected ? .sent : .pending,
             source: .optaplus,
-            attachments: attachments
+            attachments: attachments,
+            replyTo: replyId
         )
         messages.append(userMessage)
         sessionMessages[session.id] = messages
@@ -506,7 +563,8 @@ public final class ChatViewModel: ObservableObject {
                     timestamp: userMessage.timestamp,
                     status: .sent,
                     source: .optaplus,
-                    attachments: attachments
+                    attachments: attachments,
+                    replyTo: replyId
                 )
                 sessionMessages[session.id] = messages
             }
@@ -531,7 +589,8 @@ public final class ChatViewModel: ObservableObject {
                     timestamp: userMessage.timestamp,
                     status: .failed,
                     source: .optaplus,
-                    attachments: attachments
+                    attachments: attachments,
+                    replyTo: replyId
                 )
                 sessionMessages[session.id] = messages
             }
@@ -798,7 +857,8 @@ public final class ChatViewModel: ObservableObject {
                         messages[idx] = ChatMessage(
                             id: msg.id, content: msg.content, sender: msg.sender,
                             timestamp: msg.timestamp, status: .sent,
-                            source: msg.source, attachments: msg.attachments
+                            source: msg.source, attachments: msg.attachments,
+                            replyTo: msg.replyTo
                         )
                     }
                 } catch {
@@ -808,7 +868,8 @@ public final class ChatViewModel: ObservableObject {
                         messages[idx] = ChatMessage(
                             id: msg.id, content: msg.content, sender: msg.sender,
                             timestamp: msg.timestamp, status: .failed,
-                            source: msg.source, attachments: msg.attachments
+                            source: msg.source, attachments: msg.attachments,
+                            replyTo: msg.replyTo
                         )
                     }
                 }
@@ -844,6 +905,14 @@ public final class ChatViewModel: ObservableObject {
             errorMessage = "\(context) failed: \(error.localizedDescription)"
         }
         NSLog("[OC-VM] Transient error in \(context): \(error)")
+        errorCount += 1
+        updateHealth()
+        ActivityFeedManager.shared.addEvent(
+            botName: botConfig.name,
+            botEmoji: botConfig.emoji,
+            message: "error: \(context)",
+            kind: .error
+        )
     }
     
     // MARK: - Helpers
@@ -858,6 +927,41 @@ public final class ChatViewModel: ObservableObject {
 
     private func persistStats() {
         MessageStatsManager.save(messageStats, botId: botConfig.id)
+    }
+
+    // MARK: - Uptime & Health
+
+    /// Current uptime including active session.
+    public var currentUptimeSeconds: TimeInterval {
+        var total = totalUptimeSeconds
+        if let since = connectedSince {
+            total += Date().timeIntervalSince(since)
+        }
+        return total
+    }
+
+    /// Formatted uptime string (e.g. "2h 34m").
+    public var formattedUptime: String {
+        UptimeFormatter.format(currentUptimeSeconds)
+    }
+
+    /// Last message preview text for dashboard display.
+    public var lastMessagePreview: String? {
+        messages.last?.content.prefix(80).description
+    }
+
+    /// Total message count.
+    public var totalMessageCount: Int {
+        messageStats.totalSent + messageStats.totalReceived
+    }
+
+    private func updateHealth() {
+        health = BotHealth(
+            reconnectCount: reconnectCount,
+            errorCount: errorCount,
+            averageLatency: messageStats.averageResponseTime,
+            uptimeSeconds: currentUptimeSeconds
+        )
     }
 
     private func resetStreamState() {

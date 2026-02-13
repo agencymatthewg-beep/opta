@@ -21,9 +21,12 @@
 		PH000001FFFF000100000001 /* CommandPalette.swift in Sources */ = {isa = PBXBuildFile; fileRef = PH000002FFFF000100000001 /* CommandPalette.swift */; };
 		PH000003FFFF000100000001 /* KeyboardShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = PH000004FFFF000100000001 /* KeyboardShortcuts.swift */; };
 		SM000001FFFF000100000001 /* SoundManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = SM000002FFFF000100000001 /* SoundManager.swift */; };
-		CD000007BBBB000200000001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CD000008BBBB000200000001 /* Assets.xcassets */; };
+		DB000001FFFF000100000001 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB000002FFFF000100000001 /* DashboardView.swift */; };
+				CD000007BBBB000200000001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CD000008BBBB000200000001 /* Assets.xcassets */; };
 		CD000050BBBB000300000001 /* OptaPlus in Frameworks */ = {isa = PBXBuildFile; productRef = CD000051BBBB000300000001 /* OptaPlus */; };
 		CD000060BBBB000400000001 /* OptaMolt in Frameworks */ = {isa = PBXBuildFile; productRef = CD000061BBBB000400000001 /* OptaMolt */; };
+		PH100001FFFF001600000001 /* SessionViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = PH100002FFFF001600000001 /* SessionViews.swift */; };
+		PH100001FFFF001700000001 /* SettingsViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = PH100002FFFF001700000001 /* SettingsViews.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -45,6 +48,9 @@
 		PH000002FFFF000100000001 /* CommandPalette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandPalette.swift; sourceTree = "<group>"; };
 		PH000004FFFF000100000001 /* KeyboardShortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardShortcuts.swift; sourceTree = "<group>"; };
 		SM000002FFFF000100000001 /* SoundManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundManager.swift; sourceTree = "<group>"; };
+		PH100002FFFF001600000001 /* SessionViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionViews.swift; sourceTree = "<group>"; };
+		PH100002FFFF001700000001 /* SettingsViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViews.swift; sourceTree = "<group>"; };
+		DB000002FFFF000100000001 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -73,6 +79,8 @@
 			children = (
 				CD000002BBBB000100000001 /* OptaPlusMacOSApp.swift */,
 				CD000004BBBB000100000001 /* ContentView.swift */,
+				PH100002FFFF001600000001 /* SessionViews.swift */,
+				PH100002FFFF001700000001 /* SettingsViews.swift */,
 				CD000071CCCC000100000001 /* ThinkingOverlay.swift */,
 				CD000073CCCC000100000001 /* ContextPanel.swift */,
 				CD000081DDDD000100000001 /* AmbientBackground.swift */,
@@ -85,6 +93,7 @@
 				PH000002FFFF000100000001 /* CommandPalette.swift */,
 				PH000004FFFF000100000001 /* KeyboardShortcuts.swift */,
 				SM000002FFFF000100000001 /* SoundManager.swift */,
+				DB000002FFFF000100000001 /* DashboardView.swift */,
 				CD000008BBBB000200000001 /* Assets.xcassets */,
 				CD00000ABBBB000200000001 /* Info.plist */,
 				CD00000BBBBB000200000001 /* OptaPlusMacOS.entitlements */,
@@ -178,6 +187,8 @@
 			files = (
 				CD000001BBBB000100000001 /* OptaPlusMacOSApp.swift in Sources */,
 				CD000003BBBB000100000001 /* ContentView.swift in Sources */,
+				PH100001FFFF001600000001 /* SessionViews.swift in Sources */,
+				PH100001FFFF001700000001 /* SettingsViews.swift in Sources */,
 				CD000070CCCC000100000001 /* ThinkingOverlay.swift in Sources */,
 				CD000072CCCC000100000001 /* ContextPanel.swift in Sources */,
 				CD000080DDDD000100000001 /* AmbientBackground.swift in Sources */,

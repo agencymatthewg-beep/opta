@@ -9,11 +9,11 @@ import OptaMolt
 
 struct ContentView: View {
     @EnvironmentObject var appState: AppState
-    @State private var selectedTab: Tab = .chat
+    @State private var selectedTab: Tab = .dashboard
     @AppStorage("optaplus.onboardingDone") private var onboardingDone = false
 
     enum Tab {
-        case chat, settings
+        case dashboard, chat, settings
     }
 
     var body: some View {
@@ -22,6 +22,13 @@ struct ContentView: View {
                 .environmentObject(appState)
         } else {
             TabView(selection: $selectedTab) {
+                DashboardView()
+                    .environmentObject(appState)
+                    .tabItem {
+                        Label("Dashboard", systemImage: selectedTab == .dashboard ? "square.grid.2x2.fill" : "square.grid.2x2")
+                    }
+                    .tag(Tab.dashboard)
+
                 ChatTab()
                     .environmentObject(appState)
                     .tabItem {

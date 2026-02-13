@@ -123,6 +123,10 @@ struct ChatView: View {
     @State private var connectionToastMessage = ""
     @State private var isAtBottom = true
     @State private var unreadCount = 0
+    @State private var showPinnedSheet = false
+    @State private var showBookmarksSheet = false
+    @State private var scrollToMessageId: String? = nil
+    @StateObject private var pinManager = PinManager.shared
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -173,6 +177,13 @@ struct ChatView: View {
                         .padding(.bottom, 8)
                         .frame(maxWidth: .infinity, alignment: .trailing)
                         .transition(.scale.combined(with: .opacity))
+                    }
+                }
+
+                // Reply preview
+                if let replyMsg = viewModel.replyingTo {
+                    ReplyInputPreview(message: replyMsg) {
+                        viewModel.replyingTo = nil
                     }
                 }
 
@@ -237,6 +248,22 @@ struct ChatView: View {
                 .disabled(viewModel.messages.isEmpty)
             }
             ToolbarItem(placement: .navigationBarTrailing) {
+                Menu {
+                    Button {
+                        showPinnedSheet = true
+                    } label: {
+                        Label("Pinned Messages", systemImage: "pin")
+                    }
+                    Button {
+                        showBookmarksSheet = true
+                    } label: {
+                        Label("Bookmarks", systemImage: "bookmark")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                }
+            }
+            ToolbarItem(placement: .navigationBarTrailing) {
                 sessionModePicker
             }
         }
@@ -295,6 +322,18 @@ struct ChatView: View {
                 ShareSheet(activityItems: [url])
             }
         }
+        .sheet(isPresented: $showPinnedSheet) {
+            PinnedMessagesSheet(
+                messages: pinManager.pinnedMessages(from: viewModel.messages, botId: botConfig.id),
+                botName: botConfig.name,
+                onScrollTo: { id in
+                    scrollToMessageId = id
+                }
+            )
+        }
+        .sheet(isPresented: $showBookmarksSheet) {
+            BookmarksView()
+        }
     }
 
     // MARK: - Message List
@@ -319,16 +358,26 @@ struct ChatView: View {
                             if shouldShowTimestamp(messages: viewModel.messages, at: index) {
                                 TimestampSeparator(date: message.timestamp)
                             }
-                            MessageBubble(message: message, botName: botConfig.name)
-                                .id(message.id)
+                            MessageBubble(
+                                message: message,
+                                botName: botConfig.name,
+                                botId: botConfig.id,
+                                allMessages: viewModel.messages,
+                                onReply: { msg in viewModel.replyingTo = msg },
+                                onScrollTo: { id in scrollToMessageId = id }
+                            )
+                            .id(message.id)
                         }
                     }
 
-                    // Typing indicator
+                    // Enhanced typing indicator
                     if viewModel.botState == .thinking || viewModel.botState == .typing {
                         if viewModel.streamingContent.isEmpty {
                             HStack {
-                                TypingIndicator()
+                                EnhancedTypingIndicator(
+                                    botName: botConfig.name,
+                                    isActive: true
+                                )
                                 Spacer()
                             }
                         }
@@ -353,6 +402,14 @@ struct ChatView: View {
             }
             .onChange(of: viewModel.streamingContent) { _, _ in
                 scrollToBottom(proxy: proxy)
+            }
+            .onChange(of: scrollToMessageId) { _, id in
+                if let id {
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                        proxy.scrollTo(id, anchor: .center)
+                    }
+                    scrollToMessageId = nil
+                }
             }
         }
     }

@@ -10,9 +10,24 @@ import OptaMolt
 struct MessageBubble: View {
     let message: ChatMessage
     let botName: String
+    var botId: String = ""
+    var allMessages: [ChatMessage] = []
+    var onReply: ((ChatMessage) -> Void)? = nil
+    var onScrollTo: ((String) -> Void)? = nil
+    @StateObject private var pinManager = PinManager.shared
+    @StateObject private var bookmarkManager = BookmarkManager.shared
 
     private var isUser: Bool {
         message.sender == .user
+    }
+
+    private var isPinned: Bool {
+        pinManager.isPinned(message.id, botId: botId)
+    }
+
+    private var repliedMessage: ChatMessage? {
+        guard let replyId = message.replyTo else { return nil }
+        return allMessages.first { $0.id == replyId }
     }
 
     /// Detect emoji-only messages (1-3 emoji, no other chars)
@@ -32,20 +47,43 @@ struct MessageBubble: View {
         HStack {
             if isUser { Spacer(minLength: 60) }
 
-            if isEmojiOnly {
-                Text(message.content)
-                    .font(.system(size: 48))
-                    .contextMenu { messageContextMenu }
-            } else {
-                VStack(alignment: isUser ? .trailing : .leading, spacing: 4) {
-                    Text(message.content)
-                        .font(.body)
-                        .foregroundColor(.optaTextPrimary)
-                        .textSelection(.enabled)
+            VStack(alignment: isUser ? .trailing : .leading, spacing: 4) {
+                // Reply quote
+                if let replied = repliedMessage {
+                    ReplyQuoteView(originalMessage: replied) {
+                        onScrollTo?(replied.id)
+                    }
                 }
-                .padding(12)
-                .background(bubbleBackground)
-                .contextMenu { messageContextMenu }
+
+                if isEmojiOnly {
+                    Text(message.content)
+                        .font(.system(size: 48))
+                        .contextMenu { messageContextMenu }
+                } else {
+                    VStack(alignment: isUser ? .trailing : .leading, spacing: 4) {
+                        Text(message.content)
+                            .font(.body)
+                            .foregroundColor(.optaTextPrimary)
+                            .textSelection(.enabled)
+                    }
+                    .padding(12)
+                    .background(bubbleBackground)
+                    .overlay(alignment: .topLeading) {
+                        if isPinned {
+                            Image(systemName: "pin.fill")
+                                .font(.system(size: 8))
+                                .foregroundColor(.yellow)
+                                .padding(4)
+                        }
+                    }
+                    .overlay(
+                        isPinned
+                            ? AnyView(RoundedRectangle(cornerRadius: 16)
+                                .stroke(Color.yellow.opacity(0.4), lineWidth: 1.5))
+                            : AnyView(EmptyView())
+                    )
+                    .contextMenu { messageContextMenu }
+                }
             }
 
             if !isUser { Spacer(minLength: 60) }
@@ -62,6 +100,26 @@ struct MessageBubble: View {
         ShareLink(item: message.content) {
             Label("Share", systemImage: "square.and.arrow.up")
         }
+        Divider()
+        Button {
+            onReply?(message)
+        } label: {
+            Label("Reply", systemImage: "arrowshape.turn.up.left")
+        }
+        Button {
+            pinManager.togglePin(message.id, botId: botId)
+        } label: {
+            Label(isPinned ? "Unpin Message" : "Pin Message", systemImage: isPinned ? "pin.slash" : "pin")
+        }
+        Button {
+            bookmarkManager.toggle(message: message, botName: botName, botId: botId)
+        } label: {
+            Label(
+                bookmarkManager.isBookmarked(message.id) ? "Remove Bookmark" : "Bookmark",
+                systemImage: bookmarkManager.isBookmarked(message.id) ? "bookmark.slash" : "bookmark"
+            )
+        }
+        SmartActionsMenu(text: message.content)
         Divider()
         Button(role: .destructive) {
             // Deletion handled by parent — this is a visual placeholder

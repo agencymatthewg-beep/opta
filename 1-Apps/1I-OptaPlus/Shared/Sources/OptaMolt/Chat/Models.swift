@@ -187,6 +187,9 @@ public struct ChatMessage: Identifiable, Equatable, Sendable {
     /// File or image attachments.
     public let attachments: [ChatAttachment]
 
+    /// ID of the message this is replying to (quote/reply feature).
+    public let replyTo: String?
+
     // MARK: Initializer
 
     /// Creates a new chat message.
@@ -199,6 +202,7 @@ public struct ChatMessage: Identifiable, Equatable, Sendable {
     ///   - status: Delivery status. Defaults to `.sent`.
     ///   - source: Origin channel. Defaults to `nil`.
     ///   - attachments: Attached files. Defaults to empty.
+    ///   - replyTo: ID of message being replied to. Defaults to `nil`.
     public init(
         id: String = UUID().uuidString,
         content: String,
@@ -206,7 +210,8 @@ public struct ChatMessage: Identifiable, Equatable, Sendable {
         timestamp: Date = Date(),
         status: MessageStatus = .sent,
         source: MessageSource? = nil,
-        attachments: [ChatAttachment] = []
+        attachments: [ChatAttachment] = [],
+        replyTo: String? = nil
     ) {
         self.id = id
         self.content = content
@@ -215,5 +220,6 @@ public struct ChatMessage: Identifiable, Equatable, Sendable {
         self.status = status
         self.source = source
         self.attachments = attachments
+        self.replyTo = replyTo
     }
 }

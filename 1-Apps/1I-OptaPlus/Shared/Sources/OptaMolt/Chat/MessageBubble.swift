@@ -51,22 +51,44 @@ public struct MessageBubble: View {
     private let streamingSender: MessageSender?
     private let showTypingCursor: Bool
     private let hideTimestamp: Bool
+    private let allMessages: [ChatMessage]
+    private let botId: String
+    private let botName: String
+    private let onReply: ((ChatMessage) -> Void)?
+    private let onScrollTo: ((String) -> Void)?
 
     private var isStreaming: Bool { streamingContent != nil }
 
     @State private var isHovered = false
     @State private var isExpanded = false
     @State private var relativeTimestamp: String = ""
+    @State private var showRunConfirm = false
+    @State private var pendingCode = ""
     @StateObject private var reactionStore = ReactionStore.shared
+    @StateObject private var pinManager = PinManager.shared
+    @StateObject private var bookmarkManager = BookmarkManager.shared
 
     // MARK: - Init (message)
     
-    public init(message: ChatMessage, hideTimestamp: Bool = false) {
+    public init(
+        message: ChatMessage,
+        hideTimestamp: Bool = false,
+        allMessages: [ChatMessage] = [],
+        botId: String = "",
+        botName: String = "",
+        onReply: ((ChatMessage) -> Void)? = nil,
+        onScrollTo: ((String) -> Void)? = nil
+    ) {
         self.message = message
         self.streamingContent = nil
         self.streamingSender = nil
         self.showTypingCursor = false
         self.hideTimestamp = hideTimestamp
+        self.allMessages = allMessages
+        self.botId = botId
+        self.botName = botName
+        self.onReply = onReply
+        self.onScrollTo = onScrollTo
     }
 
     // MARK: - Init (streaming)
@@ -81,6 +103,23 @@ public struct MessageBubble: View {
         self.streamingSender = sender
         self.showTypingCursor = false
         self.hideTimestamp = true
+        self.allMessages = []
+        self.botId = ""
+        self.botName = ""
+        self.onReply = nil
+        self.onScrollTo = nil
+    }
+
+    // MARK: - Helpers
+
+    private var isPinned: Bool {
+        guard let msg = message else { return false }
+        return pinManager.isPinned(msg.id, botId: botId)
+    }
+
+    private var repliedMessage: ChatMessage? {
+        guard let replyId = message?.replyTo else { return nil }
+        return allMessages.first { $0.id == replyId }
     }
 
     // MARK: - Computed
@@ -177,6 +216,13 @@ public struct MessageBubble: View {
                         .foregroundColor(.optaTextMuted)
                 }
                 
+                // Reply quote (above bubble)
+                if let replied = repliedMessage {
+                    ReplyQuoteView(originalMessage: replied) {
+                        onScrollTo?(replied.id)
+                    }
+                }
+
                 // Message bubble
                 ZStack(alignment: .topTrailing) {
                     VStack(alignment: .leading, spacing: 8) {

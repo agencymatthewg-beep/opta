@@ -18,12 +18,14 @@ struct StoredMessage: Codable {
     let botName: String?
     let timestamp: Date
     let sourceRaw: String?
+    let replyTo: String?
 
     init(from message: ChatMessage) {
         self.id = message.id
         self.content = message.content
         self.timestamp = message.timestamp
         self.sourceRaw = message.source?.rawValue
+        self.replyTo = message.replyTo
         switch message.sender {
         case .user:
             self.isUser = true
@@ -41,7 +43,8 @@ struct StoredMessage: Codable {
             sender: isUser ? .user : .bot(name: botName ?? "Bot"),
             timestamp: timestamp,
             status: .delivered,
-            source: sourceRaw.flatMap { MessageSource(rawValue: $0) }
+            source: sourceRaw.flatMap { MessageSource(rawValue: $0) },
+            replyTo: replyTo
         )
     }
 }
