@@ -164,9 +164,16 @@ public final class OpenClawClient: ObservableObject {
         wsOptions.autoReplyPing = true
         
         let origin = "\(useTLS ? "https" : "http")://\(host):\(port)"
+        #if os(iOS)
+        let platformUA = "iOS"
+        #elseif os(macOS)
+        let platformUA = "macOS"
+        #else
+        let platformUA = "unknown"
+        #endif
         wsOptions.setAdditionalHeaders([
             ("Origin", origin),
-            ("User-Agent", "OptaPlus/\(clientVersion) macOS")
+            ("User-Agent", "OptaPlus/\(clientVersion) \(platformUA)")
         ])
         
         // Build parameter stack: TCP + WebSocket

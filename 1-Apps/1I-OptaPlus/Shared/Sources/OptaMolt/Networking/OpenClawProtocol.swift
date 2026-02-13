@@ -58,6 +58,7 @@ public struct EventFrame: Codable, Sendable {
 // MARK: - Connect
 
 /// Parameters for the `connect` request (handshake).
+/// Must match gateway's ConnectParamsSchema exactly (additionalProperties: false).
 public struct ConnectParams: Codable, Sendable {
     public let minProtocol: Int
     public let maxProtocol: Int
@@ -65,7 +66,6 @@ public struct ConnectParams: Codable, Sendable {
     public let role: String
     public let scopes: [String]
     public let auth: ConnectAuth?
-    public let userAgent: String?
     public let locale: String?
     
     public init(
@@ -75,16 +75,22 @@ public struct ConnectParams: Codable, Sendable {
     ) {
         self.minProtocol = 3
         self.maxProtocol = 3
+        #if os(iOS)
+        let platformName = "iOS"
+        #elseif os(macOS)
+        let platformName = "macOS"
+        #else
+        let platformName = "unknown"
+        #endif
         self.client = ClientInfo(
             id: clientId,
             version: clientVersion,
-            platform: "macOS",
+            platform: platformName,
             mode: "webchat"
         )
         self.role = "operator"
         self.scopes = ["operator.admin", "operator.approvals", "operator.pairing"]
         self.auth = token.map { ConnectAuth(token: $0) }
-        self.userAgent = "OptaPlus/\(clientVersion) macOS"
         self.locale = Locale.current.identifier
     }
 }
