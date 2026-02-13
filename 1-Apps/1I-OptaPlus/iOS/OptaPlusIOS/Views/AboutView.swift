@@ -4,8 +4,10 @@
 //
 
 import SwiftUI
+import OptaMolt
 
 struct AboutView: View {
+    var botConfigs: [BotConfig] = []
     @State private var pulseScale: CGFloat = 1.0
     @Environment(\.dismiss) private var dismiss
 
@@ -70,6 +72,44 @@ struct AboutView: View {
                 )
                 .clipShape(RoundedRectangle(cornerRadius: 12))
                 .padding(.horizontal, 20)
+
+                // Bot Stats
+                if !botConfigs.isEmpty {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Message Statistics")
+                            .font(.headline)
+                            .foregroundColor(.optaTextPrimary)
+
+                        ForEach(botConfigs) { bot in
+                            let stats = MessageStatsManager.load(botId: bot.id)
+                            if stats.totalSent > 0 || stats.totalReceived > 0 {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("\(bot.emoji) \(bot.name)")
+                                        .font(.subheadline.weight(.semibold))
+                                        .foregroundColor(.optaTextPrimary)
+
+                                    HStack(spacing: 16) {
+                                        Label("\(stats.totalSent) sent", systemImage: "arrow.up.circle")
+                                        Label("\(stats.totalReceived) recv", systemImage: "arrow.down.circle")
+                                    }
+                                    .font(.caption)
+                                    .foregroundColor(.optaTextSecondary)
+
+                                    HStack(spacing: 16) {
+                                        Label("Avg: \(stats.formattedAvgResponseTime)", systemImage: "timer")
+                                        Label("Streak: \(stats.longestStreak)d", systemImage: "flame")
+                                        Label("Peak: \(stats.formattedMostActiveTime)", systemImage: "clock")
+                                    }
+                                    .font(.caption2)
+                                    .foregroundColor(.optaTextMuted)
+                                }
+                                .padding(.vertical, 4)
+                            }
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 20)
+                }
 
                 // Acknowledgments
                 VStack(alignment: .leading, spacing: 8) {

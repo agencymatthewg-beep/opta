@@ -207,6 +207,9 @@ struct SettingsView: View {
                     appState.updateBot(updated)
                 }
             }
+            .onAppear {
+                fontScaleIndex = themeManager.fontScale.index
+            }
         }
     }
 

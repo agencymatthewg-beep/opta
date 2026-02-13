@@ -112,11 +112,16 @@ final class AppState: ObservableObject {
 @main
 struct OptaPlusIOSApp: App {
     @StateObject private var appState = AppState()
+    @ObservedObject private var themeManager = ThemeManager.shared
 
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environmentObject(appState)
+                .environmentObject(themeManager)
+                .environment(\.fontScaleOffset, themeManager.fontScale.offset)
+                .environment(\.chatDensity, themeManager.chatDensity)
+                .environment(\.backgroundMode, themeManager.backgroundMode)
                 .preferredColorScheme(.dark)
                 .onAppear {
                     if let bot = appState.selectedBot {

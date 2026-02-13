@@ -454,14 +454,18 @@ func ambientState(from botState: BotState) -> BotActivityState {
 }
 
 func botAccentColor(for bot: BotConfig) -> Color {
+    let tm = ThemeManager.shared
+    if let hex = tm.botAccentOverrides[bot.id] {
+        return Color(hex: hex)
+    }
     switch bot.name {
     case "Opta Max": return .optaCoral
-    case "Opta512": return .optaPrimary
+    case "Opta512": return tm.effectiveAccent
     case "Mono": return .optaGreen
     case "Floda": return .optaAmber
     case "Saturday": return .optaBlue
     case "YJ": return .optaAmber
-    default: return .optaPrimary
+    default: return tm.effectiveAccent
     }
 }
 
@@ -2125,6 +2129,9 @@ struct BotDetailEditor: View {
     @State private var token: String
     @State private var emoji: String
     @State private var testResult: ConnectionTestResult = .idle
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @State private var botAccentColorBinding: Color = .optaPrimary
+    @State private var hasBotAccentOverride: Bool = false
     
     init(bot: BotConfig, onSave: @escaping (BotConfig) -> Void) {
         self.bot = bot
@@ -2149,7 +2156,37 @@ struct BotDetailEditor: View {
             LabeledField("Port", text: $port, placeholder: "18793", validation: portValidation)
             LabeledField("Token", text: $token, placeholder: "Auth token")
             LabeledField("Emoji", text: $emoji, placeholder: "🤖")
-            
+
+            // Bot accent color
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text("Accent Color")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(.optaTextMuted)
+                    Spacer()
+                    if hasBotAccentOverride {
+                        Button("Reset") {
+                            themeManager.clearBotAccent(forBotId: bot.id)
+                            hasBotAccentOverride = false
+                            botAccentColorBinding = botAccentColor(for: bot)
+                        }
+                        .font(.system(size: 10))
+                        .foregroundColor(.optaTextMuted)
+                        .buttonStyle(.plain)
+                    }
+                }
+                ColorPicker("", selection: $botAccentColorBinding, supportsOpacity: false)
+                    .labelsHidden()
+                    .onChange(of: botAccentColorBinding) { _, newColor in
+                        themeManager.setBotAccent(newColor, forBotId: bot.id)
+                        hasBotAccentOverride = true
+                    }
+            }
+            .onAppear {
+                hasBotAccentOverride = themeManager.botAccentOverrides[bot.id] != nil
+                botAccentColorBinding = botAccentColor(for: bot)
+            }
+
             // Connection test
             HStack(spacing: 10) {
                 Button(action: testConnection) {
