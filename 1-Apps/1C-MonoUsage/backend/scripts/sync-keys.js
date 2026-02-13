@@ -4,7 +4,7 @@ const os = require('os');
 
 // Paths — resolved from home directory
 const HOME = os.homedir();
-const BACKEND_DIR = path.join(HOME, 'Synced/Opta/apps/MonoUsage/backend');
+const BACKEND_DIR = path.join(HOME, 'Synced/Opta/1-Apps/1D-MonoUsage/backend');
 const ENV_FILE = path.join(BACKEND_DIR, '.env');
 
 // Search multiple known locations for API-KEYS.md
@@ -23,11 +23,17 @@ function findKeysFile() {
 function parseMarkdownKeys(content) {
     const keys = {};
 
-    // MiniMax API Key
+    // MiniMax API Keys
     const minimaxMatch = content.match(/\|\s*\*\*API Key\*\*\s*\|\s*`(sk-[^`]+)`\s*\|/);
     if (minimaxMatch) {
         keys['MINIMAX_SHARED_KEY'] = minimaxMatch[1];
         console.log('  Found: MINIMAX_SHARED_KEY');
+    }
+
+    const minimaxCodingMatch = content.match(/MINIMAX_CODING_KEY[=:]\s*["']?([^\s"'\n]+)/);
+    if (minimaxCodingMatch) {
+        keys['MINIMAX_CODING_KEY'] = minimaxCodingMatch[1];
+        console.log('  Found: MINIMAX_CODING_KEY');
     }
 
     // Anthropic API Key

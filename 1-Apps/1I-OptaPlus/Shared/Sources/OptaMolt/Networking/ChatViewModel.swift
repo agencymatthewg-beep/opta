@@ -173,7 +173,7 @@ public final class ChatViewModel: ObservableObject {
         let newClient = OpenClawClient(
             url: wsURL,
             token: botConfig.token,
-            clientId: "gateway-client",
+            clientId: "openclaw-control-ui",
             clientVersion: "0.1.0"
         )
         

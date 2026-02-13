@@ -3,7 +3,7 @@
  *
  * This package provides common API infrastructure for Opta applications:
  * - Authentication middleware (API key, JWT, session)
- * - Rate limiting utilities
+ * - Rate limiting utilities (planned)
  * - Request validation helpers
  *
  * @packageDocumentation

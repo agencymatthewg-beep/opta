@@ -82,13 +82,13 @@ impl MetricsSocketServer {
                 }
             };
 
-            // Set socket permissions (readable/writable by all)
+            // Set socket permissions (owner-only for security)
             #[cfg(unix)]
             {
                 use std::os::unix::fs::PermissionsExt;
                 let _ = std::fs::set_permissions(
                     SOCKET_PATH,
-                    std::fs::Permissions::from_mode(0o666),
+                    std::fs::Permissions::from_mode(0o600),
                 );
             }
 

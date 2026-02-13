@@ -420,13 +420,21 @@ struct ChatContainerView: View {
                     .padding(.top, 52) // Below header
                     .padding(.trailing, 12)
                 
-                // Floating thinking overlay (bottom-left)
-                ThinkingOverlay(
-                    viewModel: viewModel,
-                    events: thinkingEvents,
-                    isActive: viewModel.botState != .idle
-                )
+                // Thinking overlay positioned via GeometryReader to avoid input bar
+                GeometryReader { geo in
+                    ThinkingOverlay(
+                        viewModel: viewModel,
+                        events: thinkingEvents,
+                        isActive: viewModel.botState != .idle
+                    )
+                    .frame(maxWidth: 280, alignment: .leading)
+                    .position(
+                        x: 155, // ~12 leading + half of 280 width
+                        y: geo.size.height - 120 // Well above input bar
+                    )
+                }
                 .animation(.spring(response: 0.3, dampingFraction: 0.85), value: viewModel.botState)
+                .allowsHitTesting(false)
             }
             
             // Session drawer (slides in from right)

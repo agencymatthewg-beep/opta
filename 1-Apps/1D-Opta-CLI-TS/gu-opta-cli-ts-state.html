@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Opta CLI TS — Codebase State</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --void: #09090b;
+    --surface: #18181b;
+    --elevated: #27272a;
+    --border: #3f3f46;
+    --text-primary: #fafafa;
+    --text-secondary: #a1a1aa;
+    --text-muted: #52525b;
+    --primary: #8b5cf6;
+    --primary-glow: #a855f7;
+    --neon-blue: #3b82f6;
+    --neon-green: #22c55e;
+    --neon-amber: #f59e0b;
+    --neon-red: #ef4444;
+    --neon-cyan: #06b6d4;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--void);
+    color: var(--text-primary);
+    font-family: 'Sora', -apple-system, BlinkMacSystemFont, sans-serif;
+    line-height: 1.6;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Particle background */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background:
+      radial-gradient(1px 1px at 10% 20%, rgba(139,92,246,0.3), transparent),
+      radial-gradient(1px 1px at 30% 70%, rgba(59,130,246,0.2), transparent),
+      radial-gradient(1px 1px at 50% 10%, rgba(139,92,246,0.15), transparent),
+      radial-gradient(1px 1px at 70% 40%, rgba(59,130,246,0.2), transparent),
+      radial-gradient(1px 1px at 90% 80%, rgba(139,92,246,0.25), transparent),
+      radial-gradient(1px 1px at 20% 50%, rgba(34,197,94,0.1), transparent),
+      radial-gradient(1px 1px at 60% 90%, rgba(139,92,246,0.15), transparent),
+      radial-gradient(1px 1px at 80% 15%, rgba(59,130,246,0.1), transparent);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Noise overlay */
+  body::after {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    opacity: 0.015;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+    position: relative;
+    z-index: 2;
+  }
+
+  /* Hero */
+  .hero {
+    text-align: center;
+    padding: 60px 20px 40px;
+    margin-bottom: 48px;
+  }
+
+  .hero-badge {
+    display: inline-block;
+    padding: 6px 16px;
+    background: rgba(139,92,246,0.12);
+    border: 1px solid rgba(139,92,246,0.3);
+    border-radius: 100px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--primary-glow);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    animation: breathe 3s ease-in-out infinite;
+  }
+
+  @keyframes breathe {
+    0%, 100% { box-shadow: 0 0 10px rgba(139,92,246,0.1); }
+    50% { box-shadow: 0 0 20px rgba(139,92,246,0.25); }
+  }
+
+  .hero h1 {
+    font-size: 48px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #fafafa 0%, #c4b5fd 50%, #818cf8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 12px;
+    letter-spacing: -1px;
+  }
+
+  .hero .subtitle {
+    font-size: 18px;
+    color: var(--text-secondary);
+    font-weight: 300;
+  }
+
+  .hero .timestamp {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 8px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* Glass panels */
+  .glass {
+    background: rgba(24,24,27,0.6);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 28px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+  }
+
+  .glass::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+  }
+
+  .glass:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+  }
+
+  .glass-subtle {
+    background: rgba(24,24,27,0.35);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 12px;
+    padding: 20px;
+  }
+
+  .glass-strong {
+    background: rgba(39,39,42,0.7);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 16px;
+    padding: 28px;
+  }
+
+  /* Section headers */
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+
+  .section-header h2 {
+    font-size: 22px;
+    font-weight: 600;
+    background: linear-gradient(135deg, #fafafa, #a78bfa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .section-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(139,92,246,0.1);
+    border: 1px solid rgba(139,92,246,0.25);
+    border-radius: 10px;
+    font-size: 18px;
+    box-shadow: 0 0 15px rgba(139,92,246,0.1);
+  }
+
+  /* Neon divider */
+  .neon-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--primary), transparent);
+    margin: 40px 0;
+    box-shadow: 0 0 8px rgba(139,92,246,0.3);
+  }
+
+  /* Status grid */
+  .status-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+    margin-bottom: 8px;
+  }
+
+  .status-card {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .status-card .label {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 500;
+  }
+
+  .status-card .value {
+    font-size: 28px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .status-card .detail {
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .val-green { color: var(--neon-green); text-shadow: 0 0 10px rgba(34,197,94,0.3); }
+  .val-amber { color: var(--neon-amber); text-shadow: 0 0 10px rgba(245,158,11,0.3); }
+  .val-red { color: var(--neon-red); text-shadow: 0 0 10px rgba(239,68,68,0.3); }
+  .val-blue { color: var(--neon-blue); text-shadow: 0 0 10px rgba(59,130,246,0.3); }
+  .val-purple { color: var(--primary); text-shadow: 0 0 10px rgba(139,92,246,0.3); }
+  .val-cyan { color: var(--neon-cyan); text-shadow: 0 0 10px rgba(6,182,212,0.3); }
+
+  /* Agent grid */
+  .agent-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 16px;
+  }
+
+  .agent-card {
+    padding: 22px;
+    position: relative;
+  }
+
+  .agent-card .agent-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .agent-num {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(139,92,246,0.15);
+    border: 1px solid rgba(139,92,246,0.35);
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--primary-glow);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .agent-card h3 {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .agent-card .agent-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 100px;
+    margin-left: auto;
+  }
+
+  .agent-status.done {
+    background: rgba(34,197,94,0.1);
+    border: 1px solid rgba(34,197,94,0.3);
+    color: var(--neon-green);
+  }
+
+  .agent-status .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--neon-green);
+    box-shadow: 0 0 6px var(--neon-green);
+  }
+
+  .agent-card p {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  .agent-card .file-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    background: rgba(59,130,246,0.08);
+    border: 1px solid rgba(59,130,246,0.2);
+    border-radius: 6px;
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--neon-blue);
+    margin-top: 10px;
+    margin-right: 4px;
+  }
+
+  /* Architecture tree */
+  .tree {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.8;
+    color: var(--text-secondary);
+    padding: 4px 0;
+  }
+
+  .tree .dir { color: var(--neon-blue); font-weight: 500; }
+  .tree .file-new { color: var(--neon-green); }
+  .tree .file-empty { color: var(--text-muted); }
+  .tree .file-config { color: var(--neon-amber); }
+  .tree .tag {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    margin-left: 6px;
+    font-weight: 500;
+  }
+  .tag-new { background: rgba(34,197,94,0.12); color: var(--neon-green); border: 1px solid rgba(34,197,94,0.25); }
+  .tag-empty { background: rgba(82,82,91,0.2); color: var(--text-muted); border: 1px solid rgba(82,82,91,0.3); }
+  .tag-fixed { background: rgba(139,92,246,0.12); color: var(--primary-glow); border: 1px solid rgba(139,92,246,0.25); }
+
+  /* Issues table */
+  .issues-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 6px;
+  }
+
+  .issues-table th {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 500;
+    text-align: left;
+    padding: 8px 14px;
+  }
+
+  .issues-table td {
+    padding: 12px 14px;
+    font-size: 13px;
+    background: rgba(24,24,27,0.4);
+    color: var(--text-secondary);
+  }
+
+  .issues-table tr td:first-child { border-radius: 8px 0 0 8px; }
+  .issues-table tr td:last-child { border-radius: 0 8px 8px 0; }
+
+  .severity {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .sev-fixed {
+    background: rgba(34,197,94,0.12);
+    color: var(--neon-green);
+    border: 1px solid rgba(34,197,94,0.25);
+  }
+
+  .sev-remaining {
+    background: rgba(245,158,11,0.12);
+    color: var(--neon-amber);
+    border: 1px solid rgba(245,158,11,0.25);
+  }
+
+  .sev-info {
+    background: rgba(59,130,246,0.12);
+    color: var(--neon-blue);
+    border: 1px solid rgba(59,130,246,0.25);
+  }
+
+  /* Deps */
+  .dep-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 8px;
+  }
+
+  .dep-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: rgba(24,24,27,0.3);
+    border: 1px solid rgba(255,255,255,0.04);
+    border-radius: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-secondary);
+    transition: border-color 0.2s;
+  }
+
+  .dep-item:hover { border-color: rgba(139,92,246,0.2); }
+
+  .dep-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .dep-dot.core { background: var(--primary); box-shadow: 0 0 6px rgba(139,92,246,0.4); }
+  .dep-dot.ai { background: var(--neon-cyan); box-shadow: 0 0 6px rgba(6,182,212,0.4); }
+  .dep-dot.ui { background: var(--neon-green); box-shadow: 0 0 6px rgba(34,197,94,0.4); }
+  .dep-dot.util { background: var(--text-muted); }
+  .dep-dot.removed { background: var(--neon-red); box-shadow: 0 0 6px rgba(239,68,68,0.3); }
+
+  .dep-item.removed {
+    text-decoration: line-through;
+    opacity: 0.4;
+    border-color: rgba(239,68,68,0.1);
+  }
+
+  /* Scorecard */
+  .score-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+  }
+
+  .score-item {
+    padding: 16px;
+    text-align: center;
+  }
+
+  .score-item .score-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 8px;
+  }
+
+  .score-bar-wrap {
+    height: 6px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 3px;
+    overflow: hidden;
+    margin: 10px 0 6px;
+  }
+
+  .score-bar {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .bar-green { background: linear-gradient(90deg, #22c55e, #4ade80); box-shadow: 0 0 10px rgba(34,197,94,0.3); }
+  .bar-amber { background: linear-gradient(90deg, #f59e0b, #fbbf24); box-shadow: 0 0 10px rgba(245,158,11,0.3); }
+  .bar-red { background: linear-gradient(90deg, #ef4444, #f87171); box-shadow: 0 0 10px rgba(239,68,68,0.3); }
+  .bar-blue { background: linear-gradient(90deg, #3b82f6, #60a5fa); box-shadow: 0 0 10px rgba(59,130,246,0.3); }
+  .bar-purple { background: linear-gradient(90deg, #8b5cf6, #a78bfa); box-shadow: 0 0 10px rgba(139,92,246,0.3); }
+
+  .score-nums {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+  }
+
+  .score-before { color: var(--text-muted); }
+  .score-after { font-weight: 600; }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding: 40px 0 20px;
+    color: var(--text-muted);
+    font-size: 12px;
+    letter-spacing: 0.5px;
+  }
+
+  .footer .opta-mark {
+    font-weight: 600;
+    background: linear-gradient(135deg, var(--primary), var(--neon-blue));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .hero h1 { font-size: 32px; }
+    .status-grid { grid-template-columns: 1fr 1fr; }
+    .agent-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-badge">Codebase Analysis Report</div>
+    <h1>Opta CLI TypeScript</h1>
+    <div class="subtitle">Mass debug & resolution — 5 parallel agents deployed</div>
+    <div class="timestamp">2026-02-10 · 1-Apps/1F-Opta-CLI-TS</div>
+  </div>
+
+  <!-- Status Overview -->
+  <div class="glass" style="margin-bottom: 24px;">
+    <div class="section-header">
+      <div class="section-icon">⚡</div>
+      <h2>Status Overview</h2>
+    </div>
+    <div class="status-grid">
+      <div class="glass-subtle status-card">
+        <div class="label">Issues Found</div>
+        <div class="value val-red">12</div>
+        <div class="detail">Across 6 categories</div>
+      </div>
+      <div class="glass-subtle status-card">
+        <div class="label">Issues Fixed</div>
+        <div class="value val-green">9</div>
+        <div class="detail">By 5 parallel agents</div>
+      </div>
+      <div class="glass-subtle status-card">
+        <div class="label">Remaining</div>
+        <div class="value val-amber">3</div>
+        <div class="detail">Low-priority / strategic</div>
+      </div>
+      <div class="glass-subtle status-card">
+        <div class="label">Source Files</div>
+        <div class="value val-purple">17</div>
+        <div class="detail">1 bootstrapped, 16 scaffolded</div>
+      </div>
+      <div class="glass-subtle status-card">
+        <div class="label">Deps: Before</div>
+        <div class="value val-red">26</div>
+        <div class="detail">Overlapping & premature</div>
+      </div>
+      <div class="glass-subtle status-card">
+        <div class="label">Deps: After</div>
+        <div class="value val-cyan">18</div>
+        <div class="detail">Lean & intentional</div>
+      </div>
+      <div class="glass-subtle status-card">
+        <div class="label">Config Files</div>
+        <div class="value val-blue">4</div>
+        <div class="detail">Created or fixed</div>
+      </div>
+      <div class="glass-subtle status-card">
+        <div class="label">Project Phase</div>
+        <div class="value val-amber" style="font-size:20px;">SCAFFOLD</div>
+        <div class="detail">Ready to implement</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="neon-divider"></div>
+
+  <!-- Agent Deployment -->
+  <div class="glass" style="margin-bottom: 24px;">
+    <div class="section-header">
+      <div class="section-icon">🤖</div>
+      <h2>Parallel Agent Deployment</h2>
+    </div>
+    <div class="agent-grid">
+      <div class="glass-subtle agent-card">
+        <div class="agent-header">
+          <div class="agent-num">01</div>
+          <h3>TypeScript Config</h3>
+          <div class="agent-status done"><span class="dot"></span> Done</div>
+        </div>
+        <p>Wrote proper <code>tsconfig.json</code> — ES2022 target, Node16 modules, strict mode, JSX support for Ink, source maps, declaration maps, <code>noUncheckedIndexedAccess</code>.</p>
+        <span class="file-tag">tsconfig.json</span>
+      </div>
+
+      <div class="glass-subtle agent-card">
+        <div class="agent-header">
+          <div class="agent-num">02</div>
+          <h3>ESLint 9 Flat Config</h3>
+          <div class="agent-status done"><span class="dot"></span> Done</div>
+        </div>
+        <p>Created <code>eslint.config.js</code> with flat config format. Fixed broken <code>--ext .ts</code> flag in lint script. TypeScript parser + recommended rules.</p>
+        <span class="file-tag">eslint.config.js</span>
+        <span class="file-tag">package.json</span>
+      </div>
+
+      <div class="glass-subtle agent-card">
+        <div class="agent-header">
+          <div class="agent-num">03</div>
+          <h3>Vitest Config</h3>
+          <div class="agent-status done"><span class="dot"></span> Done</div>
+        </div>
+        <p>Created <code>vitest.config.ts</code> — Node environment, V8 coverage provider, text + lcov reporters, zero thresholds for new project bootstrap.</p>
+        <span class="file-tag">vitest.config.ts</span>
+      </div>
+
+      <div class="glass-subtle agent-card">
+        <div class="agent-header">
+          <div class="agent-num">04</div>
+          <h3>Dependency Cleanup</h3>
+          <div class="agent-status done"><span class="dot"></span> Done</div>
+        </div>
+        <p>Removed 6 overlapping/premature deps: <code>got</code>, <code>ink</code>, <code>ink-spinner</code>, <code>picocolors</code>, <code>tree-kill</code>, <code>ws</code>. Cleaned orphaned <code>@types/ws</code>.</p>
+        <span class="file-tag">package.json</span>
+      </div>
+
+      <div class="glass-subtle agent-card">
+        <div class="agent-header">
+          <div class="agent-num">05</div>
+          <h3>Entry Point Bootstrap</h3>
+          <div class="agent-status done"><span class="dot"></span> Done</div>
+        </div>
+        <p>Wrote functional <code>src/index.ts</code> — shebang, Commander program, 6 subcommands (chat, init, config, models, sessions, mcp), help fallback.</p>
+        <span class="file-tag">src/index.ts</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="neon-divider"></div>
+
+  <!-- Architecture -->
+  <div class="glass" style="margin-bottom: 24px;">
+    <div class="section-header">
+      <div class="section-icon">🏗</div>
+      <h2>File Architecture</h2>
+    </div>
+    <div class="glass-subtle" style="padding: 24px 28px;">
+      <div class="tree">
+        <span class="dir">1F-Opta-CLI-TS/</span><br>
+        ├── <span class="file-config">package.json</span> <span class="tag tag-fixed">fixed</span><br>
+        ├── <span class="file-new">tsconfig.json</span> <span class="tag tag-new">new</span><br>
+        ├── <span class="file-new">eslint.config.js</span> <span class="tag tag-new">new</span><br>
+        ├── <span class="file-new">vitest.config.ts</span> <span class="tag tag-new">new</span><br>
+        ├── package-lock.json<br>
+        ├── README.md<br>
+        ├── CLAUDE.md<br>
+        ├── <span class="dir">src/</span><br>
+        │   ├── <span class="file-new">index.ts</span> <span class="tag tag-new">bootstrapped · 61 lines</span><br>
+        │   ├── <span class="dir">commands/</span><br>
+        │   │   ├── <span class="file-empty">chat.ts</span> <span class="tag tag-empty">empty</span><br>
+        │   │   ├── <span class="file-empty">config.ts</span> <span class="tag tag-empty">empty</span><br>
+        │   │   ├── <span class="file-empty">init.ts</span> <span class="tag tag-empty">empty</span><br>
+        │   │   ├── <span class="file-empty">mcp.ts</span> <span class="tag tag-empty">empty</span><br>
+        │   │   ├── <span class="file-empty">models.ts</span> <span class="tag tag-empty">empty</span><br>
+        │   │   └── <span class="file-empty">sessions.ts</span> <span class="tag tag-empty">empty</span><br>
+        │   ├── <span class="dir">core/</span><br>
+        │   │   ├── <span class="file-empty">config.ts</span> <span class="tag tag-empty">empty</span><br>
+        │   │   ├── <span class="file-empty">debug.ts</span> <span class="tag tag-empty">empty</span><br>
+        │   │   ├── <span class="file-empty">tools.ts</span> <span class="tag tag-empty">empty</span><br>
+        │   │   └── <span class="file-empty">version.ts</span> <span class="tag tag-empty">empty</span><br>
+        │   ├── <span class="dir">providers/</span><br>
+        │   │   ├── <span class="file-empty">base.ts</span> <span class="tag tag-empty">empty</span><br>
+        │   │   ├── <span class="file-empty">manager.ts</span> <span class="tag tag-empty">empty</span><br>
+        │   │   ├── <span class="file-empty">anthropic.ts</span> <span class="tag tag-empty">empty</span><br>
+        │   │   └── <span class="file-empty">local.ts</span> <span class="tag tag-empty">empty</span><br>
+        │   ├── <span class="dir">memory/</span><br>
+        │   │   └── <span class="file-empty">store.ts</span> <span class="tag tag-empty">empty</span><br>
+        │   ├── <span class="dir">skills/</span><br>
+        │   │   └── <span class="file-empty">loader.ts</span> <span class="tag tag-empty">empty</span><br>
+        │   └── <span class="dir">ui/</span> <span class="tag tag-empty">empty dir</span><br>
+        ├── <span class="dir">tests/</span> <span class="tag tag-empty">no tests</span><br>
+        ├── <span class="dir">docs/</span> <span class="tag tag-empty">all empty</span><br>
+        └── <span class="dir">scripts/</span> <span class="tag tag-empty">empty</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="neon-divider"></div>
+
+  <!-- Dependencies -->
+  <div class="glass" style="margin-bottom: 24px;">
+    <div class="section-header">
+      <div class="section-icon">📦</div>
+      <h2>Dependencies (18 production · 9 dev)</h2>
+    </div>
+
+    <div style="margin-bottom: 16px;">
+      <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: 500;">Production</div>
+      <div class="dep-grid">
+        <div class="dep-item"><span class="dep-dot ai"></span> @anthropic-ai/sdk</div>
+        <div class="dep-item"><span class="dep-dot ai"></span> openai</div>
+        <div class="dep-item"><span class="dep-dot core"></span> commander</div>
+        <div class="dep-item"><span class="dep-dot core"></span> zod</div>
+        <div class="dep-item"><span class="dep-dot ui"></span> chalk</div>
+        <div class="dep-item"><span class="dep-dot ui"></span> ora</div>
+        <div class="dep-item"><span class="dep-dot ui"></span> @inquirer/prompts</div>
+        <div class="dep-item"><span class="dep-dot ui"></span> marked</div>
+        <div class="dep-item"><span class="dep-dot ui"></span> marked-terminal</div>
+        <div class="dep-item"><span class="dep-dot core"></span> conf</div>
+        <div class="dep-item"><span class="dep-dot core"></span> cosmiconfig</div>
+        <div class="dep-item"><span class="dep-dot core"></span> dotenv</div>
+        <div class="dep-item"><span class="dep-dot util"></span> diff</div>
+        <div class="dep-item"><span class="dep-dot util"></span> execa</div>
+        <div class="dep-item"><span class="dep-dot util"></span> fast-glob</div>
+        <div class="dep-item"><span class="dep-dot util"></span> nanoid</div>
+        <div class="dep-item"><span class="dep-dot util"></span> p-queue</div>
+        <div class="dep-item"><span class="dep-dot util"></span> yaml</div>
+      </div>
+    </div>
+
+    <div>
+      <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: 500;">Removed</div>
+      <div class="dep-grid">
+        <div class="dep-item removed"><span class="dep-dot removed"></span> got</div>
+        <div class="dep-item removed"><span class="dep-dot removed"></span> ink</div>
+        <div class="dep-item removed"><span class="dep-dot removed"></span> ink-spinner</div>
+        <div class="dep-item removed"><span class="dep-dot removed"></span> picocolors</div>
+        <div class="dep-item removed"><span class="dep-dot removed"></span> tree-kill</div>
+        <div class="dep-item removed"><span class="dep-dot removed"></span> ws</div>
+        <div class="dep-item removed"><span class="dep-dot removed"></span> @types/ws</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="neon-divider"></div>
+
+  <!-- Issue Resolution Table -->
+  <div class="glass" style="margin-bottom: 24px;">
+    <div class="section-header">
+      <div class="section-icon">🔧</div>
+      <h2>Issue Resolution Matrix</h2>
+    </div>
+    <div style="overflow-x: auto;">
+      <table class="issues-table">
+        <thead>
+          <tr>
+            <th>Issue</th>
+            <th>Category</th>
+            <th>Status</th>
+            <th>Resolution</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Empty tsconfig.json</td>
+            <td style="color: var(--neon-red);">Critical</td>
+            <td><span class="severity sev-fixed">Fixed</span></td>
+            <td>Agent 01 — Full config with strict mode</td>
+          </tr>
+          <tr>
+            <td>No ESLint config (ESLint 9)</td>
+            <td style="color: var(--neon-red);">High</td>
+            <td><span class="severity sev-fixed">Fixed</span></td>
+            <td>Agent 02 — Flat config + fixed lint script</td>
+          </tr>
+          <tr>
+            <td>No vitest config</td>
+            <td style="color: var(--neon-amber);">Medium</td>
+            <td><span class="severity sev-fixed">Fixed</span></td>
+            <td>Agent 03 — V8 coverage, Node env</td>
+          </tr>
+          <tr>
+            <td>chalk + picocolors overlap</td>
+            <td style="color: var(--neon-amber);">Medium</td>
+            <td><span class="severity sev-fixed">Fixed</span></td>
+            <td>Agent 04 — Removed picocolors</td>
+          </tr>
+          <tr>
+            <td>ink + ora conflict</td>
+            <td style="color: var(--neon-amber);">Medium</td>
+            <td><span class="severity sev-fixed">Fixed</span></td>
+            <td>Agent 04 — Removed ink + ink-spinner</td>
+          </tr>
+          <tr>
+            <td>Premature deps (got, ws, tree-kill)</td>
+            <td style="color: var(--neon-amber);">Medium</td>
+            <td><span class="severity sev-fixed">Fixed</span></td>
+            <td>Agent 04 — Removed all 3</td>
+          </tr>
+          <tr>
+            <td>Empty entry point</td>
+            <td style="color: var(--neon-red);">Critical</td>
+            <td><span class="severity sev-fixed">Fixed</span></td>
+            <td>Agent 05 — 61-line Commander bootstrap</td>
+          </tr>
+          <tr>
+            <td>No shebang for CLI binary</td>
+            <td style="color: var(--neon-amber);">Medium</td>
+            <td><span class="severity sev-fixed">Fixed</span></td>
+            <td>Agent 05 — #!/usr/bin/env node</td>
+          </tr>
+          <tr>
+            <td>Orphaned @types/ws</td>
+            <td style="color: var(--text-muted);">Low</td>
+            <td><span class="severity sev-fixed">Fixed</span></td>
+            <td>Manual cleanup after Agent 04</td>
+          </tr>
+          <tr>
+            <td>16 empty source files</td>
+            <td style="color: var(--text-muted);">Low</td>
+            <td><span class="severity sev-remaining">Remaining</span></td>
+            <td>Needs implementation (scaffold phase)</td>
+          </tr>
+          <tr>
+            <td>No tests written</td>
+            <td style="color: var(--text-muted);">Low</td>
+            <td><span class="severity sev-remaining">Remaining</span></td>
+            <td>Awaiting implementation first</td>
+          </tr>
+          <tr>
+            <td>Uses npm vs monorepo pnpm</td>
+            <td style="color: var(--text-muted);">Low</td>
+            <td><span class="severity sev-info">Strategic</span></td>
+            <td>Decide: integrate or stay standalone</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="neon-divider"></div>
+
+  <!-- Scorecard: Before vs After -->
+  <div class="glass" style="margin-bottom: 24px;">
+    <div class="section-header">
+      <div class="section-icon">📊</div>
+      <h2>Scorecard — Before vs After</h2>
+    </div>
+    <div class="score-grid">
+      <div class="glass-subtle score-item">
+        <div class="score-label">Implementation</div>
+        <div class="score-bar-wrap"><div class="score-bar bar-red" style="width: 10%;"></div></div>
+        <div class="score-nums"><span class="score-before">0/10</span><span class="score-after val-red">1/10</span></div>
+      </div>
+      <div class="glass-subtle score-item">
+        <div class="score-label">Architecture</div>
+        <div class="score-bar-wrap"><div class="score-bar bar-green" style="width: 70%;"></div></div>
+        <div class="score-nums"><span class="score-before">7/10</span><span class="score-after val-green">7/10</span></div>
+      </div>
+      <div class="glass-subtle score-item">
+        <div class="score-label">Dependencies</div>
+        <div class="score-bar-wrap"><div class="score-bar bar-blue" style="width: 70%;"></div></div>
+        <div class="score-nums"><span class="score-before">3/10</span><span class="score-after val-blue">7/10</span></div>
+      </div>
+      <div class="glass-subtle score-item">
+        <div class="score-label">Build Pipeline</div>
+        <div class="score-bar-wrap"><div class="score-bar bar-green" style="width: 80%;"></div></div>
+        <div class="score-nums"><span class="score-before">4/10</span><span class="score-after val-green">8/10</span></div>
+      </div>
+      <div class="glass-subtle score-item">
+        <div class="score-label">Configuration</div>
+        <div class="score-bar-wrap"><div class="score-bar bar-purple" style="width: 80%;"></div></div>
+        <div class="score-nums"><span class="score-before">2/10</span><span class="score-after val-purple">8/10</span></div>
+      </div>
+      <div class="glass-subtle score-item">
+        <div class="score-label">Testing</div>
+        <div class="score-bar-wrap"><div class="score-bar bar-amber" style="width: 20%;"></div></div>
+        <div class="score-nums"><span class="score-before">0/10</span><span class="score-after val-amber">2/10</span></div>
+      </div>
+    </div>
+    <div style="text-align: center; margin-top: 20px; padding: 14px; background: rgba(139,92,246,0.06); border: 1px solid rgba(139,92,246,0.15); border-radius: 10px;">
+      <span style="font-size: 14px; color: var(--text-secondary);">Overall Health</span>
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 24px; font-weight: 700; margin-top: 4px;">
+        <span style="color: var(--text-muted);">2.7</span>
+        <span style="color: var(--text-muted); margin: 0 8px;">→</span>
+        <span class="val-purple">5.5 / 10</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="neon-divider"></div>
+
+  <!-- Decision Point -->
+  <div class="glass-strong" style="margin-bottom: 24px; border-color: rgba(245,158,11,0.2);">
+    <div class="section-header">
+      <div class="section-icon" style="background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.25);">⚠</div>
+      <h2>Decision Point</h2>
+    </div>
+    <p style="font-size: 14px; color: var(--text-secondary); line-height: 1.7; margin-bottom: 16px;">
+      CLAUDE.md flags this project as <strong style="color: var(--neon-amber);">"may be deprecated"</strong>. The toolchain is now healthy and the scaffold is ready for implementation — but 16 source files remain empty. Before investing further:
+    </p>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+      <div class="glass-subtle" style="border-left: 3px solid var(--neon-green); padding-left: 18px;">
+        <div style="font-size: 13px; font-weight: 600; color: var(--neon-green); margin-bottom: 6px;">If keeping →</div>
+        <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.5;">
+          Implement <code>core/config.ts</code> + <code>providers/base.ts</code> next. These unblock all other modules. Run <code>npm install</code> to verify deps resolve cleanly.
+        </p>
+      </div>
+      <div class="glass-subtle" style="border-left: 3px solid var(--neon-red); padding-left: 18px;">
+        <div style="font-size: 13px; font-weight: 600; color: var(--neon-red); margin-bottom: 6px;">If deprecating →</div>
+        <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.5;">
+          Remove directory, clean references from root configs, and archive any useful architectural decisions in <code>8-Project/</code>.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <span class="opta-mark">OPTA</span> · Generated by Claude Opus 4.6 · 5 agents · ~25s parallel execution
+  </div>
+
+</div>
+
+</body>
+</html>

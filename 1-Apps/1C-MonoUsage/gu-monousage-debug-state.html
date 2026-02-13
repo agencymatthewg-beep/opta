@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MonoUsage - Debug & Repair Report</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --void: #09090b;
+    --surface: #18181b;
+    --elevated: #27272a;
+    --border: #3f3f46;
+    --text-primary: #fafafa;
+    --text-secondary: #a1a1aa;
+    --text-muted: #52525b;
+    --primary: #8b5cf6;
+    --primary-glow: #a855f7;
+    --neon-blue: #3b82f6;
+    --neon-green: #22c55e;
+    --neon-amber: #f59e0b;
+    --neon-red: #ef4444;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--void);
+    color: var(--text-primary);
+    font-family: 'Sora', -apple-system, BlinkMacSystemFont, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Noise overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* Ambient glow orbs */
+  .ambient-orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(120px);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .ambient-orb.violet {
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(139,92,246,0.12) 0%, transparent 70%);
+    top: -100px; right: -100px;
+    animation: float-orb 12s ease-in-out infinite;
+  }
+  .ambient-orb.blue {
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(59,130,246,0.08) 0%, transparent 70%);
+    bottom: -50px; left: -100px;
+    animation: float-orb 15s ease-in-out infinite reverse;
+  }
+  .ambient-orb.green {
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(34,197,94,0.06) 0%, transparent 70%);
+    top: 40%; left: 50%;
+    animation: float-orb 18s ease-in-out infinite 3s;
+  }
+
+  @keyframes float-orb {
+    0%, 100% { transform: translate(0, 0); }
+    33% { transform: translate(30px, -20px); }
+    66% { transform: translate(-20px, 15px); }
+  }
+
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Hero Header */
+  .hero {
+    text-align: center;
+    margin-bottom: 48px;
+    padding: 48px 32px;
+    background: linear-gradient(135deg, rgba(139,92,246,0.08) 0%, rgba(59,130,246,0.04) 100%);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 24px;
+    backdrop-filter: blur(40px);
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(139,92,246,0.5), transparent);
+  }
+  .hero-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    filter: drop-shadow(0 0 20px rgba(139,92,246,0.4));
+  }
+  .hero h1 {
+    font-size: 2.4rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #fafafa 0%, #c4b5fd 50%, #818cf8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 8px;
+    letter-spacing: -0.02em;
+  }
+  .hero .subtitle {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    font-weight: 300;
+  }
+  .hero .timestamp {
+    margin-top: 16px;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* Stats Row */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 40px;
+  }
+  .stat-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 16px;
+    padding: 20px;
+    text-align: center;
+    backdrop-filter: blur(20px);
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .stat-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(139,92,246,0.3);
+    box-shadow: 0 8px 32px rgba(139,92,246,0.1);
+  }
+  .stat-number {
+    font-size: 2rem;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    margin-bottom: 4px;
+  }
+  .stat-number.green { color: var(--neon-green); }
+  .stat-number.amber { color: var(--neon-amber); }
+  .stat-number.red { color: var(--neon-red); }
+  .stat-number.blue { color: var(--neon-blue); }
+  .stat-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 500;
+  }
+
+  /* Section Headers */
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 40px 0 20px;
+    position: relative;
+  }
+  .section-header h2 {
+    font-size: 1.3rem;
+    font-weight: 600;
+    background: linear-gradient(90deg, #fafafa, #a1a1aa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    white-space: nowrap;
+  }
+  .section-header::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(139,92,246,0.4), transparent);
+    box-shadow: 0 0 8px rgba(139,92,246,0.2);
+  }
+  .section-icon {
+    font-size: 1.1rem;
+    filter: drop-shadow(0 0 6px rgba(139,92,246,0.4));
+  }
+
+  /* Glass Panel */
+  .glass-panel {
+    background: rgba(255,255,255,0.025);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 16px;
+    backdrop-filter: blur(20px);
+    position: relative;
+    overflow: hidden;
+    transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .glass-panel::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+  }
+  .glass-panel:hover {
+    border-color: rgba(255,255,255,0.12);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+  }
+
+  /* Fix Items */
+  .fix-item {
+    display: grid;
+    grid-template-columns: 40px 1fr auto;
+    gap: 16px;
+    align-items: start;
+    padding: 20px;
+    margin-bottom: 12px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+  }
+  .fix-item:hover {
+    background: rgba(255,255,255,0.04);
+    border-color: rgba(255,255,255,0.1);
+  }
+  .fix-icon {
+    width: 40px; height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    font-size: 1.1rem;
+  }
+  .fix-icon.fixed {
+    background: rgba(34,197,94,0.12);
+    border: 1px solid rgba(34,197,94,0.2);
+  }
+  .fix-icon.remaining {
+    background: rgba(245,158,11,0.12);
+    border: 1px solid rgba(245,158,11,0.2);
+  }
+  .fix-icon.info {
+    background: rgba(59,130,246,0.12);
+    border: 1px solid rgba(59,130,246,0.2);
+  }
+  .fix-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .fix-desc {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+  .fix-file {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    padding: 4px 8px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 6px;
+    white-space: nowrap;
+  }
+
+  /* Badge */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .badge.fixed { background: rgba(34,197,94,0.15); color: var(--neon-green); border: 1px solid rgba(34,197,94,0.25); }
+  .badge.remaining { background: rgba(245,158,11,0.15); color: var(--neon-amber); border: 1px solid rgba(245,158,11,0.25); }
+  .badge.info { background: rgba(59,130,246,0.15); color: var(--neon-blue); border: 1px solid rgba(59,130,246,0.25); }
+  .badge.critical { background: rgba(239,68,68,0.15); color: var(--neon-red); border: 1px solid rgba(239,68,68,0.25); }
+
+  /* Architecture Diagram */
+  .arch-diagram {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+    padding: 28px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    line-height: 1.7;
+    color: var(--text-secondary);
+    overflow-x: auto;
+    white-space: pre;
+  }
+  .arch-diagram .hl-green { color: var(--neon-green); }
+  .arch-diagram .hl-violet { color: var(--primary-glow); }
+  .arch-diagram .hl-blue { color: var(--neon-blue); }
+  .arch-diagram .hl-amber { color: var(--neon-amber); }
+  .arch-diagram .hl-dim { color: var(--text-muted); }
+
+  /* Provider Table */
+  .provider-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 6px;
+  }
+  .provider-table th {
+    text-align: left;
+    padding: 8px 12px;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    font-weight: 500;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .provider-table td {
+    padding: 12px;
+    font-size: 0.85rem;
+    background: rgba(255,255,255,0.02);
+    border-top: 1px solid rgba(255,255,255,0.03);
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+  .provider-table tr td:first-child { border-radius: 8px 0 0 8px; border-left: 1px solid rgba(255,255,255,0.03); }
+  .provider-table tr td:last-child { border-radius: 0 8px 8px 0; border-right: 1px solid rgba(255,255,255,0.03); }
+  .provider-table .mono { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; }
+  .status-dot {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin-right: 6px;
+  }
+  .status-dot.green { background: var(--neon-green); box-shadow: 0 0 8px rgba(34,197,94,0.5); }
+  .status-dot.red { background: var(--neon-red); box-shadow: 0 0 8px rgba(239,68,68,0.5); }
+  .status-dot.gray { background: var(--text-muted); }
+  .status-dot.blue { background: var(--neon-blue); box-shadow: 0 0 8px rgba(59,130,246,0.5); }
+
+  /* Files Changed Grid */
+  .files-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .file-chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    transition: all 0.2s ease;
+  }
+  .file-chip:hover {
+    background: rgba(255,255,255,0.04);
+    border-color: rgba(139,92,246,0.2);
+  }
+  .file-chip .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .file-chip .dot.swift { background: #f97316; }
+  .file-chip .dot.js { background: #eab308; }
+  .file-chip .dot.md { background: #8b5cf6; }
+  .file-chip .dot.config { background: #3b82f6; }
+
+  /* Build Status Banner */
+  .build-banner {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px 24px;
+    border-radius: 12px;
+    margin-bottom: 16px;
+  }
+  .build-banner.success {
+    background: linear-gradient(135deg, rgba(34,197,94,0.08) 0%, rgba(34,197,94,0.02) 100%);
+    border: 1px solid rgba(34,197,94,0.2);
+  }
+  .build-banner .build-icon { font-size: 1.5rem; }
+  .build-banner .build-text { font-weight: 600; font-size: 0.95rem; }
+  .build-banner .build-detail { font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px; }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    margin-top: 48px;
+    padding-top: 24px;
+    border-top: 1px solid rgba(255,255,255,0.04);
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* Breathing animation for status indicators */
+  @keyframes breathe {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+  .breathing { animation: breathe 3s ease-in-out infinite; }
+
+  @media (max-width: 768px) {
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    .files-grid { grid-template-columns: 1fr; }
+    .hero h1 { font-size: 1.8rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="ambient-orb violet"></div>
+<div class="ambient-orb blue"></div>
+<div class="ambient-orb green"></div>
+
+<div class="container">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-icon">&#x1F4CA;</div>
+    <h1>MonoUsage Debug Report</h1>
+    <div class="subtitle">Mass debug & repair -- simultaneous agent deployment</div>
+    <div class="timestamp">2026-02-10 :: 3 agents :: all issues resolved or documented</div>
+  </div>
+
+  <!-- Stats Row -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-number green">7</div>
+      <div class="stat-label">Bugs Fixed</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number amber">3</div>
+      <div class="stat-label">Noted (Low)</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number blue">7</div>
+      <div class="stat-label">Files Changed</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number green">0</div>
+      <div class="stat-label">Build Warnings</div>
+    </div>
+  </div>
+
+  <!-- Build Status -->
+  <div class="build-banner success">
+    <div class="build-icon">&#x2705;</div>
+    <div>
+      <div class="build-text">Swift Build: Clean (0.09s)</div>
+      <div class="build-detail">swift build -- zero errors, zero warnings. Backend npm run fetch verified.</div>
+    </div>
+  </div>
+
+  <!-- Architecture -->
+  <div class="section-header">
+    <span class="section-icon">&#x1F3D7;</span>
+    <h2>Architecture</h2>
+  </div>
+
+  <div class="glass-panel">
+    <div class="arch-diagram"><span class="hl-dim">   API-KEYS.md</span>
+        <span class="hl-amber">|</span>
+   <span class="hl-amber">sync-keys.js</span>  <span class="hl-dim">(parses markdown -> .env)</span>
+        <span class="hl-amber">|</span>
+        <span class="hl-amber">v</span>
+   <span class="hl-green">backend/.env</span>  <span class="hl-dim">(ANTHROPIC, OPENROUTER, MINIMAX x2, PERPLEXITY)</span>
+        <span class="hl-amber">|</span>
+   <span class="hl-amber">fetch-apis.js</span> <span class="hl-dim">(HTTPS GET to each provider)</span>
+        <span class="hl-amber">|</span>
+        <span class="hl-amber">v</span>
+   <span class="hl-green">data/latest.json</span>  <span class="hl-dim">(provider status + usage + spend)</span>
+        <span class="hl-amber">|</span>
+   <span class="hl-violet">SwiftUI UsageManager</span>  <span class="hl-dim">(file read, 60s auto-refresh)</span>
+        <span class="hl-amber">|</span>
+        <span class="hl-amber">v</span>
+   <span class="hl-blue">MenuBarExtra</span> <span class="hl-dim">($1.23 &yen;50)</span>  -->  <span class="hl-blue">DashboardView</span> <span class="hl-dim">(320px window)</span></div>
+  </div>
+
+  <!-- Issues Fixed -->
+  <div class="section-header">
+    <span class="section-icon">&#x1F527;</span>
+    <h2>Issues Fixed</h2>
+  </div>
+
+  <!-- Fix 1 -->
+  <div class="fix-item">
+    <div class="fix-icon fixed">&#x2705;</div>
+    <div>
+      <div class="fix-title">Swift hardcoded paths (critical)</div>
+      <div class="fix-desc">Both <code>dataFilePath</code> and <code>refreshScriptPath</code> referenced <code>apps/MonoUsage/</code> instead of <code>1-Apps/1D-MonoUsage/</code>. App couldn't find its data file or trigger backend refresh.</div>
+    </div>
+    <div class="fix-file">MonoUsageApp.swift:85,89</div>
+  </div>
+
+  <!-- Fix 2 -->
+  <div class="fix-item">
+    <div class="fix-icon fixed">&#x2705;</div>
+    <div>
+      <div class="fix-title">Backend script paths (critical x3)</div>
+      <div class="fix-desc">All three JS scripts (<code>fetch-apis.js</code>, <code>sync-keys.js</code>, <code>refresh-all.js</code>) had identical stale <code>BACKEND_DIR</code> path. None could find .env or write latest.json.</div>
+    </div>
+    <div class="fix-file">scripts/*.js</div>
+  </div>
+
+  <!-- Fix 3 -->
+  <div class="fix-item">
+    <div class="fix-icon fixed">&#x2705;</div>
+    <div>
+      <div class="fix-title">MINIMAX_CODING_KEY never extracted</div>
+      <div class="fix-desc"><code>sync-keys.js</code> listed it as required but had no regex to parse it from API-KEYS.md. Added <code>MINIMAX_CODING_KEY</code> extraction pattern.</div>
+    </div>
+    <div class="fix-file">sync-keys.js:31-36</div>
+  </div>
+
+  <!-- Fix 4 -->
+  <div class="fix-item">
+    <div class="fix-icon fixed">&#x2705;</div>
+    <div>
+      <div class="fix-title">Summary log uses $ for CNY providers</div>
+      <div class="fix-desc"><code>fetch-apis.js</code> summary line always printed <code>$</code> even for CNY. Now uses <code>&yen;</code> for CNY currencies. Also wrapped <code>Number()</code> to prevent <code>toFixed</code> crash on strings.</div>
+    </div>
+    <div class="fix-file">fetch-apis.js:219</div>
+  </div>
+
+  <!-- Fix 5 -->
+  <div class="fix-item">
+    <div class="fix-icon fixed">&#x2705;</div>
+    <div>
+      <div class="fix-title">SPM build warning: unhandled README.md</div>
+      <div class="fix-desc"><code>Sources/MonoUsage/README.md</code> caused a warning on every build. Added <code>exclude: ["README.md"]</code> to Package.swift target.</div>
+    </div>
+    <div class="fix-file">Package.swift:14</div>
+  </div>
+
+  <!-- Fix 6 -->
+  <div class="fix-item">
+    <div class="fix-icon fixed">&#x2705;</div>
+    <div>
+      <div class="fix-title">README.md referenced nonexistent xcodeproj</div>
+      <div class="fix-desc">README told users to <code>open MonoUsage.xcodeproj</code> -- no such file. Rewrote with correct SPM commands (<code>open Package.swift</code>). Also corrected "Python backend" -> Node.js.</div>
+    </div>
+    <div class="fix-file">README.md</div>
+  </div>
+
+  <!-- Fix 7 -->
+  <div class="fix-item">
+    <div class="fix-icon fixed">&#x2705;</div>
+    <div>
+      <div class="fix-title">Stray .clj-kondo / .lsp directories</div>
+      <div class="fix-desc">Clojure linting cache dirs created by accident in a Swift + Node.js project. Removed.</div>
+    </div>
+    <div class="fix-file">.clj-kondo/, .lsp/</div>
+  </div>
+
+  <!-- Remaining / Noted -->
+  <div class="section-header">
+    <span class="section-icon">&#x1F4CB;</span>
+    <h2>Remaining Notes (Low Priority)</h2>
+  </div>
+
+  <div class="fix-item">
+    <div class="fix-icon remaining">&#x26A0;</div>
+    <div>
+      <div class="fix-title">Perplexity validation unreliable <span class="badge remaining">Low</span></div>
+      <div class="fix-desc">Sends GET to a POST-only endpoint (<code>/chat/completions</code>). Returns 405, which passes <code>!== 401</code> check, always showing "active". Needs a proper Perplexity key validation endpoint.</div>
+    </div>
+    <div class="fix-file">fetch-apis.js:148</div>
+  </div>
+
+  <div class="fix-item">
+    <div class="fix-icon remaining">&#x26A0;</div>
+    <div>
+      <div class="fix-title">MiniMax API URL suspicious <span class="badge remaining">Low</span></div>
+      <div class="fix-desc">Uses <code>api.minimax.io/anthropic/v1/models</code> -- the <code>/anthropic/</code> segment is unusual. 404 treated as success. May need MiniMax's actual endpoint.</div>
+    </div>
+    <div class="fix-file">fetch-apis.js:89</div>
+  </div>
+
+  <div class="fix-item">
+    <div class="fix-icon info">&#x1F4A1;</div>
+    <div>
+      <div class="fix-title">Resources/ has no real resources <span class="badge info">Info</span></div>
+      <div class="fix-desc">SPM <code>.process("Resources")</code> generates a Bundle.module but the folder only has a placeholder README. Could remove the resources declaration entirely if no assets are planned.</div>
+    </div>
+    <div class="fix-file">Package.swift:15</div>
+  </div>
+
+  <!-- Provider Status -->
+  <div class="section-header">
+    <span class="section-icon">&#x1F310;</span>
+    <h2>Current Provider Status</h2>
+  </div>
+
+  <div class="glass-panel" style="padding: 16px;">
+    <table class="provider-table">
+      <thead>
+        <tr>
+          <th>Provider</th>
+          <th>Type</th>
+          <th>Status</th>
+          <th>Currency</th>
+          <th>Usage Data</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Anthropic</strong></td>
+          <td class="mono">api</td>
+          <td><span class="status-dot red"></span>invalid_key</td>
+          <td>USD</td>
+          <td style="color:var(--text-muted)">Key validation only</td>
+        </tr>
+        <tr>
+          <td><strong>OpenRouter</strong></td>
+          <td class="mono">api</td>
+          <td><span class="status-dot gray"></span>no_key</td>
+          <td>USD</td>
+          <td style="color:var(--neon-green)">Real usage/limit</td>
+        </tr>
+        <tr>
+          <td><strong>MiniMax Shared</strong></td>
+          <td class="mono">api</td>
+          <td><span class="status-dot gray"></span>no_key</td>
+          <td>CNY</td>
+          <td style="color:var(--text-muted)">Key validation only</td>
+        </tr>
+        <tr>
+          <td><strong>MiniMax Coding</strong></td>
+          <td class="mono">api</td>
+          <td><span class="status-dot gray"></span>no_key</td>
+          <td>CNY</td>
+          <td style="color:var(--text-muted)">Key validation only</td>
+        </tr>
+        <tr>
+          <td><strong>Perplexity</strong></td>
+          <td class="mono">api</td>
+          <td><span class="status-dot gray"></span>no_key</td>
+          <td>USD</td>
+          <td style="color:var(--text-muted)">Key validation only</td>
+        </tr>
+        <tr>
+          <td><strong>Claude Code (Matt)</strong></td>
+          <td class="mono">sub</td>
+          <td><span class="status-dot blue"></span>active</td>
+          <td>--</td>
+          <td style="color:var(--text-muted)">Static entry</td>
+        </tr>
+        <tr>
+          <td><strong>Claude Code (YJS)</strong></td>
+          <td class="mono">sub</td>
+          <td><span class="status-dot blue"></span>active</td>
+          <td>--</td>
+          <td style="color:var(--text-muted)">Static entry</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Files Changed -->
+  <div class="section-header">
+    <span class="section-icon">&#x1F4C1;</span>
+    <h2>Files Changed</h2>
+  </div>
+
+  <div class="glass-panel">
+    <div class="files-grid">
+      <div class="file-chip"><span class="dot swift"></span>Sources/MonoUsage/MonoUsageApp.swift</div>
+      <div class="file-chip"><span class="dot js"></span>backend/scripts/fetch-apis.js</div>
+      <div class="file-chip"><span class="dot js"></span>backend/scripts/sync-keys.js</div>
+      <div class="file-chip"><span class="dot js"></span>backend/scripts/refresh-all.js</div>
+      <div class="file-chip"><span class="dot config"></span>Package.swift</div>
+      <div class="file-chip"><span class="dot md"></span>README.md</div>
+      <div class="file-chip"><span class="dot md"></span>CLAUDE.md</div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    opta :: monousage debug report :: generated 2026-02-10 :: 3 parallel agents
+  </div>
+
+</div>
+
+</body>
+</html>

@@ -61,7 +61,7 @@ public final class OpenClawClient: ObservableObject {
         port: UInt16,
         token: String? = nil,
         useTLS: Bool = false,
-        clientId: String = "gateway-client",
+        clientId: String = "openclaw-control-ui",
         clientVersion: String = "0.1.0"
     ) {
         self.host = host
@@ -76,7 +76,7 @@ public final class OpenClawClient: ObservableObject {
     public convenience init(
         url: URL,
         token: String? = nil,
-        clientId: String = "gateway-client",
+        clientId: String = "openclaw-control-ui",
         clientVersion: String = "0.1.0"
     ) {
         let host = url.host ?? "127.0.0.1"

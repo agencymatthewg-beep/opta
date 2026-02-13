@@ -64,9 +64,6 @@ struct ThinkingOverlay: View {
     
     var body: some View {
         if isActive || !events.isEmpty {
-            VStack {
-                Spacer()
-                
                 VStack(alignment: .leading, spacing: 0) {
                     // Header with ambient breathing
                     HStack(spacing: 8) {
@@ -163,10 +160,6 @@ struct ThinkingOverlay: View {
                 .offset(y: panelOffset)
                 .opacity(panelOpacity)
                 .padding(.leading, 16)
-                .padding(.bottom, 80)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .allowsHitTesting(false)
             .onAppear {
                 // Entrance animation
                 withAnimation(.spring(response: 0.5, dampingFraction: 0.75)) {

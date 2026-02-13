@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Opta — The ecosystem of intelligent apps for macOS and iOS.">
+    <meta name="theme-color" content="#09090b">
+    <meta property="og:title" content="Opta — One Tool to Replace Them All">
+    <meta property="og:description" content="The ecosystem of intelligent apps for macOS and iOS.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://optamize.biz/">
+    <link rel="canonical" href="https://optamize.biz/">
+    <title>Opta — One Tool to Replace Them All</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="icon" href="assets/favicon.ico">
+    <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+        --bg: #08080a;
+        --text: #f5f5f4;
+        --text-dim: #78716c;
+        --text-mid: #a8a29e;
+        --accent: #8b5cf6;
+        --accent-light: #c4b5fd;
+        --border: rgba(255,255,255,0.06);
+        --serif: 'Instrument Serif', Georgia, serif;
+        --sans: 'Inter', -apple-system, sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+        font-family: var(--sans);
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.6;
+        overflow-x: hidden;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    /* NAV — minimal, editorial */
+    nav {
+        position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+        padding: 1.5rem 4rem;
+        display: flex; align-items: center; justify-content: space-between;
+        background: rgba(8,8,10,0.85);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+    }
+    .nav-logo { display: flex; align-items: center; gap: 0.6rem; }
+    .nav-logo img { height: 24px; }
+    .nav-logo span {
+        font-family: var(--serif);
+        font-size: 1.2rem;
+        font-weight: 400;
+    }
+    .nav-links { display: flex; gap: 2.5rem; }
+    .nav-links a {
+        font-size: 0.8rem; font-weight: 400; color: var(--text-dim);
+        letter-spacing: 0.06em; text-transform: uppercase;
+        transition: color 0.3s;
+    }
+    .nav-links a:hover { color: var(--text); }
+
+    /* HERO — Editorial, generous whitespace */
+    #hero {
+        min-height: 100vh;
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        text-align: center;
+        padding: 8rem 2rem 6rem;
+        position: relative;
+    }
+
+    .ring-container {
+        position: relative; width: 380px; height: 380px;
+        display: flex; align-items: center; justify-content: center;
+        perspective: 1000px;
+        margin-bottom: 3rem;
+    }
+    .ring-glow {
+        position: absolute; inset: -60%; border-radius: 50%;
+        opacity: 0.4; mix-blend-mode: screen;
+        background: radial-gradient(circle at center, rgba(168,85,247,0.3) 0%, rgba(139,92,246,0.1) 40%, transparent 70%);
+        filter: blur(80px); transform: translateZ(-100px);
+        animation: glowPulse 4s ease-in-out infinite;
+    }
+    @keyframes glowPulse {
+        0%, 100% { opacity: 0.3; transform: scale(0.95) translateZ(-100px); }
+        50% { opacity: 0.5; transform: scale(1.05) translateZ(-100px); }
+    }
+    .ring-body {
+        position: relative; width: 100%; height: 100%;
+        transform-style: preserve-3d;
+        animation: ringFloat 8s ease-in-out infinite;
+    }
+    @keyframes ringFloat {
+        0%, 100% { transform: rotateX(20deg) rotateY(-10deg) translateY(-10px); }
+        50% { transform: rotateX(25deg) rotateY(-5deg) translateY(0px); }
+    }
+    .ring-base {
+        position: absolute; inset: 0; border-radius: 50%;
+        border: 52px solid #030304; transform: translateZ(-2px);
+        box-shadow: 0 30px 60px -10px rgba(0,0,0,0.95), inset 0 10px 20px rgba(0,0,0,1);
+    }
+    .ring-arc-primary {
+        position: absolute; inset: 26px; border-radius: 50%;
+        border: 6px solid transparent;
+        background: conic-gradient(from 0deg, transparent 0deg, rgba(139,92,246,0) 60deg, rgba(168,85,247,0.6) 120deg, rgba(192,132,252,0.8) 150deg, rgba(168,85,247,0.6) 180deg, transparent 240deg) border-box;
+        -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+        mask-composite: exclude;
+        filter: blur(5px); opacity: 0.8; mix-blend-mode: screen;
+        animation: arcSpin 3s linear infinite;
+    }
+    .ring-arc-secondary {
+        position: absolute; inset: 26px; border-radius: 50%;
+        border: 6px solid transparent; opacity: 0.4; mix-blend-mode: overlay;
+        background: conic-gradient(from 180deg, transparent, #a855f7, transparent) border-box;
+        -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+        mask-composite: exclude;
+        filter: blur(8px);
+        animation: arcSpinReverse 6s linear infinite;
+    }
+    @keyframes arcSpin { to { transform: rotate(360deg); } }
+    @keyframes arcSpinReverse { to { transform: rotate(-360deg); } }
+    .ring-gloss {
+        position: absolute; inset: 0; border-radius: 50%;
+        border: 52px solid transparent;
+        background: linear-gradient(145deg, rgba(255,255,255,0.03) 0%, transparent 30%, transparent 70%, rgba(255,255,255,0.01) 100%) border-box;
+        -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+        mask-composite: exclude;
+        box-shadow: inset 0 0 20px rgba(255,255,255,0.02), inset 0 0 10px rgba(0,0,0,0.8);
+    }
+    .ring-highlight-top {
+        position: absolute; top: 15px; left: 35px; width: 112px; height: 8px;
+        border-radius: 100px; filter: blur(2px);
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
+        transform: rotate(-35deg); opacity: 0.7;
+    }
+    .ring-highlight-bottom {
+        position: absolute; bottom: 25px; right: 40px; width: 128px; height: 10px;
+        border-radius: 100px; filter: blur(10px);
+        background: linear-gradient(90deg, transparent, rgba(168,85,247,0.6), transparent);
+        transform: rotate(-35deg); opacity: 0.5;
+    }
+    .ring-inner-border {
+        position: absolute; inset: 51px; border-radius: 50%;
+        border: 1px solid rgba(255,255,255,0.05); opacity: 0.2; mix-blend-mode: overlay;
+    }
+    .ring-outer-border {
+        position: absolute; inset: 0; border-radius: 50%;
+        border: 1px solid rgba(255,255,255,0.05); opacity: 0.1; mix-blend-mode: overlay;
+    }
+
+    #hero h1 {
+        font-family: var(--serif);
+        font-size: clamp(3rem, 7vw, 5.5rem);
+        font-weight: 400;
+        line-height: 1.05;
+        letter-spacing: -0.02em;
+        margin-bottom: 1.5rem;
+    }
+    #hero h1 .accent { color: var(--accent-light); }
+    #hero h1 .italic {
+        font-style: italic;
+    }
+    #hero .lead {
+        font-size: 1.1rem;
+        color: var(--text-mid);
+        font-weight: 300;
+        max-width: 480px;
+        margin: 0 auto 3rem;
+        line-height: 1.8;
+    }
+    .hero-cta {
+        display: inline-flex; align-items: center; gap: 0.5rem;
+        padding: 0.9rem 2.25rem;
+        border: 1px solid rgba(139,92,246,0.4);
+        border-radius: 100px;
+        color: var(--accent-light);
+        font-size: 0.85rem;
+        font-weight: 400;
+        letter-spacing: 0.03em;
+        transition: all 0.3s;
+    }
+    .hero-cta:hover {
+        background: rgba(139,92,246,0.08);
+        border-color: var(--accent);
+        transform: translateY(-1px);
+    }
+
+    /* Thin editorial rule */
+    .rule {
+        max-width: 1100px;
+        margin: 0 auto;
+        border: none;
+        height: 1px;
+        background: var(--border);
+    }
+
+    /* APPS — Magazine layout */
+    #apps {
+        padding: 8rem 4rem;
+        max-width: 1100px;
+        margin: 0 auto;
+    }
+    .apps-header {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 4rem;
+        align-items: end;
+        margin-bottom: 5rem;
+    }
+    .apps-header h2 {
+        font-family: var(--serif);
+        font-size: clamp(2.5rem, 4.5vw, 4rem);
+        font-weight: 400;
+        line-height: 1.05;
+        letter-spacing: -0.02em;
+    }
+    .apps-header .intro {
+        color: var(--text-mid);
+        font-size: 0.95rem;
+        font-weight: 300;
+        line-height: 1.8;
+        max-width: 400px;
+    }
+
+    .app-editorial {
+        display: grid;
+        grid-template-columns: 280px 1fr;
+        gap: 3rem;
+        padding: 3.5rem 0;
+        border-top: 1px solid var(--border);
+        align-items: start;
+    }
+    .app-editorial:last-child {
+        border-bottom: 1px solid var(--border);
+    }
+    .app-label {
+        position: relative;
+    }
+    .app-label .number {
+        font-family: var(--serif);
+        font-size: 4rem;
+        color: rgba(139,92,246,0.1);
+        line-height: 1;
+        margin-bottom: 0.75rem;
+    }
+    .app-label .platform {
+        font-size: 0.7rem;
+        color: var(--accent-light);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        font-weight: 500;
+        margin-bottom: 0.3rem;
+    }
+    .app-label h3 {
+        font-family: var(--serif);
+        font-size: 1.75rem;
+        font-weight: 400;
+    }
+    .app-body p {
+        color: var(--text-mid);
+        font-size: 0.95rem;
+        font-weight: 300;
+        line-height: 1.85;
+        max-width: 520px;
+    }
+    .app-body p + p {
+        margin-top: 1rem;
+    }
+
+    /* FEATURES — Simple, restrained */
+    #features {
+        padding: 8rem 4rem;
+        max-width: 1100px;
+        margin: 0 auto;
+    }
+    .features-header {
+        text-align: center;
+        margin-bottom: 5rem;
+    }
+    .features-header h2 {
+        font-family: var(--serif);
+        font-size: clamp(2.5rem, 4.5vw, 4rem);
+        font-weight: 400;
+        letter-spacing: -0.02em;
+        margin-bottom: 1rem;
+    }
+    .features-header p {
+        color: var(--text-dim);
+        font-size: 0.9rem;
+        font-weight: 300;
+    }
+    .feat-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 3rem;
+    }
+    .feat-item {
+        text-align: center;
+    }
+    .feat-item .line {
+        width: 32px; height: 1px;
+        background: var(--accent);
+        margin: 0 auto 1.5rem;
+    }
+    .feat-item h3 {
+        font-family: var(--serif);
+        font-size: 1.2rem;
+        font-weight: 400;
+        margin-bottom: 0.6rem;
+    }
+    .feat-item p {
+        color: var(--text-dim);
+        font-size: 0.8rem;
+        font-weight: 300;
+        line-height: 1.75;
+    }
+
+    /* DOWNLOAD — Centered, elegant */
+    #download {
+        padding: 10rem 4rem 14rem;
+        text-align: center;
+        max-width: 700px;
+        margin: 0 auto;
+    }
+    #download h2 {
+        font-family: var(--serif);
+        font-size: clamp(2.5rem, 5vw, 4.5rem);
+        font-weight: 400;
+        letter-spacing: -0.02em;
+        margin-bottom: 1rem;
+        line-height: 1.05;
+    }
+    #download h2 .italic { font-style: italic; color: var(--accent-light); }
+    #download p {
+        color: var(--text-dim);
+        font-weight: 300;
+        font-size: 1rem;
+        margin-bottom: 3rem;
+        line-height: 1.8;
+    }
+    .download-buttons { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+    .dl-btn {
+        display: inline-flex; align-items: center; gap: 0.5rem;
+        padding: 0.9rem 2rem;
+        font-size: 0.85rem;
+        font-weight: 400;
+        transition: all 0.3s;
+        border-radius: 100px;
+    }
+    .dl-btn.primary {
+        border: 1px solid var(--accent);
+        color: var(--accent-light);
+        background: transparent;
+    }
+    .dl-btn.primary:hover {
+        background: rgba(139,92,246,0.08);
+        transform: translateY(-1px);
+    }
+    .dl-btn.secondary {
+        color: var(--text-dim);
+        border: 1px solid var(--border);
+    }
+    .dl-btn.secondary:hover { border-color: rgba(255,255,255,0.12); color: var(--text-mid); }
+
+    /* FOOTER */
+    footer {
+        border-top: 1px solid var(--border);
+        padding: 3rem 4rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        max-width: 1100px;
+        margin: 0 auto;
+    }
+    footer .left {
+        font-family: var(--serif);
+        font-size: 1rem;
+    }
+    footer .right {
+        font-size: 0.75rem;
+        color: var(--text-dim);
+        font-weight: 300;
+    }
+
+    /* FADE */
+    .fade-in { opacity: 0; transform: translateY(20px); transition: opacity 0.8s, transform 0.8s; }
+    .fade-in.visible { opacity: 1; transform: translateY(0); }
+
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+        nav { padding: 1.25rem 1.5rem; }
+        .nav-links { gap: 1.5rem; }
+        .nav-links a { font-size: 0.7rem; }
+        #hero { padding: 7rem 1.5rem 4rem; }
+        .ring-container { width: 280px; height: 280px; margin-bottom: 2rem; }
+        #apps, #features, #download { padding: 5rem 1.5rem; }
+        .apps-header { grid-template-columns: 1fr; gap: 1.5rem; }
+        .app-editorial { grid-template-columns: 1fr; gap: 1.5rem; }
+        .feat-row { grid-template-columns: 1fr 1fr; gap: 2rem; }
+        footer { flex-direction: column; gap: 1rem; padding: 2rem 1.5rem; text-align: center; }
+    }
+    </style>
+</head>
+<body>
+
+<nav>
+    <a href="#hero" class="nav-logo">
+        <img src="assets/opta-logo.png" alt="Opta">
+        <span>Opta</span>
+    </a>
+    <div class="nav-links">
+        <a href="#apps">Apps</a>
+        <a href="#features">Why</a>
+        <a href="#download">Download</a>
+    </div>
+</nav>
+
+<section id="hero">
+    <div class="ring-container">
+        <div class="ring-glow"></div>
+        <div class="ring-body">
+            <div class="ring-base"></div>
+            <div class="ring-arc-primary"></div>
+            <div class="ring-arc-secondary"></div>
+            <div class="ring-gloss"></div>
+            <div class="ring-highlight-top"></div>
+            <div class="ring-highlight-bottom"></div>
+            <div class="ring-inner-border"></div>
+            <div class="ring-outer-border"></div>
+        </div>
+    </div>
+
+    <h1>One <span class="italic accent">beautiful</span> tool<br>to replace them all</h1>
+    <p class="lead">The ecosystem of intelligent apps for macOS and iOS. Designed with restraint. Built with obsession.</p>
+    <a href="#download" class="hero-cta">Get Opta Free ↓</a>
+</section>
+
+<hr class="rule">
+
+<section id="apps" class="fade-in">
+    <div class="apps-header">
+        <h2>The<br>Ecosystem</h2>
+        <p class="intro">Three applications, each solving a distinct problem with uncommon care. Together, they form something greater — a unified system for how you work and live.</p>
+    </div>
+
+    <div class="app-editorial">
+        <div class="app-label">
+            <div class="number">01</div>
+            <div class="platform">macOS</div>
+            <h3>Opta MacOS</h3>
+        </div>
+        <div class="app-body">
+            <p>Real-time system telemetry, intelligent optimization, and performance tuning. Built natively for Apple Silicon — no wrappers, no Electron, no shortcuts.</p>
+            <p>It understands your Mac the way you do: intuitively, precisely, and without unnecessary noise.</p>
+        </div>
+    </div>
+
+    <div class="app-editorial">
+        <div class="app-label">
+            <div class="number">02</div>
+            <div class="platform">iOS</div>
+            <h3>Opta Foto</h3>
+        </div>
+        <div class="app-body">
+            <p>AI-powered photo analysis that genuinely understands your library. Smart curation finds the shots worth keeping. Duplicate detection clears the clutter.</p>
+            <p>Your photos, organized the way a careful human would — automatically.</p>
+        </div>
+    </div>
+
+    <div class="app-editorial">
+        <div class="app-label">
+            <div class="number">03</div>
+            <div class="platform">iOS</div>
+            <h3>Opta Life</h3>
+        </div>
+        <div class="app-body">
+            <p>Your intelligent life manager. Tasks, habits, and goals — orchestrated by AI that learns how you actually work, not how productivity gurus say you should.</p>
+            <p>It adapts to your rhythm. Not the other way around.</p>
+        </div>
+    </div>
+</section>
+
+<hr class="rule">
+
+<section id="features" class="fade-in">
+    <div class="features-header">
+        <h2>Why <span class="italic">Opta</span></h2>
+        <p>Four principles. No exceptions.</p>
+    </div>
+    <div class="feat-row">
+        <div class="feat-item">
+            <div class="line"></div>
+            <h3>Native</h3>
+            <p>Built for Apple platforms from the ground up. Every frame, every interaction.</p>
+        </div>
+        <div class="feat-item">
+            <div class="line"></div>
+            <h3>Private</h3>
+            <p>Your data stays on your devices. No cloud. No tracking. No exceptions.</p>
+        </div>
+        <div class="feat-item">
+            <div class="line"></div>
+            <h3>Intelligent</h3>
+            <p>On-device AI that learns your patterns and grows with you.</p>
+        </div>
+        <div class="feat-item">
+            <div class="line"></div>
+            <h3>Crafted</h3>
+            <p>Design you feel before you notice. Obsessive attention to every detail.</p>
+        </div>
+    </div>
+</section>
+
+<hr class="rule">
+
+<section id="download" class="fade-in">
+    <h2>Ready to<br><span class="italic">begin?</span></h2>
+    <p>Free to download. No account required.<br>Just open it and go.</p>
+    <div class="download-buttons">
+        <a href="#" class="dl-btn primary">↓ Download for Mac</a>
+        <a href="#" class="dl-btn secondary">App Store →</a>
+    </div>
+</section>
+
+<footer>
+    <div class="left">Opta</div>
+    <div class="right">© 2026 Optamize · Melbourne, Australia</div>
+</footer>
+
+<script>
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.1 });
+document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+</script>
+
+</body>
+</html>

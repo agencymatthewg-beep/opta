@@ -1,3 +1,6 @@
 packages:
   - "6-Packages/*"
-  - "1-Apps/1I-Web/*"
+  - "1-Apps/1A-AI-Components-Web"
+  - "1-Apps/1B-AICompare-Web"
+  - "1-Apps/1F-Opta-Life-Web"
+  - "1-Apps/1K-Optamize-Web"

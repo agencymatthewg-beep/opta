@@ -2,7 +2,7 @@ const { execFileSync } = require('child_process');
 const path = require('path');
 const os = require('os');
 
-const BACKEND_DIR = path.join(os.homedir(), 'Synced/Opta/apps/MonoUsage/backend');
+const BACKEND_DIR = path.join(os.homedir(), 'Synced/Opta/1-Apps/1D-MonoUsage/backend');
 const SCRIPTS_DIR = path.join(BACKEND_DIR, 'scripts');
 
 console.log('MonoUsage - Full Refresh');

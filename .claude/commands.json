@@ -17,7 +17,7 @@
       "type": "tool",
       "action": "Read",
       "params": {
-        "file_path": "1-Apps/1C-MacOS/1C2-Optamize-MacOS/DESIGN_SYSTEM.md"
+        "file_path": "1-Apps/1J-Optamize-MacOS/DESIGN_SYSTEM.md"
       }
     },
     "/status": {
@@ -37,12 +37,12 @@
     "/rust": {
       "description": "Navigate to Rust core and show info",
       "type": "bash",
-      "action": "cd '1-Apps/1C-MacOS/1C2-Optamize-MacOS/src-tauri' && pwd && echo '\\n=== Workspace Members ===' && cargo metadata --no-deps --format-version 1 | jq -r '.workspace_members[]' 2>/dev/null || ls -la"
+      "action": "cd '1-Apps/1J-Optamize-MacOS/src-tauri' && pwd && echo '\\n=== Workspace Members ===' && cargo metadata --no-deps --format-version 1 | jq -r '.workspace_members[]' 2>/dev/null || ls -la"
     },
     "/apps": {
       "description": "List all Opta apps",
       "type": "bash",
-      "action": "echo '=== iOS Apps ===' && ls -1 '1-Apps/1B-IOS' 2>/dev/null && echo '\\n=== Desktop Apps ===' && ls -1 '1-Apps/1C-MacOS' 2>/dev/null && echo '\\n=== Web Apps ===' && ls -1 '1-Apps/1I-Web' 2>/dev/null"
+      "action": "echo '=== All Opta Apps ===' && ls -1 1-Apps/"
     }
   },
   "aliases": {

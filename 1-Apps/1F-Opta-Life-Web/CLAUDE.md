@@ -31,6 +31,18 @@ auth.ts             # NextAuth configuration
 globals.css         # Global Tailwind styles
 ```
 
+**Note:** This app uses `app/` at project root (not `src/app/` like AICompare and AI Components).
+
+## Environment
+
+Requires `.env.local` (gitignored):
+```
+NEXTAUTH_SECRET=...
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+GOOGLE_GENERATIVE_AI_API_KEY=...
+```
+
 ## Key Features
 - Task dashboard with real-time updates
 - Calendar integration (Google Calendar)

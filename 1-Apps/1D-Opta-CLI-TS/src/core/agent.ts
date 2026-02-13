@@ -1,0 +1,346 @@
+import chalk from 'chalk';
+import type { OptaConfig } from './config.js';
+import { TOOL_SCHEMAS, resolvePermission, executeTool } from './tools.js';
+import { debug } from './debug.js';
+import { createSpinner } from '../ui/spinner.js';
+import { renderMarkdown } from '../ui/markdown.js';
+
+interface ToolCallAccum {
+  id: string;
+  name: string;
+  args: string;
+}
+
+interface AgentMessage {
+  role: 'system' | 'user' | 'assistant' | 'tool';
+  content: string | null;
+  tool_calls?: Array<{
+    id: string;
+    type: 'function';
+    function: { name: string; arguments: string };
+  }>;
+  tool_call_id?: string;
+}
+
+// --- System Prompt ---
+
+async function buildSystemPrompt(config: OptaConfig): Promise<string> {
+  let prompt = `You are Opta, an AI coding assistant running locally on the user's machine. You help with coding tasks by using tools to read, edit, and search files, and run commands.
+
+Rules:
+- Read files before editing them
+- Use edit_file for precise, targeted changes (not write_file to rewrite entire files)
+- Use search_files and find_files to understand the codebase before making changes
+- Explain your reasoning before each action
+- When the task is complete, respond with a final summary (no tool calls)
+
+Working directory: ${process.cwd()}`;
+
+  // Inject project memory if available
+  try {
+    const { readFileSync } = await import('node:fs');
+    const { resolve } = await import('node:path');
+    const memoryPath = resolve(process.cwd(), '.opta', 'memory.md');
+    const memory = readFileSync(memoryPath, 'utf-8');
+    if (memory.trim()) {
+      prompt += `\n\nProject knowledge:\n${memory}`;
+    }
+  } catch {
+    // No project memory file
+  }
+
+  void config; // config used for future extensions
+  return prompt;
+}
+
+// --- Token Estimation ---
+
+function estimateTokens(messages: AgentMessage[]): number {
+  return messages.reduce((sum, m) => {
+    const content = m.content ?? '';
+    const toolCallsStr = m.tool_calls
+      ? JSON.stringify(m.tool_calls)
+      : '';
+    return sum + Math.ceil((content.length + toolCallsStr.length) / 4);
+  }, 0);
+}
+
+// --- Context Compaction ---
+
+async function compactHistory(
+  messages: AgentMessage[],
+  client: import('openai').default,
+  model: string
+): Promise<AgentMessage[]> {
+  const systemPrompt = messages[0]!;
+  const recentCount = 6; // Keep last 3 exchanges
+  const recent = messages.slice(-recentCount);
+  const middle = messages.slice(1, -recentCount);
+
+  if (middle.length === 0) return messages;
+
+  debug(`Compacting ${middle.length} messages`);
+
+  const middleText = middle
+    .filter((m) => m.content)
+    .map((m) => `[${m.role}] ${m.content}`)
+    .join('\n');
+
+  try {
+    const response = await client.chat.completions.create({
+      model,
+      messages: [
+        {
+          role: 'system',
+          content:
+            'Summarize this conversation concisely. Preserve key decisions, file changes, and errors encountered.',
+        },
+        { role: 'user', content: middleText },
+      ],
+      max_tokens: 500,
+    });
+
+    const summary = response.choices[0]?.message?.content ?? '';
+    debug(`Compacted to ${summary.length} chars`);
+
+    return [
+      systemPrompt,
+      {
+        role: 'user' as const,
+        content: `[Previous conversation summary]\n${summary}`,
+      },
+      ...recent,
+    ];
+  } catch (err) {
+    debug(`Compaction failed: ${err}`);
+    return messages; // Keep original if compaction fails
+  }
+}
+
+// --- Stream Collector ---
+
+async function collectStream(
+  stream: AsyncIterable<import('openai').default.Chat.Completions.ChatCompletionChunk>,
+  onText: (text: string) => void
+): Promise<{ text: string; toolCalls: ToolCallAccum[] }> {
+  let text = '';
+  const toolCallMap = new Map<number, ToolCallAccum>();
+
+  for await (const chunk of stream) {
+    const delta = chunk.choices[0]?.delta;
+    if (!delta) continue;
+
+    if (delta.content) {
+      text += delta.content;
+      onText(delta.content);
+    }
+
+    if (delta.tool_calls) {
+      for (const tc of delta.tool_calls) {
+        const existing = toolCallMap.get(tc.index);
+        if (!existing) {
+          toolCallMap.set(tc.index, {
+            id: tc.id ?? '',
+            name: tc.function?.name ?? '',
+            args: tc.function?.arguments ?? '',
+          });
+        } else {
+          if (tc.id) existing.id = tc.id;
+          if (tc.function?.name) existing.name = tc.function.name;
+          if (tc.function?.arguments) existing.args += tc.function.arguments;
+        }
+      }
+    }
+  }
+
+  return {
+    text,
+    toolCalls: [...toolCallMap.values()],
+  };
+}
+
+// --- Permission Prompt ---
+
+async function promptToolApproval(
+  toolName: string,
+  args: Record<string, unknown>
+): Promise<boolean> {
+  console.log();
+  console.log(chalk.yellow(`  Tool: ${toolName}`));
+
+  // Show relevant details based on tool type
+  if (toolName === 'edit_file') {
+    console.log(chalk.dim(`  File: ${args['path']}`));
+    console.log(chalk.red(`  - ${String(args['old_text']).slice(0, 100)}`));
+    console.log(chalk.green(`  + ${String(args['new_text']).slice(0, 100)}`));
+  } else if (toolName === 'write_file') {
+    console.log(chalk.dim(`  File: ${args['path']}`));
+    const content = String(args['content'] ?? '');
+    console.log(chalk.dim(`  ${content.length} bytes`));
+  } else if (toolName === 'run_command') {
+    console.log(chalk.dim(`  $ ${args['command']}`));
+  } else {
+    console.log(chalk.dim(`  ${JSON.stringify(args)}`));
+  }
+
+  const { confirm } = await import('@inquirer/prompts');
+  return confirm({ message: 'Allow?', default: true });
+}
+
+// --- Main Agent Loop ---
+
+export async function agentLoop(
+  task: string,
+  config: OptaConfig
+): Promise<void> {
+  const { default: OpenAI } = await import('openai');
+  const client = new OpenAI({
+    baseURL: `http://${config.connection.host}:${config.connection.port}/v1`,
+    apiKey: 'lm-studio',
+  });
+
+  const model = config.model.default;
+  if (!model) {
+    console.error(
+      chalk.red('✗') +
+        ' No model configured. Run ' +
+        chalk.cyan('opta connect') +
+        ' first.'
+    );
+    process.exit(3);
+  }
+
+  const messages: AgentMessage[] = [
+    { role: 'system', content: await buildSystemPrompt(config) },
+    { role: 'user', content: task },
+  ];
+
+  let toolCallCount = 0;
+  const spinner = await createSpinner();
+
+  while (true) {
+    // 1. Context compaction
+    const tokenEstimate = estimateTokens(messages);
+    const threshold = config.model.contextLimit * config.safety.compactAt;
+    if (tokenEstimate > threshold) {
+      debug(`Token estimate ${tokenEstimate} exceeds threshold ${threshold}`);
+      spinner.start('Compacting conversation history...');
+      const compacted = await compactHistory(messages, client, model);
+      messages.length = 0;
+      messages.push(...compacted);
+      spinner.succeed('Context compacted');
+    }
+
+    // 2. Call LM Studio
+    debug(`Sending ${messages.length} messages to ${model}`);
+    spinner.start('Thinking...');
+
+    const stream = await client.chat.completions.create({
+      model,
+      messages: messages as Parameters<typeof client.chat.completions.create>[0]['messages'],
+      tools: TOOL_SCHEMAS as Parameters<typeof client.chat.completions.create>[0]['tools'],
+      tool_choice: 'auto',
+      stream: true,
+    });
+
+    spinner.stop();
+
+    // 3. Stream tokens to terminal, collect tool calls
+    let firstText = true;
+    const { text, toolCalls } = await collectStream(stream, (chunk) => {
+      if (firstText) {
+        console.log(); // blank line before response
+        firstText = false;
+      }
+      process.stdout.write(chunk);
+    });
+
+    if (text && !firstText) {
+      process.stdout.write('\n'); // newline after streamed text
+    }
+
+    // 4. No tool calls = task complete
+    if (toolCalls.length === 0) {
+      if (text) {
+        await renderMarkdown(text);
+      }
+      break;
+    }
+
+    // 5. Append assistant message with tool calls
+    messages.push({
+      role: 'assistant',
+      content: text || null,
+      tool_calls: toolCalls.map((tc) => ({
+        id: tc.id,
+        type: 'function' as const,
+        function: { name: tc.name, arguments: tc.args },
+      })),
+    });
+
+    // 6. Execute each tool call with permission checks
+    for (const call of toolCalls) {
+      const permission = resolvePermission(call.name, config);
+
+      if (permission === 'deny') {
+        messages.push({
+          role: 'tool',
+          content: 'Permission denied by configuration.',
+          tool_call_id: call.id,
+        });
+        console.log(chalk.dim(`  ✗ ${call.name} — denied`));
+        continue;
+      }
+
+      if (permission === 'ask') {
+        let args: Record<string, unknown>;
+        try {
+          args = JSON.parse(call.args);
+        } catch {
+          args = { raw: call.args };
+        }
+
+        const approved = await promptToolApproval(call.name, args);
+        if (!approved) {
+          messages.push({
+            role: 'tool',
+            content: 'User declined this action.',
+            tool_call_id: call.id,
+          });
+          continue;
+        }
+      }
+
+      // Execute the tool
+      spinner.start(`${call.name}...`);
+      const result = await executeTool(call.name, call.args);
+      spinner.succeed(`${call.name}`);
+
+      messages.push({
+        role: 'tool',
+        content: result,
+        tool_call_id: call.id,
+      });
+
+      toolCallCount++;
+      debug(`Tool call #${toolCallCount}: ${call.name} → ${result.slice(0, 100)}`);
+    }
+
+    // 7. Circuit breaker
+    if (toolCallCount >= config.safety.maxToolCalls) {
+      console.log(
+        '\n' + chalk.yellow(`Reached ${config.safety.maxToolCalls} tool calls. Pausing.`)
+      );
+      const { confirm } = await import('@inquirer/prompts');
+      const shouldContinue = await confirm({ message: 'Continue?' });
+      if (!shouldContinue) break;
+      toolCallCount = 0;
+    }
+  }
+
+  // Show token usage
+  const finalTokens = estimateTokens(messages);
+  console.log(
+    chalk.dim(`\n  ~${(finalTokens / 1000).toFixed(1)}K tokens · ${toolCallCount} tool calls`)
+  );
+}

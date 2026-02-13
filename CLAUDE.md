@@ -32,11 +32,11 @@ pnpm dev:ai-components          # AI Components Web (Next.js 16)
 
 ### Optamize MacOS (flagship desktop app)
 
-**Location:** `1-Apps/1C-MacOS/1C2-Optamize-MacOS/`
+**Location:** `1-Apps/1J-Optamize-MacOS/`
 **Stack:** Tauri v2 + React 19 + Vite 7 + TypeScript + Rust + Tailwind CSS 3
 
 ```bash
-cd 1-Apps/1C-MacOS/1C2-Optamize-MacOS
+cd 1-Apps/1J-Optamize-MacOS
 npm install
 npm run dev                     # Vite dev server (frontend only)
 npm run tauri dev               # Full Tauri app (frontend + Rust backend)
@@ -55,11 +55,11 @@ npm run build:app               # Build .app bundle (aarch64)
 
 ### Opta Scan iOS
 
-**Location:** `1-Apps/1B-IOS/1B2-Opta-Scan-IOS/`
+**Location:** `1-Apps/1H-Opta-Scan-IOS/`
 **Stack:** SwiftUI + Claude Vision API + Turborepo (for shared packages)
 
 ```bash
-cd 1-Apps/1B-IOS/1B2-Opta-Scan-IOS
+cd 1-Apps/1H-Opta-Scan-IOS
 open "Opta Scan.xcodeproj"     # Open in Xcode
 pnpm install                    # For shared TS packages
 pnpm dev                        # Turborepo dev (shared packages)
@@ -69,32 +69,32 @@ pnpm dev                        # Turborepo dev (shared packages)
 
 ### Opta Life iOS
 
-**Location:** `1-Apps/1B-IOS/1B1-Opta-Life-IOS/`
+**Location:** `1-Apps/1E-Opta-Life-IOS/`
 **Stack:** SwiftUI + Firebase
 
 ```bash
-cd 1-Apps/1B-IOS/1B1-Opta-Life-IOS
+cd 1-Apps/1E-Opta-Life-IOS
 open OptaLMiOS.xcodeproj
 ```
 
 ### Opta Life Web
 
-**Location:** `1-Apps/1I-Web/1-Opta-Life-Web/`
+**Location:** `1-Apps/1F-Opta-Life-Web/`
 **Stack:** Next.js 15 + React 18 + NextAuth + Google APIs + Tailwind CSS 4
 
 ```bash
-cd 1-Apps/1I-Web/1-Opta-Life-Web
+cd 1-Apps/1F-Opta-Life-Web
 npm run dev                     # Next.js dev server
 npm run build                   # Production build
 ```
 
 ### Opta CLI (TypeScript)
 
-**Location:** `1-Apps/1F-Opta-CLI-TS/`
+**Location:** `1-Apps/1D-Opta-CLI-TS/`
 **Stack:** TypeScript + Commander + Ink + tsup + vitest
 
 ```bash
-cd 1-Apps/1F-Opta-CLI-TS
+cd 1-Apps/1D-Opta-CLI-TS
 npm run dev                     # tsx watch mode
 npm run build                   # tsup build
 npm run test                    # vitest
@@ -103,7 +103,7 @@ npm run typecheck               # tsc --noEmit
 
 ### MonoUsage (Mac Studio monitor)
 
-**Location:** `1-Apps/1D-MonoUsage/`
+**Location:** `1-Apps/1C-MonoUsage/`
 **Stack:** Swift (Package.swift) + Node.js backend
 
 ## Shared Packages (`6-Packages/`)
@@ -133,7 +133,7 @@ Referenced as `workspace:*` dependencies. pnpm workspace config maps `packages/*
 
 ### Design System Rules (Optamize MacOS)
 
-When working in the desktop app, these are **mandatory** (enforced via `1-Apps/1C-MacOS/1C2-Optamize-MacOS/DESIGN_SYSTEM.md`):
+When working in the desktop app, these are **mandatory** (enforced via `1-Apps/1J-Optamize-MacOS/DESIGN_SYSTEM.md`):
 - Animations: Framer Motion only
 - Icons: Lucide React only
 - Glass effects: `.glass`, `.glass-subtle`, `.glass-strong` classes
@@ -152,20 +152,22 @@ When working in the desktop app, these are **mandatory** (enforced via `1-Apps/1
 
 | Path | Purpose |
 |------|---------|
-| `1-Apps/` | All applications (numbered by platform) |
+| `1-Apps/` | All applications (flat A–K list) |
+| `1-Apps/1I-OptaPlus/` | Cross-platform SwiftUI design system package (iOS + macOS) |
 | `6-Packages/` | Shared npm packages (`@opta/*`) |
 | `7-Personal/` | Personal context (calendar, hardware, goals) |
 | `8-Project/` | Cross-project planning, vision, roadmap |
+| `8-Project/8B-Shared-Assets/` | Cross-app design assets, logos, aesthetic vision specs |
 | `4-Ideas/` | Ideas and brainstorms |
 | `2-Docs/` | Documentation |
 | `.claude/commands/` | ~40 slash commands (start, end, build, commit, etc.) |
-| `.planning/` | Root-level project planning |
 
 ## Important Notes
 
 - **Numbered directories**: The codebase uses numbered prefixes (1-Apps, 6-Packages, etc.) for organization. Always use actual directory names, not the friendly names from README.
-- **pnpm workspace mismatch**: Root `pnpm-workspace.yaml` references `packages/*` and `apps/web/*` — these are symlinked or mapped to `6-Packages/*` and `1-Apps/1I-Web/*`. Use `pnpm --filter <package-name>` to target specific packages.
+- **Flat app structure**: All apps live directly in `1-Apps/` with prefixes 1A through 1K. No platform subfolders.
+- **pnpm workspace**: Root `pnpm-workspace.yaml` lists web apps individually. Use `pnpm --filter <package-name>` to target specific packages.
 - **Syncthing-synced**: This repo syncs between devices via Syncthing. `.stignore` excludes build artifacts.
 - **Per-app CLAUDE.md files**: Optamize MacOS and Opta Scan iOS have their own CLAUDE.md with app-specific rules. Always read them before working in those apps.
 - **MCP servers**: Configured in `.mcp.json` — Google Drive, Gmail, Google Calendar, YouTube, Gemini.
-- **Session protocol**: At session start, check `7-Personal/calendar.md` for today's events and relevant `.planning/STATE.md` for current progress.
+- **Session protocol**: At session start, check `7-Personal/calendar.md` for today's events.

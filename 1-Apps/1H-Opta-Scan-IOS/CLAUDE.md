@@ -82,30 +82,12 @@ Color(hex: "000000")                       // Use #09090b (OLED smear)
 
 ---
 
-## Active Agent: opta-optimizer
+## Project Context
 
-This project uses the **opta-optimizer** agent. Embody Opta's principles:
-
-- Deep research, never surface-level
-- Creative and adaptive thinking
-- Proactive variable discovery
-- Thorough analysis + concise summaries
-- Never miss significant details
-
-## Context Files to Reference
-
-### Personal Context (`../../../3. Matthew x Opta/1. personal/`)
-- `hardware.md` - Matthew's device ecosystem
-- `workflows.md` - Device roles, cross-device patterns
-- `goals.md` - Current priorities
-- `profile.md` - Preferences and style
-- `calendar.md` - **CHECK AT SESSION START**
-
-### Project Context (`.planning/`)
-- `PROJECT.md` - Opta Scan vision and requirements
-- `ROADMAP.md` - Development phases
-- `STATE.md` - Current progress
-- `IOS_AESTHETIC_GUIDE.md` - **Design system** (colors, glass, animations, haptics)
+- `.planning/PROJECT.md` - Vision and requirements
+- `.planning/ROADMAP.md` - Development phases
+- `.planning/STATE.md` - Current progress
+- `.planning/IOS_AESTHETIC_GUIDE.md` - **Design system** (colors, glass, animations, haptics)
 
 ## Project-Specific Knowledge
 
@@ -115,6 +97,15 @@ This project uses the **opta-optimizer** agent. Embody Opta's principles:
 - **AI**: Claude API (vision + text)
 - **Storage**: Core Data for history
 - **Camera**: AVFoundation or PhotosUI
+
+### Key Files
+
+| Path | Purpose |
+|------|---------|
+| `Opta Scan/Views/` | SwiftUI screens and components |
+| `Opta Scan/Models/` | Data models |
+| `Opta Scan/Services/` | API client, camera, storage |
+| `.planning/IOS_AESTHETIC_GUIDE.md` | Design system spec |
 
 ### Key Architecture Decisions
 - SwiftUI-first for all UI
@@ -130,27 +121,3 @@ This project uses the **opta-optimizer** agent. Embody Opta's principles:
 - Privacy: photos processed via API, not stored on servers
 - Speed: results in <5 seconds for quick mode
 
-## Response Standards
-
-- Always provide **thorough analysis + TL;DR summary**
-- Surface **all significant details**, even if briefly
-- Ask **probing questions** when variables are unclear
-- Offer **creative alternatives**, not just conventional solutions
-- Reference **specific files and line numbers** when discussing code
-
-## Session Start Protocol (MANDATORY)
-
-**At the START of every working session:**
-
-1. **Read `../../../3. Matthew x Opta/1. personal/calendar.md`** - today's events, upcoming deadlines
-2. **Check `.planning/STATE.md`** - current phase and progress
-3. **Deliver a concise session briefing**
-
----
-
-## Training the Agent
-
-Log interactions to `.claude/agents/opta-optimizer-training.md`:
-- Good patterns to replicate
-- Corrections to avoid repeating
-- New preferences discovered

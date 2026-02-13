@@ -8,8 +8,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./middleware": "./src/middleware/index.ts",
-    "./middleware/auth": "./src/middleware/auth.ts",
-    "./middleware/rate-limit": "./src/middleware/rate-limit.ts"
+    "./middleware/auth": "./src/middleware/auth.ts"
   },
   "scripts": {
     "lint": "eslint src/",

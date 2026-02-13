@@ -1,23 +1,21 @@
-# apps
+# 1-Apps/
 
-## Quick Context
-- Opta application source code and documentation
-- Contains: iOS, macOS, web, CLI implementations
-- Use for: building and extending Opta products
-
-
-Container for all Opta applications across platforms (macOS, iOS, web, CLI).
+All Opta applications, organized alphabetically with numbered prefixes.
 
 ## Contents
-- **MacOS/** - Native macOS apps (optamize-macos, opta-mini)
-- **ios/** - Native iOS apps (Opta Life, Opta Scan)
-- **web/** - Web applications (optamize-website, opta-life web)
-- **OptaPlus/** - iOS/macOS productivity app
-- **MonoUsage/** - Device usage monitoring
-- **cli/** - Command-line interfaces (opta-cli, opta-cli-ts)
-- **clawdbot-server/** - Bot orchestration server
-- **shared/** - Shared design assets and utilities
-- **shared-packages/** - Shared npm packages (UI, API, config)
 
-## Usage
-Each app has its own build/dev instructions. Start with the specific app's README or check its package.json/project file for setup instructions.
+| Prefix | App | Platform | Description |
+|--------|-----|----------|-------------|
+| 1A | AI Components Web | Web | AI component library |
+| 1B | AICompare Web | Web | AI model comparison |
+| 1C | MonoUsage | macOS | Mac Studio usage monitor |
+| 1D | Opta CLI TS | CLI | Command-line interface |
+| 1E | Opta Life iOS | iOS | Life management companion |
+| 1F | Opta Life Web | Web | Life management dashboard |
+| 1G | Opta Mini macOS | macOS | Menubar quick-access |
+| 1H | Opta Scan iOS | iOS | Universal scanner |
+| 1I | OptaPlus | iOS + macOS | Cross-platform design system |
+| 1J | Optamize macOS | macOS | AI PC Optimizer (flagship) |
+| 1K | Optamize Web | Web | Marketing landing page |
+
+Each app has its own README and/or CLAUDE.md with build/dev instructions.

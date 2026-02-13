@@ -82,11 +82,11 @@ class UsageManager: ObservableObject {
     private static let home = FileManager.default.homeDirectoryForCurrentUser.path
 
     private var dataFilePath: String {
-        "\(Self.home)/Synced/Opta/apps/MonoUsage/backend/data/latest.json"
+        "\(Self.home)/Synced/Opta/1-Apps/1D-MonoUsage/backend/data/latest.json"
     }
 
     private var refreshScriptPath: String {
-        "\(Self.home)/Synced/Opta/apps/MonoUsage/backend/scripts/refresh-all.js"
+        "\(Self.home)/Synced/Opta/1-Apps/1D-MonoUsage/backend/scripts/refresh-all.js"
     }
 
     private var launchAgentPath: String {

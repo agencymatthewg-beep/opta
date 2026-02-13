@@ -5,7 +5,7 @@ const https = require('https');
 
 // Paths — resolved from home directory, never hardcoded
 const HOME = os.homedir();
-const BACKEND_DIR = path.join(HOME, 'Synced/Opta/apps/MonoUsage/backend');
+const BACKEND_DIR = path.join(HOME, 'Synced/Opta/1-Apps/1D-MonoUsage/backend');
 const DATA_FILE = path.join(BACKEND_DIR, 'data/latest.json');
 const ENV_FILE = path.join(BACKEND_DIR, '.env');
 
@@ -216,7 +216,8 @@ async function main() {
     const icons = { green: '🟢', yellow: '🟡', red: '🔴', blue: '🔵', orange: '🟠', gray: '⚪' };
     Object.values(state).forEach(s => {
         const i = icons[s.color] || '⚪';
-        const spend = s.usage != null ? ` ($${s.usage.toFixed(2)})` : '';
+        const sym = s.currency === 'CNY' ? '¥' : '$';
+        const spend = s.usage != null ? ` (${sym}${Number(s.usage).toFixed(2)})` : '';
         console.log(`  ${i} ${s.name}: ${s.status}${spend}`);
     });
 }

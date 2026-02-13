@@ -70,7 +70,7 @@ public struct ConnectParams: Codable, Sendable {
     
     public init(
         token: String?,
-        clientId: String = "gateway-client",
+        clientId: String = "openclaw-control-ui",
         clientVersion: String = "0.1.0"
     ) {
         self.minProtocol = 3
@@ -79,7 +79,7 @@ public struct ConnectParams: Codable, Sendable {
             id: clientId,
             version: clientVersion,
             platform: "macOS",
-            mode: "ui"
+            mode: "webchat"
         )
         self.role = "operator"
         self.scopes = ["operator.admin", "operator.approvals", "operator.pairing"]

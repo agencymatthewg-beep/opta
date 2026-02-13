@@ -11,6 +11,7 @@ let package = Package(
         .executableTarget(
             name: "MonoUsage",
             dependencies: [],
+            exclude: ["README.md"],
             resources: [
                 .process("Resources")
             ]
