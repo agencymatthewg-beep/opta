@@ -184,24 +184,43 @@ public struct MessageBubble: View {
                                 .padding(.vertical, 2)
                         } else {
                             VStack(alignment: .leading, spacing: 4) {
-                                HStack(alignment: .bottom, spacing: 0) {
-                                    MarkdownContent(content: visibleContent, textColor: textColor, isStreaming: isStreaming)
-                                        .font(.system(size: 14))
+                                ZStack(alignment: .bottomLeading) {
+                                    HStack(alignment: .bottom, spacing: 0) {
+                                        MarkdownContent(content: visibleContent, textColor: textColor, isStreaming: isStreaming)
+                                            .font(.system(size: 14))
 
-                                    if showTypingCursor {
-                                        TypingCursor()
+                                        if showTypingCursor {
+                                            TypingCursor()
+                                        }
+                                    }
+                                    .animateHeight(isExpanded: isExpanded || !isTruncatable)
+                                    
+                                    // Gradient fade at truncation point
+                                    if isTruncatable && !isExpanded {
+                                        LinearGradient(
+                                            colors: [.clear, isUserMessage ? Color.optaPrimary.opacity(0.7) : Color.optaSurface.opacity(0.85)],
+                                            startPoint: .top,
+                                            endPoint: .bottom
+                                        )
+                                        .frame(height: 40)
+                                        .allowsHitTesting(false)
+                                        .frame(maxHeight: .infinity, alignment: .bottom)
                                     }
                                 }
                                 
                                 if isTruncatable {
                                     Button(action: {
-                                        withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) {
+                                        withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) {
                                             isExpanded.toggle()
                                         }
                                     }) {
-                                        Text(isExpanded ? "Show less" : "Show more")
-                                            .font(.system(size: 12, weight: .medium))
-                                            .foregroundColor(.optaPrimary)
+                                        HStack(spacing: 4) {
+                                            Text(isExpanded ? "Show less" : "Show more")
+                                                .font(.system(size: 12, weight: .medium))
+                                            Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                                                .font(.system(size: 9, weight: .bold))
+                                        }
+                                        .foregroundColor(.optaPrimary)
                                     }
                                     .buttonStyle(.plain)
                                     .padding(.top, 2)
@@ -412,6 +431,25 @@ public struct MessageBubble: View {
         case .delivered: return ("checkmark.circle", .optaGreen)
         case .failed: return ("exclamationmark.triangle", .optaRed)
         }
+    }
+}
+
+// MARK: - Animate Height Modifier
+
+private struct AnimateHeightModifier: ViewModifier {
+    let isExpanded: Bool
+    
+    func body(content: Content) -> some View {
+        content
+            .fixedSize(horizontal: false, vertical: true)
+            .clipped()
+            .animation(.spring(response: 0.35, dampingFraction: 0.82), value: isExpanded)
+    }
+}
+
+private extension View {
+    func animateHeight(isExpanded: Bool) -> some View {
+        modifier(AnimateHeightModifier(isExpanded: isExpanded))
     }
 }
 

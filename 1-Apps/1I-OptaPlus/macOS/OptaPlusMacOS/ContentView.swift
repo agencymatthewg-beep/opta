@@ -77,34 +77,68 @@ struct SidebarView: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var windowState: WindowState
     @State private var showingAddBot = false
+    @State private var searchText = ""
+    
+    private var filteredBots: [BotConfig] {
+        if searchText.isEmpty { return appState.bots }
+        return appState.bots.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
+    }
     
     var body: some View {
-        List(selection: Binding(
-            get: { windowState.selectedBotId },
-            set: { id in
-                if let id = id, let bot = appState.bots.first(where: { $0.id == id }) {
-                    windowState.selectBot(bot, in: appState)
-                }
-            }
-        )) {
-            Section {
-                ForEach(appState.bots) { bot in
-                    BotRow(bot: bot, viewModel: appState.viewModel(for: bot))
-                        .tag(bot.id)
-                }
-            } header: {
-                HStack {
-                    Text("BOTS")
-                        .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                        .foregroundColor(.optaTextMuted)
-                    
-                    Spacer()
-                    
-                    Button(action: { showingAddBot = true }) {
-                        Image(systemName: "plus.circle")
-                            .foregroundColor(.optaTextSecondary)
+        VStack(spacing: 0) {
+            // Search field
+            HStack(spacing: 6) {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 11))
+                    .foregroundColor(.optaTextMuted)
+                TextField("Filter bots…", text: $searchText)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 12))
+                    .foregroundColor(.optaTextPrimary)
+                if !searchText.isEmpty {
+                    Button(action: { searchText = "" }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 10))
+                            .foregroundColor(.optaTextMuted)
                     }
                     .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(Color.optaElevated.opacity(0.5))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .padding(.horizontal, 12)
+            .padding(.top, 8)
+            .padding(.bottom, 4)
+            
+            List(selection: Binding(
+                get: { windowState.selectedBotId },
+                set: { id in
+                    if let id = id, let bot = appState.bots.first(where: { $0.id == id }) {
+                        windowState.selectBot(bot, in: appState)
+                    }
+                }
+            )) {
+                Section {
+                    ForEach(filteredBots) { bot in
+                        BotRow(bot: bot, viewModel: appState.viewModel(for: bot))
+                            .tag(bot.id)
+                    }
+                } header: {
+                    HStack {
+                        Text("BOTS")
+                            .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                            .foregroundColor(.optaTextMuted)
+                        
+                        Spacer()
+                        
+                        Button(action: { showingAddBot = true }) {
+                            Image(systemName: "plus.circle")
+                                .foregroundColor(.optaTextSecondary)
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
             }
         }
@@ -275,6 +309,11 @@ struct ChatContainerView: View {
     @State private var isDragTarget = false
     @State private var isAtBottom = true
     @State private var showNewMessagesPill = false
+    @State private var newMessageCount = 0
+    @State private var showConnectionToast = false
+    @State private var connectionToastText = ""
+    @State private var connectionToastIsSuccess = false
+    @State private var previousConnectionState: ConnectionState?
     
     // Convert agent events to thinking events for the overlay
     private var thinkingEvents: [ThinkingEvent] {
@@ -346,6 +385,14 @@ struct ChatContainerView: View {
                                 // Top spacer for breathing room
                                 Color.clear.frame(height: 8)
 
+                                // Skeleton loading placeholders
+                                if viewModel.isLoading && viewModel.messages.isEmpty {
+                                    ForEach(0..<4, id: \.self) { i in
+                                        SkeletonBubble(isUser: i % 3 == 1, width: [0.45, 0.55, 0.65, 0.4][i])
+                                            .transition(.opacity)
+                                    }
+                                }
+                                
                                 // Empty state when no messages
                                 if viewModel.messages.isEmpty && !viewModel.isLoading && viewModel.streamingContent.isEmpty {
                                     ChatEmptyState(
@@ -405,6 +452,7 @@ struct ChatContainerView: View {
                                     proxy.scrollTo("bottom", anchor: .bottom)
                                 }
                             } else {
+                                newMessageCount += (newCount - oldCount)
                                 withAnimation(.spring(response: 0.3)) {
                                     showNewMessagesPill = true
                                 }
@@ -427,33 +475,41 @@ struct ChatContainerView: View {
                                 }
                             }
                         }
-                        .overlay(alignment: .bottom) {
+                        .overlay(alignment: .bottomTrailing) {
                             if showNewMessagesPill {
                                 Button(action: {
                                     withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) {
                                         proxy.scrollTo("bottom", anchor: .bottom)
                                         showNewMessagesPill = false
+                                        newMessageCount = 0
                                         isAtBottom = true
                                     }
                                 }) {
-                                    HStack(spacing: 4) {
-                                        Text("New messages")
-                                            .font(.system(size: 12, weight: .medium))
-                                        Image(systemName: "arrow.down")
-                                            .font(.system(size: 10, weight: .bold))
+                                    ZStack(alignment: .topTrailing) {
+                                        Circle()
+                                            .fill(botAccentColor(for: viewModel.botConfig).opacity(0.9))
+                                            .frame(width: 40, height: 40)
+                                            .shadow(color: botAccentColor(for: viewModel.botConfig).opacity(0.4), radius: 10, y: 3)
+                                            .overlay(
+                                                Image(systemName: "arrow.down")
+                                                    .font(.system(size: 16, weight: .bold))
+                                                    .foregroundColor(.white)
+                                            )
+                                        
+                                        if newMessageCount > 0 {
+                                            Text("\(newMessageCount)")
+                                                .font(.system(size: 9, weight: .bold))
+                                                .foregroundColor(.white)
+                                                .frame(minWidth: 16, minHeight: 16)
+                                                .background(Circle().fill(Color.optaRed))
+                                                .offset(x: 4, y: -4)
+                                        }
                                     }
-                                    .foregroundColor(.optaTextPrimary)
-                                    .padding(.horizontal, 14)
-                                    .padding(.vertical, 7)
-                                    .background(
-                                        Capsule()
-                                            .fill(Color.optaPrimary.opacity(0.85))
-                                            .shadow(color: Color.optaPrimary.opacity(0.3), radius: 8, y: 2)
-                                    )
                                 }
                                 .buttonStyle(.plain)
-                                .padding(.bottom, 12)
-                                .transition(.move(edge: .bottom).combined(with: .opacity))
+                                .padding(.bottom, 16)
+                                .padding(.trailing, 16)
+                                .transition(.scale(scale: 0.3).combined(with: .opacity))
                             }
                         }
                     }
@@ -484,6 +540,17 @@ struct ChatContainerView: View {
                             Task { await viewModel.abort() }
                         }
                     )
+                }
+                
+                // Connection toast (top center)
+                if showConnectionToast {
+                    ConnectionToast(
+                        text: connectionToastText,
+                        isSuccess: connectionToastIsSuccess
+                    )
+                    .padding(.top, 56)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .zIndex(10)
                 }
                 
                 // Floating context panel (top-right)
@@ -533,6 +600,34 @@ struct ChatContainerView: View {
                 viewModel.connect()
             }
             isInputFocused = true
+            previousConnectionState = viewModel.connectionState
+        }
+        .onChange(of: viewModel.connectionState) { oldState, newState in
+            let wasDisconnectedOrReconnecting = (previousConnectionState == .reconnecting || previousConnectionState == .connecting)
+            previousConnectionState = newState
+            
+            if newState == .connecting || newState == .reconnecting {
+                connectionToastText = newState == .reconnecting ? "Reconnecting…" : "Connecting…"
+                connectionToastIsSuccess = false
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                    showConnectionToast = true
+                }
+            } else if newState == .connected && wasDisconnectedOrReconnecting {
+                connectionToastText = "Connected to \(viewModel.botConfig.name) ✓"
+                connectionToastIsSuccess = true
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                    showConnectionToast = true
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                    withAnimation(.easeOut(duration: 0.4)) {
+                        showConnectionToast = false
+                    }
+                }
+            } else {
+                withAnimation(.easeOut(duration: 0.3)) {
+                    showConnectionToast = false
+                }
+            }
         }
         .onKeyPress(.escape) {
             // Escape: abort streaming > close drawer > close settings > unfocus
@@ -1883,6 +1978,84 @@ struct ChatEmptyState: View {
                 .buttonStyle(.plain)
             }
         }
+    }
+}
+
+// MARK: - Skeleton Bubble
+
+struct SkeletonBubble: View {
+    let isUser: Bool
+    let width: CGFloat
+    @State private var shimmerOffset: CGFloat = -1
+    
+    var body: some View {
+        HStack {
+            if isUser { Spacer(minLength: 0) }
+            
+            RoundedRectangle(cornerRadius: 18)
+                .fill(Color.optaSurface.opacity(0.4))
+                .frame(maxWidth: width * 600, minHeight: isUser ? 36 : 52)
+                .overlay(
+                    GeometryReader { geo in
+                        LinearGradient(
+                            colors: [.clear, Color.white.opacity(0.04), .clear],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                        .frame(width: geo.size.width * 0.4)
+                        .offset(x: shimmerOffset * geo.size.width)
+                    }
+                    .clipped()
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 18))
+            
+            if !isUser { Spacer(minLength: 0) }
+        }
+        .onAppear {
+            withAnimation(.linear(duration: 1.5).repeatForever(autoreverses: false)) {
+                shimmerOffset = 1.5
+            }
+        }
+    }
+}
+
+// MARK: - Connection Toast
+
+struct ConnectionToast: View {
+    let text: String
+    let isSuccess: Bool
+    @State private var pulse: CGFloat = 0
+    
+    var body: some View {
+        HStack(spacing: 8) {
+            if isSuccess {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 12))
+                    .foregroundColor(.optaGreen)
+            } else {
+                ProgressView()
+                    .scaleEffect(0.5)
+                    .frame(width: 12, height: 12)
+            }
+            
+            Text(text)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(isSuccess ? .optaGreen : .optaTextSecondary)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .background(
+            Capsule()
+                .fill(.ultraThinMaterial)
+                .shadow(color: Color.black.opacity(0.2), radius: 8, y: 2)
+        )
+        .overlay(
+            Capsule()
+                .stroke(
+                    (isSuccess ? Color.optaGreen : Color.optaAmber).opacity(0.3),
+                    lineWidth: 0.5
+                )
+        )
     }
 }
 

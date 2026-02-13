@@ -17,6 +17,9 @@
 		CD000074CCCC000100000001 /* AnimationSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD000075CCCC000100000001 /* AnimationSystem.swift */; };
 		CD000090EEEE000100000001 /* ChatTextInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD000091EEEE000100000001 /* ChatTextInput.swift */; };
 		CD000092EEEE000100000001 /* TelegramAuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD000093EEEE000100000001 /* TelegramAuthView.swift */; };
+		BP000001FFFF000100000001 /* BotProfileSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = BP000002FFFF000100000001 /* BotProfileSheet.swift */; };
+		PH000001FFFF000100000001 /* CommandPalette.swift in Sources */ = {isa = PBXBuildFile; fileRef = PH000002FFFF000100000001 /* CommandPalette.swift */; };
+		PH000003FFFF000100000001 /* KeyboardShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = PH000004FFFF000100000001 /* KeyboardShortcuts.swift */; };
 		CD000007BBBB000200000001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CD000008BBBB000200000001 /* Assets.xcassets */; };
 		CD000050BBBB000300000001 /* OptaPlus in Frameworks */ = {isa = PBXBuildFile; productRef = CD000051BBBB000300000001 /* OptaPlus */; };
 		CD000060BBBB000400000001 /* OptaMolt in Frameworks */ = {isa = PBXBuildFile; productRef = CD000061BBBB000400000001 /* OptaMolt */; };
@@ -37,6 +40,9 @@
 		CD000075CCCC000100000001 /* AnimationSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimationSystem.swift; sourceTree = "<group>"; };
 		CD000091EEEE000100000001 /* ChatTextInput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatTextInput.swift; sourceTree = "<group>"; };
 		CD000093EEEE000100000001 /* TelegramAuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelegramAuthView.swift; sourceTree = "<group>"; };
+		BP000002FFFF000100000001 /* BotProfileSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BotProfileSheet.swift; sourceTree = "<group>"; };
+		PH000002FFFF000100000001 /* CommandPalette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandPalette.swift; sourceTree = "<group>"; };
+		PH000004FFFF000100000001 /* KeyboardShortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardShortcuts.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -73,6 +79,9 @@
 				NF000002AAAA000100000001 /* NotificationManager.swift */,
 				CD000091EEEE000100000001 /* ChatTextInput.swift */,
 				CD000093EEEE000100000001 /* TelegramAuthView.swift */,
+				BP000002FFFF000100000001 /* BotProfileSheet.swift */,
+				PH000002FFFF000100000001 /* CommandPalette.swift */,
+				PH000004FFFF000100000001 /* KeyboardShortcuts.swift */,
 				CD000008BBBB000200000001 /* Assets.xcassets */,
 				CD00000ABBBB000200000001 /* Info.plist */,
 				CD00000BBBBB000200000001 /* OptaPlusMacOS.entitlements */,
@@ -174,6 +183,8 @@
 				NF000001AAAA000100000001 /* NotificationManager.swift in Sources */,
 				CD000090EEEE000100000001 /* ChatTextInput.swift in Sources */,
 				CD000092EEEE000100000001 /* TelegramAuthView.swift in Sources */,
+				PH000001FFFF000100000001 /* CommandPalette.swift in Sources */,
+				PH000003FFFF000100000001 /* KeyboardShortcuts.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
