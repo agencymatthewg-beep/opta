@@ -7,6 +7,49 @@ import SwiftUI
 import OptaPlus
 import OptaMolt
 
+// MARK: - Timestamp Helpers
+
+private func groupTimestamp(_ date: Date) -> String {
+    let cal = Calendar.current
+    let formatter = DateFormatter()
+    formatter.dateFormat = "h:mm a"
+    let time = formatter.string(from: date)
+
+    if cal.isDateInToday(date) {
+        return time
+    } else if cal.isDateInYesterday(date) {
+        return "Yesterday \(time)"
+    } else {
+        let df = DateFormatter()
+        df.dateFormat = "MMM d"
+        return "\(df.string(from: date)), \(time)"
+    }
+}
+
+private func shouldShowTimestamp(messages: [ChatMessage], at index: Int) -> Bool {
+    guard index < messages.count else { return false }
+    let msg = messages[index]
+    if index == 0 { return true }
+    let prev = messages[index - 1]
+    return msg.timestamp.timeIntervalSince(prev.timestamp) > 120
+}
+
+// MARK: - Timestamp Separator
+
+private struct TimestampSeparator: View {
+    let date: Date
+
+    var body: some View {
+        Text(groupTimestamp(date))
+            .font(.system(size: 10, weight: .medium))
+            .foregroundColor(.optaTextMuted)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 6)
+    }
+}
+
+// MARK: - Chat View
+
 struct ChatView: View {
     @ObservedObject var viewModel: ChatViewModel
     let botConfig: BotConfig
@@ -56,6 +99,16 @@ struct ChatView: View {
                 viewModel.connect()
             }
         }
+        .onChange(of: viewModel.connectionState) { old, new in
+            if old != .connected && new == .connected {
+                UINotificationFeedbackGenerator().notificationOccurred(.success)
+            }
+        }
+        .onChange(of: viewModel.errorMessage) { _, err in
+            if err != nil {
+                UINotificationFeedbackGenerator().notificationOccurred(.error)
+            }
+        }
     }
 
     // MARK: - Message List
@@ -63,14 +116,23 @@ struct ChatView: View {
     private var messageList: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(spacing: 12) {
-                    if viewModel.messages.isEmpty && viewModel.connectionState == .connected {
-                        emptyChat
+                LazyVStack(spacing: 8) {
+                    if viewModel.messages.isEmpty {
+                        if viewModel.connectionState == .connected {
+                            emptyChat
+                        } else if viewModel.connectionState == .disconnected {
+                            disconnectedState
+                        }
                     }
 
-                    ForEach(viewModel.messages) { message in
-                        MessageBubble(message: message, botName: botConfig.name)
-                            .id(message.id)
+                    ForEach(Array(viewModel.messages.enumerated()), id: \.element.id) { index, message in
+                        VStack(spacing: 4) {
+                            if shouldShowTimestamp(messages: viewModel.messages, at: index) {
+                                TimestampSeparator(date: message.timestamp)
+                            }
+                            MessageBubble(message: message, botName: botConfig.name)
+                                .id(message.id)
+                        }
                     }
 
                     // Streaming bubble
@@ -83,6 +145,10 @@ struct ChatView: View {
                 .padding(.top, 12)
                 .padding(.bottom, 8)
             }
+            .refreshable {
+                await viewModel.loadHistory()
+            }
+            .scrollDismissesKeyboard(.interactively)
             .onChange(of: viewModel.messages.count) { _, _ in
                 scrollToBottom(proxy: proxy)
             }
@@ -124,6 +190,31 @@ struct ChatView: View {
         .padding(.top, 60)
     }
 
+    private var disconnectedState: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "wifi.slash")
+                .font(.system(size: 36))
+                .foregroundColor(.optaTextMuted)
+            Text("Disconnected")
+                .font(.headline)
+                .foregroundColor(.optaTextSecondary)
+            Button {
+                viewModel.connect()
+            } label: {
+                Label("Reconnect", systemImage: "arrow.clockwise")
+                    .font(.subheadline.weight(.medium))
+                    .foregroundColor(.optaPrimary)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 10)
+                    .background(
+                        Capsule()
+                            .stroke(Color.optaPrimary, lineWidth: 1.5)
+                    )
+            }
+        }
+        .padding(.top, 60)
+    }
+
     // MARK: - Toolbar
 
     private var connectionBadge: some View {
@@ -156,6 +247,7 @@ struct ChatView: View {
     private func sendMessage() {
         let text = messageText
         messageText = ""
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
         Task {
             await viewModel.send(text)
         }
@@ -168,13 +260,11 @@ struct ChatView: View {
     }
 
     private func switchMode(to mode: SessionMode) {
-        guard var session = viewModel.activeSession else { return }
-        // Create new session with different mode
+        guard let session = viewModel.activeSession else { return }
         if mode == .isolated {
             let newSession = viewModel.createSession(name: mode.label, mode: mode)
             viewModel.switchSession(newSession)
         } else {
-            // For synced/direct, modify existing
             if let idx = viewModel.sessions.firstIndex(where: { $0.id == session.id }) {
                 viewModel.sessions[idx] = ChatSession(
                     id: session.id,

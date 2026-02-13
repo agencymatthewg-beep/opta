@@ -529,6 +529,24 @@ struct ChatContainerView: View {
             }
             isInputFocused = true
         }
+        .onKeyPress(.escape) {
+            // Escape: abort streaming > close drawer > close settings > unfocus
+            if viewModel.botState != .idle {
+                Task { await viewModel.abort() }
+                return .handled
+            }
+            if viewModel.isSessionDrawerOpen {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    viewModel.isSessionDrawerOpen = false
+                }
+                return .handled
+            }
+            if isInputFocused {
+                isInputFocused = false
+                return .handled
+            }
+            return .ignored
+        }
     }
     
     private func handleDrop(_ providers: [NSItemProvider]) {
@@ -1358,6 +1376,12 @@ struct AddBotSheet: View {
     @State private var emoji = "🤖"
     @State private var sessionKey = "main"
     
+    private var hostValidation: FieldValidation { host.isEmpty ? .valid : validateHostname(host) }
+    private var portValidation: FieldValidation { port.isEmpty ? .valid : validatePort(port) }
+    private var isFormValid: Bool {
+        !name.isEmpty && hostValidation.isValid && portValidation.isValid && !host.isEmpty && !port.isEmpty
+    }
+    
     var body: some View {
         VStack(spacing: 20) {
             Text("Add Bot")
@@ -1366,8 +1390,8 @@ struct AddBotSheet: View {
             
             VStack(alignment: .leading, spacing: 12) {
                 LabeledField("Name", text: $name, placeholder: "My Bot")
-                LabeledField("Host", text: $host, placeholder: "127.0.0.1")
-                LabeledField("Port", text: $port, placeholder: "18793")
+                LabeledField("Host", text: $host, placeholder: "127.0.0.1", validation: hostValidation)
+                LabeledField("Port", text: $port, placeholder: "18793", validation: portValidation)
                 LabeledField("Token", text: $token, placeholder: "Gateway auth token")
                 LabeledField("Emoji", text: $emoji, placeholder: "🤖")
             }
@@ -1391,7 +1415,7 @@ struct AddBotSheet: View {
                     dismiss()
                 }
                 .keyboardShortcut(.defaultAction)
-                .disabled(name.isEmpty)
+                .disabled(!isFormValid)
             }
         }
         .padding(24)
@@ -1401,15 +1425,58 @@ struct AddBotSheet: View {
     }
 }
 
+// MARK: - Validation Helpers
+
+enum FieldValidation {
+    case valid
+    case invalid(String)
+    
+    var isValid: Bool {
+        if case .valid = self { return true }
+        return false
+    }
+    
+    var errorMessage: String? {
+        if case .invalid(let msg) = self { return msg }
+        return nil
+    }
+}
+
+func validateHostname(_ host: String) -> FieldValidation {
+    let trimmed = host.trimmingCharacters(in: .whitespaces)
+    if trimmed.isEmpty { return .invalid("Hostname is required") }
+    if trimmed.contains(" ") { return .invalid("Hostname cannot contain spaces") }
+    let allowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: ".-_"))
+    if trimmed.unicodeScalars.contains(where: { !allowed.contains($0) }) {
+        return .invalid("Invalid characters in hostname")
+    }
+    return .valid
+}
+
+func validatePort(_ port: String) -> FieldValidation {
+    let trimmed = port.trimmingCharacters(in: .whitespaces)
+    if trimmed.isEmpty { return .invalid("Port is required") }
+    guard let portNum = Int(trimmed) else { return .invalid("Port must be a number") }
+    if portNum < 1 || portNum > 65535 { return .invalid("Port must be 1–65535") }
+    return .valid
+}
+
 struct LabeledField: View {
     let label: String
     @Binding var text: String
     let placeholder: String
+    var validation: FieldValidation?
     
-    init(_ label: String, text: Binding<String>, placeholder: String) {
+    init(_ label: String, text: Binding<String>, placeholder: String, validation: FieldValidation? = nil) {
         self.label = label
         self._text = text
         self.placeholder = placeholder
+        self.validation = validation
+    }
+    
+    private var hasError: Bool {
+        if case .invalid = validation { return true }
+        return false
     }
     
     var body: some View {
@@ -1429,9 +1496,17 @@ struct LabeledField: View {
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color.optaBorder, lineWidth: 1)
+                        .stroke(hasError ? Color.optaRed.opacity(0.6) : Color.optaBorder, lineWidth: 1)
                 )
+            
+            if let errorMsg = validation?.errorMessage {
+                Text(errorMsg)
+                    .font(.system(size: 10))
+                    .foregroundColor(.optaRed)
+                    .transition(.opacity)
+            }
         }
+        .animation(.spring(response: 0.2), value: hasError)
     }
 }
 
@@ -1525,6 +1600,15 @@ struct BotsSettingsView: View {
     }
 }
 
+// MARK: - Connection Test State
+
+enum ConnectionTestResult {
+    case idle
+    case testing
+    case success
+    case failure(String)
+}
+
 struct BotDetailEditor: View {
     let bot: BotConfig
     let onSave: (BotConfig) -> Void
@@ -1534,6 +1618,7 @@ struct BotDetailEditor: View {
     @State private var port: String
     @State private var token: String
     @State private var emoji: String
+    @State private var testResult: ConnectionTestResult = .idle
     
     init(bot: BotConfig, onSave: @escaping (BotConfig) -> Void) {
         self.bot = bot
@@ -1545,13 +1630,89 @@ struct BotDetailEditor: View {
         _emoji = State(initialValue: bot.emoji)
     }
     
+    private var hostValidation: FieldValidation { validateHostname(host) }
+    private var portValidation: FieldValidation { validatePort(port) }
+    private var isFormValid: Bool {
+        !name.isEmpty && hostValidation.isValid && portValidation.isValid
+    }
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             LabeledField("Name", text: $name, placeholder: "Bot name")
-            LabeledField("Host", text: $host, placeholder: "127.0.0.1")
-            LabeledField("Port", text: $port, placeholder: "18793")
+            LabeledField("Host", text: $host, placeholder: "127.0.0.1", validation: hostValidation)
+            LabeledField("Port", text: $port, placeholder: "18793", validation: portValidation)
             LabeledField("Token", text: $token, placeholder: "Auth token")
             LabeledField("Emoji", text: $emoji, placeholder: "🤖")
+            
+            // Connection test
+            HStack(spacing: 10) {
+                Button(action: testConnection) {
+                    HStack(spacing: 6) {
+                        if case .testing = testResult {
+                            ProgressView()
+                                .scaleEffect(0.6)
+                                .frame(width: 14, height: 14)
+                        } else {
+                            Image(systemName: "antenna.radiowaves.left.and.right")
+                                .font(.system(size: 12))
+                        }
+                        Text("Test Connection")
+                            .font(.system(size: 12, weight: .medium))
+                    }
+                    .foregroundColor(.optaTextSecondary)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.optaElevated)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color.optaBorder, lineWidth: 1)
+                    )
+                }
+                .buttonStyle(.plain)
+                .disabled(!hostValidation.isValid || !portValidation.isValid || {
+                    if case .testing = testResult { return true }
+                    return false
+                }())
+                
+                switch testResult {
+                case .idle:
+                    EmptyView()
+                case .testing:
+                    EmptyView()
+                case .success:
+                    HStack(spacing: 4) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(.optaGreen)
+                            .font(.system(size: 14))
+                        Text("Connected")
+                            .font(.system(size: 11))
+                            .foregroundColor(.optaGreen)
+                    }
+                    .transition(.scale(scale: 0.8).combined(with: .opacity))
+                case .failure(let error):
+                    HStack(spacing: 4) {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(.optaRed)
+                            .font(.system(size: 14))
+                        Text(error)
+                            .font(.system(size: 11))
+                            .foregroundColor(.optaRed)
+                            .lineLimit(1)
+                    }
+                    .transition(.scale(scale: 0.8).combined(with: .opacity))
+                }
+            }
+            .animation(.spring(response: 0.3, dampingFraction: 0.8), value: {
+                switch testResult {
+                case .idle: return 0
+                case .testing: return 1
+                case .success: return 2
+                case .failure: return 3
+                }
+            }())
             
             Spacer()
             
@@ -1570,6 +1731,46 @@ struct BotDetailEditor: View {
                     onSave(updated)
                 }
                 .keyboardShortcut(.defaultAction)
+                .disabled(!isFormValid)
+            }
+        }
+    }
+    
+    private func testConnection() {
+        testResult = .testing
+        let testHost = host
+        let testPort = Int(port) ?? 0
+        
+        Task {
+            do {
+                let url = URL(string: "ws://\(testHost):\(testPort)")!
+                let session = URLSession(configuration: .default)
+                let task = session.webSocketTask(with: url)
+                task.resume()
+                
+                // Try to receive a message within 5 seconds
+                let result = try await withThrowingTaskGroup(of: Bool.self) { group in
+                    group.addTask {
+                        // Try sending a ping
+                        try await task.sendPing()
+                        return true
+                    }
+                    group.addTask {
+                        try await Task.sleep(nanoseconds: 5_000_000_000)
+                        throw URLError(.timedOut)
+                    }
+                    let result = try await group.next()!
+                    group.cancelAll()
+                    return result
+                }
+                
+                task.cancel(with: .goingAway, reason: nil)
+                await MainActor.run { testResult = .success }
+            } catch {
+                await MainActor.run {
+                    let msg = error.localizedDescription
+                    testResult = .failure(msg.count > 40 ? String(msg.prefix(40)) + "…" : msg)
+                }
             }
         }
     }

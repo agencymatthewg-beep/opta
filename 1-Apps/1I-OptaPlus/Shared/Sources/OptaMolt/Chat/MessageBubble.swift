@@ -54,6 +54,7 @@ public struct MessageBubble: View {
     private var isStreaming: Bool { streamingContent != nil }
 
     @State private var isHovered = false
+    @State private var isExpanded = false
 
     // MARK: - Init (message)
     
@@ -93,6 +94,31 @@ public struct MessageBubble: View {
         if isStreaming { return false }
         if case .user = displaySender { return true }
         return false
+    }
+    
+    /// Whether content is "wide" (code blocks, tables, long lines)
+    /// Whether the message should be truncatable (>600 chars, not slightly over)
+    private var isTruncatable: Bool {
+        !isStreaming && displayContent.count > 600
+    }
+    
+    /// Content to actually display (truncated or full)
+    private var visibleContent: String {
+        guard isTruncatable && !isExpanded else { return displayContent }
+        let content = displayContent
+        // Find a safe truncation point — don't cut inside code blocks
+        let target = 500
+        let prefix = String(content.prefix(target))
+        // If we're inside a code block (odd number of ```), extend to end of block
+        let fenceCount = prefix.components(separatedBy: "```").count - 1
+        if fenceCount % 2 == 1 {
+            // Inside a code block — find the closing fence
+            if let closeRange = content.range(of: "```", range: content.index(content.startIndex, offsetBy: target)..<content.endIndex) {
+                let endIdx = content.index(closeRange.upperBound, offsetBy: 0)
+                return String(content[content.startIndex..<endIdx]) + "\n…"
+            }
+        }
+        return prefix + "…"
     }
     
     /// Whether content is "wide" (code blocks, tables, long lines)
@@ -157,12 +183,28 @@ public struct MessageBubble: View {
                                 .padding(.horizontal, 4)
                                 .padding(.vertical, 2)
                         } else {
-                            HStack(alignment: .bottom, spacing: 0) {
-                                MarkdownContent(content: displayContent, textColor: textColor, isStreaming: isStreaming)
-                                    .font(.system(size: 14))
+                            VStack(alignment: .leading, spacing: 4) {
+                                HStack(alignment: .bottom, spacing: 0) {
+                                    MarkdownContent(content: visibleContent, textColor: textColor, isStreaming: isStreaming)
+                                        .font(.system(size: 14))
 
-                                if showTypingCursor {
-                                    TypingCursor()
+                                    if showTypingCursor {
+                                        TypingCursor()
+                                    }
+                                }
+                                
+                                if isTruncatable {
+                                    Button(action: {
+                                        withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) {
+                                            isExpanded.toggle()
+                                        }
+                                    }) {
+                                        Text(isExpanded ? "Show less" : "Show more")
+                                            .font(.system(size: 12, weight: .medium))
+                                            .foregroundColor(.optaPrimary)
+                                    }
+                                    .buttonStyle(.plain)
+                                    .padding(.top, 2)
                                 }
                             }
                         }
@@ -213,7 +255,9 @@ public struct MessageBubble: View {
                         )
                     )
                 }
+                .brightness(isHovered ? 0.03 : 0)
                 .shadow(color: Color.black.opacity(0.3), radius: 12, y: 4)
+                .animation(.spring(response: 0.25, dampingFraction: 0.8), value: isHovered)
                 .contextMenu {
                     Button {
                         copyToClipboard(displayContent)
@@ -231,8 +275,8 @@ public struct MessageBubble: View {
                     removal: .opacity
                 ))
                 
-                // Timestamp row
-                if !isStreaming && !hideTimestamp {
+                // Timestamp row (always visible when not hidden, or show on hover)
+                if !isStreaming && (!hideTimestamp || isHovered) {
                     HStack(spacing: 4) {
                         if isUserMessage {
                             statusIcon

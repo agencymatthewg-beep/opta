@@ -36,6 +36,7 @@ struct ChatInputBar: View {
                                     .stroke(Color.optaBorder, lineWidth: 1)
                             )
                     )
+                    .submitLabel(.send)
                     .onSubmit {
                         if !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                             onSend()
