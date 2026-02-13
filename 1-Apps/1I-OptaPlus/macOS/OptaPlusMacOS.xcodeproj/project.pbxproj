@@ -201,6 +201,7 @@
 				PH000001FFFF000100000001 /* CommandPalette.swift in Sources */,
 				PH000003FFFF000100000001 /* KeyboardShortcuts.swift in Sources */,
 				SM000001FFFF000100000001 /* SoundManager.swift in Sources */,
+				DB000001FFFF000100000001 /* DashboardView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
