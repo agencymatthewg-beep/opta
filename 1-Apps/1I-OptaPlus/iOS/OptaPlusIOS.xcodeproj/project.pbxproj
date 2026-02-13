@@ -11,7 +11,14 @@
 		CB000003AAAA000100000001 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB000004AAAA000100000001 /* ContentView.swift */; };
 		CB000007AAAA000200000001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CB000008AAAA000200000001 /* Assets.xcassets */; };
 		CB000050AAAA000300000001 /* OptaPlus in Frameworks */ = {isa = PBXBuildFile; productRef = CB000051AAAA000300000001 /* OptaPlus */; };
+		CB000053AAAA000300000001 /* OptaMolt in Frameworks */ = {isa = PBXBuildFile; productRef = CB000054AAAA000300000001 /* OptaMolt */; };
 		CB000060AAAA000400000001 /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB000061AAAA000400000001 /* ChatView.swift */; };
+		CB000070AAAA000500000001 /* BotListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB000071AAAA000500000001 /* BotListView.swift */; };
+		CB000072AAAA000500000001 /* MessageBubble.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB000073AAAA000500000001 /* MessageBubble.swift */; };
+		CB000074AAAA000500000001 /* ChatInputBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB000075AAAA000500000001 /* ChatInputBar.swift */; };
+		CB000076AAAA000500000001 /* ThinkingOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB000077AAAA000500000001 /* ThinkingOverlay.swift */; };
+		CB000078AAAA000500000001 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB000079AAAA000500000001 /* SettingsView.swift */; };
+		CB00007AAAAA000500000001 /* BotAvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB00007BAAAA000500000001 /* BotAvatarView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -21,6 +28,12 @@
 		CB000009AAAA000100000001 /* OptaPlusIOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OptaPlusIOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CB00000AAAAA000200000001 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		CB000061AAAA000400000001 /* ChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatView.swift; sourceTree = "<group>"; };
+		CB000071AAAA000500000001 /* BotListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BotListView.swift; sourceTree = "<group>"; };
+		CB000073AAAA000500000001 /* MessageBubble.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageBubble.swift; sourceTree = "<group>"; };
+		CB000075AAAA000500000001 /* ChatInputBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatInputBar.swift; sourceTree = "<group>"; };
+		CB000077AAAA000500000001 /* ThinkingOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThinkingOverlay.swift; sourceTree = "<group>"; };
+		CB000079AAAA000500000001 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		CB00007BAAAA000500000001 /* BotAvatarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BotAvatarView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -29,6 +42,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				CB000050AAAA000300000001 /* OptaPlus in Frameworks */,
+				CB000053AAAA000300000001 /* OptaMolt in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -59,6 +73,12 @@
 			isa = PBXGroup;
 			children = (
 				CB000061AAAA000400000001 /* ChatView.swift */,
+				CB000071AAAA000500000001 /* BotListView.swift */,
+				CB000073AAAA000500000001 /* MessageBubble.swift */,
+				CB000075AAAA000500000001 /* ChatInputBar.swift */,
+				CB000077AAAA000500000001 /* ThinkingOverlay.swift */,
+				CB000079AAAA000500000001 /* SettingsView.swift */,
+				CB00007BAAAA000500000001 /* BotAvatarView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -89,6 +109,7 @@
 			name = OptaPlusIOS;
 			packageProductDependencies = (
 				CB000051AAAA000300000001 /* OptaPlus */,
+				CB000054AAAA000300000001 /* OptaMolt */,
 			);
 			productName = OptaPlusIOS;
 			productReference = CB000009AAAA000100000001 /* OptaPlusIOS.app */;
@@ -119,7 +140,7 @@
 			);
 			mainGroup = CB00000DAAAA000100000001;
 			packageReferences = (
-				CB000052AAAA000300000001 /* XCLocalSwiftPackageReference "../OptaPlus" */,
+				CB000052AAAA000300000001 /* XCLocalSwiftPackageReference ".." */,
 			);
 			productRefGroup = CB00000FAAAA000100000001 /* Products */;
 			projectDirPath = "";
@@ -149,6 +170,12 @@
 				CB000001AAAA000100000001 /* OptaPlusIOSApp.swift in Sources */,
 				CB000003AAAA000100000001 /* ContentView.swift in Sources */,
 				CB000060AAAA000400000001 /* ChatView.swift in Sources */,
+				CB000070AAAA000500000001 /* BotListView.swift in Sources */,
+				CB000072AAAA000500000001 /* MessageBubble.swift in Sources */,
+				CB000074AAAA000500000001 /* ChatInputBar.swift in Sources */,
+				CB000076AAAA000500000001 /* ThinkingOverlay.swift in Sources */,
+				CB000078AAAA000500000001 /* SettingsView.swift in Sources */,
+				CB00007AAAAA000500000001 /* BotAvatarView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -360,9 +387,9 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		CB000052AAAA000300000001 /* XCLocalSwiftPackageReference "../OptaPlus" */ = {
+		CB000052AAAA000300000001 /* XCLocalSwiftPackageReference ".." */ = {
 			isa = XCLocalSwiftPackageReference;
-			relativePath = ../Shared;
+			relativePath = ..;
 		};
 /* End XCLocalSwiftPackageReference section */
 
@@ -370,6 +397,10 @@
 		CB000051AAAA000300000001 /* OptaPlus */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = OptaPlus;
+		};
+		CB000054AAAA000300000001 /* OptaMolt */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = OptaMolt;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

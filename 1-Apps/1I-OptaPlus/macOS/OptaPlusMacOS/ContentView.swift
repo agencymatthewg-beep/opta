@@ -273,6 +273,8 @@ struct ChatContainerView: View {
     @FocusState private var isInputFocused: Bool
     @State private var showContextPanel = false
     @State private var isDragTarget = false
+    @State private var isAtBottom = true
+    @State private var showNewMessagesPill = false
     
     // Convert agent events to thinking events for the overlay
     private var thinkingEvents: [ThinkingEvent] {
@@ -343,9 +345,26 @@ struct ChatContainerView: View {
                             LazyVStack(spacing: 10) {
                                 // Top spacer for breathing room
                                 Color.clear.frame(height: 8)
-                                
+
+                                // Empty state when no messages
+                                if viewModel.messages.isEmpty && !viewModel.isLoading && viewModel.streamingContent.isEmpty {
+                                    ChatEmptyState(
+                                        botName: viewModel.botConfig.name,
+                                        botEmoji: viewModel.botConfig.emoji,
+                                        isConnected: viewModel.connectionState == .connected,
+                                        onReconnect: { viewModel.connect() }
+                                    )
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.top, 80)
+                                }
+
                                 ForEach(Array(viewModel.messages.enumerated()), id: \.element.id) { index, message in
-                                    MessageRow(message: message, index: index, total: viewModel.messages.count)
+                                    MessageRow(
+                                        message: message,
+                                        index: index,
+                                        total: viewModel.messages.count,
+                                        showTimestamp: shouldShowTimestamp(messages: viewModel.messages, at: index)
+                                    )
                                         .transition(.asymmetric(
                                             insertion: .move(edge: .bottom).combined(with: .opacity),
                                             removal: .opacity
@@ -381,16 +400,55 @@ struct ChatContainerView: View {
                             .animation(.spring(response: 0.3, dampingFraction: 0.9), value: viewModel.streamingContent.isEmpty)
                         }
                         .onChange(of: viewModel.messages.count) { _, _ in
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) {
-                                proxy.scrollTo("bottom", anchor: .bottom)
+                            if isAtBottom {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) {
+                                    proxy.scrollTo("bottom", anchor: .bottom)
+                                }
+                            } else {
+                                withAnimation(.spring(response: 0.3)) {
+                                    showNewMessagesPill = true
+                                }
                             }
                         }
                         .onChange(of: viewModel.streamingContent) { _, _ in
-                            proxy.scrollTo("bottom", anchor: .bottom)
+                            if isAtBottom {
+                                proxy.scrollTo("bottom", anchor: .bottom)
+                            }
                         }
                         .onChange(of: viewModel.botState) { _, _ in
-                            withAnimation(.spring(response: 0.25)) {
-                                proxy.scrollTo("bottom", anchor: .bottom)
+                            if isAtBottom {
+                                withAnimation(.spring(response: 0.25)) {
+                                    proxy.scrollTo("bottom", anchor: .bottom)
+                                }
+                            }
+                        }
+                        .overlay(alignment: .bottom) {
+                            if showNewMessagesPill {
+                                Button(action: {
+                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) {
+                                        proxy.scrollTo("bottom", anchor: .bottom)
+                                        showNewMessagesPill = false
+                                        isAtBottom = true
+                                    }
+                                }) {
+                                    HStack(spacing: 4) {
+                                        Text("New messages")
+                                            .font(.system(size: 12, weight: .medium))
+                                        Image(systemName: "arrow.down")
+                                            .font(.system(size: 10, weight: .bold))
+                                    }
+                                    .foregroundColor(.optaTextPrimary)
+                                    .padding(.horizontal, 14)
+                                    .padding(.vertical, 7)
+                                    .background(
+                                        Capsule()
+                                            .fill(Color.optaPrimary.opacity(0.85))
+                                            .shadow(color: Color.optaPrimary.opacity(0.3), radius: 8, y: 2)
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                                .padding(.bottom, 12)
+                                .transition(.move(edge: .bottom).combined(with: .opacity))
                             }
                         }
                     }
@@ -752,10 +810,53 @@ struct SessionModeOption: View {
 
 // MARK: - Message Row (with entrance animation)
 
+// MARK: - Timestamp Grouping
+
+/// Format a timestamp for display between message groups.
+func groupTimestamp(_ date: Date) -> String {
+    let cal = Calendar.current
+    let now = Date()
+    let formatter = DateFormatter()
+    formatter.dateFormat = "h:mm a"
+    let time = formatter.string(from: date)
+
+    if cal.isDateInToday(date) {
+        return time
+    } else if cal.isDateInYesterday(date) {
+        return "Yesterday \(time)"
+    } else {
+        let df = DateFormatter()
+        df.dateFormat = "MMM d"
+        return "\(df.string(from: date)), \(time)"
+    }
+}
+
+/// Whether a timestamp separator should appear before this message.
+func shouldShowTimestamp(messages: [ChatMessage], at index: Int) -> Bool {
+    guard index < messages.count else { return false }
+    let msg = messages[index]
+    if index == 0 { return true }
+    let prev = messages[index - 1]
+    return msg.timestamp.timeIntervalSince(prev.timestamp) > 120 // 2 minutes
+}
+
+struct TimestampSeparator: View {
+    let date: Date
+
+    var body: some View {
+        Text(groupTimestamp(date))
+            .font(.system(size: 10, weight: .medium))
+            .foregroundColor(.optaTextMuted)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 6)
+    }
+}
+
 struct MessageRow: View {
     let message: ChatMessage
     let index: Int
     let total: Int
+    let showTimestamp: Bool
     
     @State private var appeared = false
     @State private var floatY: CGFloat = 0
@@ -763,26 +864,30 @@ struct MessageRow: View {
     private var isRecent: Bool { total - index <= 3 }
     
     var body: some View {
-        MessageBubble(message: message)
-            .opacity(appeared ? 1 : 0)
-            .offset(y: appeared ? floatY : 16)
-            .scaleEffect(appeared ? 1 : 0.97)
-            .onAppear {
-                if isRecent {
-                    withAnimation(.spring(response: 0.45, dampingFraction: 0.75).delay(0.03 * Double(total - index))) {
-                        appeared = true
-                    }
-                } else {
+        VStack(spacing: 4) {
+            if showTimestamp {
+                TimestampSeparator(date: message.timestamp)
+            }
+            MessageBubble(message: message, hideTimestamp: !showTimestamp)
+        }
+        .opacity(appeared ? 1 : 0)
+        .offset(y: appeared ? floatY : 16)
+        .scaleEffect(appeared ? 1 : 0.97)
+        .onAppear {
+            if isRecent {
+                withAnimation(.spring(response: 0.45, dampingFraction: 0.75).delay(0.03 * Double(total - index))) {
                     appeared = true
                 }
-                // Very subtle ambient float for recent messages
-                if isRecent {
-                    let duration = 4.0 + Double.random(in: 0...1.5)
-                    withAnimation(.easeInOut(duration: duration).repeatForever(autoreverses: true).delay(Double.random(in: 0...1))) {
-                        floatY = CGFloat.random(in: -0.5...0.5)
-                    }
+            } else {
+                appeared = true
+            }
+            if isRecent {
+                let duration = 4.0 + Double.random(in: 0...1.5)
+                withAnimation(.easeInOut(duration: duration).repeatForever(autoreverses: true).delay(Double.random(in: 0...1))) {
+                    floatY = CGFloat.random(in: -0.5...0.5)
                 }
             }
+        }
     }
 }
 
@@ -865,7 +970,28 @@ struct ChatHeaderView: View {
             }
             
             Spacer()
-            
+
+            // Reconnect button when disconnected
+            if viewModel.connectionState == .disconnected {
+                Button(action: { viewModel.connect() }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "arrow.clockwise")
+                            .font(.system(size: 11))
+                        Text("Reconnect")
+                            .font(.system(size: 11, weight: .medium))
+                    }
+                    .foregroundColor(.optaAmber)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(
+                        Capsule().fill(Color.optaAmber.opacity(0.12))
+                    )
+                    .overlay(Capsule().stroke(Color.optaAmber.opacity(0.3), lineWidth: 0.5))
+                }
+                .buttonStyle(.plain)
+                .transition(.scale(scale: 0.8).combined(with: .opacity))
+            }
+
             // Session drawer toggle with rotation
             Button(action: {
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
@@ -1054,18 +1180,28 @@ struct ChatInputBar: View {
                 // Attachment picker
                 AttachmentPicker(attachments: $attachments)
 
-                ChatTextInput(
-                    text: $text,
-                    placeholder: "Message…",
-                    font: .systemFont(ofSize: 14),
-                    textColor: NSColor(Color.optaTextPrimary),
-                    onSend: { if hasContent { triggerSend() } },
-                    onImagePasted: { attachment in
-                        attachments.append(attachment)
+                VStack(alignment: .trailing, spacing: 2) {
+                    ChatTextInput(
+                        text: $text,
+                        placeholder: "Message…",
+                        font: .systemFont(ofSize: 14),
+                        textColor: NSColor(Color.optaTextPrimary),
+                        onSend: { if hasContent { triggerSend() } },
+                        onImagePasted: { attachment in
+                            attachments.append(attachment)
+                        }
+                    )
+                    .frame(minHeight: 22, maxHeight: 120)
+                    .focused(isFocused)
+
+                    // Character count for long messages
+                    if text.count > 1000 {
+                        Text("\(text.count)")
+                            .font(.system(size: 9, design: .monospaced))
+                            .foregroundColor(text.count > 4000 ? .optaAmber : .optaTextMuted)
+                            .transition(.opacity)
                     }
-                )
-                .frame(minHeight: 22, maxHeight: 120)
-                .focused(isFocused)
+                }
 
                 // Send / Abort button with spring animation
                 Group {
@@ -1486,6 +1622,61 @@ struct GeneralSettingsView: View {
             .padding()
         }
         .frame(maxWidth: .infinity)
+    }
+}
+
+// MARK: - Chat Empty State (Bot Selected, No Messages)
+
+struct ChatEmptyState: View {
+    let botName: String
+    let botEmoji: String
+    let isConnected: Bool
+    let onReconnect: () -> Void
+
+    @State private var pulse: CGFloat = 0.9
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Text(botEmoji)
+                .font(.system(size: 56))
+                .scaleEffect(pulse)
+                .onAppear {
+                    withAnimation(.easeInOut(duration: 2.5).repeatForever(autoreverses: true)) {
+                        pulse = 1.05
+                    }
+                }
+
+            if isConnected {
+                Text("Start a conversation with \(botName)")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.optaTextSecondary)
+
+                Text("Type a message below to begin")
+                    .font(.system(size: 13))
+                    .foregroundColor(.optaTextMuted)
+            } else {
+                Text("\(botName) is disconnected")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.optaTextSecondary)
+
+                Button(action: onReconnect) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "arrow.clockwise")
+                            .font(.system(size: 12))
+                        Text("Reconnect")
+                            .font(.system(size: 13, weight: .medium))
+                    }
+                    .foregroundColor(.optaPrimary)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(
+                        Capsule().fill(Color.optaPrimary.opacity(0.12))
+                    )
+                    .overlay(Capsule().stroke(Color.optaPrimary.opacity(0.3), lineWidth: 0.5))
+                }
+                .buttonStyle(.plain)
+            }
+        }
     }
 }
 

@@ -120,6 +120,13 @@ final class ChatNSTextView: NSTextView {
     override func keyDown(with event: NSEvent) {
         let isReturn = event.keyCode == 36
         let isShiftHeld = event.modifierFlags.contains(.shift)
+        let isCmdHeld = event.modifierFlags.contains(.command)
+
+        // Cmd+Enter → send (always)
+        if isReturn && isCmdHeld {
+            onSend?()
+            return
+        }
 
         if isReturn && !isShiftHeld {
             // Return without Shift → send

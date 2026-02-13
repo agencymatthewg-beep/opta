@@ -49,16 +49,20 @@ public struct MessageBubble: View {
     private let streamingContent: String?
     private let streamingSender: MessageSender?
     private let showTypingCursor: Bool
+    private let hideTimestamp: Bool
 
     private var isStreaming: Bool { streamingContent != nil }
 
+    @State private var isHovered = false
+
     // MARK: - Init (message)
     
-    public init(message: ChatMessage) {
+    public init(message: ChatMessage, hideTimestamp: Bool = false) {
         self.message = message
         self.streamingContent = nil
         self.streamingSender = nil
         self.showTypingCursor = false
+        self.hideTimestamp = hideTimestamp
     }
 
     // MARK: - Init (streaming)
@@ -71,7 +75,8 @@ public struct MessageBubble: View {
         self.message = nil
         self.streamingContent = streamingContent
         self.streamingSender = sender
-        self.showTypingCursor = showTypingCursor
+        self.showTypingCursor = false
+        self.hideTimestamp = true
     }
 
     // MARK: - Computed
@@ -99,6 +104,15 @@ public struct MessageBubble: View {
         return false
     }
     
+    /// Whether content is only emoji characters (1-5 emojis, no other text)
+    private var isEmojiOnly: Bool {
+        let trimmed = displayContent.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty && trimmed.count <= 10 else { return false }
+        return trimmed.unicodeScalars.allSatisfy { scalar in
+            scalar.properties.isEmoji && scalar.value > 0x23F // Exclude ASCII symbols
+        }
+    }
+
     /// Max width fraction based on content type
     private var maxWidthFraction: CGFloat {
         if isUserMessage { return 0.65 }
@@ -135,29 +149,56 @@ public struct MessageBubble: View {
                 }
                 
                 // Message bubble
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack(alignment: .bottom, spacing: 0) {
-                        MarkdownContent(content: displayContent, textColor: textColor, isStreaming: isStreaming)
-                            .font(.system(size: 14))
+                ZStack(alignment: .topTrailing) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        if isEmojiOnly {
+                            Text(displayContent)
+                                .font(.system(size: 48))
+                                .padding(.horizontal, 4)
+                                .padding(.vertical, 2)
+                        } else {
+                            HStack(alignment: .bottom, spacing: 0) {
+                                MarkdownContent(content: displayContent, textColor: textColor, isStreaming: isStreaming)
+                                    .font(.system(size: 14))
 
-                        if showTypingCursor {
-                            TypingCursor()
+                                if showTypingCursor {
+                                    TypingCursor()
+                                }
+                            }
+                        }
+
+                        // Inline attachments
+                        if let msg = message, !msg.attachments.isEmpty {
+                            ForEach(msg.attachments) { attachment in
+                                InlineAttachmentView(attachment: attachment)
+                            }
                         }
                     }
+                    .padding(.horizontal, isEmojiOnly ? 8 : 16)
+                    .padding(.vertical, isEmojiOnly ? 4 : 12)
+                    .frame(maxWidth: .infinity)
+                    .background(isEmojiOnly ? AnyView(Color.clear) : AnyView(bubbleBackground))
+                    .clipShape(RoundedRectangle(cornerRadius: bubbleRadius))
+                    .overlay(isEmojiOnly ? AnyView(EmptyView()) : AnyView(bubbleOverlay))
 
-                    // Inline attachments
-                    if let msg = message, !msg.attachments.isEmpty {
-                        ForEach(msg.attachments) { attachment in
-                            InlineAttachmentView(attachment: attachment)
+                    // Hover copy button
+                    if isHovered && !isStreaming && !isEmojiOnly {
+                        Button(action: { copyToClipboard(displayContent) }) {
+                            Image(systemName: "doc.on.doc")
+                                .font(.system(size: 11))
+                                .foregroundColor(.optaTextMuted)
+                                .padding(6)
+                                .background(.ultraThinMaterial)
+                                .clipShape(RoundedRectangle(cornerRadius: 6))
                         }
+                        .buttonStyle(.plain)
+                        .padding(6)
+                        .transition(.opacity)
                     }
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-                .frame(maxWidth: .infinity)
-                .background(bubbleBackground)
-                .clipShape(RoundedRectangle(cornerRadius: bubbleRadius))
-                .overlay(bubbleOverlay)
+                .onHover { hovering in
+                    withAnimation(.easeInOut(duration: 0.15)) { isHovered = hovering }
+                }
                 .if(isUserMessage) { view in
                     view.mask(
                         LinearGradient(
@@ -191,7 +232,7 @@ public struct MessageBubble: View {
                 ))
                 
                 // Timestamp row
-                if !isStreaming {
+                if !isStreaming && !hideTimestamp {
                     HStack(spacing: 4) {
                         if isUserMessage {
                             statusIcon
