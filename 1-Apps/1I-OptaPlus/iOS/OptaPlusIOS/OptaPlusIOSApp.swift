@@ -83,13 +83,14 @@ final class AppState: ObservableObject {
 
     private func addDefaultBots() {
         bots = [
-            BotConfig(name: "Opta Max", host: "127.0.0.1", port: 18793,
+            BotConfig(name: "Opta Max", host: "192.168.188.9", port: 18793,
                       token: "8c081eb5c0769f34ec0fedde6e6ddd5f5299fb946b91b1ed", emoji: "🥷🏿"),
-            BotConfig(name: "Opta512", host: "Mono512.local", port: 19000, token: "", emoji: "🟣"),
-            BotConfig(name: "Mono", host: "Mono512.local", port: 19001, token: "", emoji: "🟢"),
-            BotConfig(name: "Floda", host: "Mono512.local", port: 19002, token: "", emoji: "🧪"),
-            BotConfig(name: "Saturday", host: "Mono512.local", port: 19003, token: "", emoji: "🔵"),
-            BotConfig(name: "YJ", host: "Mono512.local", port: 19005, token: "", emoji: "⚡"),
+            BotConfig(name: "Mono", host: "192.168.188.11", port: 19001,
+                      token: "e5acead966cc3922795eaea658612d9c47e4b7fa87563729", emoji: "🟢"),
+            BotConfig(name: "Opta512", host: "192.168.188.11", port: 19000, token: "", emoji: "🟣"),
+            BotConfig(name: "Floda", host: "192.168.188.11", port: 19002, token: "", emoji: "🧪"),
+            BotConfig(name: "Saturday", host: "192.168.188.11", port: 19003, token: "", emoji: "🔵"),
+            BotConfig(name: "YJ", host: "192.168.188.11", port: 19005, token: "", emoji: "⚡"),
         ]
         saveBots()
     }
