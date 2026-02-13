@@ -290,7 +290,7 @@ struct ChatView: View {
                     }
 
                     // Typing indicator
-                    if viewModel.botState == .thinking || viewModel.botState == .responding {
+                    if viewModel.botState == .thinking || viewModel.botState == .typing {
                         if viewModel.streamingContent.isEmpty {
                             HStack {
                                 TypingIndicator()
