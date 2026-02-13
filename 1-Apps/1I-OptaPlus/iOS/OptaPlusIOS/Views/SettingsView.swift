@@ -9,8 +9,10 @@ import OptaMolt
 
 struct SettingsView: View {
     @EnvironmentObject var appState: AppState
+    @ObservedObject var themeManager: ThemeManager = .shared
     @State private var showAddBot = false
     @State private var editingBot: BotConfig?
+    @State private var fontScaleIndex: Double = 1
 
     var body: some View {
         NavigationStack {
@@ -56,12 +58,80 @@ struct SettingsView: View {
                 }
 
                 Section {
-                    HStack {
+                    // Theme picker
+                    VStack(alignment: .leading, spacing: 8) {
                         Label("Theme", systemImage: "paintbrush.fill")
                             .foregroundColor(.optaTextSecondary)
-                        Spacer()
-                        Text("Cinematic Void")
-                            .foregroundColor(.optaTextMuted)
+                        Picker("Theme", selection: Binding(
+                            get: { themeManager.currentTheme.id },
+                            set: { id in
+                                if let theme = AppTheme.allBuiltIn.first(where: { $0.id == id }) {
+                                    themeManager.currentTheme = theme
+                                }
+                            }
+                        )) {
+                            ForEach(AppTheme.allBuiltIn) { theme in
+                                Text(theme.name).tag(theme.id)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                    }
+                    .listRowBackground(Color.optaSurface)
+
+                    // Custom accent
+                    ColorPicker(selection: Binding(
+                        get: { themeManager.customAccentColor ?? themeManager.currentTheme.accentColor },
+                        set: { themeManager.customAccentColor = $0 }
+                    ), supportsOpacity: false) {
+                        Label("Custom Accent", systemImage: "paintpalette")
+                            .foregroundColor(.optaTextSecondary)
+                    }
+                    .listRowBackground(Color.optaSurface)
+
+                    if themeManager.customAccentColor != nil {
+                        Button("Reset Accent Color") {
+                            themeManager.customAccentColor = nil
+                        }
+                        .foregroundColor(.optaRed)
+                        .listRowBackground(Color.optaSurface)
+                    }
+
+                    // Font size
+                    VStack(alignment: .leading, spacing: 6) {
+                        Label("Font Size — \(themeManager.fontScale.label)", systemImage: "textformat.size")
+                            .foregroundColor(.optaTextSecondary)
+                        Slider(value: $fontScaleIndex, in: 0...3, step: 1) {
+                            Text("Font Size")
+                        }
+                        .onChange(of: fontScaleIndex) { _, newVal in
+                            themeManager.fontScale = FontScale(index: newVal)
+                        }
+                    }
+                    .listRowBackground(Color.optaSurface)
+
+                    // Chat density
+                    VStack(alignment: .leading, spacing: 6) {
+                        Label("Chat Density", systemImage: "line.3.horizontal")
+                            .foregroundColor(.optaTextSecondary)
+                        Picker("Density", selection: $themeManager.chatDensity) {
+                            ForEach(ChatDensity.allCases, id: \.self) { d in
+                                Text(d.label).tag(d)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                    }
+                    .listRowBackground(Color.optaSurface)
+
+                    // Background mode
+                    VStack(alignment: .leading, spacing: 6) {
+                        Label("Ambient Background", systemImage: "sparkles")
+                            .foregroundColor(.optaTextSecondary)
+                        Picker("Background", selection: $themeManager.backgroundMode) {
+                            ForEach(BackgroundMode.allCases, id: \.self) { mode in
+                                Text(mode.label).tag(mode)
+                            }
+                        }
+                        .pickerStyle(.segmented)
                     }
                     .listRowBackground(Color.optaSurface)
 

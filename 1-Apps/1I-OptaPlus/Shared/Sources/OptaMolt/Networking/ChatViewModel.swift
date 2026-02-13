@@ -156,6 +156,12 @@ public final class ChatViewModel: ObservableObject {
 
     /// Per-session streaming state
     private var sessionStreamContent: [String: String] = [:]
+
+    /// Message stats for this bot
+    private var messageStats: BotMessageStats
+
+    /// Timestamp when user sent last message (for response time tracking)
+    private var lastSendTime: Date?
     
     /// Offline message queue (FIFO, max 50)
     private var messageQueue: [(text: String, attachments: [ChatAttachment], messageId: String)] = []
@@ -167,9 +173,13 @@ public final class ChatViewModel: ObservableObject {
 
     // MARK: - Init
 
+    /// Whether a clear chat confirmation alert should be shown.
+    @Published public var showClearConfirmation = false
+
     public init(botConfig: BotConfig, syncCoordinator: SyncCoordinator? = nil) {
         self.botConfig = botConfig
         self.syncCoordinator = syncCoordinator
+        self.messageStats = MessageStatsManager.load(botId: botConfig.id)
         
         // Restore persisted sessions or use defaults
         if let data = UserDefaults.standard.data(forKey: "optaplus.sessions.\(botConfig.id)"),
@@ -187,6 +197,33 @@ public final class ChatViewModel: ObservableObject {
         } else {
             self.activeSession = sessions.first
         }
+
+        // Load locally persisted messages
+        Task {
+            let stored = await MessageStore.shared.loadMessages(botId: botConfig.id)
+            if !stored.isEmpty && self.messages.isEmpty {
+                self.messages = stored
+                if let session = self.activeSession {
+                    self.sessionMessages[session.id] = stored
+                }
+            }
+        }
+    }
+
+    // MARK: - Message Stats (Public)
+
+    /// Current bot message statistics.
+    public var stats: BotMessageStats { messageStats }
+
+    // MARK: - Clear Chat
+
+    /// Clear messages with local persistence cleanup.
+    public func clearChat() {
+        messages.removeAll()
+        if let session = activeSession {
+            sessionMessages[session.id] = []
+        }
+        Task { await MessageStore.shared.clearMessages(botId: botConfig.id) }
     }
     
     // MARK: - Connection
@@ -428,6 +465,10 @@ public final class ChatViewModel: ObservableObject {
         )
         messages.append(userMessage)
         sessionMessages[session.id] = messages
+        messageStats.recordSent(at: userMessage.timestamp)
+        lastSendTime = Date()
+        persistStats()
+        schedulePersist()
         NSLog("[OC-VM] User message appended, total messages: \(messages.count)")
 
         // If disconnected, queue for later
@@ -548,6 +589,12 @@ public final class ChatViewModel: ObservableObject {
         
         switch stateStr {
         case "delta":
+            // Track time to first streaming byte
+            if botState != .typing, let sendTime = lastSendTime {
+                messageStats.recordResponseTime(Date().timeIntervalSince(sendTime))
+                lastSendTime = nil
+                persistStats()
+            }
             botState = .typing
             
             // Extract accumulated message text
@@ -595,6 +642,13 @@ public final class ChatViewModel: ObservableObject {
                     status: .delivered
                 )
                 messages.append(botMessage)
+                messageStats.recordReceived(at: botMessage.timestamp)
+                if let sendTime = lastSendTime {
+                    messageStats.recordResponseTime(Date().timeIntervalSince(sendTime))
+                    lastSendTime = nil
+                }
+                persistStats()
+                schedulePersist()
                 if let session = activeSession {
                     sessionMessages[session.id] = messages
                 }
@@ -794,6 +848,18 @@ public final class ChatViewModel: ObservableObject {
     
     // MARK: - Helpers
     
+    // MARK: - Persistence Helpers
+
+    private func schedulePersist() {
+        let msgs = messages
+        let botId = botConfig.id
+        Task { await MessageStore.shared.saveMessages(msgs, botId: botId) }
+    }
+
+    private func persistStats() {
+        MessageStatsManager.save(messageStats, botId: botConfig.id)
+    }
+
     private func resetStreamState() {
         botState = .idle
         streamingContent = ""

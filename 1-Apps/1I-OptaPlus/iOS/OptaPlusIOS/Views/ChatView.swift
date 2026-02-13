@@ -117,6 +117,8 @@ struct ChatView: View {
     let botConfig: BotConfig
     @State private var messageText = ""
     @State private var showThinkingExpanded = false
+    @State private var showExportSheet = false
+    @State private var exportFileURL: URL?
     @State private var showConnectionToast = false
     @State private var connectionToastMessage = ""
     @State private var isAtBottom = true
@@ -216,6 +218,25 @@ struct ChatView: View {
                 }
             }
             ToolbarItem(placement: .navigationBarTrailing) {
+                Menu {
+                    ForEach(ChatExportFormat.allCases, id: \.rawValue) { format in
+                        Button("\(format.label) (.\(format.fileExtension))") {
+                            if let url = ChatExporter.temporaryFileURL(
+                                messages: viewModel.messages,
+                                botName: botConfig.name,
+                                format: format
+                            ) {
+                                exportFileURL = url
+                                showExportSheet = true
+                            }
+                        }
+                    }
+                } label: {
+                    Image(systemName: "square.and.arrow.up")
+                }
+                .disabled(viewModel.messages.isEmpty)
+            }
+            ToolbarItem(placement: .navigationBarTrailing) {
                 sessionModePicker
             }
         }
@@ -258,6 +279,20 @@ struct ChatView: View {
         .onChange(of: viewModel.messages.count) { old, new in
             if new > old && !isAtBottom {
                 unreadCount += (new - old)
+            }
+        }
+        .alert("Clear Chat History",
+               isPresented: $viewModel.showClearConfirmation) {
+            Button("Clear", role: .destructive) {
+                viewModel.clearChat()
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("Clear chat history for \(botConfig.name)? This removes local messages only.")
+        }
+        .sheet(isPresented: $showExportSheet) {
+            if let url = exportFileURL {
+                ShareSheet(activityItems: [url])
             }
         }
     }
@@ -457,6 +492,18 @@ struct ChatView: View {
             }
         }
     }
+}
+
+// MARK: - Share Sheet
+
+struct ShareSheet: UIViewControllerRepresentable {
+    let activityItems: [Any]
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
+    }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
 // MARK: - Blinking Cursor

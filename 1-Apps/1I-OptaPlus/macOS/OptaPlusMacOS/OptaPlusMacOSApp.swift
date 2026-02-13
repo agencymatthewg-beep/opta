@@ -109,6 +109,7 @@ struct OptaPlusMacOSApp: App {
     @StateObject private var appState = AppState()
     @StateObject private var animPrefs = AnimationPreferences.shared
     @StateObject private var notificationManager = NotificationManager.shared
+    @ObservedObject private var themeManager = ThemeManager.shared
     @AppStorage("optaplus.textAlignment") private var textAlignmentRaw: String = MessageTextAlignment.centeredExpanding.rawValue
     @Environment(\.openWindow) private var openWindow
 
@@ -122,8 +123,12 @@ struct OptaPlusMacOSApp: App {
             WindowRoot(initialBotId: value.botId)
                 .environmentObject(appState)
                 .environmentObject(animPrefs)
+                .environmentObject(themeManager)
                 .environment(\.animationLevel, animPrefs.level)
                 .environment(\.messageTextAlignment, textAlignment)
+                .environment(\.fontScaleOffset, themeManager.fontScale.offset)
+                .environment(\.chatDensity, themeManager.chatDensity)
+                .environment(\.backgroundMode, themeManager.backgroundMode)
                 .frame(minWidth: 500, minHeight: 400)
                 .preferredColorScheme(.dark)
         } defaultValue: {
@@ -142,11 +147,11 @@ struct OptaPlusMacOSApp: App {
                 Divider()
             }
             
-            // Edit → Clear Chat (⌘K)
+            // Edit → Clear Chat (⌘K) — now shows confirmation
             CommandGroup(after: .pasteboard) {
                 Button("Clear Chat") {
                     if let vm = appState.selectedViewModel {
-                        vm.messages.removeAll()
+                        vm.showClearConfirmation = true
                     }
                 }
                 .keyboardShortcut("k", modifiers: .command)
@@ -186,8 +191,12 @@ struct OptaPlusMacOSApp: App {
             SettingsView()
                 .environmentObject(appState)
                 .environmentObject(animPrefs)
+                .environmentObject(themeManager)
                 .environment(\.animationLevel, animPrefs.level)
                 .environment(\.messageTextAlignment, textAlignment)
+                .environment(\.fontScaleOffset, themeManager.fontScale.offset)
+                .environment(\.chatDensity, themeManager.chatDensity)
+                .environment(\.backgroundMode, themeManager.backgroundMode)
         }
     }
     

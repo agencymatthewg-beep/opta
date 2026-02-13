@@ -175,6 +175,40 @@ struct BotProfileSheet: View {
                         .foregroundColor(.optaTextSecondary)
                 }
                 .padding(.top, 4)
+
+                // Persistent stats
+                let stats = viewModel.stats
+                if stats.totalSent > 0 || stats.totalReceived > 0 {
+                    LinearGradient(
+                        colors: [.clear, accentColor.opacity(0.15), .clear],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                    .frame(height: 1)
+                    .padding(.top, 4)
+
+                    Text("ALL TIME")
+                        .font(.system(size: 9, weight: .bold, design: .monospaced))
+                        .foregroundColor(.optaTextMuted)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, 2)
+
+                    HStack(spacing: 0) {
+                        StatCell(label: "Total Sent", value: "\(stats.totalSent)", color: .optaPrimary)
+                        Spacer()
+                        StatCell(label: "Total Recv", value: "\(stats.totalReceived)", color: accentColor)
+                        Spacer()
+                        StatCell(label: "Avg Response", value: stats.formattedAvgResponseTime, color: .optaGreen)
+                    }
+
+                    HStack(spacing: 0) {
+                        StatCell(label: "Streak", value: "\(stats.longestStreak)d", color: .optaAmber)
+                        Spacer()
+                        StatCell(label: "Peak Hour", value: stats.formattedMostActiveTime, color: .optaBlue)
+                        Spacer()
+                        StatCell(label: "", value: "", color: .clear)
+                    }
+                }
             }
             .padding(16)
             .background(

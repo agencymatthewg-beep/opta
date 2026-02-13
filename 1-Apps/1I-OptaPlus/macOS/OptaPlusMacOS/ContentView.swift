@@ -474,6 +474,7 @@ struct ChatContainerView: View {
     @State private var pendingAttachments: [ChatAttachment] = []
     @FocusState private var isInputFocused: Bool
     @State private var showContextPanel = false
+    @State private var showExportMenu = false
     @State private var isDragTarget = false
     @State private var dragType: DropType = .file
     @State private var isAtBottom = true
@@ -846,6 +847,15 @@ struct ChatContainerView: View {
             }
         }
         .animation(.spring(response: 0.25, dampingFraction: 0.85), value: showMessageSearch)
+        .alert("Clear Chat History",
+               isPresented: $viewModel.showClearConfirmation) {
+            Button("Clear", role: .destructive) {
+                viewModel.clearChat()
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("Clear chat history for \(viewModel.botConfig.name)? This removes local messages only.")
+        }
         .onKeyPress(.escape) {
             // Escape: close search > abort streaming > close drawer > close settings > unfocus
             if showMessageSearch {
@@ -1474,6 +1484,27 @@ struct ChatHeaderView: View {
                 .accessibilityLabel("Reconnect to \(viewModel.botConfig.name)")
                 .transition(.scale(scale: 0.8).combined(with: .opacity))
             }
+
+            // Export menu
+            Menu {
+                ForEach(ChatExportFormat.allCases, id: \.rawValue) { format in
+                    Button("\(format.label) (.\(format.fileExtension))") {
+                        ChatExporter.saveWithPanel(
+                            messages: viewModel.messages,
+                            botName: viewModel.botConfig.name,
+                            format: format
+                        )
+                    }
+                }
+            } label: {
+                Image(systemName: "square.and.arrow.up")
+                    .font(.system(size: 13))
+                    .foregroundColor(.optaTextSecondary)
+            }
+            .menuStyle(.borderlessButton)
+            .frame(width: 20)
+            .help("Export chat")
+            .disabled(viewModel.messages.isEmpty)
 
             // Session drawer toggle with rotation
             Button(action: {
@@ -2253,7 +2284,11 @@ struct BotDetailEditor: View {
 
 struct GeneralSettingsView: View {
     @EnvironmentObject var animPrefs: AnimationPreferences
+    @ObservedObject var themeManager: ThemeManager = .shared
     @AppStorage("optaplus.textAlignment") private var textAlignment: String = MessageTextAlignment.centeredExpanding.rawValue
+
+    @State private var fontScaleIndex: Double = 1
+    @State private var showCustomAccent = false
 
     private var appVersion: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1.0"
@@ -2271,7 +2306,7 @@ struct GeneralSettingsView: View {
                         .font(.system(size: 36))
                         .foregroundStyle(
                             LinearGradient(
-                                colors: [.optaPrimary, .optaNeonPurple],
+                                colors: [themeManager.effectiveAccent, themeManager.currentTheme.accentGlow],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             )
@@ -2288,14 +2323,124 @@ struct GeneralSettingsView: View {
                     Text("Native OpenClaw chat client")
                         .font(.system(size: 13))
                         .foregroundColor(.optaTextSecondary)
+                }
 
-                    Text("Built with SwiftUI • Cinematic Void Design System")
-                        .font(.system(size: 11))
+                Divider().background(Color.optaBorder)
+
+                // Theme picker
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("THEME")
+                        .font(.system(size: 11, weight: .semibold, design: .monospaced))
                         .foregroundColor(.optaTextMuted)
 
-                    Link("GitHub →", destination: URL(string: "https://github.com/optamize/optaplus")!)
+                    HStack(spacing: 8) {
+                        ForEach(AppTheme.allBuiltIn) { theme in
+                            ThemePreviewCard(
+                                theme: theme,
+                                isSelected: themeManager.currentTheme.id == theme.id,
+                                onTap: { themeManager.currentTheme = theme }
+                            )
+                        }
+                    }
+                }
+
+                // Custom accent color
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("CUSTOM ACCENT")
+                            .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                            .foregroundColor(.optaTextMuted)
+
+                        Spacer()
+
+                        if themeManager.customAccentColor != nil {
+                            Button("Reset") {
+                                themeManager.customAccentColor = nil
+                            }
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(.optaTextMuted)
+                            .buttonStyle(.plain)
+                        }
+                    }
+
+                    ColorPicker(
+                        "Accent Color",
+                        selection: Binding(
+                            get: { themeManager.customAccentColor ?? themeManager.currentTheme.accentColor },
+                            set: { themeManager.customAccentColor = $0 }
+                        ),
+                        supportsOpacity: false
+                    )
+                    .font(.system(size: 12))
+                    .foregroundColor(.optaTextSecondary)
+
+                    Text("Override the theme's accent color with any color you choose.")
+                        .font(.system(size: 11))
+                        .foregroundColor(.optaTextMuted)
+                }
+
+                Divider().background(Color.optaBorder)
+
+                // Font scale
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("FONT SIZE")
+                        .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                        .foregroundColor(.optaTextMuted)
+
+                    HStack {
+                        Text("A")
+                            .font(.system(size: 10))
+                            .foregroundColor(.optaTextMuted)
+                        Slider(value: $fontScaleIndex, in: 0...3, step: 1)
+                            .onChange(of: fontScaleIndex) { _, newVal in
+                                themeManager.fontScale = FontScale(index: newVal)
+                            }
+                        Text("A")
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundColor(.optaTextMuted)
+                    }
+
+                    Text(themeManager.fontScale.label)
                         .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(.optaPrimary)
+                        .foregroundColor(.optaTextSecondary)
+                }
+
+                // Chat density
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("CHAT DENSITY")
+                        .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                        .foregroundColor(.optaTextMuted)
+
+                    Picker("Density", selection: $themeManager.chatDensity) {
+                        ForEach(ChatDensity.allCases, id: \.self) { density in
+                            Text(density.label).tag(density)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+
+                    Text("Affects message spacing and bubble size.")
+                        .font(.system(size: 11))
+                        .foregroundColor(.optaTextMuted)
+                }
+
+                Divider().background(Color.optaBorder)
+
+                // Background mode
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("AMBIENT BACKGROUND")
+                        .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                        .foregroundColor(.optaTextMuted)
+
+                    Picker("Background", selection: $themeManager.backgroundMode) {
+                        ForEach(BackgroundMode.allCases, id: \.self) { mode in
+                            Text(mode.label).tag(mode)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+
+                    Text(backgroundModeDescription)
+                        .font(.system(size: 11))
+                        .foregroundColor(.optaTextMuted)
                 }
 
                 Divider().background(Color.optaBorder)
@@ -2328,6 +2473,50 @@ struct GeneralSettingsView: View {
             .padding()
         }
         .frame(maxWidth: .infinity)
+        .onAppear {
+            fontScaleIndex = themeManager.fontScale.index
+        }
+    }
+
+    private var backgroundModeDescription: String {
+        switch themeManager.backgroundMode {
+        case .on: return "Full ambient particles and gradient orbs."
+        case .off: return "Pure void background — saves GPU."
+        case .subtle: return "Reduced particles and orb opacity."
+        }
+    }
+}
+
+// MARK: - Theme Preview Card
+
+struct ThemePreviewCard: View {
+    let theme: AppTheme
+    let isSelected: Bool
+    let onTap: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            VStack(spacing: 6) {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(theme.backgroundColor)
+                    .frame(height: 40)
+                    .overlay(
+                        Circle()
+                            .fill(theme.accentColor)
+                            .frame(width: 14, height: 14)
+                            .shadow(color: theme.accentColor.opacity(0.6), radius: 6)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(isSelected ? theme.accentColor : Color.optaBorder, lineWidth: isSelected ? 2 : 0.5)
+                    )
+
+                Text(theme.name)
+                    .font(.system(size: 10, weight: isSelected ? .semibold : .regular))
+                    .foregroundColor(isSelected ? .optaTextPrimary : .optaTextMuted)
+            }
+        }
+        .buttonStyle(.plain)
     }
 }
 
