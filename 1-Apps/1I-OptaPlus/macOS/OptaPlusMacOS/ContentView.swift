@@ -395,6 +395,22 @@ struct ChatContainerView: View {
                         }
                     }
                     
+                    .overlay(alignment: .bottomLeading) {
+                        if viewModel.botState != .idle {
+                            ThinkingOverlay(
+                                viewModel: viewModel,
+                                events: thinkingEvents,
+                                isActive: true
+                            )
+                            .frame(maxWidth: 280)
+                            .padding(.leading, 12)
+                            .padding(.bottom, 12)
+                            .allowsHitTesting(false)
+                            .transition(.opacity.combined(with: .move(edge: .bottom)))
+                            .animation(.spring(response: 0.3, dampingFraction: 0.85), value: viewModel.botState)
+                        }
+                    }
+                    
                     // Floating input bar
                     ChatInputBar(
                         text: $inputText,
@@ -420,21 +436,7 @@ struct ChatContainerView: View {
                     .padding(.top, 52) // Below header
                     .padding(.trailing, 12)
                 
-                // Thinking overlay positioned via GeometryReader to avoid input bar
-                GeometryReader { geo in
-                    ThinkingOverlay(
-                        viewModel: viewModel,
-                        events: thinkingEvents,
-                        isActive: viewModel.botState != .idle
-                    )
-                    .frame(maxWidth: 280, alignment: .leading)
-                    .position(
-                        x: 155, // ~12 leading + half of 280 width
-                        y: geo.size.height - 120 // Well above input bar
-                    )
-                }
-                .animation(.spring(response: 0.3, dampingFraction: 0.85), value: viewModel.botState)
-                .allowsHitTesting(false)
+                // ThinkingOverlay is now an overlay on the ScrollView above
             }
             
             // Session drawer (slides in from right)
