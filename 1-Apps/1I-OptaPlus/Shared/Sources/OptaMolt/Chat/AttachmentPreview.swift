@@ -74,10 +74,16 @@ struct AttachmentThumbnail: View {
     private var imageThumbnail: some View {
         Group {
             if let data = attachment.thumbnailData ?? attachment.data,
-               let nsImage = platformImage(from: data) {
-                Image(nsImage: nsImage)
+               let platformImg = platformImage(from: data) {
+                #if canImport(AppKit)
+                Image(nsImage: platformImg)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
+                #elseif canImport(UIKit)
+                Image(uiImage: platformImg)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                #endif
             } else {
                 Color.optaSurface
                     .overlay {
