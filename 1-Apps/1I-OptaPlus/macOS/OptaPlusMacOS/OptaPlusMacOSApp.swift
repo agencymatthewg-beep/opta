@@ -84,13 +84,10 @@ struct WindowRoot: View {
     var body: some View {
         ContentView()
             .environmentObject(windowState)
-            .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { _ in
+            .onChange(of: windowTitle) { _, newTitle in
                 // Update NSWindow title for hidden title bar mode
-                if let window = NSApp.keyWindow {
-                    let title = windowTitle
-                    if window.title != title {
-                        window.title = title
-                    }
+                if let window = NSApp.keyWindow, window.title != newTitle {
+                    window.title = newTitle
                 }
             }
             .onAppear {
@@ -155,6 +152,14 @@ struct OptaPlusMacOSApp: App {
                     }
                 }
                 .keyboardShortcut("k", modifiers: .command)
+            }
+            
+            // View → Refresh All (⌘⇧R)
+            CommandGroup(after: .toolbar) {
+                Button("Refresh All Connections") {
+                    appState.refreshAll()
+                }
+                .keyboardShortcut("r", modifiers: [.command, .shift])
             }
 
             // Window → Show Bot shortcuts (⌘1 through ⌘6)
@@ -396,6 +401,32 @@ final class AppState: ObservableObject {
     }
 
     // MARK: - Connected Bot Count
+
+    /// Full app refresh — disconnect all bots, clear view models, reload config, reconnect.
+    func refreshAll() {
+        // 1. Disconnect all active connections
+        for (_, vm) in chatViewModels {
+            vm.disconnect()
+        }
+        
+        // 2. Clear all cached view models
+        chatViewModels.removeAll()
+        
+        // 3. Reload bot configs from persistence
+        loadBots()
+        if bots.isEmpty {
+            addDefaultBots()
+        }
+        
+        // 4. Re-initialize sync coordinator
+        initializeSyncCoordinator()
+        
+        // 5. Reconnect selected bot
+        if let bot = selectedBot {
+            let vm = viewModel(for: bot)
+            vm.connect()
+        }
+    }
 
     var connectedBotCount: Int {
         chatViewModels.values.filter { $0.connectionState == .connected }.count

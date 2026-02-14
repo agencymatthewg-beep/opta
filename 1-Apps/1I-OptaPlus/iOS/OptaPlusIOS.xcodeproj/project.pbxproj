@@ -25,6 +25,9 @@
 		DB000004AAAA000900000001 /* ChatHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB000003AAAA000900000001 /* ChatHistoryView.swift */; };
 		DB000006AAAA000A00000001 /* AutomationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB000005AAAA000A00000001 /* AutomationsView.swift */; };
 		DB000008AAAA000B00000001 /* DebugView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB000007AAAA000B00000001 /* DebugView.swift */; };
+		DB00000AAAAA000C00000001 /* BotPagerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB000009AAAA000C00000001 /* BotPagerView.swift */; };
+		DB00000CAAAA000D00000001 /* BotPageHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB00000BAAAA000D00000001 /* BotPageHeader.swift */; };
+		DB00000EAAAA000E00000001 /* BotAutomationsPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB00000DAAAA000E00000001 /* BotAutomationsPage.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -46,6 +49,9 @@
 		DB000003AAAA000900000001 /* ChatHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatHistoryView.swift; sourceTree = "<group>"; };
 		DB000005AAAA000A00000001 /* AutomationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutomationsView.swift; sourceTree = "<group>"; };
 		DB000007AAAA000B00000001 /* DebugView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugView.swift; sourceTree = "<group>"; };
+		DB000009AAAA000C00000001 /* BotPagerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BotPagerView.swift; sourceTree = "<group>"; };
+		DB00000BAAAA000D00000001 /* BotPageHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BotPageHeader.swift; sourceTree = "<group>"; };
+		DB00000DAAAA000E00000001 /* BotAutomationsPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BotAutomationsPage.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -105,6 +111,9 @@
 				DB000003AAAA000900000001 /* ChatHistoryView.swift */,
 				DB000005AAAA000A00000001 /* AutomationsView.swift */,
 				DB000007AAAA000B00000001 /* DebugView.swift */,
+				DB000009AAAA000C00000001 /* BotPagerView.swift */,
+				DB00000BAAAA000D00000001 /* BotPageHeader.swift */,
+				DB00000DAAAA000E00000001 /* BotAutomationsPage.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -200,6 +209,9 @@
 				DB000004AAAA000900000001 /* ChatHistoryView.swift in Sources */,
 				DB000006AAAA000A00000001 /* AutomationsView.swift in Sources */,
 				DB000008AAAA000B00000001 /* DebugView.swift in Sources */,
+				DB00000AAAAA000C00000001 /* BotPagerView.swift in Sources */,
+				DB00000CAAAA000D00000001 /* BotPageHeader.swift in Sources */,
+				DB00000EAAAA000E00000001 /* BotAutomationsPage.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -133,51 +133,17 @@ struct ChatView: View {
             Color.optaVoid.ignoresSafeArea()
 
             VStack(spacing: 0) {
-                ZStack(alignment: .bottom) {
-                    ZStack(alignment: .top) {
-                        messageList
+                ZStack(alignment: .top) {
+                    messageList
 
-                        // Gradient fade at top
-                        LinearGradient(
-                            colors: [Color.optaVoid, Color.optaVoid.opacity(0)],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                        .frame(height: 40)
-                        .allowsHitTesting(false)
-                    }
-
-                    // Scroll to bottom FAB
-                    if !isAtBottom {
-                        Button {
-                            isAtBottom = true
-                            unreadCount = 0
-                        } label: {
-                            ZStack(alignment: .topTrailing) {
-                                Image(systemName: "chevron.down")
-                                    .font(.system(size: 14, weight: .bold))
-                                    .foregroundColor(.white)
-                                    .frame(width: 36, height: 36)
-                                    .background(Color.optaPrimary)
-                                    .clipShape(Circle())
-                                    .shadow(color: Color.optaPrimary.opacity(0.4), radius: 8)
-
-                                if unreadCount > 0 {
-                                    Text("\(unreadCount)")
-                                        .font(.caption2.bold())
-                                        .foregroundColor(.white)
-                                        .frame(minWidth: 18, minHeight: 18)
-                                        .background(Color.optaRed)
-                                        .clipShape(Capsule())
-                                        .offset(x: 4, y: -4)
-                                }
-                            }
-                        }
-                        .padding(.trailing, 16)
-                        .padding(.bottom, 8)
-                        .frame(maxWidth: .infinity, alignment: .trailing)
-                        .transition(.scale.combined(with: .opacity))
-                    }
+                    // Gradient fade at top
+                    LinearGradient(
+                        colors: [Color.optaVoid, Color.optaVoid.opacity(0)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    .frame(height: 40)
+                    .allowsHitTesting(false)
                 }
 
                 // Reply preview
@@ -388,6 +354,18 @@ struct ChatView: View {
                         streamingBubble
                             .id("streaming")
                     }
+
+                    // Bottom sentinel for scroll position tracking
+                    Color.clear
+                        .frame(height: 1)
+                        .id("bottomAnchor")
+                        .onAppear {
+                            isAtBottom = true
+                            unreadCount = 0
+                        }
+                        .onDisappear {
+                            isAtBottom = false
+                        }
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 12)
@@ -398,10 +376,10 @@ struct ChatView: View {
             }
             .scrollDismissesKeyboard(.interactively)
             .onChange(of: viewModel.messages.count) { _, _ in
-                scrollToBottom(proxy: proxy)
+                if isAtBottom { scrollToBottom(proxy: proxy) }
             }
             .onChange(of: viewModel.streamingContent) { _, _ in
-                scrollToBottom(proxy: proxy)
+                if isAtBottom { scrollToBottom(proxy: proxy) }
             }
             .onChange(of: scrollToMessageId) { _, id in
                 if let id {
@@ -409,6 +387,41 @@ struct ChatView: View {
                         proxy.scrollTo(id, anchor: .center)
                     }
                     scrollToMessageId = nil
+                }
+            }
+            .overlay(alignment: .bottomTrailing) {
+                // Scroll to bottom FAB
+                if !isAtBottom {
+                    Button {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                            proxy.scrollTo("bottomAnchor", anchor: .bottom)
+                        }
+                        isAtBottom = true
+                        unreadCount = 0
+                    } label: {
+                        ZStack(alignment: .topTrailing) {
+                            Image(systemName: "chevron.down")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(.white)
+                                .frame(width: 36, height: 36)
+                                .background(Color.optaPrimary)
+                                .clipShape(Circle())
+                                .shadow(color: Color.optaPrimary.opacity(0.4), radius: 8)
+
+                            if unreadCount > 0 {
+                                Text("\(unreadCount)")
+                                    .font(.caption2.bold())
+                                    .foregroundColor(.white)
+                                    .frame(minWidth: 18, minHeight: 18)
+                                    .background(Color.optaRed)
+                                    .clipShape(Capsule())
+                                    .offset(x: 4, y: -4)
+                            }
+                        }
+                    }
+                    .padding(.trailing, 16)
+                    .padding(.bottom, 8)
+                    .transition(.scale.combined(with: .opacity))
                 }
             }
         }

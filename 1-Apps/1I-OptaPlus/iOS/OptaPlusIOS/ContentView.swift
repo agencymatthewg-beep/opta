@@ -36,14 +36,14 @@ struct ContentView: View {
                     }
                     .tag(Tab.history)
 
-                ChatTab()
+                ChatPagerTab()
                     .environmentObject(appState)
                     .tabItem {
                         Label("Chat", systemImage: selectedTab == .chat ? "bubble.left.and.bubble.right.fill" : "bubble.left.and.bubble.right")
                     }
                     .tag(Tab.chat)
 
-                AutomationsView()
+                AutomationsPagerTab()
                     .environmentObject(appState)
                     .tabItem {
                         Label("Automations", systemImage: selectedTab == .automations ? "bolt.circle.fill" : "bolt.circle")
@@ -62,44 +62,57 @@ struct ContentView: View {
     }
 }
 
-// MARK: - Chat Tab (Split on iPad, Stack on iPhone)
+// MARK: - Chat Pager Tab (Swipeable per-bot pages)
 
-struct ChatTab: View {
+struct ChatPagerTab: View {
     @EnvironmentObject var appState: AppState
-    @Environment(\.horizontalSizeClass) private var sizeClass
-    @State private var columnVisibility: NavigationSplitViewVisibility = .automatic
     @State private var showSettings = false
 
     var body: some View {
-        NavigationSplitView(columnVisibility: $columnVisibility) {
-            BotListView()
-                .environmentObject(appState)
-        } detail: {
-            if let bot = appState.selectedBot {
+        NavigationStack {
+            BotPagerView { bot in
                 let vm = appState.viewModel(for: bot)
-                ChatView(viewModel: vm, botConfig: bot)
-            } else {
-                emptyState
+                VStack(spacing: 0) {
+                    BotPageHeader(bot: bot, viewModel: vm)
+                    ChatView(viewModel: vm, botConfig: bot)
+                }
             }
-        }
-        .navigationSplitViewStyle(.balanced)
-        .onAppear {
-            if sizeClass == .regular {
-                columnVisibility = .all
+            .navigationTitle("Chat")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showSettings = true
+                    } label: {
+                        Image(systemName: "gearshape")
+                            .foregroundColor(.optaTextSecondary)
+                    }
+                }
+            }
+            .sheet(isPresented: $showSettings) {
+                SettingsView()
+                    .environmentObject(appState)
             }
         }
     }
+}
 
-    private var emptyState: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "bubble.left.and.bubble.right")
-                .font(.system(size: 48))
-                .foregroundColor(.optaTextMuted)
-            Text("Select a bot to start chatting")
-                .font(.headline)
-                .foregroundColor(.optaTextSecondary)
+// MARK: - Automations Pager Tab (Swipeable per-bot pages)
+
+struct AutomationsPagerTab: View {
+    @EnvironmentObject var appState: AppState
+
+    var body: some View {
+        NavigationStack {
+            BotPagerView { bot in
+                let vm = appState.viewModel(for: bot)
+                VStack(spacing: 0) {
+                    BotPageHeader(bot: bot, viewModel: vm, compact: true)
+                    BotAutomationsPage(bot: bot, viewModel: vm)
+                }
+            }
+            .navigationTitle("Automations")
+            .navigationBarTitleDisplayMode(.inline)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.optaVoid)
     }
 }

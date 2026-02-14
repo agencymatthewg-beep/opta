@@ -12,7 +12,7 @@ import OptaMolt
 
 // MARK: - History Item Model
 
-struct HistoryItem: Identifiable {
+struct HistoryItem: Identifiable, Hashable {
     let id: String
     let botName: String
     let botEmoji: String
@@ -51,6 +51,9 @@ struct ChatHistoryView: View {
     @State private var isLoading = false
     @State private var searchText = ""
     @State private var errorMessage: String?
+    @State private var resumeItem: HistoryItem?
+    @State private var pinnedIds: Set<String> = []
+    @State private var listVisible = false
 
     private var filteredItems: [HistoryItem] {
         if searchText.isEmpty { return items }
@@ -96,10 +99,36 @@ struct ChatHistoryView: View {
 
     private var sessionList: some View {
         List {
-            ForEach(groupedItems, id: \.0) { group, items in
+            ForEach(groupedItems, id: \.0) { group, groupItems in
                 Section {
-                    ForEach(items) { item in
-                        HistoryRow(item: item)
+                    ForEach(Array(groupItems.enumerated()), id: \.element.id) { index, item in
+                        Button {
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            resumeSession(item)
+                        } label: {
+                            HistoryRow(item: item, isPinned: pinnedIds.contains(item.id))
+                        }
+                        .staggeredIgnition(index: index, isVisible: listVisible)
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button(role: .destructive) {
+                                UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+                                deleteSession(item)
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                        }
+                        .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                            Button {
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                togglePin(item)
+                            } label: {
+                                Label(
+                                    pinnedIds.contains(item.id) ? "Unpin" : "Pin",
+                                    systemImage: pinnedIds.contains(item.id) ? "pin.slash" : "pin"
+                                )
+                            }
+                            .tint(.optaAmber)
+                        }
                     }
                 } header: {
                     Text(group.rawValue)
@@ -110,6 +139,59 @@ struct ChatHistoryView: View {
             .listRowBackground(Color.optaSurface)
         }
         .scrollContentBackground(.hidden)
+        .onAppear { listVisible = true }
+        .navigationDestination(item: $resumeItem) { item in
+            if let bot = appState.bots.first(where: { $0.id == item.botId }) {
+                let vm = appState.viewModel(for: bot)
+                ChatView(viewModel: vm, botConfig: bot)
+            }
+        }
+    }
+
+    private func deleteSession(_ item: HistoryItem) {
+        withAnimation(.optaSpring) {
+            items.removeAll { $0.id == item.id }
+        }
+        // Fire-and-forget delete on gateway
+        if let bot = appState.bots.first(where: { $0.id == item.botId }) {
+            let vm = appState.viewModel(for: bot)
+            Task {
+                _ = try? await vm.call("sessions.delete", params: ["sessionKey": item.sessionKey])
+            }
+        }
+    }
+
+    private func togglePin(_ item: HistoryItem) {
+        if pinnedIds.contains(item.id) {
+            pinnedIds.remove(item.id)
+        } else {
+            pinnedIds.insert(item.id)
+        }
+    }
+
+    private func resumeSession(_ item: HistoryItem) {
+        guard let bot = appState.bots.first(where: { $0.id == item.botId }) else { return }
+        let vm = appState.viewModel(for: bot)
+
+        // Connect if needed
+        if vm.connectionState == .disconnected {
+            vm.connect()
+        }
+
+        // Find existing session with this key, or create one
+        if let existing = vm.sessions.first(where: { $0.sessionKey == item.sessionKey }) {
+            vm.switchSession(existing)
+        } else {
+            let session = ChatSession(
+                name: item.summary.prefix(30).description,
+                sessionKey: item.sessionKey,
+                mode: .synced
+            )
+            vm.sessions.append(session)
+            vm.switchSession(session)
+        }
+
+        resumeItem = item
     }
 
     private var emptyState: some View {
@@ -211,6 +293,7 @@ struct ChatHistoryView: View {
 
 struct HistoryRow: View {
     let item: HistoryItem
+    var isPinned: Bool = false
 
     var body: some View {
         HStack(spacing: 12) {
@@ -219,6 +302,12 @@ struct HistoryRow: View {
 
             VStack(alignment: .leading, spacing: 3) {
                 HStack {
+                    if isPinned {
+                        Image(systemName: "pin.fill")
+                            .font(.system(size: 9))
+                            .foregroundColor(.optaAmber)
+                    }
+
                     Text(item.botName)
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundColor(.optaTextPrimary)

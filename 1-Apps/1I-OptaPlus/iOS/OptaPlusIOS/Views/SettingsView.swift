@@ -16,6 +16,7 @@ struct SettingsView: View {
     @State private var editingBot: BotConfig?
     @State private var fontScaleIndex: Double = 1
     @AppStorage("optaplus.deviceName") private var deviceName = "iPhone"
+    @AppStorage("optaplus.deviceEmoji") private var deviceEmoji = ""
     @AppStorage("optaplus.biometricLock") private var biometricLock = false
     @AppStorage("optaplus.privacyMode") private var privacyMode = false
     @AppStorage("optaplus.notifications") private var notificationsEnabled = true
@@ -71,11 +72,37 @@ struct SettingsView: View {
                     TextField("Device Name", text: $deviceName)
                         .textInputAutocapitalization(.words)
                         .listRowBackground(Color.optaSurface)
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Device Emoji")
+                            .font(.subheadline)
+                            .foregroundColor(.optaTextSecondary)
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 44))], spacing: 8) {
+                            ForEach(deviceEmojiOptions, id: \.self) { e in
+                                Button {
+                                    deviceEmoji = (deviceEmoji == e) ? "" : e
+                                } label: {
+                                    Text(e)
+                                        .font(.title2)
+                                        .frame(width: 40, height: 40)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 8)
+                                                .fill(deviceEmoji == e ? Color.optaPrimary.opacity(0.2) : Color.clear)
+                                        )
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 8)
+                                                .stroke(deviceEmoji == e ? Color.optaPrimary : Color.clear, lineWidth: 2)
+                                        )
+                                }
+                            }
+                        }
+                    }
+                    .listRowBackground(Color.optaSurface)
                 } header: {
                     Label("Device Identity", systemImage: "iphone")
                         .foregroundColor(.optaTextSecondary)
                 } footer: {
-                    Text("Messages sent from this device will be tagged with this name.")
+                    Text("Messages sent from this device will be tagged with this name and emoji.")
                         .font(.caption2)
                         .foregroundColor(.optaTextMuted)
                 }
@@ -265,6 +292,8 @@ struct SettingsView: View {
             }
         }
     }
+
+    private let deviceEmojiOptions = ["📱", "💻", "🖥️", "⌚", "🎧", "🎮", "📡", "🏠", "🏢", "🚀", "⚡", "🔮"]
 
     private func connectionIndicator(for bot: BotConfig) -> some View {
         let vm = appState.viewModel(for: bot)

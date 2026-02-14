@@ -272,6 +272,7 @@ struct IOSBotCardView: View {
 
 struct StreamingDots: View {
     @State private var phase = 0
+    private let timer = Timer.publish(every: 0.4, on: .main, in: .common).autoconnect()
 
     var body: some View {
         HStack(spacing: 2) {
@@ -282,11 +283,9 @@ struct StreamingDots: View {
                     .opacity(phase == i ? 1.0 : 0.3)
             }
         }
-        .onAppear {
-            Timer.scheduledTimer(withTimeInterval: 0.4, repeats: true) { _ in
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    phase = (phase + 1) % 3
-                }
+        .onReceive(timer) { _ in
+            withAnimation(.easeInOut(duration: 0.2)) {
+                phase = (phase + 1) % 3
             }
         }
     }

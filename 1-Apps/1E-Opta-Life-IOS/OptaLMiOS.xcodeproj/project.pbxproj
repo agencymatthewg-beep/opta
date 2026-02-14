@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 77;
+	objectVersion = 63;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -17,7 +17,6 @@
 		3792267DD158C64F70DFF933 /* EnhancedComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = E720F0613897F825ACABA4A6 /* EnhancedComponents.swift */; };
 		3CF069CB5647D9E07FC0A582 /* CreateEventIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 419A045F1A783B93D38C89E7 /* CreateEventIntent.swift */; };
 		3E10C0ADD3B6E290E371B4F4 /* OptaWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = C83482146D084C4D8A36E519 /* OptaWidgets.swift */; };
-		44CB92FC0CEBF5B31D9E25DE /* Date+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA95198A3B9B4142CA3CA18A /* Date+Extensions.swift */; };
 		46A842A441DCD30451C95DD8 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = DF6970CE2A1933ACF53F6C6D /* GoogleSignInSwift */; };
 		52B8BF103D2AF2164DCF69F1 /* AuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05637FA696D9471B7362E647 /* AuthManager.swift */; };
 		583E3AADD7F0A292EEC1D04F /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88D00EDCF6EC641E7996635D /* DashboardView.swift */; };
@@ -90,7 +89,7 @@
 		751B498377766CD739882518 /* TasksWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TasksWidget.swift; sourceTree = "<group>"; };
 		78EE66BD41F1D63657313BFA /* NotificationSettingsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationSettingsManager.swift; sourceTree = "<group>"; };
 		7FF672F63701DB27E0184EA5 /* UIComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UIComponents.swift; sourceTree = "<group>"; };
-		86820EF3E07ABCC7B18B0E72 /* OptaLMiOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = OptaLMiOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		86820EF3E07ABCC7B18B0E72 /* Opta LM.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Opta LM.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		88D00EDCF6EC641E7996635D /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
 		89324EAC5D3D301DF17A929E /* CalendarSyncSettings.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = CalendarSyncSettings.swift; path = OptaLMiOS/Views/Settings/CalendarSyncSettings.swift; sourceTree = "<group>"; };
 		8BD585D14FBA665050A60CE0 /* CalendarListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarListView.swift; sourceTree = "<group>"; };
@@ -187,7 +186,7 @@
 		5C2593A1104B518578965282 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				86820EF3E07ABCC7B18B0E72 /* OptaLMiOS.app */,
+				86820EF3E07ABCC7B18B0E72 /* Opta LM.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -347,7 +346,7 @@
 				DF6970CE2A1933ACF53F6C6D /* GoogleSignInSwift */,
 			);
 			productName = OptaLMiOS;
-			productReference = 86820EF3E07ABCC7B18B0E72 /* OptaLMiOS.app */;
+			productReference = 86820EF3E07ABCC7B18B0E72 /* Opta LM.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -357,10 +356,9 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
-				LastUpgradeCheck = 1600;
+				LastUpgradeCheck = 2620;
 				TargetAttributes = {
 					09596D13611D0C637D05BCF2 = {
-						DevelopmentTeam = 77PKS547H5;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -378,7 +376,6 @@
 			packageReferences = (
 				D588D893BA2F8A1920F09EAF /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 			);
-			preferredProjectObjectVersion = 77;
 			productRefGroup = 5C2593A1104B518578965282 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -445,7 +442,6 @@
 				64D2F3B24F69BBCC04A55B84 /* UIComponents.swift in Sources */,
 				60841C19B45B22F6B95DE941 /* ViewModifiers.swift in Sources */,
 				D54CA44D1A4C147B72E0C0CB /* WeatherService.swift in Sources */,
-				44CB92FC0CEBF5B31D9E25DE /* Date+Extensions.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -458,6 +454,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
@@ -496,6 +493,7 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -520,6 +518,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.opta.lm.ios;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.9;
@@ -533,6 +532,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
@@ -571,6 +571,7 @@
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -588,6 +589,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.opta.lm.ios;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 5.9;
@@ -600,6 +602,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = NM9ZUH276T;
 				INFOPLIST_FILE = OptaLMiOS/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -619,6 +622,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = NM9ZUH276T;
 				INFOPLIST_FILE = OptaLMiOS/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

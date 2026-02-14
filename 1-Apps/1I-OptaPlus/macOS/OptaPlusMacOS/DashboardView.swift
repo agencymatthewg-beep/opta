@@ -135,11 +135,6 @@ struct BotCardView: View {
                         Circle()
                             .fill(isConnected ? Color.green : Color.gray)
                             .frame(width: 8, height: 8)
-                            .scaleEffect(pulse && isConnected ? 1.3 : 1.0)
-                            .animation(
-                                isConnected ? .easeInOut(duration: 1.2).repeatForever(autoreverses: true) : .default,
-                                value: pulse
-                            )
 
                         Text(connectionLabel)
                             .font(.system(size: 12))

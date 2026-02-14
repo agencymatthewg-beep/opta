@@ -27,26 +27,37 @@ public final class NetworkEnvironment: ObservableObject {
         startMonitoring()
     }
 
+    deinit {
+        monitor.cancel()
+    }
+
     /// Quick TCP probe to check if LAN host is reachable (200ms timeout).
     public func probeLAN(host: String, port: Int) async -> Bool {
         await withCheckedContinuation { continuation in
-            let endpoint = NWEndpoint.hostPort(
-                host: NWEndpoint.Host(host),
-                port: NWEndpoint.Port(rawValue: UInt16(port))!
-            )
+            guard let nwPort = NWEndpoint.Port(rawValue: UInt16(port)) else {
+                continuation.resume(returning: false)
+                return
+            }
+            let endpoint = NWEndpoint.hostPort(host: NWEndpoint.Host(host), port: nwPort)
             let connection = NWConnection(to: endpoint, using: .tcp)
+            let lock = NSLock()
             var resumed = false
 
-            connection.stateUpdateHandler = { state in
+            func safeResume(_ value: Bool) {
+                lock.lock()
+                defer { lock.unlock() }
                 guard !resumed else { return }
+                resumed = true
+                connection.cancel()
+                continuation.resume(returning: value)
+            }
+
+            connection.stateUpdateHandler = { state in
                 switch state {
                 case .ready:
-                    resumed = true
-                    connection.cancel()
-                    continuation.resume(returning: true)
+                    safeResume(true)
                 case .failed, .cancelled:
-                    resumed = true
-                    continuation.resume(returning: false)
+                    safeResume(false)
                 default:
                     break
                 }
@@ -56,10 +67,7 @@ public final class NetworkEnvironment: ObservableObject {
 
             // 200ms timeout
             DispatchQueue.global().asyncAfter(deadline: .now() + 0.2) {
-                guard !resumed else { return }
-                resumed = true
-                connection.cancel()
-                continuation.resume(returning: false)
+                safeResume(false)
             }
         }
     }

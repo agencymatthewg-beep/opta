@@ -1,7 +1,7 @@
 import SwiftUI
 
-struct ClawdbotSettingsView: View {
-    @ObservedObject private var service = ClawdbotService.shared
+struct OpenClawSettingsView: View {
+    @ObservedObject private var service = OpenClawService.shared
     @State private var serverURL: String = ""
     @State private var autoConnect: Bool = true
     @State private var showingResetConfirmation = false
@@ -126,7 +126,7 @@ struct ClawdbotSettingsView: View {
                 } header: {
                     Text("Configuration")
                 } footer: {
-                    Text("Enter your Clawdbot server's WebSocket URL. The server should be running on your local network or accessible via Tailscale.")
+                    Text("Enter your OpenClaw server's WebSocket URL. The server should be running on your local network or accessible via Tailscale.")
                         .foregroundColor(.optaTextMuted)
                 }
 
@@ -199,20 +199,20 @@ struct ClawdbotSettingsView: View {
                     }
                     .listRowBackground(Color.optaGlassBackground)
                 } footer: {
-                    Text("This will disconnect and clear all Clawdbot settings.")
+                    Text("This will disconnect and clear all OpenClaw settings.")
                         .foregroundColor(.optaTextMuted)
                 }
             }
             .scrollContentBackground(.hidden)
         }
-        .navigationTitle("Clawdbot Settings")
+        .navigationTitle("OpenClaw Settings")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             serverURL = service.serverURL
             autoConnect = service.autoConnect
         }
         .confirmationDialog(
-            "Reset Clawdbot Settings?",
+            "Reset OpenClaw Settings?",
             isPresented: $showingResetConfirmation,
             titleVisibility: .visible
         ) {
@@ -232,6 +232,6 @@ struct ClawdbotSettingsView: View {
 
 #Preview {
     NavigationStack {
-        ClawdbotSettingsView()
+        OpenClawSettingsView()
     }
 }

@@ -15,6 +15,7 @@ struct ChatInputBar: View {
     @FocusState private var isFocused: Bool
     @State private var sendPulse = false
     @AppStorage("optaplus.deviceName") private var deviceName = "iPhone"
+    @AppStorage("optaplus.deviceEmoji") private var deviceEmoji = ""
 
     private var trimmedText: String {
         text.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -35,7 +36,11 @@ struct ChatInputBar: View {
             VStack(spacing: 4) {
                 // Device identity badge
                 if !deviceName.isEmpty {
-                    HStack {
+                    HStack(spacing: 4) {
+                        if !deviceEmoji.isEmpty {
+                            Text(deviceEmoji)
+                                .font(.system(size: 11))
+                        }
                         Text("Sending as: \(deviceName)")
                             .font(.system(size: 10))
                             .foregroundColor(.optaTextMuted)

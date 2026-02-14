@@ -15,7 +15,7 @@ import OptaMolt
 final class AppState: ObservableObject {
     @Published var bots: [BotConfig] = []
     @Published var selectedBotId: String?
-    @Published var chatViewModels: [String: ChatViewModel] = [:]
+    private var chatViewModels: [String: ChatViewModel] = [:]
 
     private let botsKey = "optaplus.bots"
     private let selectedBotKey = "optaplus.selectedBot"

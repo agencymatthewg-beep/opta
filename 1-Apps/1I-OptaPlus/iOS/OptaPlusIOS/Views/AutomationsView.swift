@@ -116,6 +116,23 @@ struct AutomationsView: View {
                             onToggle: { toggleJob(job) },
                             onRun: { runJob(job) }
                         )
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button(role: .destructive) {
+                                UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+                                deleteJob(job)
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                        }
+                        .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                            Button {
+                                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                                toggleJob(job)
+                            } label: {
+                                Label("Pause", systemImage: "pause.circle")
+                            }
+                            .tint(.optaAmber)
+                        }
                     }
                     .listRowBackground(Color.optaSurface)
                 }
@@ -132,6 +149,23 @@ struct AutomationsView: View {
                             onToggle: { toggleJob(job) },
                             onRun: { runJob(job) }
                         )
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button(role: .destructive) {
+                                UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+                                deleteJob(job)
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                        }
+                        .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                            Button {
+                                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                                toggleJob(job)
+                            } label: {
+                                Label("Resume", systemImage: "play.circle")
+                            }
+                            .tint(.optaGreen)
+                        }
                     }
                     .listRowBackground(Color.optaSurface)
                 }
@@ -282,6 +316,20 @@ struct AutomationsView: View {
         }
     }
 
+    private func deleteJob(_ job: CronJobItem) {
+        guard let vm = viewModel(for: job) else { return }
+        Task {
+            do {
+                _ = try await vm.call("cron.delete", params: ["jobId": job.id])
+                withAnimation(.optaSpring) {
+                    jobs.removeAll { $0.id == job.id }
+                }
+            } catch {
+                errorMessage = "Delete failed: \(error.localizedDescription)"
+            }
+        }
+    }
+
     private func viewModel(for job: CronJobItem) -> ChatViewModel? {
         guard let bot = appState.bots.first(where: { $0.id == job.botId }) else { return nil }
         return appState.viewModel(for: bot)
@@ -342,7 +390,7 @@ struct AutomationsView: View {
 
 // MARK: - String Padding Helper
 
-private extension String {
+extension String {
     func leftPad(_ length: Int, pad: Character = "0") -> String {
         String(repeating: pad, count: max(0, length - count)) + self
     }

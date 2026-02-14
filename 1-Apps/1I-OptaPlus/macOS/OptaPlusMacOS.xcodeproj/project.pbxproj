@@ -3,33 +3,34 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 56;
+	objectVersion = 60;
 	objects = {
 
 /* Begin PBXBuildFile section */
+		BP000001FFFF000100000001 /* BotProfileSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = BP000002FFFF000100000001 /* BotProfileSheet.swift */; };
 		CD000001BBBB000100000001 /* OptaPlusMacOSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD000002BBBB000100000001 /* OptaPlusMacOSApp.swift */; };
 		CD000003BBBB000100000001 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD000004BBBB000100000001 /* ContentView.swift */; };
-		CD000070CCCC000100000001 /* ThinkingOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD000071CCCC000100000001 /* ThinkingOverlay.swift */; };
-		CD000072CCCC000100000001 /* ContextPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD000073CCCC000100000001 /* ContextPanel.swift */; };
-		CD000080DDDD000100000001 /* AmbientBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD000081DDDD000100000001 /* AmbientBackground.swift */; };
-		CD000082DDDD000100000001 /* LoadingSplash.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD000083DDDD000100000001 /* LoadingSplash.swift */; };
-		NF000001AAAA000100000001 /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = NF000002AAAA000100000001 /* NotificationManager.swift */; };
-		CD000074CCCC000100000001 /* AnimationSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD000075CCCC000100000001 /* AnimationSystem.swift */; };
-		CD000090EEEE000100000001 /* ChatTextInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD000091EEEE000100000001 /* ChatTextInput.swift */; };
-		CD000092EEEE000100000001 /* TelegramAuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD000093EEEE000100000001 /* TelegramAuthView.swift */; };
-		BP000001FFFF000100000001 /* BotProfileSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = BP000002FFFF000100000001 /* BotProfileSheet.swift */; };
-		PH000001FFFF000100000001 /* CommandPalette.swift in Sources */ = {isa = PBXBuildFile; fileRef = PH000002FFFF000100000001 /* CommandPalette.swift */; };
-		PH000003FFFF000100000001 /* KeyboardShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = PH000004FFFF000100000001 /* KeyboardShortcuts.swift */; };
-		SM000001FFFF000100000001 /* SoundManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = SM000002FFFF000100000001 /* SoundManager.swift */; };
-		DB000001FFFF000100000001 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB000002FFFF000100000001 /* DashboardView.swift */; };
-				CD000007BBBB000200000001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CD000008BBBB000200000001 /* Assets.xcassets */; };
+		CD000007BBBB000200000001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CD000008BBBB000200000001 /* Assets.xcassets */; };
 		CD000050BBBB000300000001 /* OptaPlus in Frameworks */ = {isa = PBXBuildFile; productRef = CD000051BBBB000300000001 /* OptaPlus */; };
 		CD000060BBBB000400000001 /* OptaMolt in Frameworks */ = {isa = PBXBuildFile; productRef = CD000061BBBB000400000001 /* OptaMolt */; };
+		CD000070CCCC000100000001 /* ThinkingOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD000071CCCC000100000001 /* ThinkingOverlay.swift */; };
+		CD000072CCCC000100000001 /* ContextPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD000073CCCC000100000001 /* ContextPanel.swift */; };
+		CD000074CCCC000100000001 /* AnimationSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD000075CCCC000100000001 /* AnimationSystem.swift */; };
+		CD000080DDDD000100000001 /* AmbientBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD000081DDDD000100000001 /* AmbientBackground.swift */; };
+		CD000082DDDD000100000001 /* LoadingSplash.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD000083DDDD000100000001 /* LoadingSplash.swift */; };
+		CD000090EEEE000100000001 /* ChatTextInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD000091EEEE000100000001 /* ChatTextInput.swift */; };
+		CD000092EEEE000100000001 /* TelegramAuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD000093EEEE000100000001 /* TelegramAuthView.swift */; };
+		DB000001FFFF000100000001 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB000002FFFF000100000001 /* DashboardView.swift */; };
+		NF000001AAAA000100000001 /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = NF000002AAAA000100000001 /* NotificationManager.swift */; };
+		PH000001FFFF000100000001 /* CommandPalette.swift in Sources */ = {isa = PBXBuildFile; fileRef = PH000002FFFF000100000001 /* CommandPalette.swift */; };
+		PH000003FFFF000100000001 /* KeyboardShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = PH000004FFFF000100000001 /* KeyboardShortcuts.swift */; };
 		PH100001FFFF001600000001 /* SessionViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = PH100002FFFF001600000001 /* SessionViews.swift */; };
 		PH100001FFFF001700000001 /* SettingsViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = PH100002FFFF001700000001 /* SettingsViews.swift */; };
+		SM000001FFFF000100000001 /* SoundManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = SM000002FFFF000100000001 /* SoundManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		BP000002FFFF000100000001 /* BotProfileSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BotProfileSheet.swift; sourceTree = "<group>"; };
 		CD000002BBBB000100000001 /* OptaPlusMacOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptaPlusMacOSApp.swift; sourceTree = "<group>"; };
 		CD000004BBBB000100000001 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		CD000008BBBB000200000001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -38,19 +39,18 @@
 		CD00000BBBBB000200000001 /* OptaPlusMacOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = OptaPlusMacOS.entitlements; sourceTree = "<group>"; };
 		CD000071CCCC000100000001 /* ThinkingOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThinkingOverlay.swift; sourceTree = "<group>"; };
 		CD000073CCCC000100000001 /* ContextPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContextPanel.swift; sourceTree = "<group>"; };
+		CD000075CCCC000100000001 /* AnimationSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimationSystem.swift; sourceTree = "<group>"; };
 		CD000081DDDD000100000001 /* AmbientBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AmbientBackground.swift; sourceTree = "<group>"; };
 		CD000083DDDD000100000001 /* LoadingSplash.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingSplash.swift; sourceTree = "<group>"; };
-		NF000002AAAA000100000001 /* NotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
-		CD000075CCCC000100000001 /* AnimationSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimationSystem.swift; sourceTree = "<group>"; };
 		CD000091EEEE000100000001 /* ChatTextInput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatTextInput.swift; sourceTree = "<group>"; };
 		CD000093EEEE000100000001 /* TelegramAuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelegramAuthView.swift; sourceTree = "<group>"; };
-		BP000002FFFF000100000001 /* BotProfileSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BotProfileSheet.swift; sourceTree = "<group>"; };
+		DB000002FFFF000100000001 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
+		NF000002AAAA000100000001 /* NotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
 		PH000002FFFF000100000001 /* CommandPalette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandPalette.swift; sourceTree = "<group>"; };
 		PH000004FFFF000100000001 /* KeyboardShortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardShortcuts.swift; sourceTree = "<group>"; };
-		SM000002FFFF000100000001 /* SoundManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundManager.swift; sourceTree = "<group>"; };
 		PH100002FFFF001600000001 /* SessionViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionViews.swift; sourceTree = "<group>"; };
 		PH100002FFFF001700000001 /* SettingsViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViews.swift; sourceTree = "<group>"; };
-		DB000002FFFF000100000001 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
+		SM000002FFFF000100000001 /* SoundManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -158,7 +158,7 @@
 			);
 			mainGroup = CD00000DBBBB000100000001;
 			packageReferences = (
-				CD000052BBBB000300000001 /* XCLocalSwiftPackageReference "../Shared" */,
+				CD000052BBBB000300000001 /* XCLocalSwiftPackageReference ".." */,
 			);
 			productRefGroup = CD00000FBBBB000100000001 /* Products */;
 			projectDirPath = "";
@@ -334,10 +334,11 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = OptaPlusMacOS/OptaPlusMacOS.entitlements;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = NM9ZUH276T;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -363,10 +364,11 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = OptaPlusMacOS/OptaPlusMacOS.entitlements;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = NM9ZUH276T;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;

@@ -31,16 +31,16 @@ Make OptaPlus work **exactly like Telegram** — open the app from anywhere with
 
 ## Phases (3 parallel workstreams)
 
-### Phase A: Infrastructure (Cloudflare Tunnel Setup)
-**Agent: infra-agent** | **Estimated: 15 min** | **Blocks: B, C**
+### Phase A: Infrastructure (Cloudflare Tunnel Setup) ✅ COMPLETE
+**Host: Mono512 (Mac Studio)** | **Completed: 2026-02-14**
 
-1. [A1] Authenticate cloudflared with Cloudflare (`cloudflared tunnel login`)
-2. [A2] Create tunnel named `optaplus`
-3. [A3] Write config.yml with ingress rules for all 7 bots
-4. [A4] Create DNS CNAME records (gateway, mono, opta512, floda, saturday, yj)
-5. [A5] Test tunnel connectivity: `cloudflared tunnel run optaplus`
-6. [A6] Install as macOS launchd service (persistent, auto-start)
-7. [A7] Verify WebSocket handshake works through tunnel (wscat test)
+1. [x] [A1] Authenticated cloudflared on MacBook, copied cert to Mono512
+2. [x] [A2] Created tunnel `optaplus` (ID: `bcad0b59-bc52-4353-94a7-b447e65b04bf`)
+3. [x] [A3] Config.yml with ingress rules for all 7 bots (5 localhost + 1 LAN)
+4. [x] [A4] DNS CNAMEs created: gateway, mono, opta512, floda, saturday, yj
+5. [x] [A5] Tunnel running — 4 QUIC connections (syd01, mel01, mel02, syd07)
+6. [x] [A6] Installed as launchd agent: `com.opta.cloudflared-optaplus`
+7. [x] [A7] All 6 subdomains returning HTTP 200
 
 ### Phase B: Gateway Config (OpenClaw Changes)
 **Agent: gateway-agent** | **Estimated: 5 min** | **Can start immediately, independent**

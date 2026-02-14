@@ -2,24 +2,24 @@ import Foundation
 import SwiftUI
 import Combine
 
-// MARK: - Clawdbot Service
+// MARK: - OpenClaw Service
 
-/// WebSocket client for Clawdbot AI assistant integration
+/// WebSocket client for OpenClaw AI assistant integration
 @MainActor
-final class ClawdbotService: ObservableObject {
-    static let shared = ClawdbotService()
+final class OpenClawService: ObservableObject {
+    static let shared = OpenClawService()
 
     // MARK: - Configuration
 
-    @AppStorage("clawdbotEnabled") private(set) var isEnabled = false
-    @AppStorage("clawdbotServerURL") private(set) var serverURL = ""
-    @AppStorage("clawdbotAutoConnect") private(set) var autoConnect = true
+    @AppStorage("openclawEnabled") private(set) var isEnabled = false
+    @AppStorage("openclawServerURL") private(set) var serverURL = ""
+    @AppStorage("openclawAutoConnect") private(set) var autoConnect = true
 
     // MARK: - Published State
 
-    @Published var connectionState: ClawdbotConnectionState = .disconnected
-    @Published var messages: [ClawdbotMessage] = []
-    @Published var botState: ClawdbotBotState = .idle
+    @Published var connectionState: OpenClawConnectionState = .disconnected
+    @Published var messages: [OpenClawMessage] = []
+    @Published var botState: OpenClawBotState = .idle
     @Published var botStateDetail: String?
     @Published var streamingContent: [String: String] = [:]
     @Published var lastError: String?
@@ -92,7 +92,7 @@ final class ClawdbotService: ObservableObject {
 
     func connect() async {
         guard isEnabled else {
-            lastError = "Clawdbot is disabled"
+            lastError = "OpenClaw is disabled"
             return
         }
 
@@ -144,7 +144,7 @@ final class ClawdbotService: ObservableObject {
         }
 
         let messageId = UUID().uuidString
-        let userMessage = ClawdbotMessage(
+        let userMessage = OpenClawMessage(
             id: messageId,
             role: .user,
             content: content,
@@ -238,7 +238,7 @@ final class ClawdbotService: ObservableObject {
                let messageId = payload["messageID"] as? String,
                let role = payload["role"] as? String,
                let content = payload["content"] as? String {
-                let newMessage = ClawdbotMessage(
+                let newMessage = OpenClawMessage(
                     id: messageId,
                     role: role == "assistant" ? .assistant : .user,
                     content: content,
@@ -251,7 +251,7 @@ final class ClawdbotService: ObservableObject {
         case "bot.state":
             if let payload = json["payload"] as? [String: Any],
                let stateStr = payload["state"] as? String {
-                botState = ClawdbotBotState(rawValue: stateStr) ?? .idle
+                botState = OpenClawBotState(rawValue: stateStr) ?? .idle
                 botStateDetail = payload["detail"] as? String
             }
 
@@ -264,7 +264,7 @@ final class ClawdbotService: ObservableObject {
                 if isFinal {
                     // Finalize streaming message
                     if let finalContent = streamingContent[messageId] {
-                        let completeMessage = ClawdbotMessage(
+                        let completeMessage = OpenClawMessage(
                             id: messageId,
                             role: .assistant,
                             content: finalContent + content,
@@ -347,7 +347,7 @@ final class ClawdbotService: ObservableObject {
 
 // MARK: - Types
 
-enum ClawdbotConnectionState: String {
+enum OpenClawConnectionState: String {
     case disconnected
     case connecting
     case connected
@@ -371,7 +371,7 @@ enum ClawdbotConnectionState: String {
     }
 }
 
-enum ClawdbotBotState: String {
+enum OpenClawBotState: String {
     case idle
     case thinking
     case typing
@@ -387,14 +387,14 @@ enum ClawdbotBotState: String {
     }
 }
 
-struct ClawdbotMessage: Identifiable, Equatable {
+struct OpenClawMessage: Identifiable, Equatable {
     let id: String
-    let role: ClawdbotMessageRole
+    let role: OpenClawMessageRole
     let content: String
     let timestamp: Date
 }
 
-enum ClawdbotMessageRole: String {
+enum OpenClawMessageRole: String {
     case user
     case assistant
 }

@@ -122,6 +122,21 @@ struct TaskRowCompact: View {
                     .lineLimit(1)
                 
                 HStack(spacing: 8) {
+                    // Source badge (Opta512 indicator)
+                    if task.labels.contains("opta512") {
+                        HStack(spacing: 3) {
+                            Image(systemName: "brain.head.profile")
+                                .font(.system(size: 8))
+                            Text("512")
+                                .font(.system(size: 9, weight: .semibold))
+                        }
+                        .foregroundColor(.optaPrimary)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.optaPrimary.opacity(0.15))
+                        .cornerRadius(6)
+                    }
+                    
                     if let due = task.due {
                         HStack(spacing: 4) {
                             Image(systemName: "clock")
@@ -132,8 +147,9 @@ struct TaskRowCompact: View {
                         .foregroundColor(isDueSoon ? .optaNeonAmber : .optaTextMuted)
                     }
                     
-                    if !task.labels.isEmpty {
-                        TagPill(text: task.labels.first ?? "", color: .optaNeonBlue)
+                    // Show other labels (non-opta512)
+                    if let firstNonOpta512Label = task.labels.first(where: { $0 != "opta512" }) {
+                        TagPill(text: firstNonOpta512Label, color: .optaNeonBlue)
                     }
                 }
             }
@@ -235,7 +251,7 @@ struct EventRowCompact: View {
     var body: some View {
         HStack(spacing: 10) {
             Circle()
-                .fill(Color.optaNeonBlue)
+                .fill(sourceColor)
                 .frame(width: 6, height: 6)
             
             VStack(alignment: .leading, spacing: 2) {
@@ -244,11 +260,26 @@ struct EventRowCompact: View {
                     .foregroundColor(.optaTextPrimary)
                     .lineLimit(1)
                 
-                HStack(spacing: 4) {
+                HStack(spacing: 6) {
+                    // Source badge (Opta512 indicator)
+                    if event.source == .opta512 {
+                        HStack(spacing: 2) {
+                            Image(systemName: "brain.head.profile")
+                                .font(.system(size: 7))
+                            Text("512")
+                                .font(.system(size: 8, weight: .semibold))
+                        }
+                        .foregroundColor(.optaPrimary)
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 1)
+                        .background(Color.optaPrimary.opacity(0.15))
+                        .cornerRadius(4)
+                    }
+                    
                     if event.startDate?.isToday ?? false {
                         Text(event.displayTime)
                             .font(.caption2)
-                            .foregroundColor(.optaNeonBlue)
+                            .foregroundColor(sourceColor)
                             .fontDesign(.monospaced)
                     } else {
                         Text(event.displayDate)
@@ -265,6 +296,10 @@ struct EventRowCompact: View {
             
             Spacer()
         }
+    }
+    
+    private var sourceColor: Color {
+        event.source.color
     }
 }
 

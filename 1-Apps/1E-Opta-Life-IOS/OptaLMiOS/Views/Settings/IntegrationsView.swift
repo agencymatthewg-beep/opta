@@ -2,19 +2,19 @@ import SwiftUI
 
 struct IntegrationsView: View {
     @StateObject private var viewModel = IntegrationsViewModel()
-    @ObservedObject private var clawdbotService = ClawdbotService.shared
+    @ObservedObject private var openclawService = OpenClawService.shared
     @State private var showTodoistAuth = false
     @State private var showSyncStatus = false
     @State private var showCalendarSettings = false
     @State private var showHealthInsights = false
     @State private var showingSyncAll = false
 
-    // Clawdbot status helpers
-    private var clawdbotStatusText: String {
-        if !clawdbotService.isEnabled {
+    // OpenClaw status helpers
+    private var openclawStatusText: String {
+        if !openclawService.isEnabled {
             return "Disabled"
         }
-        switch clawdbotService.connectionState {
+        switch openclawService.connectionState {
         case .connected:
             return "Connected"
         case .connecting:
@@ -22,15 +22,15 @@ struct IntegrationsView: View {
         case .reconnecting:
             return "Reconnecting..."
         case .disconnected:
-            return clawdbotService.serverURL.isEmpty ? "Not configured" : "Disconnected"
+            return openclawService.serverURL.isEmpty ? "Not configured" : "Disconnected"
         }
     }
 
-    private var clawdbotStatusColor: Color {
-        if !clawdbotService.isEnabled {
+    private var openclawStatusColor: Color {
+        if !openclawService.isEnabled {
             return .optaTextMuted
         }
-        return clawdbotService.connectionState.color
+        return openclawService.connectionState.color
     }
 
     var body: some View {
@@ -301,7 +301,7 @@ struct IntegrationsView: View {
                     }
                 }
 
-                // Clawdbot AI Section
+                // OpenClaw AI Section
                 Section {
                     HStack {
                         Image(systemName: "terminal.fill")
@@ -310,66 +310,66 @@ struct IntegrationsView: View {
                             .frame(width: 40)
 
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Clawdbot")
+                            Text("OpenClaw")
                                 .font(.headline)
                                 .foregroundColor(.optaTextPrimary)
 
-                            Text(clawdbotStatusText)
+                            Text(openclawStatusText)
                                 .font(.caption)
-                                .foregroundColor(clawdbotStatusColor)
+                                .foregroundColor(openclawStatusColor)
                         }
 
                         Spacer()
 
                         Toggle("", isOn: Binding(
-                            get: { clawdbotService.isEnabled },
-                            set: { clawdbotService.setEnabled($0) }
+                            get: { openclawService.isEnabled },
+                            set: { openclawService.setEnabled($0) }
                         ))
                         .labelsHidden()
                         .tint(.optaNeonCyan)
-                        .onChange(of: clawdbotService.isEnabled) { _, _ in
+                        .onChange(of: openclawService.isEnabled) { _, _ in
                             HapticManager.shared.impact(.light)
                         }
                     }
                     .listRowBackground(Color.optaGlassBackground)
 
-                    if clawdbotService.isEnabled {
+                    if openclawService.isEnabled {
                         // Connection Status
                         HStack {
                             Circle()
-                                .fill(clawdbotService.connectionState.color)
+                                .fill(openclawService.connectionState.color)
                                 .frame(width: 8, height: 8)
-                                .optaGlow(clawdbotService.connectionState.color, radius: 4)
+                                .optaGlow(openclawService.connectionState.color, radius: 4)
 
-                            Text(clawdbotService.connectionState.displayText)
+                            Text(openclawService.connectionState.displayText)
                                 .font(.subheadline)
                                 .foregroundColor(.optaTextSecondary)
 
                             Spacer()
 
-                            if clawdbotService.isConnected {
+                            if openclawService.isConnected {
                                 Button {
                                     HapticManager.shared.impact(.medium)
                                     Task {
-                                        await clawdbotService.disconnect()
+                                        await openclawService.disconnect()
                                     }
                                 } label: {
                                     Text("Disconnect")
                                         .font(.caption)
                                         .foregroundColor(.optaNeonRed)
                                 }
-                            } else if clawdbotService.connectionState != .connecting {
+                            } else if openclawService.connectionState != .connecting {
                                 Button {
                                     HapticManager.shared.impact(.medium)
                                     Task {
-                                        await clawdbotService.connect()
+                                        await openclawService.connect()
                                     }
                                 } label: {
                                     Text("Connect")
                                         .font(.caption)
                                         .foregroundColor(.optaNeonCyan)
                                 }
-                                .disabled(clawdbotService.serverURL.isEmpty)
+                                .disabled(openclawService.serverURL.isEmpty)
                             } else {
                                 ProgressView()
                                     .tint(.optaNeonCyan)
@@ -379,7 +379,7 @@ struct IntegrationsView: View {
 
                         // Settings Navigation
                         NavigationLink {
-                            ClawdbotSettingsView()
+                            OpenClawSettingsView()
                         } label: {
                             HStack {
                                 Image(systemName: "gearshape")
@@ -393,11 +393,11 @@ struct IntegrationsView: View {
                 } header: {
                     Text("AI Assistant")
                 } footer: {
-                    if clawdbotService.isEnabled {
-                        Text("Connect to your Clawdbot server for AI-powered life management. Requires a server running on your local network or via Tailscale.")
+                    if openclawService.isEnabled {
+                        Text("Connect to your OpenClaw server for AI-powered life management. Requires a server running on your local network or via Tailscale.")
                             .foregroundColor(.optaTextMuted)
                     } else {
-                        Text("Enable Clawdbot to add AI assistant capabilities to Opta.")
+                        Text("Enable OpenClaw to add AI assistant capabilities to Opta.")
                             .foregroundColor(.optaTextMuted)
                     }
                 }

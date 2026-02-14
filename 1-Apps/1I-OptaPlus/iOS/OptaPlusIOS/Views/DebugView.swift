@@ -15,7 +15,6 @@ import OptaMolt
 struct DebugView: View {
     @EnvironmentObject var appState: AppState
     @State private var healthData: [String: Any]?
-    @State private var statusData: [String: Any]?
     @State private var sessions: [[String: Any]] = []
     @State private var nodes: [[String: Any]] = []
     @State private var isLoading = false
@@ -246,13 +245,6 @@ struct DebugView: View {
             }
         }()
 
-        async let statusTask: Void = {
-            let result = try? await vm.call("status")
-            if let dict = result?.dict {
-                await MainActor.run { statusData = dict }
-            }
-        }()
-
         async let sessionsTask: Void = {
             let result = try? await vm.call("sessions.list")
             if let list = result?.dict?["sessions"] as? [[String: Any]] {
@@ -267,7 +259,7 @@ struct DebugView: View {
             }
         }()
 
-        _ = await (healthTask, statusTask, sessionsTask, nodesTask)
+        _ = await (healthTask, sessionsTask, nodesTask)
     }
 
     // MARK: - Helpers

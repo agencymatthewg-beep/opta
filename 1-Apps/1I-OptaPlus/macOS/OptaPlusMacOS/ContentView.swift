@@ -368,25 +368,8 @@ struct BotRow: View {
                     .font(.system(size: 18))
             }
             .shadow(color: accentColor.opacity(isConnected ? 0.5 : 0.2), radius: isConnected ? 10 : 4)
-            .scaleEffect(breatheScale)
-            .onAppear {
-                if isConnected {
-                    withAnimation(.easeInOut(duration: 2.5).repeatForever(autoreverses: true)) {
-                        breatheScale = 1.03
-                    }
-                }
-            }
-            .onChange(of: isConnected) { _, connected in
-                if connected {
-                    withAnimation(.easeInOut(duration: 2.5).repeatForever(autoreverses: true)) {
-                        breatheScale = 1.03
-                    }
-                } else {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                        breatheScale = 1.0
-                    }
-                }
-            }
+            .scaleEffect(isConnected ? 1.02 : 1.0)
+            .animation(.easeInOut(duration: 0.5), value: isConnected)
             
             VStack(alignment: .leading, spacing: 2) {
                 Text(bot.name)
@@ -679,6 +662,14 @@ struct ChatContainerView: View {
                                 }
                                 
                                 Color.clear.frame(height: 1).id("bottom")
+                                    .onAppear {
+                                        isAtBottom = true
+                                        showNewMessagesPill = false
+                                        newMessageCount = 0
+                                    }
+                                    .onDisappear {
+                                        isAtBottom = false
+                                    }
                             }
                             .padding(.horizontal, 20)
                             .padding(.vertical, 8)
@@ -724,7 +715,7 @@ struct ChatContainerView: View {
                             }
                         }
                         .overlay(alignment: .bottomTrailing) {
-                            if showNewMessagesPill {
+                            if !isAtBottom {
                                 Button(action: {
                                     withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) {
                                         proxy.scrollTo("bottom", anchor: .bottom)
@@ -1202,8 +1193,7 @@ struct MessageSearchBar: View {
         .padding(.horizontal, 14)
         .padding(.vertical, 8)
         .background(
-            Color.optaSurface.opacity(0.6)
-                .background(.ultraThinMaterial)
+            Color(red: 0.06, green: 0.06, blue: 0.07) // Solid dark glass (was ultraThinMaterial)
         )
         .onChange(of: query) { _, _ in
             currentIndex = 0
@@ -1298,12 +1288,7 @@ struct MessageRow: View {
             } else {
                 appeared = true
             }
-            if isRecent {
-                let duration = 4.0 + Double.random(in: 0...1.5)
-                withAnimation(.easeInOut(duration: duration).repeatForever(autoreverses: true).delay(Double.random(in: 0...1))) {
-                    floatY = CGFloat.random(in: -0.5...0.5)
-                }
-            }
+            // Removed per-message float animation — caused N concurrent repeatForever animations
         }
     }
 }
@@ -1495,33 +1480,14 @@ struct ChatHeaderView: View {
             .scaleEffect(isConnecting ? connectingPulse : (viewModel.connectionState == .connected ? 1 : 0.7))
             .animation(.spring(response: 0.2, dampingFraction: 0.8), value: viewModel.connectionState)
             .onAppear {
-                withAnimation(.easeInOut(duration: 2).repeatForever(autoreverses: true)) {
-                    connGlow = 1
-                }
-                if isConnecting {
-                    withAnimation(.spring(response: 0.2, dampingFraction: 0.8).repeatForever(autoreverses: true)) {
-                        connectingPulse = 1.3
-                    }
-                }
-            }
-            .onChange(of: isConnecting) { _, connecting in
-                if connecting {
-                    withAnimation(.spring(response: 0.2, dampingFraction: 0.8).repeatForever(autoreverses: true)) {
-                        connectingPulse = 1.3
-                    }
-                } else {
-                    withAnimation(.spring(response: 0.2, dampingFraction: 0.8)) {
-                        connectingPulse = 1.0
-                    }
-                }
+                connGlow = 1
             }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
         .background(
             ZStack {
-                Color.optaSurface.opacity(0.5)
-                    .background(.ultraThinMaterial)
+                Color(red: 0.06, green: 0.06, blue: 0.07) // Solid dark glass (was ultraThinMaterial)
                 
                 // Bot accent color tint gradient at top
                 VStack {
@@ -1657,6 +1623,7 @@ struct ChatInputBar: View {
     var onSaveTemplate: ((String) -> Void)? = nil
 
     @AppStorage("optaplus.deviceName") private var deviceName = "MacBook"
+    @AppStorage("optaplus.deviceEmoji") private var deviceEmoji = ""
     @State private var glowPhase: CGFloat = 0
     @State private var sendScale: CGFloat = 1
 
@@ -1686,7 +1653,11 @@ struct ChatInputBar: View {
 
             // Device identity badge
             if !deviceName.isEmpty {
-                HStack {
+                HStack(spacing: 4) {
+                    if !deviceEmoji.isEmpty {
+                        Text(deviceEmoji)
+                            .font(.system(size: 11))
+                    }
                     Text("Sending as: \(deviceName)")
                         .font(.system(size: 10))
                         .foregroundColor(.optaTextMuted)
@@ -1765,8 +1736,7 @@ struct ChatInputBar: View {
         }
         .background(
             ZStack {
-                Color.optaSurface.opacity(0.5)
-                    .background(.ultraThinMaterial)
+                Color(red: 0.06, green: 0.06, blue: 0.07) // Solid dark glass (was ultraThinMaterial)
                 
                 // Subtle glow behind input when streaming
                 if isStreaming {
@@ -1775,9 +1745,7 @@ struct ChatInputBar: View {
             }
         )
         .onAppear {
-            withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
-                glowPhase = 1
-            }
+            glowPhase = 1
         }
     }
     

@@ -2,7 +2,7 @@ import SwiftUI
 
 struct DashboardView: View {
     @StateObject private var viewModel = DashboardViewModel()
-    @ObservedObject private var clawdbotService = ClawdbotService.shared
+    @ObservedObject private var openclawService = OpenClawService.shared
     @EnvironmentObject var authManager: AuthManager
     @State private var showBriefingSheet = false
     @State private var showHealthInsights = false
@@ -101,9 +101,9 @@ struct DashboardView: View {
 
             Spacer()
 
-            // Clawdbot connection indicator (only when enabled)
-            if clawdbotService.isEnabled {
-                ClawdbotHeaderIndicator(service: clawdbotService)
+            // OpenClaw connection indicator (only when enabled)
+            if openclawService.isEnabled {
+                OpenClawHeaderIndicator(service: openclawService)
                     .padding(.trailing, 8)
             }
 
@@ -531,10 +531,14 @@ class DashboardViewModel: ObservableObject {
     }
     
     private let api = APIService.shared
+    private let opta512 = Opta512Service.shared
     // private let healthService = HealthService.shared
 
     func loadData() async {
         isLoading = true
+
+        // Sync Opta512 personal assistant data first
+        await opta512.syncAll()
 
         await withTaskGroup(of: Void.self) { group in
             group.addTask { await self.loadTasks() }
@@ -556,29 +560,50 @@ class DashboardViewModel: ObservableObject {
         isLoadingTasks = true
         defer { isLoadingTasks = false }
         
+        var allTasks: [OptaTask] = []
+        
+        // Load Opta512 personal assistant tasks
+        let opta512Tasks = opta512.getTodayTasks()
+        allTasks.append(contentsOf: opta512Tasks)
+        
+        // Load API/Todoist tasks
         do {
             let dashboard = try await api.fetchTasksDashboard()
-            todayTasks = dashboard.todayTasks
-            stats.tasksToday = dashboard.stats.todayCount
+            allTasks.append(contentsOf: dashboard.todayTasks)
             todoistConnected = true
         } catch {
             self.error = error.localizedDescription
             todoistConnected = false
         }
+        
+        // Merge and deduplicate tasks
+        todayTasks = allTasks
+        stats.tasksToday = allTasks.count
     }
     
     private func loadCalendar() async {
         isLoadingCalendar = true
         defer { isLoadingCalendar = false }
         
+        var allEvents: [CalendarEvent] = []
+        
+        // Load Opta512 personal assistant events
+        let opta512Events = opta512.getTodayEvents()
+        allEvents.append(contentsOf: opta512Events)
+        
+        // Load API/Google Calendar events
         do {
-            upcomingEvents = try await api.fetchCalendarEvents(range: "week")
-            stats.eventsToday = upcomingEvents.filter { $0.startDate?.isToday ?? false }.count
+            let apiEvents = try await api.fetchCalendarEvents(range: "week")
+            allEvents.append(contentsOf: apiEvents)
             calendarConnected = true
         } catch {
             self.error = error.localizedDescription
             calendarConnected = false
         }
+        
+        // Merge and sort events
+        upcomingEvents = allEvents.sorted { ($0.startDate ?? Date()) < ($1.startDate ?? Date()) }
+        stats.eventsToday = upcomingEvents.filter { $0.startDate?.isToday ?? false }.count
     }
     
     private func loadEmails() async {
@@ -632,10 +657,10 @@ class DashboardViewModel: ObservableObject {
     */
 }
 
-// MARK: - Clawdbot Header Indicator
+// MARK: - OpenClaw Header Indicator
 
-struct ClawdbotHeaderIndicator: View {
-    @ObservedObject var service: ClawdbotService
+struct OpenClawHeaderIndicator: View {
+    @ObservedObject var service: OpenClawService
     @State private var showingPopover = false
 
     var body: some View {
@@ -665,14 +690,14 @@ struct ClawdbotHeaderIndicator: View {
             )
         }
         .popover(isPresented: $showingPopover) {
-            ClawdbotQuickStatus(service: service)
+            OpenClawQuickStatus(service: service)
                 .presentationCompactAdaptation(.popover)
         }
     }
 }
 
-struct ClawdbotQuickStatus: View {
-    @ObservedObject var service: ClawdbotService
+struct OpenClawQuickStatus: View {
+    @ObservedObject var service: OpenClawService
     @Environment(\.dismiss) var dismiss
 
     var body: some View {
@@ -681,7 +706,7 @@ struct ClawdbotQuickStatus: View {
             HStack {
                 Image(systemName: "terminal.fill")
                     .foregroundColor(.optaNeonCyan)
-                Text("Clawdbot")
+                Text("OpenClaw")
                     .font(.headline)
                     .foregroundColor(.optaTextPrimary)
                 Spacer()

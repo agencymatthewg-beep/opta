@@ -419,6 +419,7 @@ struct GeneralSettingsView: View {
     @ObservedObject var themeManager: ThemeManager = .shared
     @AppStorage("optaplus.textAlignment") private var textAlignment: String = MessageTextAlignment.centeredExpanding.rawValue
     @AppStorage("optaplus.deviceName") private var deviceName = "MacBook"
+    @AppStorage("optaplus.deviceEmoji") private var deviceEmoji = ""
 
     @State private var fontScaleIndex: Double = 1
     @State private var showCustomAccent = false
@@ -468,7 +469,33 @@ struct GeneralSettingsView: View {
 
                     LabeledField("Device Name", text: $deviceName, placeholder: "MacBook")
 
-                    Text("Messages will be tagged with this name so bots know the source device.")
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Device Emoji")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(.optaTextMuted)
+                        HStack(spacing: 6) {
+                            ForEach(["📱", "💻", "🖥️", "⌚", "🎧", "🎮", "📡", "🏠", "🏢", "🚀", "⚡", "🔮"], id: \.self) { e in
+                                Button {
+                                    deviceEmoji = (deviceEmoji == e) ? "" : e
+                                } label: {
+                                    Text(e)
+                                        .font(.system(size: 16))
+                                        .frame(width: 28, height: 28)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 6)
+                                                .fill(deviceEmoji == e ? Color.optaPrimary.opacity(0.2) : Color.optaElevated)
+                                        )
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 6)
+                                                .stroke(deviceEmoji == e ? Color.optaPrimary : Color.clear, lineWidth: 1.5)
+                                        )
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    }
+
+                    Text("Messages will be tagged with this name and emoji so bots know the source device.")
                         .font(.system(size: 11))
                         .foregroundColor(.optaTextMuted)
                 }
