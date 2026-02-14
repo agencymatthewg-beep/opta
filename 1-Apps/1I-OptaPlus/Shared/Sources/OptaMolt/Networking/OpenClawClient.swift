@@ -163,17 +163,17 @@ public final class OpenClawClient: ObservableObject {
         let wsOptions = NWProtocolWebSocket.Options()
         wsOptions.autoReplyPing = true
         
-        let origin = "\(useTLS ? "https" : "http")://\(host):\(port)"
-        #if os(iOS)
-        let platformUA = "iOS"
-        #elseif os(macOS)
-        let platformUA = "macOS"
-        #else
-        let platformUA = "unknown"
-        #endif
+        // Origin must match the connection URL origin exactly (gateway does exact string match).
+        // For wss:// on standard port 443, omit port. For ws:// always include port.
+        let origin: String
+        if useTLS {
+            let portSuffix = (port != 443) ? ":\(port)" : ""
+            origin = "https://\(host)\(portSuffix)"
+        } else {
+            origin = "http://\(host):\(port)"
+        }
         wsOptions.setAdditionalHeaders([
-            ("Origin", origin),
-            ("User-Agent", "OptaPlus/\(clientVersion) \(platformUA)")
+            ("Origin", origin)
         ])
         
         // Build parameter stack: TCP + WebSocket

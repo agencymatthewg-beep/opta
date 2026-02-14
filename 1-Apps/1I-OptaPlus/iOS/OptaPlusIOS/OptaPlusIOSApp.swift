@@ -72,7 +72,8 @@ final class AppState: ObservableObject {
     func updateBot(_ bot: BotConfig) {
         if let idx = bots.firstIndex(where: { $0.id == bot.id }) {
             let old = bots[idx]
-            if old.host != bot.host || old.port != bot.port || old.token != bot.token {
+            if old.host != bot.host || old.port != bot.port || old.token != bot.token
+                || old.remoteURL != bot.remoteURL || old.connectionMode != bot.connectionMode {
                 chatViewModels[bot.id]?.disconnect()
                 chatViewModels.removeValue(forKey: bot.id)
             }
@@ -84,13 +85,19 @@ final class AppState: ObservableObject {
     private func addDefaultBots() {
         bots = [
             BotConfig(name: "Opta Max", host: "192.168.188.9", port: 18793,
-                      token: "8c081eb5c0769f34ec0fedde6e6ddd5f5299fb946b91b1ed", emoji: "🥷🏿"),
+                      token: "8c081eb5c0769f34ec0fedde6e6ddd5f5299fb946b91b1ed", emoji: "🥷🏿",
+                      remoteURL: "wss://gateway.optamize.biz"),
             BotConfig(name: "Mono", host: "192.168.188.11", port: 19001,
-                      token: "e5acead966cc3922795eaea658612d9c47e4b7fa87563729", emoji: "🟢"),
-            BotConfig(name: "Opta512", host: "192.168.188.11", port: 19000, token: "", emoji: "🟣"),
-            BotConfig(name: "Floda", host: "192.168.188.11", port: 19002, token: "", emoji: "🧪"),
-            BotConfig(name: "Saturday", host: "192.168.188.11", port: 19003, token: "", emoji: "🔵"),
-            BotConfig(name: "YJ", host: "192.168.188.11", port: 19005, token: "", emoji: "⚡"),
+                      token: "e5acead966cc3922795eaea658612d9c47e4b7fa87563729", emoji: "🟢",
+                      remoteURL: "wss://mono.optamize.biz"),
+            BotConfig(name: "Opta512", host: "192.168.188.11", port: 19000, token: "", emoji: "🟣",
+                      remoteURL: "wss://opta512.optamize.biz"),
+            BotConfig(name: "Floda", host: "192.168.188.11", port: 19002, token: "", emoji: "🧪",
+                      remoteURL: "wss://floda.optamize.biz"),
+            BotConfig(name: "Saturday", host: "192.168.188.11", port: 19003, token: "", emoji: "🔵",
+                      remoteURL: "wss://saturday.optamize.biz"),
+            BotConfig(name: "YJ", host: "192.168.188.11", port: 19005, token: "", emoji: "⚡",
+                      remoteURL: "wss://yj.optamize.biz"),
         ]
         saveBots()
     }

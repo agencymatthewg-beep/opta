@@ -1385,9 +1385,9 @@ struct ChatHeaderView: View {
                         .font(.sora(16, weight: .semibold))
                         .foregroundColor(.optaTextPrimary)
                     
-                    // Connection security indicator
-                    ConnectionSecurityBadge(host: viewModel.botConfig.host)
-                    
+                    // Connection route indicator (LAN vs Remote)
+                    ConnectionRouteBadge(route: viewModel.connectionRoute, isConnected: viewModel.connectionState == .connected)
+
                     if let session = viewModel.activeSession {
                         SessionBadge(session: session, accentColor: accentColor)
                             .transition(.scale(scale: 0.8).combined(with: .opacity))
@@ -1577,6 +1577,35 @@ struct ChatHeaderView: View {
         case .connected: return .optaGreen
         case .connecting, .reconnecting: return .optaAmber
         case .disconnected: return .optaRed
+        }
+    }
+}
+
+// MARK: - Connection Route Badge
+
+struct ConnectionRouteBadge: View {
+    let route: NetworkEnvironment.ConnectionType
+    let isConnected: Bool
+
+    var body: some View {
+        if isConnected {
+            HStack(spacing: 3) {
+                Image(systemName: route == .remote ? "globe" : "wifi")
+                    .font(.system(size: 8))
+                Text(route == .remote ? "Remote" : "LAN")
+                    .font(.system(size: 9, weight: .medium))
+            }
+            .foregroundColor(route == .remote ? .optaAmber : .optaGreen)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(
+                Capsule()
+                    .fill((route == .remote ? Color.optaAmber : Color.optaGreen).opacity(0.15))
+            )
+            .overlay(
+                Capsule()
+                    .stroke((route == .remote ? Color.optaAmber : Color.optaGreen).opacity(0.3), lineWidth: 0.5)
+            )
         }
     }
 }

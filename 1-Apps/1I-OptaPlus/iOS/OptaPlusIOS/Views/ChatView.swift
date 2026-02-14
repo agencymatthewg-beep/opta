@@ -477,10 +477,18 @@ struct ChatView: View {
     // MARK: - Toolbar
 
     private var connectionBadge: some View {
-        Circle()
-            .fill(viewModel.connectionState == .connected ? Color.optaGreen :
-                  viewModel.connectionState == .disconnected ? Color.optaTextMuted : Color.optaAmber)
-            .frame(width: 8, height: 8)
+        HStack(spacing: 4) {
+            Circle()
+                .fill(viewModel.connectionState == .connected ? Color.optaGreen :
+                      viewModel.connectionState == .disconnected ? Color.optaTextMuted : Color.optaAmber)
+                .frame(width: 8, height: 8)
+
+            if viewModel.connectionState == .connected {
+                Image(systemName: viewModel.connectionRoute == .remote ? "globe" : "wifi")
+                    .font(.system(size: 9))
+                    .foregroundColor(viewModel.connectionRoute == .remote ? .optaAmber : .optaGreen)
+            }
+        }
     }
 
     private var sessionModePicker: some View {

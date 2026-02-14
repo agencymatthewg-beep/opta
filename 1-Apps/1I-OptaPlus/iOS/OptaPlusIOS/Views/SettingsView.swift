@@ -234,6 +234,8 @@ struct BotEditSheet: View {
     @State private var port: String = ""
     @State private var token: String = ""
     @State private var emoji: String = "🤖"
+    @State private var remoteURL: String = ""
+    @State private var connectionMode: BotConfig.ConnectionMode = .auto
     @State private var testResult: ConnectionTestResult = .idle
 
     private enum ConnectionTestResult {
@@ -287,6 +289,26 @@ struct BotEditSheet: View {
                     }
                 }
 
+                Section {
+                    TextField("Remote URL", text: $remoteURL)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .font(.system(.body, design: .monospaced))
+
+                    Picker("Connection Mode", selection: $connectionMode) {
+                        Text("Auto (LAN preferred)").tag(BotConfig.ConnectionMode.auto)
+                        Text("LAN Only").tag(BotConfig.ConnectionMode.lan)
+                        Text("Remote Only").tag(BotConfig.ConnectionMode.remote)
+                    }
+                    .pickerStyle(.segmented)
+                } header: {
+                    Text("Remote Access")
+                } footer: {
+                    Text("Auto mode tries LAN first, then falls back to the remote URL.")
+                        .font(.caption2)
+                        .foregroundColor(.optaTextMuted)
+                }
+
                 Section("Test") {
                     Button {
                         testConnection()
@@ -335,7 +357,9 @@ struct BotEditSheet: View {
                             host: host,
                             port: p,
                             token: token,
-                            emoji: emoji
+                            emoji: emoji,
+                            remoteURL: remoteURL.isEmpty ? nil : remoteURL,
+                            connectionMode: connectionMode
                         )
                         onSave(config)
                         dismiss()
@@ -350,6 +374,8 @@ struct BotEditSheet: View {
                     port = String(bot.port)
                     token = bot.token
                     emoji = bot.emoji
+                    remoteURL = bot.remoteURL ?? ""
+                    connectionMode = bot.connectionMode
                 }
             }
         }

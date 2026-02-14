@@ -47,11 +47,28 @@ public struct BotConfig: Identifiable, Codable, Sendable, Hashable {
     public var token: String
     public var emoji: String
     public var sessions: [ChatSession]
-    
-    public var wsURL: URL? {
+
+    // Remote access
+    public var remoteURL: String?
+    public var connectionMode: ConnectionMode
+
+    public enum ConnectionMode: String, Codable, Sendable, Hashable, CaseIterable {
+        case auto     // Try LAN first (200ms probe), fall back to remote
+        case lan      // Force LAN only (current behavior)
+        case remote   // Force remote only
+    }
+
+    public var lanURL: URL? {
         URL(string: "ws://\(host):\(port)")
     }
-    
+
+    public var remoteAccessURL: URL? {
+        remoteURL.flatMap { URL(string: $0) }
+    }
+
+    /// Backwards-compatible: returns LAN URL (used by legacy callers).
+    public var wsURL: URL? { lanURL }
+
     public init(
         id: String = UUID().uuidString,
         name: String,
@@ -59,7 +76,9 @@ public struct BotConfig: Identifiable, Codable, Sendable, Hashable {
         port: Int,
         token: String,
         emoji: String = "🤖",
-        sessionKey: String = "main"
+        sessionKey: String = "main",
+        remoteURL: String? = nil,
+        connectionMode: ConnectionMode = .auto
     ) {
         self.id = id
         self.name = name
@@ -68,6 +87,26 @@ public struct BotConfig: Identifiable, Codable, Sendable, Hashable {
         self.token = token
         self.emoji = emoji
         self.sessions = [ChatSession.defaultSynced(botName: name)]
+        self.remoteURL = remoteURL
+        self.connectionMode = connectionMode
+    }
+
+    // Codable migration: handle missing remoteURL/connectionMode from old configs
+    enum CodingKeys: String, CodingKey {
+        case id, name, host, port, token, emoji, sessions, remoteURL, connectionMode
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        host = try container.decode(String.self, forKey: .host)
+        port = try container.decode(Int.self, forKey: .port)
+        token = try container.decode(String.self, forKey: .token)
+        emoji = try container.decode(String.self, forKey: .emoji)
+        sessions = try container.decode([ChatSession].self, forKey: .sessions)
+        remoteURL = try container.decodeIfPresent(String.self, forKey: .remoteURL)
+        connectionMode = try container.decodeIfPresent(ConnectionMode.self, forKey: .connectionMode) ?? .auto
     }
 }
 
@@ -151,17 +190,23 @@ public final class ChatViewModel: ObservableObject {
 
     /// Message currently being replied to (shown above input bar).
     @Published public var replyingTo: ChatMessage? = nil
-    
+
+    /// Current connection route (LAN vs Remote).
+    @Published public var connectionRoute: NetworkEnvironment.ConnectionType = .unknown
+
     // MARK: - Configuration
-    
+
     /// The bot configuration.
     public let botConfig: BotConfig
-    
+
     // MARK: - Sync
 
     /// Sync coordinator for dual-channel (gateway + Telegram) messaging.
     public var syncCoordinator: SyncCoordinator?
 
+    // MARK: - Network Environment
+
+    private let networkEnv: NetworkEnvironment
 
     // MARK: - Private
 
@@ -194,9 +239,10 @@ public final class ChatViewModel: ObservableObject {
     /// Whether a clear chat confirmation alert should be shown.
     @Published public var showClearConfirmation = false
 
-    public init(botConfig: BotConfig, syncCoordinator: SyncCoordinator? = nil) {
+    public init(botConfig: BotConfig, syncCoordinator: SyncCoordinator? = nil, networkEnv: NetworkEnvironment? = nil) {
         self.botConfig = botConfig
         self.syncCoordinator = syncCoordinator
+        self.networkEnv = networkEnv ?? NetworkEnvironment()
         self.messageStats = MessageStatsManager.load(botId: botConfig.id)
         
         // Restore persisted sessions or use defaults
@@ -246,23 +292,31 @@ public final class ChatViewModel: ObservableObject {
     
     // MARK: - Connection
     
-    /// Connect to the bot's gateway.
+    /// Connect to the bot's gateway, using NetworkEnvironment to resolve LAN vs remote.
     public func connect() {
-        guard let wsURL = botConfig.wsURL else {
-            errorMessage = "Invalid WebSocket URL"
-            return
-        }
-        
         // Tear down existing connection
         client?.disconnect()
         cancellables.removeAll()
-        
-        let newClient = OpenClawClient(
-            url: wsURL,
-            token: botConfig.token,
-            clientId: "openclaw-control-ui",
-            clientVersion: "0.1.0"
-        )
+
+        Task {
+            guard let url = await networkEnv.resolveURL(for: botConfig) else {
+                errorMessage = "No connection URL available"
+                return
+            }
+            connectionRoute = networkEnv.connectionType
+
+            let newClient = OpenClawClient(
+                url: url,
+                token: botConfig.token,
+                clientId: "openclaw-control-ui",
+                clientVersion: "0.1.0"
+            )
+            self.wireUpClient(newClient)
+        }
+    }
+
+    /// Wire up Combine observations and callbacks on a new client, then connect.
+    private func wireUpClient(_ newClient: OpenClawClient) {
         
         // Use Combine to observe client state changes directly
         newClient.$state

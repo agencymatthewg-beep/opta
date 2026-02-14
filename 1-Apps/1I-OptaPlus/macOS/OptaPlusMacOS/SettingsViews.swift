@@ -197,17 +197,19 @@ enum ConnectionTestResult {
 struct BotDetailEditor: View {
     let bot: BotConfig
     let onSave: (BotConfig) -> Void
-    
+
     @State private var name: String
     @State private var host: String
     @State private var port: String
     @State private var token: String
     @State private var emoji: String
+    @State private var remoteURL: String
+    @State private var connectionMode: BotConfig.ConnectionMode
     @State private var testResult: ConnectionTestResult = .idle
     @ObservedObject private var themeManager = ThemeManager.shared
     @State private var botAccentColorBinding: Color = .optaPrimary
     @State private var hasBotAccentOverride: Bool = false
-    
+
     init(bot: BotConfig, onSave: @escaping (BotConfig) -> Void) {
         self.bot = bot
         self.onSave = onSave
@@ -216,6 +218,8 @@ struct BotDetailEditor: View {
         _port = State(initialValue: String(bot.port))
         _token = State(initialValue: bot.token)
         _emoji = State(initialValue: bot.emoji)
+        _remoteURL = State(initialValue: bot.remoteURL ?? "")
+        _connectionMode = State(initialValue: bot.connectionMode)
     }
     
     private var hostValidation: FieldValidation { validateHostname(host) }
@@ -231,6 +235,22 @@ struct BotDetailEditor: View {
             LabeledField("Port", text: $port, placeholder: "18793", validation: portValidation)
             LabeledField("Token", text: $token, placeholder: "Auth token")
             LabeledField("Emoji", text: $emoji, placeholder: "🤖")
+
+            // Remote access
+            VStack(alignment: .leading, spacing: 8) {
+                Text("REMOTE ACCESS")
+                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                    .foregroundColor(.optaTextMuted)
+
+                LabeledField("Remote URL", text: $remoteURL, placeholder: "wss://gateway.optamize.biz")
+
+                Picker("Connection Mode", selection: $connectionMode) {
+                    Text("Auto (LAN preferred)").tag(BotConfig.ConnectionMode.auto)
+                    Text("LAN Only").tag(BotConfig.ConnectionMode.lan)
+                    Text("Remote Only").tag(BotConfig.ConnectionMode.remote)
+                }
+                .pickerStyle(.segmented)
+            }
 
             // Bot accent color
             VStack(alignment: .leading, spacing: 4) {
@@ -342,7 +362,9 @@ struct BotDetailEditor: View {
                         port: Int(port) ?? bot.port,
                         token: token,
                         emoji: emoji,
-                        sessionKey: bot.sessions.first?.sessionKey ?? "main"
+                        sessionKey: bot.sessions.first?.sessionKey ?? "main",
+                        remoteURL: remoteURL.isEmpty ? nil : remoteURL,
+                        connectionMode: connectionMode
                     )
                     onSave(updated)
                 }
