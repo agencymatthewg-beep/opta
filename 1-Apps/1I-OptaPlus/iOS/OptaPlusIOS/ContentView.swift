@@ -12,8 +12,8 @@ struct ContentView: View {
     @State private var selectedTab: Tab = .dashboard
     @AppStorage("optaplus.onboardingDone") private var onboardingDone = false
 
-    enum Tab {
-        case dashboard, chat, settings
+    enum Tab: String {
+        case dashboard, history, chat, automations, debug
     }
 
     var body: some View {
@@ -29,6 +29,13 @@ struct ContentView: View {
                     }
                     .tag(Tab.dashboard)
 
+                ChatHistoryView()
+                    .environmentObject(appState)
+                    .tabItem {
+                        Label("History", systemImage: selectedTab == .history ? "clock.arrow.circlepath" : "clock.arrow.circlepath")
+                    }
+                    .tag(Tab.history)
+
                 ChatTab()
                     .environmentObject(appState)
                     .tabItem {
@@ -36,12 +43,19 @@ struct ContentView: View {
                     }
                     .tag(Tab.chat)
 
-                SettingsView()
+                AutomationsView()
                     .environmentObject(appState)
                     .tabItem {
-                        Label("Settings", systemImage: selectedTab == .settings ? "gearshape.fill" : "gearshape")
+                        Label("Automations", systemImage: selectedTab == .automations ? "bolt.circle.fill" : "bolt.circle")
                     }
-                    .tag(Tab.settings)
+                    .tag(Tab.automations)
+
+                DebugView()
+                    .environmentObject(appState)
+                    .tabItem {
+                        Label("Debug", systemImage: selectedTab == .debug ? "ant.fill" : "ant")
+                    }
+                    .tag(Tab.debug)
             }
             .tint(.optaPrimary)
         }

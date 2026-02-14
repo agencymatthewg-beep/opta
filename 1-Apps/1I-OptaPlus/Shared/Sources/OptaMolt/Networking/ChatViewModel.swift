@@ -651,6 +651,19 @@ public final class ChatViewModel: ObservableObject {
         }
     }
     
+    /// Call any gateway method and return the raw result.
+    /// Used by History, Automations, and Debug pages.
+    public func call(_ method: String, params: [String: Any] = [:]) async throws -> AnyCodable? {
+        guard let client = client else { throw OpenClawError.notConnected }
+        let anyCodable = params.isEmpty ? nil : AnyCodable(params)
+        return try await client.request(method, params: anyCodable)
+    }
+
+    /// Whether the client is connected and ready for method calls.
+    public var isGatewayReady: Bool {
+        client != nil && connectionState == .connected
+    }
+
     /// Abort the current generation.
     public func abort() async {
         guard let client = client, let session = activeSession else { return }

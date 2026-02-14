@@ -22,6 +22,9 @@
 		CB00008AAAAA000600000001 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB00008BAAAA000600000001 /* OnboardingView.swift */; };
 		CB00008CAAAA000700000001 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB00008DAAAA000700000001 /* AboutView.swift */; };
 		DB000001AAAA000800000001 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB000002AAAA000800000001 /* DashboardView.swift */; };
+		DB000004AAAA000900000001 /* ChatHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB000003AAAA000900000001 /* ChatHistoryView.swift */; };
+		DB000006AAAA000A00000001 /* AutomationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB000005AAAA000A00000001 /* AutomationsView.swift */; };
+		DB000008AAAA000B00000001 /* DebugView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB000007AAAA000B00000001 /* DebugView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -40,6 +43,9 @@
 		CB00008BAAAA000600000001 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		CB00008DAAAA000700000001 /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
 		DB000002AAAA000800000001 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
+		DB000003AAAA000900000001 /* ChatHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatHistoryView.swift; sourceTree = "<group>"; };
+		DB000005AAAA000A00000001 /* AutomationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutomationsView.swift; sourceTree = "<group>"; };
+		DB000007AAAA000B00000001 /* DebugView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -96,6 +102,9 @@
 				CB00008BAAAA000600000001 /* OnboardingView.swift */,
 				CB00008DAAAA000700000001 /* AboutView.swift */,
 				DB000002AAAA000800000001 /* DashboardView.swift */,
+				DB000003AAAA000900000001 /* ChatHistoryView.swift */,
+				DB000005AAAA000A00000001 /* AutomationsView.swift */,
+				DB000007AAAA000B00000001 /* DebugView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -188,6 +197,9 @@
 				CB00008AAAAA000600000001 /* OnboardingView.swift in Sources */,
 				CB00008CAAAA000700000001 /* AboutView.swift in Sources */,
 				DB000001AAAA000800000001 /* DashboardView.swift in Sources */,
+				DB000004AAAA000900000001 /* ChatHistoryView.swift in Sources */,
+				DB000006AAAA000A00000001 /* AutomationsView.swift in Sources */,
+				DB000008AAAA000B00000001 /* DebugView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

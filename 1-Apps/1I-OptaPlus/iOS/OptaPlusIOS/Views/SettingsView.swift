@@ -2,6 +2,8 @@
 //  SettingsView.swift
 //  OptaPlusIOS
 //
+//  Refactored settings — picker-first philosophy, no debug overlap.
+//
 
 import SwiftUI
 import OptaPlus
@@ -13,10 +15,16 @@ struct SettingsView: View {
     @State private var showAddBot = false
     @State private var editingBot: BotConfig?
     @State private var fontScaleIndex: Double = 1
+    @AppStorage("optaplus.biometricLock") private var biometricLock = false
+    @AppStorage("optaplus.privacyMode") private var privacyMode = false
+    @AppStorage("optaplus.notifications") private var notificationsEnabled = true
+    @AppStorage("optaplus.sounds") private var soundsEnabled = true
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         NavigationStack {
             List {
+                // Bot Management
                 Section {
                     ForEach(appState.bots) { bot in
                         Button {
@@ -57,8 +65,9 @@ struct SettingsView: View {
                         .foregroundColor(.optaTextSecondary)
                 }
 
+                // Appearance
                 Section {
-                    // Theme picker
+                    // Theme
                     VStack(alignment: .leading, spacing: 8) {
                         Label("Theme", systemImage: "paintbrush.fill")
                             .foregroundColor(.optaTextSecondary)
@@ -96,7 +105,7 @@ struct SettingsView: View {
                         .listRowBackground(Color.optaSurface)
                     }
 
-                    // Font size
+                    // Font scale slider
                     VStack(alignment: .leading, spacing: 6) {
                         Label("Font Size — \(themeManager.fontScale.label)", systemImage: "textformat.size")
                             .foregroundColor(.optaTextSecondary)
@@ -135,19 +144,52 @@ struct SettingsView: View {
                     }
                     .listRowBackground(Color.optaSurface)
 
-                    HStack {
-                        Label("Reduce Motion", systemImage: "figure.walk")
+                    // Sounds toggle
+                    Toggle(isOn: $soundsEnabled) {
+                        Label("Sounds", systemImage: "speaker.wave.2")
                             .foregroundColor(.optaTextSecondary)
-                        Spacer()
-                        Text(UIAccessibility.isReduceMotionEnabled ? "On" : "Off")
-                            .foregroundColor(.optaTextMuted)
                     }
+                    .tint(.optaPrimary)
                     .listRowBackground(Color.optaSurface)
                 } header: {
                     Label("Appearance", systemImage: "sparkles")
                         .foregroundColor(.optaTextSecondary)
                 }
 
+                // Notifications
+                Section {
+                    Toggle(isOn: $notificationsEnabled) {
+                        Label("Notifications", systemImage: "bell.fill")
+                            .foregroundColor(.optaTextSecondary)
+                    }
+                    .tint(.optaPrimary)
+                    .listRowBackground(Color.optaSurface)
+                } header: {
+                    Label("Notifications", systemImage: "bell")
+                        .foregroundColor(.optaTextSecondary)
+                }
+
+                // Privacy & Security
+                Section {
+                    Toggle(isOn: $biometricLock) {
+                        Label("Biometric Lock", systemImage: "faceid")
+                            .foregroundColor(.optaTextSecondary)
+                    }
+                    .tint(.optaPrimary)
+                    .listRowBackground(Color.optaSurface)
+
+                    Toggle(isOn: $privacyMode) {
+                        Label("Privacy Mode", systemImage: "eye.slash")
+                            .foregroundColor(.optaTextSecondary)
+                    }
+                    .tint(.optaPrimary)
+                    .listRowBackground(Color.optaSurface)
+                } header: {
+                    Label("Privacy & Security", systemImage: "lock.shield")
+                        .foregroundColor(.optaTextSecondary)
+                }
+
+                // About
                 Section {
                     HStack {
                         Label("Version", systemImage: "info.circle")
@@ -167,15 +209,6 @@ struct SettingsView: View {
                     }
                     .listRowBackground(Color.optaSurface)
 
-                    HStack {
-                        Label("Design System", systemImage: "paintpalette")
-                            .foregroundColor(.optaTextSecondary)
-                        Spacer()
-                        Text("OptaMolt")
-                            .foregroundColor(.optaTextMuted)
-                    }
-                    .listRowBackground(Color.optaSurface)
-
                     NavigationLink {
                         AboutView()
                     } label: {
@@ -184,7 +217,7 @@ struct SettingsView: View {
                     }
                     .listRowBackground(Color.optaSurface)
                 } header: {
-                    Label("About OptaPlus", systemImage: "star.fill")
+                    Label("About", systemImage: "star.fill")
                         .foregroundColor(.optaTextSecondary)
                 } footer: {
                     Text("OptaPlus — Premium AI Chat Client")
@@ -197,6 +230,11 @@ struct SettingsView: View {
             .scrollContentBackground(.hidden)
             .background(Color.optaVoid)
             .navigationTitle("Settings")
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
             .sheet(isPresented: $showAddBot) {
                 BotEditSheet(bot: nil) { newBot in
                     appState.addBot(newBot)
@@ -222,7 +260,7 @@ struct SettingsView: View {
     }
 }
 
-// MARK: - Bot Edit Sheet
+// MARK: - Bot Edit Sheet (Picker-First)
 
 struct BotEditSheet: View {
     let bot: BotConfig?
@@ -231,20 +269,17 @@ struct BotEditSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var name: String = ""
     @State private var host: String = ""
-    @State private var port: String = ""
+    @State private var port: Int = 18793
     @State private var token: String = ""
     @State private var emoji: String = "🤖"
     @State private var remoteURL: String = ""
     @State private var connectionMode: BotConfig.ConnectionMode = .auto
     @State private var testResult: ConnectionTestResult = .idle
 
+    private let emojiOptions = ["🥷🏿", "🟢", "🟣", "🧪", "🔵", "⚡", "🤖", "🦊", "🔥", "💎", "🌟", "🎯"]
+
     private enum ConnectionTestResult {
         case idle, testing, success, failure(String)
-    }
-
-    private var isPortValid: Bool {
-        guard let p = Int(port) else { return false }
-        return p > 0 && p <= 65535
     }
 
     private var isHostValid: Bool {
@@ -252,63 +287,80 @@ struct BotEditSheet: View {
     }
 
     private var canSave: Bool {
-        !name.isEmpty && isHostValid && isPortValid
+        !name.isEmpty && isHostValid && port > 0 && port <= 65535
     }
 
     var body: some View {
         NavigationStack {
             Form {
+                // Identity
                 Section("Identity") {
                     TextField("Name", text: $name)
-                    TextField("Emoji", text: $emoji)
+
+                    // Emoji grid picker
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Emoji")
+                            .font(.subheadline)
+                            .foregroundColor(.optaTextSecondary)
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 44))], spacing: 8) {
+                            ForEach(emojiOptions, id: \.self) { e in
+                                Button {
+                                    emoji = e
+                                } label: {
+                                    Text(e)
+                                        .font(.title2)
+                                        .frame(width: 40, height: 40)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 8)
+                                                .fill(emoji == e ? Color.optaPrimary.opacity(0.2) : Color.clear)
+                                        )
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 8)
+                                                .stroke(emoji == e ? Color.optaPrimary : Color.clear, lineWidth: 2)
+                                        )
+                                }
+                            }
+                        }
+                    }
                 }
 
+                // Connection
                 Section {
                     TextField("Host", text: $host)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
-                    HStack {
-                        TextField("Port", text: $port)
-                            .keyboardType(.numberPad)
-                        if !port.isEmpty && !isPortValid {
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .foregroundColor(.optaAmber)
-                                .font(.caption)
-                        }
-                    }
+
+                    Stepper("Port: \(port)", value: $port, in: 1024...65535)
+
                     SecureField("Token", text: $token)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
                 } header: {
                     Text("Connection")
-                } footer: {
-                    if !port.isEmpty && !isPortValid {
-                        Text("Port must be 1–65535")
-                            .font(.caption2)
-                            .foregroundColor(.optaAmber)
-                    }
                 }
 
+                // Remote Access
                 Section {
-                    TextField("Remote URL", text: $remoteURL)
+                    TextField("Remote URL (wss://...)", text: $remoteURL)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
                         .font(.system(.body, design: .monospaced))
 
                     Picker("Connection Mode", selection: $connectionMode) {
-                        Text("Auto (LAN preferred)").tag(BotConfig.ConnectionMode.auto)
-                        Text("LAN Only").tag(BotConfig.ConnectionMode.lan)
-                        Text("Remote Only").tag(BotConfig.ConnectionMode.remote)
+                        Text("Auto").tag(BotConfig.ConnectionMode.auto)
+                        Text("LAN").tag(BotConfig.ConnectionMode.lan)
+                        Text("Remote").tag(BotConfig.ConnectionMode.remote)
                     }
                     .pickerStyle(.segmented)
                 } header: {
                     Text("Remote Access")
                 } footer: {
-                    Text("Auto mode tries LAN first, then falls back to the remote URL.")
+                    Text("Auto tries LAN first, then falls back to the remote URL.")
                         .font(.caption2)
                         .foregroundColor(.optaTextMuted)
                 }
 
+                // Test
                 Section("Test") {
                     Button {
                         testConnection()
@@ -350,12 +402,11 @@ struct BotEditSheet: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
-                        let p = Int(port) ?? 18793
                         let config = BotConfig(
                             id: bot?.id ?? UUID().uuidString,
                             name: name,
                             host: host,
-                            port: p,
+                            port: port,
                             token: token,
                             emoji: emoji,
                             remoteURL: remoteURL.isEmpty ? nil : remoteURL,
@@ -371,7 +422,7 @@ struct BotEditSheet: View {
                 if let bot = bot {
                     name = bot.name
                     host = bot.host
-                    port = String(bot.port)
+                    port = bot.port
                     token = bot.token
                     emoji = bot.emoji
                     remoteURL = bot.remoteURL ?? ""
@@ -384,10 +435,9 @@ struct BotEditSheet: View {
     private func testConnection() {
         testResult = .testing
         let h = host.trimmingCharacters(in: .whitespacesAndNewlines)
-        let p = Int(port) ?? 18793
         Task {
             do {
-                let url = URL(string: "http://\(h):\(p)/health")!
+                let url = URL(string: "http://\(h):\(port)/health")!
                 let (_, response) = try await URLSession.shared.data(from: url)
                 if let http = response as? HTTPURLResponse, http.statusCode == 200 {
                     testResult = .success
