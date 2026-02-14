@@ -555,6 +555,10 @@ public final class ChatViewModel: ObservableObject {
         guard !trimmed.isEmpty || !attachments.isEmpty,
               let session = activeSession else { return }
 
+        // Prepend device identity tag if configured
+        let deviceName = UserDefaults.standard.string(forKey: "optaplus.deviceName") ?? ""
+        let wireText = deviceName.isEmpty ? trimmed : "[via: \(deviceName)] \(trimmed)"
+
         let displayText = trimmed.isEmpty && !attachments.isEmpty
             ? "[\(attachments.count) file\(attachments.count == 1 ? "" : "s")]"
             : trimmed
@@ -584,7 +588,7 @@ public final class ChatViewModel: ObservableObject {
 
         // If disconnected, queue for later
         guard let client = client, connectionState == .connected else {
-            enqueueMessage(text: trimmed, attachments: attachments, messageId: userMessage.id)
+            enqueueMessage(text: wireText, attachments: attachments, messageId: userMessage.id)
             return
         }
 
@@ -600,7 +604,7 @@ public final class ChatViewModel: ObservableObject {
         do {
             let key = try await client.chatSend(
                 sessionKey: session.sessionKey,
-                message: trimmed,
+                message: wireText,
                 deliver: session.mode.shouldDeliver,
                 attachments: wireAttachments
             )

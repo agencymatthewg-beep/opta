@@ -14,6 +14,7 @@ struct ChatInputBar: View {
 
     @FocusState private var isFocused: Bool
     @State private var sendPulse = false
+    @AppStorage("optaplus.deviceName") private var deviceName = "iPhone"
 
     private var trimmedText: String {
         text.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -32,6 +33,17 @@ struct ChatInputBar: View {
                 .animation(.easeInOut(duration: 0.3), value: isFocused)
 
             VStack(spacing: 4) {
+                // Device identity badge
+                if !deviceName.isEmpty {
+                    HStack {
+                        Text("Sending as: \(deviceName)")
+                            .font(.system(size: 10))
+                            .foregroundColor(.optaTextMuted)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 4)
+                }
+
                 HStack(alignment: .bottom, spacing: 8) {
                     // Attachment button
                     Button {

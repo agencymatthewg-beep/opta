@@ -418,6 +418,7 @@ struct GeneralSettingsView: View {
     @EnvironmentObject var animPrefs: AnimationPreferences
     @ObservedObject var themeManager: ThemeManager = .shared
     @AppStorage("optaplus.textAlignment") private var textAlignment: String = MessageTextAlignment.centeredExpanding.rawValue
+    @AppStorage("optaplus.deviceName") private var deviceName = "MacBook"
 
     @State private var fontScaleIndex: Double = 1
     @State private var showCustomAccent = false
@@ -455,6 +456,21 @@ struct GeneralSettingsView: View {
                     Text("Native OpenClaw chat client")
                         .font(.system(size: 13))
                         .foregroundColor(.optaTextSecondary)
+                }
+
+                Divider().background(Color.optaBorder)
+
+                // Device Identity
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("DEVICE IDENTITY")
+                        .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                        .foregroundColor(.optaTextMuted)
+
+                    LabeledField("Device Name", text: $deviceName, placeholder: "MacBook")
+
+                    Text("Messages will be tagged with this name so bots know the source device.")
+                        .font(.system(size: 11))
+                        .foregroundColor(.optaTextMuted)
                 }
 
                 Divider().background(Color.optaBorder)

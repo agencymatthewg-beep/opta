@@ -15,6 +15,7 @@ struct SettingsView: View {
     @State private var showAddBot = false
     @State private var editingBot: BotConfig?
     @State private var fontScaleIndex: Double = 1
+    @AppStorage("optaplus.deviceName") private var deviceName = "iPhone"
     @AppStorage("optaplus.biometricLock") private var biometricLock = false
     @AppStorage("optaplus.privacyMode") private var privacyMode = false
     @AppStorage("optaplus.notifications") private var notificationsEnabled = true
@@ -63,6 +64,20 @@ struct SettingsView: View {
                 } header: {
                     Label("Bots", systemImage: "cpu")
                         .foregroundColor(.optaTextSecondary)
+                }
+
+                // Device Identity
+                Section {
+                    TextField("Device Name", text: $deviceName)
+                        .textInputAutocapitalization(.words)
+                        .listRowBackground(Color.optaSurface)
+                } header: {
+                    Label("Device Identity", systemImage: "iphone")
+                        .foregroundColor(.optaTextSecondary)
+                } footer: {
+                    Text("Messages sent from this device will be tagged with this name.")
+                        .font(.caption2)
+                        .foregroundColor(.optaTextMuted)
                 }
 
                 // Appearance

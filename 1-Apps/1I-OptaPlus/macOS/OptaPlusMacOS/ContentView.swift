@@ -1656,6 +1656,7 @@ struct ChatInputBar: View {
     var onDownArrow: (() -> Void)? = nil
     var onSaveTemplate: ((String) -> Void)? = nil
 
+    @AppStorage("optaplus.deviceName") private var deviceName = "MacBook"
     @State private var glowPhase: CGFloat = 0
     @State private var sendScale: CGFloat = 1
 
@@ -1682,6 +1683,17 @@ struct ChatInputBar: View {
                 endPoint: .trailing
             )
             .frame(height: 1)
+
+            // Device identity badge
+            if !deviceName.isEmpty {
+                HStack {
+                    Text("Sending as: \(deviceName)")
+                        .font(.system(size: 10))
+                        .foregroundColor(.optaTextMuted)
+                    Spacer()
+                }
+                .padding(.horizontal, 16)
+            }
 
             HStack(spacing: 10) {
                 // Session mode indicator with subtle pulse
