@@ -18,8 +18,8 @@ afterEach(async () => {
 });
 
 describe('tool schemas', () => {
-  it('defines exactly 8 tools', () => {
-    expect(TOOL_SCHEMAS).toHaveLength(8);
+  it('defines exactly 9 tools', () => {
+    expect(TOOL_SCHEMAS).toHaveLength(9);
   });
 
   it('has all expected tool names', () => {
@@ -32,6 +32,7 @@ describe('tool schemas', () => {
     expect(names).toContain('find_files');
     expect(names).toContain('run_command');
     expect(names).toContain('ask_user');
+    expect(names).toContain('read_project_docs');
   });
 
   it('each schema has type, function.name, function.parameters', () => {
@@ -202,6 +203,35 @@ describe('run_command', () => {
       command: 'exit 42',
     }));
     expect(result).toContain('[exit code: 42]');
+  });
+});
+
+describe('read_project_docs', () => {
+  it('reads OPIS docs from docs/ directory', async () => {
+    await mkdir(join(TEST_DIR, 'docs'), { recursive: true });
+    await writeFile(join(TEST_DIR, 'docs', 'KNOWLEDGE.md'), '# Knowledge\nImportant facts here.\n');
+
+    const originalCwd = process.cwd();
+    try {
+      process.chdir(TEST_DIR);
+      const result = await executeTool('read_project_docs', JSON.stringify({ file: 'KNOWLEDGE.md' }));
+      expect(result).toContain('# Knowledge');
+      expect(result).toContain('Important facts here.');
+    } finally {
+      process.chdir(originalCwd);
+    }
+  });
+
+  it('returns helpful message for missing docs', async () => {
+    const originalCwd = process.cwd();
+    try {
+      process.chdir(TEST_DIR);
+      const result = await executeTool('read_project_docs', JSON.stringify({ file: 'ARCHITECTURE.md' }));
+      expect(result).toContain('not found');
+      expect(result).toContain('opta init');
+    } finally {
+      process.chdir(originalCwd);
+    }
   });
 });
 

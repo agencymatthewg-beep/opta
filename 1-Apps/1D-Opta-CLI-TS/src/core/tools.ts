@@ -134,6 +134,20 @@ export const TOOL_SCHEMAS = [
       },
     },
   },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'read_project_docs',
+      description: 'Read an OPIS project document. Available: APP.md, ARCHITECTURE.md, GUARDRAILS.md, DECISIONS.md, ECOSYSTEM.md, KNOWLEDGE.md, WORKFLOWS.md, ROADMAP.md, INDEX.md, CLAUDE.md',
+      parameters: {
+        type: 'object',
+        properties: {
+          file: { type: 'string', description: 'Document filename (e.g., ARCHITECTURE.md)' },
+        },
+        required: ['file'],
+      },
+    },
+  },
 ];
 
 // --- Permission Resolution ---
@@ -182,6 +196,8 @@ export async function executeTool(
         return await execRunCommand(args);
       case 'ask_user':
         return await execAskUser(args);
+      case 'read_project_docs':
+        return await execReadProjectDocs(args);
       default:
         return `Error: Unknown tool "${name}"`;
     }
@@ -365,6 +381,12 @@ async function execAskUser(args: Record<string, unknown>): Promise<string> {
   const answer = await input({ message: question });
 
   return answer;
+}
+
+async function execReadProjectDocs(args: Record<string, unknown>): Promise<string> {
+  const file = String(args['file'] ?? '');
+  const { readProjectDoc } = await import('../context/opis.js');
+  return readProjectDoc(process.cwd(), file);
 }
 
 // --- Utility ---
