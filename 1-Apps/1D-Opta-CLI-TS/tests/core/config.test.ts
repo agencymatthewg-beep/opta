@@ -28,6 +28,19 @@ describe('config', () => {
     expect(config.model.default).toBe(''); // default preserved
   });
 
+  it('has git defaults', () => {
+    expect(DEFAULT_CONFIG.git.autoCommit).toBe(true);
+    expect(DEFAULT_CONFIG.git.checkpoints).toBe(true);
+  });
+
+  it('validates partial git config', () => {
+    const config = OptaConfigSchema.parse({
+      git: { autoCommit: false },
+    });
+    expect(config.git.autoCommit).toBe(false);
+    expect(config.git.checkpoints).toBe(true); // default preserved
+  });
+
   it('rejects invalid permission values', () => {
     expect(() =>
       OptaConfigSchema.parse({

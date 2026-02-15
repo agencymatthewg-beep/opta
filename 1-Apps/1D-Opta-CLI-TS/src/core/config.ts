@@ -8,6 +8,7 @@ export const OptaConfigSchema = z.object({
       host: z.string().default('192.168.188.11'),
       port: z.number().default(1234),
       protocol: z.literal('http').default('http'),
+      adminKey: z.string().optional(),
     })
     .default({}),
   model: z
@@ -32,6 +33,12 @@ export const OptaConfigSchema = z.object({
     .object({
       maxToolCalls: z.number().default(30),
       compactAt: z.number().default(0.7),
+    })
+    .default({}),
+  git: z
+    .object({
+      autoCommit: z.boolean().default(true),
+      checkpoints: z.boolean().default(true),
     })
     .default({}),
 });
@@ -77,6 +84,12 @@ export async function loadConfig(
     (raw as Record<string, unknown>).connection = {
       ...((raw as Record<string, Record<string, unknown>>).connection ?? {}),
       port: parseInt(process.env['OPTA_PORT'], 10),
+    };
+  }
+  if (process.env['OPTA_ADMIN_KEY']) {
+    (raw as Record<string, unknown>).connection = {
+      ...((raw as Record<string, Record<string, unknown>>).connection ?? {}),
+      adminKey: process.env['OPTA_ADMIN_KEY'],
     };
   }
   if (process.env['OPTA_MODEL']) {
