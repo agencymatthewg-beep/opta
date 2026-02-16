@@ -17,6 +17,23 @@
 		<string>AppIcon</string>
 	</dict>
 	<key>NSCameraUsageDescription</key>
-	<string>OptaPlus needs camera access to attach photos to messages.</string>
+	<string>OptaPlus needs camera access to scan QR codes and attach photos to messages.</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_openclaw._tcp</string>
+	</array>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>OptaPlus searches your local network to discover OpenClaw bots for automatic pairing.</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>optaplus</string>
+			</array>
+			<key>CFBundleURLName</key>
+			<string>biz.optamize.optaplus</string>
+		</dict>
+	</array>
 </dict>
 </plist>

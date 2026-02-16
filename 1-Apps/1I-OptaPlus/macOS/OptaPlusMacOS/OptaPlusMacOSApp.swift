@@ -104,6 +104,7 @@ struct WindowRoot: View {
 @main
 struct OptaPlusMacOSApp: App {
     @StateObject private var appState = AppState()
+    @StateObject private var pairingCoordinator = PairingCoordinator()
     @StateObject private var animPrefs = AnimationPreferences.shared
     @StateObject private var notificationManager = NotificationManager.shared
     @ObservedObject private var themeManager = ThemeManager.shared
@@ -119,6 +120,7 @@ struct OptaPlusMacOSApp: App {
         WindowGroup(id: "chat", for: WindowValue.self) { $value in
             WindowRoot(initialBotId: value.botId)
                 .environmentObject(appState)
+                .environmentObject(pairingCoordinator)
                 .environmentObject(animPrefs)
                 .environmentObject(themeManager)
                 .environment(\.animationLevel, animPrefs.level)
@@ -128,6 +130,11 @@ struct OptaPlusMacOSApp: App {
                 .environment(\.backgroundMode, themeManager.backgroundMode)
                 .frame(minWidth: 500, minHeight: 400)
                 .preferredColorScheme(.dark)
+                .onOpenURL { url in
+                    if let info = PairingCoordinator.parseDeepLink(url) {
+                        pairingCoordinator.pendingPairingInfo = info
+                    }
+                }
         } defaultValue: {
             WindowValue.empty
         }

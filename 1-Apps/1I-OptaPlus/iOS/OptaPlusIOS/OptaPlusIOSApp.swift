@@ -120,12 +120,14 @@ final class AppState: ObservableObject {
 @main
 struct OptaPlusIOSApp: App {
     @StateObject private var appState = AppState()
+    @StateObject private var pairingCoordinator = PairingCoordinator()
     @ObservedObject private var themeManager = ThemeManager.shared
 
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environmentObject(appState)
+                .environmentObject(pairingCoordinator)
                 .environmentObject(themeManager)
                 .environment(\.fontScaleOffset, themeManager.fontScale.offset)
                 .environment(\.chatDensity, themeManager.chatDensity)
@@ -134,6 +136,11 @@ struct OptaPlusIOSApp: App {
                 .onAppear {
                     if let bot = appState.selectedBot {
                         appState.selectBot(bot)
+                    }
+                }
+                .onOpenURL { url in
+                    if let info = PairingCoordinator.parseDeepLink(url) {
+                        pairingCoordinator.pendingPairingInfo = info
                     }
                 }
         }
