@@ -11,7 +11,7 @@ interface ToolCallAccum {
   args: string;
 }
 
-interface AgentMessage {
+export interface AgentMessage {
   role: 'system' | 'user' | 'assistant' | 'tool';
   content: string | null;
   tool_calls?: Array<{
@@ -22,9 +22,20 @@ interface AgentMessage {
   tool_call_id?: string;
 }
 
+export interface AgentLoopOptions {
+  existingMessages?: AgentMessage[];
+}
+
+export interface AgentLoopResult {
+  messages: AgentMessage[];
+  toolCallCount: number;
+}
+
 // --- System Prompt ---
 
-async function buildSystemPrompt(config: OptaConfig): Promise<string> {
+export async function buildSystemPrompt(config: OptaConfig, cwd?: string): Promise<string> {
+  const workingDir = cwd ?? process.cwd();
+
   let prompt = `You are Opta, an AI coding assistant running locally on the user's machine. You help with coding tasks by using tools to read, edit, and search files, and run commands.
 
 Rules:
@@ -34,19 +45,34 @@ Rules:
 - Explain your reasoning before each action
 - When the task is complete, respond with a final summary (no tool calls)
 
-Working directory: ${process.cwd()}`;
+Working directory: ${workingDir}`;
 
-  // Inject project memory if available
+  // Load OPIS context
   try {
-    const { readFileSync } = await import('node:fs');
-    const { resolve } = await import('node:path');
-    const memoryPath = resolve(process.cwd(), '.opta', 'memory.md');
-    const memory = readFileSync(memoryPath, 'utf-8');
-    if (memory.trim()) {
-      prompt += `\n\nProject knowledge:\n${memory}`;
+    const { loadOpisContext } = await import('../context/opis.js');
+    const opisCtx = await loadOpisContext(workingDir);
+
+    if (opisCtx.hasOpis && opisCtx.summary) {
+      prompt += `\n\n${opisCtx.summary}`;
+    } else if (opisCtx.fallbackMemory) {
+      prompt += `\n\nProject knowledge:\n${opisCtx.fallbackMemory}`;
+    } else {
+      prompt += `\n\nTip: Run \`opta init\` to set up project documentation for better context.`;
     }
   } catch {
-    // No project memory file
+    // OPIS loading failed — continue without context
+  }
+
+  // Load export map
+  try {
+    const { scanExports, formatExportMap } = await import('../context/exports.js');
+    const exportMap = await scanExports(workingDir);
+
+    if (exportMap.entries.length > 0) {
+      prompt += `\n\nCodebase exports:\n${formatExportMap(exportMap)}`;
+    }
+  } catch {
+    // Export scanning failed — continue without map
   }
 
   void config; // config used for future extensions
@@ -191,12 +217,13 @@ async function promptToolApproval(
 
 export async function agentLoop(
   task: string,
-  config: OptaConfig
-): Promise<void> {
+  config: OptaConfig,
+  options?: AgentLoopOptions
+): Promise<AgentLoopResult> {
   const { default: OpenAI } = await import('openai');
   const client = new OpenAI({
     baseURL: `http://${config.connection.host}:${config.connection.port}/v1`,
-    apiKey: 'lm-studio',
+    apiKey: 'opta-lmx',
   });
 
   const model = config.model.default;
@@ -204,16 +231,19 @@ export async function agentLoop(
     console.error(
       chalk.red('✗') +
         ' No model configured. Run ' +
-        chalk.cyan('opta connect') +
-        ' first.'
+        chalk.cyan('opta status') +
+        ' to check your LMX connection.'
     );
     process.exit(3);
   }
 
-  const messages: AgentMessage[] = [
-    { role: 'system', content: await buildSystemPrompt(config) },
-    { role: 'user', content: task },
-  ];
+  // Use existing messages (multi-turn) or start fresh (single-shot)
+  const messages: AgentMessage[] = options?.existingMessages
+    ? [...options.existingMessages, { role: 'user', content: task }]
+    : [
+        { role: 'system', content: await buildSystemPrompt(config) },
+        { role: 'user', content: task },
+      ];
 
   let toolCallCount = 0;
   const spinner = await createSpinner();
@@ -231,7 +261,7 @@ export async function agentLoop(
       spinner.succeed('Context compacted');
     }
 
-    // 2. Call LM Studio
+    // 2. Call Opta LMX
     debug(`Sending ${messages.length} messages to ${model}`);
     spinner.start('Thinking...');
 
@@ -343,4 +373,6 @@ export async function agentLoop(
   console.log(
     chalk.dim(`\n  ~${(finalTokens / 1000).toFixed(1)}K tokens · ${toolCallCount} tool calls`)
   );
+
+  return { messages, toolCallCount };
 }
