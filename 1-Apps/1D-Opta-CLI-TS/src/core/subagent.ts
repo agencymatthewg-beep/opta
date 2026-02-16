@@ -208,6 +208,9 @@ export async function spawnSubAgent(
     ? registry.schemas.filter(s => task.tools!.includes(s.function.name))
     : registry.schemas;
 
+  // Import resolvePermission once outside the loop
+  const { resolvePermission } = await import('./tools.js');
+
   const runLoop = async (): Promise<SubAgentResult> => {
     while (true) {
       // Check budget before each LLM call
@@ -295,7 +298,6 @@ export async function spawnSubAgent(
         }
 
         // Check permission
-        const { resolvePermission } = await import('./tools.js');
         const permission = resolvePermission(toolName, childConfig);
         if (permission === 'deny' || permission === 'ask') {
           // Silent agents cannot prompt: ask becomes deny

@@ -432,7 +432,7 @@ describe('bg_status', () => {
   it('returns message when no processes', async () => {
     // Force shutdown to clear any lingering processes
     const { shutdownProcessManager } = await import('../../src/core/tools.js');
-    shutdownProcessManager();
+    await shutdownProcessManager();
     const result = await executeTool('bg_status', JSON.stringify({}));
     expect(result).toContain('No background processes');
   });

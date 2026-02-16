@@ -140,9 +140,13 @@ export class ProcessManager {
       detached: false,
     });
 
+    if (!child.pid) {
+      throw new Error(`Failed to spawn process for command: ${command}`);
+    }
+
     const proc: ManagedProcess = {
       id,
-      pid: child.pid!,
+      pid: child.pid,
       command,
       label: opts?.label,
       state: 'running',
@@ -157,6 +161,15 @@ export class ProcessManager {
 
     child.stdout!.on('data', (chunk: Buffer) => proc.stdout.append(chunk.toString()));
     child.stderr!.on('data', (chunk: Buffer) => proc.stderr.append(chunk.toString()));
+
+    child.on('error', (err) => {
+      if (proc.state === 'running') {
+        proc.state = 'failed';
+      }
+      proc.endedAt = Date.now();
+      if (proc.timeoutHandle) clearTimeout(proc.timeoutHandle);
+      debug(`bg[${id}] spawn error: ${err.message}`);
+    });
 
     child.on('close', (code, signal) => {
       if (proc.state === 'running') {
@@ -182,7 +195,7 @@ export class ProcessManager {
 
     this.processes.set(id, proc);
     debug(`bg[${id}] started: pid=${child.pid} cmd="${command}"`);
-    return { id, pid: child.pid!, command };
+    return { id, pid: child.pid, command };
   }
 
   status(id?: string): ProcessStatus | ProcessStatus[] {
@@ -268,8 +281,8 @@ export class ProcessManager {
     await Promise.all(running.map((p) => this.kill(p.id)));
   }
 
-  cleanup(): void {
-    this.killAll();
+  async cleanup(): Promise<void> {
+    await this.killAll();
     this.processes.clear();
   }
 }

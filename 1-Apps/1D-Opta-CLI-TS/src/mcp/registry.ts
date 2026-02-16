@@ -2,6 +2,7 @@ import { TOOL_SCHEMAS, SUB_AGENT_TOOL_SCHEMAS, executeTool } from '../core/tools
 import { connectMcpServer, type McpConnection } from './client.js';
 import { debug } from '../core/debug.js';
 import type { OptaConfig } from '../core/config.js';
+import type { SubAgentContext } from '../core/subagent.js';
 import { LspManager } from '../lsp/manager.js';
 import { resolve } from 'node:path';
 
@@ -18,6 +19,7 @@ export interface ToolRegistry {
   schemas: ToolSchema[];
   execute: (name: string, argsJson: string) => Promise<string>;
   close: () => Promise<void>;
+  parentContext?: SubAgentContext;
 }
 
 export async function buildToolRegistry(
@@ -88,9 +90,12 @@ export async function buildToolRegistry(
     : (TOOL_SCHEMAS as ToolSchema[]).filter(s => !LSP_TOOL_NAMES.has(s.function.name));
 
   const totalTools = baseSchemas.length + mcpSchemas.length + subAgentSchemas.length;
-  if (totalTools > 20) {
+  const contextLimit = config.model?.contextLimit ?? 32768;
+  const toolThreshold = Math.floor(contextLimit / 256);
+  if (totalTools > toolThreshold) {
+    const estimatedTokens = Math.ceil(totalTools * 59);
     console.warn(
-      `  ${totalTools} tools configured — local models may struggle. Consider reducing MCP servers.`
+      `  ${totalTools} tools (~${estimatedTokens} tokens) may degrade inference on ${(contextLimit / 1024).toFixed(0)}K context. Consider: lsp.enabled=false or reducing MCP servers.`
     );
   }
 
@@ -194,8 +199,20 @@ async function execSubAgentTool(
   }
 
   // Lazy-load sub-agent modules
-  const { spawnSubAgent, formatSubAgentResult } = await import('../core/subagent.js');
+  const { spawnSubAgent, formatSubAgentResult, createSubAgentContext } = await import('../core/subagent.js');
   const { nanoid } = await import('nanoid');
+
+  // Validate depth before spawning
+  let childContext: SubAgentContext;
+  try {
+    childContext = createSubAgentContext(
+      registry.parentContext?.parentSessionId ?? 'root',
+      registry.parentContext,
+      config,
+    );
+  } catch (err) {
+    return `Error: ${err instanceof Error ? err.message : String(err)}`;
+  }
 
   // Create an OpenAI client for the sub-agent (shares config)
   const { default: OpenAI } = await import('openai');
@@ -221,6 +238,7 @@ async function execSubAgentTool(
       config,
       client,
       registry,
+      childContext,
     );
 
     return formatSubAgentResult(result);

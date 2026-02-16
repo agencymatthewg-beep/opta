@@ -13,6 +13,7 @@ import OptaMolt
 // MARK: - Bot Map View
 
 struct BotMapView: View {
+    @EnvironmentObject var appState: AppState
     @EnvironmentObject var pairingCoordinator: PairingCoordinator
     @StateObject private var scanner = BotScanner()
     @StateObject private var clipboardMonitor = ClipboardMonitor()
@@ -253,7 +254,8 @@ struct BotMapView: View {
                         node: node,
                         isSelected: selectedBot?.id == node.id,
                         index: index,
-                        appeared: appeared
+                        appeared: appeared,
+                        viewModel: viewModelForNode(node)
                     )
                     .position(position)
                     .onTapGesture {
@@ -304,6 +306,11 @@ struct BotMapView: View {
                 opacity: Double.random(in: 0.1...0.5)
             )
         }
+    }
+
+    private func viewModelForNode(_ node: BotNode) -> ChatViewModel? {
+        guard appState.bots.contains(where: { $0.id == node.botId }) else { return nil }
+        return appState.viewModel(forNode: node)
     }
 }
 
@@ -382,8 +389,20 @@ struct BotConstellationNode: View {
     let isSelected: Bool
     let index: Int
     let appeared: Bool
+    var viewModel: ChatViewModel? = nil
+
+    private var isConnected: Bool {
+        viewModel?.connectionState == .connected
+    }
 
     private var glowColor: Color {
+        if let vm = viewModel {
+            switch vm.connectionState {
+            case .connected: return .optaGreen
+            case .connecting, .reconnecting: return .optaAmber
+            case .disconnected: return node.state == .paired ? .optaPrimary : .optaRed
+            }
+        }
         switch node.state {
         case .connected: return .optaGreen
         case .connecting, .pairing: return .optaAmber
@@ -405,16 +424,30 @@ struct BotConstellationNode: View {
                     .stroke(glowColor.opacity(isSelected ? 0.6 : 0.3), lineWidth: isSelected ? 2 : 1)
                     .frame(width: 58, height: 58)
 
-                // Connected breathing glow
-                if node.state == .connected {
+                // Thinking arc
+                if viewModel?.botState == .thinking {
+                    ConstellationThinkingArc(color: glowColor)
+                        .frame(width: 62, height: 62)
+                }
+
+                // Connected idle breathing
+                if isConnected && viewModel?.botState == .idle {
                     Circle()
                         .fill(glowColor.opacity(0.15))
                         .frame(width: 58, height: 58)
                         .optaBreathing(minOpacity: 0.05, maxOpacity: 0.15)
                 }
 
-                // Connecting amber pulse
-                if node.state == .connecting {
+                // Typing pulse ring
+                if viewModel?.botState == .typing {
+                    Circle()
+                        .stroke(glowColor.opacity(0.4), lineWidth: 1.5)
+                        .frame(width: 66, height: 66)
+                        .optaBreathing(minOpacity: 0.2, maxOpacity: 0.8, minScale: 0.95, maxScale: 1.1)
+                }
+
+                // Connecting amber pulse (fallback when no viewModel)
+                if node.state == .connecting && viewModel == nil {
                     Circle()
                         .fill(glowColor.opacity(0.15))
                         .frame(width: 58, height: 58)
@@ -444,7 +477,7 @@ struct BotConstellationNode: View {
                     .fill(glowColor)
                     .frame(width: 5, height: 5)
 
-                Text(statusLabel)
+                Text(liveStatusLabel)
                     .font(.soraCaption)
                     .foregroundColor(.optaTextMuted)
             }
@@ -454,6 +487,19 @@ struct BotConstellationNode: View {
         .animation(.optaSpring.delay(0.15 + Double(index) * 0.08), value: appeared)
         .scaleEffect(isSelected ? 1.1 : 1.0)
         .animation(.optaSpring, value: isSelected)
+    }
+
+    private var liveStatusLabel: String {
+        if let vm = viewModel {
+            switch vm.botState {
+            case .thinking: return "Thinking..."
+            case .typing: return "Responding..."
+            case .idle:
+                return vm.connectionState == .connected ? "Connected" :
+                       vm.connectionState == .connecting ? "Connecting..." : "Offline"
+            }
+        }
+        return statusLabel
     }
 
     private var statusLabel: String {
@@ -466,6 +512,31 @@ struct BotConstellationNode: View {
         case .paired: return "Paired"
         case .error: return "Error"
         }
+    }
+}
+
+// MARK: - Constellation Thinking Arc
+
+struct ConstellationThinkingArc: View {
+    let color: Color
+    @State private var rotation: Double = 0
+
+    var body: some View {
+        Circle()
+            .trim(from: 0, to: 0.28)
+            .stroke(
+                AngularGradient(
+                    gradient: Gradient(colors: [color.opacity(0), color]),
+                    center: .center
+                ),
+                style: StrokeStyle(lineWidth: 2, lineCap: .round)
+            )
+            .rotationEffect(.degrees(rotation))
+            .onAppear {
+                withAnimation(.optaSpin) {
+                    rotation = 360
+                }
+            }
     }
 }
 

@@ -349,6 +349,11 @@ export async function agentLoop(
   const { buildToolRegistry } = await import('../mcp/registry.js');
   const registry = await buildToolRegistry(effectiveConfig, options?.mode);
 
+  // Thread sub-agent context into registry for depth tracking
+  if (options?.subAgentContext) {
+    registry.parentContext = options.subAgentContext;
+  }
+
   // Initialize hook manager (no-op when no hooks configured)
   const hooks = createHookManager(effectiveConfig);
   const sessionCtx: SessionContext = {
@@ -574,7 +579,7 @@ export async function agentLoop(
   await registry.close();
 
   // Shutdown background processes
-  shutdownProcessManager();
+  await shutdownProcessManager();
 
   // Fire session end hook
   if (!isSubAgent) {

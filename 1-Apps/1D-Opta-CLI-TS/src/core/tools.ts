@@ -932,19 +932,25 @@ function getProcessManager(): ProcessManager {
 }
 
 export function initProcessManager(config: OptaConfig): void {
-  const bg = (config as Record<string, unknown>).background as
-    | { maxConcurrent?: number; defaultTimeout?: number; maxBufferSize?: number }
-    | undefined;
   _processManager = new ProcessManager({
-    maxConcurrent: bg?.maxConcurrent ?? 5,
-    defaultTimeout: bg?.defaultTimeout ?? 300_000,
-    maxBufferSize: bg?.maxBufferSize ?? 1_048_576,
+    maxConcurrent: config.background.maxConcurrent,
+    defaultTimeout: config.background.defaultTimeout,
+    maxBufferSize: config.background.maxBufferSize,
   });
 }
 
-export function shutdownProcessManager(): void {
-  _processManager?.cleanup();
-  _processManager = null;
+export async function shutdownProcessManager(): Promise<void> {
+  if (_processManager) {
+    await _processManager.cleanup();
+    _processManager = null;
+  }
+}
+
+export function forceKillAllProcesses(): void {
+  if (_processManager) {
+    _processManager.killAll().catch(() => {});
+    _processManager = null;
+  }
 }
 
 async function execBgStart(args: Record<string, unknown>): Promise<string> {
@@ -957,7 +963,7 @@ async function execBgStart(args: Record<string, unknown>): Promise<string> {
   return `Process started: id=${handle.id} pid=${handle.pid} cmd="${command}"`;
 }
 
-async function execBgStatus(args: Record<string, unknown>): Promise<string> {
+function execBgStatus(args: Record<string, unknown>): string {
   const id = args['id'] ? String(args['id']) : undefined;
   const pm = getProcessManager();
 
@@ -976,7 +982,7 @@ async function execBgStatus(args: Record<string, unknown>): Promise<string> {
   return `id=${s.id} state=${s.state} pid=${s.pid} exit=${s.exitCode ?? 'n/a'} runtime=${(s.runtimeMs / 1000).toFixed(1)}s${s.label ? ` label="${s.label}"` : ''} cmd="${s.command}"`;
 }
 
-async function execBgOutput(args: Record<string, unknown>): Promise<string> {
+function execBgOutput(args: Record<string, unknown>): string {
   const id = String(args['id'] ?? '');
   const lines = args['lines'] !== undefined ? Number(args['lines']) : undefined;
   const stream = args['stream'] as 'stdout' | 'stderr' | 'both' | undefined;

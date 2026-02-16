@@ -1,7 +1,6 @@
 import { nanoid } from 'nanoid';
 import type { OptaConfig } from './config.js';
 import type { SubAgentTask, SubAgentResult } from './subagent.js';
-import { formatSubAgentResult } from './subagent.js';
 import type { ToolRegistry } from '../mcp/registry.js';
 
 interface DelegationPlan {
