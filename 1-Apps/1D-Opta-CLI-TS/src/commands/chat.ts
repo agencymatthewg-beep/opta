@@ -118,6 +118,7 @@ export async function startChat(opts: ChatOptions): Promise<void> {
     try {
       const result = await agentLoop(userInput, config, {
         existingMessages: session.messages,
+        sessionId: session.id,
       });
 
       session.messages = result.messages;
@@ -162,6 +163,8 @@ async function handleSlashCommand(
       console.log('  /compact      Force context compaction');
       console.log('  /clear        Clear screen');
       console.log('  /help         Show this help');
+      console.log('  /undo [n]     Reverse last checkpoint (or specific #n)');
+      console.log('  /undo list    Show all checkpoints');
       console.log();
       return 'handled';
 
@@ -211,6 +214,45 @@ async function handleSlashCommand(
     case '/clear':
       console.clear();
       return 'handled';
+
+    case '/undo': {
+      try {
+        const { isGitRepo } = await import('../git/utils.js');
+        if (!(await isGitRepo(process.cwd()))) {
+          console.log(chalk.dim('  Not in a git repository'));
+          return 'handled';
+        }
+
+        if (arg === 'list') {
+          const { listCheckpoints } = await import('../git/checkpoints.js');
+          const checkpoints = await listCheckpoints(process.cwd(), session.id);
+          if (checkpoints.length === 0) {
+            console.log(chalk.dim('  No checkpoints in this session'));
+          } else {
+            console.log('\n' + chalk.bold('Checkpoints:'));
+            for (const cp of checkpoints) {
+              console.log(`  #${cp.n}  ${cp.tool}  ${cp.path}  ${chalk.dim(cp.timestamp)}`);
+            }
+            console.log();
+          }
+          return 'handled';
+        }
+
+        const { undoCheckpoint } = await import('../git/checkpoints.js');
+        const n = arg ? parseInt(arg, 10) : undefined;
+        await undoCheckpoint(process.cwd(), session.id, n);
+
+        const label = n !== undefined ? `Checkpoint #${n}` : 'Last checkpoint';
+        console.log(chalk.green('✓') + ` Undone: ${label}`);
+        session.messages.push({
+          role: 'user',
+          content: `[System: User reversed ${label} — changes have been reverted. Adjust your approach accordingly.]`,
+        });
+      } catch (err) {
+        console.error(chalk.red('✗') + ` Undo failed: ${err instanceof Error ? err.message : err}`);
+      }
+      return 'handled';
+    }
 
     default:
       console.log(chalk.yellow(`  Unknown command: ${cmd}`) + chalk.dim(' (try /help)'));
