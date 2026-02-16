@@ -20,6 +20,7 @@ struct BotMapView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var botNodes: [BotNode] = []
     @State private var selectedBot: BotNode?
+    @State private var selectedBotForChat: BotConfig?
     @State private var appeared = false
     @State private var starPositions: [StarPosition] = []
     @State private var showQRScanner = false
@@ -69,6 +70,30 @@ struct BotMapView: View {
             .navigationTitle("Bot Map")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Menu {
+                        Button {
+                            for node in botNodes {
+                                if let vm = viewModelForNode(node), vm.connectionState == .disconnected {
+                                    vm.connect()
+                                }
+                            }
+                        } label: {
+                            Label("Connect All", systemImage: "bolt.fill")
+                        }
+                        Button {
+                            for node in botNodes {
+                                viewModelForNode(node)?.disconnect()
+                            }
+                        } label: {
+                            Label("Disconnect All", systemImage: "bolt.slash")
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
+                            .foregroundColor(.optaTextSecondary)
+                    }
+                    .accessibilityLabel("Connection options")
+                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack(spacing: 16) {
                         // QR code scanner button
@@ -143,6 +168,11 @@ struct BotMapView: View {
                     }
                 )
                 .interactiveDismissDisabled()
+            }
+            .navigationDestination(item: $selectedBotForChat) { bot in
+                let vm = appState.viewModel(for: bot)
+                ChatView(viewModel: vm, botConfig: bot)
+                    .navigationTitle(bot.name)
             }
         }
     }
@@ -263,8 +293,48 @@ struct BotMapView: View {
                             selectedBot = node
                         }
                     }
+                    .contextMenu {
+                        // Open Chat
+                        Button {
+                            if let bot = appState.bots.first(where: { $0.id == node.botId }) {
+                                appState.selectBot(bot)
+                                selectedBotForChat = bot
+                            }
+                        } label: {
+                            Label("Open Chat", systemImage: "bubble.left.fill")
+                        }
+
+                        Divider()
+
+                        // Connect / Disconnect
+                        if let vm = viewModelForNode(node) {
+                            if vm.connectionState == .connected {
+                                Button {
+                                    vm.disconnect()
+                                } label: {
+                                    Label("Disconnect", systemImage: "bolt.slash")
+                                }
+                            } else {
+                                Button {
+                                    vm.connect()
+                                } label: {
+                                    Label("Connect", systemImage: "bolt.fill")
+                                }
+                            }
+                        }
+
+                        Divider()
+
+                        // Forget
+                        Button(role: .destructive) {
+                            store.removeBotNode(id: node.id)
+                            loadBots()
+                        } label: {
+                            Label("Forget Bot", systemImage: "trash")
+                        }
+                    }
                     .accessibilityLabel("\(node.name), \(node.state.rawValue)")
-                    .accessibilityHint("Tap to select \(node.name)")
+                    .accessibilityHint("Tap to select, long press for options")
                 }
             }
         }
