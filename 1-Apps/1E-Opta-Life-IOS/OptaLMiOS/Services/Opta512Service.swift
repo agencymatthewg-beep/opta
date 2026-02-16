@@ -120,8 +120,7 @@ class Opta512Service: ObservableObject {
         
         return Opta512Schedule(
             lastUpdated: lastUpdated ?? Date(),
-            todayEvents: events,
-            source: .opta512
+            todayEvents: events
         )
     }
     
@@ -163,16 +162,16 @@ class Opta512Service: ObservableObject {
         
         guard let start = startDate else { return nil }
         
+        let fmt = ISO8601DateFormatter()
         return CalendarEvent(
             id: UUID().uuidString,
             summary: summary,
-            startDate: start,
-            endDate: isAllDay ? nil : start.addingTimeInterval(3600), // 1 hour default
+            description: nil,
+            start: fmt.string(from: start),
+            end: isAllDay ? nil : fmt.string(from: start.addingTimeInterval(3600)),
             isAllDay: isAllDay,
             location: nil,
-            notes: nil,
-            source: .opta512,
-            calendarName: calendar
+            htmlLink: nil
         )
     }
     
@@ -304,7 +303,6 @@ class Opta512Service: ObservableObject {
 struct Opta512Schedule {
     let lastUpdated: Date
     let todayEvents: [CalendarEvent]
-    let source: EventSource
 }
 
 struct Opta512Priorities {
@@ -347,16 +345,3 @@ extension Date {
     }
 }
 
-extension String {
-    var isoDate: Date? {
-        let formatter = ISO8601DateFormatter()
-        return formatter.date(from: self) ?? self.simpleDate
-    }
-    
-    var simpleDate: Date? {
-        // Parse "YYYY-MM-DD" format
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        return formatter.date(from: self)
-    }
-}

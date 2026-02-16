@@ -24,7 +24,7 @@ final class RemindersSyncService: ObservableObject {
 
     // MARK: - Initialization
 
-    private init() {
+    init() {
         loadLastSyncDate()
         loadSyncedRemindersCache()
     }
@@ -101,7 +101,7 @@ final class RemindersSyncService: ObservableObject {
 
         do {
             // Ensure reminders access
-            guard eventKitService.isRemindersAuthorized else {
+            if !eventKitService.isRemindersAuthorized {
                 let granted = await eventKitService.requestRemindersAccess()
                 guard granted else {
                     throw RemindersSyncError.notAuthorized
@@ -446,6 +446,47 @@ enum RemindersSyncError: LocalizedError {
             return "Failed to merge tasks and reminders."
         case .conversionFailed:
             return "Failed to convert between task and reminder formats."
+        }
+    }
+}
+
+// MARK: - Intent Support Extensions
+
+extension RemindersSyncService {
+    /// Fetch reminders for Siri Intents (returns ReminderEntity for intent display)
+    func fetchReminders(listName: String? = nil) async throws -> [ReminderEntity] {
+        let eventStore = EventKitService.shared.eventStore
+        let calendars: [EKCalendar]
+        
+        if let name = listName {
+            calendars = eventStore.calendars(for: .reminder).filter { $0.title == name }
+        } else {
+            calendars = eventStore.calendars(for: .reminder)
+        }
+        
+        guard !calendars.isEmpty else { return [] }
+        
+        let predicate = eventStore.predicateForReminders(in: calendars)
+        
+        return try await withCheckedThrowingContinuation { continuation in
+            eventStore.fetchReminders(matching: predicate) { reminders in
+                guard let reminders = reminders else {
+                    continuation.resume(returning: [])
+                    return
+                }
+                let entities = reminders.map { reminder in
+                    ReminderEntity(
+                        id: reminder.calendarItemIdentifier,
+                        title: reminder.title ?? "Untitled",
+                        notes: reminder.notes,
+                        dueDate: reminder.dueDateComponents?.date,
+                        isCompleted: reminder.isCompleted,
+                        priority: reminder.priority,
+                        listName: reminder.calendar?.title
+                    )
+                }
+                continuation.resume(returning: entities)
+            }
         }
     }
 }

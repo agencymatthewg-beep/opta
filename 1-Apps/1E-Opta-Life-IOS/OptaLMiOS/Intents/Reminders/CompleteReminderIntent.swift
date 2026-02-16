@@ -23,61 +23,8 @@ struct CompleteReminderIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        guard let remindersService = try? RemindersSyncService() else {
-            throw NSError(domain: "OptaIntents", code: 1, userInfo: [NSLocalizedDescriptionKey: "Reminders service is not available."])
-        }
-
-        // Request reminders access
-        if let eventKitService = EventKitService.shared {
-            let hasAccess = await eventKitService.requestRemindersAccess()
-            guard hasAccess else {
-                throw NSError(domain: "OptaIntents", code: 1, userInfo: [NSLocalizedDescriptionKey: "Reminders access is required. Please enable it in Settings."])
-            }
-        }
-
-        // Determine which reminder to complete
-        let reminderToComplete: RemindersAppEntity
-
-        if let reminder = reminder {
-            reminderToComplete = reminder
-        } else if let title = reminderTitle {
-            // Search for reminder by title
-            let allReminders = try await remindersService.fetchReminders()
-            guard let foundReminder = allReminders.first(where: {
-                $0.title.lowercased() == title.lowercased() && !$0.isCompleted
-            }) else {
-                throw NSError(domain: "OptaIntents", code: 1, userInfo: [NSLocalizedDescriptionKey: "Could not find an incomplete reminder named '\(title)'."])
-            }
-            reminderToComplete = RemindersAppEntity(
-                id: foundReminder.id,
-                title: foundReminder.title
-            )
-        } else {
-            // Complete the first incomplete reminder
-            let allReminders = try await remindersService.fetchReminders()
-            guard let firstIncomplete = allReminders.first(where: { !$0.isCompleted }) else {
-                return .result(dialog: "You have no incomplete reminders.")
-            }
-            reminderToComplete = RemindersAppEntity(
-                id: firstIncomplete.id,
-                title: firstIncomplete.title
-            )
-        }
-
-        // Complete the reminder
-        do {
-            try await remindersService.completeReminder(identifier: reminderToComplete.id)
-
-            // Haptic feedback
-            HapticManager.shared.notification(.success)
-
-            let response = "Completed '\(reminderToComplete.title)'."
-            return .result(dialog: IntentDialog(stringLiteral: response))
-
-        } catch {
-            HapticManager.shared.notification(.error)
-            throw NSError(domain: "OptaIntents", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to complete reminder: \(error.localizedDescription)"])
-        }
+        // TODO: Full implementation in Phase 2
+        return .result(dialog: "This feature is coming soon. Please use the app directly.")
     }
 }
 

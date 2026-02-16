@@ -31,57 +31,8 @@ struct AddToTodoistIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        guard let todoistService = TodoistService.shared else {
-            throw NSError(domain: "OptaIntents", code: 1, userInfo: [NSLocalizedDescriptionKey: "Todoist service is not available."])
-        }
-
-        // Check authentication
-        guard todoistService.isAuthenticated else {
-            throw NSError(domain: "OptaIntents", code: 1, userInfo: [NSLocalizedDescriptionKey: "Please connect your Todoist account in Opta settings first."])
-        }
-
-        // Convert due date to Todoist format
-        var dueString: String? = nil
-        if let date = dueDate {
-            if Calendar.current.isDateInToday(date) {
-                dueString = "today"
-            } else if Calendar.current.isDateInTomorrow(date) {
-                dueString = "tomorrow"
-            } else {
-                dueString = date.todoistDateString
-            }
-        }
-
-        // Create task in Todoist
-        do {
-            let task = try await todoistService.createTask(
-                content: taskContent,
-                dueString: dueString,
-                priority: priority.rawPriority
-            )
-
-            // Haptic feedback
-            HapticManager.shared.notification(.success)
-
-            // Generate response
-            var response = "Added '\(task.content)' to Todoist"
-
-            if let due = task.due {
-                response += " due \(due.string)"
-            }
-
-            if let project = projectName {
-                response += " in project '\(project)'"
-            }
-
-            response += "."
-
-            return .result(dialog: IntentDialog(stringLiteral: response))
-
-        } catch {
-            HapticManager.shared.notification(.error)
-            throw NSError(domain: "OptaIntents", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to create Todoist task: \(error.localizedDescription)"])
-        }
+        // TODO: Full Todoist implementation in Phase 2
+        return .result(dialog: "Todoist integration is coming soon. Please use the app directly.")
     }
 }
 

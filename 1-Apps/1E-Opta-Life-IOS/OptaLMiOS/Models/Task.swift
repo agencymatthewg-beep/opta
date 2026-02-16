@@ -26,6 +26,29 @@ struct OptaTask: Identifiable, Codable, Hashable {
         case createdAt = "created_at"
     }
     
+    // Memberwise initializer for programmatic creation
+    init(
+        id: String,
+        content: String,
+        description: String? = nil,
+        projectId: String? = nil,
+        priority: TaskPriority = .normal,
+        due: TaskDue? = nil,
+        labels: [String] = [],
+        isCompleted: Bool = false,
+        createdAt: Date? = nil
+    ) {
+        self.id = id
+        self.content = content
+        self.description = description
+        self.projectId = projectId
+        self.priority = priority
+        self.due = due
+        self.labels = labels
+        self.isCompleted = isCompleted
+        self.createdAt = createdAt
+    }
+    
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(String.self, forKey: .id)

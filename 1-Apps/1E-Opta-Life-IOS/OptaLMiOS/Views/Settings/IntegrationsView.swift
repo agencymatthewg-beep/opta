@@ -563,10 +563,7 @@ struct IntegrationsView: View {
         .navigationTitle("Integrations")
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showTodoistAuth) {
-            TodoistAuthSheet(onSuccess: {
-                viewModel.todoistConnected = true
-                showTodoistAuth = false
-            })
+            TodoistAuthSheet()
         }
         .task {
             await viewModel.loadStatus()

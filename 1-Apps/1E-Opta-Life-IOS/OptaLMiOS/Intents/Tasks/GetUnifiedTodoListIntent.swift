@@ -24,13 +24,13 @@ struct GetUnifiedTodoListIntent: AppIntent {
         let api = APIService.shared
         do {
             let optaTasks = try await api.fetchTodayTasks()
-            allTasks.append(contentsOf: optaTasks.map { UnifiedTask(from: $0, source: .opta) })
+            allTasks.append(contentsOf: optaTasks.map { UnifiedTask(from: $0, source: .backend) })
         } catch {
             print("Failed to fetch Opta tasks: \(error)")
         }
 
         // Fetch from Todoist if authenticated
-        if let todoistService = TodoistService.shared, todoistService.isAuthenticated {
+        let todoistService = TodoistService.shared; if todoistService.isAuthenticated {
             do {
                 let todoistTasks = try await todoistService.fetchTasks()
                 allTasks.append(contentsOf: todoistTasks.map { UnifiedTask(from: $0, source: .todoist) })
@@ -41,15 +41,14 @@ struct GetUnifiedTodoListIntent: AppIntent {
 
         // Fetch from Apple Reminders if access granted
         if let remindersService = try? RemindersSyncService() {
-            if let eventKitService = EventKitService.shared {
-                let hasAccess = await eventKitService.requestRemindersAccess()
-                if hasAccess {
-                    do {
-                        let reminders = try await remindersService.fetchReminders()
-                        allTasks.append(contentsOf: reminders.map { UnifiedTask(from: $0, source: .appleReminders) })
-                    } catch {
-                        print("Failed to fetch Apple Reminders: \(error)")
-                    }
+            let eventKitService = EventKitService.shared
+            let hasAccess = await eventKitService.requestRemindersAccess()
+            if hasAccess {
+                do {
+                    let reminders = try await remindersService.fetchReminders()
+                    allTasks.append(contentsOf: reminders.map { UnifiedTask(from: $0, source: .appleReminders) })
+                } catch {
+                    print("Failed to fetch Apple Reminders: \(error)")
                 }
             }
         }
@@ -186,16 +185,16 @@ struct UnifiedTask: Identifiable {
     init(from optaTask: OptaTask, source: TaskSource) {
         self.id = optaTask.id
         self.title = optaTask.content
-        self.dueDate = optaTask.due?.date
-        self.priority = optaTask.priority
+        self.dueDate = optaTask.due?.date.isoDate
+        self.priority = optaTask.priority.rawValue
         self.isCompleted = optaTask.isCompleted
         self.source = source
     }
 
-    init(from todoistTask: TodoistTaskModel, source: TaskSource) {
+    init(from todoistTask: TodoistTask, source: TaskSource) {
         self.id = todoistTask.id
         self.title = todoistTask.content
-        self.dueDate = todoistTask.due?.date
+        self.dueDate = todoistTask.due?.date.isoDate
         self.priority = todoistTask.priority
         self.isCompleted = todoistTask.isCompleted
         self.source = source
@@ -211,26 +210,24 @@ struct UnifiedTask: Identifiable {
     }
 }
 
-// MARK: - Task Source Enum
+// MARK: - TaskSource UI Helpers
 
-enum TaskSource: String {
-    case opta = "Opta"
-    case todoist = "Todoist"
-    case appleReminders = "Reminders"
-
+extension TaskSource {
     var color: Color {
         switch self {
-        case .opta: return .blue
+        case .backend: return .blue
         case .todoist: return .red
         case .appleReminders: return .orange
+        case .hybrid: return .purple
         }
     }
 
     var icon: String {
         switch self {
-        case .opta: return "sparkles"
+        case .backend: return "sparkles"
         case .todoist: return "checkmark.circle"
         case .appleReminders: return "checklist"
+        case .hybrid: return "arrow.triangle.merge"
         }
     }
 }
@@ -397,43 +394,3 @@ struct SourceBadge: View {
 
 // MARK: - Stub TodoistService
 
-// This is a stub - Phase 2 will implement full Todoist API integration
-@MainActor
-class TodoistService {
-    static let shared: TodoistService? = TodoistService()
-
-    var isAuthenticated: Bool = false
-
-    private init() {}
-
-    func fetchTasks(filter: String? = nil) async throws -> [TodoistTaskModel] {
-        // Stub implementation
-        // Phase 2 will implement: REST API v2 calls
-        return []
-    }
-
-    func createTask(content: String, dueString: String?, priority: Int) async throws -> TodoistTaskModel {
-        // Stub implementation
-        throw NSError(domain: "OptaIntents", code: 1, userInfo: [NSLocalizedDescriptionKey: "Todoist integration not yet implemented"])
-    }
-
-    func completeTask(id: String) async throws {
-        // Stub implementation
-        throw NSError(domain: "OptaIntents", code: 1, userInfo: [NSLocalizedDescriptionKey: "Todoist integration not yet implemented"])
-    }
-}
-
-// MARK: - Todoist Task Model
-
-struct TodoistTaskModel {
-    let id: String
-    let content: String
-    let priority: Int
-    let isCompleted: Bool
-    let due: TodoistDue?
-}
-
-struct TodoistDue {
-    let date: Date
-    let string: String
-}

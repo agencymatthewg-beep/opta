@@ -111,21 +111,21 @@ struct OptaFocusFilter: SetFocusFilterIntent {
     static var description: IntentDescription? = IntentDescription("Configure Opta for your current focus mode")
     
     @Parameter(title: "Show Notifications")
-    var showNotifications: Bool
-    
+    var showNotifications: Bool?
+
     @Parameter(title: "Mode", default: .work)
-    var focusMode: OptaFocusMode
-    
+    var focusMode: OptaFocusMode?
+
     func perform() async throws -> some IntentResult {
         // Configure app based on focus mode
         // In a real implementation, this would update UserDefaults or similar
         return .result()
     }
-    
+
     var displayRepresentation: DisplayRepresentation {
         DisplayRepresentation(
-            title: "Opta \(focusMode.displayName) Mode",
-            subtitle: showNotifications ? "Notifications on" : "Notifications off"
+            title: "Opta \(focusMode?.displayName ?? "Focus") Mode",
+            subtitle: (showNotifications ?? true) ? "Notifications on" : "Notifications off"
         )
     }
 }

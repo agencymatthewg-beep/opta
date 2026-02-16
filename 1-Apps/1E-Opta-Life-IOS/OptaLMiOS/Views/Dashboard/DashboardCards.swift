@@ -262,7 +262,7 @@ struct EventRowCompact: View {
                 
                 HStack(spacing: 6) {
                     // Source badge (Opta512 indicator)
-                    if event.source == .opta512 {
+                    if true {
                         HStack(spacing: 2) {
                             Image(systemName: "brain.head.profile")
                                 .font(.system(size: 7))
@@ -299,7 +299,7 @@ struct EventRowCompact: View {
     }
     
     private var sourceColor: Color {
-        event.source.color
+        .optaNeonBlue
     }
 }
 

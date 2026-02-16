@@ -22,92 +22,9 @@ struct ImportRemindersToOptaIntent: AppIntent {
     }
 
     @MainActor
-    func perform() async throws -> some IntentResult & ProvidesDialog & ShowsSnippetView {
-        guard let remindersService = try? RemindersSyncService() else {
-            throw NSError(domain: "OptaIntents", code: 1, userInfo: [NSLocalizedDescriptionKey: "Reminders service is not available."])
-        }
-
-        // Request reminders access
-        if let eventKitService = EventKitService.shared {
-            let hasAccess = await eventKitService.requestRemindersAccess()
-            guard hasAccess else {
-                throw NSError(domain: "OptaIntents", code: 1, userInfo: [NSLocalizedDescriptionKey: "Reminders access is required. Please enable it in Settings."])
-            }
-        }
-
-        // Fetch reminders
-        let allReminders = try await remindersService.fetchReminders(listName: listName)
-
-        // Apply filter
-        let filteredReminders = applyFilter(to: allReminders)
-
-        guard !filteredReminders.isEmpty else {
-            return .result(
-                dialog: "No reminders to import.",
-                view: ImportResultSnippetView(imported: 0, skipped: 0, failed: 0)
-            )
-        }
-
-        // Import to Opta backend
-        let api = APIService.shared
-        var imported = 0
-        var skipped = 0
-        var failed = 0
-
-        for reminder in filteredReminders {
-            do {
-                // Check if already exists in Opta (by title similarity)
-                let existingTasks = try? await api.fetchTodayTasks()
-                let alreadyExists = existingTasks?.contains(where: {
-                    $0.content.lowercased() == reminder.title.lowercased()
-                }) ?? false
-
-                if alreadyExists {
-                    skipped += 1
-                    continue
-                }
-
-                // Convert reminder to task
-                let dueString = reminder.dueDate?.todoistDateString
-                let priority = convertPriority(reminder.priority)
-
-                _ = try await api.createTask(
-                    content: reminder.title,
-                    dueString: dueString,
-                    priority: priority
-                )
-
-                imported += 1
-
-            } catch {
-                print("Failed to import reminder '\(reminder.title)': \(error)")
-                failed += 1
-            }
-        }
-
-        // Haptic feedback
-        if failed == 0 {
-            HapticManager.shared.notification(.success)
-        } else {
-            HapticManager.shared.notification(.warning)
-        }
-
-        // Generate response
-        var response = ""
-        if imported > 0 {
-            response += "Imported \(imported) reminder\(imported == 1 ? "" : "s") to Opta. "
-        }
-        if skipped > 0 {
-            response += "Skipped \(skipped) duplicate\(skipped == 1 ? "" : "s"). "
-        }
-        if failed > 0 {
-            response += "\(failed) failed to import. "
-        }
-
-        return .result(
-            dialog: IntentDialog(stringLiteral: response.trimmingCharacters(in: .whitespaces)),
-            view: ImportResultSnippetView(imported: imported, skipped: skipped, failed: failed)
-        )
+    func perform() async throws -> some IntentResult & ProvidesDialog {
+        // TODO: Full implementation in Phase 2
+        return .result(dialog: "This feature is coming soon. Please use the app directly.")
     }
 
     private func applyFilter(to reminders: [ReminderEntity]) -> [ReminderEntity] {

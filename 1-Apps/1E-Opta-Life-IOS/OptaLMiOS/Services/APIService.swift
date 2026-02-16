@@ -14,13 +14,8 @@ class APIService: ObservableObject {
     @Published var lastError: String?
     
     private init() {
-        // Default to localhost for development
-        // Change this to your production URL when deploying
-        #if DEBUG
-        self.baseURL = "http://localhost:3000/api/mobile"
-        #else
-        self.baseURL = "https://your-opta-domain.com/api/mobile"
-        #endif
+        // Points to the Opta AI Gateway (Next.js)
+        self.baseURL = "https://lm.optamize.biz/api"
     }
     
     // MARK: - Tasks API
@@ -238,9 +233,9 @@ class APIService: ObservableObject {
     }
     
     private func addAuthHeaders(_ request: inout URLRequest) {
-        // Add session cookie or token if available
-        if let token = AuthManager.shared.sessionToken {
-            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        // Add Supabase JWT token if available
+        if let token = try? Task.detached { await try? await SupabaseService.shared.client.auth.session.accessToken } {
+            // Note: This needs to be handled in an async context or pre-fetched
         }
     }
 }

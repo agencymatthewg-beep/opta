@@ -17,60 +17,9 @@ struct SyncCalendarsIntent: AppIntent {
     }
 
     @MainActor
-    func perform() async throws -> some IntentResult & ProvidesDialog & ShowsSnippetView {
-        guard let calendarSyncService = try? CalendarSyncService() else {
-            throw NSError(domain: "OptaIntents", code: 1, userInfo: [NSLocalizedDescriptionKey: "Calendar sync service is not available."])
-        }
-
-        // Request calendar access if needed
-        if let eventKitService = EventKitService.shared {
-            let hasAccess = await eventKitService.requestCalendarAccess()
-            guard hasAccess else {
-                throw NSError(domain: "OptaIntents", code: 1, userInfo: [NSLocalizedDescriptionKey: "Calendar access is required. Please enable it in Settings."])
-            }
-        }
-
-        // Perform sync based on direction
-        do {
-            let result: SyncResult
-
-            switch syncDirection {
-            case .bidirectional:
-                result = try await calendarSyncService.syncBidirectional()
-            case .importFromApple:
-                result = try await calendarSyncService.importFromAppleCalendar()
-            case .exportToApple:
-                result = try await calendarSyncService.exportToAppleCalendar()
-            }
-
-            // Haptic feedback
-            if result.conflicts.isEmpty {
-                HapticManager.shared.notification(.success)
-            } else {
-                HapticManager.shared.notification(.warning)
-            }
-
-            // Generate spoken response
-            var spokenMessage = "Calendar sync complete. "
-            if result.eventsAdded > 0 {
-                spokenMessage += "Added \(result.eventsAdded) event\(result.eventsAdded == 1 ? "" : "s"). "
-            }
-            if result.eventsUpdated > 0 {
-                spokenMessage += "Updated \(result.eventsUpdated) event\(result.eventsUpdated == 1 ? "" : "s"). "
-            }
-            if result.conflicts.count > 0 {
-                spokenMessage += "Found \(result.conflicts.count) conflict\(result.conflicts.count == 1 ? "" : "s"). "
-            }
-
-            return .result(
-                dialog: IntentDialog(stringLiteral: spokenMessage.trimmingCharacters(in: .whitespaces)),
-                view: SyncResultSnippetView(result: result, direction: syncDirection)
-            )
-
-        } catch {
-            HapticManager.shared.notification(.error)
-            throw NSError(domain: "OptaIntents", code: 1, userInfo: [NSLocalizedDescriptionKey: "Sync failed: \(error.localizedDescription)"])
-        }
+    func perform() async throws -> some IntentResult & ProvidesDialog {
+        // TODO: Full implementation in Phase 2
+        return .result(dialog: "This feature is coming soon. Please use the app directly.")
     }
 }
 
@@ -105,14 +54,14 @@ struct SyncResult {
     let eventsAdded: Int
     let eventsUpdated: Int
     let eventsDeleted: Int
-    let conflicts: [EventConflict]
+    let conflicts: [IntentEventConflict]
     let syncDate: Date
 
     init(
         eventsAdded: Int = 0,
         eventsUpdated: Int = 0,
         eventsDeleted: Int = 0,
-        conflicts: [EventConflict] = [],
+        conflicts: [IntentEventConflict] = [],
         syncDate: Date = Date()
     ) {
         self.eventsAdded = eventsAdded
@@ -125,7 +74,7 @@ struct SyncResult {
 
 // MARK: - Event Conflict
 
-struct EventConflict: Identifiable {
+struct IntentEventConflict: Identifiable {
     let id = UUID()
     let eventTitle: String
     let backendVersion: Date
@@ -278,24 +227,4 @@ struct StatRow: View {
     }
 }
 
-// MARK: - Extended CalendarSyncService Stub
-
-extension CalendarSyncService {
-    func syncBidirectional() async throws -> SyncResult {
-        // Stub implementation
-        // Phase 1 will implement full bidirectional sync logic
-        return SyncResult()
-    }
-
-    func importFromAppleCalendar() async throws -> SyncResult {
-        // Stub implementation
-        // Phase 1 will implement import logic
-        return SyncResult()
-    }
-
-    func exportToAppleCalendar() async throws -> SyncResult {
-        // Stub implementation
-        // Phase 1 will implement export logic
-        return SyncResult()
-    }
-}
+// CalendarSyncService methods used directly from Services/CalendarSyncService.swift

@@ -18,13 +18,9 @@ struct SyncTodoistIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog & ShowsSnippetView {
-        guard let taskSyncCoordinator = TaskSyncCoordinator.shared else {
-            throw NSError(domain: "OptaIntents", code: 1, userInfo: [NSLocalizedDescriptionKey: "Task sync coordinator is not available."])
-        }
+        let taskSyncCoordinator = TaskSyncCoordinator.shared
 
-        guard let todoistService = TodoistService.shared else {
-            throw NSError(domain: "OptaIntents", code: 1, userInfo: [NSLocalizedDescriptionKey: "Todoist service is not available."])
-        }
+        let todoistService = TodoistService.shared
 
         // Check authentication
         guard todoistService.isAuthenticated else {
@@ -33,16 +29,14 @@ struct SyncTodoistIntent: AppIntent {
 
         // Perform sync based on direction
         do {
-            let result: TodoistSyncResult
-
-            switch syncDirection {
-            case .bidirectional:
-                result = try await taskSyncCoordinator.syncBidirectional()
-            case .importFromTodoist:
-                result = try await taskSyncCoordinator.importFromTodoist()
-            case .exportToTodoist:
-                result = try await taskSyncCoordinator.exportToTodoist()
-            }
+            // TODO: Implement full Todoist sync in Phase 2
+            let result = TodoistSyncResult(
+                tasksAdded: 0,
+                tasksUpdated: 0,
+                tasksCompleted: 0,
+                conflicts: [],
+                errors: [SyncError(taskTitle: "Sync", errorMessage: "Todoist sync not yet implemented")]
+            )
 
             // Haptic feedback
             if result.conflicts.isEmpty && result.errors.isEmpty {
@@ -310,33 +304,5 @@ struct TodoistSyncResultSnippetView: View {
         case .exportToTodoist:
             return "Exported from Opta to Todoist"
         }
-    }
-}
-
-// MARK: - Stub TaskSyncCoordinator
-
-// This is a stub - Phase 2 will implement full task sync orchestration
-@MainActor
-class TaskSyncCoordinator {
-    static let shared: TaskSyncCoordinator? = TaskSyncCoordinator()
-
-    private init() {}
-
-    func syncBidirectional() async throws -> TodoistSyncResult {
-        // Stub implementation
-        // Phase 2 will implement full bidirectional sync logic
-        return TodoistSyncResult()
-    }
-
-    func importFromTodoist() async throws -> TodoistSyncResult {
-        // Stub implementation
-        // Phase 2 will implement import logic
-        return TodoistSyncResult()
-    }
-
-    func exportToTodoist() async throws -> TodoistSyncResult {
-        // Stub implementation
-        // Phase 2 will implement export logic
-        return TodoistSyncResult()
     }
 }

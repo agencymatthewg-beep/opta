@@ -35,52 +35,8 @@ struct AddToRemindersIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        guard let remindersService = try? RemindersSyncService() else {
-            throw NSError(domain: "OptaIntents", code: 1, userInfo: [NSLocalizedDescriptionKey: "Reminders service is not available."])
-        }
-
-        // Request reminders access
-        if let eventKitService = EventKitService.shared {
-            let hasAccess = await eventKitService.requestRemindersAccess()
-            guard hasAccess else {
-                throw NSError(domain: "OptaIntents", code: 1, userInfo: [NSLocalizedDescriptionKey: "Reminders access is required. Please enable it in Settings."])
-            }
-        }
-
-        // Create reminder
-        do {
-            let reminderId = try await remindersService.createReminder(
-                title: title,
-                notes: notes,
-                dueDate: dueDate,
-                priority: priority.rawPriority
-            )
-
-            // Haptic feedback
-            HapticManager.shared.notification(.success)
-
-            // Generate response
-            var response = "Added '\(title)' to Reminders"
-
-            if let dueDate = dueDate {
-                let dateFormatter = DateFormatter()
-                dateFormatter.dateStyle = .medium
-                dateFormatter.timeStyle = .short
-                response += " due \(dateFormatter.string(from: dueDate))"
-            }
-
-            if let listName = listName {
-                response += " in '\(listName)'"
-            }
-
-            response += "."
-
-            return .result(dialog: IntentDialog(stringLiteral: response))
-
-        } catch {
-            HapticManager.shared.notification(.error)
-            throw NSError(domain: "OptaIntents", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to create reminder: \(error.localizedDescription)"])
-        }
+        // TODO: Full implementation in Phase 2
+        return .result(dialog: "This feature is coming soon. Please use the app directly.")
     }
 }
 

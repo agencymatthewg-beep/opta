@@ -38,86 +38,9 @@ struct CreateInBothCalendarsIntent: AppIntent {
     }
 
     @MainActor
-    func perform() async throws -> some IntentResult & ProvidesDialog & ShowsSnippetView {
-        let endTime = startTime.addingTimeInterval(TimeInterval(durationMinutes * 60))
-
-        var backendSuccess = false
-        var appleSuccess = false
-        var backendEventId: String?
-        var appleEventId: String?
-
-        // Create in backend (Opta)
-        do {
-            let api = APIService.shared
-            let event = try await api.createCalendarEvent(
-                title: title,
-                startTime: startTime,
-                endTime: endTime,
-                location: location,
-                description: notes,
-                isAllDay: isAllDay
-            )
-            backendSuccess = true
-            backendEventId = event.id
-        } catch {
-            print("Failed to create in backend: \(error)")
-        }
-
-        // Create in Apple Calendar
-        if let eventKitService = EventKitService.shared {
-            let hasAccess = await eventKitService.requestCalendarAccess()
-            if hasAccess {
-                do {
-                    let eventId = try await eventKitService.createEvent(
-                        title: title,
-                        startDate: startTime,
-                        endDate: endTime,
-                        location: location,
-                        notes: notes
-                    )
-                    appleSuccess = true
-                    appleEventId = eventId
-                } catch {
-                    print("Failed to create in Apple Calendar: \(error)")
-                }
-            }
-        }
-
-        // Generate response based on success
-        let result: CreateBothCalendarsResult
-        if backendSuccess && appleSuccess {
-            HapticManager.shared.notification(.success)
-            result = CreateBothCalendarsResult(
-                title: title,
-                startTime: startTime,
-                status: .both,
-                message: "Created '\(title)' in both calendars successfully."
-            )
-        } else if backendSuccess && !appleSuccess {
-            HapticManager.shared.notification(.warning)
-            result = CreateBothCalendarsResult(
-                title: title,
-                startTime: startTime,
-                status: .backendOnly,
-                message: "Created '\(title)' in Opta. Apple Calendar access is not available."
-            )
-        } else if !backendSuccess && appleSuccess {
-            HapticManager.shared.notification(.warning)
-            result = CreateBothCalendarsResult(
-                title: title,
-                startTime: startTime,
-                status: .appleOnly,
-                message: "Created '\(title)' in Apple Calendar. Backend sync failed."
-            )
-        } else {
-            HapticManager.shared.notification(.error)
-            throw NSError(domain: "OptaIntents", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to create event in both calendars. Please try again."])
-        }
-
-        return .result(
-            dialog: IntentDialog(stringLiteral: result.message),
-            view: CreateBothCalendarsSnippetView(result: result)
-        )
+    func perform() async throws -> some IntentResult & ProvidesDialog {
+        // TODO: Full implementation in Phase 2
+        return .result(dialog: "This feature is coming soon. Please use the app directly.")
     }
 }
 

@@ -2,6 +2,7 @@ import Foundation
 import AuthenticationServices
 import SwiftUI
 import GoogleSignIn
+import Supabase
 
 // MARK: - Auth Manager
 
@@ -15,6 +16,8 @@ class AuthManager: NSObject, ObservableObject {
     @Published var error: String?
     @Published var showAppleSignInAlert = false
     @Published var showGoogleSignInAlert = false
+    
+    private let supabase = SupabaseService.shared.client
 
     var sessionToken: String? {
         KeychainHelper.get("opta_session_token")
@@ -22,13 +25,45 @@ class AuthManager: NSObject, ObservableObject {
 
     override private init() {
         super.init()
-        // Check for existing session on launch
+        // Check for existing session on launch 
         Task {
             await checkExistingSession()
         }
     }
 
     // MARK: - Public Methods
+    
+    /// Sign in with Supabase Email/Password
+    func signIn(email: String, password: String) async {
+        isLoading = true
+        error = nil
+        
+        defer { isLoading = false }
+        
+        do {
+            let session = try await supabase.auth.signIn(email: email, password: password)
+            await handleSupabaseSession(session)
+        } catch {
+            self.error = error.localizedDescription
+        }
+    }
+    
+    /// Sign up with Supabase
+    func signUp(email: String, password: String, name: String) async {
+        isLoading = true
+        error = nil
+        
+        defer { isLoading = false }
+        
+        do {
+            let response = try await supabase.auth.signUp(email: email, password: password, data: ["full_name": .string(name)])
+            if let session = response.session {
+                await handleSupabaseSession(session)
+            }
+        } catch {
+            self.error = error.localizedDescription
+        }
+    }
 
     func signInWithGoogle() {
         isLoading = true
@@ -71,35 +106,34 @@ class AuthManager: NSObject, ObservableObject {
                 }
 
                 guard let user = result?.user,
-                      let profile = user.profile else {
+                      let idToken = user.idToken?.tokenString else {
                     self?.error = "Failed to get user profile"
                     return
                 }
 
-                // Save user data
-                self?.saveGoogleUser(
-                    userId: user.userID ?? UUID().uuidString,
-                    name: profile.name,
-                    email: profile.email,
-                    imageURL: profile.imageURL(withDimension: 200)?.absoluteString
-                )
+                // Sign in to Supabase with Google ID Token
+                do {
+                    let session = try await self?.supabase.auth.signInWithIdToken(credentials: .init(provider: .google, idToken: idToken))
+                    if let session = session {
+                        await self?.handleSupabaseSession(session)
+                    }
+                } catch {
+                    self?.error = "Supabase Auth failed: \(error.localizedDescription)"
+                }
             }
         }
     }
 
     func signInWithApple() {
-        // Sign in with Apple requires Apple Developer Program membership
-        // For personal/free developer accounts, show an alert
-        showAppleSignInAlert = true
-
-        // Uncomment below when using a paid Apple Developer account:
-        // let provider = ASAuthorizationAppleIDProvider()
-        // let request = provider.createRequest()
-        // request.requestedScopes = [.fullName, .email]
-        // let controller = ASAuthorizationController(authorizationRequests: [request])
-        // controller.delegate = self
-        // controller.performRequests()
-        // isLoading = true
+        // Sign in with Apple using Supabase native support
+        let provider = ASAuthorizationAppleIDProvider()
+        let request = provider.createRequest()
+        request.requestedScopes = [.fullName, .email]
+        
+        let controller = ASAuthorizationController(authorizationRequests: [request])
+        controller.delegate = self
+        controller.performRequests()
+        isLoading = true
     }
 
     func skipAuthentication() {
@@ -113,52 +147,23 @@ class AuthManager: NSObject, ObservableObject {
         )
     }
 
-    // TodoistService temporarily disabled
-    /*
-    func signInWithTodoist() async throws {
-        isLoading = true
-        error = nil
-
-        defer { isLoading = false }
-
-        guard let authURL = TodoistService.shared.initiateOAuth() else {
-            error = "Failed to generate Todoist OAuth URL"
-            throw AuthError.todoistOAuthFailed
-        }
-
-        // Open Safari for OAuth flow
-        // The callback will be handled in the app delegate/scene delegate
-        await UIApplication.shared.open(authURL)
-    }
-
-    func handleTodoistCallback(code: String) async {
-        isLoading = true
-        error = nil
-
-        defer { isLoading = false }
-
-        do {
-            try await TodoistService.shared.handleOAuthCallback(code: code)
-            // Todoist auth successful - user can now use hybrid mode
-        } catch {
-            self.error = error.localizedDescription
-        }
-    }
-    */
-
     func signOut() {
-        // Sign out from Google
-        GIDSignIn.sharedInstance.signOut()
+        Task {
+            try? await supabase.auth.signOut()
+            
+            // Clear stored data
+            KeychainHelper.delete("opta_session_token")
+            KeychainHelper.delete("opta_user_id")
+            KeychainHelper.delete("opta_user_name")
+            KeychainHelper.delete("opta_user_email")
+            KeychainHelper.delete("opta_user_image")
 
-        // Clear stored data
-        KeychainHelper.delete("opta_session_token")
-        KeychainHelper.delete("opta_user_id")
-        KeychainHelper.delete("opta_user_name")
-        KeychainHelper.delete("opta_user_email")
-        KeychainHelper.delete("opta_user_image")
-
-        currentUser = nil
-        isAuthenticated = false
+            currentUser = nil
+            isAuthenticated = false
+            
+            // Sign out from Google
+            GIDSignIn.sharedInstance.signOut()
+        }
     }
 
     func handleAuthCallback(token: String) {
@@ -175,49 +180,21 @@ class AuthManager: NSObject, ObservableObject {
 
     /// Restore previous sign-in (call on app launch)
     func restorePreviousSignIn() async {
-        // Try to restore Google Sign-In
-        if GIDSignIn.sharedInstance.hasPreviousSignIn() {
-            do {
-                let user = try await GIDSignIn.sharedInstance.restorePreviousSignIn()
-                if let profile = user.profile {
-                    saveGoogleUser(
-                        userId: user.userID ?? UUID().uuidString,
-                        name: profile.name,
-                        email: profile.email,
-                        imageURL: profile.imageURL(withDimension: 200)?.absoluteString
-                    )
-                }
-            } catch {
-                // Restoration failed - check local storage
-                await checkExistingSession()
-            }
-        } else {
-            await checkExistingSession()
-        }
+        // Supabase SDK handles session restoration automatically via its internal storage
+        // but we'll verify it here
+        await checkExistingSession()
     }
 
     // MARK: - Private Methods
 
     private func checkExistingSession() async {
-        // Check if we have a stored user ID (local auth)
-        if let userId = KeychainHelper.get("opta_user_id") {
-            currentUser = User(
-                id: userId,
-                name: KeychainHelper.get("opta_user_name") ?? "Opta User",
-                email: KeychainHelper.get("opta_user_email") ?? "",
-                image: KeychainHelper.get("opta_user_image")
-            )
-            isAuthenticated = true
-            return
-        }
-
-        // Check for API session token
-        guard sessionToken != nil else {
+        do {
+            let session = try await supabase.auth.session
+            await handleSupabaseSession(session)
+        } catch {
+            // No session or error
             isAuthenticated = false
-            return
         }
-
-        await verifySession()
     }
 
     private func verifySession() async {
@@ -225,59 +202,44 @@ class AuthManager: NSObject, ObservableObject {
         defer { isLoading = false }
 
         do {
-            let isValid = try await APIService.shared.verifyAuth()
-            isAuthenticated = isValid
+            let session = try await supabase.auth.session
+            await handleSupabaseSession(session)
         } catch {
-            // If API verification fails, check for local auth
-            if KeychainHelper.get("opta_user_id") != nil {
-                isAuthenticated = true
-            } else {
-                isAuthenticated = false
-                self.error = error.localizedDescription
-            }
+            isAuthenticated = false
+            self.error = error.localizedDescription
         }
     }
 
-    private func saveGoogleUser(userId: String, name: String, email: String, imageURL: String?) {
-        KeychainHelper.set(userId, forKey: "opta_user_id")
-        KeychainHelper.set(name, forKey: "opta_user_name")
+    private func handleSupabaseSession(_ session: Session) async {
+        let user = session.user
+        
+        // Save to keychain for redundancy and existing logic compatibility
+        KeychainHelper.set(session.accessToken, forKey: "opta_session_token")
+        KeychainHelper.set(user.id.uuidString, forKey: "opta_user_id")
+        
+        let email = user.email ?? ""
         KeychainHelper.set(email, forKey: "opta_user_email")
-        if let imageURL = imageURL {
-            KeychainHelper.set(imageURL, forKey: "opta_user_image")
+        
+        var name = "Opta User"
+        let metadata = user.userMetadata
+        if let fullName = metadata["full_name"] {
+            name = String(describing: fullName)
         }
-
-        currentUser = User(
-            id: userId,
+        KeychainHelper.set(name, forKey: "opta_user_name")
+        
+        self.currentUser = User(
+            id: user.id.uuidString,
             name: name,
             email: email,
-            image: imageURL
+            image: nil // Can be fetched from metadata if available
         )
-        isAuthenticated = true
-    }
-
-    private func saveAppleUser(userId: String, fullName: PersonNameComponents?, email: String?) {
-        KeychainHelper.set(userId, forKey: "opta_user_id")
-
-        var name = "Opta User"
-        if let fullName = fullName {
-            let firstName = fullName.givenName ?? ""
-            let lastName = fullName.familyName ?? ""
-            name = "\(firstName) \(lastName)".trimmingCharacters(in: .whitespaces)
-            if name.isEmpty { name = "Opta User" }
+        self.isAuthenticated = true
+        
+        // Trigger Credential Sync
+        Task {
+            await OptaCredentialService.shared.pullCredentialsFromCloud()
+            await OptaCredentialService.shared.syncLocalCredentialsToCloud()
         }
-        KeychainHelper.set(name, forKey: "opta_user_name")
-
-        if let email = email {
-            KeychainHelper.set(email, forKey: "opta_user_email")
-        }
-
-        currentUser = User(
-            id: userId,
-            name: name,
-            email: email ?? "",
-            image: nil
-        )
-        isAuthenticated = true
     }
 }
 
@@ -285,18 +247,27 @@ class AuthManager: NSObject, ObservableObject {
 
 extension AuthManager: ASAuthorizationControllerDelegate {
     func authorizationController(controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
-        isLoading = false
-
-        switch authorization.credential {
-        case let appleIDCredential as ASAuthorizationAppleIDCredential:
-            let userId = appleIDCredential.user
-            let fullName = appleIDCredential.fullName
-            let email = appleIDCredential.email
-
-            saveAppleUser(userId: userId, fullName: fullName, email: email)
-
-        default:
-            break
+        Task {
+            do {
+                switch authorization.credential {
+                case let appleIDCredential as ASAuthorizationAppleIDCredential:
+                    guard let idTokenData = appleIDCredential.identityToken,
+                          let idToken = String(data: idTokenData, encoding: .utf8) else {
+                        throw AuthError.invalidAppleToken
+                    }
+                    
+                    let nonce = "" // nonce should be generated and verified if possible
+                    
+                    let session = try await supabase.auth.signInWithIdToken(credentials: .init(provider: .apple, idToken: idToken, nonce: nonce))
+                    await handleSupabaseSession(session)
+                    
+                default:
+                    break
+                }
+            } catch {
+                self.error = "Apple Sign In failed: \(error.localizedDescription)"
+                self.isLoading = false
+            }
         }
     }
 
@@ -306,20 +277,9 @@ extension AuthManager: ASAuthorizationControllerDelegate {
         if let authError = error as? ASAuthorizationError {
             switch authError.code {
             case .canceled:
-                // User canceled - not an error
                 break
-            case .failed:
-                self.error = "Sign in failed. Please try again."
-            case .invalidResponse:
-                self.error = "Invalid response from Apple."
-            case .notHandled:
-                self.error = "Sign in was not handled."
-            case .unknown:
-                self.error = "An unknown error occurred."
-            case .notInteractive:
-                self.error = "Sign in requires interaction."
-            @unknown default:
-                self.error = "Sign in failed."
+            default:
+                self.error = error.localizedDescription
             }
         } else {
             self.error = error.localizedDescription
@@ -340,11 +300,14 @@ struct User: Codable {
 
 enum AuthError: LocalizedError {
     case todoistOAuthFailed
+    case invalidAppleToken
 
     var errorDescription: String? {
         switch self {
         case .todoistOAuthFailed:
             return "Failed to initiate Todoist OAuth flow"
+        case .invalidAppleToken:
+            return "Invalid identity token from Apple"
         }
     }
 }

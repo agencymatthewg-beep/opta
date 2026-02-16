@@ -177,117 +177,174 @@ struct OfflineBanner: View {
 
 struct LoginView: View {
     @EnvironmentObject var authManager: AuthManager
+    @State private var email = ""
+    @State private var password = ""
+    @State private var name = ""
+    @State private var isSignUp = false
 
     var body: some View {
         ZStack {
             Color.optaVoid
                 .ignoresSafeArea()
 
-            VStack(spacing: 40) {
-                Spacer()
+            ScrollView {
+                VStack(spacing: 32) {
+                    // Logo & Title
+                    VStack(spacing: 16) {
+                        EnhancedOptaRing(isActive: .constant(true), size: 100)
 
-                // Logo & Title
-                VStack(spacing: 20) {
-                    EnhancedOptaRing(isActive: .constant(true), size: 140)
-
-                    Text("Opta LM")
-                        .font(.system(size: 48, weight: .bold, design: .rounded))
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [.white, .optaPrimaryGlow],
-                                startPoint: .leading,
-                                endPoint: .trailing
+                        Text("Opta LM")
+                            .font(.system(size: 36, weight: .bold, design: .rounded))
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [.white, .optaPrimaryGlow],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
                             )
-                        )
 
-                    Text("Your AI Life Manager")
-                        .font(.subheadline)
-                        .foregroundColor(.optaTextSecondary)
-                }
-
-                Spacer()
-
-                // Sign in buttons
-                VStack(spacing: 16) {
-                    // Sign in with Apple (native, works immediately)
-                    Button {
-                        HapticManager.shared.impact(.medium)
-                        authManager.signInWithApple()
-                    } label: {
-                        HStack(spacing: 12) {
-                            Image(systemName: "apple.logo")
-                                .font(.title3)
-
-                            Text("Continue with Apple")
-                                .fontWeight(.medium)
-                        }
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(Color.black)
-                        .cornerRadius(12)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                        )
+                        Text(isSignUp ? "Create your account" : "Welcome back")
+                            .font(.headline)
+                            .foregroundColor(.optaTextSecondary)
                     }
-                    .disabled(authManager.isLoading)
+                    .padding(.top, 40)
 
-                    // Google Sign In
-                    Button {
-                        HapticManager.shared.impact(.medium)
-                        authManager.signInWithGoogle()
-                    } label: {
-                        HStack(spacing: 12) {
-                            Image(systemName: "g.circle.fill")
-                                .font(.title3)
-
-                            Text("Continue with Google")
-                                .fontWeight(.medium)
+                    // Email/Password Form
+                    VStack(spacing: 16) {
+                        if isSignUp {
+                            TextField("Full Name", text: $name)
+                                .textFieldStyle(OptaTextFieldStyle())
+                                .textContentType(.name)
                         }
-                        .foregroundColor(.black)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(Color.white)
-                        .cornerRadius(12)
-                    }
-                    .disabled(authManager.isLoading)
 
-                    // Manual setup option
-                    Button {
-                        HapticManager.shared.impact(.light)
-                        authManager.skipAuthentication()
-                    } label: {
-                        Text("Continue without account")
-                            .font(.subheadline)
+                        TextField("Email Address", text: $email)
+                            .textFieldStyle(OptaTextFieldStyle())
+                            .keyboardType(.emailAddress)
+                            .autocapitalization(.none)
+                            .textContentType(.emailAddress)
+
+                        SecureField("Password", text: $password)
+                            .textFieldStyle(OptaTextFieldStyle())
+                            .textContentType(isSignUp ? .newPassword : .password)
+
+                        Button {
+                            HapticManager.shared.impact(.medium)
+                            Task {
+                                if isSignUp {
+                                    await authManager.signUp(email: email, password: password, name: name)
+                                } else {
+                                    await authManager.signIn(email: email, password: password)
+                                }
+                            }
+                        } label: {
+                            Text(isSignUp ? "Create Account" : "Sign In")
+                                .fontWeight(.bold)
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 16)
+                                .background(Color.optaPrimary)
+                                .cornerRadius(12)
+                        }
+                        .disabled(email.isEmpty || password.isEmpty || (isSignUp && name.isEmpty) || authManager.isLoading)
+
+                        Button {
+                            withAnimation {
+                                isSignUp.toggle()
+                            }
+                        } label: {
+                            Text(isSignUp ? "Already have an account? Sign In" : "Don't have an account? Create one")
+                                .font(.subheadline)
+                                .foregroundColor(.optaPrimary)
+                        }
+                    }
+                    .padding(.horizontal, 24)
+
+                    // Divider
+                    HStack {
+                        Rectangle()
+                            .fill(Color.white.opacity(0.1))
+                            .frame(height: 1)
+                        Text("OR")
+                            .font(.caption2)
                             .foregroundColor(.optaTextMuted)
+                        Rectangle()
+                            .fill(Color.white.opacity(0.1))
+                            .frame(height: 1)
                     }
-                }
-                .padding(.horizontal, 24)
-                .padding(.bottom, 60)
+                    .padding(.horizontal, 24)
 
-                // Loading overlay
-                if authManager.isLoading {
-                    LoadingOverlay(message: "Signing in...")
+                    // Social Sign in buttons
+                    VStack(spacing: 16) {
+                        Button {
+                            HapticManager.shared.impact(.medium)
+                            authManager.signInWithApple()
+                        } label: {
+                            HStack(spacing: 12) {
+                                Image(systemName: "apple.logo")
+                                Text("Continue with Apple")
+                                    .fontWeight(.medium)
+                            }
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(Color.black)
+                            .cornerRadius(12)
+                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(0.2), lineWidth: 1))
+                        }
+                        .disabled(authManager.isLoading)
+
+                        Button {
+                            HapticManager.shared.impact(.medium)
+                            authManager.signInWithGoogle()
+                        } label: {
+                            HStack(spacing: 12) {
+                                Image(systemName: "g.circle.fill")
+                                Text("Continue with Google")
+                                    .fontWeight(.medium)
+                            }
+                            .foregroundColor(.black)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(Color.white)
+                            .cornerRadius(12)
+                        }
+                        .disabled(authManager.isLoading)
+
+                        Button {
+                            authManager.skipAuthentication()
+                        } label: {
+                            Text("Continue Offline")
+                                .font(.subheadline)
+                                .foregroundColor(.optaTextMuted)
+                        }
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 40)
                 }
             }
-        }
-        .alert("Google Sign-In Setup Required", isPresented: $authManager.showGoogleSignInAlert) {
-            Button("Continue Without Account") {
-                authManager.skipAuthentication()
+
+            // Loading overlay
+            if authManager.isLoading {
+                LoadingOverlay(message: isSignUp ? "Creating account..." : "Signing in...")
             }
-            Button("Cancel", role: .cancel) { }
-        } message: {
-            Text("Google Sign-In requires OAuth configuration in Google Cloud Console. Continue without an account for now.")
         }
-        .alert("Apple Sign-In Unavailable", isPresented: $authManager.showAppleSignInAlert) {
-            Button("Continue Without Account") {
-                authManager.skipAuthentication()
-            }
-            Button("Cancel", role: .cancel) { }
+        .alert("Auth Error", isPresented: .init(get: { authManager.error != nil }, set: { _ in authManager.error = nil })) {
+            Button("OK", role: .cancel) { }
         } message: {
-            Text("Sign in with Apple requires an Apple Developer Program membership. Continue without an account for now.")
+            Text(authManager.error ?? "")
         }
+    }
+}
+
+// Simple text field style
+struct OptaTextFieldStyle: TextFieldStyle {
+    func _body(configuration: TextField<Self._Label>) -> some View {
+        configuration
+            .padding()
+            .background(Color.white.opacity(0.05))
+            .cornerRadius(10)
+            .foregroundColor(.white)
+            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.white.opacity(0.1), lineWidth: 1))
     }
 }
 

@@ -28,7 +28,8 @@ struct ViewRemindersIntent: AppIntent {
         }
 
         // Request reminders access
-        if let eventKitService = EventKitService.shared {
+        do {
+            let eventKitService = EventKitService.shared
             let hasAccess = await eventKitService.requestRemindersAccess()
             guard hasAccess else {
                 throw NSError(domain: "OptaIntents", code: 1, userInfo: [NSLocalizedDescriptionKey: "Reminders access is required. Please enable it in Settings."])
@@ -261,42 +262,5 @@ struct RemindersSnippetView: View {
         } else {
             return date.formatted(date: .abbreviated, time: .shortened)
         }
-    }
-}
-
-// MARK: - Stub RemindersSyncService
-
-// This is a stub - Phase 1 will implement full EventKit Reminders integration
-@MainActor
-class RemindersSyncService {
-    func fetchReminders(listName: String? = nil) async throws -> [ReminderEntity] {
-        // Stub implementation
-        // Phase 1 will implement: fetch EKReminders from eventStore
-        return []
-    }
-
-    func createReminder(title: String, notes: String?, dueDate: Date?, priority: Int) async throws -> String {
-        // Stub implementation
-        throw NSError(domain: "OptaIntents", code: 1, userInfo: [NSLocalizedDescriptionKey: "Reminders integration not yet implemented"])
-    }
-
-    func completeReminder(identifier: String) async throws {
-        // Stub implementation
-        throw NSError(domain: "OptaIntents", code: 1, userInfo: [NSLocalizedDescriptionKey: "Reminders integration not yet implemented"])
-    }
-
-    func deleteReminder(identifier: String) async throws {
-        // Stub implementation
-        throw NSError(domain: "OptaIntents", code: 1, userInfo: [NSLocalizedDescriptionKey: "Reminders integration not yet implemented"])
-    }
-}
-
-// MARK: - Extended EventKitService
-
-extension EventKitService {
-    func requestRemindersAccess() async -> Bool {
-        // Stub implementation
-        // Phase 1 will implement: eventStore.requestFullAccessToReminders() for iOS 17+
-        return false
     }
 }

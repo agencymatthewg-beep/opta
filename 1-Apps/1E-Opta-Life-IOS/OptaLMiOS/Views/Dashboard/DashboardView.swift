@@ -25,7 +25,7 @@ struct DashboardView: View {
                         statsSection
                             .slideIn(delay: 0.2)
                         
-                        // Quick Actions
+                        // Quick Actionsq
                         quickActionsRow
                             .slideIn(delay: 0.3)
                         

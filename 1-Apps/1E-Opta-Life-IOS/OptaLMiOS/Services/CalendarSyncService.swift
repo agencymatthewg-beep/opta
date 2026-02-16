@@ -25,7 +25,7 @@ final class CalendarSyncService: ObservableObject {
 
     // MARK: - Initialization
 
-    private init() {
+    init() {
         loadLastSyncDate()
         loadSyncedEventsCache()
     }
@@ -49,7 +49,7 @@ final class CalendarSyncService: ObservableObject {
 
         do {
             // Step 1: Ensure calendar access
-            guard eventKitService.isCalendarAuthorized else {
+            if !eventKitService.isCalendarAuthorized {
                 let granted = await eventKitService.requestCalendarAccess()
                 guard granted else {
                     throw CalendarSyncError.notAuthorized
@@ -115,7 +115,7 @@ final class CalendarSyncService: ObservableObject {
 
         do {
             // Ensure calendar access
-            guard eventKitService.isCalendarAuthorized else {
+            if !eventKitService.isCalendarAuthorized {
                 let granted = await eventKitService.requestCalendarAccess()
                 guard granted else {
                     throw CalendarSyncError.notAuthorized
@@ -181,7 +181,7 @@ final class CalendarSyncService: ObservableObject {
 
         do {
             // Ensure calendar access
-            guard eventKitService.isCalendarAuthorized else {
+            if !eventKitService.isCalendarAuthorized {
                 let granted = await eventKitService.requestCalendarAccess()
                 guard granted else {
                     throw CalendarSyncError.notAuthorized

@@ -12,7 +12,7 @@ final class EventKitService: ObservableObject {
 
     static let shared = EventKitService()
 
-    private let eventStore = EKEventStore()
+    let eventStore = EKEventStore()
 
     @Published var calendarAuthorizationStatus: EKAuthorizationStatus = .notDetermined
     @Published var remindersAuthorizationStatus: EKAuthorizationStatus = .notDetermined

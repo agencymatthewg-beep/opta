@@ -83,28 +83,28 @@ struct SyncStatusView: View {
 
             // Stats Grid
             HStack(spacing: 12) {
-                StatBadge(
+                SyncStatBadge(
                     value: "\(viewModel.todayStats.totalSyncs)",
                     label: "Total",
                     icon: "arrow.triangle.2.circlepath",
                     color: .optaNeonBlue
                 )
 
-                StatBadge(
+                SyncStatBadge(
                     value: "\(viewModel.todayStats.successCount)",
                     label: "Success",
                     icon: "checkmark.circle",
                     color: .optaNeonGreen
                 )
 
-                StatBadge(
+                SyncStatBadge(
                     value: "\(viewModel.todayStats.errorCount)",
                     label: "Errors",
                     icon: "exclamationmark.triangle",
                     color: .optaNeonRed
                 )
 
-                StatBadge(
+                SyncStatBadge(
                     value: "\(viewModel.todayStats.conflictsResolved)",
                     label: "Conflicts",
                     icon: "exclamationmark.arrow.triangle.2.circlepath",
@@ -169,7 +169,7 @@ struct SyncStatusView: View {
 
 // MARK: - Stat Badge
 
-struct StatBadge: View {
+struct SyncStatBadge: View {
     let value: String
     let label: String
     let icon: String
