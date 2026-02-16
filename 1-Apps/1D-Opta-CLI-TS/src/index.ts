@@ -120,9 +120,9 @@ program
   .command('diff')
   .description('Show changes made in a session (V2)')
   .option('-s, --session <id>', 'session to diff')
-  .action(async () => {
+  .action(async (opts) => {
     const { diff } = await import('./commands/diff.js');
-    await diff();
+    await diff(opts);
   });
 
 program
