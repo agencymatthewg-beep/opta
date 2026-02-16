@@ -28,7 +28,7 @@ export async function executeTask(task: string[], opts: DoOptions): Promise<void
     if (!config.model.default) {
       console.error(
         chalk.red('✗') + ' No model configured\n\n' +
-        chalk.dim('Run ') + chalk.cyan('opta connect') + chalk.dim(' to set up LM Studio connection')
+        chalk.dim('Run ') + chalk.cyan('opta status') + chalk.dim(' to check your LMX connection')
       );
       process.exit(EXIT.NO_CONNECTION);
     }

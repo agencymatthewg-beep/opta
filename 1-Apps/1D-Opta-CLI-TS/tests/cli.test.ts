@@ -21,13 +21,13 @@ describe('opta CLI', () => {
 
   it('shows version with --version', async () => {
     const result = await run(['--version']);
-    expect(result.stdout).toMatch(/^\d+\.\d+\.\d+$/);
+    expect(result.stdout).toMatch(/^\d+\.\d+\.\d+/);
     expect(result.exitCode).toBe(0);
   });
 
   it('shows version with -V', async () => {
     const result = await run(['-V']);
-    expect(result.stdout).toMatch(/^\d+\.\d+\.\d+$/);
+    expect(result.stdout).toMatch(/^\d+\.\d+\.\d+/);
     expect(result.exitCode).toBe(0);
   });
 

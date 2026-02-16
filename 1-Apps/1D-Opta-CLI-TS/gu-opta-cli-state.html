@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Opta CLI — State of the App</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+  :root {
+    --void: #09090b;
+    --surface: #18181b;
+    --elevated: #27272a;
+    --border: #3f3f46;
+    --text-primary: #fafafa;
+    --text-secondary: #a1a1aa;
+    --text-muted: #52525b;
+    --primary: #8b5cf6;
+    --primary-glow: #a855f7;
+    --neon-blue: #3b82f6;
+    --neon-green: #22c55e;
+    --neon-amber: #f59e0b;
+    --neon-red: #ef4444;
+    --neon-cyan: #06b6d4;
+    --neon-pink: #ec4899;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--void);
+    color: var(--text-primary);
+    font-family: 'Sora', -apple-system, BlinkMacSystemFont, sans-serif;
+    line-height: 1.6;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background:
+      radial-gradient(ellipse 800px 600px at 20% 30%, rgba(139,92,246,0.06) 0%, transparent 70%),
+      radial-gradient(ellipse 600px 400px at 80% 70%, rgba(59,130,246,0.04) 0%, transparent 70%),
+      radial-gradient(ellipse 400px 300px at 50% 50%, rgba(168,85,247,0.03) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    opacity: 0.015;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+    position: relative;
+    z-index: 2;
+  }
+
+  /* Hero */
+  .hero {
+    text-align: center;
+    padding: 60px 0 40px;
+    position: relative;
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 16px;
+    border-radius: 999px;
+    background: rgba(139,92,246,0.1);
+    border: 1px solid rgba(139,92,246,0.3);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--primary-glow);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+
+  .hero-badge .pulse {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--neon-green);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 4px var(--neon-green); }
+    50% { opacity: 0.5; box-shadow: 0 0 12px var(--neon-green); }
+  }
+
+  .hero h1 {
+    font-size: 52px;
+    font-weight: 800;
+    letter-spacing: -1.5px;
+    background: linear-gradient(135deg, #fafafa 0%, #c4b5fd 40%, #8b5cf6 70%, #6366f1 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 12px;
+    line-height: 1.1;
+  }
+
+  .hero .subtitle {
+    font-size: 18px;
+    color: var(--text-secondary);
+    font-weight: 300;
+    max-width: 500px;
+    margin: 0 auto 24px;
+  }
+
+  .hero .version-tag {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    color: var(--neon-green);
+    padding: 4px 12px;
+    border-radius: 6px;
+    background: rgba(34,197,94,0.08);
+    border: 1px solid rgba(34,197,94,0.2);
+  }
+
+  /* Neon divider */
+  .neon-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, var(--primary) 20%, var(--primary-glow) 50%, var(--primary) 80%, transparent 100%);
+    margin: 40px 0;
+    box-shadow: 0 0 8px rgba(139,92,246,0.3), 0 0 20px rgba(139,92,246,0.1);
+  }
+
+  .neon-divider.subtle {
+    background: linear-gradient(90deg, transparent 0%, var(--border) 30%, var(--border) 70%, transparent 100%);
+    box-shadow: none;
+    margin: 30px 0;
+  }
+
+  /* Section header */
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+
+  .section-header .icon {
+    width: 40px; height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+
+  .section-header h2 {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    background: linear-gradient(135deg, #fafafa, #c4b5fd);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .section-header .tag {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 6px;
+    margin-left: auto;
+  }
+
+  /* Glass panel */
+  .glass {
+    background: rgba(24,24,27,0.6);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 16px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .glass::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent 10%, rgba(255,255,255,0.08) 50%, transparent 90%);
+  }
+
+  .glass:hover {
+    border-color: rgba(255,255,255,0.1);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  }
+
+  .glass-strong {
+    background: rgba(39,39,42,0.7);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+
+  .glass-subtle {
+    background: rgba(24,24,27,0.3);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.04);
+  }
+
+  /* Stats row */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 40px;
+  }
+
+  .stat-card {
+    text-align: center;
+    padding: 20px 16px;
+  }
+
+  .stat-card .stat-value {
+    font-size: 36px;
+    font-weight: 800;
+    font-family: 'JetBrains Mono', monospace;
+    margin-bottom: 4px;
+    line-height: 1;
+  }
+
+  .stat-card .stat-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 500;
+  }
+
+  /* Grid layouts */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+
+  /* Command cards */
+  .cmd-card { padding: 20px; }
+
+  .cmd-card .cmd-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .cmd-card .cmd-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  .cmd-card .cmd-status {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-top: 8px;
+  }
+
+  .status-done { background: rgba(34,197,94,0.12); color: var(--neon-green); border: 1px solid rgba(34,197,94,0.25); }
+  .status-new { background: rgba(139,92,246,0.12); color: var(--primary-glow); border: 1px solid rgba(139,92,246,0.25); }
+  .status-stub { background: rgba(82,82,91,0.3); color: var(--text-muted); border: 1px solid rgba(82,82,91,0.4); }
+  .status-rewrite { background: rgba(6,182,212,0.12); color: var(--neon-cyan); border: 1px solid rgba(6,182,212,0.25); }
+
+  /* Timeline */
+  .timeline {
+    position: relative;
+    padding-left: 32px;
+  }
+
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 11px;
+    top: 8px;
+    bottom: 8px;
+    width: 2px;
+    background: linear-gradient(180deg, var(--primary) 0%, var(--neon-blue) 50%, var(--border) 100%);
+    border-radius: 1px;
+  }
+
+  .timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+    padding: 16px 20px;
+  }
+
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -27px;
+    top: 22px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid var(--primary);
+    background: var(--void);
+  }
+
+  .timeline-item.completed::before {
+    background: var(--neon-green);
+    border-color: var(--neon-green);
+    box-shadow: 0 0 8px rgba(34,197,94,0.4);
+  }
+
+  .timeline-item .tl-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .timeline-item .tl-detail {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  .timeline-item .tl-files {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 6px;
+  }
+
+  /* Architecture diagram */
+  .arch-diagram {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin: 20px 0;
+  }
+
+  .arch-layer {
+    border-radius: 12px;
+    padding: 16px 20px;
+    position: relative;
+  }
+
+  .arch-layer .layer-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .arch-layer .modules {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .arch-layer .module {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.06);
+    white-space: nowrap;
+  }
+
+  /* Phase cards */
+  .phase-card {
+    padding: 24px;
+    margin-bottom: 16px;
+    position: relative;
+  }
+
+  .phase-card h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .phase-card p {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  .phase-card .new-files {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 10px;
+    display: block;
+  }
+
+  .phase-number {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  /* Code block */
+  .code-block {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(255,255,255,0.04);
+    border-radius: 10px;
+    padding: 16px 20px;
+    overflow-x: auto;
+    line-height: 1.7;
+    margin: 12px 0;
+  }
+
+  .code-block .comment { color: var(--text-muted); }
+  .code-block .keyword { color: var(--primary-glow); }
+  .code-block .string { color: var(--neon-green); }
+  .code-block .flag { color: var(--neon-cyan); }
+  .code-block .cmd { color: var(--neon-amber); }
+
+  /* Checklist */
+  .checklist { list-style: none; padding: 0; }
+
+  .checklist li {
+    padding: 8px 0;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-secondary);
+  }
+
+  .checklist .check {
+    width: 20px; height: 20px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+
+  .check-done { background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.3); color: var(--neon-green); }
+  .check-pending { background: rgba(82,82,91,0.2); border: 1px solid var(--border); color: var(--text-muted); }
+
+  /* Deleted file */
+  .deleted { text-decoration: line-through; color: var(--neon-red); opacity: 0.6; }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding: 40px 0 20px;
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+
+  .footer .brand { font-weight: 600; color: var(--primary); }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    .hero h1 { font-size: 36px; }
+  }
+
+  @keyframes breathe {
+    0%, 100% { box-shadow: 0 0 20px rgba(139,92,246,0.05); }
+    50% { box-shadow: 0 0 30px rgba(139,92,246,0.12); }
+  }
+
+  .glow-breathe { animation: breathe 4s ease-in-out infinite; }
+
+  .tag-green { background: rgba(34,197,94,0.1); color: var(--neon-green); border: 1px solid rgba(34,197,94,0.2); }
+  .tag-amber { background: rgba(245,158,11,0.1); color: var(--neon-amber); border: 1px solid rgba(245,158,11,0.2); }
+  .tag-blue { background: rgba(59,130,246,0.1); color: var(--neon-blue); border: 1px solid rgba(59,130,246,0.2); }
+  .tag-purple { background: rgba(139,92,246,0.1); color: var(--primary-glow); border: 1px solid rgba(139,92,246,0.2); }
+  .tag-red { background: rgba(239,68,68,0.1); color: var(--neon-red); border: 1px solid rgba(239,68,68,0.2); }
+  .tag-cyan { background: rgba(6,182,212,0.1); color: var(--neon-cyan); border: 1px solid rgba(6,182,212,0.2); }
+
+  /* Connection arrow */
+  .conn-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin: 24px 0;
+    font-size: 14px;
+    color: var(--text-muted);
+  }
+
+  .conn-arrow .node {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-weight: 500;
+  }
+
+  .conn-arrow .arrow-line {
+    flex: 1;
+    max-width: 120px;
+    height: 2px;
+    background: linear-gradient(90deg, var(--primary), var(--neon-cyan));
+    position: relative;
+  }
+
+  .conn-arrow .arrow-line::after {
+    content: '';
+    position: absolute;
+    right: -1px;
+    top: -4px;
+    width: 0; height: 0;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    border-left: 8px solid var(--neon-cyan);
+  }
+
+  .conn-arrow .arrow-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    position: absolute;
+    top: -16px;
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    color: var(--text-muted);
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ==================== HERO ==================== -->
+  <div class="hero">
+    <div class="hero-badge"><span class="pulse"></span> State of the App</div>
+    <h1>Opta CLI</h1>
+    <p class="subtitle">Agentic AI coding assistant powered by local LLMs on Apple Silicon</p>
+    <span class="version-tag">v0.1.0 &mdash; V1 Code Complete &middot; V2 Designed</span>
+  </div>
+
+  <!-- ==================== STATS ==================== -->
+  <div class="stats-row">
+    <div class="stat-card glass">
+      <div class="stat-value" style="color: var(--neon-green);">8</div>
+      <div class="stat-label">Commands</div>
+    </div>
+    <div class="stat-card glass">
+      <div class="stat-value" style="color: var(--primary-glow);">68</div>
+      <div class="stat-label">Tests Passing</div>
+    </div>
+    <div class="stat-card glass">
+      <div class="stat-value" style="color: var(--neon-blue);">8</div>
+      <div class="stat-label">Agent Tools</div>
+    </div>
+    <div class="stat-card glass">
+      <div class="stat-value" style="color: var(--neon-amber);">~2.5k</div>
+      <div class="stat-label">Lines of Code</div>
+    </div>
+  </div>
+
+  <div class="neon-divider"></div>
+
+  <!-- ==================== RECENT IMPROVEMENTS ==================== -->
+  <div class="section-header">
+    <div class="icon" style="background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.3);">&#9889;</div>
+    <h2>Recent Improvements</h2>
+    <span class="tag tag-green" style="border-radius: 6px;">Feb 15, 2026</span>
+  </div>
+
+  <p style="color: var(--text-secondary); margin-bottom: 24px; font-size: 15px;">
+    Provider layer removed. LMX admin client created. Five stub commands wired into working implementations.
+    Agent loop extended for multi-turn conversations. V2 design document approved.
+    Test suite expanded from 44 to 68 tests &mdash; all passing with clean typecheck and lint.
+  </p>
+
+  <div class="timeline">
+    <div class="timeline-item glass-subtle completed">
+      <div class="tl-title" style="color: var(--neon-cyan);">LMX Migration &mdash; Provider Layer Removed</div>
+      <div class="tl-detail">Deleted entire <code style="color:var(--neon-red);">src/providers/</code> directory (base.ts, lmstudio.ts, manager.ts). Created thin <code style="color:var(--neon-green);">src/lmx/client.ts</code> &mdash; fetch-based admin API client for health, status, models, load, unload. <code style="color:var(--neon-red);">opta connect</code> replaced with <code style="color:var(--neon-green);">opta status</code> (read-only health check).</div>
+      <div class="tl-files">src/lmx/client.ts &middot; src/commands/status.ts &middot; +10 tests &middot; -5 files deleted</div>
+    </div>
+
+    <div class="timeline-item glass-subtle completed">
+      <div class="tl-title" style="color: var(--primary-glow);">Models Command Rewrite</div>
+      <div class="tl-detail">Complete rewrite using LmxClient. Five subcommands: list (default), use, info, <strong>load</strong> (new), <strong>unload</strong> (new). Can now trigger model loading/unloading via LMX admin API.</div>
+      <div class="tl-files">src/commands/models.ts &middot; 266 lines</div>
+    </div>
+
+    <div class="timeline-item glass-subtle completed">
+      <div class="tl-title" style="color: var(--primary-glow);">Session Store</div>
+      <div class="tl-detail">Full CRUD persistence layer. Sessions stored as JSON at <code style="color:var(--neon-cyan);">~/.config/opta/sessions/&lt;id&gt;.json</code>. Nanoid(12) for IDs, auto-title from first message.</div>
+      <div class="tl-files">src/memory/store.ts &middot; 123 lines &middot; 15 tests</div>
+    </div>
+
+    <div class="timeline-item glass-subtle completed">
+      <div class="tl-title" style="color: var(--primary-glow);">Agent Loop Multi-Turn</div>
+      <div class="tl-detail">Exported AgentMessage type, added AgentLoopOptions/Result interfaces. Optional <code style="color:var(--neon-cyan);">existingMessages</code> parameter enables session resume without breaking <code style="color:var(--neon-cyan);">opta do</code>.</div>
+      <div class="tl-files">src/core/agent.ts &middot; modified (non-breaking)</div>
+    </div>
+
+    <div class="timeline-item glass-subtle completed">
+      <div class="tl-title" style="color: var(--primary-glow);">Interactive Chat REPL</div>
+      <div class="tl-detail">Full conversation loop with @inquirer/prompts. Slash commands: /exit, /help, /model, /history, /compact, /clear. Session auto-save on Ctrl+C.</div>
+      <div class="tl-files">src/commands/chat.ts &middot; 219 lines</div>
+    </div>
+
+    <div class="timeline-item glass-subtle completed">
+      <div class="tl-title" style="color: var(--primary-glow);">Sessions, Config &amp; Completions</div>
+      <div class="tl-detail">Sessions: list/resume/delete/export. Config: list/get/set/reset with dot-notation. Shell completions: bash/zsh/fish with all commands, subcommands, and flags.</div>
+      <div class="tl-files">src/commands/sessions.ts &middot; config.ts &middot; completions.ts</div>
+    </div>
+
+    <div class="timeline-item glass-subtle completed">
+      <div class="tl-title" style="color: var(--neon-amber);">V2 Design Document Approved</div>
+      <div class="tl-detail">Comprehensive design for 4 features: OPIS integration + export map, Git checkpoint system, MCP integration, and <code style="color:var(--neon-cyan);">opta init</code>. Competitive analysis against Claude Code, Codex CLI, Aider, Gemini CLI.</div>
+      <div class="tl-files">docs/plans/2026-02-15-v2-features-design.md &middot; ~400 lines</div>
+    </div>
+  </div>
+
+  <div class="neon-divider"></div>
+
+  <!-- ==================== COMMAND STATUS ==================== -->
+  <div class="section-header">
+    <div class="icon" style="background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.3);">&#9881;</div>
+    <h2>Command Status</h2>
+    <span class="tag tag-green" style="border-radius: 6px;">8 Commands</span>
+  </div>
+
+  <div class="grid-4">
+    <div class="cmd-card glass">
+      <div class="cmd-name" style="color: var(--neon-green);">opta chat</div>
+      <div class="cmd-desc">Interactive REPL with session persistence, slash commands, streaming</div>
+      <span class="cmd-status status-done">V1</span>
+    </div>
+    <div class="cmd-card glass">
+      <div class="cmd-name" style="color: var(--neon-green);">opta do &lt;task&gt;</div>
+      <div class="cmd-desc">Single-shot agentic task execution</div>
+      <span class="cmd-status status-done">V1</span>
+    </div>
+    <div class="cmd-card glass">
+      <div class="cmd-name" style="color: var(--neon-cyan);">opta status</div>
+      <div class="cmd-desc">LMX health check: version, uptime, loaded models, memory</div>
+      <span class="cmd-status status-rewrite">Rewritten</span>
+    </div>
+    <div class="cmd-card glass">
+      <div class="cmd-name" style="color: var(--neon-cyan);">opta models</div>
+      <div class="cmd-desc">list / use / info / load / unload via LMX admin API</div>
+      <span class="cmd-status status-rewrite">Rewritten</span>
+    </div>
+    <div class="cmd-card glass">
+      <div class="cmd-name" style="color: var(--neon-green);">opta config</div>
+      <div class="cmd-desc">list / get / set / reset with dot-notation keys</div>
+      <span class="cmd-status status-done">V1</span>
+    </div>
+    <div class="cmd-card glass">
+      <div class="cmd-name" style="color: var(--neon-green);">opta sessions</div>
+      <div class="cmd-desc">list / resume / delete / export with table + JSON output</div>
+      <span class="cmd-status status-done">V1</span>
+    </div>
+    <div class="cmd-card glass">
+      <div class="cmd-name" style="color: var(--neon-green);">opta completions</div>
+      <div class="cmd-desc">bash / zsh / fish shell autocompletion scripts</div>
+      <span class="cmd-status status-done">V1</span>
+    </div>
+    <div class="cmd-card glass">
+      <div class="cmd-name" style="color: var(--text-muted);">opta mcp</div>
+      <div class="cmd-desc">Model Context Protocol. Designed for V2.</div>
+      <span class="cmd-status status-stub">V2 Stub</span>
+    </div>
+  </div>
+
+  <div class="neon-divider"></div>
+
+  <!-- ==================== ARCHITECTURE ==================== -->
+  <div class="section-header">
+    <div class="icon" style="background: rgba(6,182,212,0.15); border: 1px solid rgba(6,182,212,0.3);">&#9670;</div>
+    <h2>Architecture</h2>
+    <span class="tag tag-cyan" style="border-radius: 6px;">Post-Migration</span>
+  </div>
+
+  <!-- Connection diagram -->
+  <div class="conn-arrow">
+    <div class="node glass" style="border-color: rgba(139,92,246,0.3); color: var(--primary-glow);">Opta CLI</div>
+    <div style="position: relative; flex: 1; max-width: 140px;">
+      <div class="arrow-line" style="width: 100%; height: 2px; background: linear-gradient(90deg, var(--primary), var(--neon-cyan)); position: relative;">
+        <div style="position: absolute; right: -1px; top: -4px; width: 0; height: 0; border-top: 5px solid transparent; border-bottom: 5px solid transparent; border-left: 8px solid var(--neon-cyan);"></div>
+      </div>
+      <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 1px; text-align: center; margin-top: 6px; color: var(--text-muted);">OpenAI SDK + Admin API</div>
+    </div>
+    <div class="node glass" style="border-color: rgba(6,182,212,0.3); color: var(--neon-cyan);">Opta LMX</div>
+    <div style="position: relative; flex: 1; max-width: 140px;">
+      <div class="arrow-line" style="width: 100%; height: 2px; background: linear-gradient(90deg, var(--neon-cyan), var(--neon-green)); position: relative;">
+        <div style="position: absolute; right: -1px; top: -4px; width: 0; height: 0; border-top: 5px solid transparent; border-bottom: 5px solid transparent; border-left: 8px solid var(--neon-green);"></div>
+      </div>
+      <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 1px; text-align: center; margin-top: 6px; color: var(--text-muted);">MLX Inference</div>
+    </div>
+    <div class="node glass" style="border-color: rgba(34,197,94,0.3); color: var(--neon-green);">Local LLM</div>
+  </div>
+
+  <div class="arch-diagram">
+    <div class="arch-layer glass" style="border-left: 3px solid var(--neon-green);">
+      <div class="layer-label" style="color: var(--neon-green);">Entry &amp; Commands</div>
+      <div class="modules">
+        <span class="module">index.ts</span>
+        <span class="module">chat.ts</span>
+        <span class="module">do.ts</span>
+        <span class="module" style="border-color: rgba(6,182,212,0.3); color: var(--neon-cyan);">status.ts</span>
+        <span class="module" style="border-color: rgba(6,182,212,0.3); color: var(--neon-cyan);">models.ts</span>
+        <span class="module">config.ts</span>
+        <span class="module">sessions.ts</span>
+        <span class="module">completions.ts</span>
+      </div>
+    </div>
+
+    <div class="arch-layer glass" style="border-left: 3px solid var(--primary);">
+      <div class="layer-label" style="color: var(--primary-glow);">Core Engine &mdash; Unique Value</div>
+      <div class="modules">
+        <span class="module" style="border-color: rgba(139,92,246,0.4); color: var(--primary-glow);">agent.ts (360 LOC)</span>
+        <span class="module" style="border-color: rgba(139,92,246,0.4); color: var(--primary-glow);">tools.ts (200 LOC)</span>
+        <span class="module">config.ts</span>
+        <span class="module">errors.ts</span>
+        <span class="module">debug.ts</span>
+      </div>
+    </div>
+
+    <div class="arch-layer glass" style="border-left: 3px solid var(--neon-cyan);">
+      <div class="layer-label" style="color: var(--neon-cyan);">LMX Client &mdash; Thin Admin Layer</div>
+      <div class="modules">
+        <span class="module" style="border-color: rgba(6,182,212,0.3); color: var(--neon-cyan);">client.ts</span>
+        <span class="module" style="font-size: 11px; color: var(--text-muted);">health() &middot; status() &middot; models() &middot; loadModel() &middot; unloadModel()</span>
+      </div>
+    </div>
+
+    <div class="arch-layer glass" style="border-left: 3px solid var(--neon-blue);">
+      <div class="layer-label" style="color: var(--neon-blue);">Memory &amp; UI</div>
+      <div class="modules">
+        <span class="module">store.ts</span>
+        <span class="module">output.ts</span>
+        <span class="module">spinner.ts</span>
+        <span class="module">markdown.ts</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-2" style="margin-top: 16px;">
+    <div class="glass" style="border-left: 3px solid var(--neon-red); padding: 16px 20px;">
+      <h3 style="font-size: 14px; margin-bottom: 8px; color: var(--neon-red);">Deleted (Provider Layer)</h3>
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">
+        <span class="deleted">src/providers/base.ts</span><br>
+        <span class="deleted">src/providers/lmstudio.ts</span><br>
+        <span class="deleted">src/providers/manager.ts</span><br>
+        <span class="deleted">src/providers/anthropic.ts</span><br>
+        <span class="deleted">src/commands/connect.ts</span><br>
+        <span class="deleted">tests/providers/*.test.ts</span>
+      </div>
+    </div>
+    <div class="glass" style="border-left: 3px solid var(--neon-green); padding: 16px 20px;">
+      <h3 style="font-size: 14px; margin-bottom: 8px; color: var(--neon-green);">Created (LMX Layer)</h3>
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">
+        <span style="color: var(--neon-green);">src/lmx/client.ts</span> <span style="color:var(--text-muted);">&mdash; Admin API client</span><br>
+        <span style="color: var(--neon-green);">src/commands/status.ts</span> <span style="color:var(--text-muted);">&mdash; Health check</span><br>
+        <span style="color: var(--neon-green);">tests/lmx/client.test.ts</span> <span style="color:var(--text-muted);">&mdash; 10 tests</span><br>
+        <span style="color: var(--neon-cyan);">src/commands/models.ts</span> <span style="color:var(--text-muted);">&mdash; Full rewrite</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="neon-divider"></div>
+
+  <!-- ==================== V2 ROADMAP ==================== -->
+  <div class="section-header">
+    <div class="icon" style="background: rgba(236,72,153,0.15); border: 1px solid rgba(236,72,153,0.3);">&#10024;</div>
+    <h2>V2 Roadmap</h2>
+    <span class="tag tag-purple" style="border-radius: 6px;">Design Approved</span>
+  </div>
+
+  <p style="color: var(--text-secondary); margin-bottom: 24px; font-size: 15px;">
+    Four phases, each a separate PR. ~910 lines of new code. Phased to allow independent delivery
+    while respecting dependencies (Phase 4 requires Phases 1 + 3).
+  </p>
+
+  <div class="phase-card glass glow-breathe" style="border-left: 3px solid var(--primary);">
+    <h3 style="color: var(--primary-glow);">
+      <span class="phase-number" style="background: rgba(139,92,246,0.2); border: 1px solid rgba(139,92,246,0.3); color: var(--primary-glow);">1</span>
+      OPIS Integration + Export Map
+    </h3>
+    <p>
+      Foundation layer that changes how the system prompt is built.
+      <strong>Hybrid OPIS injection:</strong> compressed project summary (~500 tokens) in system prompt;
+      <code style="color:var(--neon-cyan);">read_project_docs</code> tool for on-demand deep dives.
+      <strong>Export map:</strong> regex-based scanner for top-level exports (~500-1K tokens).
+      Replaces tree-sitter dependency &mdash; OPIS provides architecture, export map provides symbol locations.
+    </p>
+    <span class="new-files">src/context/opis.ts &middot; src/context/exports.ts &middot; ~260 LOC</span>
+  </div>
+
+  <div class="phase-card glass" style="border-left: 3px solid var(--neon-green);">
+    <h3 style="color: var(--neon-green);">
+      <span class="phase-number" style="background: rgba(34,197,94,0.2); border: 1px solid rgba(34,197,94,0.3); color: var(--neon-green);">2</span>
+      Git Integration
+    </h3>
+    <p>
+      Checkpoint system wraps around the agent loop.
+      <strong>Checkpoint snapshots:</strong> patch files saved after each edit (<code style="color:var(--neon-cyan);">.opta/checkpoints/</code>).
+      <strong>Task commit:</strong> single clean commit when agent loop completes, message generated by model.
+      <strong>/undo:</strong> reverse specific checkpoints mid-task.
+      <strong>opta diff:</strong> show all uncommitted session changes.
+    </p>
+    <span class="new-files">src/git/checkpoints.ts &middot; src/git/commit.ts &middot; src/commands/diff.ts &middot; ~250 LOC</span>
+  </div>
+
+  <div class="phase-card glass" style="border-left: 3px solid var(--neon-blue);">
+    <h3 style="color: var(--neon-blue);">
+      <span class="phase-number" style="background: rgba(59,130,246,0.2); border: 1px solid rgba(59,130,246,0.3); color: var(--neon-blue);">3</span>
+      MCP Integration
+    </h3>
+    <p>
+      Extends the tool system with external services.
+      <strong>Config-based discovery:</strong> MCP servers declared in <code style="color:var(--neon-cyan);">.opta/config.json</code> (security-first).
+      <strong>Transport:</strong> stdio (local npm) + HTTP/SSE (remote).
+      <strong>Tool budget:</strong> warn at >20 tools (local LLM degradation threshold).
+      <strong>opta mcp:</strong> list / add / remove / test.
+    </p>
+    <span class="new-files">src/mcp/client.ts &middot; src/mcp/registry.ts &middot; ~250 LOC</span>
+  </div>
+
+  <div class="phase-card glass" style="border-left: 3px solid var(--neon-amber);">
+    <h3 style="color: var(--neon-amber);">
+      <span class="phase-number" style="background: rgba(245,158,11,0.2); border: 1px solid rgba(245,158,11,0.3); color: var(--neon-amber);">4</span>
+      opta init (OPIS Runner)
+    </h3>
+    <p>
+      Requires Phases 1 + 3. Structured command flow &mdash; CLI drives OPIS stages deterministically,
+      model generates scaffold in one shot.
+      <strong>Auto-detection:</strong> greenfield vs brownfield vs companion.
+      <strong>10 mode-specific questions</strong> via inquirer prompts.
+      <strong>MCP suggestions</strong> parsed from generated KNOWLEDGE.md.
+    </p>
+    <span class="new-files">src/commands/init.ts &middot; src/opis/questions.ts &middot; src/opis/templates.ts &middot; ~150 LOC</span>
+  </div>
+
+  <div class="neon-divider"></div>
+
+  <!-- ==================== OWNERSHIP SPLIT ==================== -->
+  <div class="section-header">
+    <div class="icon" style="background: rgba(6,182,212,0.15); border: 1px solid rgba(6,182,212,0.3);">&#9878;</div>
+    <h2>Ownership Split</h2>
+    <span class="tag tag-cyan" style="border-radius: 6px;">CLI vs LMX</span>
+  </div>
+
+  <div class="grid-2">
+    <div class="glass" style="border-left: 3px solid var(--primary);">
+      <h3 style="font-size: 16px; margin-bottom: 8px; color: var(--primary-glow);">Opta CLI Owns</h3>
+      <ul style="list-style: none; padding: 0; font-size: 13px; color: var(--text-secondary);">
+        <li style="padding: 4px 0;">&#8227; Agentic coding loop (plan, act, observe)</li>
+        <li style="padding: 4px 0;">&#8227; 8 coding tools + permission system</li>
+        <li style="padding: 4px 0;">&#8227; Interactive chat REPL + slash commands</li>
+        <li style="padding: 4px 0;">&#8227; Session persistence + resume</li>
+        <li style="padding: 4px 0;">&#8227; Context compaction + circuit breaker</li>
+        <li style="padding: 4px 0;">&#8227; OPIS integration (V2) + repo awareness</li>
+        <li style="padding: 4px 0;">&#8227; Git checkpoints (V2) + task commits</li>
+        <li style="padding: 4px 0;">&#8227; MCP integration (V2) as tool extensions</li>
+        <li style="padding: 4px 0;">&#8227; Config management + shell completions</li>
+      </ul>
+    </div>
+    <div class="glass" style="border-left: 3px solid var(--neon-cyan);">
+      <h3 style="font-size: 16px; margin-bottom: 8px; color: var(--neon-cyan);">Opta LMX Owns</h3>
+      <ul style="list-style: none; padding: 0; font-size: 13px; color: var(--text-secondary);">
+        <li style="padding: 4px 0;">&#8227; Model lifecycle (load, unload, evict)</li>
+        <li style="padding: 4px 0;">&#8227; Memory management (90% guardrail, LRU)</li>
+        <li style="padding: 4px 0;">&#8227; OpenAI-compatible inference API</li>
+        <li style="padding: 4px 0;">&#8227; Admin API (health, status, models)</li>
+        <li style="padding: 4px 0;">&#8227; Server-side streaming (SSE)</li>
+        <li style="padding: 4px 0;">&#8227; Model downloading from HuggingFace</li>
+        <li style="padding: 4px 0;">&#8227; Context length per model</li>
+        <li style="padding: 4px 0;">&#8227; MLX inference on Apple Silicon</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="neon-divider"></div>
+
+  <!-- ==================== QUICK START ==================== -->
+  <div class="section-header">
+    <div class="icon" style="background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.3);">&#9654;</div>
+    <h2>Quick Start</h2>
+    <span class="tag tag-green" style="border-radius: 6px;">Today</span>
+  </div>
+
+  <div class="code-block">
+    <span class="comment"># Build and install globally</span><br>
+    <span class="cmd">cd</span> <span class="string">~/Synced/Opta/1-Apps/1D-Opta-CLI-TS</span><br>
+    <span class="cmd">npm</span> install && <span class="cmd">npm</span> run build<br>
+    <span class="cmd">npm</span> link<br>
+    <br>
+    <span class="comment"># Check LMX is running</span><br>
+    <span class="cmd">opta</span> status<br>
+    <span class="cmd">opta</span> status <span class="flag">--json</span><br>
+    <br>
+    <span class="comment"># Manage models via LMX admin API</span><br>
+    <span class="cmd">opta</span> models<br>
+    <span class="cmd">opta</span> models load <span class="string">qwen2.5-72b</span><br>
+    <span class="cmd">opta</span> models use <span class="string">qwen2.5-72b</span><br>
+    <br>
+    <span class="comment"># Start coding with AI</span><br>
+    <span class="cmd">opta</span> chat<br>
+    <span class="cmd">opta</span> do <span class="string">"fix the auth bug in middleware.ts"</span><br>
+    <br>
+    <span class="comment"># Manage sessions</span><br>
+    <span class="cmd">opta</span> sessions<br>
+    <span class="cmd">opta</span> sessions resume <span class="string">abc123</span><br>
+    <br>
+    <span class="comment"># Shell completions</span><br>
+    <span class="cmd">eval</span> <span class="string">"$(opta completions zsh)"</span>
+  </div>
+
+  <div class="neon-divider"></div>
+
+  <!-- ==================== RELEASE CHECKLIST ==================== -->
+  <div class="section-header">
+    <div class="icon" style="background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.3);">&#9745;</div>
+    <h2>V1 Release Status</h2>
+  </div>
+
+  <div class="grid-2">
+    <div class="glass">
+      <h3 style="font-size: 15px; margin-bottom: 12px; color: var(--neon-green);">Done</h3>
+      <ul class="checklist">
+        <li><span class="check check-done">&#10003;</span> All 8 commands implemented</li>
+        <li><span class="check check-done">&#10003;</span> 68/68 tests passing</li>
+        <li><span class="check check-done">&#10003;</span> TypeScript strict mode clean</li>
+        <li><span class="check check-done">&#10003;</span> ESLint passing</li>
+        <li><span class="check check-done">&#10003;</span> Provider layer removed</li>
+        <li><span class="check check-done">&#10003;</span> LMX admin client wired</li>
+        <li><span class="check check-done">&#10003;</span> Session CRUD + resume</li>
+        <li><span class="check check-done">&#10003;</span> Agent loop with multi-turn</li>
+        <li><span class="check check-done">&#10003;</span> Shell completions (3 shells)</li>
+        <li><span class="check check-done">&#10003;</span> Config management</li>
+        <li><span class="check check-done">&#10003;</span> Error handling + exit codes</li>
+        <li><span class="check check-done">&#10003;</span> V2 design document approved</li>
+      </ul>
+    </div>
+    <div class="glass">
+      <h3 style="font-size: 15px; margin-bottom: 12px; color: var(--neon-amber);">Remaining</h3>
+      <ul class="checklist">
+        <li><span class="check check-pending">&#9675;</span> End-to-end test with live LMX</li>
+        <li><span class="check check-pending">&#9675;</span> Verify streaming with real model</li>
+        <li><span class="check check-pending">&#9675;</span> Context compaction under load</li>
+        <li><span class="check check-pending">&#9675;</span> Performance verification (&lt;50ms --help)</li>
+        <li><span class="check check-pending">&#9675;</span> README with real usage examples</li>
+        <li><span class="check check-pending">&#9675;</span> Wire --plan flag behavior</li>
+        <li><span class="check check-pending">&#9675;</span> npm publish / global install test</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="neon-divider subtle"></div>
+
+  <!-- ==================== TECH STACK ==================== -->
+  <div class="section-header">
+    <div class="icon" style="background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.3);">&#9881;</div>
+    <h2>Tech Stack</h2>
+  </div>
+
+  <div class="grid-3" style="margin-bottom: 0;">
+    <div class="glass-subtle" style="padding: 16px; text-align: center;">
+      <div style="font-size: 24px; margin-bottom: 6px;">TS</div>
+      <div style="font-size: 13px; font-weight: 600;">TypeScript 5.7</div>
+      <div style="font-size: 11px; color: var(--text-muted);">Strict ESM, Node16 resolution</div>
+    </div>
+    <div class="glass-subtle" style="padding: 16px; text-align: center;">
+      <div style="font-size: 24px; margin-bottom: 6px;">&#9881;</div>
+      <div style="font-size: 13px; font-weight: 600;">Commander.js</div>
+      <div style="font-size: 11px; color: var(--text-muted);">CLI framework + lazy loading</div>
+    </div>
+    <div class="glass-subtle" style="padding: 16px; text-align: center;">
+      <div style="font-size: 24px; margin-bottom: 6px;">AI</div>
+      <div style="font-size: 13px; font-weight: 600;">OpenAI SDK</div>
+      <div style="font-size: 11px; color: var(--text-muted);">Pointed at local Opta LMX</div>
+    </div>
+    <div class="glass-subtle" style="padding: 16px; text-align: center;">
+      <div style="font-size: 24px; margin-bottom: 6px;">&#9889;</div>
+      <div style="font-size: 13px; font-weight: 600;">Vitest</div>
+      <div style="font-size: 11px; color: var(--text-muted);">68 tests, mock-based</div>
+    </div>
+    <div class="glass-subtle" style="padding: 16px; text-align: center;">
+      <div style="font-size: 24px; margin-bottom: 6px;">&#9655;</div>
+      <div style="font-size: 13px; font-weight: 600;">tsup</div>
+      <div style="font-size: 11px; color: var(--text-muted);">ESM bundle to dist/</div>
+    </div>
+    <div class="glass-subtle" style="padding: 16px; text-align: center;">
+      <div style="font-size: 24px; margin-bottom: 6px;">Z</div>
+      <div style="font-size: 13px; font-weight: 600;">Zod</div>
+      <div style="font-size: 11px; color: var(--text-muted);">Config schema validation</div>
+    </div>
+  </div>
+
+  <!-- ==================== FOOTER ==================== -->
+  <div class="footer">
+    <span class="brand">Opta CLI</span> &middot; v0.1.0 &middot; State of the App &middot; Feb 15, 2026
+    <br>
+    <span style="color: var(--text-muted);">1-Apps/1D-Opta-CLI-TS &middot; Opta Operations</span>
+  </div>
+
+</div>
+</body>
+</html>
