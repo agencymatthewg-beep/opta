@@ -64,4 +64,39 @@ export const VERSION = "1.0";
     const prompt = await buildSystemPrompt(DEFAULT_CONFIG, TEST_DIR);
     expect(prompt).toContain('opta init');
   });
+
+  it('includes dirty working tree warning for dirty git repos', async () => {
+    // Create a git repo and make it dirty
+    const { execa } = await import('execa');
+    await execa('git', ['init'], { cwd: TEST_DIR });
+    await execa('git', ['config', 'user.email', 'test@test.com'], { cwd: TEST_DIR });
+    await execa('git', ['config', 'user.name', 'Test'], { cwd: TEST_DIR });
+    await writeFile(join(TEST_DIR, 'initial.txt'), 'initial');
+    await execa('git', ['add', '-A'], { cwd: TEST_DIR });
+    await execa('git', ['commit', '-m', 'init'], { cwd: TEST_DIR });
+
+    // Make dirty
+    await writeFile(join(TEST_DIR, 'dirty.txt'), 'uncommitted');
+
+    const prompt = await buildSystemPrompt(DEFAULT_CONFIG, TEST_DIR);
+    expect(prompt).toContain('uncommitted changes');
+  });
+
+  it('does not include dirty warning for clean git repos', async () => {
+    const { execa } = await import('execa');
+    await execa('git', ['init'], { cwd: TEST_DIR });
+    await execa('git', ['config', 'user.email', 'test@test.com'], { cwd: TEST_DIR });
+    await execa('git', ['config', 'user.name', 'Test'], { cwd: TEST_DIR });
+    await writeFile(join(TEST_DIR, 'initial.txt'), 'initial');
+    await execa('git', ['add', '-A'], { cwd: TEST_DIR });
+    await execa('git', ['commit', '-m', 'init'], { cwd: TEST_DIR });
+
+    const prompt = await buildSystemPrompt(DEFAULT_CONFIG, TEST_DIR);
+    expect(prompt).not.toContain('uncommitted changes');
+  });
+
+  it('does not include dirty warning for non-git directories', async () => {
+    const prompt = await buildSystemPrompt(DEFAULT_CONFIG, TEST_DIR);
+    expect(prompt).not.toContain('uncommitted changes');
+  });
 });

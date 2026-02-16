@@ -24,6 +24,7 @@ export interface AgentMessage {
 
 export interface AgentLoopOptions {
   existingMessages?: AgentMessage[];
+  sessionId?: string;
 }
 
 export interface AgentLoopResult {
@@ -73,6 +74,16 @@ Working directory: ${workingDir}`;
     }
   } catch {
     // Export scanning failed — continue without map
+  }
+
+  // Warn about dirty working tree
+  try {
+    const { isGitRepo, isDirty } = await import('../git/utils.js');
+    if (await isGitRepo(workingDir) && await isDirty(workingDir)) {
+      prompt += '\n\nNote: Working tree has uncommitted changes from outside this session.';
+    }
+  } catch {
+    // Git utils unavailable — skip
   }
 
   void config; // config used for future extensions
@@ -247,6 +258,8 @@ export async function agentLoop(
 
   let toolCallCount = 0;
   const spinner = await createSpinner();
+  const sessionId = options?.sessionId ?? 'unknown';
+  let checkpointCount = 0;
 
   while (true) {
     // 1. Context compaction
@@ -354,6 +367,26 @@ export async function agentLoop(
 
       toolCallCount++;
       debug(`Tool call #${toolCallCount}: ${call.name} → ${result.slice(0, 100)}`);
+
+      // Create checkpoint for file-modifying tools
+      if (config.git.checkpoints && (call.name === 'edit_file' || call.name === 'write_file')) {
+        try {
+          const { isGitRepo } = await import('../git/utils.js');
+          if (await isGitRepo(process.cwd())) {
+            const { createCheckpoint } = await import('../git/checkpoints.js');
+            let parsedArgs: Record<string, unknown>;
+            try {
+              parsedArgs = JSON.parse(call.args);
+            } catch {
+              parsedArgs = {};
+            }
+            checkpointCount++;
+            await createCheckpoint(process.cwd(), sessionId, checkpointCount, call.name, String(parsedArgs['path'] ?? 'unknown'));
+          }
+        } catch {
+          // Checkpoint creation failed — non-fatal
+        }
+      }
     }
 
     // 7. Circuit breaker
@@ -365,6 +398,28 @@ export async function agentLoop(
       const shouldContinue = await confirm({ message: 'Continue?' });
       if (!shouldContinue) break;
       toolCallCount = 0;
+    }
+  }
+
+  // Auto-commit if enabled and tools were used
+  if (config.git.autoCommit && toolCallCount > 0 && options?.sessionId) {
+    try {
+      const { isGitRepo, getModifiedFiles } = await import('../git/utils.js');
+      if (await isGitRepo(process.cwd())) {
+        const modifiedFiles = await getModifiedFiles(process.cwd());
+        if (modifiedFiles.length > 0) {
+          const { generateCommitMessage, commitSessionChanges } = await import('../git/commit.js');
+          const commitMsg = await generateCommitMessage(messages, client, model);
+          const committed = await commitSessionChanges(process.cwd(), modifiedFiles, commitMsg);
+          if (committed) {
+            console.log(chalk.green('✓') + chalk.dim(` Committed: ${commitMsg}`));
+          }
+          const { cleanupCheckpoints } = await import('../git/checkpoints.js');
+          await cleanupCheckpoints(process.cwd(), options.sessionId);
+        }
+      }
+    } catch {
+      // Auto-commit failed — non-fatal
     }
   }
 
