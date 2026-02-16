@@ -5,6 +5,8 @@ import { formatError, OptaError, EXIT } from '../core/errors.js';
 
 interface DoOptions {
   model?: string;
+  commit?: boolean;
+  checkpoints?: boolean;
 }
 
 export async function executeTask(task: string[], opts: DoOptions): Promise<void> {
@@ -20,6 +22,12 @@ export async function executeTask(task: string[], opts: DoOptions): Promise<void
   const overrides: Record<string, unknown> = {};
   if (opts.model) {
     overrides['model'] = { default: opts.model };
+  }
+  if (opts.commit === false) {
+    overrides['git'] = { ...((overrides['git'] as Record<string, unknown>) ?? {}), autoCommit: false };
+  }
+  if (opts.checkpoints === false) {
+    overrides['git'] = { ...((overrides['git'] as Record<string, unknown>) ?? {}), checkpoints: false };
   }
 
   try {

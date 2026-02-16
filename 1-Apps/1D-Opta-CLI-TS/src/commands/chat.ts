@@ -15,12 +15,20 @@ interface ChatOptions {
   resume?: string;
   plan?: boolean;
   model?: string;
+  commit?: boolean;
+  checkpoints?: boolean;
 }
 
 export async function startChat(opts: ChatOptions): Promise<void> {
   const overrides: Record<string, unknown> = {};
   if (opts.model) {
     overrides['model'] = { default: opts.model };
+  }
+  if (opts.commit === false) {
+    overrides['git'] = { ...((overrides['git'] as Record<string, unknown>) ?? {}), autoCommit: false };
+  }
+  if (opts.checkpoints === false) {
+    overrides['git'] = { ...((overrides['git'] as Record<string, unknown>) ?? {}), checkpoints: false };
   }
 
   let config = await loadConfig(overrides);

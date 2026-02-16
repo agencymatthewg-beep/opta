@@ -42,6 +42,8 @@ program
   .option('-r, --resume <id>', 'resume a previous session')
   .option('--plan', 'plan mode — all edits require approval')
   .option('-m, --model <name>', 'override default model')
+  .option('--no-commit', 'disable auto-commit at task end')
+  .option('--no-checkpoints', 'disable checkpoint creation')
   .action(async (opts) => {
     const { startChat } = await import('./commands/chat.js');
     await startChat(opts);
@@ -51,6 +53,8 @@ program
   .command('do <task...>')
   .description('Execute a coding task using the agent loop')
   .option('-m, --model <name>', 'use specific model for this task')
+  .option('--no-commit', 'disable auto-commit at task end')
+  .option('--no-checkpoints', 'disable checkpoint creation')
   .action(async (task: string[], opts) => {
     const { executeTask } = await import('./commands/do.js');
     await executeTask(task, opts);
