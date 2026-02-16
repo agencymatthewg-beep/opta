@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { writeFile, mkdir, rm } from 'node:fs/promises';
-import { join } from 'node:path';
+import { readFile, writeFile, mkdir, rm } from 'node:fs/promises';
+import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { buildSystemPrompt } from '../../src/core/agent.js';
 import { DEFAULT_CONFIG } from '../../src/core/config.js';
@@ -98,5 +98,23 @@ export const VERSION = "1.0";
   it('does not include dirty warning for non-git directories', async () => {
     const prompt = await buildSystemPrompt(DEFAULT_CONFIG, TEST_DIR);
     expect(prompt).not.toContain('uncommitted changes');
+  });
+});
+
+describe('agentLoop tool registry integration', () => {
+  it('uses buildToolRegistry from mcp/registry', async () => {
+    const source = await readFile(resolve(process.cwd(), 'src/core/agent.ts'), 'utf-8');
+    expect(source).toContain('buildToolRegistry');
+    expect(source).toContain('registry.execute');
+    expect(source).toContain('registry.close');
+  });
+
+  it('does not import TOOL_SCHEMAS or executeTool from tools.js', async () => {
+    const source = await readFile(resolve(process.cwd(), 'src/core/agent.ts'), 'utf-8');
+    // Should still import resolvePermission
+    expect(source).toContain("import { resolvePermission } from './tools.js'");
+    // Should NOT import TOOL_SCHEMAS or executeTool from tools.js
+    expect(source).not.toMatch(/import\s*\{[^}]*TOOL_SCHEMAS[^}]*\}\s*from\s*['"]\.\/tools/);
+    expect(source).not.toMatch(/import\s*\{[^}]*executeTool[^}]*\}\s*from\s*['"]\.\/tools/);
   });
 });

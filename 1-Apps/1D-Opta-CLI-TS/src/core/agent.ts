@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import type { OptaConfig } from './config.js';
-import { TOOL_SCHEMAS, resolvePermission, executeTool } from './tools.js';
+import { resolvePermission } from './tools.js';
 import { debug } from './debug.js';
 import { createSpinner } from '../ui/spinner.js';
 import { renderMarkdown } from '../ui/markdown.js';
@@ -261,6 +261,9 @@ export async function agentLoop(
   const sessionId = options?.sessionId ?? 'unknown';
   let checkpointCount = 0;
 
+  const { buildToolRegistry } = await import('../mcp/registry.js');
+  const registry = await buildToolRegistry(config);
+
   while (true) {
     // 1. Context compaction
     const tokenEstimate = estimateTokens(messages);
@@ -281,7 +284,7 @@ export async function agentLoop(
     const stream = await client.chat.completions.create({
       model,
       messages: messages as Parameters<typeof client.chat.completions.create>[0]['messages'],
-      tools: TOOL_SCHEMAS as Parameters<typeof client.chat.completions.create>[0]['tools'],
+      tools: registry.schemas as Parameters<typeof client.chat.completions.create>[0]['tools'],
       tool_choice: 'auto',
       stream: true,
     });
@@ -356,7 +359,7 @@ export async function agentLoop(
 
       // Execute the tool
       spinner.start(`${call.name}...`);
-      const result = await executeTool(call.name, call.args);
+      const result = await registry.execute(call.name, call.args);
       spinner.succeed(`${call.name}`);
 
       messages.push({
@@ -428,6 +431,8 @@ export async function agentLoop(
   console.log(
     chalk.dim(`\n  ~${(finalTokens / 1000).toFixed(1)}K tokens · ${toolCallCount} tool calls`)
   );
+
+  await registry.close();
 
   return { messages, toolCallCount };
 }
