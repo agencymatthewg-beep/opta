@@ -102,12 +102,42 @@ program
     await sessions(action, id, opts);
   });
 
-program
+const mcpCmd = program
   .command('mcp')
-  .description('Model Context Protocol tools (V2)')
-  .action(async () => {
-    const { mcp } = await import('./commands/mcp.js');
-    await mcp();
+  .description('Manage MCP (Model Context Protocol) servers');
+
+mcpCmd
+  .command('list')
+  .description('Show configured MCP servers')
+  .option('--json', 'machine-readable output')
+  .action(async (opts) => {
+    const { mcpList } = await import('./commands/mcp.js');
+    await mcpList(opts);
+  });
+
+mcpCmd
+  .command('add <name> <command>')
+  .description('Add a stdio MCP server')
+  .option('--env <pairs>', 'environment variables (KEY=VAL,KEY2=VAL2)')
+  .action(async (name: string, command: string, opts) => {
+    const { mcpAdd } = await import('./commands/mcp.js');
+    await mcpAdd(name, command, opts);
+  });
+
+mcpCmd
+  .command('remove <name>')
+  .description('Remove an MCP server')
+  .action(async (name: string) => {
+    const { mcpRemove } = await import('./commands/mcp.js');
+    await mcpRemove(name);
+  });
+
+mcpCmd
+  .command('test <name>')
+  .description('Test connection to an MCP server')
+  .action(async (name: string) => {
+    const { mcpTest } = await import('./commands/mcp.js');
+    await mcpTest(name);
   });
 
 program
