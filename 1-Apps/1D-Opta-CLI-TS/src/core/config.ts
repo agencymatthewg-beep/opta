@@ -50,8 +50,18 @@ export const OptaConfigSchema = z.object({
     }),
   safety: z
     .object({
-      maxToolCalls: z.number().default(30),
+      maxToolCalls: z.number().default(30), // backward compat
       compactAt: z.number().default(0.7),
+      circuitBreaker: z
+        .object({
+          warnAt: z.number().default(20),
+          pauseAt: z.number().default(40),
+          hardStopAt: z.number().default(100),
+          perToolLimit: z.number().default(0),
+          maxDuration: z.number().default(0),
+          silentBehavior: z.enum(['stop', 'warn-and-continue', 'error']).default('stop'),
+        })
+        .default({}),
     })
     .default({}),
   git: z

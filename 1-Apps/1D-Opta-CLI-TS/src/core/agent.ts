@@ -403,16 +403,24 @@ export async function agentLoop(
       }
     }
 
-    // 7. Circuit breaker
-    if (toolCallCount >= config.safety.maxToolCalls) {
-      if (silent) break; // Non-interactive — auto-stop
-      console.log(
-        '\n' + chalk.yellow(`Reached ${config.safety.maxToolCalls} tool calls. Pausing.`)
-      );
+    // 7. Progressive circuit breaker
+    const cb = config.safety.circuitBreaker;
+
+    if (cb.hardStopAt > 0 && toolCallCount >= cb.hardStopAt) {
+      if (!silent) console.log(chalk.red(`\n  Hard stop: ${cb.hardStopAt} tool calls reached.`));
+      break;
+    }
+
+    if (cb.pauseAt > 0 && toolCallCount >= cb.pauseAt && toolCallCount % cb.pauseAt === 0) {
+      if (silent) break;
+      console.log(chalk.yellow(`\n  Reached ${toolCallCount} tool calls. Pausing.`));
       const { confirm } = await import('@inquirer/prompts');
       const shouldContinue = await confirm({ message: 'Continue?' });
       if (!shouldContinue) break;
-      toolCallCount = 0;
+    }
+
+    if (cb.warnAt > 0 && toolCallCount === cb.warnAt && !silent) {
+      console.log(chalk.dim(`\n  Note: ${cb.warnAt} tool calls used (pauses at ${cb.pauseAt})`));
     }
   }
 
