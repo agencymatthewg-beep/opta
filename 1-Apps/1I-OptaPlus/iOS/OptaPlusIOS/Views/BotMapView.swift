@@ -67,6 +67,24 @@ struct BotMapView: View {
                     reloadAfterScan()
                 }
             }
+            .sheet(item: $selectedBot) { node in
+                BotDetailSheet(
+                    node: node,
+                    onConnect: {
+                        print("[BotMap] Connect requested for \(node.name) (\(node.id))")
+                    },
+                    onDisconnect: {
+                        print("[BotMap] Disconnect requested for \(node.name) (\(node.id))")
+                    },
+                    onForget: {
+                        store.removeBotNode(id: node.id)
+                        loadBots()
+                    }
+                )
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.hidden)
+                .presentationBackground(Color.optaElevated)
+            }
         }
     }
 
