@@ -65,3 +65,40 @@ describe('opta CLI', () => {
     expect(result.exitCode).toBe(0);
   });
 });
+
+describe('opta mcp', () => {
+  it('mcp list runs without error', async () => {
+    const result = await run(['mcp', 'list']);
+    expect(result.exitCode).toBe(0);
+  });
+
+  it('mcp shows help with subcommands', async () => {
+    const result = await run(['mcp', '--help']);
+    expect(result.stdout).toContain('list');
+    expect(result.stdout).toContain('add');
+    expect(result.stdout).toContain('remove');
+    expect(result.stdout).toContain('test');
+  });
+
+  it('mcp list accepts --json flag', async () => {
+    const result = await run(['mcp', 'list', '--json']);
+    expect(result.exitCode).toBe(0);
+  });
+
+  it('mcp add shows help with required args', async () => {
+    const result = await run(['mcp', 'add', '--help']);
+    expect(result.stdout).toContain('name');
+    expect(result.stdout).toContain('command');
+    expect(result.exitCode).toBe(0);
+  });
+
+  it('mcp remove shows help', async () => {
+    const result = await run(['mcp', 'remove', '--help']);
+    expect(result.exitCode).toBe(0);
+  });
+
+  it('mcp test shows help', async () => {
+    const result = await run(['mcp', 'test', '--help']);
+    expect(result.exitCode).toBe(0);
+  });
+});
