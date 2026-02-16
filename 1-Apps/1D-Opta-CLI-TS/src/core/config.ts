@@ -53,6 +53,16 @@ export const OptaConfigSchema = z.object({
       web_search: 'allow',
       web_fetch: 'allow',
       save_memory: 'allow',
+      bg_start: 'ask',
+      bg_status: 'allow',
+      bg_output: 'allow',
+      bg_kill: 'ask',
+      lsp_definition: 'allow',
+      lsp_references: 'allow',
+      lsp_hover: 'allow',
+      lsp_symbols: 'allow',
+      lsp_document_symbols: 'allow',
+      lsp_rename: 'ask',
     }),
   safety: z
     .object({
@@ -84,6 +94,63 @@ export const OptaConfigSchema = z.object({
   search: z
     .object({
       searxngUrl: z.string().default('http://192.168.188.10:8888'),
+    })
+    .default({}),
+  background: z
+    .object({
+      maxConcurrent: z.number().min(1).max(20).default(5),
+      defaultTimeout: z.number().min(0).default(300_000), // 5 min
+      maxBufferSize: z.number().min(1024).default(1_048_576), // 1MB per stream
+      killOnSessionEnd: z.boolean().default(true),
+    })
+    .default({}),
+  hooks: z
+    .array(
+      z.object({
+        event: z.enum([
+          'session.start',
+          'session.end',
+          'tool.pre',
+          'tool.post',
+          'compact',
+          'error',
+        ]),
+        command: z.string(),
+        matcher: z.string().optional(),
+        timeout: z.number().min(100).max(60000).optional(),
+        background: z.boolean().optional(),
+      }),
+    )
+    .default([]),
+  lsp: z
+    .object({
+      enabled: z.boolean().default(true),
+      servers: z
+        .record(
+          z.string(),
+          z.object({
+            command: z.string(),
+            args: z.array(z.string()).default([]),
+            initializationOptions: z.record(z.string(), z.unknown()).default({}),
+          })
+        )
+        .default({}),
+      timeout: z.number().default(10000),
+    })
+    .default({}),
+  subAgent: z
+    .object({
+      enabled: z.boolean().default(true),
+      maxDepth: z.number().default(2),
+      maxConcurrent: z.number().default(1),
+      defaultBudget: z
+        .object({
+          maxToolCalls: z.number().default(15),
+          maxTokens: z.number().default(8192),
+          timeoutMs: z.number().default(60_000),
+        })
+        .default({}),
+      inheritMode: z.boolean().default(true),
     })
     .default({}),
 });

@@ -5,6 +5,17 @@ import { debug } from './debug.js';
 import { maskOldObservations, COMPACTION_PROMPT } from './context.js';
 import { createSpinner } from '../ui/spinner.js';
 import { renderMarkdown } from '../ui/markdown.js';
+import type { SubAgentContext } from './subagent.js';
+import {
+  createHookManager,
+  fireSessionStart,
+  fireSessionEnd,
+  fireToolPre,
+  fireToolPost,
+  fireCompact,
+  fireError,
+  type SessionContext,
+} from '../hooks/integration.js';
 
 interface ToolCallAccum {
   id: string;
@@ -33,6 +44,7 @@ export interface AgentLoopOptions {
   silent?: boolean;
   mode?: string;
   imageBase64?: string;
+  subAgentContext?: SubAgentContext;
 }
 
 export interface AgentLoopResult {
@@ -266,13 +278,24 @@ export async function agentLoop(
   config: OptaConfig,
   options?: AgentLoopOptions
 ): Promise<AgentLoopResult> {
+  const isSubAgent = !!options?.subAgentContext;
+
+  // When running as a sub-agent, apply derived config overrides
+  let effectiveConfig: OptaConfig;
+  if (isSubAgent) {
+    const { deriveChildConfig } = await import('./subagent.js');
+    effectiveConfig = deriveChildConfig(config, options?.mode, options?.subAgentContext?.budget);
+  } else {
+    effectiveConfig = config;
+  }
+
   const { default: OpenAI } = await import('openai');
   const client = new OpenAI({
-    baseURL: `http://${config.connection.host}:${config.connection.port}/v1`,
+    baseURL: `http://${effectiveConfig.connection.host}:${effectiveConfig.connection.port}/v1`,
     apiKey: 'opta-lmx',
   });
 
-  const model = config.model.default;
+  const model = effectiveConfig.model.default;
   if (!model) {
     console.error(
       chalk.red('✗') +
@@ -294,21 +317,48 @@ export async function agentLoop(
       }
     : { role: 'user', content: task };
 
+  let systemPrompt: string;
+  if (isSubAgent) {
+    // Sub-agents get a lightweight prompt without OPIS/export map
+    const { buildSubAgentPrompt } = await import('./subagent.js');
+    const cwd = options?.subAgentContext?.parentCwd ?? process.cwd();
+    const maxToolCalls = options?.subAgentContext?.budget.maxToolCalls ?? 15;
+    systemPrompt = buildSubAgentPrompt(task, cwd, maxToolCalls);
+  } else {
+    systemPrompt = await buildSystemPrompt(effectiveConfig, undefined, options?.mode);
+  }
+
   const messages: AgentMessage[] = options?.existingMessages
     ? [...options.existingMessages, userMessage]
     : [
-        { role: 'system', content: await buildSystemPrompt(config, undefined, options?.mode) },
+        { role: 'system', content: systemPrompt },
         userMessage,
       ];
 
   let toolCallCount = 0;
-  const silent = options?.silent ?? false;
+  // Sub-agents are always silent
+  const silent = isSubAgent || (options?.silent ?? false);
   const spinner = silent ? { start: () => {}, stop: () => {}, succeed: () => {} } : await createSpinner();
   const sessionId = options?.sessionId ?? 'unknown';
   let checkpointCount = 0;
 
+  // Initialize background process manager
+  const { initProcessManager, shutdownProcessManager } = await import('./tools.js');
+  initProcessManager(effectiveConfig);
+
   const { buildToolRegistry } = await import('../mcp/registry.js');
-  const registry = await buildToolRegistry(config, options?.mode);
+  const registry = await buildToolRegistry(effectiveConfig, options?.mode);
+
+  // Initialize hook manager (no-op when no hooks configured)
+  const hooks = createHookManager(effectiveConfig);
+  const sessionCtx: SessionContext = {
+    sessionId,
+    cwd: process.cwd(),
+    model,
+  };
+  if (!isSubAgent) {
+    await fireSessionStart(hooks, sessionCtx);
+  }
 
   while (true) {
     // 0. Observation masking (free context savings)
@@ -318,14 +368,15 @@ export async function agentLoop(
 
     // 1. Context compaction
     const tokenEstimate = estimateTokens(messages);
-    const threshold = config.model.contextLimit * config.safety.compactAt;
+    const threshold = effectiveConfig.model.contextLimit * effectiveConfig.safety.compactAt;
     if (tokenEstimate > threshold) {
       debug(`Token estimate ${tokenEstimate} exceeds threshold ${threshold}`);
       spinner.start('Compacting conversation history...');
-      const compacted = await compactHistory(messages, client, model, config.model.contextLimit);
+      const compacted = await compactHistory(messages, client, model, effectiveConfig.model.contextLimit);
       messages.length = 0;
       messages.push(...compacted);
       spinner.succeed('Context compacted');
+      await fireCompact(hooks, sessionCtx);
     }
 
     // 2. Call Opta LMX
@@ -378,7 +429,7 @@ export async function agentLoop(
 
     // 6. Execute each tool call with permission checks
     for (const call of toolCalls) {
-      const permission = resolvePermission(call.name, config);
+      const permission = resolvePermission(call.name, effectiveConfig);
 
       if (permission === 'deny') {
         messages.push({
@@ -391,6 +442,16 @@ export async function agentLoop(
       }
 
       if (permission === 'ask') {
+        // Sub-agents cannot prompt users — deny silently
+        if (isSubAgent) {
+          messages.push({
+            role: 'tool',
+            content: 'Permission denied (sub-agent cannot prompt user).',
+            tool_call_id: call.id,
+          });
+          continue;
+        }
+
         let args: Record<string, unknown>;
         try {
           args = JSON.parse(call.args);
@@ -409,10 +470,25 @@ export async function agentLoop(
         }
       }
 
+      // Fire pre-tool hook (can cancel execution)
+      const preResult = await fireToolPre(hooks, call.name, call.args, sessionCtx);
+      if (preResult.cancelled) {
+        messages.push({
+          role: 'tool',
+          content: `Tool blocked by hook: ${preResult.reason ?? 'no reason given'}`,
+          tool_call_id: call.id,
+        });
+        if (!silent) console.log(chalk.dim(`  ✗ ${call.name} — blocked by hook`));
+        continue;
+      }
+
       // Execute the tool
       spinner.start(`${call.name}...`);
       const result = await registry.execute(call.name, call.args);
       spinner.succeed(`${call.name}`);
+
+      // Fire post-tool hook
+      await fireToolPost(hooks, call.name, call.args, result, sessionCtx);
 
       messages.push({
         role: 'tool',
@@ -423,8 +499,8 @@ export async function agentLoop(
       toolCallCount++;
       debug(`Tool call #${toolCallCount}: ${call.name} → ${result.slice(0, 100)}`);
 
-      // Create checkpoint for file-modifying tools
-      if (config.git.checkpoints && (call.name === 'edit_file' || call.name === 'write_file')) {
+      // Create checkpoint for file-modifying tools (skip for sub-agents)
+      if (!isSubAgent && effectiveConfig.git.checkpoints && (call.name === 'edit_file' || call.name === 'write_file')) {
         try {
           const { isGitRepo } = await import('../git/utils.js');
           if (await isGitRepo(process.cwd())) {
@@ -445,7 +521,7 @@ export async function agentLoop(
     }
 
     // 7. Progressive circuit breaker
-    const cb = config.safety.circuitBreaker;
+    const cb = effectiveConfig.safety.circuitBreaker;
 
     if (cb.hardStopAt > 0 && toolCallCount >= cb.hardStopAt) {
       if (!silent) console.log(chalk.red(`\n  Hard stop: ${cb.hardStopAt} tool calls reached.`));
@@ -465,8 +541,8 @@ export async function agentLoop(
     }
   }
 
-  // Auto-commit if enabled and tools were used
-  if (config.git.autoCommit && toolCallCount > 0 && options?.sessionId) {
+  // Auto-commit if enabled and tools were used (skip for sub-agents)
+  if (!isSubAgent && effectiveConfig.git.autoCommit && toolCallCount > 0 && options?.sessionId) {
     try {
       const { isGitRepo, getModifiedFiles } = await import('../git/utils.js');
       if (await isGitRepo(process.cwd())) {
@@ -496,6 +572,14 @@ export async function agentLoop(
   }
 
   await registry.close();
+
+  // Shutdown background processes
+  shutdownProcessManager();
+
+  // Fire session end hook
+  if (!isSubAgent) {
+    await fireSessionEnd(hooks, sessionCtx);
+  }
 
   return { messages, toolCallCount };
 }

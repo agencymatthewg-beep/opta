@@ -109,3 +109,63 @@ describe('MCP config schema', () => {
     ).toThrow();
   });
 });
+
+describe('hooks config schema', () => {
+  it('parses hooks from config', () => {
+    const c = OptaConfigSchema.parse({
+      hooks: [{ event: 'tool.pre', command: 'echo hi', matcher: 'edit_file' }],
+    });
+    expect(c.hooks).toHaveLength(1);
+    expect(c.hooks[0]!.event).toBe('tool.pre');
+    expect(c.hooks[0]!.command).toBe('echo hi');
+    expect(c.hooks[0]!.matcher).toBe('edit_file');
+  });
+
+  it('rejects invalid event name', () => {
+    expect(() =>
+      OptaConfigSchema.parse({
+        hooks: [{ event: 'invalid', command: 'x' }],
+      })
+    ).toThrow();
+  });
+
+  it('defaults to empty array', () => {
+    expect(OptaConfigSchema.parse({}).hooks).toEqual([]);
+  });
+
+  it('accepts all valid event types', () => {
+    const events = ['session.start', 'session.end', 'tool.pre', 'tool.post', 'compact', 'error'];
+    const hooks = events.map((event) => ({ event, command: 'echo test' }));
+    const c = OptaConfigSchema.parse({ hooks });
+    expect(c.hooks).toHaveLength(6);
+  });
+
+  it('validates timeout constraints', () => {
+    // Valid timeout
+    const c = OptaConfigSchema.parse({
+      hooks: [{ event: 'tool.pre', command: 'echo hi', timeout: 5000 }],
+    });
+    expect(c.hooks[0]!.timeout).toBe(5000);
+
+    // Too low
+    expect(() =>
+      OptaConfigSchema.parse({
+        hooks: [{ event: 'tool.pre', command: 'echo hi', timeout: 50 }],
+      })
+    ).toThrow();
+
+    // Too high
+    expect(() =>
+      OptaConfigSchema.parse({
+        hooks: [{ event: 'tool.pre', command: 'echo hi', timeout: 100000 }],
+      })
+    ).toThrow();
+  });
+
+  it('accepts background flag', () => {
+    const c = OptaConfigSchema.parse({
+      hooks: [{ event: 'session.end', command: 'git commit', background: true }],
+    });
+    expect(c.hooks[0]!.background).toBe(true);
+  });
+});

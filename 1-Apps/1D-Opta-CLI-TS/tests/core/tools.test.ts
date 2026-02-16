@@ -18,8 +18,8 @@ afterEach(async () => {
 });
 
 describe('tool schemas', () => {
-  it('defines exactly 14 tools', () => {
-    expect(TOOL_SCHEMAS).toHaveLength(14);
+  it('defines exactly 24 tools', () => {
+    expect(TOOL_SCHEMAS).toHaveLength(24);
   });
 
   it('has all expected tool names', () => {
@@ -38,6 +38,32 @@ describe('tool schemas', () => {
     expect(names).toContain('delete_file');
     expect(names).toContain('multi_edit');
     expect(names).toContain('save_memory');
+    expect(names).toContain('bg_start');
+    expect(names).toContain('bg_status');
+    expect(names).toContain('bg_output');
+    expect(names).toContain('bg_kill');
+  });
+
+  it('has all 6 LSP tool names', () => {
+    const names = getToolNames();
+    expect(names).toContain('lsp_definition');
+    expect(names).toContain('lsp_references');
+    expect(names).toContain('lsp_hover');
+    expect(names).toContain('lsp_symbols');
+    expect(names).toContain('lsp_document_symbols');
+    expect(names).toContain('lsp_rename');
+  });
+
+  it('LSP read tools have allow permission by default', () => {
+    expect(resolvePermission('lsp_definition', DEFAULT_CONFIG)).toBe('allow');
+    expect(resolvePermission('lsp_references', DEFAULT_CONFIG)).toBe('allow');
+    expect(resolvePermission('lsp_hover', DEFAULT_CONFIG)).toBe('allow');
+    expect(resolvePermission('lsp_symbols', DEFAULT_CONFIG)).toBe('allow');
+    expect(resolvePermission('lsp_document_symbols', DEFAULT_CONFIG)).toBe('allow');
+  });
+
+  it('lsp_rename requires ask permission', () => {
+    expect(resolvePermission('lsp_rename', DEFAULT_CONFIG)).toBe('ask');
   });
 
   it('each schema has type, function.name, function.parameters', () => {
@@ -366,6 +392,81 @@ describe('save_memory', () => {
     } finally {
       process.chdir(originalCwd);
     }
+  });
+});
+
+describe('bg_start', () => {
+  it('starts a background process', async () => {
+    const result = await executeTool('bg_start', JSON.stringify({ command: 'echo bg-test' }));
+    expect(result).toContain('Process started');
+    expect(result).toMatch(/id=[a-zA-Z0-9_-]{8}/);
+  });
+
+  it('includes label when provided', async () => {
+    const result = await executeTool('bg_start', JSON.stringify({ command: 'echo test', label: 'my-test' }));
+    expect(result).toContain('Process started');
+    // Cleanup
+    const id = result.match(/id=([a-zA-Z0-9_-]{8})/)?.[1];
+    if (id) await executeTool('bg_kill', JSON.stringify({ id }));
+  });
+});
+
+describe('bg_status', () => {
+  it('returns status of a running process', async () => {
+    const startResult = await executeTool('bg_start', JSON.stringify({ command: 'sleep 5' }));
+    const id = startResult.match(/id=([a-zA-Z0-9_-]{8})/)?.[1];
+    const statusResult = await executeTool('bg_status', JSON.stringify({ id }));
+    expect(statusResult).toContain('running');
+    // Cleanup
+    await executeTool('bg_kill', JSON.stringify({ id }));
+  });
+
+  it('lists all processes when no id given', async () => {
+    await executeTool('bg_start', JSON.stringify({ command: 'sleep 5', label: 'first' }));
+    await executeTool('bg_start', JSON.stringify({ command: 'sleep 5', label: 'second' }));
+    const result = await executeTool('bg_status', JSON.stringify({}));
+    expect(result).toContain('first');
+    expect(result).toContain('second');
+  });
+
+  it('returns message when no processes', async () => {
+    // Force shutdown to clear any lingering processes
+    const { shutdownProcessManager } = await import('../../src/core/tools.js');
+    shutdownProcessManager();
+    const result = await executeTool('bg_status', JSON.stringify({}));
+    expect(result).toContain('No background processes');
+  });
+});
+
+describe('bg_output', () => {
+  it('returns stdout from completed process', async () => {
+    const startResult = await executeTool('bg_start', JSON.stringify({ command: 'echo bg-output-test' }));
+    const id = startResult.match(/id=([a-zA-Z0-9_-]{8})/)?.[1];
+    await new Promise((r) => setTimeout(r, 200));
+    const outputResult = await executeTool('bg_output', JSON.stringify({ id }));
+    expect(outputResult).toContain('bg-output-test');
+  });
+
+  it('returns error for unknown process', async () => {
+    const result = await executeTool('bg_output', JSON.stringify({ id: 'nonexist' }));
+    expect(result).toContain('Error:');
+  });
+});
+
+describe('bg_kill', () => {
+  it('kills a running process', async () => {
+    const startResult = await executeTool('bg_start', JSON.stringify({ command: 'sleep 30' }));
+    const id = startResult.match(/id=([a-zA-Z0-9_-]{8})/)?.[1];
+    const killResult = await executeTool('bg_kill', JSON.stringify({ id }));
+    expect(killResult).toContain('killed');
+  });
+
+  it('reports already-dead process', async () => {
+    const startResult = await executeTool('bg_start', JSON.stringify({ command: 'echo done' }));
+    const id = startResult.match(/id=([a-zA-Z0-9_-]{8})/)?.[1];
+    await new Promise((r) => setTimeout(r, 200));
+    const killResult = await executeTool('bg_kill', JSON.stringify({ id }));
+    expect(killResult).toContain('already');
   });
 });
 

@@ -37,4 +37,32 @@ describe('permission modes', () => {
     });
     expect(resolvePermission('run_command', config)).toBe('deny');
   });
+
+  it('bg_start defaults to ask in safe mode', () => {
+    const config = OptaConfigSchema.parse({ defaultMode: 'safe' });
+    expect(resolvePermission('bg_start', config)).toBe('ask');
+    expect(resolvePermission('bg_status', config)).toBe('allow');
+    expect(resolvePermission('bg_output', config)).toBe('allow');
+    expect(resolvePermission('bg_kill', config)).toBe('ask');
+  });
+
+  it('bg_start and bg_kill allowed in auto mode', () => {
+    const config = OptaConfigSchema.parse({ defaultMode: 'auto' });
+    expect(resolvePermission('bg_start', config)).toBe('allow');
+    expect(resolvePermission('bg_kill', config)).toBe('allow');
+  });
+
+  it('bg_start and bg_kill denied in plan mode', () => {
+    const config = OptaConfigSchema.parse({ defaultMode: 'plan' });
+    expect(resolvePermission('bg_start', config)).toBe('deny');
+    expect(resolvePermission('bg_kill', config)).toBe('deny');
+    expect(resolvePermission('bg_status', config)).toBe('allow');
+    expect(resolvePermission('bg_output', config)).toBe('allow');
+  });
+
+  it('bg_start and bg_kill denied in ci mode', () => {
+    const config = OptaConfigSchema.parse({ defaultMode: 'ci' });
+    expect(resolvePermission('bg_start', config)).toBe('deny');
+    expect(resolvePermission('bg_kill', config)).toBe('deny');
+  });
 });

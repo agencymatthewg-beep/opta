@@ -233,16 +233,261 @@ export const TOOL_SCHEMAS = [
       },
     },
   },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'bg_start',
+      description: 'Start a shell command in the background. Returns a process ID for tracking. Use for long-running commands (tests, builds, dev servers).',
+      parameters: {
+        type: 'object',
+        properties: {
+          command: { type: 'string', description: 'Shell command to execute' },
+          timeout: {
+            type: 'number',
+            description: 'Timeout in ms (default: 300000 = 5 min, 0 = no timeout)',
+          },
+          label: {
+            type: 'string',
+            description: 'Human-readable label (e.g. "test suite", "dev server")',
+          },
+        },
+        required: ['command'],
+      },
+    },
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'bg_status',
+      description: 'Check the status of one or all background processes. Returns state, PID, runtime, exit code.',
+      parameters: {
+        type: 'object',
+        properties: {
+          id: {
+            type: 'string',
+            description: 'Process ID from bg_start. Omit to list all processes.',
+          },
+        },
+        required: [],
+      },
+    },
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'bg_output',
+      description: 'Get stdout/stderr from a background process. Defaults to new output since last read.',
+      parameters: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', description: 'Process ID from bg_start' },
+          lines: {
+            type: 'number',
+            description: 'Number of lines to return from the end (default: 50)',
+          },
+          stream: {
+            type: 'string',
+            enum: ['stdout', 'stderr', 'both'],
+            description: 'Which output stream (default: both)',
+          },
+          since_last_read: {
+            type: 'boolean',
+            description: 'Only return output since last bg_output call (default: true)',
+          },
+        },
+        required: ['id'],
+      },
+    },
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'bg_kill',
+      description: 'Terminate a background process. Sends SIGTERM, then SIGKILL after 5s if still running.',
+      parameters: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', description: 'Process ID to kill' },
+          signal: {
+            type: 'string',
+            enum: ['SIGTERM', 'SIGKILL', 'SIGINT'],
+            description: 'Signal to send (default: SIGTERM)',
+          },
+        },
+        required: ['id'],
+      },
+    },
+  },
+  // --- LSP Tools ---
+  {
+    type: 'function' as const,
+    function: {
+      name: 'lsp_definition',
+      description: 'Go to the definition of a symbol. Returns file path and line number.',
+      parameters: {
+        type: 'object',
+        properties: {
+          path: { type: 'string', description: 'File path (relative to cwd)' },
+          line: { type: 'number', description: 'Line number (1-based)' },
+          character: { type: 'number', description: 'Column number (0-based)' },
+        },
+        required: ['path', 'line', 'character'],
+      },
+    },
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'lsp_references',
+      description: 'Find all references to a symbol across the workspace.',
+      parameters: {
+        type: 'object',
+        properties: {
+          path: { type: 'string', description: 'File path (relative to cwd)' },
+          line: { type: 'number', description: 'Line number (1-based)' },
+          character: { type: 'number', description: 'Column number (0-based)' },
+          include_declaration: { type: 'boolean', description: 'Include the declaration itself (default: true)' },
+        },
+        required: ['path', 'line', 'character'],
+      },
+    },
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'lsp_hover',
+      description: 'Get type information and documentation for a symbol at a position.',
+      parameters: {
+        type: 'object',
+        properties: {
+          path: { type: 'string', description: 'File path (relative to cwd)' },
+          line: { type: 'number', description: 'Line number (1-based)' },
+          character: { type: 'number', description: 'Column number (0-based)' },
+        },
+        required: ['path', 'line', 'character'],
+      },
+    },
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'lsp_symbols',
+      description: 'Search for symbols (functions, classes, variables) across the workspace by name.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Symbol name or partial name to search for' },
+        },
+        required: ['query'],
+      },
+    },
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'lsp_document_symbols',
+      description: 'List all symbols (functions, classes, interfaces) defined in a file.',
+      parameters: {
+        type: 'object',
+        properties: {
+          path: { type: 'string', description: 'File path (relative to cwd)' },
+        },
+        required: ['path'],
+      },
+    },
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'lsp_rename',
+      description: 'Rename a symbol across all files in the workspace. Returns a list of edits to apply.',
+      parameters: {
+        type: 'object',
+        properties: {
+          path: { type: 'string', description: 'File path (relative to cwd)' },
+          line: { type: 'number', description: 'Line number (1-based)' },
+          character: { type: 'number', description: 'Column number (0-based)' },
+          new_name: { type: 'string', description: 'New name for the symbol' },
+        },
+        required: ['path', 'line', 'character', 'new_name'],
+      },
+    },
+  },
+];
+
+// --- Sub-Agent Tool Schemas (conditionally included by registry) ---
+
+export const SUB_AGENT_TOOL_SCHEMAS = [
+  {
+    type: 'function' as const,
+    function: {
+      name: 'spawn_agent',
+      description: 'Spawn a sub-agent to perform a focused task independently. The sub-agent has its own context window and returns a result summary. Use for: parallel investigation, focused code search, isolated analysis. Do NOT use for trivial tasks a single tool call can handle.',
+      parameters: {
+        type: 'object',
+        properties: {
+          task: {
+            type: 'string',
+            description: 'Clear task description for the sub-agent. Be specific about what files to look at and what to report back.',
+          },
+          scope: {
+            type: 'string',
+            description: 'Optional: directory or file path to focus on (relative to cwd)',
+          },
+          max_tool_calls: {
+            type: 'number',
+            description: 'Max tool calls the sub-agent can make (default: 15)',
+          },
+          mode: {
+            type: 'string',
+            enum: ['plan', 'auto'],
+            description: 'Permission mode for sub-agent. "plan" = read-only, "auto" = can edit files.',
+          },
+        },
+        required: ['task'],
+      },
+    },
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'delegate_task',
+      description: 'Break a complex task into sub-tasks and run them sequentially. Each sub-task spawns a sub-agent. Results are aggregated into a single report. Use for multi-step investigations or when exploring multiple areas of the codebase.',
+      parameters: {
+        type: 'object',
+        properties: {
+          plan: {
+            type: 'string',
+            description: 'High-level description of the overall goal',
+          },
+          subtasks: {
+            type: 'array',
+            description: 'Ordered list of sub-tasks to execute',
+            items: {
+              type: 'object',
+              properties: {
+                task: { type: 'string', description: 'Task description' },
+                scope: { type: 'string', description: 'Focus directory/file' },
+                depends_on: { type: 'number', description: 'Index of prerequisite sub-task (0-based)' },
+              },
+              required: ['task'],
+            },
+          },
+        },
+        required: ['plan', 'subtasks'],
+      },
+    },
+  },
 ];
 
 // --- Permission Resolution ---
 
 const MODE_PERMISSIONS: Record<string, Record<string, 'allow' | 'ask' | 'deny'>> = {
   safe: {},
-  auto: { edit_file: 'allow', write_file: 'allow', delete_file: 'allow', multi_edit: 'allow' },
-  plan: { edit_file: 'deny', write_file: 'deny', delete_file: 'deny', multi_edit: 'deny', run_command: 'deny' },
-  dangerous: { edit_file: 'allow', write_file: 'allow', delete_file: 'allow', multi_edit: 'allow', run_command: 'allow' },
-  ci: { edit_file: 'deny', write_file: 'deny', delete_file: 'deny', multi_edit: 'deny', run_command: 'deny', ask_user: 'deny' },
+  auto: { edit_file: 'allow', write_file: 'allow', delete_file: 'allow', multi_edit: 'allow', bg_start: 'allow', bg_kill: 'allow', spawn_agent: 'allow', delegate_task: 'allow' },
+  plan: { edit_file: 'deny', write_file: 'deny', delete_file: 'deny', multi_edit: 'deny', run_command: 'deny', bg_start: 'deny', bg_kill: 'deny', spawn_agent: 'deny', delegate_task: 'deny' },
+  dangerous: { edit_file: 'allow', write_file: 'allow', delete_file: 'allow', multi_edit: 'allow', run_command: 'allow', bg_start: 'allow', bg_kill: 'allow', spawn_agent: 'allow', delegate_task: 'allow' },
+  ci: { edit_file: 'deny', write_file: 'deny', delete_file: 'deny', multi_edit: 'deny', run_command: 'deny', ask_user: 'deny', bg_start: 'deny', bg_kill: 'deny', spawn_agent: 'deny', delegate_task: 'deny' },
 };
 
 const DEFAULT_TOOL_PERMISSIONS: Record<string, string> = {
@@ -260,6 +505,18 @@ const DEFAULT_TOOL_PERMISSIONS: Record<string, string> = {
   delete_file: 'ask',
   multi_edit: 'ask',
   save_memory: 'allow',
+  bg_start: 'ask',
+  bg_status: 'allow',
+  bg_output: 'allow',
+  bg_kill: 'ask',
+  spawn_agent: 'ask',
+  delegate_task: 'ask',
+  lsp_definition: 'allow',
+  lsp_references: 'allow',
+  lsp_hover: 'allow',
+  lsp_symbols: 'allow',
+  lsp_document_symbols: 'allow',
+  lsp_rename: 'ask',
 };
 
 export function resolvePermission(
@@ -330,6 +587,14 @@ export async function executeTool(
         return await execMultiEdit(args);
       case 'save_memory':
         return await execSaveMemory(args);
+      case 'bg_start':
+        return await execBgStart(args);
+      case 'bg_status':
+        return await execBgStatus(args);
+      case 'bg_output':
+        return await execBgOutput(args);
+      case 'bg_kill':
+        return await execBgKill(args);
       default:
         return `Error: Unknown tool "${name}"`;
     }
@@ -646,6 +911,102 @@ async function execSaveMemory(args: Record<string, unknown>): Promise<string> {
   await writeFile(memoryPath, existing + entry, 'utf-8');
 
   return `Memory saved to .opta/memory.md (${category})`;
+}
+
+// --- Background Process Management ---
+
+import { ProcessManager, type ProcessStatus } from './background.js';
+
+let _processManager: ProcessManager | null = null;
+
+function getProcessManager(): ProcessManager {
+  if (!_processManager) {
+    // Use defaults; config-driven values set via initProcessManager()
+    _processManager = new ProcessManager({
+      maxConcurrent: 5,
+      defaultTimeout: 300_000,
+      maxBufferSize: 1_048_576,
+    });
+  }
+  return _processManager;
+}
+
+export function initProcessManager(config: OptaConfig): void {
+  const bg = (config as Record<string, unknown>).background as
+    | { maxConcurrent?: number; defaultTimeout?: number; maxBufferSize?: number }
+    | undefined;
+  _processManager = new ProcessManager({
+    maxConcurrent: bg?.maxConcurrent ?? 5,
+    defaultTimeout: bg?.defaultTimeout ?? 300_000,
+    maxBufferSize: bg?.maxBufferSize ?? 1_048_576,
+  });
+}
+
+export function shutdownProcessManager(): void {
+  _processManager?.cleanup();
+  _processManager = null;
+}
+
+async function execBgStart(args: Record<string, unknown>): Promise<string> {
+  const command = String(args['command'] ?? '');
+  const timeout = args['timeout'] !== undefined ? Number(args['timeout']) : undefined;
+  const label = args['label'] ? String(args['label']) : undefined;
+
+  const pm = getProcessManager();
+  const handle = await pm.start(command, { timeout, label });
+  return `Process started: id=${handle.id} pid=${handle.pid} cmd="${command}"`;
+}
+
+async function execBgStatus(args: Record<string, unknown>): Promise<string> {
+  const id = args['id'] ? String(args['id']) : undefined;
+  const pm = getProcessManager();
+
+  if (!id) {
+    const all = pm.status() as ProcessStatus[];
+    if (all.length === 0) return 'No background processes.';
+    return all
+      .map(
+        (s) =>
+          `id=${s.id} state=${s.state} pid=${s.pid} runtime=${(s.runtimeMs / 1000).toFixed(1)}s${s.label ? ` label="${s.label}"` : ''} cmd="${s.command}"`
+      )
+      .join('\n');
+  }
+
+  const s = pm.status(id) as ProcessStatus;
+  return `id=${s.id} state=${s.state} pid=${s.pid} exit=${s.exitCode ?? 'n/a'} runtime=${(s.runtimeMs / 1000).toFixed(1)}s${s.label ? ` label="${s.label}"` : ''} cmd="${s.command}"`;
+}
+
+async function execBgOutput(args: Record<string, unknown>): Promise<string> {
+  const id = String(args['id'] ?? '');
+  const lines = args['lines'] !== undefined ? Number(args['lines']) : undefined;
+  const stream = args['stream'] as 'stdout' | 'stderr' | 'both' | undefined;
+  const sinceLastRead = args['since_last_read'] !== undefined ? Boolean(args['since_last_read']) : true;
+
+  const pm = getProcessManager();
+  const output = pm.output(id, { lines, stream, sinceLastRead });
+
+  let result = '';
+  if (output.stdout) result += `[stdout]\n${output.stdout}\n`;
+  if (output.stderr) result += `[stderr]\n${output.stderr}\n`;
+  if (!output.stdout && !output.stderr) result = '(no new output)';
+  if (output.truncated) result += '[truncated]\n';
+
+  return result;
+}
+
+async function execBgKill(args: Record<string, unknown>): Promise<string> {
+  const id = String(args['id'] ?? '');
+  const signal = (args['signal'] as NodeJS.Signals) ?? 'SIGTERM';
+
+  const pm = getProcessManager();
+  const s = pm.status(id) as ProcessStatus;
+  const killed = await pm.kill(id, signal);
+
+  if (!killed) {
+    return `Process ${id} is already ${s.state} (not running).`;
+  }
+
+  return `Process ${id} killed (was running for ${(s.runtimeMs / 1000).toFixed(1)}s)`;
 }
 
 // --- Utility ---
