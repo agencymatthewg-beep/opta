@@ -56,6 +56,14 @@ describe('opta CLI', () => {
     expect(result.stdout).toContain('--resume');
     expect(result.stdout).toContain('--plan');
     expect(result.stdout).toContain('--model');
+    expect(result.stdout).toContain('--format');
+    expect(result.exitCode).toBe(0);
+  });
+
+  it('do command accepts --format flag', async () => {
+    const result = await run(['do', '--help']);
+    expect(result.stdout).toContain('--format');
+    expect(result.stdout).toContain('json');
     expect(result.exitCode).toBe(0);
   });
 

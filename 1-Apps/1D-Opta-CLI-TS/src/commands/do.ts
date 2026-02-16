@@ -7,6 +7,7 @@ interface DoOptions {
   model?: string;
   commit?: boolean;
   checkpoints?: boolean;
+  format?: string;
 }
 
 export async function executeTask(task: string[], opts: DoOptions): Promise<void> {
@@ -30,22 +31,41 @@ export async function executeTask(task: string[], opts: DoOptions): Promise<void
     overrides['git'] = { ...((overrides['git'] as Record<string, unknown>) ?? {}), checkpoints: false };
   }
 
+  const jsonMode = opts.format === 'json';
+
   try {
     const config = await loadConfig(overrides);
 
     if (!config.model.default) {
-      console.error(
-        chalk.red('✗') + ' No model configured\n\n' +
-        chalk.dim('Run ') + chalk.cyan('opta status') + chalk.dim(' to check your LMX connection')
-      );
+      if (jsonMode) {
+        console.log(JSON.stringify({ error: 'No model configured' }));
+      } else {
+        console.error(
+          chalk.red('✗') + ' No model configured\n\n' +
+          chalk.dim('Run ') + chalk.cyan('opta status') + chalk.dim(' to check your LMX connection')
+        );
+      }
       process.exit(EXIT.NO_CONNECTION);
     }
 
-    console.log(
-      chalk.dim(`opta · ${config.model.default} · ${config.connection.host}`)
-    );
+    if (!jsonMode) {
+      console.log(
+        chalk.dim(`opta · ${config.model.default} · ${config.connection.host}`)
+      );
+    }
 
-    await agentLoop(taskStr, config);
+    const result = await agentLoop(taskStr, config, { silent: jsonMode });
+
+    if (jsonMode) {
+      // Extract final assistant message
+      const assistantMsgs = result.messages.filter((m) => m.role === 'assistant');
+      const finalMsg = assistantMsgs[assistantMsgs.length - 1];
+      console.log(JSON.stringify({
+        result: finalMsg?.content ?? '',
+        tool_calls: result.toolCallCount,
+        model: config.model.default,
+      }));
+    }
   } catch (err) {
     if (err instanceof OptaError) {
       console.error(formatError(err));

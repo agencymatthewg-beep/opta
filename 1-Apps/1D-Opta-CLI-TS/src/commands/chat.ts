@@ -17,6 +17,7 @@ interface ChatOptions {
   model?: string;
   commit?: boolean;
   checkpoints?: boolean;
+  format?: string;
 }
 
 export async function startChat(opts: ChatOptions): Promise<void> {
@@ -31,6 +32,7 @@ export async function startChat(opts: ChatOptions): Promise<void> {
     overrides['git'] = { ...((overrides['git'] as Record<string, unknown>) ?? {}), checkpoints: false };
   }
 
+  const jsonMode = opts.format === 'json';
   let config = await loadConfig(overrides);
 
   if (!config.model.default) {
@@ -49,14 +51,16 @@ export async function startChat(opts: ChatOptions): Promise<void> {
   if (opts.resume) {
     try {
       session = await loadSession(opts.resume);
-      console.log(
-        chalk.dim(
-          `opta · ${session.model} · ${config.connection.host}:${config.connection.port}`
-        )
-      );
-      console.log(chalk.dim(`Session: ${session.id} (resumed)`));
-      if (session.title) {
-        console.log(chalk.dim(`  "${session.title}"`));
+      if (!jsonMode) {
+        console.log(
+          chalk.dim(
+            `opta · ${session.model} · ${config.connection.host}:${config.connection.port}`
+          )
+        );
+        console.log(chalk.dim(`Session: ${session.id} (resumed)`));
+        if (session.title) {
+          console.log(chalk.dim(`  "${session.title}"`));
+        }
       }
     } catch {
       console.error(
@@ -72,17 +76,21 @@ export async function startChat(opts: ChatOptions): Promise<void> {
     session.messages = [{ role: 'system', content: systemPrompt }];
     await saveSession(session);
 
-    console.log(
-      chalk.dim(
-        `opta · ${config.model.default} · ${config.connection.host}:${config.connection.port}`
-      )
-    );
-    console.log(chalk.dim(`Session: ${session.id} (new)`));
+    if (!jsonMode) {
+      console.log(
+        chalk.dim(
+          `opta · ${config.model.default} · ${config.connection.host}:${config.connection.port}`
+        )
+      );
+      console.log(chalk.dim(`Session: ${session.id} (new)`));
+    }
   }
 
-  console.log(
-    chalk.dim('Type /help for commands, /exit to quit\n')
-  );
+  if (!jsonMode) {
+    console.log(
+      chalk.dim('Type /help for commands, /exit to quit\n')
+    );
+  }
 
   // REPL loop
   const { input } = await import('@inquirer/prompts');
@@ -94,7 +102,7 @@ export async function startChat(opts: ChatOptions): Promise<void> {
     } catch {
       // Ctrl+C or EOF
       await saveSession(session);
-      console.log(chalk.dim(`\nSession saved: ${session.id}`));
+      if (!jsonMode) console.log(chalk.dim(`\nSession saved: ${session.id}`));
       break;
     }
 
@@ -105,10 +113,12 @@ export async function startChat(opts: ChatOptions): Promise<void> {
       const handled = await handleSlashCommand(userInput, session, config);
       if (handled === 'exit') {
         await saveSession(session);
-        console.log(
-          chalk.dim(`Session saved: ${session.id}`) +
-            (session.title ? chalk.dim(` "${session.title}"`) : '')
-        );
+        if (!jsonMode) {
+          console.log(
+            chalk.dim(`Session saved: ${session.id}`) +
+              (session.title ? chalk.dim(` "${session.title}"`) : '')
+          );
+        }
         break;
       }
       if (handled === 'model-switched') {
@@ -127,11 +137,22 @@ export async function startChat(opts: ChatOptions): Promise<void> {
       const result = await agentLoop(userInput, config, {
         existingMessages: session.messages,
         sessionId: session.id,
+        silent: jsonMode,
       });
 
       session.messages = result.messages;
       session.toolCallCount += result.toolCallCount;
       await saveSession(session);
+
+      if (jsonMode) {
+        const assistantMsgs = result.messages.filter((m: AgentMessage) => m.role === 'assistant');
+        const lastMsg = assistantMsgs[assistantMsgs.length - 1];
+        console.log(JSON.stringify({
+          role: 'assistant',
+          content: lastMsg?.content ?? '',
+          tool_calls: lastMsg?.tool_calls ?? [],
+        }));
+      }
     } catch (err) {
       if (err instanceof OptaError) {
         console.error(formatError(err));

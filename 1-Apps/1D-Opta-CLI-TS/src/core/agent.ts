@@ -25,6 +25,7 @@ export interface AgentMessage {
 export interface AgentLoopOptions {
   existingMessages?: AgentMessage[];
   sessionId?: string;
+  silent?: boolean;
 }
 
 export interface AgentLoopResult {
@@ -257,7 +258,8 @@ export async function agentLoop(
       ];
 
   let toolCallCount = 0;
-  const spinner = await createSpinner();
+  const silent = options?.silent ?? false;
+  const spinner = silent ? { start: () => {}, stop: () => {}, succeed: () => {} } : await createSpinner();
   const sessionId = options?.sessionId ?? 'unknown';
   let checkpointCount = 0;
 
@@ -294,6 +296,7 @@ export async function agentLoop(
     // 3. Stream tokens to terminal, collect tool calls
     let firstText = true;
     const { text, toolCalls } = await collectStream(stream, (chunk) => {
+      if (silent) return;
       if (firstText) {
         console.log(); // blank line before response
         firstText = false;
@@ -301,13 +304,13 @@ export async function agentLoop(
       process.stdout.write(chunk);
     });
 
-    if (text && !firstText) {
+    if (!silent && text && !firstText) {
       process.stdout.write('\n'); // newline after streamed text
     }
 
     // 4. No tool calls = task complete
     if (toolCalls.length === 0) {
-      if (text) {
+      if (!silent && text) {
         await renderMarkdown(text);
       }
       break;
@@ -334,7 +337,7 @@ export async function agentLoop(
           content: 'Permission denied by configuration.',
           tool_call_id: call.id,
         });
-        console.log(chalk.dim(`  ✗ ${call.name} — denied`));
+        if (!silent) console.log(chalk.dim(`  ✗ ${call.name} — denied`));
         continue;
       }
 
@@ -394,6 +397,7 @@ export async function agentLoop(
 
     // 7. Circuit breaker
     if (toolCallCount >= config.safety.maxToolCalls) {
+      if (silent) break; // Non-interactive — auto-stop
       console.log(
         '\n' + chalk.yellow(`Reached ${config.safety.maxToolCalls} tool calls. Pausing.`)
       );
@@ -414,7 +418,7 @@ export async function agentLoop(
           const { generateCommitMessage, commitSessionChanges } = await import('../git/commit.js');
           const commitMsg = await generateCommitMessage(messages, client, model);
           const committed = await commitSessionChanges(process.cwd(), modifiedFiles, commitMsg);
-          if (committed) {
+          if (committed && !silent) {
             console.log(chalk.green('✓') + chalk.dim(` Committed: ${commitMsg}`));
           }
           const { cleanupCheckpoints } = await import('../git/checkpoints.js');
@@ -427,10 +431,12 @@ export async function agentLoop(
   }
 
   // Show token usage
-  const finalTokens = estimateTokens(messages);
-  console.log(
-    chalk.dim(`\n  ~${(finalTokens / 1000).toFixed(1)}K tokens · ${toolCallCount} tool calls`)
-  );
+  if (!silent) {
+    const finalTokens = estimateTokens(messages);
+    console.log(
+      chalk.dim(`\n  ~${(finalTokens / 1000).toFixed(1)}K tokens · ${toolCallCount} tool calls`)
+    );
+  }
 
   await registry.close();
 
