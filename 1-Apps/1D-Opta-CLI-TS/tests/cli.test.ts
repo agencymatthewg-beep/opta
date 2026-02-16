@@ -67,6 +67,18 @@ describe('opta CLI', () => {
     expect(result.exitCode).toBe(0);
   });
 
+  it('chat command accepts --auto flag', async () => {
+    const result = await run(['chat', '--help']);
+    expect(result.stdout).toContain('--auto');
+    expect(result.stdout).toContain('--dangerous');
+  });
+
+  it('do command accepts --auto flag', async () => {
+    const result = await run(['do', '--help']);
+    expect(result.stdout).toContain('--auto');
+    expect(result.stdout).toContain('--dangerous');
+  });
+
   it('shows command-specific help for status', async () => {
     const result = await run(['status', '--help']);
     expect(result.stdout).toContain('--json');

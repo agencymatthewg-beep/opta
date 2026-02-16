@@ -46,8 +46,13 @@ export const OptaConfigSchema = z.object({
       find_files: 'allow',
       edit_file: 'ask',
       write_file: 'ask',
+      multi_edit: 'ask',
+      delete_file: 'ask',
       run_command: 'ask',
       ask_user: 'allow',
+      web_search: 'allow',
+      web_fetch: 'allow',
+      save_memory: 'allow',
     }),
   safety: z
     .object({
