@@ -52,9 +52,9 @@ final class MarkdownContentTests: XCTestCase {
         XCTAssertEqual(blocks.count, 1)
         if case .bulletList(let items) = blocks[0] {
             XCTAssertEqual(items.count, 3)
-            XCTAssertEqual(items[0], "First item")
-            XCTAssertEqual(items[1], "Second item")
-            XCTAssertEqual(items[2], "Third item")
+            XCTAssertEqual(items[0].content, "First item")
+            XCTAssertEqual(items[1].content, "Second item")
+            XCTAssertEqual(items[2].content, "Third item")
         } else {
             XCTFail("Expected bullet list block")
         }
@@ -68,8 +68,8 @@ final class MarkdownContentTests: XCTestCase {
         XCTAssertEqual(blocks.count, 1)
         if case .bulletList(let items) = blocks[0] {
             XCTAssertEqual(items.count, 2)
-            XCTAssertEqual(items[0], "Item one")
-            XCTAssertEqual(items[1], "Item two")
+            XCTAssertEqual(items[0].content, "Item one")
+            XCTAssertEqual(items[1].content, "Item two")
         } else {
             XCTFail("Expected bullet list block")
         }
@@ -83,8 +83,8 @@ final class MarkdownContentTests: XCTestCase {
         XCTAssertEqual(blocks.count, 1)
         if case .bulletList(let items) = blocks[0] {
             XCTAssertEqual(items.count, 2)
-            XCTAssertEqual(items[0], "Alpha")
-            XCTAssertEqual(items[1], "Beta")
+            XCTAssertEqual(items[0].content, "Alpha")
+            XCTAssertEqual(items[1].content, "Beta")
         } else {
             XCTFail("Expected bullet list block")
         }
@@ -281,8 +281,8 @@ final class MarkdownContentTests: XCTestCase {
         XCTAssertEqual(blocks.count, 1)
         if case .bulletList(let items) = blocks[0] {
             XCTAssertEqual(items.count, 2)
-            XCTAssertEqual(items[0], "")  // Empty item is preserved
-            XCTAssertEqual(items[1], "Second item")
+            XCTAssertEqual(items[0].content, "")  // Empty item is preserved
+            XCTAssertEqual(items[1].content, "Second item")
         } else {
             XCTFail("Expected bullet list")
         }
@@ -318,9 +318,9 @@ final class MarkdownContentTests: XCTestCase {
     }
 
     func testContentBlockBulletListEquality() {
-        let block1 = ContentBlock.bulletList(["A", "B"])
-        let block2 = ContentBlock.bulletList(["A", "B"])
-        let block3 = ContentBlock.bulletList(["A", "B", "C"])
+        let block1 = ContentBlock.bulletList([BulletItem(content: "A"), BulletItem(content: "B")])
+        let block2 = ContentBlock.bulletList([BulletItem(content: "A"), BulletItem(content: "B")])
+        let block3 = ContentBlock.bulletList([BulletItem(content: "A"), BulletItem(content: "B"), BulletItem(content: "C")])
 
         XCTAssertEqual(block1, block2)
         XCTAssertNotEqual(block1, block3)
@@ -328,7 +328,7 @@ final class MarkdownContentTests: XCTestCase {
 
     func testContentBlockDifferentTypesNotEqual() {
         let paragraph = ContentBlock.paragraph("- Item")
-        let list = ContentBlock.bulletList(["Item"])
+        let list = ContentBlock.bulletList([BulletItem(content: "Item")])
 
         XCTAssertNotEqual(paragraph, list)
     }

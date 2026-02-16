@@ -22,14 +22,14 @@ final class NetworkingTests: XCTestCase {
 
     func testRequestFrameEncoding() throws {
         let frame = RequestFrame(method: "chat.send", params: nil)
-        XCTAssertEqual(frame.type, "req")
+        XCTAssertEqual(frame.type, .req)
         XCTAssertEqual(frame.method, "chat.send")
         XCTAssertFalse(frame.id.isEmpty)
 
         let data = try JSONEncoder().encode(frame)
         let decoded = try JSONDecoder().decode(RequestFrame.self, from: data)
         XCTAssertEqual(decoded.method, "chat.send")
-        XCTAssertEqual(decoded.type, "req")
+        XCTAssertEqual(decoded.type, .req)
         XCTAssertEqual(decoded.id, frame.id)
     }
 
@@ -52,7 +52,7 @@ final class NetworkingTests: XCTestCase {
         """
         let data = json.data(using: .utf8)!
         let frame = try JSONDecoder().decode(ResponseFrame.self, from: data)
-        XCTAssertEqual(frame.type, "res")
+        XCTAssertEqual(frame.type, .res)
         XCTAssertEqual(frame.id, "abc-123")
         XCTAssertTrue(frame.ok)
         XCTAssertNil(frame.error)
@@ -77,7 +77,7 @@ final class NetworkingTests: XCTestCase {
         """
         let data = json.data(using: .utf8)!
         let frame = try JSONDecoder().decode(EventFrame.self, from: data)
-        XCTAssertEqual(frame.type, "event")
+        XCTAssertEqual(frame.type, .event)
         XCTAssertEqual(frame.event, "agent.stream")
         XCTAssertEqual(frame.seq, 42)
     }

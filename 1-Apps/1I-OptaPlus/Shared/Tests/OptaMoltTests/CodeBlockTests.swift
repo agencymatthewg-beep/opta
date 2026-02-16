@@ -202,6 +202,8 @@ final class CodeBlockTests: XCTestCase {
                 break
             case .image:
                 break
+            case .numberedList, .blockQuote, .heading, .horizontalRule:
+                break
             }
         }
 

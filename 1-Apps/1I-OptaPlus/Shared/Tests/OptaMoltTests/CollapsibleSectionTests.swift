@@ -72,8 +72,8 @@ final class CollapsibleSectionTests: XCTestCase {
             XCTAssertEqual(nestedContent.count, 1)
             if case .bulletList(let items) = nestedContent[0] {
                 XCTAssertEqual(items.count, 2)
-                XCTAssertEqual(items[0], "First item")
-                XCTAssertEqual(items[1], "Second item")
+                XCTAssertEqual(items[0].content, "First item")
+                XCTAssertEqual(items[1].content, "Second item")
             } else {
                 XCTFail("Expected nested bullet list")
             }
