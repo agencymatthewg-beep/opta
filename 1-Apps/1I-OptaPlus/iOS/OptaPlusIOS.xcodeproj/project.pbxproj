@@ -21,9 +21,7 @@
 		CB00007AAAAA000500000001 /* BotAvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB00007BAAAA000500000001 /* BotAvatarView.swift */; };
 		CB00008AAAAA000600000001 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB00008BAAAA000600000001 /* OnboardingView.swift */; };
 		CB00008CAAAA000700000001 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB00008DAAAA000700000001 /* AboutView.swift */; };
-		DB000001AAAA000800000001 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB000002AAAA000800000001 /* DashboardView.swift */; };
 		DB000004AAAA000900000001 /* ChatHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB000003AAAA000900000001 /* ChatHistoryView.swift */; };
-		DB000006AAAA000A00000001 /* AutomationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB000005AAAA000A00000001 /* AutomationsView.swift */; };
 		DB000008AAAA000B00000001 /* DebugView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB000007AAAA000B00000001 /* DebugView.swift */; };
 		DB00000AAAAA000C00000001 /* BotPagerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB000009AAAA000C00000001 /* BotPagerView.swift */; };
 		DB00000CAAAA000D00000001 /* BotPageHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB00000BAAAA000D00000001 /* BotPageHeader.swift */; };
@@ -31,7 +29,6 @@
 		DB000010AAAA000F00000001 /* CreateJobSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB000011AAAA000F00000001 /* CreateJobSheet.swift */; };
 		DB000012AAAA001000000001 /* JobHistorySheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB000013AAAA001000000001 /* JobHistorySheet.swift */; };
 		DB000014AAAA001100000001 /* DebugDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB000015AAAA001100000001 /* DebugDiagnostics.swift */; };
-		DB000016AAAA001200000001 /* BotWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB000017AAAA001200000001 /* BotWebView.swift */; };
 		DB000018AAAA001300000001 /* BotManagementSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB000019AAAA001300000001 /* BotManagementSheet.swift */; };
 		DB00001AAAAA001400000001 /* ChannelSwitcherSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB00001BAAAA001400000001 /* ChannelSwitcherSheet.swift */; };
 		DB00001CAAAA001500000001 /* BotMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB00001DAAAA001500000001 /* BotMapView.swift */; };
@@ -53,9 +50,7 @@
 		CB00007BAAAA000500000001 /* BotAvatarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BotAvatarView.swift; sourceTree = "<group>"; };
 		CB00008BAAAA000600000001 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		CB00008DAAAA000700000001 /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
-		DB000002AAAA000800000001 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
 		DB000003AAAA000900000001 /* ChatHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatHistoryView.swift; sourceTree = "<group>"; };
-		DB000005AAAA000A00000001 /* AutomationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutomationsView.swift; sourceTree = "<group>"; };
 		DB000007AAAA000B00000001 /* DebugView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugView.swift; sourceTree = "<group>"; };
 		DB000009AAAA000C00000001 /* BotPagerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BotPagerView.swift; sourceTree = "<group>"; };
 		DB00000BAAAA000D00000001 /* BotPageHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BotPageHeader.swift; sourceTree = "<group>"; };
@@ -63,7 +58,6 @@
 		DB000011AAAA000F00000001 /* CreateJobSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateJobSheet.swift; sourceTree = "<group>"; };
 		DB000013AAAA001000000001 /* JobHistorySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobHistorySheet.swift; sourceTree = "<group>"; };
 		DB000015AAAA001100000001 /* DebugDiagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugDiagnostics.swift; sourceTree = "<group>"; };
-		DB000017AAAA001200000001 /* BotWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BotWebView.swift; sourceTree = "<group>"; };
 		DB000019AAAA001300000001 /* BotManagementSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BotManagementSheet.swift; sourceTree = "<group>"; };
 		DB00001BAAAA001400000001 /* ChannelSwitcherSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChannelSwitcherSheet.swift; sourceTree = "<group>"; };
 		DB00001DAAAA001500000001 /* BotMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BotMapView.swift; sourceTree = "<group>"; };
@@ -123,9 +117,7 @@
 				CB00007BAAAA000500000001 /* BotAvatarView.swift */,
 				CB00008BAAAA000600000001 /* OnboardingView.swift */,
 				CB00008DAAAA000700000001 /* AboutView.swift */,
-				DB000002AAAA000800000001 /* DashboardView.swift */,
 				DB000003AAAA000900000001 /* ChatHistoryView.swift */,
-				DB000005AAAA000A00000001 /* AutomationsView.swift */,
 				DB000007AAAA000B00000001 /* DebugView.swift */,
 				DB000009AAAA000C00000001 /* BotPagerView.swift */,
 				DB00000BAAAA000D00000001 /* BotPageHeader.swift */,
@@ -133,7 +125,6 @@
 				DB000011AAAA000F00000001 /* CreateJobSheet.swift */,
 				DB000013AAAA001000000001 /* JobHistorySheet.swift */,
 				DB000015AAAA001100000001 /* DebugDiagnostics.swift */,
-				DB000017AAAA001200000001 /* BotWebView.swift */,
 				DB000019AAAA001300000001 /* BotManagementSheet.swift */,
 				DB00001BAAAA001400000001 /* ChannelSwitcherSheet.swift */,
 				DB00001DAAAA001500000001 /* BotMapView.swift */,
@@ -229,9 +220,7 @@
 				CB00007AAAAA000500000001 /* BotAvatarView.swift in Sources */,
 				CB00008AAAAA000600000001 /* OnboardingView.swift in Sources */,
 				CB00008CAAAA000700000001 /* AboutView.swift in Sources */,
-				DB000001AAAA000800000001 /* DashboardView.swift in Sources */,
 				DB000004AAAA000900000001 /* ChatHistoryView.swift in Sources */,
-				DB000006AAAA000A00000001 /* AutomationsView.swift in Sources */,
 				DB000008AAAA000B00000001 /* DebugView.swift in Sources */,
 				DB00000AAAAA000C00000001 /* BotPagerView.swift in Sources */,
 				DB00000CAAAA000D00000001 /* BotPageHeader.swift in Sources */,
@@ -239,7 +228,6 @@
 				DB000010AAAA000F00000001 /* CreateJobSheet.swift in Sources */,
 				DB000012AAAA001000000001 /* JobHistorySheet.swift in Sources */,
 				DB000014AAAA001100000001 /* DebugDiagnostics.swift in Sources */,
-				DB000016AAAA001200000001 /* BotWebView.swift in Sources */,
 				DB000018AAAA001300000001 /* BotManagementSheet.swift in Sources */,
 				DB00001AAAAA001400000001 /* ChannelSwitcherSheet.swift in Sources */,
 				DB00001CAAAA001500000001 /* BotMapView.swift in Sources */,

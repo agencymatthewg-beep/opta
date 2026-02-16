@@ -11,6 +11,40 @@ import SwiftUI
 import OptaPlus
 import OptaMolt
 
+// MARK: - Cron Job Model (relocated from AutomationsView)
+
+struct CronJobItem: Identifiable {
+    let id: String
+    let name: String
+    var enabled: Bool
+    let scheduleText: String
+    let scheduleKind: String
+    let sessionTarget: String
+    let payloadKind: String
+    let model: String?
+    let lastRunAt: Date?
+    let nextRunAt: Date?
+    let botName: String
+    let botEmoji: String
+    let botId: String
+    let rawSchedule: [String: Any]?
+    let rawPayload: [String: Any]?
+
+    var displayName: String {
+        name.isEmpty ? id : name
+    }
+}
+
+// MARK: - Scheduler Status
+
+struct SchedulerStatus {
+    let running: Bool
+    let jobCount: Int
+    let activeCount: Int
+}
+
+// MARK: - Bot Automations Page
+
 struct BotAutomationsPage: View {
     let bot: BotConfig
     @ObservedObject var viewModel: ChatViewModel
@@ -387,4 +421,221 @@ struct BotAutomationsPage: View {
     }
 }
 
-// String leftPad is already defined in AutomationsView.swift
+// MARK: - String Padding Helper (relocated from AutomationsView)
+
+extension String {
+    func leftPad(_ length: Int, pad: Character = "0") -> String {
+        String(repeating: pad, count: max(0, length - count)) + self
+    }
+}
+
+// MARK: - Job Row (relocated from AutomationsView)
+
+struct JobRow: View {
+    let job: CronJobItem
+    let isRunning: Bool
+    let onTap: () -> Void
+    let onToggle: () -> Void
+    let onRun: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Text(job.botEmoji)
+                        .font(.sora(14, weight: .regular))
+                    Text(job.displayName)
+                        .font(.sora(15, weight: .semibold))
+                        .foregroundColor(.optaTextPrimary)
+                    Spacer()
+                    Toggle("", isOn: Binding(
+                        get: { job.enabled },
+                        set: { _ in onToggle() }
+                    ))
+                    .labelsHidden()
+                    .tint(.optaPrimary)
+                    .accessibilityLabel("\(job.displayName) \(job.enabled ? "enabled" : "disabled")")
+                    .accessibilityHint("Double tap to \(job.enabled ? "disable" : "enable") this automation")
+                }
+
+                HStack(spacing: 8) {
+                    Image(systemName: "clock")
+                        .font(.sora(10, weight: .regular))
+                        .foregroundColor(.optaTextMuted)
+                    Text(job.scheduleText)
+                        .font(.sora(12, weight: .regular))
+                        .foregroundColor(.optaTextSecondary)
+
+                    if let model = job.model {
+                        Text("· \(model)")
+                            .font(.sora(11, weight: .regular))
+                            .foregroundColor(.optaTextMuted)
+                    }
+                }
+
+                HStack {
+                    if let lastRun = job.lastRunAt {
+                        Text("Last: \(OptaFormatting.relativeTime(lastRun))")
+                            .font(.sora(11, weight: .regular))
+                            .foregroundColor(.optaTextMuted)
+                    }
+
+                    Spacer()
+
+                    if job.enabled {
+                        Button(action: onRun) {
+                            HStack(spacing: 4) {
+                                if isRunning {
+                                    ProgressView()
+                                        .scaleEffect(0.6)
+                                        .tint(.optaPrimary)
+                                } else {
+                                    Image(systemName: "play.fill")
+                                        .font(.sora(10, weight: .regular))
+                                }
+                                Text("Run Now")
+                                    .font(.sora(11, weight: .medium))
+                            }
+                            .foregroundColor(.optaPrimary)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 4)
+                            .background(Capsule().fill(Color.optaPrimary.opacity(0.15)))
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(isRunning)
+                        .accessibilityLabel(isRunning ? "Running \(job.displayName)" : "Run \(job.displayName) now")
+                    }
+                }
+            }
+            .padding(.vertical, 4)
+        }
+    }
+}
+
+// MARK: - Job Detail Sheet (relocated from AutomationsView)
+
+struct JobDetailSheet: View {
+    let job: CronJobItem
+    let onToggle: () -> Void
+    let onRun: () -> Void
+    var onEdit: (() -> Void)? = nil
+    var onDuplicate: (() -> Void)? = nil
+    var onHistory: (() -> Void)? = nil
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section("Job Info") {
+                    LabeledRow(label: "Name", value: job.displayName)
+                    LabeledRow(label: "ID", value: job.id, mono: true)
+                    LabeledRow(label: "Bot", value: "\(job.botEmoji) \(job.botName)")
+                    LabeledRow(label: "Status", value: job.enabled ? "Enabled" : "Disabled")
+                }
+
+                Section("Schedule") {
+                    LabeledRow(label: "Type", value: job.scheduleKind.capitalized)
+                    LabeledRow(label: "Schedule", value: job.scheduleText)
+                    if let next = job.nextRunAt {
+                        LabeledRow(label: "Next Run", value: OptaFormatting.formatDate(next))
+                    }
+                    if let last = job.lastRunAt {
+                        LabeledRow(label: "Last Run", value: OptaFormatting.formatDate(last))
+                    }
+                }
+
+                Section("Execution") {
+                    LabeledRow(label: "Payload", value: job.payloadKind)
+                    LabeledRow(label: "Session", value: job.sessionTarget)
+                    if let model = job.model {
+                        LabeledRow(label: "Model", value: model)
+                    }
+                }
+
+                Section {
+                    Button(action: {
+                        onToggle()
+                        dismiss()
+                    }) {
+                        Label(
+                            job.enabled ? "Disable Job" : "Enable Job",
+                            systemImage: job.enabled ? "pause.circle" : "play.circle"
+                        )
+                        .foregroundColor(job.enabled ? .optaAmber : .optaGreen)
+                    }
+
+                    if job.enabled {
+                        Button(action: {
+                            onRun()
+                            dismiss()
+                        }) {
+                            Label("Run Now", systemImage: "bolt.fill")
+                                .foregroundColor(.optaPrimary)
+                        }
+                    }
+
+                    if let onEdit = onEdit {
+                        Button(action: {
+                            dismiss()
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { onEdit() }
+                        }) {
+                            Label("Edit Job", systemImage: "pencil")
+                                .foregroundColor(.optaTextPrimary)
+                        }
+                    }
+
+                    if let onDuplicate = onDuplicate {
+                        Button(action: {
+                            dismiss()
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { onDuplicate() }
+                        }) {
+                            Label("Duplicate", systemImage: "doc.on.doc")
+                                .foregroundColor(.optaTextPrimary)
+                        }
+                    }
+
+                    if let onHistory = onHistory {
+                        Button(action: {
+                            dismiss()
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { onHistory() }
+                        }) {
+                            Label("Run History", systemImage: "clock.arrow.circlepath")
+                                .foregroundColor(.optaTextPrimary)
+                        }
+                    }
+                }
+            }
+            .scrollContentBackground(.hidden)
+            .background(Color.optaVoid)
+            .navigationTitle(job.displayName)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Labeled Row Helper (relocated from AutomationsView)
+
+struct LabeledRow: View {
+    let label: String
+    let value: String
+    var mono: Bool = false
+
+    var body: some View {
+        HStack {
+            Text(label)
+                .font(.sora(14, weight: .regular))
+                .foregroundColor(.optaTextSecondary)
+            Spacer()
+            Text(value)
+                .font(.system(size: 14, design: mono ? .monospaced : .default))
+                .foregroundColor(.optaTextPrimary)
+                .lineLimit(1)
+        }
+        .listRowBackground(Color.optaSurface)
+    }
+}

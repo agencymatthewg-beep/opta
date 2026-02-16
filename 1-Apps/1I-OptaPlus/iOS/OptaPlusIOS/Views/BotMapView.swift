@@ -764,3 +764,34 @@ struct TetherPulseModifier: ViewModifier {
         }
     }
 }
+
+// MARK: - iOS Activity Row (relocated from DashboardView)
+
+struct IOSActivityRow: View {
+    let event: ActivityEvent
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: event.icon)
+                .font(.sora(11, weight: .regular))
+                .foregroundColor(event.iconColor)
+                .frame(width: 18)
+
+            Text(event.botEmoji)
+                .font(.sora(13, weight: .regular))
+
+            Text("\(event.botName) \(event.message)")
+                .font(.sora(12, weight: .regular))
+                .foregroundColor(.optaTextSecondary)
+                .lineLimit(1)
+
+            Spacer()
+
+            Text(event.relativeTime)
+                .font(.system(size: 10, design: .monospaced))
+                .foregroundColor(.optaTextMuted)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 4)
+    }
+}
