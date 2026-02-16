@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { maskOldObservations } from '../../src/core/context.js';
+import { maskOldObservations, COMPACTION_PROMPT } from '../../src/core/context.js';
 import type { AgentMessage } from '../../src/core/agent.js';
 
 describe('maskOldObservations', () => {
@@ -53,5 +53,13 @@ describe('maskOldObservations', () => {
 
     const masked = maskOldObservations(messages, 4);
     expect(masked[1]!.content).toBe('X'.repeat(500));
+  });
+});
+
+describe('compaction prompt', () => {
+  it('includes file preservation instructions', () => {
+    expect(COMPACTION_PROMPT).toContain('FILES MODIFIED');
+    expect(COMPACTION_PROMPT).toContain('DECISIONS MADE');
+    expect(COMPACTION_PROMPT).toContain('CURRENT STATE');
   });
 });

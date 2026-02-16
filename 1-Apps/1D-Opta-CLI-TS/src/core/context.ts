@@ -27,3 +27,13 @@ export function maskOldObservations(
     return m;
   });
 }
+
+export const COMPACTION_PROMPT = `Summarize this coding assistant conversation for continuity. Preserve:
+
+1. FILES MODIFIED: Every file path that was read, edited, or created, with the nature of changes
+2. DECISIONS MADE: Architectural choices, rejected alternatives, and rationale
+3. ERRORS ENCOUNTERED: Bugs found, failed attempts, and how they were resolved
+4. CURRENT STATE: What is done, what remains, any blockers
+5. KEY CODE PATTERNS: Variable names, function signatures, data structures being worked with
+
+Be thorough — this summary replaces the full history. Include specific file paths and code identifiers.`;

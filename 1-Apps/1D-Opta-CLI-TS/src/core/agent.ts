@@ -2,7 +2,7 @@ import chalk from 'chalk';
 import type { OptaConfig } from './config.js';
 import { resolvePermission } from './tools.js';
 import { debug } from './debug.js';
-import { maskOldObservations } from './context.js';
+import { maskOldObservations, COMPACTION_PROMPT } from './context.js';
 import { createSpinner } from '../ui/spinner.js';
 import { renderMarkdown } from '../ui/markdown.js';
 
@@ -109,16 +109,19 @@ function estimateTokens(messages: AgentMessage[]): number {
 async function compactHistory(
   messages: AgentMessage[],
   client: import('openai').default,
-  model: string
+  model: string,
+  contextLimit: number
 ): Promise<AgentMessage[]> {
   const systemPrompt = messages[0]!;
-  const recentCount = 6; // Keep last 3 exchanges
+  const recentCount = Math.max(6, Math.min(Math.floor(contextLimit / 4000), 20));
   const recent = messages.slice(-recentCount);
   const middle = messages.slice(1, -recentCount);
 
   if (middle.length === 0) return messages;
 
-  debug(`Compacting ${middle.length} messages`);
+  debug(`Compacting ${middle.length} messages (keeping last ${recentCount})`);
+
+  const summaryBudget = Math.max(500, Math.min(Math.floor(contextLimit * 0.05), 2000));
 
   const middleText = middle
     .filter((m) => m.content)
@@ -131,16 +134,15 @@ async function compactHistory(
       messages: [
         {
           role: 'system',
-          content:
-            'Summarize this conversation concisely. Preserve key decisions, file changes, and errors encountered.',
+          content: COMPACTION_PROMPT,
         },
         { role: 'user', content: middleText },
       ],
-      max_tokens: 500,
+      max_tokens: summaryBudget,
     });
 
     const summary = response.choices[0]?.message?.content ?? '';
-    debug(`Compacted to ${summary.length} chars`);
+    debug(`Compacted to ${summary.length} chars (budget: ${summaryBudget} tokens)`);
 
     return [
       systemPrompt,
@@ -279,7 +281,7 @@ export async function agentLoop(
     if (tokenEstimate > threshold) {
       debug(`Token estimate ${tokenEstimate} exceeds threshold ${threshold}`);
       spinner.start('Compacting conversation history...');
-      const compacted = await compactHistory(messages, client, model);
+      const compacted = await compactHistory(messages, client, model, config.model.contextLimit);
       messages.length = 0;
       messages.push(...compacted);
       spinner.succeed('Context compacted');
