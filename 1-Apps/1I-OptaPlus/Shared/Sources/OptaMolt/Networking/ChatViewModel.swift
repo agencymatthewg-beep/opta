@@ -121,7 +121,8 @@ public struct BotConfig: Identifiable, Codable, Sendable, Hashable {
             port: botNode.gatewayPort ?? 3000,
             token: token,
             emoji: botNode.emoji,
-            remoteURL: botNode.remoteURL
+            remoteURL: botNode.remoteURL,
+            connectionMode: botNode.connectionMode
         )
     }
 }

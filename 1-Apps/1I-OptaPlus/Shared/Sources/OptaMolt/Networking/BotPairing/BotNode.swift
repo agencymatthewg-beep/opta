@@ -15,6 +15,7 @@ public struct BotNode: Identifiable, Codable, Hashable, Sendable {
     public var gatewayHost: String?
     public var gatewayPort: Int?
     public var remoteURL: String?
+    public var connectionMode: BotConfig.ConnectionMode
     public var state: BotConnectionState
     public var lastSeen: Date
     public var lastLatency: TimeInterval?
@@ -29,6 +30,7 @@ public struct BotNode: Identifiable, Codable, Hashable, Sendable {
         gatewayHost: String? = nil,
         gatewayPort: Int? = nil,
         remoteURL: String? = nil,
+        connectionMode: BotConfig.ConnectionMode = .auto,
         state: BotConnectionState = .discovered,
         lastSeen: Date = Date()
     ) {
@@ -39,8 +41,30 @@ public struct BotNode: Identifiable, Codable, Hashable, Sendable {
         self.gatewayHost = gatewayHost
         self.gatewayPort = gatewayPort
         self.remoteURL = remoteURL
+        self.connectionMode = connectionMode
         self.state = state
         self.lastSeen = lastSeen
+    }
+
+    // Codable migration: handle missing connectionMode from old persisted data
+    enum CodingKeys: String, CodingKey {
+        case botId, gatewayFingerprint, name, emoji, gatewayHost, gatewayPort
+        case remoteURL, connectionMode, state, lastSeen, lastLatency
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        botId = try container.decode(String.self, forKey: .botId)
+        gatewayFingerprint = try container.decode(String.self, forKey: .gatewayFingerprint)
+        name = try container.decode(String.self, forKey: .name)
+        emoji = try container.decode(String.self, forKey: .emoji)
+        gatewayHost = try container.decodeIfPresent(String.self, forKey: .gatewayHost)
+        gatewayPort = try container.decodeIfPresent(Int.self, forKey: .gatewayPort)
+        remoteURL = try container.decodeIfPresent(String.self, forKey: .remoteURL)
+        connectionMode = try container.decodeIfPresent(BotConfig.ConnectionMode.self, forKey: .connectionMode) ?? .auto
+        state = try container.decode(BotConnectionState.self, forKey: .state)
+        lastSeen = try container.decode(Date.self, forKey: .lastSeen)
+        lastLatency = try container.decodeIfPresent(TimeInterval.self, forKey: .lastLatency)
     }
 }
 
