@@ -45,6 +45,9 @@ program
   .option('-f, --format <type>', 'output format: text (default) or json')
   .option('--no-commit', 'disable auto-commit at task end')
   .option('--no-checkpoints', 'disable checkpoint creation')
+  .option('-a, --auto', 'auto-accept file edits without prompting')
+  .option('--dangerous', 'bypass all permission prompts')
+  .option('--yolo', 'alias for --dangerous')
   .action(async (opts) => {
     const { startChat } = await import('./commands/chat.js');
     await startChat(opts);
@@ -57,6 +60,9 @@ program
   .option('-f, --format <type>', 'output format: text (default) or json')
   .option('--no-commit', 'disable auto-commit at task end')
   .option('--no-checkpoints', 'disable checkpoint creation')
+  .option('-a, --auto', 'auto-accept file edits without prompting')
+  .option('--dangerous', 'bypass all permission prompts')
+  .option('--yolo', 'alias for --dangerous')
   .action(async (task: string[], opts) => {
     const { executeTask } = await import('./commands/do.js');
     await executeTask(task, opts);

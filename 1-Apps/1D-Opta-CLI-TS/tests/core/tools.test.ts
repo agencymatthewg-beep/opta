@@ -53,11 +53,11 @@ describe('resolvePermission', () => {
     expect(resolvePermission('find_files', DEFAULT_CONFIG)).toBe('allow');
   });
 
-  it('returns deny for write tools in CI/non-TTY (ask→deny downgrade)', () => {
-    // In test environment (non-TTY), isCI=true so 'ask' becomes 'deny'
-    expect(resolvePermission('edit_file', DEFAULT_CONFIG)).toBe('deny');
-    expect(resolvePermission('write_file', DEFAULT_CONFIG)).toBe('deny');
-    expect(resolvePermission('run_command', DEFAULT_CONFIG)).toBe('deny');
+  it('returns ask for write tools in default safe mode', () => {
+    // Safe mode (default) prompts for write operations
+    expect(resolvePermission('edit_file', DEFAULT_CONFIG)).toBe('ask');
+    expect(resolvePermission('write_file', DEFAULT_CONFIG)).toBe('ask');
+    expect(resolvePermission('run_command', DEFAULT_CONFIG)).toBe('ask');
   });
 
   it('config defaults have ask for write tools', () => {

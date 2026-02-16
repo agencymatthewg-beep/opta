@@ -18,6 +18,9 @@ interface ChatOptions {
   commit?: boolean;
   checkpoints?: boolean;
   format?: string;
+  auto?: boolean;
+  dangerous?: boolean;
+  yolo?: boolean;
 }
 
 export async function startChat(opts: ChatOptions): Promise<void> {
@@ -30,6 +33,14 @@ export async function startChat(opts: ChatOptions): Promise<void> {
   }
   if (opts.checkpoints === false) {
     overrides['git'] = { ...((overrides['git'] as Record<string, unknown>) ?? {}), checkpoints: false };
+  }
+
+  if (opts.dangerous || opts.yolo) {
+    overrides['defaultMode'] = 'dangerous';
+  } else if (opts.auto) {
+    overrides['defaultMode'] = 'auto';
+  } else if (opts.plan) {
+    overrides['defaultMode'] = 'plan';
   }
 
   const jsonMode = opts.format === 'json';

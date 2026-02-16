@@ -8,6 +8,9 @@ interface DoOptions {
   commit?: boolean;
   checkpoints?: boolean;
   format?: string;
+  auto?: boolean;
+  dangerous?: boolean;
+  yolo?: boolean;
 }
 
 export async function executeTask(task: string[], opts: DoOptions): Promise<void> {
@@ -29,6 +32,12 @@ export async function executeTask(task: string[], opts: DoOptions): Promise<void
   }
   if (opts.checkpoints === false) {
     overrides['git'] = { ...((overrides['git'] as Record<string, unknown>) ?? {}), checkpoints: false };
+  }
+
+  if (opts.dangerous || opts.yolo) {
+    overrides['defaultMode'] = 'dangerous';
+  } else if (opts.auto) {
+    overrides['defaultMode'] = 'auto';
   }
 
   const jsonMode = opts.format === 'json';

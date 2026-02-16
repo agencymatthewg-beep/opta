@@ -152,15 +152,47 @@ export const TOOL_SCHEMAS = [
 
 // --- Permission Resolution ---
 
+const MODE_PERMISSIONS: Record<string, Record<string, 'allow' | 'ask' | 'deny'>> = {
+  safe: {},
+  auto: { edit_file: 'allow', write_file: 'allow' },
+  plan: { edit_file: 'deny', write_file: 'deny', run_command: 'deny' },
+  dangerous: { edit_file: 'allow', write_file: 'allow', run_command: 'allow' },
+  ci: { edit_file: 'deny', write_file: 'deny', run_command: 'deny', ask_user: 'deny' },
+};
+
+const DEFAULT_TOOL_PERMISSIONS: Record<string, string> = {
+  read_file: 'allow',
+  list_dir: 'allow',
+  search_files: 'allow',
+  find_files: 'allow',
+  edit_file: 'ask',
+  write_file: 'ask',
+  run_command: 'ask',
+  ask_user: 'allow',
+  read_project_docs: 'allow',
+};
+
 export function resolvePermission(
   toolName: string,
   config: OptaConfig
 ): 'allow' | 'ask' | 'deny' {
-  const permission = config.permissions[toolName];
+  // Per-tool config overrides take highest precedence
+  const configPerm = config.permissions[toolName];
+  const defaultPerm = DEFAULT_TOOL_PERMISSIONS[toolName];
 
-  if (isCI && permission === 'ask') return 'deny';
+  // If the user explicitly set a per-tool override different from defaults, use it
+  if (configPerm && configPerm !== defaultPerm) {
+    return configPerm as 'allow' | 'ask' | 'deny';
+  }
 
-  return permission ?? 'ask';
+  // Mode-level permissions (mode handles CI via the 'ci' mode)
+  const mode = config.defaultMode ?? 'safe';
+  const modePerm = MODE_PERMISSIONS[mode]?.[toolName];
+  if (modePerm) return modePerm;
+
+  // Fall back to config permission or default
+  const permission = configPerm ?? defaultPerm ?? 'ask';
+  return permission as 'allow' | 'ask' | 'deny';
 }
 
 // --- Tool Executors ---

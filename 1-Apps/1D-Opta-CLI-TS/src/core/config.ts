@@ -36,6 +36,7 @@ export const OptaConfigSchema = z.object({
       contextLimit: z.number().default(32768),
     })
     .default({}),
+  defaultMode: z.enum(['safe', 'auto', 'plan', 'dangerous', 'ci']).default('safe'),
   permissions: z
     .record(z.string(), ToolPermission)
     .default({
