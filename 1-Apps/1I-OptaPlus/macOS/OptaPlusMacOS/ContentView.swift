@@ -36,7 +36,7 @@ enum DropType {
 // MARK: - Detail Mode
 
 enum DetailMode: Equatable {
-    case chat, dashboard, automations, botWeb, debug
+    case chat, dashboard, automations, botWeb, debug, botMap
 }
 
 // MARK: - Content View
@@ -86,6 +86,9 @@ struct ContentView: View {
                             DebugView(bot: nil, viewModel: nil)
                                 .environmentObject(appState)
                         }
+                    case .botMap:
+                        BotMapView()
+                            .environmentObject(appState)
                     case .chat:
                         if let bot = windowState.selectedBot(in: appState) {
                             let vm = appState.viewModel(for: bot)
@@ -163,6 +166,8 @@ struct ContentView: View {
                     .keyboardShortcut("b", modifiers: [.command, .shift])
                 Button("") { detailMode = detailMode == .debug ? .chat : .debug }
                     .keyboardShortcut("g", modifiers: [.command, .shift])
+                Button("") { detailMode = detailMode == .botMap ? .chat : .botMap }
+                    .keyboardShortcut("m", modifiers: [.command, .shift])
             }
             .frame(width: 0, height: 0)
             .opacity(0)
@@ -178,6 +183,9 @@ struct ContentView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .toggleDebug)) { _ in
             detailMode = detailMode == .debug ? .chat : .debug
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .toggleBotMap)) { _ in
+            detailMode = detailMode == .botMap ? .chat : .botMap
         }
         .onReceive(NotificationCenter.default.publisher(for: .switchToChat)) { _ in
             detailMode = .chat
@@ -384,6 +392,16 @@ struct SidebarView: View {
             }
             ToolbarItem(placement: .automatic) {
                 Button(action: {
+                    NotificationCenter.default.post(name: .toggleBotMap, object: nil)
+                }) {
+                    Image(systemName: "sparkles")
+                        .foregroundColor(.optaTextSecondary)
+                }
+                .accessibilityLabel("Bot Map")
+                .help("Bot Map (⌘⇧M)")
+            }
+            ToolbarItem(placement: .automatic) {
+                Button(action: {
                     NotificationCenter.default.post(name: .toggleDebug, object: nil)
                 }) {
                     Image(systemName: "ant")
@@ -408,6 +426,7 @@ extension Notification.Name {
     static let toggleAutomations = Notification.Name("toggleAutomations")
     static let toggleBotWeb = Notification.Name("toggleBotWeb")
     static let toggleDebug = Notification.Name("toggleDebug")
+    static let toggleBotMap = Notification.Name("toggleBotMap")
 }
 
 // MARK: - Bot Row

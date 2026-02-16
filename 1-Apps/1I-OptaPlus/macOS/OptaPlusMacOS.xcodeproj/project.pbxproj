@@ -30,6 +30,7 @@
 		AV000001FFFF000100000001 /* AutomationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AV000002FFFF000100000001 /* AutomationsView.swift */; };
 		DV000001FFFF000100000001 /* DebugView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DV000002FFFF000100000001 /* DebugView.swift */; };
 		BW000001FFFF000100000001 /* BotWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BW000002FFFF000100000001 /* BotWebView.swift */; };
+		BM000001FFFF000100000001 /* BotMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BM000002FFFF000100000001 /* BotMapView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -57,6 +58,7 @@
 		AV000002FFFF000100000001 /* AutomationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutomationsView.swift; sourceTree = "<group>"; };
 		DV000002FFFF000100000001 /* DebugView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugView.swift; sourceTree = "<group>"; };
 		BW000002FFFF000100000001 /* BotWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BotWebView.swift; sourceTree = "<group>"; };
+		BM000002FFFF000100000001 /* BotMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BotMapView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -103,6 +105,7 @@
 				AV000002FFFF000100000001 /* AutomationsView.swift */,
 				DV000002FFFF000100000001 /* DebugView.swift */,
 				BW000002FFFF000100000001 /* BotWebView.swift */,
+				BM000002FFFF000100000001 /* BotMapView.swift */,
 				CD000008BBBB000200000001 /* Assets.xcassets */,
 				CD00000ABBBB000200000001 /* Info.plist */,
 				CD00000BBBBB000200000001 /* OptaPlusMacOS.entitlements */,
@@ -214,6 +217,7 @@
 				AV000001FFFF000100000001 /* AutomationsView.swift in Sources */,
 				DV000001FFFF000100000001 /* DebugView.swift in Sources */,
 				BW000001FFFF000100000001 /* BotWebView.swift in Sources */,
+				BM000001FFFF000100000001 /* BotMapView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
