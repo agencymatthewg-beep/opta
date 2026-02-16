@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OptaPlus — Development Status Report</title>
+<style>
+  :root {
+    --void: #050505;
+    --surface: #0f0f11;
+    --elevated: #1a1a1f;
+    --border: #2a2a30;
+    --primary: #8B5CF6;
+    --primary-dim: rgba(139, 92, 246, 0.15);
+    --green: #22c55e;
+    --green-dim: rgba(34, 197, 94, 0.12);
+    --amber: #f59e0b;
+    --amber-dim: rgba(245, 158, 11, 0.12);
+    --red: #ef4444;
+    --red-dim: rgba(239, 68, 68, 0.12);
+    --blue: #3b82f6;
+    --blue-dim: rgba(59, 130, 246, 0.12);
+    --cyan: #06b6d4;
+    --cyan-dim: rgba(6, 182, 212, 0.12);
+    --coral: #f97316;
+    --text-primary: #f0f0f5;
+    --text-secondary: #a0a0b0;
+    --text-muted: #606070;
+    --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--void);
+    color: var(--text-primary);
+    font-family: var(--font);
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  .bg-grid {
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(139, 92, 246, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(139, 92, 246, 0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    margin-bottom: 48px;
+    padding: 48px 32px;
+    background: linear-gradient(135deg, var(--surface), var(--elevated));
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(ellipse at 30% 20%, rgba(139, 92, 246, 0.08), transparent 60%);
+    pointer-events: none;
+  }
+  .header h1 {
+    font-size: 2.4rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, var(--text-primary), var(--primary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+  }
+  .header .subtitle {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    margin-bottom: 24px;
+  }
+  .header .date {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    color: var(--text-muted);
+  }
+
+  /* Stats row */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 40px;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    text-align: center;
+  }
+  .stat-card .number {
+    font-size: 2rem;
+    font-weight: 700;
+    font-family: var(--mono);
+    margin-bottom: 4px;
+  }
+  .stat-card .label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .stat-card.purple .number { color: var(--primary); }
+  .stat-card.green .number { color: var(--green); }
+  .stat-card.blue .number { color: var(--blue); }
+  .stat-card.amber .number { color: var(--amber); }
+
+  /* Platform pills */
+  .platform-row {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-bottom: 40px;
+  }
+  .platform-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 18px;
+    border-radius: 100px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .platform-pill.ios { border-color: rgba(59, 130, 246, 0.3); color: var(--blue); }
+  .platform-pill.macos { border-color: rgba(139, 92, 246, 0.3); color: var(--primary); }
+  .platform-pill.shared { border-color: rgba(6, 182, 212, 0.3); color: var(--cyan); }
+
+  /* Section */
+  .section {
+    margin-bottom: 40px;
+  }
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .section-header h2 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .section-header .badge {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    padding: 3px 10px;
+    border-radius: 100px;
+    font-weight: 600;
+  }
+  .badge-done { background: var(--green-dim); color: var(--green); }
+  .badge-progress { background: var(--amber-dim); color: var(--amber); }
+  .badge-todo { background: var(--blue-dim); color: var(--blue); }
+  .badge-critical { background: var(--red-dim); color: var(--red); }
+  .badge-high { background: rgba(249, 115, 22, 0.12); color: var(--coral); }
+  .badge-medium { background: var(--amber-dim); color: var(--amber); }
+
+  /* Cards */
+  .card-grid {
+    display: grid;
+    gap: 12px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px 24px;
+    transition: border-color 0.2s;
+  }
+  .card:hover {
+    border-color: rgba(139, 92, 246, 0.3);
+  }
+  .card-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .card-title .icon {
+    font-size: 1.1rem;
+  }
+  .card-desc {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+  .card-meta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+  }
+  .tag {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: var(--elevated);
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+  }
+  .tag.ios { color: var(--blue); border-color: rgba(59, 130, 246, 0.2); }
+  .tag.macos { color: var(--primary); border-color: rgba(139, 92, 246, 0.2); }
+  .tag.shared { color: var(--cyan); border-color: rgba(6, 182, 212, 0.2); }
+  .tag.files { color: var(--text-secondary); }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+  }
+  .status-dot.done { background: var(--green); box-shadow: 0 0 8px rgba(34, 197, 94, 0.4); }
+  .status-dot.pending { background: var(--amber); box-shadow: 0 0 8px rgba(245, 158, 11, 0.3); }
+  .status-dot.todo { background: var(--text-muted); }
+
+  /* Remaining issues table */
+  .issues-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.85rem;
+  }
+  .issues-table th {
+    text-align: left;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .issues-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(42, 42, 48, 0.5);
+    color: var(--text-secondary);
+    vertical-align: top;
+  }
+  .issues-table tr:hover td {
+    background: rgba(139, 92, 246, 0.03);
+  }
+  .issues-table .issue-title {
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+  .issues-table .issue-location {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+
+  /* Progress bar */
+  .progress-container {
+    margin: 20px 0;
+  }
+  .progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    margin-bottom: 8px;
+  }
+  .progress-label span:first-child { color: var(--text-secondary); }
+  .progress-label span:last-child { color: var(--primary); font-family: var(--mono); font-weight: 600; }
+  .progress-bar {
+    height: 6px;
+    background: var(--elevated);
+    border-radius: 100px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 100px;
+    background: linear-gradient(90deg, var(--primary), #a78bfa);
+    transition: width 0.6s ease;
+  }
+
+  /* File changes */
+  .file-list {
+    list-style: none;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+  }
+  .file-list li {
+    padding: 4px 0;
+    color: var(--text-muted);
+  }
+  .file-list li .action {
+    display: inline-block;
+    width: 16px;
+    text-align: center;
+    margin-right: 6px;
+    font-weight: 700;
+  }
+  .file-list li .action.add { color: var(--green); }
+  .file-list li .action.mod { color: var(--amber); }
+  .file-list li .action.del { color: var(--red); }
+
+  /* Divider */
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border), transparent);
+    margin: 40px 0;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    .header h1 { font-size: 1.8rem; }
+    .container { padding: 20px 16px 60px; }
+  }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding: 32px 0;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+  .footer a {
+    color: var(--primary);
+    text-decoration: none;
+  }
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <h1>OptaPlus Status Report</h1>
+    <p class="subtitle">Cross-platform SwiftUI design system &amp; bot interface &mdash; iOS + macOS</p>
+    <p class="date">Generated 2026-02-15 &bull; Sprint: Navigation &amp; Quality Overhaul</p>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-row">
+    <div class="stat-card green">
+      <div class="number">47</div>
+      <div class="label">Fixes Applied</div>
+    </div>
+    <div class="stat-card purple">
+      <div class="number">25</div>
+      <div class="label">Files Modified</div>
+    </div>
+    <div class="stat-card blue">
+      <div class="number">15</div>
+      <div class="label">DRY Violations Fixed</div>
+    </div>
+    <div class="stat-card amber">
+      <div class="number">23</div>
+      <div class="label">Issues Remaining</div>
+    </div>
+  </div>
+
+  <!-- Platforms -->
+  <div class="platform-row">
+    <span class="platform-pill ios">iOS 17+</span>
+    <span class="platform-pill macos">macOS 14+</span>
+    <span class="platform-pill shared">OptaMolt Shared</span>
+  </div>
+
+  <!-- Progress -->
+  <div class="progress-container">
+    <div class="progress-label">
+      <span>Overall quality pass completion</span>
+      <span>67%</span>
+    </div>
+    <div class="progress-bar">
+      <div class="progress-fill" style="width: 67%"></div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- COMPLETED: UX Overhaul -->
+  <div class="section">
+    <div class="section-header">
+      <h2>UX Overhaul &mdash; Completed</h2>
+      <span class="badge badge-done">DONE</span>
+    </div>
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-title">
+          <span class="status-dot done"></span>
+          <span class="icon">📱</span>
+          Remove "More" Page &mdash; 6 Tabs to 5
+        </div>
+        <div class="card-desc">
+          Merged History tab into Chat as a toolbar button + sheet. Final tab order: Dashboard, Web, Chat, Automations, Debug. Eliminates iOS auto-generated "More" page.
+        </div>
+        <div class="card-meta">
+          <span class="tag ios">iOS</span>
+          <span class="tag files">ContentView.swift</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <span class="status-dot done"></span>
+          <span class="icon">⬇️</span>
+          Fix Scroll-to-Bottom Button
+        </div>
+        <div class="card-desc">
+          Replaced unreliable sentinel <code>.onAppear/.onDisappear</code> with continuous <code>GeometryReader + PreferenceKey</code> pattern. Button now reliably appears/disappears based on actual scroll position.
+        </div>
+        <div class="card-meta">
+          <span class="tag ios">iOS</span>
+          <span class="tag files">ChatView.swift</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <span class="status-dot done"></span>
+          <span class="icon">🔄</span>
+          Fix "No Automations" on Connect
+        </div>
+        <div class="card-desc">
+          Added <code>.onChange(of: connectionState)</code> to auto-retry <code>loadJobs()</code> when bot connects. Plus new "Scan" button in empty state for manual retry.
+        </div>
+        <div class="card-meta">
+          <span class="tag ios">iOS</span>
+          <span class="tag files">BotAutomationsPage.swift</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <span class="status-dot done"></span>
+          <span class="icon">📡</span>
+          Channel-Based Chat System
+        </div>
+        <div class="card-desc">
+          Replaced Direct/Isolated/Synced session mode menu with channel system. <code>ChannelType</code> enum (Telegram, Direct, WhatsApp, Discord) with color indicators. <code>ChannelSwitcherSheet</code> with 5-session limit, auto-color assignment, swipe-to-delete. Backward-compatible <code>ChatSession</code> migration.
+        </div>
+        <div class="card-meta">
+          <span class="tag ios">iOS</span>
+          <span class="tag macos">macOS</span>
+          <span class="tag shared">Shared</span>
+          <span class="tag files">7 files + 1 new</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- COMPLETED: Animation & DRY Fixes -->
+  <div class="section">
+    <div class="section-header">
+      <h2>Design System Compliance &mdash; Completed</h2>
+      <span class="badge badge-done">DONE</span>
+    </div>
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-title">
+          <span class="status-dot done"></span>
+          <span class="icon">🌊</span>
+          32 Animation Violations Fixed
+        </div>
+        <div class="card-desc">
+          All <code>.easeInOut</code>, <code>.easeOut</code>, <code>.easeIn</code> replaced with spring physics tokens (<code>.optaSpring</code>, <code>.optaSnap</code>, <code>.optaGentle</code>, <code>.optaPulse</code>). Breathing effects migrated to new <code>PhaseAnimator</code>-based <code>.optaBreathing()</code> modifier. Linear rotation exceptions kept where physics-correct.
+        </div>
+        <div class="card-meta">
+          <span class="tag ios">iOS &bull; 6 files</span>
+          <span class="tag macos">macOS &bull; 8 files</span>
+          <span class="tag shared">Shared &bull; 5 files</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <span class="status-dot done"></span>
+          <span class="icon">🧹</span>
+          15 Duplicated Functions Extracted
+        </div>
+        <div class="card-desc">
+          Created <code>OptaFormatting</code> enum in shared <code>Utilities.swift</code> with cached <code>DateFormatter</code>. Consolidated: <code>relativeTime</code> (4 copies), <code>formatDate</code> (4), <code>formatUptime</code> (4), <code>formatDuration</code> (2), <code>copyToClipboard</code> (2), <code>channelColor</code> (1 &rarr; <code>ChannelType.color</code>).
+        </div>
+        <div class="card-meta">
+          <span class="tag ios">iOS &bull; 6 files</span>
+          <span class="tag macos">macOS &bull; 3 files</span>
+          <span class="tag shared">Shared &bull; 2 files</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <span class="status-dot done"></span>
+          <span class="icon">🎨</span>
+          New Design Tokens Added
+        </div>
+        <div class="card-desc">
+          <code>optaPulse</code> &mdash; fixed from <code>.easeInOut</code> to underdamped spring. <code>optaSpin</code> &mdash; explicit continuous rotation token. <code>OptaBreathingModifier</code> &mdash; <code>PhaseAnimator</code>-based spring breathing with configurable opacity/scale ranges.
+        </div>
+        <div class="card-meta">
+          <span class="tag shared">Animations.swift</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- COMPLETED: Earlier Features -->
+  <div class="section">
+    <div class="section-header">
+      <h2>Earlier Improvements &mdash; Completed</h2>
+      <span class="badge badge-done">DONE</span>
+    </div>
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-title">
+          <span class="status-dot done"></span>
+          <span class="icon">⚡</span>
+          CPU Idle Performance: 48% &rarr; 17%
+        </div>
+        <div class="card-desc">Reduced idle CPU usage by optimizing timer intervals and removing unnecessary continuous redraw triggers.</div>
+        <div class="card-meta"><span class="tag shared">Shared</span></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <span class="status-dot done"></span>
+          <span class="icon">🏷️</span>
+          Device Name Identity
+        </div>
+        <div class="card-desc">Messages now tagged with source device name for multi-device identification.</div>
+        <div class="card-meta"><span class="tag shared">Shared</span></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <span class="status-dot done"></span>
+          <span class="icon">🌐</span>
+          Remote Access via Cloudflare Tunnel
+        </div>
+        <div class="card-desc">Added <code>wss://</code> support with auto LAN/remote detection. Platform-aware Origin headers.</div>
+        <div class="card-meta"><span class="tag shared">NetworkEnvironment</span></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <span class="status-dot done"></span>
+          <span class="icon">🤖</span>
+          Protocol Expansion
+        </div>
+        <div class="card-desc">Bot management UI, reaction system, cron scheduling with gateway schema verification.</div>
+        <div class="card-meta">
+          <span class="tag ios">iOS</span>
+          <span class="tag macos">macOS</span>
+          <span class="tag shared">Shared</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- REMAINING: Critical -->
+  <div class="section">
+    <div class="section-header">
+      <h2>Remaining &mdash; Critical Issues</h2>
+      <span class="badge badge-critical">9 ISSUES</span>
+    </div>
+    <table class="issues-table">
+      <thead>
+        <tr>
+          <th style="width: 40%">Issue</th>
+          <th style="width: 35%">Location</th>
+          <th style="width: 25%">Impact</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="issue-title">AnyCodable <code>@unchecked Sendable</code></td>
+          <td class="issue-location">OpenClawProtocol.swift</td>
+          <td>Wraps <code>Any</code> with zero thread safety</td>
+        </tr>
+        <tr>
+          <td class="issue-title">GatewayConfig.parsed not Sendable</td>
+          <td class="issue-location">OpenClawProtocol.swift</td>
+          <td><code>[String: Any]</code> crossed isolation</td>
+        </tr>
+        <tr>
+          <td class="issue-title">Force unwrap <code>text.data(using:)!</code></td>
+          <td class="issue-location">OpenClawClient.swift</td>
+          <td>WebSocket send crash risk</td>
+        </tr>
+        <tr>
+          <td class="issue-title">Hardcoded Telegram user ID</td>
+          <td class="issue-location">TelegramSyncManager.swift</td>
+          <td>Security: personal ID in source</td>
+        </tr>
+        <tr>
+          <td class="issue-title">4 ObservableObjects missing <code>@MainActor</code></td>
+          <td class="issue-location">Various ViewModels</td>
+          <td>Swift 6 strict concurrency crash</td>
+        </tr>
+        <tr>
+          <td class="issue-title">JWT tokens in UserDefaults</td>
+          <td class="issue-location">OptaAccountService.swift</td>
+          <td>Should use Keychain</td>
+        </tr>
+        <tr>
+          <td class="issue-title">Telegram API creds in UserDefaults</td>
+          <td class="issue-location">macOS ContentView.swift</td>
+          <td>Readable by any process</td>
+        </tr>
+        <tr>
+          <td class="issue-title">Hardcoded bot auth tokens</td>
+          <td class="issue-location">iOS + macOS sources</td>
+          <td>Committed to version control</td>
+        </tr>
+        <tr>
+          <td class="issue-title">Force-unwrap <code>URL(string:)!</code></td>
+          <td class="issue-location">iOS views</td>
+          <td>Crash on malformed input</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- REMAINING: High -->
+  <div class="section">
+    <div class="section-header">
+      <h2>Remaining &mdash; High Priority</h2>
+      <span class="badge badge-high">8 ISSUES</span>
+    </div>
+    <table class="issues-table">
+      <thead>
+        <tr>
+          <th style="width: 40%">Issue</th>
+          <th style="width: 35%">Location</th>
+          <th style="width: 25%">Impact</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="issue-title">ChatViewModel: 1070+ lines SRP violation</td>
+          <td class="issue-location">ChatViewModel.swift</td>
+          <td>Should decompose into focused managers</td>
+        </tr>
+        <tr>
+          <td class="issue-title">ChatMessage full struct reconstruction</td>
+          <td class="issue-location">ChatViewModel.swift (4+ places)</td>
+          <td>Simple status updates require full copy</td>
+        </tr>
+        <tr>
+          <td class="issue-title">SyntaxHighlighter regex recompilation</td>
+          <td class="issue-location">SyntaxHighlighter.swift</td>
+          <td>Hot path during scrolling</td>
+        </tr>
+        <tr>
+          <td class="issue-title">MarkdownContent re-parses per keystroke</td>
+          <td class="issue-location">MarkdownContent.swift</td>
+          <td>Streaming performance bottleneck</td>
+        </tr>
+        <tr>
+          <td class="issue-title">No WebSocket request timeout</td>
+          <td class="issue-location">OpenClawClient.swift</td>
+          <td>Memory leak on abandoned requests</td>
+        </tr>
+        <tr>
+          <td class="issue-title">~80 lines dead code</td>
+          <td class="issue-location">macOS ContentView + renderers</td>
+          <td>inputAreaView, drawOrbs, drawParticles</td>
+        </tr>
+        <tr>
+          <td class="issue-title">Missing accessibility labels</td>
+          <td class="issue-location">Both platforms</td>
+          <td>Near-total absence on interactive elements</td>
+        </tr>
+        <tr>
+          <td class="issue-title">Dead delete button logic</td>
+          <td class="issue-location">iOS ChannelSwitcherSheet</td>
+          <td>Swipe action guard never satisfied</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- REMAINING: Medium -->
+  <div class="section">
+    <div class="section-header">
+      <h2>Remaining &mdash; Medium Priority</h2>
+      <span class="badge badge-medium">6 ISSUES</span>
+    </div>
+    <table class="issues-table">
+      <thead>
+        <tr>
+          <th style="width: 40%">Issue</th>
+          <th style="width: 35%">Location</th>
+          <th style="width: 25%">Impact</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="issue-title">Hardcoded colors (5+ instances)</td>
+          <td class="issue-location">Various views</td>
+          <td>Should use design tokens</td>
+        </tr>
+        <tr>
+          <td class="issue-title">NSLog instead of structured logging</td>
+          <td class="issue-location">Networking layer</td>
+          <td>No log levels or filtering</td>
+        </tr>
+        <tr>
+          <td class="issue-title">RequestFrame uses String, not FrameType</td>
+          <td class="issue-location">OpenClawProtocol.swift</td>
+          <td>Reduced type safety</td>
+        </tr>
+        <tr>
+          <td class="issue-title">Inconsistent font usage</td>
+          <td class="issue-location">macOS views</td>
+          <td>Mixed <code>.sora</code> vs <code>.system</code></td>
+        </tr>
+        <tr>
+          <td class="issue-title">macOS ContentView monolith</td>
+          <td class="issue-location">ContentView.swift (2,032 lines)</td>
+          <td>Should extract into focused files</td>
+        </tr>
+        <tr>
+          <td class="issue-title">NotificationCenter as event bus</td>
+          <td class="issue-location">Various</td>
+          <td>Fragile coupling pattern</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Files Changed -->
+  <div class="section">
+    <div class="section-header">
+      <h2>Files Changed This Sprint</h2>
+    </div>
+    <div class="card">
+      <ul class="file-list">
+        <li><span class="action add">+</span> Shared/Sources/OptaMolt/DesignSystem/Utilities.swift</li>
+        <li><span class="action add">+</span> iOS/OptaPlusIOS/Views/ChannelSwitcherSheet.swift</li>
+        <li><span class="action mod">M</span> Shared/Sources/OptaMolt/DesignSystem/Animations.swift</li>
+        <li><span class="action mod">M</span> Shared/Sources/OptaMolt/DesignSystem/MicroInteractions.swift</li>
+        <li><span class="action mod">M</span> Shared/Sources/OptaMolt/Networking/OpenClawProtocol.swift</li>
+        <li><span class="action mod">M</span> Shared/Sources/OptaMolt/Networking/ChatViewModel.swift</li>
+        <li><span class="action mod">M</span> Shared/Sources/OptaMolt/Chat/MessageBubble.swift</li>
+        <li><span class="action mod">M</span> Shared/Sources/OptaMolt/Chat/CodeBlockView.swift</li>
+        <li><span class="action mod">M</span> Shared/Sources/OptaMolt/Chat/EnhancedTypingIndicator.swift</li>
+        <li><span class="action mod">M</span> Shared/Sources/OptaMolt/Chat/LinkPreview.swift</li>
+        <li><span class="action mod">M</span> Shared/Sources/OptaMolt/Chat/ChartView.swift</li>
+        <li><span class="action mod">M</span> Shared/Sources/OptaMolt/Chat/AsyncImageView.swift</li>
+        <li><span class="action mod">M</span> iOS/OptaPlusIOS/ContentView.swift</li>
+        <li><span class="action mod">M</span> iOS/OptaPlusIOS/Views/ChatView.swift</li>
+        <li><span class="action mod">M</span> iOS/OptaPlusIOS/Views/BotAutomationsPage.swift</li>
+        <li><span class="action mod">M</span> iOS/OptaPlusIOS/Views/BotPageHeader.swift</li>
+        <li><span class="action mod">M</span> iOS/OptaPlusIOS/Views/AutomationsView.swift</li>
+        <li><span class="action mod">M</span> iOS/OptaPlusIOS/Views/ChatHistoryView.swift</li>
+        <li><span class="action mod">M</span> iOS/OptaPlusIOS/Views/DebugView.swift</li>
+        <li><span class="action mod">M</span> iOS/OptaPlusIOS/Views/JobHistorySheet.swift</li>
+        <li><span class="action mod">M</span> iOS/OptaPlusIOS/Views/BotManagementSheet.swift</li>
+        <li><span class="action mod">M</span> iOS/OptaPlusIOS/Views/OnboardingView.swift</li>
+        <li><span class="action mod">M</span> iOS/OptaPlusIOS/Views/ChatInputBar.swift</li>
+        <li><span class="action mod">M</span> iOS/OptaPlusIOS/Views/DashboardView.swift</li>
+        <li><span class="action mod">M</span> iOS/OptaPlusIOS/Views/BotWebView.swift</li>
+        <li><span class="action mod">M</span> iOS/OptaPlusIOS/Views/AboutView.swift</li>
+        <li><span class="action mod">M</span> iOS/OptaPlusIOS.xcodeproj/project.pbxproj</li>
+        <li><span class="action mod">M</span> macOS/OptaPlusMacOS/ContentView.swift</li>
+        <li><span class="action mod">M</span> macOS/OptaPlusMacOS/AmbientBackground.swift</li>
+        <li><span class="action mod">M</span> macOS/OptaPlusMacOS/SettingsViews.swift</li>
+        <li><span class="action mod">M</span> macOS/OptaPlusMacOS/ThinkingOverlay.swift</li>
+        <li><span class="action mod">M</span> macOS/OptaPlusMacOS/ContextPanel.swift</li>
+        <li><span class="action mod">M</span> macOS/OptaPlusMacOS/BotProfileSheet.swift</li>
+        <li><span class="action mod">M</span> macOS/OptaPlusMacOS/LoadingSplash.swift</li>
+        <li><span class="action mod">M</span> macOS/OptaPlusMacOS/AnimationSystem.swift</li>
+        <li><span class="action mod">M</span> macOS/OptaPlusMacOS/BotWebView.swift</li>
+        <li><span class="action mod">M</span> macOS/OptaPlusMacOS/AutomationsView.swift</li>
+        <li><span class="action mod">M</span> macOS/OptaPlusMacOS/DebugView.swift</li>
+        <li><span class="action mod">M</span> macOS/OptaPlusMacOS/CommandPalette.swift</li>
+        <li><span class="action mod">M</span> macOS/OptaPlusMacOS/SessionViews.swift</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer">
+    OptaPlus &bull; Opta Operations &bull; <a href="#">optamize.biz</a><br>
+    Report generated by Claude Code
+  </div>
+</div>
+</body>
+</html>
