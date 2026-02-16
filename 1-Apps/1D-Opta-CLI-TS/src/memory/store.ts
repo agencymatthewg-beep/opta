@@ -5,16 +5,10 @@ import { nanoid } from 'nanoid';
 
 // --- Types ---
 
-export interface AgentMessage {
-  role: 'system' | 'user' | 'assistant' | 'tool';
-  content: string | null;
-  tool_calls?: Array<{
-    id: string;
-    type: 'function';
-    function: { name: string; arguments: string };
-  }>;
-  tool_call_id?: string;
-}
+import type { AgentMessage, ContentPart } from '../core/agent.js';
+
+// Re-export AgentMessage from agent.ts (canonical source)
+export type { AgentMessage, ContentPart };
 
 export interface Session {
   id: string;

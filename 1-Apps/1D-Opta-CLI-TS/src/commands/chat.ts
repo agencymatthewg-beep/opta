@@ -23,6 +23,12 @@ interface ChatOptions {
   yolo?: boolean;
 }
 
+export type OptaMode = 'normal' | 'plan' | 'auto-accept';
+
+export interface ChatState {
+  currentMode: OptaMode;
+}
+
 export async function startChat(opts: ChatOptions): Promise<void> {
   const overrides: Record<string, unknown> = {};
   if (opts.model) {
@@ -103,13 +109,27 @@ export async function startChat(opts: ChatOptions): Promise<void> {
     );
   }
 
+  // Mode state
+  const chatState: ChatState = {
+    currentMode: opts.plan ? 'plan' : (opts.auto ? 'auto-accept' : 'normal'),
+  };
+  if (opts.dangerous || opts.yolo) chatState.currentMode = 'normal'; // dangerous handled by config mode
+
+  function getPromptMessage(): string {
+    switch (chatState.currentMode) {
+      case 'plan': return chalk.magenta('[PLAN]') + ' ' + chalk.cyan('you:');
+      case 'auto-accept': return chalk.yellow('[AUTO]') + ' ' + chalk.cyan('you:');
+      default: return chalk.cyan('you:');
+    }
+  }
+
   // REPL loop
   const { input } = await import('@inquirer/prompts');
 
   while (true) {
     let userInput: string;
     try {
-      userInput = await input({ message: chalk.cyan('you:') });
+      userInput = await input({ message: getPromptMessage() });
     } catch {
       // Ctrl+C or EOF
       await saveSession(session);
@@ -121,7 +141,7 @@ export async function startChat(opts: ChatOptions): Promise<void> {
 
     // Slash commands
     if (userInput.startsWith('/')) {
-      const handled = await handleSlashCommand(userInput, session, config);
+      const handled = await handleSlashCommand(userInput, session, config, chatState);
       if (handled === 'exit') {
         await saveSession(session);
         if (!jsonMode) {
@@ -149,6 +169,7 @@ export async function startChat(opts: ChatOptions): Promise<void> {
         existingMessages: session.messages,
         sessionId: session.id,
         silent: jsonMode,
+        mode: chatState.currentMode === 'plan' ? 'plan' : undefined,
       });
 
       session.messages = result.messages;
@@ -181,7 +202,8 @@ type SlashResult = 'handled' | 'exit' | 'model-switched';
 async function handleSlashCommand(
   input: string,
   session: Session,
-  config: import('../core/config.js').OptaConfig
+  config: import('../core/config.js').OptaConfig,
+  state: ChatState
 ): Promise<SlashResult> {
   const parts = input.trim().split(/\s+/);
   const cmd = parts[0]!.toLowerCase();
@@ -202,6 +224,8 @@ async function handleSlashCommand(
       console.log('  /history      Show conversation summary');
       console.log('  /compact      Force context compaction');
       console.log('  /clear        Clear screen');
+      console.log('  /plan         Toggle plan mode (read-only)');
+      console.log('  /image <path>  Analyze an image file');
       console.log('  /help         Show this help');
       console.log('  /undo [n]     Reverse last checkpoint (or specific #n)');
       console.log('  /undo list    Show all checkpoints');
@@ -235,7 +259,8 @@ async function handleSlashCommand(
       console.log();
       userMessages.forEach((m: AgentMessage, i: number) => {
         const role = m.role === 'user' ? chalk.cyan('user') : chalk.green('assistant');
-        const content = (m.content ?? '').slice(0, 80).replace(/\n/g, ' ');
+        const rawContent = typeof m.content === 'string' ? m.content : Array.isArray(m.content) ? '[multimodal]' : '';
+        const content = rawContent.slice(0, 80).replace(/\n/g, ' ');
         const toolCount = m.tool_calls?.length;
         const suffix = toolCount ? chalk.dim(` (${toolCount} tool calls)`) : '';
         console.log(`  ${i + 1}. [${role}] ${content}${suffix}`);
@@ -290,6 +315,60 @@ async function handleSlashCommand(
         });
       } catch (err) {
         console.error(chalk.red('✗') + ` Undo failed: ${err instanceof Error ? err.message : err}`);
+      }
+      return 'handled';
+    }
+
+    case '/plan': {
+      if (arg === 'off' || (state.currentMode === 'plan' && !arg)) {
+        state.currentMode = 'normal';
+        console.log(chalk.green('\u2713') + ' Exited plan mode');
+      } else {
+        state.currentMode = 'plan';
+        console.log(chalk.magenta('\u2713') + ' Entered plan mode \u2014 read-only exploration');
+        console.log(chalk.dim('  Tools: read, search, list, find, ask, web_search, web_fetch'));
+        console.log(chalk.dim('  Type /plan off to exit'));
+      }
+      return 'handled';
+    }
+
+    case '/image': {
+      if (!arg) {
+        console.log(chalk.dim('  Usage: /image <path> [question]'));
+        return 'handled';
+      }
+
+      const parts = arg.split(/\s+/);
+      const imagePath = parts[0]!;
+      const question = parts.slice(1).join(' ') || 'What is in this image?';
+
+      try {
+        const { readFile: readFs } = await import('node:fs/promises');
+        const { resolve: resolvePath, extname } = await import('node:path');
+        const fullPath = resolvePath(imagePath);
+        const data = await readFs(fullPath);
+        const base64 = data.toString('base64');
+        const ext = extname(fullPath).slice(1).toLowerCase();
+        const mime = ext === 'jpg' ? 'jpeg' : ext;
+
+        // Set title from first image
+        if (!session.title) {
+          session.title = generateTitle(question);
+        }
+
+        const result = await agentLoop(question, config, {
+          existingMessages: session.messages,
+          sessionId: session.id,
+          silent: false,
+          mode: state.currentMode === 'plan' ? 'plan' : undefined,
+          imageBase64: `data:image/${mime};base64,${base64}`,
+        });
+
+        session.messages = result.messages;
+        session.toolCallCount += result.toolCallCount;
+        await saveSession(session);
+      } catch (err) {
+        console.error(chalk.red('✗') + ` Failed to read image: ${err instanceof Error ? err.message : err}`);
       }
       return 'handled';
     }

@@ -18,7 +18,10 @@ export interface ToolRegistry {
   close: () => Promise<void>;
 }
 
-export async function buildToolRegistry(config: OptaConfig): Promise<ToolRegistry> {
+export async function buildToolRegistry(
+  config: OptaConfig,
+  mode: string = 'normal'
+): Promise<ToolRegistry> {
   const connections: McpConnection[] = [];
   const mcpSchemas: ToolSchema[] = [];
   const mcpRoutes = new Map<string, McpConnection>();
@@ -60,8 +63,17 @@ export async function buildToolRegistry(config: OptaConfig): Promise<ToolRegistr
 
   const allSchemas = [...(TOOL_SCHEMAS as ToolSchema[]), ...mcpSchemas];
 
+  const WRITE_TOOL_NAMES = new Set([
+    'edit_file', 'write_file', 'multi_edit', 'delete_file',
+    'run_command', 'save_memory',
+  ]);
+
+  const filteredSchemas = mode === 'plan'
+    ? allSchemas.filter(s => !WRITE_TOOL_NAMES.has(s.function.name))
+    : allSchemas;
+
   return {
-    schemas: allSchemas,
+    schemas: filteredSchemas,
     async execute(name: string, argsJson: string): Promise<string> {
       const mcpConn = mcpRoutes.get(name);
       if (mcpConn) {

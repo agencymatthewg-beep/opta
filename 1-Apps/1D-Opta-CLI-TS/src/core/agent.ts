@@ -12,9 +12,13 @@ interface ToolCallAccum {
   args: string;
 }
 
+export type ContentPart =
+  | { type: 'text'; text: string }
+  | { type: 'image_url'; image_url: { url: string } };
+
 export interface AgentMessage {
   role: 'system' | 'user' | 'assistant' | 'tool';
-  content: string | null;
+  content: string | ContentPart[] | null;
   tool_calls?: Array<{
     id: string;
     type: 'function';
@@ -27,6 +31,8 @@ export interface AgentLoopOptions {
   existingMessages?: AgentMessage[];
   sessionId?: string;
   silent?: boolean;
+  mode?: string;
+  imageBase64?: string;
 }
 
 export interface AgentLoopResult {
@@ -36,7 +42,7 @@ export interface AgentLoopResult {
 
 // --- System Prompt ---
 
-export async function buildSystemPrompt(config: OptaConfig, cwd?: string): Promise<string> {
+export async function buildSystemPrompt(config: OptaConfig, cwd?: string, mode?: string): Promise<string> {
   const workingDir = cwd ?? process.cwd();
 
   let prompt = `You are Opta, an AI coding assistant running locally on the user's machine. You help with coding tasks by using tools to read, edit, and search files, and run commands.
@@ -88,6 +94,24 @@ Working directory: ${workingDir}`;
     // Git utils unavailable — skip
   }
 
+  if (mode === 'plan') {
+    prompt += `\n\nYou are in PLAN MODE. You are a software architect helping design an implementation approach.
+
+CRITICAL CONSTRAINTS:
+- You are READ-ONLY. You MUST NOT call edit_file, write_file, multi_edit, delete_file, or run_command.
+- You CAN use: read_file, list_dir, search_files, find_files, ask_user, web_search, web_fetch
+- Your goal is to explore the codebase and produce a clear implementation plan.
+
+PLANNING PROCESS:
+1. Understand the request — ask ONE clarifying question at a time if needed
+2. Explore the codebase — read relevant files, search for patterns
+3. Propose 2-3 approaches with trade-offs, lead with your recommendation
+4. Present the plan in sections, checking after each
+5. Conclude with: critical files to modify, estimated scope, risks
+
+When your plan is complete, say: "Plan complete. Ready to implement?"`;
+  }
+
   void config; // config used for future extensions
   return prompt;
 }
@@ -96,11 +120,18 @@ Working directory: ${workingDir}`;
 
 function estimateTokens(messages: AgentMessage[]): number {
   return messages.reduce((sum, m) => {
-    const content = m.content ?? '';
-    const toolCallsStr = m.tool_calls
-      ? JSON.stringify(m.tool_calls)
-      : '';
-    return sum + Math.ceil((content.length + toolCallsStr.length) / 4);
+    let contentLen = 0;
+    if (typeof m.content === 'string') {
+      contentLen = m.content.length;
+    } else if (Array.isArray(m.content)) {
+      contentLen = m.content.reduce((s, p) => {
+        if (p.type === 'text') return s + p.text.length;
+        if (p.type === 'image_url') return s + 1000; // estimate image tokens
+        return s;
+      }, 0);
+    }
+    const toolCallsStr = m.tool_calls ? JSON.stringify(m.tool_calls) : '';
+    return sum + Math.ceil((contentLen + toolCallsStr.length) / 4);
   }, 0);
 }
 
@@ -253,11 +284,21 @@ export async function agentLoop(
   }
 
   // Use existing messages (multi-turn) or start fresh (single-shot)
+  const userMessage: AgentMessage = options?.imageBase64
+    ? {
+        role: 'user',
+        content: [
+          { type: 'text', text: task },
+          { type: 'image_url', image_url: { url: options.imageBase64 } },
+        ],
+      }
+    : { role: 'user', content: task };
+
   const messages: AgentMessage[] = options?.existingMessages
-    ? [...options.existingMessages, { role: 'user', content: task }]
+    ? [...options.existingMessages, userMessage]
     : [
-        { role: 'system', content: await buildSystemPrompt(config) },
-        { role: 'user', content: task },
+        { role: 'system', content: await buildSystemPrompt(config, undefined, options?.mode) },
+        userMessage,
       ];
 
   let toolCallCount = 0;
@@ -267,7 +308,7 @@ export async function agentLoop(
   let checkpointCount = 0;
 
   const { buildToolRegistry } = await import('../mcp/registry.js');
-  const registry = await buildToolRegistry(config);
+  const registry = await buildToolRegistry(config, options?.mode);
 
   while (true) {
     // 0. Observation masking (free context savings)
