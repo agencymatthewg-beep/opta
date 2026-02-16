@@ -13,7 +13,7 @@ struct ContentView: View {
     @AppStorage("optaplus.onboardingDone") private var onboardingDone = false
 
     enum Tab: String {
-        case dashboard, web, chat, automations, debug
+        case dashboard, botMap, web, chat, automations, debug
     }
 
     var body: some View {
@@ -28,6 +28,13 @@ struct ContentView: View {
                         Label("Dashboard", systemImage: selectedTab == .dashboard ? "square.grid.2x2.fill" : "square.grid.2x2")
                     }
                     .tag(Tab.dashboard)
+
+                BotMapView()
+                    .environmentObject(appState)
+                    .tabItem {
+                        Label("Map", systemImage: selectedTab == .botMap ? "circle.hexagongrid.fill" : "circle.hexagongrid")
+                    }
+                    .tag(Tab.botMap)
 
                 BotWebView()
                     .environmentObject(appState)
