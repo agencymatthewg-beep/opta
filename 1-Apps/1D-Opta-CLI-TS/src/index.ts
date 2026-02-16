@@ -57,19 +57,18 @@ program
   });
 
 program
-  .command('connect')
-  .description('Connect to LM Studio on your Mac Studio')
-  .option('--host <ip>', 'connect to specific host')
-  .option('--port <port>', 'connect to specific port', '1234')
+  .command('status')
+  .description('Check Opta LMX server health and loaded models')
+  .option('--json', 'machine-readable output')
   .action(async (opts) => {
-    const { connect } = await import('./commands/connect.js');
-    await connect(opts);
+    const { status } = await import('./commands/status.js');
+    await status(opts);
   });
 
 program
   .command('models')
-  .description('List and manage LLM providers')
-  .argument('[action]', 'use | info')
+  .description('List and manage loaded models')
+  .argument('[action]', 'use | info | load | unload')
   .argument('[name]', 'model name')
   .option('--json', 'machine-readable output')
   .action(async (action, name, opts) => {
@@ -105,6 +104,25 @@ program
   .action(async () => {
     const { mcp } = await import('./commands/mcp.js');
     await mcp();
+  });
+
+program
+  .command('init')
+  .description('Initialize Opta in a project (V2)')
+  .option('--mode <mode>', 'initialization mode')
+  .option('--force', 'overwrite existing config')
+  .action(async () => {
+    const { init } = await import('./commands/init.js');
+    await init();
+  });
+
+program
+  .command('diff')
+  .description('Show changes made in a session (V2)')
+  .option('-s, --session <id>', 'session to diff')
+  .action(async () => {
+    const { diff } = await import('./commands/diff.js');
+    await diff();
   });
 
 program

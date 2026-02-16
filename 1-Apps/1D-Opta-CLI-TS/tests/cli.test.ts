@@ -14,7 +14,7 @@ describe('opta CLI', () => {
     const result = await run([]);
     expect(result.stdout).toContain('Agentic AI coding CLI powered by local LLMs');
     expect(result.stdout).toContain('chat');
-    expect(result.stdout).toContain('connect');
+    expect(result.stdout).toContain('status');
     expect(result.stdout).toContain('do');
     expect(result.exitCode).toBe(0);
   });
@@ -38,7 +38,7 @@ describe('opta CLI', () => {
 
   it('lists all expected commands in help', async () => {
     const result = await run(['--help']);
-    const commands = ['chat', 'do', 'connect', 'models', 'config', 'sessions', 'mcp', 'completions'];
+    const commands = ['chat', 'do', 'status', 'models', 'config', 'sessions', 'mcp', 'init', 'diff', 'completions'];
     for (const cmd of commands) {
       expect(result.stdout).toContain(cmd);
     }
@@ -59,10 +59,9 @@ describe('opta CLI', () => {
     expect(result.exitCode).toBe(0);
   });
 
-  it('shows command-specific help for connect', async () => {
-    const result = await run(['connect', '--help']);
-    expect(result.stdout).toContain('--host');
-    expect(result.stdout).toContain('--port');
+  it('shows command-specific help for status', async () => {
+    const result = await run(['status', '--help']);
+    expect(result.stdout).toContain('--json');
     expect(result.exitCode).toBe(0);
   });
 });
