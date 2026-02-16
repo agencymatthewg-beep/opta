@@ -231,8 +231,34 @@ struct SettingsView: View {
                         .foregroundColor(.optaTextSecondary)
                 }
 
-                // About
+                // Diagnostics & About
                 Section {
+                    NavigationLink {
+                        DebugView()
+                            .environmentObject(appState)
+                    } label: {
+                        HStack {
+                            Label("Gateway Diagnostics", systemImage: "ant")
+                                .foregroundColor(.optaTextSecondary)
+                            Spacer()
+                            if let bot = appState.selectedBot,
+                               appState.viewModel(for: bot).connectionState == .connected {
+                                Circle()
+                                    .fill(Color.optaGreen)
+                                    .frame(width: 6, height: 6)
+                            }
+                        }
+                    }
+                    .listRowBackground(Color.optaSurface)
+
+                    NavigationLink {
+                        AboutView()
+                    } label: {
+                        Label("About OptaPlus", systemImage: "info.circle.fill")
+                            .foregroundColor(.optaPrimary)
+                    }
+                    .listRowBackground(Color.optaSurface)
+
                     HStack {
                         Label("Version", systemImage: "info.circle")
                             .foregroundColor(.optaTextSecondary)
@@ -250,16 +276,8 @@ struct SettingsView: View {
                             .foregroundColor(.optaTextMuted)
                     }
                     .listRowBackground(Color.optaSurface)
-
-                    NavigationLink {
-                        AboutView()
-                    } label: {
-                        Label("About OptaPlus", systemImage: "info.circle.fill")
-                            .foregroundColor(.optaPrimary)
-                    }
-                    .listRowBackground(Color.optaSurface)
                 } header: {
-                    Label("About", systemImage: "star.fill")
+                    Label("More", systemImage: "ellipsis.circle")
                         .foregroundColor(.optaTextSecondary)
                 } footer: {
                     Text("OptaPlus — Premium AI Chat Client")

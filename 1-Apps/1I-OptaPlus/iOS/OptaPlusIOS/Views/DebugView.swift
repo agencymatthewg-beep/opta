@@ -20,7 +20,6 @@ struct DebugView: View {
     @State private var nodes: [[String: Any]] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
-    @State private var showSettings = false
     @State private var selectedNode: [String: Any]?
     @State private var sectionsVisible = false
 
@@ -56,17 +55,8 @@ struct DebugView: View {
                 .padding()
             }
             .background(Color.optaVoid)
-            .navigationTitle("Debug")
+            .navigationTitle("Diagnostics")
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button {
-                        showSettings = true
-                    } label: {
-                        Image(systemName: "gearshape")
-                            .foregroundColor(.optaTextSecondary)
-                    }
-                    .accessibilityLabel("Settings")
-                }
                 ToolbarItem(placement: .primaryAction) {
                     Button {
                         Task { await loadAll() }
@@ -81,10 +71,6 @@ struct DebugView: View {
             }
             .task {
                 await loadAll()
-            }
-            .sheet(isPresented: $showSettings) {
-                SettingsView()
-                    .environmentObject(appState)
             }
             .sheet(item: Binding(
                 get: { selectedNode.map { IdentifiableNode(node: $0) } },
