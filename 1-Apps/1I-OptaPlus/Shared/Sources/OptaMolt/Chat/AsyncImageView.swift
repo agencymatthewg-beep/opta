@@ -32,7 +32,7 @@ private struct ShimmerModifier: ViewModifier {
                 )
                 .offset(x: phase)
                 .onAppear {
-                    withAnimation(.linear(duration: 1.5).repeatForever(autoreverses: false)) {
+                    withAnimation(.optaSpin) {
                         phase = 300
                     }
                 }

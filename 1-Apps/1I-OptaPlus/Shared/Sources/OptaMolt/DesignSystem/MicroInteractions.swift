@@ -37,7 +37,7 @@ public struct OptaLoader: View {
             .frame(width: size, height: size)
             .rotationEffect(.degrees(rotation))
             .onAppear {
-                withAnimation(.linear(duration: 0.8).repeatForever(autoreverses: false)) {
+                withAnimation(.optaSpin) {
                     rotation = 360
                 }
             }
