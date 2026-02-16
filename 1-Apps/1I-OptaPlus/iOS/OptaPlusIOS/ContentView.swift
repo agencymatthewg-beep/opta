@@ -9,11 +9,11 @@ import OptaMolt
 
 struct ContentView: View {
     @EnvironmentObject var appState: AppState
-    @State private var selectedTab: Tab = .dashboard
+    @State private var selectedTab: Tab = .map
     @AppStorage("optaplus.onboardingDone") private var onboardingDone = false
 
     enum Tab: String {
-        case dashboard, botMap, web, chat, automations, debug
+        case map, chat, automations, settings
     }
 
     var body: some View {
@@ -22,26 +22,12 @@ struct ContentView: View {
                 .environmentObject(appState)
         } else {
             TabView(selection: $selectedTab) {
-                DashboardView()
-                    .environmentObject(appState)
-                    .tabItem {
-                        Label("Dashboard", systemImage: selectedTab == .dashboard ? "square.grid.2x2.fill" : "square.grid.2x2")
-                    }
-                    .tag(Tab.dashboard)
-
                 BotMapView()
                     .environmentObject(appState)
                     .tabItem {
-                        Label("Map", systemImage: selectedTab == .botMap ? "circle.hexagongrid.fill" : "circle.hexagongrid")
+                        Label("Map", systemImage: selectedTab == .map ? "circle.hexagongrid.fill" : "circle.hexagongrid")
                     }
-                    .tag(Tab.botMap)
-
-                BotWebView()
-                    .environmentObject(appState)
-                    .tabItem {
-                        Label("Web", systemImage: selectedTab == .web ? "globe.americas.fill" : "globe.americas")
-                    }
-                    .tag(Tab.web)
+                    .tag(Tab.map)
 
                 ChatPagerTab()
                     .environmentObject(appState)
@@ -57,12 +43,12 @@ struct ContentView: View {
                     }
                     .tag(Tab.automations)
 
-                DebugView()
+                SettingsView(isModal: false)
                     .environmentObject(appState)
                     .tabItem {
-                        Label("Debug", systemImage: selectedTab == .debug ? "ant.fill" : "ant")
+                        Label("Settings", systemImage: selectedTab == .settings ? "gearshape.fill" : "gearshape")
                     }
-                    .tag(Tab.debug)
+                    .tag(Tab.settings)
             }
             .tint(.optaPrimary)
         }
@@ -73,7 +59,6 @@ struct ContentView: View {
 
 struct ChatPagerTab: View {
     @EnvironmentObject var appState: AppState
-    @State private var showSettings = false
     @State private var showBotConfig = false
     @State private var showHistory = false
 
@@ -105,19 +90,8 @@ struct ChatPagerTab: View {
                                 .foregroundColor(.optaTextSecondary)
                         }
                         .accessibilityLabel("Bot configuration")
-                        Button {
-                            showSettings = true
-                        } label: {
-                            Image(systemName: "gearshape")
-                                .foregroundColor(.optaTextSecondary)
-                        }
-                        .accessibilityLabel("Settings")
                     }
                 }
-            }
-            .sheet(isPresented: $showSettings) {
-                SettingsView()
-                    .environmentObject(appState)
             }
             .sheet(isPresented: $showBotConfig) {
                 if let bot = appState.selectedBot {

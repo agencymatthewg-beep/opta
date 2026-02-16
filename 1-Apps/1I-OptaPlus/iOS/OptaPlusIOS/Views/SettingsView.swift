@@ -10,6 +10,8 @@ import OptaPlus
 import OptaMolt
 
 struct SettingsView: View {
+    var isModal: Bool = true
+
     @EnvironmentObject var appState: AppState
     @ObservedObject var themeManager: ThemeManager = .shared
     @State private var showAddBot = false
@@ -291,8 +293,10 @@ struct SettingsView: View {
             .background(Color.optaVoid)
             .navigationTitle("Settings")
             .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
+                if isModal {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Done") { dismiss() }
+                    }
                 }
             }
             .sheet(isPresented: $showAddBot) {
