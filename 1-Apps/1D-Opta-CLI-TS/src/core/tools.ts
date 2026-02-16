@@ -148,6 +148,21 @@ export const TOOL_SCHEMAS = [
       },
     },
   },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'web_search',
+      description: 'Search the web for documentation, error messages, APIs, or current information.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Search query' },
+          max_results: { type: 'number', description: 'Max results (default: 5)' },
+        },
+        required: ['query'],
+      },
+    },
+  },
 ];
 
 // --- Permission Resolution ---
@@ -170,6 +185,7 @@ const DEFAULT_TOOL_PERMISSIONS: Record<string, string> = {
   run_command: 'ask',
   ask_user: 'allow',
   read_project_docs: 'allow',
+  web_search: 'allow',
 };
 
 export function resolvePermission(
@@ -230,6 +246,8 @@ export async function executeTool(
         return await execAskUser(args);
       case 'read_project_docs':
         return await execReadProjectDocs(args);
+      case 'web_search':
+        return await execWebSearch(args);
       default:
         return `Error: Unknown tool "${name}"`;
     }
@@ -419,6 +437,43 @@ async function execReadProjectDocs(args: Record<string, unknown>): Promise<strin
   const file = String(args['file'] ?? '');
   const { readProjectDoc } = await import('../context/opis.js');
   return readProjectDoc(process.cwd(), file);
+}
+
+async function execWebSearch(args: Record<string, unknown>): Promise<string> {
+  const query = String(args['query'] ?? '');
+  const maxResults = Number(args['max_results'] ?? 5);
+
+  let searxngUrl = 'http://192.168.188.10:8888';
+  try {
+    const { loadConfig } = await import('./config.js');
+    const config = await loadConfig();
+    searxngUrl = config.search?.searxngUrl ?? searxngUrl;
+  } catch {
+    // Use default
+  }
+
+  const url = `${searxngUrl}/search?q=${encodeURIComponent(query)}&format=json`;
+
+  try {
+    const response = await fetch(url, { signal: AbortSignal.timeout(10000) });
+    if (!response.ok) return `Error: Search returned ${response.status}`;
+
+    const data = (await response.json()) as {
+      results?: Array<{ title: string; url: string; content: string }>;
+    };
+    const results = (data.results ?? []).slice(0, maxResults);
+
+    if (results.length === 0) return 'No results found.';
+
+    return results
+      .map(
+        (r, i) =>
+          `${i + 1}. ${r.title}\n   ${r.url}\n   ${r.content?.slice(0, 200) ?? ''}`
+      )
+      .join('\n\n');
+  } catch (err) {
+    return `Error: Search failed — ${err instanceof Error ? err.message : String(err)}`;
+  }
 }
 
 // --- Utility ---

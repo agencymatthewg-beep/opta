@@ -76,6 +76,11 @@ export const OptaConfigSchema = z.object({
       servers: z.record(z.string(), McpServerConfigSchema).default({}),
     })
     .default({}),
+  search: z
+    .object({
+      searxngUrl: z.string().default('http://192.168.188.10:8888'),
+    })
+    .default({}),
 });
 
 export type OptaConfig = z.infer<typeof OptaConfigSchema>;

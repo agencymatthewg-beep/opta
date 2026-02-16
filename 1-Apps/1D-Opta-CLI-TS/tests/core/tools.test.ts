@@ -18,8 +18,8 @@ afterEach(async () => {
 });
 
 describe('tool schemas', () => {
-  it('defines exactly 9 tools', () => {
-    expect(TOOL_SCHEMAS).toHaveLength(9);
+  it('defines exactly 10 tools', () => {
+    expect(TOOL_SCHEMAS).toHaveLength(10);
   });
 
   it('has all expected tool names', () => {
@@ -33,6 +33,7 @@ describe('tool schemas', () => {
     expect(names).toContain('run_command');
     expect(names).toContain('ask_user');
     expect(names).toContain('read_project_docs');
+    expect(names).toContain('web_search');
   });
 
   it('each schema has type, function.name, function.parameters', () => {
