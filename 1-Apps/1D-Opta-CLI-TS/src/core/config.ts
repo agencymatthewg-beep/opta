@@ -2,6 +2,25 @@ import { z } from 'zod';
 
 const ToolPermission = z.enum(['allow', 'ask', 'deny']);
 
+const McpStdioServerSchema = z.object({
+  transport: z.literal('stdio'),
+  command: z.string(),
+  args: z.array(z.string()).default([]),
+  env: z.record(z.string(), z.string()).default({}),
+});
+
+const McpHttpServerSchema = z.object({
+  transport: z.literal('http'),
+  url: z.string().url(),
+});
+
+const McpServerConfigSchema = z.discriminatedUnion('transport', [
+  McpStdioServerSchema,
+  McpHttpServerSchema,
+]);
+
+export { McpServerConfigSchema };
+
 export const OptaConfigSchema = z.object({
   connection: z
     .object({
@@ -39,6 +58,11 @@ export const OptaConfigSchema = z.object({
     .object({
       autoCommit: z.boolean().default(true),
       checkpoints: z.boolean().default(true),
+    })
+    .default({}),
+  mcp: z
+    .object({
+      servers: z.record(z.string(), McpServerConfigSchema).default({}),
     })
     .default({}),
 });

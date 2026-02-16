@@ -49,3 +49,63 @@ describe('config', () => {
     ).toThrow();
   });
 });
+
+describe('MCP config schema', () => {
+  it('defaults to empty servers object', () => {
+    const config = OptaConfigSchema.parse({});
+    expect(config.mcp).toEqual({ servers: {} });
+  });
+
+  it('accepts stdio server config', () => {
+    const config = OptaConfigSchema.parse({
+      mcp: {
+        servers: {
+          filesystem: {
+            transport: 'stdio',
+            command: 'npx',
+            args: ['-y', '@modelcontextprotocol/server-filesystem', '/tmp'],
+            env: { DEBUG: '1' },
+          },
+        },
+      },
+    });
+    expect(config.mcp.servers['filesystem']).toEqual({
+      transport: 'stdio',
+      command: 'npx',
+      args: ['-y', '@modelcontextprotocol/server-filesystem', '/tmp'],
+      env: { DEBUG: '1' },
+    });
+  });
+
+  it('accepts http server config', () => {
+    const config = OptaConfigSchema.parse({
+      mcp: {
+        servers: {
+          remote: {
+            transport: 'http',
+            url: 'https://mcp.example.com/sse',
+          },
+        },
+      },
+    });
+    expect(config.mcp.servers['remote']).toEqual({
+      transport: 'http',
+      url: 'https://mcp.example.com/sse',
+    });
+  });
+
+  it('rejects invalid transport type', () => {
+    expect(() =>
+      OptaConfigSchema.parse({
+        mcp: {
+          servers: {
+            bad: {
+              transport: 'grpc',
+              command: 'foo',
+            },
+          },
+        },
+      })
+    ).toThrow();
+  });
+});
