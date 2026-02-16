@@ -41,7 +41,25 @@ public final class SecureStorage {
         let status = SecItemAdd(query as CFDictionary, nil)
         return status == errSecSuccess
     }
-    
+
+    /// Save a string value to Keychain with iCloud sync enabled.
+    /// Use for pairing tokens that should persist across Apple devices.
+    @discardableResult
+    public func saveSyncable(key: String, value: String) -> Bool {
+        guard let data = value.data(using: .utf8) else { return false }
+        delete(key: key)
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: serviceName,
+            kSecAttrAccount as String: key,
+            kSecValueData as String: data,
+            kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlocked,
+            kSecAttrSynchronizable as String: true
+        ]
+        let status = SecItemAdd(query as CFDictionary, nil)
+        return status == errSecSuccess
+    }
+
     /// Retrieve a string value from Keychain.
     public func load(key: String) -> String? {
         let query: [String: Any] = [
