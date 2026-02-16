@@ -15,6 +15,8 @@ import OptaMolt
 struct BotMapView: View {
     @EnvironmentObject var pairingCoordinator: PairingCoordinator
     @StateObject private var scanner = BotScanner()
+    @StateObject private var clipboardMonitor = ClipboardMonitor()
+    @Environment(\.scenePhase) private var scenePhase
     @State private var botNodes: [BotNode] = []
     @State private var selectedBot: BotNode?
     @State private var appeared = false
@@ -38,6 +40,28 @@ struct BotMapView: View {
 
             // Radar sweep overlay (renders above constellation)
             RadarScanView(isScanning: $scanner.isScanning)
+
+            // Clipboard pairing banner (slides in from top)
+            VStack {
+                if let info = clipboardMonitor.detectedPairing {
+                    ClipboardPairingBanner(
+                        pairingInfo: info,
+                        onPair: {
+                            pairingCoordinator.pendingPairingInfo = info
+                            clipboardMonitor.dismiss()
+                            loadBots()
+                        },
+                        onDismiss: {
+                            withAnimation(.optaSpring) {
+                                clipboardMonitor.dismiss()
+                            }
+                        }
+                    )
+                    .padding(.top, 52) // Below the toolbar title bar
+                }
+                Spacer()
+            }
+            .animation(.optaSpring, value: clipboardMonitor.detectedPairing != nil)
 
             // Toolbar overlay (top-right)
             VStack {
@@ -70,8 +94,14 @@ struct BotMapView: View {
         .onAppear {
             loadBots()
             generateStars()
+            clipboardMonitor.checkClipboard()
             withAnimation(.optaGentle.delay(0.1)) {
                 appeared = true
+            }
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active {
+                clipboardMonitor.checkClipboard()
             }
         }
         .onChange(of: scanner.isScanning) { _, scanning in
