@@ -8,6 +8,55 @@
 
 import SwiftUI
 
+// MARK: - Parse Cache
+
+/// Thread-safe cache for parsed markdown blocks.
+/// Avoids redundant parsing during streaming where onChange fires
+/// on every keystroke but the content may not have meaningfully changed.
+private final class MarkdownParseCache: @unchecked Sendable {
+    /// Cache entry: the input string's identity (count + hash) and the parsed result
+    private struct Entry {
+        let count: Int
+        let hash: Int
+        let blocks: [ContentBlock]
+    }
+
+    private var entry: Entry?
+
+    /// Returns cached blocks if the content matches, otherwise nil.
+    func lookup(_ content: String) -> [ContentBlock]? {
+        guard let e = entry,
+              e.count == content.count,
+              e.hash == content.hashValue else {
+            return nil
+        }
+        return e.blocks
+    }
+
+    /// Stores a parsed result for the given content.
+    func store(_ content: String, blocks: [ContentBlock]) {
+        entry = Entry(count: content.count, hash: content.hashValue, blocks: blocks)
+    }
+}
+
+// MARK: - Cached Regex Helpers
+
+/// Pre-compiled regexes used by MarkdownContent parsing.
+/// Compiled once as static lets to avoid re-creation on every parse call.
+private enum MarkdownRegexCache {
+    /// Collapsible <details> block pattern
+    static let collapsible: NSRegularExpression? = {
+        let pattern = #"<details(\s+open)?>\s*<summary>(.*?)</summary>([\s\S]*?)</details>"#
+        return try? NSRegularExpression(pattern: pattern, options: [])
+    }()
+
+    /// Markdown image pattern: ![alt](url "title")
+    static let image: NSRegularExpression? = {
+        let pattern = #"!\[(.*?)\]\((\S+?)(?:\s+["\'](.+?)["\']\s*)?\)"#
+        return try? NSRegularExpression(pattern: pattern, options: [])
+    }()
+}
+
 // MARK: - Image Data Model
 
 /// Represents parsed image data from markdown
@@ -98,8 +147,16 @@ public struct ChartData: Equatable, Codable, Sendable {
 public enum ContentBlock: Equatable, Sendable {
     /// A paragraph of text (may contain inline formatting)
     case paragraph(String)
-    /// A bullet list with items
-    case bulletList([String])
+    /// A bullet list with items and indent levels
+    case bulletList([BulletItem])
+    /// A numbered list with items
+    case numberedList([NumberedItem])
+    /// A block quote
+    case blockQuote(String)
+    /// A heading (level 1-6)
+    case heading(level: Int, text: String)
+    /// A horizontal rule (---, ***, ___)
+    case horizontalRule
     /// A fenced code block with optional language hint
     case codeBlock(code: String, language: String?)
     /// A collapsible/expandable section with nested content
@@ -110,6 +167,28 @@ public enum ContentBlock: Equatable, Sendable {
     case chart(ChartData)
     /// An inline image with URL, alt text, and optional caption
     case image(ImageData)
+}
+
+/// A bullet list item with indent level for nesting
+public struct BulletItem: Equatable, Sendable {
+    public let content: String
+    public let indentLevel: Int
+
+    public init(content: String, indentLevel: Int = 0) {
+        self.content = content
+        self.indentLevel = indentLevel
+    }
+}
+
+/// A numbered list item
+public struct NumberedItem: Equatable, Sendable {
+    public let number: Int
+    public let content: String
+
+    public init(number: Int, content: String) {
+        self.number = number
+        self.content = content
+    }
 }
 
 // MARK: - MarkdownContent View
@@ -137,11 +216,17 @@ public struct MarkdownContent: View {
     /// Whether the content is currently streaming (affects code block rendering)
     let isStreaming: Bool
 
+    /// Per-instance parse cache — avoids redundant parsing when content hasn't changed.
+    /// Using a reference-type cache so @State isn't needed (it survives view re-init
+    /// as long as SwiftUI reuses the same identity, which it does for streaming updates).
+    private let parseCache = MarkdownParseCache()
+
     /// Initialize with markdown content
     /// - Parameters:
     ///   - content: The markdown string to render
     ///   - textColor: Base color for text (default: optaTextPrimary)
     ///   - isStreaming: Whether content is actively streaming (default: false)
+
     public init(content: String, textColor: Color = .optaTextPrimary, isStreaming: Bool = false) {
         self.content = content
         self.baseTextColor = textColor
@@ -158,11 +243,21 @@ public struct MarkdownContent: View {
         }
         .textSelection(.enabled)
         .onAppear {
-            blocks = parseBlocks(content)
+            blocks = cachedParseBlocks(content)
         }
         .onChange(of: content) { _, newContent in
-            blocks = parseBlocks(newContent)
+            blocks = cachedParseBlocks(newContent)
         }
+    }
+
+    /// Parse blocks with caching — returns cached result if content hasn't changed.
+    private func cachedParseBlocks(_ content: String) -> [ContentBlock] {
+        if let cached = parseCache.lookup(content) {
+            return cached
+        }
+        let result = parseBlocks(content)
+        parseCache.store(content, blocks: result)
+        return result
     }
 
     // MARK: - Block Parsing
@@ -189,20 +284,42 @@ public struct MarkdownContent: View {
         var tableSeparatorLine: String?
         var tableDataLines: [String] = []
 
+        // List parsing state
+        var currentBulletItems: [BulletItem] = []
+        var currentNumberedItems: [NumberedItem] = []
+        var currentBlockQuoteLines: [String] = []
+
+        /// Flush all pending accumulators into blocks
+        func flushPending() {
+            if !currentParagraph.isEmpty {
+                blocks.append(.paragraph(currentParagraph.joined(separator: "\n")))
+                currentParagraph = []
+            }
+            if !currentBulletList.isEmpty {
+                // Legacy path — convert to BulletItem
+                blocks.append(.bulletList(currentBulletList.map { BulletItem(content: $0) }))
+                currentBulletList = []
+            }
+            if !currentBulletItems.isEmpty {
+                blocks.append(.bulletList(currentBulletItems))
+                currentBulletItems = []
+            }
+            if !currentNumberedItems.isEmpty {
+                blocks.append(.numberedList(currentNumberedItems))
+                currentNumberedItems = []
+            }
+            if !currentBlockQuoteLines.isEmpty {
+                blocks.append(.blockQuote(currentBlockQuoteLines.joined(separator: "\n")))
+                currentBlockQuoteLines = []
+            }
+        }
+
         for line in lines {
             let trimmed = line.trimmingCharacters(in: .whitespaces)
 
             // Check for collapsible placeholder
             if trimmed.hasPrefix("__COLLAPSIBLE_PLACEHOLDER_") && trimmed.hasSuffix("__") {
-                // Flush any pending content
-                if !currentParagraph.isEmpty {
-                    blocks.append(.paragraph(currentParagraph.joined(separator: "\n")))
-                    currentParagraph = []
-                }
-                if !currentBulletList.isEmpty {
-                    blocks.append(.bulletList(currentBulletList))
-                    currentBulletList = []
-                }
+                flushPending()
 
                 // Extract index from placeholder
                 // "__COLLAPSIBLE_PLACEHOLDER_" is 26 chars, "__" suffix is 2 chars, need at least 29 (26 + 1 digit + 2)
@@ -221,15 +338,7 @@ public struct MarkdownContent: View {
             if trimmed.hasPrefix("```") {
                 if inCodeBlock {
                     // End of code block
-                    // Flush any pending content first
-                    if !currentParagraph.isEmpty {
-                        blocks.append(.paragraph(currentParagraph.joined(separator: "\n")))
-                        currentParagraph = []
-                    }
-                    if !currentBulletList.isEmpty {
-                        blocks.append(.bulletList(currentBulletList))
-                        currentBulletList = []
-                    }
+                    flushPending()
 
                     // Check if this is a chart code block
                     if codeBlockLanguage?.lowercased() == "chart" {
@@ -237,7 +346,6 @@ public struct MarkdownContent: View {
                         if let chartData = parseChartJSON(code) {
                             blocks.append(.chart(chartData))
                         } else {
-                            // Failed to parse as chart, fall back to code block
                             blocks.append(.codeBlock(code: code, language: codeBlockLanguage))
                         }
                     } else {
@@ -248,15 +356,7 @@ public struct MarkdownContent: View {
                     inCodeBlock = false
                 } else {
                     // Start of code block
-                    // Flush any pending content
-                    if !currentParagraph.isEmpty {
-                        blocks.append(.paragraph(currentParagraph.joined(separator: "\n")))
-                        currentParagraph = []
-                    }
-                    if !currentBulletList.isEmpty {
-                        blocks.append(.bulletList(currentBulletList))
-                        currentBulletList = []
-                    }
+                    flushPending()
 
                     inCodeBlock = true
                     let langPart = String(trimmed.dropFirst(3)).trimmingCharacters(in: .whitespaces)
@@ -274,26 +374,15 @@ public struct MarkdownContent: View {
             if isTableRow(trimmed) {
                 // Flush any pending content before starting table
                 if !inTable {
-                    if !currentParagraph.isEmpty {
-                        blocks.append(.paragraph(currentParagraph.joined(separator: "\n")))
-                        currentParagraph = []
-                    }
-                    if !currentBulletList.isEmpty {
-                        blocks.append(.bulletList(currentBulletList))
-                        currentBulletList = []
-                    }
+                    flushPending()
                 }
 
                 if tableHeaderLine == nil {
-                    // First row is the header
                     tableHeaderLine = trimmed
                     inTable = true
                 } else if tableSeparatorLine == nil && isTableSeparator(trimmed) {
-                    // Second row should be separator
                     tableSeparatorLine = trimmed
                 } else if tableSeparatorLine == nil {
-                    // Second row is not a separator - this isn't a table, treat as regular content
-                    // Flush what we have as paragraph
                     if let header = tableHeaderLine {
                         currentParagraph.append(header)
                     }
@@ -301,24 +390,20 @@ public struct MarkdownContent: View {
                     tableHeaderLine = nil
                     inTable = false
                 } else {
-                    // Data row
                     tableDataLines.append(trimmed)
                 }
                 continue
             } else if inTable {
-                // Non-table line ends the table
                 if let header = tableHeaderLine,
                    let tableData = parseTable(headerLine: header, separatorLine: tableSeparatorLine, dataLines: tableDataLines) {
                     blocks.append(.table(tableData))
                 } else if let header = tableHeaderLine {
-                    // Couldn't parse as table - treat as paragraph
                     currentParagraph.append(header)
                     if let sep = tableSeparatorLine {
                         currentParagraph.append(sep)
                     }
                     currentParagraph.append(contentsOf: tableDataLines)
                 }
-                // Reset table state
                 tableHeaderLine = nil
                 tableSeparatorLine = nil
                 tableDataLines = []
@@ -327,67 +412,123 @@ public struct MarkdownContent: View {
 
             // Check for standalone image line
             if isImageLine(trimmed) {
-                // Flush any pending content
-                if !currentParagraph.isEmpty {
-                    blocks.append(.paragraph(currentParagraph.joined(separator: "\n")))
-                    currentParagraph = []
-                }
-                if !currentBulletList.isEmpty {
-                    blocks.append(.bulletList(currentBulletList))
-                    currentBulletList = []
-                }
-                // Parse and add the image
+                flushPending()
                 if let imageData = parseImageFromLine(trimmed) {
                     blocks.append(.image(imageData))
                 }
                 continue
             }
 
-            if isBulletLine(trimmed) {
+            // Horizontal rule
+            if isHorizontalRule(trimmed) {
+                flushPending()
+                blocks.append(.horizontalRule)
+                continue
+            }
+
+            // Headings
+            if isHeadingLine(trimmed) {
+                flushPending()
+                let (level, text) = extractHeading(trimmed)
+                blocks.append(.heading(level: level, text: text))
+                continue
+            }
+
+            // Block quotes
+            if isBlockQuoteLine(line) {
+                // Flush non-blockquote pending content
+                if !currentParagraph.isEmpty {
+                    blocks.append(.paragraph(currentParagraph.joined(separator: "\n")))
+                    currentParagraph = []
+                }
+                if !currentBulletItems.isEmpty {
+                    blocks.append(.bulletList(currentBulletItems))
+                    currentBulletItems = []
+                }
+                if !currentNumberedItems.isEmpty {
+                    blocks.append(.numberedList(currentNumberedItems))
+                    currentNumberedItems = []
+                }
+                currentBlockQuoteLines.append(extractBlockQuoteContent(line))
+                continue
+            } else if !currentBlockQuoteLines.isEmpty {
+                blocks.append(.blockQuote(currentBlockQuoteLines.joined(separator: "\n")))
+                currentBlockQuoteLines = []
+            }
+
+            // Numbered lists (check before bullet to avoid conflicts)
+            if isNumberedLine(line) {
+                // Flush paragraph and bullet lists
+                if !currentParagraph.isEmpty {
+                    blocks.append(.paragraph(currentParagraph.joined(separator: "\n")))
+                    currentParagraph = []
+                }
+                if !currentBulletItems.isEmpty {
+                    blocks.append(.bulletList(currentBulletItems))
+                    currentBulletItems = []
+                }
+                let (number, content) = extractNumberedContent(line)
+                currentNumberedItems.append(NumberedItem(number: number, content: content))
+                continue
+            } else if !currentNumberedItems.isEmpty {
+                blocks.append(.numberedList(currentNumberedItems))
+                currentNumberedItems = []
+            }
+
+            // Bullet lists
+            if isBulletLine(line) {
                 // Flush any pending paragraph
                 if !currentParagraph.isEmpty {
                     blocks.append(.paragraph(currentParagraph.joined(separator: "\n")))
                     currentParagraph = []
                 }
-                // Add to bullet list
-                let bulletContent = extractBulletContent(trimmed)
-                currentBulletList.append(bulletContent)
-            } else {
-                // Flush any pending bullet list
-                if !currentBulletList.isEmpty {
-                    blocks.append(.bulletList(currentBulletList))
-                    currentBulletList = []
+                if !currentNumberedItems.isEmpty {
+                    blocks.append(.numberedList(currentNumberedItems))
+                    currentNumberedItems = []
                 }
-                // Add to paragraph (or keep empty line as separator)
-                if !trimmed.isEmpty {
-                    currentParagraph.append(line)
-                } else if !currentParagraph.isEmpty {
-                    // Empty line ends paragraph
-                    blocks.append(.paragraph(currentParagraph.joined(separator: "\n")))
-                    currentParagraph = []
-                }
+                let bulletContent = extractBulletContent(line)
+                let indent = bulletIndentLevel(line)
+                currentBulletItems.append(BulletItem(content: bulletContent, indentLevel: indent))
+                continue
+            } else if !currentBulletItems.isEmpty {
+                blocks.append(.bulletList(currentBulletItems))
+                currentBulletItems = []
+            }
+
+            // Regular text
+            if !trimmed.isEmpty {
+                currentParagraph.append(line)
+            } else if !currentParagraph.isEmpty {
+                blocks.append(.paragraph(currentParagraph.joined(separator: "\n")))
+                currentParagraph = []
             }
         }
 
         // Flush remaining content
         if inCodeBlock {
-            // Unclosed code block during streaming - render what we have
             blocks.append(.codeBlock(code: codeBlockLines.joined(separator: "\n"), language: codeBlockLanguage))
         }
-        // Flush remaining table
         if inTable {
             if let header = tableHeaderLine,
                let tableData = parseTable(headerLine: header, separatorLine: tableSeparatorLine, dataLines: tableDataLines) {
                 blocks.append(.table(tableData))
             } else if let header = tableHeaderLine {
-                // Incomplete table during streaming - render header-only table
                 if let tableData = parseTable(headerLine: header, separatorLine: tableSeparatorLine, dataLines: []) {
                     blocks.append(.table(tableData))
                 }
             }
         }
         if !currentBulletList.isEmpty {
-            blocks.append(.bulletList(currentBulletList))
+            blocks.append(.bulletList(currentBulletList.map { BulletItem(content: $0) }))
+        }
+        if !currentBulletItems.isEmpty {
+            blocks.append(.bulletList(currentBulletItems))
+        }
+        if !currentNumberedItems.isEmpty {
+            blocks.append(.numberedList(currentNumberedItems))
+        }
+        if !currentBlockQuoteLines.isEmpty {
+            blocks.append(.blockQuote(currentBlockQuoteLines.joined(separator: "\n")))
         }
         if !currentParagraph.isEmpty {
             blocks.append(.paragraph(currentParagraph.joined(separator: "\n")))
@@ -413,9 +554,7 @@ public struct MarkdownContent: View {
 
         // Pattern: <details>\s*<summary>Title</summary>Content</details>
         // Also handles optional "open" attribute: <details open>
-        let pattern = #"<details(\s+open)?>\s*<summary>(.*?)</summary>([\s\S]*?)</details>"#
-
-        guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
+        guard let regex = MarkdownRegexCache.collapsible else {
             return (content, [])
         }
 
@@ -504,21 +643,99 @@ public struct MarkdownContent: View {
         return openCount % 2 == 1  // Odd number means unclosed
     }
 
-    /// Check if a line is a bullet list item
+    /// Check if a line is a bullet list item (supports nesting with indentation)
     private func isBulletLine(_ line: String) -> Bool {
-        line.hasPrefix("- ") || line.hasPrefix("* ") || line.hasPrefix("+ ")
+        let trimmed = line.trimmingCharacters(in: .init(charactersIn: " "))
+        return trimmed.hasPrefix("- ") || trimmed.hasPrefix("* ") || trimmed.hasPrefix("+ ")
+    }
+
+    /// Check if a line is a numbered list item (e.g., "1. ", "2. ")
+    private func isNumberedLine(_ line: String) -> Bool {
+        let trimmed = line.trimmingCharacters(in: .init(charactersIn: " "))
+        guard let dotIndex = trimmed.firstIndex(of: ".") else { return false }
+        let prefix = trimmed[trimmed.startIndex..<dotIndex]
+        guard !prefix.isEmpty, prefix.allSatisfy(\.isNumber) else { return false }
+        let afterDot = trimmed.index(after: dotIndex)
+        return afterDot < trimmed.endIndex && trimmed[afterDot] == " "
     }
 
     /// Extract content after bullet marker
     private func extractBulletContent(_ line: String) -> String {
-        if line.hasPrefix("- ") {
-            return String(line.dropFirst(2))
-        } else if line.hasPrefix("* ") {
-            return String(line.dropFirst(2))
-        } else if line.hasPrefix("+ ") {
-            return String(line.dropFirst(2))
+        let trimmed = line.trimmingCharacters(in: .init(charactersIn: " "))
+        if trimmed.hasPrefix("- ") {
+            return String(trimmed.dropFirst(2))
+        } else if trimmed.hasPrefix("* ") {
+            return String(trimmed.dropFirst(2))
+        } else if trimmed.hasPrefix("+ ") {
+            return String(trimmed.dropFirst(2))
         }
-        return line
+        return trimmed
+    }
+
+    /// Get indent level of a bullet line (number of leading spaces / 2)
+    private func bulletIndentLevel(_ line: String) -> Int {
+        let leadingSpaces = line.prefix(while: { $0 == " " }).count
+        return leadingSpaces / 2
+    }
+
+    /// Extract number and content from a numbered list item
+    private func extractNumberedContent(_ line: String) -> (number: Int, content: String) {
+        let trimmed = line.trimmingCharacters(in: .init(charactersIn: " "))
+        guard let dotIndex = trimmed.firstIndex(of: ".") else { return (1, trimmed) }
+        let prefix = trimmed[trimmed.startIndex..<dotIndex]
+        let number = Int(prefix) ?? 1
+        let afterDot = trimmed.index(after: dotIndex)
+        guard afterDot < trimmed.endIndex else { return (number, "") }
+        return (number, String(trimmed[trimmed.index(after: afterDot)...]))
+    }
+
+    /// Check if a line is a block quote (starts with > )
+    private func isBlockQuoteLine(_ line: String) -> Bool {
+        let trimmed = line.trimmingCharacters(in: .init(charactersIn: " "))
+        return trimmed.hasPrefix("> ") || trimmed == ">"
+    }
+
+    /// Extract content after block quote marker
+    private func extractBlockQuoteContent(_ line: String) -> String {
+        let trimmed = line.trimmingCharacters(in: .init(charactersIn: " "))
+        if trimmed.hasPrefix("> ") {
+            return String(trimmed.dropFirst(2))
+        }
+        if trimmed == ">" {
+            return ""
+        }
+        return trimmed
+    }
+
+    /// Check if a line is a heading (starts with # )
+    private func isHeadingLine(_ line: String) -> Bool {
+        let trimmed = line.trimmingCharacters(in: .whitespaces)
+        return trimmed.hasPrefix("# ") || trimmed.hasPrefix("## ") || trimmed.hasPrefix("### ")
+            || trimmed.hasPrefix("#### ") || trimmed.hasPrefix("##### ") || trimmed.hasPrefix("###### ")
+    }
+
+    /// Extract heading level and content
+    private func extractHeading(_ line: String) -> (level: Int, content: String) {
+        let trimmed = line.trimmingCharacters(in: .whitespaces)
+        var level = 0
+        var idx = trimmed.startIndex
+        while idx < trimmed.endIndex && trimmed[idx] == "#" {
+            level += 1
+            idx = trimmed.index(after: idx)
+        }
+        // Skip the space after #
+        if idx < trimmed.endIndex && trimmed[idx] == " " {
+            idx = trimmed.index(after: idx)
+        }
+        return (level, String(trimmed[idx...]))
+    }
+
+    /// Check if a line is a horizontal rule (---, ***, ___)
+    private func isHorizontalRule(_ line: String) -> Bool {
+        let trimmed = line.trimmingCharacters(in: .whitespaces)
+        if trimmed.count < 3 { return false }
+        let chars = Set(trimmed)
+        return (chars == ["-"] || chars == ["*"] || chars == ["_"]) && trimmed.count >= 3
     }
 
     // MARK: - Image Parsing
@@ -542,10 +759,8 @@ public struct MarkdownContent: View {
         let trimmed = line.trimmingCharacters(in: .whitespaces)
 
         // Pattern: ![alt text](url) or ![alt text](url "title")
-        // Use regex for robust parsing
-        let pattern = #"!\[(.*?)\]\((\S+?)(?:\s+["\'](.+?)["\']\s*)?\)"#
-
-        guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
+        // Use cached pre-compiled regex for robust parsing
+        guard let regex = MarkdownRegexCache.image else {
             return nil
         }
 
@@ -587,9 +802,7 @@ public struct MarkdownContent: View {
     /// - Parameter text: Paragraph text that may contain inline images
     /// - Returns: Array of ContentBlocks (paragraphs and images interleaved)
     private func extractImagesFromParagraph(_ text: String) -> [ContentBlock] {
-        let pattern = #"!\[(.*?)\]\((\S+?)(?:\s+["\'](.+?)["\']\s*)?\)"#
-
-        guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
+        guard let regex = MarkdownRegexCache.image else {
             return [.paragraph(text)]
         }
 
@@ -793,9 +1006,15 @@ public struct MarkdownContent: View {
             renderParagraph(text)
         case .bulletList(let items):
             renderBulletList(items)
+        case .numberedList(let items):
+            renderNumberedList(items)
+        case .blockQuote(let text):
+            renderBlockQuote(text)
+        case .heading(let level, let text):
+            renderHeading(level: level, text: text)
+        case .horizontalRule:
+            renderHorizontalRule()
         case .codeBlock(let code, let language):
-            // Determine if this specific code block is still streaming
-            // (if it's the last block and content is streaming with partial code)
             let isPartialBlock = isStreaming && MarkdownContent.hasPartialCodeBlock(content)
             CodeBlockView(code: code, language: language, isStreaming: isPartialBlock)
                 .padding(.vertical, 4)
@@ -809,7 +1028,6 @@ public struct MarkdownContent: View {
             )
             .padding(.vertical, 4)
         case .table(let data):
-            // TableView will be implemented in Task 3 - placeholder for now
             TableView(data: data, textColor: baseTextColor)
                 .padding(.vertical, 4)
         case .chart(let chartData):
@@ -827,52 +1045,227 @@ public struct MarkdownContent: View {
             .foregroundColor(baseTextColor)
     }
 
-    /// Render a bullet list
-    private func renderBulletList(_ items: [String]) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
+    /// Render a heading
+    private func renderHeading(level: Int, text: String) -> some View {
+        let fontSize: CGFloat = level == 1 ? 24 : level == 2 ? 20 : level == 3 ? 17 : level == 4 ? 15 : 14
+        let weight: Font.Weight = level <= 2 ? .bold : level <= 4 ? .semibold : .medium
+        return styledText(text)
+            .font(.system(size: fontSize, weight: weight))
+            .foregroundColor(baseTextColor)
+            .padding(.top, level <= 2 ? 4 : 2)
+    }
+
+    /// Render a horizontal rule
+    private func renderHorizontalRule() -> some View {
+        Rectangle()
+            .fill(Color.optaBorder)
+            .frame(height: 1)
+            .padding(.vertical, 8)
+    }
+
+    /// Render a block quote with left border bar
+    private func renderBlockQuote(_ text: String) -> some View {
+        HStack(alignment: .top, spacing: 0) {
+            RoundedRectangle(cornerRadius: 1.5)
+                .fill(Color.optaPrimary)
+                .frame(width: 3)
+
+            styledText(text)
+                .italic()
+                .foregroundColor(baseTextColor.opacity(0.85))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 6)
+                .fill(Color.optaElevated.opacity(0.6))
+        )
+        .padding(.vertical, 2)
+    }
+
+    /// Render a bullet list with proper nesting and styled bullets
+    private func renderBulletList(_ items: [BulletItem]) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
             ForEach(Array(items.enumerated()), id: \.offset) { _, item in
                 renderBulletItem(item)
             }
         }
     }
 
-    /// Render a single bullet item
-    private func renderBulletItem(_ text: String) -> some View {
+    /// Render a single bullet item with indent and styled bullet
+    private func renderBulletItem(_ item: BulletItem) -> some View {
         HStack(alignment: .top, spacing: 8) {
+            // Bullet dot — optaPrimary colored
             Circle()
-                .fill(baseTextColor.opacity(0.6))
-                .frame(width: 6, height: 6)
-                .padding(.top, 7)  // Align with text baseline
+                .fill(item.indentLevel == 0 ? Color.optaPrimary : Color.optaPrimary.opacity(0.6))
+                .frame(width: item.indentLevel == 0 ? 6 : 5, height: item.indentLevel == 0 ? 6 : 5)
+                .padding(.top, 7)
 
-            styledText(text)
+            styledText(item.content)
                 .foregroundColor(baseTextColor)
+        }
+        .padding(.leading, CGFloat(item.indentLevel) * 16)
+    }
+
+    /// Render a numbered list with aligned numbers
+    private func renderNumberedList(_ items: [NumberedItem]) -> some View {
+        let maxNum = items.map(\.number).max() ?? 1
+        let numWidth: CGFloat = maxNum >= 10 ? 24 : 16
+
+        return VStack(alignment: .leading, spacing: 5) {
+            ForEach(Array(items.enumerated()), id: \.offset) { _, item in
+                HStack(alignment: .top, spacing: 6) {
+                    Text("\(item.number).")
+                        .font(.system(size: 14, weight: .medium, design: .default))
+                        .foregroundColor(.optaPrimary)
+                        .frame(width: numWidth, alignment: .trailing)
+                        .padding(.top, 1)
+
+                    styledText(item.content)
+                        .foregroundColor(baseTextColor)
+                }
+            }
         }
     }
 
     // MARK: - Inline Formatting
 
     /// Create styled text with inline markdown formatting
-    /// Uses AttributedString for bold, italic, and links
+    /// Uses AttributedString for bold, italic, strikethrough, and links
     /// Handles inline code separately with custom styling
     private func styledText(_ text: String) -> Text {
-        // First, handle inline code blocks which need special styling
         let segments = parseInlineCode(text)
+        // Post-process text segments to extract @mentions
+        let finalSegments = extractMentionSegments(from: segments)
 
         var result = Text("")
-        for segment in segments {
+        for segment in finalSegments {
             switch segment {
             case .text(let content):
-                // Use AttributedString for bold/italic/links
-                if let attributed = try? AttributedString(markdown: content) {
+                // Handle strikethrough manually since AttributedString(markdown:) may not handle ~~
+                let processed = processStrikethrough(content)
+                result = result + processed
+            case .code(let code):
+                // Inline code pill: monospace + optaPrimary on optaElevated background
+                // SwiftUI Text doesn't support inline background, so we use visual cues:
+                // space padding + monospace + distinct color
+                result = result + Text("\u{2009}\(code)\u{2009}")
+                    .font(.system(size: 13, design: .monospaced))
+                    .foregroundColor(.optaPrimary)
+            case .mention(let name):
+                // @mention highlighted in optaPrimary with semibold weight
+                result = result + Text("@\(name)")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.optaPrimary)
+            }
+        }
+
+        return result
+    }
+
+    /// Extract @mention tokens from text segments.
+    /// Only processes `.text` segments — code and existing mentions are left untouched.
+    private func extractMentionSegments(from segments: [TextSegment]) -> [TextSegment] {
+        var result: [TextSegment] = []
+        for segment in segments {
+            guard case .text(let content) = segment else {
+                result.append(segment)
+                continue
+            }
+            // Split text on @mention patterns
+            var remaining = content[content.startIndex...]
+            while !remaining.isEmpty {
+                guard let atIndex = remaining.firstIndex(of: "@") else {
+                    result.append(.text(String(remaining)))
+                    break
+                }
+                // Check that @ is at start or preceded by whitespace
+                let validStart = atIndex == remaining.startIndex
+                    || remaining[remaining.index(before: atIndex)].isWhitespace
+                let afterAt = remaining.index(after: atIndex)
+                if validStart && afterAt < remaining.endIndex && remaining[afterAt].isLetter {
+                    // Extract the mention word (letters, digits, spaces between capitalized words)
+                    var endIndex = afterAt
+                    while endIndex < remaining.endIndex && !remaining[endIndex].isNewline {
+                        let nextChar = remaining[endIndex]
+                        if nextChar.isLetter || nextChar.isNumber {
+                            endIndex = remaining.index(after: endIndex)
+                        } else if nextChar == " " {
+                            // Allow space for multi-word bot names like "Opta Max"
+                            let afterSpace = remaining.index(after: endIndex)
+                            if afterSpace < remaining.endIndex && remaining[afterSpace].isUppercase {
+                                endIndex = remaining.index(after: endIndex)
+                            } else {
+                                break
+                            }
+                        } else {
+                            break
+                        }
+                    }
+                    let mentionName = String(remaining[afterAt..<endIndex])
+                    if !mentionName.isEmpty {
+                        // Add text before @
+                        if atIndex > remaining.startIndex {
+                            result.append(.text(String(remaining[remaining.startIndex..<atIndex])))
+                        }
+                        result.append(.mention(mentionName))
+                        remaining = remaining[endIndex...]
+                    } else {
+                        result.append(.text(String(remaining[remaining.startIndex...atIndex])))
+                        remaining = remaining[afterAt...]
+                    }
+                } else {
+                    // @ not at valid word boundary, include up to and past @
+                    let nextIndex = remaining.index(after: atIndex)
+                    result.append(.text(String(remaining[remaining.startIndex..<nextIndex])))
+                    remaining = remaining[nextIndex...]
+                }
+            }
+        }
+        return result
+    }
+
+    /// Process text that may contain ~~strikethrough~~ markers
+    private func processStrikethrough(_ text: String) -> Text {
+        var result = Text("")
+        var remaining = text
+
+        while !remaining.isEmpty {
+            if let openRange = remaining.range(of: "~~") {
+                // Text before ~~
+                let before = String(remaining[..<openRange.lowerBound])
+                if !before.isEmpty {
+                    if let attributed = try? AttributedString(markdown: before) {
+                        result = result + Text(attributed)
+                    } else {
+                        result = result + Text(before)
+                    }
+                }
+
+                let afterOpen = remaining[openRange.upperBound...]
+                if let closeRange = afterOpen.range(of: "~~") {
+                    // Found closing ~~ — apply strikethrough
+                    let struck = String(afterOpen[..<closeRange.lowerBound])
+                    result = result + Text(struck).strikethrough()
+                    remaining = String(afterOpen[closeRange.upperBound...])
+                } else {
+                    // No closing ~~ — treat as plain text
+                    if let attributed = try? AttributedString(markdown: String(remaining)) {
+                        result = result + Text(attributed)
+                    } else {
+                        result = result + Text(remaining)
+                    }
+                    remaining = ""
+                }
+            } else {
+                // No ~~ — render with AttributedString for bold/italic/links
+                if let attributed = try? AttributedString(markdown: remaining) {
                     result = result + Text(attributed)
                 } else {
-                    result = result + Text(content)
+                    result = result + Text(remaining)
                 }
-            case .code(let code):
-                // Monospace styling for inline code
-                result = result + Text(code)
-                    .font(.system(.body, design: .monospaced))
-                    .foregroundColor(.optaPrimary)
+                remaining = ""
             }
         }
 
@@ -883,6 +1276,7 @@ public struct MarkdownContent: View {
     private enum TextSegment {
         case text(String)
         case code(String)
+        case mention(String) // @botname token
     }
 
     /// Parse inline code blocks from text
@@ -902,7 +1296,6 @@ public struct MarkdownContent: View {
                 // Look for closing backtick
                 let afterOpen = remaining[openRange.upperBound...]
                 if let closeRange = afterOpen.range(of: "`") {
-                    // Found matching backtick - extract code
                     let codeContent = String(afterOpen[..<closeRange.lowerBound])
                     segments.append(.code(codeContent))
                     remaining = String(afterOpen[closeRange.upperBound...])
@@ -912,7 +1305,6 @@ public struct MarkdownContent: View {
                     remaining = ""
                 }
             } else {
-                // No more backticks - add remaining as text
                 segments.append(.text(remaining))
                 remaining = ""
             }
@@ -1045,19 +1437,36 @@ struct MarkdownContent_Previews: PreviewProvider {
                 // Basic formatting
                 MarkdownContent(content: "**Bold** and *italic* text")
 
+                // Strikethrough
+                MarkdownContent(content: "This is ~~deleted~~ updated text")
+
                 // Inline code
-                MarkdownContent(content: "Use `print()` to debug")
+                MarkdownContent(content: "Use `print()` to debug and `let x = 42`")
 
                 // Links
                 MarkdownContent(content: "Visit [Apple](https://apple.com) for more")
 
-                // Bullet list
+                // Headings
+                MarkdownContent(content: "# Heading 1\n## Heading 2\n### Heading 3")
+
+                // Block quote
+                MarkdownContent(content: "> This is a block quote with some **bold** text.\n> It can span multiple lines.")
+
+                // Horizontal rule
+                MarkdownContent(content: "Above the line\n\n---\n\nBelow the line")
+
+                // Bullet list with nesting
                 MarkdownContent(content: """
                     Features:
                     - Fast rendering
+                      - Sub-feature one
+                      - Sub-feature two
                     - Streaming support
                     - Beautiful styling
                     """)
+
+                // Numbered list
+                MarkdownContent(content: "1. First item\n2. Second item\n3. Third item")
 
                 // Code block with language
                 MarkdownContent(content: """
@@ -1072,15 +1481,6 @@ struct MarkdownContent_Previews: PreviewProvider {
                     That's it!
                     """)
 
-                // Code block without language
-                MarkdownContent(content: """
-                    Generic code:
-                    ```
-                    npm install
-                    npm run dev
-                    ```
-                    """)
-
                 // Mixed content
                 MarkdownContent(content: """
                     Here's a **bold** statement with `code`.
@@ -1089,6 +1489,8 @@ struct MarkdownContent_Previews: PreviewProvider {
                     - First *important* item
                     - Second item with `inline code`
                     - Third item
+
+                    > Remember: always test your code!
 
                     That's all!
                     """)

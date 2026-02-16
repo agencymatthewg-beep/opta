@@ -66,12 +66,12 @@ struct LabeledField: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(label)
-                .font(.system(size: 11, weight: .medium))
+                .font(.sora(11, weight: .medium))
                 .foregroundColor(.optaTextMuted)
             
             TextField(placeholder, text: $text)
                 .textFieldStyle(.plain)
-                .font(.system(size: 13))
+                .font(.sora(13))
                 .foregroundColor(.optaTextPrimary)
                 .padding(8)
                 .background(
@@ -85,7 +85,7 @@ struct LabeledField: View {
             
             if let errorMsg = validation?.errorMessage {
                 Text(errorMsg)
-                    .font(.system(size: 10))
+                    .font(.sora(10))
                     .foregroundColor(.optaRed)
                     .transition(.opacity)
             }
@@ -137,11 +137,11 @@ struct TelegramSettingsTab: View {
                 .foregroundColor(.optaTextMuted)
 
             Text("Telegram Sync")
-                .font(.system(size: 14, weight: .semibold))
+                .font(.sora(14, weight: .semibold))
                 .foregroundColor(.optaTextSecondary)
 
             Text("Bidirectional Telegram sync is planned but requires TDLibKit integration.\nMessages sent from OptaPlus will be relayed by the bot.")
-                .font(.system(size: 12))
+                .font(.sora(12))
                 .foregroundColor(.optaTextMuted)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 300)
@@ -161,7 +161,7 @@ struct BotsSettingsView: View {
                     HStack {
                         Text(bot.emoji)
                         Text(bot.name)
-                            .font(.system(size: 13))
+                            .font(.sora(13))
                     }
                     .tag(bot.id)
                 }
@@ -256,7 +256,7 @@ struct BotDetailEditor: View {
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
                     Text("Accent Color")
-                        .font(.system(size: 11, weight: .medium))
+                        .font(.sora(11, weight: .medium))
                         .foregroundColor(.optaTextMuted)
                     Spacer()
                     if hasBotAccentOverride {
@@ -265,7 +265,7 @@ struct BotDetailEditor: View {
                             hasBotAccentOverride = false
                             botAccentColorBinding = botAccentColor(for: bot)
                         }
-                        .font(.system(size: 10))
+                        .font(.sora(10))
                         .foregroundColor(.optaTextMuted)
                         .buttonStyle(.plain)
                     }
@@ -293,7 +293,7 @@ struct BotDetailEditor: View {
                                 .font(.system(size: 12))
                         }
                         Text("Test Connection")
-                            .font(.system(size: 12, weight: .medium))
+                            .font(.sora(12, weight: .medium))
                     }
                     .foregroundColor(.optaTextSecondary)
                     .padding(.horizontal, 12)
@@ -324,7 +324,7 @@ struct BotDetailEditor: View {
                             .foregroundColor(.optaGreen)
                             .font(.system(size: 14))
                         Text("Connected")
-                            .font(.system(size: 11))
+                            .font(.sora(11))
                             .foregroundColor(.optaGreen)
                     }
                     .transition(.scale(scale: 0.8).combined(with: .opacity))
@@ -334,7 +334,7 @@ struct BotDetailEditor: View {
                             .foregroundColor(.optaRed)
                             .font(.system(size: 14))
                         Text(error)
-                            .font(.system(size: 11))
+                            .font(.sora(11))
                             .foregroundColor(.optaRed)
                             .lineLimit(1)
                     }
@@ -381,7 +381,10 @@ struct BotDetailEditor: View {
         
         Task {
             do {
-                let url = URL(string: "ws://\(testHost):\(testPort)")!
+                guard let url = URL(string: "ws://\(testHost):\(testPort)") else {
+                    testResult = .failure("Invalid URL")
+                    return
+                }
                 let session = URLSession(configuration: .default)
                 let task = session.webSocketTask(with: url)
                 task.resume()
@@ -455,7 +458,7 @@ struct GeneralSettingsView: View {
                         .foregroundColor(.optaTextMuted)
 
                     Text("Native OpenClaw chat client")
-                        .font(.system(size: 13))
+                        .font(.sora(13))
                         .foregroundColor(.optaTextSecondary)
                 }
 
@@ -471,7 +474,7 @@ struct GeneralSettingsView: View {
 
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Device Emoji")
-                            .font(.system(size: 11, weight: .medium))
+                            .font(.sora(11, weight: .medium))
                             .foregroundColor(.optaTextMuted)
                         HStack(spacing: 6) {
                             ForEach(["📱", "💻", "🖥️", "⌚", "🎧", "🎮", "📡", "🏠", "🏢", "🚀", "⚡", "🔮"], id: \.self) { e in
@@ -496,7 +499,7 @@ struct GeneralSettingsView: View {
                     }
 
                     Text("Messages will be tagged with this name and emoji so bots know the source device.")
-                        .font(.system(size: 11))
+                        .font(.sora(11))
                         .foregroundColor(.optaTextMuted)
                 }
 
@@ -532,7 +535,7 @@ struct GeneralSettingsView: View {
                             Button("Reset") {
                                 themeManager.customAccentColor = nil
                             }
-                            .font(.system(size: 10, weight: .medium))
+                            .font(.sora(10, weight: .medium))
                             .foregroundColor(.optaTextMuted)
                             .buttonStyle(.plain)
                         }
@@ -546,11 +549,11 @@ struct GeneralSettingsView: View {
                         ),
                         supportsOpacity: false
                     )
-                    .font(.system(size: 12))
+                    .font(.sora(12))
                     .foregroundColor(.optaTextSecondary)
 
                     Text("Override the theme's accent color with any color you choose.")
-                        .font(.system(size: 11))
+                        .font(.sora(11))
                         .foregroundColor(.optaTextMuted)
                 }
 
@@ -564,19 +567,19 @@ struct GeneralSettingsView: View {
 
                     HStack {
                         Text("A")
-                            .font(.system(size: 10))
+                            .font(.sora(10))
                             .foregroundColor(.optaTextMuted)
                         Slider(value: $fontScaleIndex, in: 0...3, step: 1)
                             .onChange(of: fontScaleIndex) { _, newVal in
                                 themeManager.fontScale = FontScale(index: newVal)
                             }
                         Text("A")
-                            .font(.system(size: 18, weight: .bold))
+                            .font(.sora(18, weight: .bold))
                             .foregroundColor(.optaTextMuted)
                     }
 
                     Text(themeManager.fontScale.label)
-                        .font(.system(size: 11, weight: .medium))
+                        .font(.sora(11, weight: .medium))
                         .foregroundColor(.optaTextSecondary)
                 }
 
@@ -594,7 +597,7 @@ struct GeneralSettingsView: View {
                     .pickerStyle(.segmented)
 
                     Text("Affects message spacing and bubble size.")
-                        .font(.system(size: 11))
+                        .font(.sora(11))
                         .foregroundColor(.optaTextMuted)
                 }
 
@@ -614,7 +617,7 @@ struct GeneralSettingsView: View {
                     .pickerStyle(.segmented)
 
                     Text(backgroundModeDescription)
-                        .font(.system(size: 11))
+                        .font(.sora(11))
                         .foregroundColor(.optaTextMuted)
                 }
 
@@ -639,7 +642,7 @@ struct GeneralSettingsView: View {
                     .pickerStyle(.segmented)
 
                     Text("Controls how chat messages are positioned in the window.")
-                        .font(.system(size: 11))
+                        .font(.sora(11))
                         .foregroundColor(.optaTextMuted)
                 }
 
@@ -687,7 +690,7 @@ struct ThemePreviewCard: View {
                     )
 
                 Text(theme.name)
-                    .font(.system(size: 10, weight: isSelected ? .semibold : .regular))
+                    .font(.sora(10, weight: isSelected ? .semibold : .regular))
                     .foregroundColor(isSelected ? .optaTextPrimary : .optaTextMuted)
             }
         }
@@ -711,22 +714,22 @@ struct ChatEmptyState: View {
                 .font(.system(size: 56))
                 .scaleEffect(pulse)
                 .onAppear {
-                    withAnimation(.easeInOut(duration: 2.5).repeatForever(autoreverses: true)) {
+                    withAnimation(.optaPulse) {
                         pulse = 1.05
                     }
                 }
 
             if isConnected {
                 Text("Start a conversation with \(botName)")
-                    .font(.system(size: 16, weight: .medium))
+                    .font(.sora(16, weight: .medium))
                     .foregroundColor(.optaTextSecondary)
 
                 Text("Type a message below to begin")
-                    .font(.system(size: 13))
+                    .font(.sora(13))
                     .foregroundColor(.optaTextMuted)
             } else {
                 Text("\(botName) is disconnected")
-                    .font(.system(size: 16, weight: .medium))
+                    .font(.sora(16, weight: .medium))
                     .foregroundColor(.optaTextSecondary)
 
                 Button(action: onReconnect) {
@@ -734,7 +737,7 @@ struct ChatEmptyState: View {
                         Image(systemName: "arrow.clockwise")
                             .font(.system(size: 12))
                         Text("Reconnect")
-                            .font(.system(size: 13, weight: .medium))
+                            .font(.sora(13, weight: .medium))
                     }
                     .foregroundColor(.optaPrimary)
                     .padding(.horizontal, 16)
@@ -767,7 +770,7 @@ struct SkeletonBubble: View {
                 .overlay(
                     GeometryReader { geo in
                         LinearGradient(
-                            colors: [.clear, Color.white.opacity(0.04), .clear],
+                            colors: [.clear, Color.optaGlassHighlight, .clear],
                             startPoint: .leading,
                             endPoint: .trailing
                         )
@@ -806,7 +809,7 @@ struct ConnectionToast: View {
             }
             
             Text(text)
-                .font(.system(size: 12, weight: .medium))
+                .font(.sora(12, weight: .medium))
                 .foregroundColor(isSuccess ? .optaGreen : .optaTextSecondary)
         }
         .padding(.horizontal, 16)
@@ -814,7 +817,7 @@ struct ConnectionToast: View {
         .background(
             Capsule()
                 .fill(.ultraThinMaterial)
-                .shadow(color: Color.black.opacity(0.2), radius: 8, y: 2)
+                .shadow(color: Color.optaVoid.opacity(0.2), radius: 8, y: 2)
         )
         .overlay(
             Capsule()

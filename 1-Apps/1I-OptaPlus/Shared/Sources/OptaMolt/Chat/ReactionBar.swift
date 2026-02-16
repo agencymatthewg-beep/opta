@@ -2,31 +2,58 @@
 //  ReactionBar.swift
 //  OptaMolt
 //
-//  Quick reaction bar and reaction pills for messages.
+//  Smart reaction bar with bot-command reactions.
+//  Each emoji maps to a command sent via chat.send.
 //  Hover (macOS) or long-press (iOS) to show reaction picker.
-//  Reactions stored locally with spring-animated pills.
 //
 
 import SwiftUI
 
-// MARK: - Reaction Model
+// MARK: - Reaction Action
 
-/// A reaction on a message
-public struct MessageReaction: Identifiable, Equatable, Sendable {
-    public let id: String
-    public let emoji: String
-    public var count: Int
+/// A bot-command reaction. Each emoji maps to a command sent via chat.send.
+public enum ReactionAction: String, CaseIterable, Sendable {
+    case proceed   = "👍"
+    case explain   = "❓"
+    case revert    = "👎"
+    case retry     = "🔄"
+    case pause     = "⏸️"
+    case resume    = "▶️"
+    case summarize = "📋"
+    case detail    = "🔍"
 
-    public init(emoji: String, count: Int = 1) {
-        self.id = emoji
-        self.emoji = emoji
-        self.count = count
+    /// The command text sent to the bot via chat.send.
+    public var commandText: String {
+        switch self {
+        case .proceed:   return "[USER_REACTION: proceed] Continue with the next steps."
+        case .explain:   return "[USER_REACTION: explain] Explain your last message in simpler terms."
+        case .revert:    return "[USER_REACTION: revert] Undo or revert your last action."
+        case .retry:     return "[USER_REACTION: retry] Regenerate your last response."
+        case .pause:     return "[USER_REACTION: pause] Pause current work and save state."
+        case .resume:    return "[USER_REACTION: resume] Resume paused work."
+        case .summarize: return "[USER_REACTION: summarize] Summarize this conversation."
+        case .detail:    return "[USER_REACTION: detail] Give me more detail on this."
+        }
+    }
+
+    /// Human-readable label shown in tooltip.
+    public var label: String {
+        switch self {
+        case .proceed:   return "Proceed"
+        case .explain:   return "Explain"
+        case .revert:    return "Revert"
+        case .retry:     return "Retry"
+        case .pause:     return "Pause"
+        case .resume:    return "Resume"
+        case .summarize: return "Summarize"
+        case .detail:    return "Detail"
+        }
     }
 }
 
 // MARK: - Reaction Store
 
-/// Local storage for message reactions
+/// Local storage for message reactions (visual state only)
 @MainActor
 public final class ReactionStore: ObservableObject {
     public static let shared = ReactionStore()
@@ -49,39 +76,49 @@ public final class ReactionStore: ObservableObject {
         } else {
             reactions[messageId]?[emoji] = 1
         }
-        // Clean up empty entries
         if reactions[messageId]?.isEmpty == true {
             reactions[messageId] = nil
         }
     }
 }
 
+/// A reaction on a message (visual pill)
+public struct MessageReaction: Identifiable, Equatable, Sendable {
+    public let id: String
+    public let emoji: String
+    public var count: Int
+
+    public init(emoji: String, count: Int = 1) {
+        self.id = emoji
+        self.emoji = emoji
+        self.count = count
+    }
+}
+
 // MARK: - Quick Reaction Bar
 
-/// Floating bar with quick reaction emoji options
+/// Floating bar with 8 smart reaction buttons
 public struct QuickReactionBar: View {
     let messageId: String
-    let onReact: (String) -> Void
+    let onReact: (ReactionAction) -> Void
 
-    private let quickReactions = ["👍", "❤️", "😂", "🤔", "👀", "🔥"]
-
-    public init(messageId: String, onReact: @escaping (String) -> Void) {
+    public init(messageId: String, onReact: @escaping (ReactionAction) -> Void) {
         self.messageId = messageId
         self.onReact = onReact
     }
 
     public var body: some View {
         HStack(spacing: 4) {
-            ForEach(quickReactions, id: \.self) { emoji in
-                Button(action: { onReact(emoji) }) {
-                    Text(emoji)
+            ForEach(ReactionAction.allCases, id: \.rawValue) { action in
+                Button(action: { onReact(action) }) {
+                    Text(action.rawValue)
                         .font(.system(size: 18))
                         .padding(4)
-                        .background(Color.clear)
-                        .clipShape(Circle())
                 }
                 .buttonStyle(.plain)
-                .scaleEffect(1.0)
+                .help(action.label)
+                .accessibilityLabel(action.label)
+                .accessibilityHint("Sends \(action.label.lowercased()) reaction to bot")
             }
         }
         .padding(.horizontal, 8)
@@ -143,6 +180,8 @@ public struct ReactionPillsView: View {
                         )
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel("\(reaction.emoji) reaction, count \(reaction.count)")
+                    .accessibilityHint("Double tap to remove reaction")
                     .transition(.scale.combined(with: .opacity))
                 }
             }
@@ -155,12 +194,16 @@ public struct ReactionPillsView: View {
 /// Wraps a message view with hover/long-press reaction bar
 public struct ReactiveMessageWrapper<Content: View>: View {
     let messageId: String
+    let onReact: (ReactionAction) -> Void
     let content: Content
     @StateObject private var store = ReactionStore.shared
     @State private var showReactionBar = false
 
-    public init(messageId: String, @ViewBuilder content: () -> Content) {
+    public init(messageId: String,
+                onReact: @escaping (ReactionAction) -> Void,
+                @ViewBuilder content: () -> Content) {
         self.messageId = messageId
+        self.onReact = onReact
         self.content = content()
     }
 
@@ -170,11 +213,12 @@ public struct ReactiveMessageWrapper<Content: View>: View {
                 content
 
                 if showReactionBar {
-                    QuickReactionBar(messageId: messageId) { emoji in
+                    QuickReactionBar(messageId: messageId) { action in
                         withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-                            store.toggleReaction(emoji, for: messageId)
+                            store.toggleReaction(action.rawValue, for: messageId)
                             showReactionBar = false
                         }
+                        onReact(action)
                     }
                     .offset(y: -40)
                     .transition(.scale(scale: 0.8).combined(with: .opacity))
@@ -183,7 +227,7 @@ public struct ReactiveMessageWrapper<Content: View>: View {
             }
             #if canImport(AppKit)
             .onHover { hovering in
-                withAnimation(.easeInOut(duration: 0.2)) {
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
                     showReactionBar = hovering
                 }
             }
@@ -207,8 +251,8 @@ public struct ReactiveMessageWrapper<Content: View>: View {
 struct ReactionBar_Previews: PreviewProvider {
     static var previews: some View {
         VStack(spacing: 20) {
-            QuickReactionBar(messageId: "test") { emoji in
-                print("Reacted with \(emoji)")
+            QuickReactionBar(messageId: "test") { action in
+                print("Reacted with \(action.label)")
             }
 
             ReactionPillsView(messageId: "test")

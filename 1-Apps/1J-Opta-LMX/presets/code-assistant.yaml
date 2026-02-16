@@ -1,0 +1,13 @@
+name: code-assistant
+description: "Fast coding assistant with low temperature"
+model: "mlx-community/Qwen2.5-Coder-32B-Instruct-4bit"
+parameters:
+  temperature: 0.2
+  top_p: 0.95
+  max_tokens: 4096
+system_prompt: |
+  You are a senior software engineer. Write clean, idiomatic code.
+  When asked to write code, output only the code without explanations
+  unless explicitly asked.
+routing_alias: code
+auto_load: false

@@ -179,7 +179,7 @@ struct ShimmerModifier: ViewModifier {
             content
                 .overlay(
                     LinearGradient(
-                        colors: [.clear, Color.white.opacity(0.03), .clear],
+                        colors: [.clear, Color.optaGlassHighlight, .clear],
                         startPoint: .leading,
                         endPoint: .trailing
                     )
@@ -266,7 +266,7 @@ struct BreathingModifier: ViewModifier {
             .opacity(opacityVal)
             .onAppear {
                 if animLevel.ambientEnabled {
-                    withAnimation(.easeInOut(duration: duration).repeatForever(autoreverses: true)) {
+                    withAnimation(.spring(response: 1.2, dampingFraction: 0.5).repeatForever(autoreverses: true)) {
                         phase = 1
                     }
                 }
@@ -288,7 +288,7 @@ struct AnimationLevelPicker: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Animation Intensity")
-                .font(.system(size: 13, weight: .semibold))
+                .font(.sora(13, weight: .semibold))
                 .foregroundColor(.optaTextPrimary)
             
             ForEach(AnimationLevel.allCases, id: \.self) { level in
@@ -317,11 +317,11 @@ struct AnimationLevelOption: View {
                 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(level.label)
-                        .font(.system(size: 13, weight: .medium))
+                        .font(.sora(13, weight: .medium))
                         .foregroundColor(isSelected ? .optaTextPrimary : .optaTextSecondary)
                     
                     Text(level.description)
-                        .font(.system(size: 10))
+                        .font(.sora(10))
                         .foregroundColor(.optaTextMuted)
                 }
                 

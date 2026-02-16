@@ -41,9 +41,9 @@ public struct BotHealth: Sendable {
     }
 
     public var color: Color {
-        if score >= 70 { return .green }
-        if score >= 40 { return .orange }
-        return .red
+        if score >= 70 { return .optaGreen }
+        if score >= 40 { return .optaAmber }
+        return .optaRed
     }
 
     public var label: String {
@@ -90,11 +90,11 @@ public struct ActivityEvent: Identifiable {
 
     public var iconColor: Color {
         switch kind {
-        case .connected: return .green
-        case .disconnected: return .gray
-        case .messageSent: return .blue
-        case .messageReceived: return .purple
-        case .error: return .red
+        case .connected: return .optaGreen
+        case .disconnected: return .optaTextMuted
+        case .messageSent: return .optaBlue
+        case .messageReceived: return .optaPrimary
+        case .error: return .optaRed
         }
     }
 

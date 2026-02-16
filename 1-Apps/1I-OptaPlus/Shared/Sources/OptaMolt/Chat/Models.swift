@@ -70,6 +70,10 @@ public struct ChatAttachment: Identifiable, Equatable, Sendable {
         mimeType.hasPrefix("image/")
     }
 
+    public var isAudio: Bool {
+        mimeType.hasPrefix("audio/")
+    }
+
     public var formattedSize: String {
         if sizeBytes < 1024 { return "\(sizeBytes) B" }
         if sizeBytes < 1024 * 1024 { return String(format: "%.1f KB", Double(sizeBytes) / 1024) }
@@ -179,7 +183,7 @@ public struct ChatMessage: Identifiable, Equatable, Sendable {
     public let timestamp: Date
 
     /// Current delivery status.
-    public let status: MessageStatus
+    public var status: MessageStatus
 
     /// Which channel this message originated from (nil for legacy messages).
     public let source: MessageSource?

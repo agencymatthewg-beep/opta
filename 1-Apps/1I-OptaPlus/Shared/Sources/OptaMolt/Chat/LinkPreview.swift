@@ -106,7 +106,7 @@ public struct LinkPreviewCard: View {
         }
         .buttonStyle(.plain)
         .onHover { hovering in
-            withAnimation(.easeInOut(duration: 0.15)) { isHovered = hovering }
+            withAnimation(.optaSnap) { isHovered = hovering }
         }
     }
 

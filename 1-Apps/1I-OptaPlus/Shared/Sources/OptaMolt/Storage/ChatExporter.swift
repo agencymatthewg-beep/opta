@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import os.log
 #if canImport(AppKit)
 import AppKit
 #elseif canImport(UIKit)
@@ -41,6 +42,8 @@ public enum ChatExportFormat: String, CaseIterable {
 // MARK: - Chat Exporter
 
 public struct ChatExporter {
+
+    private static let logger = Logger(subsystem: "biz.optamize.OptaPlus", category: "Export")
 
     private static let dateFormatter: DateFormatter = {
         let f = DateFormatter()
@@ -209,7 +212,7 @@ public struct ChatExporter {
             try data.write(to: tempURL, options: .atomic)
             return tempURL
         } catch {
-            NSLog("[ChatExporter] Failed to write temp file: \(error)")
+            logger.error("Failed to write temp file: \(error.localizedDescription)")
             return nil
         }
     }

@@ -8,12 +8,14 @@
 
 import Foundation
 import Security
+import os.log
 
 // MARK: - Secure Storage
 
 public final class SecureStorage {
+    private static let logger = Logger(subsystem: "biz.optamize.OptaPlus", category: "Security")
     public static let shared = SecureStorage()
-    
+
     private let serviceName = "com.optaoperations.optaplus"
     
     private init() {}
@@ -143,7 +145,7 @@ public final class SecureStorage {
         }
         
         UserDefaults.standard.set(true, forKey: migrationKey)
-        NSLog("[SecureStorage] Migrated \(bots.count) bot tokens to Keychain")
+        Self.logger.info("Migrated \(bots.count) bot tokens to Keychain")
     }
     
     // MARK: - Token Masking

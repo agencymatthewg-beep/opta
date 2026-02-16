@@ -108,9 +108,10 @@ struct ContextPanel: View {
                 .scaleEffect(1 + 0.02 * buttonBreathe)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(isExpanded ? "Collapse context panel" : "Expand context panel, \(items.count) files")
             .help("Context files (\(items.count))")
             .onAppear {
-                withAnimation(.easeInOut(duration: 3).repeatForever(autoreverses: true)) {
+                withAnimation(.optaPulse) {
                     buttonBreathe = 1
                 }
             }
@@ -133,7 +134,7 @@ struct ContextPanel: View {
                         Spacer()
                         
                         Text("\(items.count) files")
-                            .font(.system(size: 9))
+                            .font(.sora(9))
                             .foregroundColor(.optaTextMuted)
                             .opacity(0.5)
                     }
@@ -203,7 +204,7 @@ struct ContextPanel: View {
                             lineWidth: 0.5
                         )
                 )
-                .shadow(color: Color.black.opacity(0.25), radius: 20, y: 6)
+                .shadow(color: Color.optaVoid.opacity(0.25), radius: 20, y: 6)
                 .shadow(color: Color.optaPrimary.opacity(0.08), radius: 16, y: 0)
                 .scaleEffect(panelScale, anchor: .topTrailing)
                 .opacity(panelOpacity)
@@ -249,7 +250,7 @@ struct ContextPill: View {
                 .foregroundColor(item.kind.color)
             
             Text(item.name)
-                .font(.system(size: 9, weight: .medium))
+                .font(.sora(9, weight: .medium))
                 .foregroundColor(isHovered ? .optaTextPrimary : .optaTextSecondary)
                 .lineLimit(1)
             
@@ -281,7 +282,7 @@ struct ContextPill: View {
             }
             // Subtle ambient float (each pill slightly different)
             let duration = 3.0 + Double.random(in: 0...1)
-            withAnimation(.easeInOut(duration: duration).repeatForever(autoreverses: true).delay(entranceDelay)) {
+            withAnimation(.spring(response: 1.2, dampingFraction: 0.5).repeatForever(autoreverses: true).delay(entranceDelay)) {
                 floatOffset = CGFloat.random(in: -1.5...1.5)
             }
         }

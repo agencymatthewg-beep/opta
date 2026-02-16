@@ -33,6 +33,9 @@ struct DashboardView: View {
                                     appState.selectBot(bot)
                                     selectedBotId = bot.id
                                 }
+                                .accessibilityElement(children: .combine)
+                                .accessibilityLabel("\(bot.name), \(vm.connectionState == .connected ? "connected" : "offline")")
+                                .accessibilityHint("Opens chat with \(bot.name)")
                         }
                     }
                     .padding(.horizontal)
@@ -40,7 +43,7 @@ struct DashboardView: View {
                     if !activityFeed.events.isEmpty {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Activity")
-                                .font(.headline)
+                                .font(.soraHeadline)
                                 .foregroundColor(.optaTextPrimary)
                                 .padding(.horizontal)
 
@@ -49,7 +52,7 @@ struct DashboardView: View {
                                     .transition(.opacity.combined(with: .move(edge: .top)))
                             }
                         }
-                        .animation(.easeInOut(duration: 0.3), value: activityFeed.events.count)
+                        .animation(.optaSpring, value: activityFeed.events.count)
                     }
                 }
                 .padding(.top, 8)
@@ -64,6 +67,7 @@ struct DashboardView: View {
                         Image(systemName: "gearshape")
                             .foregroundColor(.optaTextSecondary)
                     }
+                    .accessibilityLabel("Settings")
                 }
                 ToolbarItem(placement: .primaryAction) {
                     Menu {
@@ -72,6 +76,7 @@ struct DashboardView: View {
                     } label: {
                         Image(systemName: "ellipsis.circle")
                     }
+                    .accessibilityLabel("Connection options")
                 }
             }
             .refreshable {
@@ -110,7 +115,6 @@ struct DashboardView: View {
 struct IOSBotCardView: View {
     let bot: BotConfig
     @ObservedObject var viewModel: ChatViewModel
-    @State private var breathe = false
     @State private var rotationAngle: Double = 0
 
     private var isConnected: Bool {
@@ -119,13 +123,13 @@ struct IOSBotCardView: View {
 
     private var accentColor: Color {
         switch bot.name {
-        case "Opta Max": return .red
-        case "Opta512": return .purple
-        case "Mono": return .green
-        case "Floda": return .orange
-        case "Saturday": return .blue
-        case "YJ": return .yellow
-        default: return .purple
+        case "Opta Max": return .optaRed
+        case "Opta512": return .optaPrimary
+        case "Mono": return .optaGreen
+        case "Floda": return .optaAmber
+        case "Saturday": return .optaBlue
+        case "YJ": return .optaAmber
+        default: return .optaPrimary
         }
     }
 
@@ -157,30 +161,29 @@ struct IOSBotCardView: View {
                 // Idle breathing glow
                 if isConnected && viewModel.botState == .idle {
                     Circle()
-                        .fill(accentColor.opacity(breathe ? 0.15 : 0.05))
+                        .fill(accentColor)
                         .frame(width: 52, height: 52)
-                        .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: breathe)
+                        .optaBreathing(minOpacity: 0.05, maxOpacity: 0.15)
                 }
 
                 Text(bot.emoji)
-                    .font(.system(size: 32))
+                    .font(.sora(32, weight: .regular))
             }
             .frame(height: 56)
-            .onAppear { breathe = true }
 
             // Bot name
             Text(bot.name)
-                .font(.system(size: 15, weight: .semibold))
+                .font(.sora(15, weight: .semibold))
                 .foregroundColor(.optaTextPrimary)
 
             // Connection + route badge
             HStack(spacing: 4) {
                 Circle()
-                    .fill(isConnected ? Color.green : viewModel.connectionState == .disconnected ? Color.gray : Color.optaAmber)
+                    .fill(isConnected ? Color.optaGreen : viewModel.connectionState == .disconnected ? Color.optaTextMuted : Color.optaAmber)
                     .frame(width: 6, height: 6)
 
                 Text(connectionLabel)
-                    .font(.system(size: 10, weight: .medium))
+                    .font(.sora(10, weight: .medium))
                     .foregroundColor(.optaTextMuted)
             }
 
@@ -190,7 +193,7 @@ struct IOSBotCardView: View {
             // Last message preview
             if let preview = viewModel.lastMessagePreview {
                 Text(preview)
-                    .font(.system(size: 11))
+                    .font(.sora(11, weight: .regular))
                     .foregroundColor(.optaTextMuted)
                     .lineLimit(2)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -213,7 +216,7 @@ struct IOSBotCardView: View {
                     .foregroundColor(.optaTextMuted)
 
                 Text("\(viewModel.totalMessageCount) msgs")
-                    .font(.system(size: 11))
+                    .font(.sora(11, weight: .regular))
                     .foregroundColor(.optaTextSecondary)
             }
         }
@@ -252,14 +255,14 @@ struct IOSBotCardView: View {
                     .scaleEffect(0.6)
                     .tint(.optaPrimary)
                 Text("Thinking...")
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.sora(11, weight: .medium))
                     .foregroundColor(.optaPrimary)
             }
         case .typing:
             HStack(spacing: 3) {
                 StreamingDots()
                 Text("Responding...")
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.sora(11, weight: .medium))
                     .foregroundColor(.optaPrimary)
             }
         default:
@@ -284,7 +287,7 @@ struct StreamingDots: View {
             }
         }
         .onReceive(timer) { _ in
-            withAnimation(.easeInOut(duration: 0.2)) {
+            withAnimation(.optaSnap) {
                 phase = (phase + 1) % 3
             }
         }
@@ -299,15 +302,15 @@ struct IOSActivityRow: View {
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: event.icon)
-                .font(.system(size: 11))
+                .font(.sora(11, weight: .regular))
                 .foregroundColor(event.iconColor)
                 .frame(width: 18)
 
             Text(event.botEmoji)
-                .font(.system(size: 13))
+                .font(.sora(13, weight: .regular))
 
             Text("\(event.botName) \(event.message)")
-                .font(.system(size: 12))
+                .font(.sora(12, weight: .regular))
                 .foregroundColor(.optaTextSecondary)
                 .lineLimit(1)
 

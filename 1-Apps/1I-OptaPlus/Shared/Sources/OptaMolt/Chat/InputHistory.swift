@@ -7,6 +7,7 @@
 
 import Foundation
 
+@MainActor
 public final class InputHistory: ObservableObject {
     private let maxSize = 50
     private let storageKeyPrefix = "optaplus.inputHistory."

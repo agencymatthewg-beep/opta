@@ -140,7 +140,7 @@ public struct ConnectionPulseDot: View {
                 // Pulse animation
                 pulseScale = 1.0
                 pulseOpacity = 0.8
-                withAnimation(.easeOut(duration: 0.6)) {
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
                     pulseScale = 2.5
                     pulseOpacity = 0
                 }
@@ -196,7 +196,7 @@ public struct ScrollEdgeGlow: View {
         )
         .frame(height: 30)
         .allowsHitTesting(false)
-        .animation(.easeOut(duration: 0.2), value: isVisible)
+        .animation(.optaSnap, value: isVisible)
     }
 }
 
@@ -237,7 +237,7 @@ public struct CrossfadeModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content
             .id(id)
-            .transition(.opacity.animation(.easeInOut(duration: 0.25)))
+            .transition(.opacity.animation(.optaSpring))
     }
 }
 

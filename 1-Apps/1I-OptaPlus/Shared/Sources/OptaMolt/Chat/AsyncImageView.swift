@@ -266,6 +266,12 @@ public struct InlineAttachmentView: View {
     public var body: some View {
         if attachment.isImage {
             imageView
+        } else if attachment.isAudio, let audioData = attachment.data {
+            VoicePlayerView(
+                audioData: audioData,
+                filename: attachment.filename,
+                formattedSize: attachment.formattedSize
+            )
         } else {
             FileAttachmentView(attachment: attachment)
         }
@@ -280,7 +286,12 @@ public struct InlineAttachmentView: View {
                     Image(nsImage: nsImage)
                         .resizable()
                         .aspectRatio(contentMode: .fit)
+                        .frame(maxWidth: 300, maxHeight: 250)
                         .clipShape(RoundedRectangle(cornerRadius: 10))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color.optaBorder.opacity(0.15), lineWidth: 0.5)
+                        )
                         .onTapGesture { showFullImage = true }
                 }
                 #elseif canImport(UIKit)
@@ -288,12 +299,16 @@ public struct InlineAttachmentView: View {
                     Image(uiImage: uiImage)
                         .resizable()
                         .aspectRatio(contentMode: .fit)
+                        .frame(maxWidth: 300, maxHeight: 250)
                         .clipShape(RoundedRectangle(cornerRadius: 10))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color.optaBorder.opacity(0.15), lineWidth: 0.5)
+                        )
                         .onTapGesture { showFullImage = true }
                 }
                 #endif
             } else {
-                // Fallback: show filename
                 FileAttachmentView(attachment: attachment)
             }
 
@@ -301,6 +316,51 @@ public struct InlineAttachmentView: View {
                 .font(.system(size: 11))
                 .foregroundColor(.optaTextMuted)
         }
+        .sheet(isPresented: $showFullImage) {
+            FullScreenAttachmentView(attachment: attachment)
+        }
+    }
+}
+
+// MARK: - Full Screen Attachment View
+
+private struct FullScreenAttachmentView: View {
+    let attachment: ChatAttachment
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        ZStack(alignment: .topTrailing) {
+            Color.black.ignoresSafeArea()
+
+            if let data = attachment.data ?? attachment.thumbnailData {
+                #if canImport(AppKit)
+                if let nsImage = NSImage(data: data) {
+                    Image(nsImage: nsImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+                #elseif canImport(UIKit)
+                if let uiImage = UIImage(data: data) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+                #endif
+            }
+
+            Button(action: { dismiss() }) {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.title2)
+                    .foregroundColor(.white.opacity(0.8))
+                    .padding()
+            }
+            #if os(macOS)
+            .buttonStyle(.plain)
+            #endif
+        }
+        .accessibilityLabel("Full size image: \(attachment.filename)")
     }
 }
 

@@ -69,21 +69,12 @@ public struct AmbientBackground: View {
         isConnected ? 1.0 : 0.3
     }
 
-    /// Orb brightness boost when bot is active.
-    private var orbBoost: Double {
-        switch botState {
-        case .idle: return 1.0
-        case .thinking: return 1.6
-        case .typing: return 1.4
-        }
-    }
-
     public var body: some View {
         // Static ambient background — rendered once, no continuous animation.
         // Drops idle CPU from ~30% to <2%.
         staticBackground
             .opacity(globalDim)
-            .animation(.easeInOut(duration: 0.5), value: isConnected)
+            .animation(.optaSpring, value: isConnected)
     }
 
     // MARK: - Static Fallback
@@ -110,87 +101,6 @@ public struct AmbientBackground: View {
         .drawingGroup() // Flatten to single GPU texture
     }
 
-    // MARK: - Orb Rendering
-
-    /// Orb parameters — 3 orbs with different drift patterns.
-    private struct Orb {
-        let xPhase: Double
-        let yPhase: Double
-        let xPeriod: Double
-        let yPeriod: Double
-        let baseOpacity: Double
-        let radius: CGFloat
-    }
-
-    private let orbs: [Orb] = [
-        Orb(xPhase: 0.0, yPhase: 0.3, xPeriod: 23, yPeriod: 19, baseOpacity: 0.08, radius: 220),
-        Orb(xPhase: 2.1, yPhase: 1.4, xPeriod: 29, yPeriod: 31, baseOpacity: 0.06, radius: 180),
-        Orb(xPhase: 4.5, yPhase: 3.7, xPeriod: 37, yPeriod: 23, baseOpacity: 0.05, radius: 200),
-    ]
-
-    private func drawOrbs(context: GraphicsContext, size: CGSize, time: Double) {
-        for orb in orbs {
-            let x = size.width * 0.5 + sin((time + orb.xPhase) / orb.xPeriod * .pi * 2) * size.width * 0.25
-            let y = size.height * 0.5 + cos((time + orb.yPhase) / orb.yPeriod * .pi * 2) * size.height * 0.2
-
-            // Pulse when active
-            let pulseT = sin(time * 1.5) * 0.5 + 0.5
-            let activeBoost = botState == .idle ? 0.0 : pulseT * 0.03
-            let opacity = (orb.baseOpacity + activeBoost) * orbBoost * globalDim
-
-            let rect = CGRect(
-                x: x - orb.radius,
-                y: y - orb.radius,
-                width: orb.radius * 2,
-                height: orb.radius * 2
-            )
-
-            var context = context
-            context.opacity = opacity
-            context.addFilter(.blur(radius: 200))
-
-            let gradient = Gradient(colors: [botAccentColor, .clear])
-            context.fill(
-                Ellipse().path(in: rect),
-                with: .radialGradient(
-                    gradient,
-                    center: CGPoint(x: x, y: y),
-                    startRadius: 0,
-                    endRadius: orb.radius
-                )
-            )
-        }
-    }
-
-    // MARK: - Particle Rendering
-
-    /// Seeded particle positions (deterministic from index).
-    private func drawParticles(context: GraphicsContext, size: CGSize, time: Double) {
-        let count = 40
-        for i in 0..<count {
-            let seed = Double(i)
-            // Deterministic base position from seed
-            let baseX = fmod(seed * 137.508, 1.0) // golden angle distribution
-            let baseY = fmod(seed * 97.331, 1.0)
-
-            // Slow drift
-            let driftX = sin(time * 0.05 + seed * 0.7) * 0.02
-            let driftY = cos(time * 0.04 + seed * 1.3) * 0.015
-
-            let x = (baseX + driftX).truncatingRemainder(dividingBy: 1.0) * size.width
-            let y = (baseY + driftY).truncatingRemainder(dividingBy: 1.0) * size.height
-
-            // Varying opacity 3-5%
-            let particleOpacity = (0.03 + fmod(seed * 0.47, 0.02)) * globalDim
-
-            var context = context
-            context.opacity = particleOpacity
-
-            let dotSize: CGFloat = 1.5
-            let rect = CGRect(x: x - dotSize / 2, y: y - dotSize / 2, width: dotSize, height: dotSize)
-            context.fill(Circle().path(in: rect), with: .color(.white))
-        }
-    }
 }
 
 // MARK: - Preview

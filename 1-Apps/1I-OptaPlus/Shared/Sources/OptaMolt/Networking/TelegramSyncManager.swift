@@ -11,6 +11,7 @@
 import Foundation
 import TDLibKit
 import Combine
+import os.log
 
 // MARK: - Auth State
 
@@ -56,6 +57,8 @@ public struct TelegramIncomingMessage: Sendable {
 
 @MainActor
 public final class TelegramSyncManager: ObservableObject {
+
+    private static let logger = Logger(subsystem: "biz.optamize.OptaPlus", category: "Telegram")
 
     // MARK: - Published State
 
@@ -105,12 +108,12 @@ public final class TelegramSyncManager: ObservableObject {
     ///   - apiId: Telegram API application ID.
     ///   - apiHash: Telegram API application hash.
     ///   - botUsername: The bot to sync with (without @). Defaults to "Opta_Bot".
-    ///   - ownerUserId: The owner's Telegram user ID. Defaults to Matthew's ID.
+    ///   - ownerUserId: The owner's Telegram user ID. Must be provided explicitly.
     public init(
         apiId: Int32,
         apiHash: String,
         botUsername: String = "Opta_Bot",
-        ownerUserId: Int64 = 7799095654
+        ownerUserId: Int64
     ) {
         self.apiId = apiId
         self.apiHash = apiHash
@@ -131,7 +134,7 @@ public final class TelegramSyncManager: ObservableObject {
                     let update = try api.decoder.decode(Update.self, from: data)
                     self.handleUpdate(update)
                 } catch {
-                    NSLog("[TG] Failed to decode update: \(error)")
+                    Self.logger.error("Failed to decode update: \(error.localizedDescription)")
                 }
             }
         }
@@ -159,9 +162,9 @@ public final class TelegramSyncManager: ObservableObject {
                 useTestDc: false
             )
             try await api.setTdlibParameters(params)
-            NSLog("[TG] TDLib parameters set, database at: \(databasePath)")
+            Self.logger.info("TDLib parameters set, database at: \(self.databasePath)")
         } catch {
-            NSLog("[TG] Failed to set TDLib parameters: \(error)")
+            Self.logger.error("Failed to set TDLib parameters: \(error.localizedDescription)")
             authState = .error("Failed to initialize: \(error.localizedDescription)")
         }
     }
@@ -175,7 +178,7 @@ public final class TelegramSyncManager: ObservableObject {
             do {
                 try await api?.logOut()
             } catch {
-                NSLog("[TG] Logout error: \(error)")
+                Self.logger.error("Logout error: \(error.localizedDescription)")
             }
         }
 
@@ -204,21 +207,21 @@ public final class TelegramSyncManager: ObservableObject {
             phoneNumber: phone,
             settings: settings
         )
-        NSLog("[TG] Phone number submitted: \(phone.prefix(4))***")
+        Self.logger.info("Phone number submitted: \(phone.prefix(4))***")
     }
 
     /// Submit the verification code.
     public func submitCode(_ code: String) async throws {
         guard let api = api else { throw TelegramError.notInitialized }
         try await api.checkAuthenticationCode(code: code)
-        NSLog("[TG] Auth code submitted")
+        Self.logger.info("Auth code submitted")
     }
 
     /// Submit 2FA password.
     public func submitPassword(_ password: String) async throws {
         guard let api = api else { throw TelegramError.notInitialized }
         try await api.checkAuthenticationPassword(password: password)
-        NSLog("[TG] 2FA password submitted")
+        Self.logger.info("2FA password submitted")
     }
 
     // MARK: - Messaging
@@ -248,7 +251,7 @@ public final class TelegramSyncManager: ObservableObject {
             replyTo: nil
         )
 
-        NSLog("[TG] Message sent, id: \(result.id)")
+        Self.logger.info("Message sent, id: \(result.id)")
         return result.id
     }
 
@@ -271,7 +274,7 @@ public final class TelegramSyncManager: ObservableObject {
     }
 
     private func handleAuthState(_ state: AuthorizationState) {
-        NSLog("[TG] Auth state: \(state)")
+        Self.logger.info("Auth state: \(String(describing: state))")
         switch state {
         case .authorizationStateWaitPhoneNumber:
             authState = .awaitingPhoneNumber
@@ -285,7 +288,7 @@ public final class TelegramSyncManager: ObservableObject {
         case .authorizationStateReady:
             authState = .ready
             isReady = true
-            NSLog("[TG] Authenticated! Discovering bot chat...")
+            Self.logger.info("Authenticated — discovering bot chat")
             Task { await discoverBotChat() }
 
         case .authorizationStateLoggingOut:
@@ -307,12 +310,12 @@ public final class TelegramSyncManager: ObservableObject {
         do {
             let chat = try await api.searchPublicChat(username: botUsername)
             botChatId = chat.id
-            NSLog("[TG] Bot chat discovered: \(botUsername), chatId: \(chat.id)")
+            Self.logger.info("Bot chat discovered: \(self.botUsername), chatId: \(chat.id)")
 
             // Open the chat to receive updates
             try await api.openChat(chatId: chat.id)
         } catch {
-            NSLog("[TG] Failed to discover bot chat '\(botUsername)': \(error)")
+            Self.logger.error("Failed to discover bot chat '\(self.botUsername)': \(error.localizedDescription)")
             authState = .error("Bot @\(botUsername) not found")
         }
     }
@@ -352,7 +355,7 @@ public final class TelegramSyncManager: ObservableObject {
             senderUserId: senderUserId
         )
 
-        NSLog("[TG] New message from \(isBot ? "bot" : "user"): '\(text.prefix(50))'")
+        Self.logger.info("New message from \(isBot ? "bot" : "user"): '\(text.prefix(50))'")
         onBotMessage?(incoming)
     }
 

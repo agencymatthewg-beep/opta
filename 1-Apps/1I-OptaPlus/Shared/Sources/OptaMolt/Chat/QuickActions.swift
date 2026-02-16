@@ -42,6 +42,7 @@ public enum QuickActionCategory: String, Codable, CaseIterable, Hashable {
 
 // MARK: - Quick Action Manager
 
+@MainActor
 public final class QuickActionManager: ObservableObject {
     public static let shared = QuickActionManager()
     

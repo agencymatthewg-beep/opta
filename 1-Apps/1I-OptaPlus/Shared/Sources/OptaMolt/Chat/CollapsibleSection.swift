@@ -318,20 +318,58 @@ struct CollapsibleBlockView: View {
                 ForEach(items.indices, id: \.self) { index in
                     HStack(alignment: .top, spacing: 8) {
                         Circle()
-                            .fill(textColor.opacity(0.6))
+                            .fill(Color.optaPrimary.opacity(items[index].indentLevel == 0 ? 1.0 : 0.6))
                             .frame(width: 6, height: 6)
                             .padding(.top, 7)
-                        Text(items[index])
+                        Text(items[index].content)
+                            .foregroundColor(textColor)
+                    }
+                    .padding(.leading, CGFloat(items[index].indentLevel) * 16)
+                }
+            }
+
+        case .numberedList(let items):
+            VStack(alignment: .leading, spacing: 4) {
+                ForEach(items.indices, id: \.self) { index in
+                    HStack(alignment: .top, spacing: 6) {
+                        Text("\(items[index].number).")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.optaPrimary)
+                            .frame(width: 20, alignment: .trailing)
+                        Text(items[index].content)
                             .foregroundColor(textColor)
                     }
                 }
             }
 
+        case .blockQuote(let text):
+            HStack(alignment: .top, spacing: 0) {
+                RoundedRectangle(cornerRadius: 1.5)
+                    .fill(Color.optaPrimary)
+                    .frame(width: 3)
+                Text(text)
+                    .italic()
+                    .foregroundColor(textColor.opacity(0.85))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+            }
+            .background(Color.optaElevated.opacity(0.6))
+
+        case .heading(let level, let text):
+            Text(text)
+                .font(.system(size: level <= 2 ? 20 : 17, weight: level <= 2 ? .bold : .semibold))
+                .foregroundColor(textColor)
+
+        case .horizontalRule:
+            Rectangle()
+                .fill(Color.optaBorder)
+                .frame(height: 1)
+                .padding(.vertical, 8)
+
         case .codeBlock(let code, let language):
             CodeBlockView(code: code, language: language, isStreaming: false)
 
         case .collapsible(let nestedSummary, let nestedContent, let nestedIsOpen):
-            // Recursive nested collapsible
             CollapsibleBlockView(
                 summary: nestedSummary,
                 content: nestedContent,
@@ -347,7 +385,6 @@ struct CollapsibleBlockView: View {
             ChartView(data: chartData)
 
         case .image(let imageData):
-            // Image rendering - AsyncImageView will render this
             AsyncImageView(data: imageData)
         }
     }

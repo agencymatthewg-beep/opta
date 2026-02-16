@@ -9,11 +9,6 @@
 
 import SwiftUI
 import Combine
-#if canImport(AppKit)
-import AppKit
-#elseif canImport(UIKit)
-import UIKit
-#endif
 
 // MARK: - Text Alignment Environment Key
 
@@ -272,6 +267,7 @@ public struct MessageBubble: View {
                                         .foregroundColor(.optaPrimary)
                                     }
                                     .buttonStyle(.plain)
+                                    .accessibilityLabel(isExpanded ? "Show less of message" : "Show full message")
                                     .padding(.top, 2)
                                 }
                             }
@@ -293,7 +289,7 @@ public struct MessageBubble: View {
 
                     // Hover copy button
                     if isHovered && !isStreaming && !isEmojiOnly {
-                        Button(action: { copyToClipboard(displayContent) }) {
+                        Button(action: { OptaFormatting.copyToClipboard(displayContent) }) {
                             Image(systemName: "doc.on.doc")
                                 .font(.system(size: 11))
                                 .foregroundColor(.optaTextMuted)
@@ -302,6 +298,7 @@ public struct MessageBubble: View {
                                 .clipShape(RoundedRectangle(cornerRadius: 6))
                         }
                         .buttonStyle(.plain)
+                        .accessibilityLabel("Copy message")
                         .padding(6)
                         .transition(.opacity)
                     }
@@ -330,12 +327,12 @@ public struct MessageBubble: View {
                 .accessibilityLabel(isUserMessage ? "Your message: \(displayContent.prefix(100))" : "\(displaySender.accessibleName) said: \(displayContent.prefix(100))")
                 .contextMenu {
                     Button {
-                        copyToClipboard(displayContent)
+                        OptaFormatting.copyToClipboard(displayContent)
                     } label: {
                         Label("Copy Message", systemImage: "doc.on.doc")
                     }
                     Button {
-                        copyToClipboard(displayContent)
+                        OptaFormatting.copyToClipboard(displayContent)
                     } label: {
                         Label("Copy as Markdown", systemImage: "text.badge.checkmark")
                     }
@@ -490,33 +487,9 @@ public struct MessageBubble: View {
         }
     }
 
-    private func copyToClipboard(_ text: String) {
-        #if canImport(AppKit)
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(text, forType: .string)
-        #elseif canImport(UIKit)
-        UIPasteboard.general.string = text
-        #endif
-    }
-
-    private func relativeTime(for date: Date) -> String {
-        let now = Date()
-        let interval = now.timeIntervalSince(date)
-        if interval < 60 { return "just now" }
-        if interval < 3600 {
-            let mins = Int(interval / 60)
-            return "\(mins)m ago"
-        }
-        if interval < 86400 {
-            let hours = Int(interval / 3600)
-            return "\(hours)h ago"
-        }
-        return date.formatted(date: .abbreviated, time: .shortened)
-    }
-
     private func updateRelativeTimestamp() {
         if let msg = message {
-            relativeTimestamp = relativeTime(for: msg.timestamp)
+            relativeTimestamp = OptaFormatting.relativeTime(msg.timestamp)
         }
     }
 
@@ -562,7 +535,7 @@ private struct TypingCursor: View {
             .scaleEffect(pulseScale)
             .padding(.leading, 4)
             .onAppear {
-                withAnimation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true)) {
+                withAnimation(.optaPulse) {
                     pulseScale = 1.2
                 }
             }

@@ -4,6 +4,7 @@
 //
 //  Per-bot automations page shown inside the BotPagerView.
 //  Fetches and displays cron jobs for a single bot.
+//  Supports create, edit, duplicate, history, toggle, run, delete.
 //
 
 import SwiftUI
@@ -19,6 +20,10 @@ struct BotAutomationsPage: View {
     @State private var runningJobIds: Set<String> = []
     @State private var errorMessage: String?
     @State private var listVisible = false
+    @State private var showCreateSheet = false
+    @State private var editingJob: CronJobItem?
+    @State private var duplicatingJob: CronJobItem?
+    @State private var historyJob: CronJobItem?
 
     var body: some View {
         Group {
@@ -26,7 +31,7 @@ struct BotAutomationsPage: View {
                 VStack(spacing: 12) {
                     OptaLoader(size: 24)
                     Text("Loading automations...")
-                        .font(.system(size: 13))
+                        .font(.sora(13, weight: .regular))
                         .foregroundColor(.optaTextMuted)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -43,8 +48,64 @@ struct BotAutomationsPage: View {
         .refreshable {
             await loadJobs()
         }
+        .onChange(of: viewModel.connectionState) { old, new in
+            if old != .connected && new == .connected {
+                Task { await loadJobs() }
+            }
+        }
         .sheet(item: $selectedJob) { job in
-            JobDetailSheet(job: job, onToggle: { toggleJob(job) }, onRun: { runJob(job) })
+            JobDetailSheet(
+                job: job,
+                onToggle: { toggleJob(job) },
+                onRun: { runJob(job) },
+                onEdit: { editingJob = job },
+                onDuplicate: { duplicatingJob = job },
+                onHistory: { historyJob = job }
+            )
+        }
+        .sheet(isPresented: $showCreateSheet) {
+            CreateJobSheet(
+                viewModel: viewModel,
+                botConfig: bot,
+                existingJob: nil,
+                onSaved: { Task { await loadJobs() } }
+            )
+        }
+        .sheet(item: $editingJob) { job in
+            CreateJobSheet(
+                viewModel: viewModel,
+                botConfig: bot,
+                existingJob: job,
+                onSaved: { Task { await loadJobs() } }
+            )
+        }
+        .sheet(item: $duplicatingJob) { job in
+            // Duplicate: open create sheet with the same data but nil id
+            CreateJobSheet(
+                viewModel: viewModel,
+                botConfig: bot,
+                existingJob: CronJobItem(
+                    id: UUID().uuidString,
+                    name: "\(job.name) (copy)",
+                    enabled: job.enabled,
+                    scheduleText: job.scheduleText,
+                    scheduleKind: job.scheduleKind,
+                    sessionTarget: job.sessionTarget,
+                    payloadKind: job.payloadKind,
+                    model: job.model,
+                    lastRunAt: nil,
+                    nextRunAt: nil,
+                    botName: job.botName,
+                    botEmoji: job.botEmoji,
+                    botId: job.botId,
+                    rawSchedule: job.rawSchedule,
+                    rawPayload: job.rawPayload
+                ),
+                onSaved: { Task { await loadJobs() } }
+            )
+        }
+        .sheet(item: $historyJob) { job in
+            JobHistorySheet(job: job, viewModel: viewModel)
         }
     }
 
@@ -69,6 +130,13 @@ struct BotAutomationsPage: View {
                     } label: {
                         Label("Delete", systemImage: "trash")
                     }
+
+                    Button {
+                        duplicatingJob = job
+                    } label: {
+                        Label("Duplicate", systemImage: "doc.on.doc")
+                    }
+                    .tint(.optaPrimary)
                 }
                 .swipeActions(edge: .leading, allowsFullSwipe: true) {
                     Button {
@@ -88,7 +156,7 @@ struct BotAutomationsPage: View {
             if let error = errorMessage {
                 Section {
                     Text(error)
-                        .font(.caption)
+                        .font(.soraCaption)
                         .foregroundColor(.optaRed)
                 }
             }
@@ -100,26 +168,50 @@ struct BotAutomationsPage: View {
     private var emptyState: some View {
         VStack(spacing: 16) {
             Image(systemName: "bolt.circle")
-                .font(.system(size: 48))
+                .font(.sora(48, weight: .regular))
                 .foregroundColor(.optaTextMuted)
             Text("No automations")
-                .font(.headline)
+                .font(.soraHeadline)
                 .foregroundColor(.optaTextSecondary)
             Text("\(bot.name) has no cron jobs configured")
-                .font(.subheadline)
+                .font(.soraSubhead)
                 .foregroundColor(.optaTextMuted)
                 .multilineTextAlignment(.center)
 
-            if viewModel.connectionState == .disconnected {
+            HStack(spacing: 12) {
+                if viewModel.connectionState == .disconnected {
+                    Button {
+                        viewModel.connect()
+                    } label: {
+                        Label("Connect", systemImage: "bolt.fill")
+                            .font(.sora(15, weight: .medium))
+                            .foregroundColor(.optaPrimary)
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 10)
+                            .background(Capsule().stroke(Color.optaPrimary, lineWidth: 1.5))
+                    }
+                } else {
+                    Button {
+                        showCreateSheet = true
+                    } label: {
+                        Label("Create Job", systemImage: "plus.circle.fill")
+                            .font(.sora(15, weight: .medium))
+                            .foregroundColor(.optaPrimary)
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 10)
+                            .background(Capsule().stroke(Color.optaPrimary, lineWidth: 1.5))
+                    }
+                }
+
                 Button {
-                    viewModel.connect()
+                    Task { await loadJobs() }
                 } label: {
-                    Label("Connect", systemImage: "bolt.fill")
-                        .font(.subheadline.weight(.medium))
-                        .foregroundColor(.optaPrimary)
+                    Label("Scan", systemImage: "arrow.clockwise")
+                        .font(.sora(15, weight: .medium))
+                        .foregroundColor(.optaTextSecondary)
                         .padding(.horizontal, 20)
                         .padding(.vertical, 10)
-                        .background(Capsule().stroke(Color.optaPrimary, lineWidth: 1.5))
+                        .background(Capsule().stroke(Color.optaBorder, lineWidth: 1))
                 }
             }
         }
@@ -165,7 +257,8 @@ struct BotAutomationsPage: View {
 
                 let payloadKind: String
                 let model: String?
-                if let payload = job["payload"] as? [String: Any] {
+                let rawPayload = job["payload"] as? [String: Any]
+                if let payload = rawPayload {
                     payloadKind = payload["kind"] as? String ?? "unknown"
                     model = payload["model"] as? String
                 } else {
@@ -173,6 +266,7 @@ struct BotAutomationsPage: View {
                     model = nil
                 }
 
+                let rawSchedule = job["schedule"] as? [String: Any]
                 let lastRunAt = parseDate(job["lastRunAt"])
                 let nextRunAt = parseDate(job["nextRunAt"])
 
@@ -181,7 +275,8 @@ struct BotAutomationsPage: View {
                     scheduleText: scheduleText, scheduleKind: scheduleKind,
                     sessionTarget: sessionTarget, payloadKind: payloadKind,
                     model: model, lastRunAt: lastRunAt, nextRunAt: nextRunAt,
-                    botName: bot.name, botEmoji: bot.emoji, botId: bot.id
+                    botName: bot.name, botEmoji: bot.emoji, botId: bot.id,
+                    rawSchedule: rawSchedule, rawPayload: rawPayload
                 ))
             }
 
@@ -230,7 +325,7 @@ struct BotAutomationsPage: View {
         UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
         Task {
             do {
-                _ = try await viewModel.call("cron.delete", params: ["jobId": job.id])
+                _ = try await viewModel.call("cron.remove", params: ["jobId": job.id])
                 withAnimation(.optaSpring) {
                     jobs.removeAll { $0.id == job.id }
                 }

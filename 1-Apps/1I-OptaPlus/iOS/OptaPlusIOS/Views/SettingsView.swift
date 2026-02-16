@@ -481,7 +481,10 @@ struct BotEditSheet: View {
         let h = host.trimmingCharacters(in: .whitespacesAndNewlines)
         Task {
             do {
-                let url = URL(string: "http://\(h):\(port)/health")!
+                guard let url = URL(string: "http://\(h):\(port)/health") else {
+                    testResult = .failure("Invalid URL")
+                    return
+                }
                 let (_, response) = try await URLSession.shared.data(from: url)
                 if let http = response as? HTTPURLResponse, http.statusCode == 200 {
                     testResult = .success

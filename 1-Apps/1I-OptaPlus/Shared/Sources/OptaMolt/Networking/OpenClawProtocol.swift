@@ -20,13 +20,13 @@ public enum FrameType: String, Codable, Sendable {
 
 /// A request frame sent from client → gateway.
 public struct RequestFrame: Codable, Sendable {
-    public let type: String // always "req"
+    public let type: FrameType
     public let id: String
     public let method: String
     public let params: AnyCodable?
-    
+
     public init(method: String, params: AnyCodable? = nil) {
-        self.type = "req"
+        self.type = .req
         self.id = UUID().uuidString
         self.method = method
         self.params = params
@@ -35,7 +35,7 @@ public struct RequestFrame: Codable, Sendable {
 
 /// A response frame received from gateway → client.
 public struct ResponseFrame: Codable, Sendable {
-    public let type: String // always "res"
+    public let type: FrameType
     public let id: String
     public let ok: Bool
     public let payload: AnyCodable?
@@ -49,7 +49,7 @@ public struct ResponseFrame: Codable, Sendable {
 
 /// An event frame received from gateway → client.
 public struct EventFrame: Codable, Sendable {
-    public let type: String // always "event"
+    public let type: FrameType
     public let event: String
     public let payload: AnyCodable?
     public let seq: Int?
@@ -228,6 +228,74 @@ public enum SessionMode: String, Codable, Sendable, CaseIterable {
     }
 }
 
+// MARK: - Channel Type
+
+/// The communication channel a session is routed through.
+public enum ChannelType: String, Codable, Sendable, CaseIterable, Identifiable {
+    case telegram
+    case direct
+    case whatsapp
+    case discord
+
+    public var id: String { rawValue }
+
+    public var label: String {
+        switch self {
+        case .telegram: return "Telegram"
+        case .direct: return "Direct"
+        case .whatsapp: return "WhatsApp"
+        case .discord: return "Discord"
+        }
+    }
+
+    public var icon: String {
+        switch self {
+        case .telegram: return "paperplane.fill"
+        case .direct: return "bolt.fill"
+        case .whatsapp: return "phone.fill"
+        case .discord: return "gamecontroller.fill"
+        }
+    }
+
+    public var accentColor: String {
+        switch self {
+        case .telegram: return "optaBlue"
+        case .direct: return "optaCoral"
+        case .whatsapp: return "optaGreen"
+        case .discord: return "optaIndigo"
+        }
+    }
+
+    /// Whether chat.send should set deliver: true for this channel.
+    public var shouldDeliver: Bool {
+        switch self {
+        case .telegram: return true
+        case .direct: return false
+        case .whatsapp: return true
+        case .discord: return true
+        }
+    }
+}
+
+// MARK: - Chat Session Color
+
+/// Color palette for custom chat sessions (max 5 per bot).
+public enum ChatSessionColor: String, CaseIterable, Codable, Sendable {
+    case purple, teal, pink, amber, cyan
+
+    public var displayName: String { rawValue.capitalized }
+
+    public var swiftUIColor: String {
+        switch self {
+        case .purple: return "optaNeonPurple"
+        case .teal: return "optaCyan"
+        case .pink: return "optaPink"
+        case .amber: return "optaAmber"
+        case .cyan: return "optaBlue"
+        }
+    }
+}
+
 /// A chat session within a bot connection.
 public struct ChatSession: Identifiable, Codable, Sendable, Hashable {
     public let id: String
@@ -236,14 +304,34 @@ public struct ChatSession: Identifiable, Codable, Sendable, Hashable {
     public var mode: SessionMode
     public var createdAt: Date
     public var isPinned: Bool
-    
+    public var channelType: ChannelType?
+    public var colorTag: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id, name, sessionKey, mode, createdAt, isPinned, channelType, colorTag
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        sessionKey = try container.decode(String.self, forKey: .sessionKey)
+        mode = try container.decode(SessionMode.self, forKey: .mode)
+        createdAt = try container.decode(Date.self, forKey: .createdAt)
+        isPinned = try container.decode(Bool.self, forKey: .isPinned)
+        channelType = try container.decodeIfPresent(ChannelType.self, forKey: .channelType)
+        colorTag = try container.decodeIfPresent(String.self, forKey: .colorTag)
+    }
+
     public init(
         id: String = UUID().uuidString,
         name: String,
         sessionKey: String = "main",
         mode: SessionMode = .synced,
         createdAt: Date = Date(),
-        isPinned: Bool = false
+        isPinned: Bool = false,
+        channelType: ChannelType? = nil,
+        colorTag: String? = nil
     ) {
         self.id = id
         self.name = name
@@ -251,16 +339,24 @@ public struct ChatSession: Identifiable, Codable, Sendable, Hashable {
         self.mode = mode
         self.createdAt = createdAt
         self.isPinned = isPinned
+        self.channelType = channelType
+        self.colorTag = colorTag
     }
-    
+
     /// The default synced session for a bot.
     public static func defaultSynced(botName: String) -> ChatSession {
         ChatSession(
             name: "Telegram",
             sessionKey: "main",
             mode: .synced,
-            isPinned: true
+            isPinned: true,
+            channelType: .telegram
         )
+    }
+
+    /// Resolve deliver flag: channelType takes precedence over mode.
+    public var resolvedShouldDeliver: Bool {
+        channelType?.shouldDeliver ?? mode.shouldDeliver
     }
 }
 
@@ -312,79 +408,144 @@ public struct GatewaySession: Identifiable, Sendable {
     }
 }
 
+// MARK: - SendableJSON (type-safe, Sendable JSON value)
+
+/// A recursive, fully Sendable representation of a JSON value.
+/// Replaces `Any` with a closed enum so `AnyCodable` can be properly `Sendable`.
+public enum SendableJSON: Sendable, Equatable {
+    case null
+    case bool(Bool)
+    case int(Int)
+    case double(Double)
+    case string(String)
+    case array([SendableJSON])
+    case object([String: SendableJSON])
+
+    /// Convert from an arbitrary `Any` (e.g. from JSONSerialization).
+    /// Unknown types become `.null`.
+    public static func from(_ value: Any) -> SendableJSON {
+        switch value {
+        case is NSNull:
+            return .null
+        case let b as Bool:
+            return .bool(b)
+        case let i as Int:
+            return .int(i)
+        case let d as Double:
+            return .double(d)
+        case let s as String:
+            return .string(s)
+        case let arr as [Any]:
+            return .array(arr.map { from($0) })
+        case let dict as [String: Any]:
+            return .object(dict.mapValues { from($0) })
+        default:
+            return .null
+        }
+    }
+
+    /// Convert back to untyped `Any` for legacy callers that expect `[String: Any]` etc.
+    public var anyValue: Any {
+        switch self {
+        case .null: return NSNull()
+        case .bool(let b): return b
+        case .int(let i): return i
+        case .double(let d): return d
+        case .string(let s): return s
+        case .array(let arr): return arr.map(\.anyValue)
+        case .object(let dict): return dict.mapValues(\.anyValue)
+        }
+    }
+}
+
 // MARK: - AnyCodable (lightweight type-erased JSON)
 
 /// A type-erased `Codable` wrapper for arbitrary JSON values.
 /// Used to handle the dynamic payloads in the OpenClaw protocol.
-public struct AnyCodable: Codable, Sendable, @unchecked Sendable {
-    public let value: Any
-    
+/// Internally stores a `SendableJSON` enum for proper `Sendable` conformance.
+public struct AnyCodable: Codable, Sendable {
+    public let storage: SendableJSON
+
+    /// The underlying value as `Any` (for legacy callers).
+    public var value: Any { storage.anyValue }
+
     public init(_ value: Any) {
-        self.value = value
+        self.storage = SendableJSON.from(value)
     }
-    
+
+    init(storage: SendableJSON) {
+        self.storage = storage
+    }
+
     public init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
-        
+
         if container.decodeNil() {
-            self.value = NSNull()
+            self.storage = .null
         } else if let bool = try? container.decode(Bool.self) {
-            self.value = bool
+            self.storage = .bool(bool)
         } else if let int = try? container.decode(Int.self) {
-            self.value = int
+            self.storage = .int(int)
         } else if let double = try? container.decode(Double.self) {
-            self.value = double
+            self.storage = .double(double)
         } else if let string = try? container.decode(String.self) {
-            self.value = string
+            self.storage = .string(string)
         } else if let array = try? container.decode([AnyCodable].self) {
-            self.value = array.map(\.value)
+            self.storage = .array(array.map(\.storage))
         } else if let dict = try? container.decode([String: AnyCodable].self) {
-            self.value = dict.mapValues(\.value)
+            self.storage = .object(dict.mapValues(\.storage))
         } else {
-            self.value = NSNull()
+            self.storage = .null
         }
     }
-    
+
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
-        
-        switch value {
-        case is NSNull:
+
+        switch storage {
+        case .null:
             try container.encodeNil()
-        case let bool as Bool:
-            try container.encode(bool)
-        case let int as Int:
-            try container.encode(int)
-        case let double as Double:
-            try container.encode(double)
-        case let string as String:
-            try container.encode(string)
-        case let array as [Any]:
-            try container.encode(array.map { AnyCodable($0) })
-        case let dict as [String: Any]:
-            try container.encode(dict.mapValues { AnyCodable($0) })
-        default:
-            try container.encodeNil()
+        case .bool(let b):
+            try container.encode(b)
+        case .int(let i):
+            try container.encode(i)
+        case .double(let d):
+            try container.encode(d)
+        case .string(let s):
+            try container.encode(s)
+        case .array(let arr):
+            try container.encode(arr.map { AnyCodable(storage: $0) })
+        case .object(let dict):
+            try container.encode(dict.mapValues { AnyCodable(storage: $0) })
         }
     }
-    
+
     // MARK: - Convenience Accessors
-    
+
     /// Access as dictionary.
     public var dict: [String: Any]? { value as? [String: Any] }
-    
+
     /// Access as array.
     public var array: [Any]? { value as? [Any] }
-    
+
     /// Access as string.
-    public var string: String? { value as? String }
-    
+    public var string: String? {
+        if case .string(let s) = storage { return s }
+        return nil
+    }
+
     /// Access as int.
-    public var int: Int? { value as? Int }
-    
+    public var int: Int? {
+        if case .int(let i) = storage { return i }
+        return nil
+    }
+
     /// Access as bool.
-    public var bool: Bool? { value as? Bool }
-    
+    public var bool: Bool? {
+        if case .bool(let b) = storage { return b }
+        return nil
+    }
+
     /// Access nested key.
     public subscript(key: String) -> Any? {
         (value as? [String: Any])?[key]
@@ -400,4 +561,206 @@ public func encodeParams<T: Encodable>(_ value: T) -> AnyCodable? {
         return nil
     }
     return AnyCodable(json)
+}
+
+// MARK: - Gateway Config
+
+/// Response from `config.get` — raw config text + hash for optimistic concurrency.
+/// Uses `SendableJSON` internally for proper `Sendable` conformance.
+public struct GatewayConfig: Sendable {
+    public let raw: String
+    public let hash: String
+    private let _parsed: SendableJSON
+
+    /// Parsed config as `[String: Any]` (convenience accessor for legacy callers).
+    public var parsed: [String: Any] {
+        _parsed.anyValue as? [String: Any] ?? [:]
+    }
+
+    public init(raw: String, hash: String, parsed: [String: Any]) {
+        self.raw = raw
+        self.hash = hash
+        self._parsed = SendableJSON.from(parsed)
+    }
+}
+
+/// Parameters for `config.patch` — partial config update.
+public struct ConfigPatchParams: Codable, Sendable {
+    public let raw: String
+    public let baseHash: String
+    public let note: String?
+
+    public init(raw: String, baseHash: String, note: String? = nil) {
+        self.raw = raw
+        self.baseHash = baseHash
+        self.note = note
+    }
+}
+
+/// Parameters for `gateway.restart` — full config replacement + restart.
+public struct GatewayRestartParams: Codable, Sendable {
+    public let raw: String
+    public let baseHash: String?
+    public let note: String?
+
+    public init(raw: String, baseHash: String? = nil, note: String? = nil) {
+        self.raw = raw
+        self.baseHash = baseHash
+        self.note = note
+    }
+}
+
+// MARK: - Gateway Health & Status
+
+/// Response from `health` RPC.
+public struct GatewayHealth: Sendable {
+    public let status: String
+    public let uptime: Double
+    public let version: String
+    public let model: String?
+    public let sessions: Int
+    public let cronJobs: Int
+
+    public init(status: String, uptime: Double, version: String,
+                model: String? = nil, sessions: Int = 0, cronJobs: Int = 0) {
+        self.status = status
+        self.uptime = uptime
+        self.version = version
+        self.model = model
+        self.sessions = sessions
+        self.cronJobs = cronJobs
+    }
+}
+
+/// Response from `status` RPC.
+public struct GatewayStatus: Sendable {
+    public let version: String
+    public let model: String?
+    public let channels: [String: ChannelStatus]
+
+    public init(version: String, model: String? = nil, channels: [String: ChannelStatus] = [:]) {
+        self.version = version
+        self.model = model
+        self.channels = channels
+    }
+}
+
+public struct ChannelStatus: Sendable {
+    public let connected: Bool
+    public let type: String
+
+    public init(connected: Bool, type: String) {
+        self.connected = connected
+        self.type = type
+    }
+}
+
+// MARK: - Models
+
+/// A model available on the gateway.
+public struct GatewayModel: Identifiable, Sendable {
+    public let id: String
+    public let name: String?
+    public let provider: String?
+
+    public init(id: String, name: String? = nil, provider: String? = nil) {
+        self.id = id
+        self.name = name
+        self.provider = provider
+    }
+}
+
+// MARK: - Cron Job Creation
+
+/// Parameters for `cron.add` — new job.
+public struct CronJobCreate: Codable, Sendable {
+    public let name: String?
+    public let schedule: CronScheduleCreate
+    public let sessionTarget: String
+    public let payload: CronPayloadCreate
+    public let delivery: CronDeliveryCreate?
+    public let enabled: Bool
+
+    public init(name: String?, schedule: CronScheduleCreate,
+                sessionTarget: String = "main", payload: CronPayloadCreate,
+                delivery: CronDeliveryCreate? = nil, enabled: Bool = true) {
+        self.name = name
+        self.schedule = schedule
+        self.sessionTarget = sessionTarget
+        self.payload = payload
+        self.delivery = delivery
+        self.enabled = enabled
+    }
+}
+
+public struct CronScheduleCreate: Codable, Sendable {
+    public let kind: String
+    public let expression: String?
+    public let intervalMs: Int?
+    public let date: Double?
+    public let tz: String?
+
+    public init(kind: String, expression: String? = nil, intervalMs: Int? = nil,
+                date: Double? = nil, tz: String? = nil) {
+        self.kind = kind
+        self.expression = expression
+        self.intervalMs = intervalMs
+        self.date = date
+        self.tz = tz
+    }
+}
+
+public struct CronPayloadCreate: Codable, Sendable {
+    public let kind: String
+    public let message: String?
+
+    public init(kind: String, message: String? = nil) {
+        self.kind = kind
+        self.message = message
+    }
+}
+
+public struct CronDeliveryCreate: Codable, Sendable {
+    public let mode: String
+    public let channel: String?
+    public let to: String?
+
+    public init(mode: String = "none", channel: String? = nil, to: String? = nil) {
+        self.mode = mode
+        self.channel = channel
+        self.to = to
+    }
+}
+
+// MARK: - Cron Run History
+
+/// A single execution record from `cron.runs`.
+public struct CronRun: Identifiable, Sendable {
+    public let id: String
+    public let startedAt: Date?
+    public let finishedAt: Date?
+    public let status: String
+    public let error: String?
+
+    public init(id: String, startedAt: Date? = nil, finishedAt: Date? = nil,
+                status: String = "ok", error: String? = nil) {
+        self.id = id
+        self.startedAt = startedAt
+        self.finishedAt = finishedAt
+        self.status = status
+        self.error = error
+    }
+}
+
+// MARK: - Sessions Patch
+
+/// Parameters for `sessions.patch`.
+public struct SessionsPatchParams: Codable, Sendable {
+    public let sessionKey: String
+    public let patch: AnyCodable
+
+    public init(sessionKey: String, patch: [String: Any]) {
+        self.sessionKey = sessionKey
+        self.patch = AnyCodable(patch)
+    }
 }

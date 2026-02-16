@@ -162,6 +162,29 @@ struct OptaPlusMacOSApp: App {
                 .keyboardShortcut("r", modifiers: [.command, .shift])
             }
 
+            // Views menu
+            CommandMenu("Views") {
+                Button("Dashboard") {
+                    NotificationCenter.default.post(name: .toggleDashboard, object: nil)
+                }
+                .keyboardShortcut("d", modifiers: .command)
+
+                Button("Automations") {
+                    NotificationCenter.default.post(name: .toggleAutomations, object: nil)
+                }
+                .keyboardShortcut("j", modifiers: .command)
+
+                Button("Bot Web") {
+                    NotificationCenter.default.post(name: .toggleBotWeb, object: nil)
+                }
+                .keyboardShortcut("b", modifiers: [.command, .shift])
+
+                Button("Debug") {
+                    NotificationCenter.default.post(name: .toggleDebug, object: nil)
+                }
+                .keyboardShortcut("g", modifiers: [.command, .shift])
+            }
+
             // Window → Show Bot shortcuts (⌘1 through ⌘6)
             CommandMenu("Bots") {
                 ForEach(Array(appState.bots.prefix(6).enumerated()), id: \.element.id) { index, bot in
@@ -181,10 +204,10 @@ struct OptaPlusMacOSApp: App {
             ZStack {
                 Image(systemName: "circle.fill")
                     .font(.system(size: 12))
-                    .foregroundColor(.purple)
+                    .foregroundColor(.optaPrimary)
                 if notificationManager.unreadCount > 0 {
                     Circle()
-                        .fill(Color.red)
+                        .fill(Color.optaRed)
                         .frame(width: 6, height: 6)
                         .offset(x: 6, y: -6)
                 }
@@ -470,13 +493,13 @@ struct MenuBarPanel: View {
             HStack {
                 Image(systemName: "circle.fill")
                     .font(.system(size: 10))
-                    .foregroundColor(.purple)
+                    .foregroundColor(.optaPrimary)
                 Text("OptaPlus")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.sora(13, weight: .semibold))
                 Spacer()
                 Text("\(appState.connectedBotCount) connected")
-                    .font(.system(size: 11))
-                    .foregroundColor(.secondary)
+                    .font(.sora(11))
+                    .foregroundColor(.optaTextSecondary)
             }
 
             Divider()
@@ -484,13 +507,13 @@ struct MenuBarPanel: View {
             // Latest message preview
             if let preview = appState.latestMessagePreview {
                 Text(preview)
-                    .font(.system(size: 11))
-                    .foregroundColor(.secondary)
+                    .font(.sora(11))
+                    .foregroundColor(.optaTextSecondary)
                     .lineLimit(2)
             } else {
                 Text("No messages yet")
-                    .font(.system(size: 11))
-                    .foregroundColor(.secondary)
+                    .font(.sora(11))
+                    .foregroundColor(.optaTextSecondary)
             }
 
             Divider()

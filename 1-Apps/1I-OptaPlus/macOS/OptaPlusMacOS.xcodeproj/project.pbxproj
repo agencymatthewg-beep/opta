@@ -27,6 +27,9 @@
 		PH100001FFFF001600000001 /* SessionViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = PH100002FFFF001600000001 /* SessionViews.swift */; };
 		PH100001FFFF001700000001 /* SettingsViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = PH100002FFFF001700000001 /* SettingsViews.swift */; };
 		SM000001FFFF000100000001 /* SoundManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = SM000002FFFF000100000001 /* SoundManager.swift */; };
+		AV000001FFFF000100000001 /* AutomationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AV000002FFFF000100000001 /* AutomationsView.swift */; };
+		DV000001FFFF000100000001 /* DebugView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DV000002FFFF000100000001 /* DebugView.swift */; };
+		BW000001FFFF000100000001 /* BotWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BW000002FFFF000100000001 /* BotWebView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -51,6 +54,9 @@
 		PH100002FFFF001600000001 /* SessionViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionViews.swift; sourceTree = "<group>"; };
 		PH100002FFFF001700000001 /* SettingsViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViews.swift; sourceTree = "<group>"; };
 		SM000002FFFF000100000001 /* SoundManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundManager.swift; sourceTree = "<group>"; };
+		AV000002FFFF000100000001 /* AutomationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutomationsView.swift; sourceTree = "<group>"; };
+		DV000002FFFF000100000001 /* DebugView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugView.swift; sourceTree = "<group>"; };
+		BW000002FFFF000100000001 /* BotWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BotWebView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -94,6 +100,9 @@
 				PH000004FFFF000100000001 /* KeyboardShortcuts.swift */,
 				SM000002FFFF000100000001 /* SoundManager.swift */,
 				DB000002FFFF000100000001 /* DashboardView.swift */,
+				AV000002FFFF000100000001 /* AutomationsView.swift */,
+				DV000002FFFF000100000001 /* DebugView.swift */,
+				BW000002FFFF000100000001 /* BotWebView.swift */,
 				CD000008BBBB000200000001 /* Assets.xcassets */,
 				CD00000ABBBB000200000001 /* Info.plist */,
 				CD00000BBBBB000200000001 /* OptaPlusMacOS.entitlements */,
@@ -202,6 +211,9 @@
 				PH000003FFFF000100000001 /* KeyboardShortcuts.swift in Sources */,
 				SM000001FFFF000100000001 /* SoundManager.swift in Sources */,
 				DB000001FFFF000100000001 /* DashboardView.swift in Sources */,
+				AV000001FFFF000100000001 /* AutomationsView.swift in Sources */,
+				DV000001FFFF000100000001 /* DebugView.swift in Sources */,
+				BW000001FFFF000100000001 /* BotWebView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

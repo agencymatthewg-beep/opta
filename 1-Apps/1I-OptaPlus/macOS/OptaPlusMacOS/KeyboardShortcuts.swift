@@ -51,11 +51,17 @@ struct KeyboardShortcutsView: View {
             ShortcutEntry(keys: "⌘]", description: "Toggle session drawer"),
             ShortcutEntry(keys: "⌘P → New Session", description: "Create session"),
         ]),
+        ShortcutGroup(name: "Views", icon: "rectangle.3.group", shortcuts: [
+            ShortcutEntry(keys: "⌘D", description: "Toggle Dashboard"),
+            ShortcutEntry(keys: "⌘J", description: "Toggle Automations"),
+            ShortcutEntry(keys: "⌘⇧B", description: "Toggle Bot Web"),
+            ShortcutEntry(keys: "⌘⇧G", description: "Toggle Debug Panel"),
+        ]),
     ]
 
     var body: some View {
         ZStack {
-            Color.black.opacity(0.35)
+            Color.optaVoid.opacity(0.35)
                 .ignoresSafeArea()
                 .onTapGesture { isPresented = false }
 
@@ -67,7 +73,7 @@ struct KeyboardShortcutsView: View {
                         .foregroundColor(.optaPrimary)
 
                     Text("Keyboard Shortcuts")
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(.sora(15, weight: .semibold))
                         .foregroundColor(.optaTextPrimary)
 
                     Spacer()
@@ -142,7 +148,7 @@ struct ShortcutGroupCard: View {
                         .frame(minWidth: 50, alignment: .leading)
 
                     Text(shortcut.description)
-                        .font(.system(size: 11))
+                        .font(.sora(11))
                         .foregroundColor(.optaTextSecondary)
                         .lineLimit(1)
 

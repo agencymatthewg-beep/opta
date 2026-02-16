@@ -8,7 +8,6 @@ import OptaMolt
 
 struct AboutView: View {
     var botConfigs: [BotConfig] = []
-    @State private var pulseScale: CGFloat = 1.0
     @Environment(\.dismiss) private var dismiss
 
     private var version: String {
@@ -29,19 +28,14 @@ struct AboutView: View {
                     Circle()
                         .fill(Color.optaPrimary.opacity(0.12))
                         .frame(width: 120, height: 120)
-                        .scaleEffect(pulseScale)
                         .blur(radius: 15)
+                        .optaBreathing(minScale: 1.0, maxScale: 1.15)
 
                     Text("O+")
                         .font(.system(size: 48, weight: .black, design: .rounded))
                         .foregroundStyle(
                             LinearGradient(colors: [.optaPrimary, .optaCyan], startPoint: .topLeading, endPoint: .bottomTrailing)
                         )
-                }
-                .onAppear {
-                    withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true)) {
-                        pulseScale = 1.15
-                    }
                 }
 
                 VStack(spacing: 4) {

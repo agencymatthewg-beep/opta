@@ -132,7 +132,7 @@ struct ChatHistoryView: View {
                     }
                 } header: {
                     Text(group.rawValue)
-                        .font(.subheadline.weight(.semibold))
+                        .font(.sora(15, weight: .semibold))
                         .foregroundColor(.optaTextSecondary)
                 }
             }
@@ -197,13 +197,13 @@ struct ChatHistoryView: View {
     private var emptyState: some View {
         VStack(spacing: 16) {
             Image(systemName: "clock.arrow.circlepath")
-                .font(.system(size: 48))
+                .font(.sora(48, weight: .regular))
                 .foregroundColor(.optaTextMuted)
             Text("No sessions yet")
-                .font(.headline)
+                .font(.soraHeadline)
                 .foregroundColor(.optaTextSecondary)
             Text("Connect to a bot to see conversation history")
-                .font(.subheadline)
+                .font(.soraSubhead)
                 .foregroundColor(.optaTextMuted)
                 .multilineTextAlignment(.center)
         }
@@ -298,23 +298,23 @@ struct HistoryRow: View {
     var body: some View {
         HStack(spacing: 12) {
             Text(item.botEmoji)
-                .font(.title2)
+                .font(.soraTitle2)
 
             VStack(alignment: .leading, spacing: 3) {
                 HStack {
                     if isPinned {
                         Image(systemName: "pin.fill")
-                            .font(.system(size: 9))
+                            .font(.sora(9, weight: .regular))
                             .foregroundColor(.optaAmber)
                     }
 
                     Text(item.botName)
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(.sora(15, weight: .semibold))
                         .foregroundColor(.optaTextPrimary)
 
                     if let channel = item.channel {
                         Text(channel)
-                            .font(.system(size: 10))
+                            .font(.sora(10, weight: .regular))
                             .foregroundColor(.optaTextMuted)
                             .padding(.horizontal, 5)
                             .padding(.vertical, 1)
@@ -323,7 +323,7 @@ struct HistoryRow: View {
                 }
 
                 Text(item.summary)
-                    .font(.system(size: 13))
+                    .font(.sora(13, weight: .regular))
                     .foregroundColor(.optaTextSecondary)
                     .lineLimit(2)
 
@@ -344,25 +344,15 @@ struct HistoryRow: View {
             Spacer()
 
             VStack(alignment: .trailing, spacing: 4) {
-                Text(relativeTime(item.lastActivity))
-                    .font(.system(size: 11))
+                Text(OptaFormatting.relativeTime(item.lastActivity))
+                    .font(.sora(11, weight: .regular))
                     .foregroundColor(.optaTextMuted)
 
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 10))
+                    .font(.sora(10, weight: .regular))
                     .foregroundColor(.optaTextMuted)
             }
         }
         .padding(.vertical, 4)
-    }
-
-    private func relativeTime(_ date: Date) -> String {
-        let seconds = Int(Date().timeIntervalSince(date))
-        if seconds < 60 { return "just now" }
-        if seconds < 3600 { return "\(seconds / 60)m ago" }
-        if seconds < 86400 { return "\(seconds / 3600)h ago" }
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMM d"
-        return formatter.string(from: date)
     }
 }

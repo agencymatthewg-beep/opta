@@ -72,7 +72,7 @@ public struct EnhancedTypingIndicator: View {
                     try? await Task.sleep(nanoseconds: 30_000_000_000)
                     if !Task.isCancelled {
                         await MainActor.run {
-                            withAnimation(.easeOut(duration: 0.3)) {
+                            withAnimation(.optaSpring) {
                                 isVisible = false
                             }
                         }
@@ -80,7 +80,7 @@ public struct EnhancedTypingIndicator: View {
                 }
             } else {
                 autoHideTask?.cancel()
-                withAnimation(.easeOut(duration: 0.3)) {
+                withAnimation(.optaSpring) {
                     isVisible = false
                 }
             }
@@ -92,7 +92,7 @@ public struct EnhancedTypingIndicator: View {
                     try? await Task.sleep(nanoseconds: 30_000_000_000)
                     if !Task.isCancelled {
                         await MainActor.run {
-                            withAnimation(.easeOut(duration: 0.3)) { isVisible = false }
+                            withAnimation(.optaSpring) { isVisible = false }
                         }
                     }
                 }

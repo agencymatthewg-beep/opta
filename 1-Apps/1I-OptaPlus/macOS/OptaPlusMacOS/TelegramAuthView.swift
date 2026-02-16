@@ -26,9 +26,9 @@ struct TelegramAuthView: View {
     @State private var isWorking = false
     @State private var localError: String?
 
-    // Persisted credentials (per-app, not per-user)
-    @AppStorage("optaplus.telegram.apiId") private var savedApiId: String = ""
-    @AppStorage("optaplus.telegram.apiHash") private var savedApiHash: String = ""
+    // Keychain keys for Telegram API credentials
+    private static let apiIdKey = "optaplus.telegram.apiId"
+    private static let apiHashKey = "optaplus.telegram.apiHash"
 
     var body: some View {
         ScrollView {
@@ -47,11 +47,11 @@ struct TelegramAuthView: View {
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Telegram Sync")
-                            .font(.system(size: 15, weight: .semibold))
+                            .font(.sora(15, weight: .semibold))
                             .foregroundColor(.optaTextPrimary)
 
                         Text("Bidirectional sync with @Opta_Bot")
-                            .font(.system(size: 11))
+                            .font(.sora(11))
                             .foregroundColor(.optaTextMuted)
                     }
 
@@ -94,7 +94,7 @@ struct TelegramAuthView: View {
                             .foregroundColor(.optaAmber)
                             .font(.system(size: 12))
                         Text(error)
-                            .font(.system(size: 11))
+                            .font(.sora(11))
                             .foregroundColor(.optaAmber)
                     }
                     .padding(8)
@@ -110,8 +110,9 @@ struct TelegramAuthView: View {
         }
         .frame(maxWidth: .infinity)
         .onAppear {
-            apiIdText = savedApiId
-            apiHashText = savedApiHash
+            migrateTelegramCredsFromUserDefaultsIfNeeded()
+            apiIdText = SecureStorage.shared.load(key: Self.apiIdKey) ?? ""
+            apiHashText = SecureStorage.shared.load(key: Self.apiHashKey) ?? ""
         }
         .onChange(of: manager.authState) { _ in
             localError = nil
@@ -126,7 +127,7 @@ struct TelegramAuthView: View {
                 .fill(statusColor)
                 .frame(width: 6, height: 6)
             Text(statusText)
-                .font(.system(size: 10, weight: .medium))
+                .font(.sora(10, weight: .medium))
                 .foregroundColor(statusColor)
         }
         .padding(.horizontal, 8)
@@ -168,7 +169,7 @@ struct TelegramAuthView: View {
                 .foregroundColor(.optaTextMuted)
 
             Text("Get these from my.telegram.org → API development tools.")
-                .font(.system(size: 11))
+                .font(.sora(11))
                 .foregroundColor(.optaTextMuted)
 
             LabeledField("API ID", text: $apiIdText, placeholder: "12345678")
@@ -200,7 +201,7 @@ struct TelegramAuthView: View {
                 .foregroundColor(.optaTextMuted)
 
             Text("Enter your phone number with country code (e.g., +61...).")
-                .font(.system(size: 11))
+                .font(.sora(11))
                 .foregroundColor(.optaTextMuted)
 
             LabeledField("Phone", text: $phoneNumber, placeholder: "+61...")
@@ -228,7 +229,7 @@ struct TelegramAuthView: View {
                 .foregroundColor(.optaTextMuted)
 
             Text("Check your Telegram app or SMS for the code.")
-                .font(.system(size: 11))
+                .font(.sora(11))
                 .foregroundColor(.optaTextMuted)
 
             LabeledField("Code", text: $verificationCode, placeholder: "12345")
@@ -256,17 +257,17 @@ struct TelegramAuthView: View {
                 .foregroundColor(.optaTextMuted)
 
             Text("Your account has 2FA enabled. Enter your cloud password.")
-                .font(.system(size: 11))
+                .font(.sora(11))
                 .foregroundColor(.optaTextMuted)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text("Password")
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.sora(11, weight: .medium))
                     .foregroundColor(.optaTextMuted)
 
                 SecureField("Cloud password", text: $password)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 13))
+                    .font(.sora(13))
                     .foregroundColor(.optaTextPrimary)
                     .padding(8)
                     .background(
@@ -304,12 +305,12 @@ struct TelegramAuthView: View {
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Telegram Connected")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.sora(14, weight: .semibold))
                         .foregroundColor(.optaTextPrimary)
 
                     if let phone = manager.connectedPhone {
                         Text(phone)
-                            .font(.system(size: 11))
+                            .font(.sora(11))
                             .foregroundColor(.optaTextMuted)
                     }
                 }
@@ -327,7 +328,7 @@ struct TelegramAuthView: View {
             )
 
             Text("Messages sent in synced sessions will be mirrored to @Opta_Bot on Telegram.")
-                .font(.system(size: 11))
+                .font(.sora(11))
                 .foregroundColor(.optaTextMuted)
                 .multilineTextAlignment(.center)
 
@@ -351,7 +352,7 @@ struct TelegramAuthView: View {
                     .foregroundColor(.optaRed)
 
                 Text(message)
-                    .font(.system(size: 12))
+                    .font(.sora(12))
                     .foregroundColor(.optaTextSecondary)
             }
             .padding(12)
@@ -378,8 +379,8 @@ struct TelegramAuthView: View {
 
         localError = nil
         isWorking = true
-        savedApiId = apiIdText
-        savedApiHash = apiHashText
+        SecureStorage.shared.save(key: Self.apiIdKey, value: apiIdText)
+        SecureStorage.shared.save(key: Self.apiHashKey, value: apiHashText)
 
         Task {
             // Re-create the manager with validated credentials
@@ -428,6 +429,24 @@ struct TelegramAuthView: View {
                 localError = error.localizedDescription
             }
             isWorking = false
+        }
+    }
+
+    /// One-time migration: move Telegram API creds from UserDefaults to Keychain.
+    private func migrateTelegramCredsFromUserDefaultsIfNeeded() {
+        let legacyApiId = UserDefaults.standard.string(forKey: Self.apiIdKey)
+        let legacyApiHash = UserDefaults.standard.string(forKey: Self.apiHashKey)
+
+        if let id = legacyApiId, !id.isEmpty {
+            SecureStorage.shared.save(key: Self.apiIdKey, value: id)
+            UserDefaults.standard.removeObject(forKey: Self.apiIdKey)
+        }
+        if let hash = legacyApiHash, !hash.isEmpty {
+            SecureStorage.shared.save(key: Self.apiHashKey, value: hash)
+            UserDefaults.standard.removeObject(forKey: Self.apiHashKey)
+        }
+        if legacyApiId != nil || legacyApiHash != nil {
+            NSLog("[TelegramAuthView] Migrated Telegram API credentials from UserDefaults to Keychain")
         }
     }
 

@@ -33,7 +33,7 @@ struct OnboardingView: View {
             .animation(.spring(response: 0.5, dampingFraction: 0.8), value: currentPage)
         }
         .onAppear {
-            withAnimation(.easeOut(duration: 0.8)) { animateIn = true }
+            withAnimation(.optaGentle) { animateIn = true }
         }
     }
 
@@ -174,7 +174,7 @@ struct OnboardingView: View {
                         RoundedRectangle(cornerRadius: 16)
                             .fill(canAdd
                                 ? LinearGradient(colors: [.optaPrimary, .optaPrimary.opacity(0.7)], startPoint: .leading, endPoint: .trailing)
-                                : LinearGradient(colors: [Color.gray.opacity(0.3), Color.gray.opacity(0.3)], startPoint: .leading, endPoint: .trailing)
+                                : LinearGradient(colors: [Color.optaTextMuted.opacity(0.3), Color.optaTextMuted.opacity(0.3)], startPoint: .leading, endPoint: .trailing)
                             )
                     )
             }

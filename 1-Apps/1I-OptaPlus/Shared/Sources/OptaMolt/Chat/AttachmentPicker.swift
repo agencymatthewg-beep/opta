@@ -3,17 +3,62 @@
 //  OptaMolt
 //
 //  Menu button for selecting files or images to attach.
-//  Uses native file importer on macOS and PhotosPicker on iOS.
+//  Uses native file importer on macOS and PhotosPicker + file importer on iOS.
 //
 
 import SwiftUI
 import UniformTypeIdentifiers
+#if canImport(PhotosUI)
+import PhotosUI
+#endif
+
+// MARK: - Attachment Limits
+
+public enum AttachmentLimits {
+    public static let maxFileBytes = 10 * 1024 * 1024 // 10 MB
+    public static let maxAttachmentsPerMessage = 5
+}
+
+// MARK: - Attachment Error
+
+public enum AttachmentError: LocalizedError, Identifiable {
+    case fileTooLarge(filename: String, sizeBytes: Int)
+    case tooManyAttachments
+    case unreadableFile(filename: String)
+
+    public var id: String {
+        switch self {
+        case .fileTooLarge(let name, _): return "large-\(name)"
+        case .tooManyAttachments: return "too-many"
+        case .unreadableFile(let name): return "unreadable-\(name)"
+        }
+    }
+
+    public var errorDescription: String? {
+        switch self {
+        case .fileTooLarge(let name, let size):
+            let mb = String(format: "%.1f", Double(size) / (1024 * 1024))
+            return "\(name) is \(mb) MB. Maximum is 10 MB."
+        case .tooManyAttachments:
+            return "Maximum \(AttachmentLimits.maxAttachmentsPerMessage) attachments per message."
+        case .unreadableFile(let name):
+            return "Could not read \(name)."
+        }
+    }
+}
 
 // MARK: - Attachment Picker
 
 public struct AttachmentPicker: View {
     @Binding var attachments: [ChatAttachment]
     @State private var showFilePicker = false
+    @State private var attachmentError: AttachmentError?
+
+    #if os(iOS)
+    @State private var showActionSheet = false
+    @State private var showPhotoPicker = false
+    @State private var selectedPhotos: [PhotosPickerItem] = []
+    #endif
 
     /// Allowed content types for file import.
     private let allowedTypes: [UTType] = [
@@ -21,21 +66,30 @@ public struct AttachmentPicker: View {
         .mpeg4Movie, .quickTimeMovie, .mp3, .wav, .aiff
     ]
 
-    /// Maximum single file size (50 MB).
-    private let maxFileSize = 50 * 1024 * 1024
-
     public init(attachments: Binding<[ChatAttachment]>) {
         self._attachments = attachments
     }
 
     public var body: some View {
+        #if os(iOS)
+        iOSPicker
+        #else
+        macOSPicker
+        #endif
+    }
+
+    // MARK: - macOS Picker
+
+    #if os(macOS)
+    private var macOSPicker: some View {
         Button(action: { showFilePicker = true }) {
             Image(systemName: "paperclip")
                 .font(.system(size: 16, weight: .medium))
                 .foregroundColor(attachments.isEmpty ? .optaTextSecondary : .optaPrimary)
         }
         .buttonStyle(.plain)
-        .help("Attach files")
+        .help("Attach files (max 10 MB each, up to 5)")
+        .disabled(attachments.count >= AttachmentLimits.maxAttachmentsPerMessage)
         .fileImporter(
             isPresented: $showFilePicker,
             allowedContentTypes: allowedTypes,
@@ -43,7 +97,98 @@ public struct AttachmentPicker: View {
         ) { result in
             handleFileSelection(result)
         }
+        .alert(item: $attachmentError) { error in
+            Alert(
+                title: Text("Attachment Error"),
+                message: Text(error.errorDescription ?? "Unknown error"),
+                dismissButton: .default(Text("OK"))
+            )
+        }
     }
+    #endif
+
+    // MARK: - iOS Picker
+
+    #if os(iOS)
+    private var iOSPicker: some View {
+        Button(action: { showActionSheet = true }) {
+            Image(systemName: "plus.circle.fill")
+                .font(.title3)
+                .foregroundColor(attachments.isEmpty ? .optaTextMuted : .optaPrimary)
+        }
+        .disabled(attachments.count >= AttachmentLimits.maxAttachmentsPerMessage)
+        .accessibilityLabel("Attach file")
+        .accessibilityHint("Opens photo or file picker")
+        .confirmationDialog("Attach", isPresented: $showActionSheet, titleVisibility: .hidden) {
+            Button("Photo Library") {
+                showPhotoPicker = true
+            }
+            Button("Choose File") {
+                showFilePicker = true
+            }
+            Button("Cancel", role: .cancel) {}
+        }
+        .photosPicker(
+            isPresented: $showPhotoPicker,
+            selection: $selectedPhotos,
+            maxSelectionCount: max(0, AttachmentLimits.maxAttachmentsPerMessage - attachments.count),
+            matching: .images
+        )
+        .onChange(of: selectedPhotos) { _, newItems in
+            handlePhotoSelection(newItems)
+            selectedPhotos = []
+        }
+        .fileImporter(
+            isPresented: $showFilePicker,
+            allowedContentTypes: allowedTypes,
+            allowsMultipleSelection: true
+        ) { result in
+            handleFileSelection(result)
+        }
+        .alert(item: $attachmentError) { error in
+            Alert(
+                title: Text("Attachment Error"),
+                message: Text(error.errorDescription ?? "Unknown error"),
+                dismissButton: .default(Text("OK"))
+            )
+        }
+    }
+
+    private func handlePhotoSelection(_ items: [PhotosPickerItem]) {
+        for item in items {
+            guard attachments.count < AttachmentLimits.maxAttachmentsPerMessage else {
+                attachmentError = .tooManyAttachments
+                return
+            }
+
+            Task {
+                guard let data = try? await item.loadTransferable(type: Data.self) else { return }
+
+                if data.count > AttachmentLimits.maxFileBytes {
+                    await MainActor.run {
+                        attachmentError = .fileTooLarge(filename: "photo", sizeBytes: data.count)
+                    }
+                    return
+                }
+
+                let mimeType = "image/jpeg"
+                let filename = "photo-\(UUID().uuidString.prefix(8)).jpg"
+                let thumbnail = generateThumbnail(from: data)
+
+                let attachment = ChatAttachment(
+                    filename: filename,
+                    mimeType: mimeType,
+                    sizeBytes: data.count,
+                    data: data,
+                    thumbnailData: thumbnail
+                )
+                await MainActor.run {
+                    attachments.append(attachment)
+                }
+            }
+        }
+    }
+    #endif
 
     // MARK: - File Handling
 
@@ -51,11 +196,25 @@ public struct AttachmentPicker: View {
         switch result {
         case .success(let urls):
             for url in urls {
-                guard url.startAccessingSecurityScopedResource() else { continue }
+                guard attachments.count < AttachmentLimits.maxAttachmentsPerMessage else {
+                    attachmentError = .tooManyAttachments
+                    return
+                }
+
+                guard url.startAccessingSecurityScopedResource() else {
+                    attachmentError = .unreadableFile(filename: url.lastPathComponent)
+                    continue
+                }
                 defer { url.stopAccessingSecurityScopedResource() }
 
-                guard let data = try? Data(contentsOf: url) else { continue }
-                guard data.count <= maxFileSize else { continue }
+                guard let data = try? Data(contentsOf: url) else {
+                    attachmentError = .unreadableFile(filename: url.lastPathComponent)
+                    continue
+                }
+                guard data.count <= AttachmentLimits.maxFileBytes else {
+                    attachmentError = .fileTooLarge(filename: url.lastPathComponent, sizeBytes: data.count)
+                    continue
+                }
 
                 let mimeType = UTType(filenameExtension: url.pathExtension)?
                     .preferredMIMEType ?? "application/octet-stream"

@@ -55,10 +55,10 @@ public struct TableView: View {
                 // Header row
                 headerRow
 
-                // Separator
+                // Header separator — slightly thicker
                 Rectangle()
-                    .fill(Color.optaSurface)
-                    .frame(height: TableLayout.borderWidth)
+                    .fill(Color.optaBorder)
+                    .frame(height: 1)
 
                 // Data rows
                 ForEach(Array(data.rows.enumerated()), id: \.offset) { index, row in
@@ -67,7 +67,7 @@ public struct TableView: View {
                     // Row separator (except after last row)
                     if index < data.rows.count - 1 {
                         Rectangle()
-                            .fill(Color.optaSurface)
+                            .fill(Color.optaBorder)
                             .frame(height: TableLayout.borderWidth)
                     }
                 }
@@ -75,7 +75,7 @@ public struct TableView: View {
             .clipShape(RoundedRectangle(cornerRadius: TableLayout.cornerRadius))
             .overlay(
                 RoundedRectangle(cornerRadius: TableLayout.cornerRadius)
-                    .stroke(Color.optaSurface, lineWidth: TableLayout.borderWidth)
+                    .stroke(Color.optaBorder, lineWidth: TableLayout.borderWidth)
             )
         }
     }
@@ -87,15 +87,14 @@ public struct TableView: View {
             ForEach(Array(data.headers.enumerated()), id: \.offset) { index, header in
                 headerCell(header, alignment: alignment(for: index))
 
-                // Column separator (except after last column)
                 if index < data.headers.count - 1 {
                     Rectangle()
-                        .fill(Color.optaSurface)
+                        .fill(Color.optaBorder)
                         .frame(width: TableLayout.borderWidth)
                 }
             }
         }
-        .glassSubtle()
+        .background(Color.optaElevated)
     }
 
     private func headerCell(_ text: String, alignment: TableData.TableAlignment) -> some View {
@@ -115,15 +114,14 @@ public struct TableView: View {
             ForEach(Array(row.enumerated()), id: \.offset) { index, cell in
                 dataCell(cell, alignment: alignment(for: index))
 
-                // Column separator (except after last column)
                 if index < row.count - 1 {
                     Rectangle()
-                        .fill(Color.optaSurface)
+                        .fill(Color.optaBorder)
                         .frame(width: TableLayout.borderWidth)
                 }
             }
         }
-        .background(isEven ? Color.optaSurface.opacity(0.3) : Color.clear)
+        .background(isEven ? Color.optaElevated.opacity(0.4) : Color.clear)
     }
 
     private func dataCell(_ text: String, alignment: TableData.TableAlignment) -> some View {

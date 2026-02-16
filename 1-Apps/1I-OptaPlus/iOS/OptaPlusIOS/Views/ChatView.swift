@@ -110,12 +110,23 @@ private struct TypingIndicator: View {
     }
 }
 
+// MARK: - Scroll Position Tracking
+
+private struct BottomAnchorYKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
+    }
+}
+
 // MARK: - Chat View
 
 struct ChatView: View {
+    @EnvironmentObject var appState: AppState
     @ObservedObject var viewModel: ChatViewModel
     let botConfig: BotConfig
     @State private var messageText = ""
+    @State private var pendingAttachments: [ChatAttachment] = []
     @State private var showThinkingExpanded = false
     @State private var showExportSheet = false
     @State private var exportFileURL: URL?
@@ -127,6 +138,9 @@ struct ChatView: View {
     @State private var showBookmarksSheet = false
     @State private var scrollToMessageId: String? = nil
     @StateObject private var pinManager = PinManager.shared
+    @StateObject private var searchEngine = SearchEngine()
+    @State private var showChannelSwitcher = false
+    @StateObject private var mentionAutocomplete = MentionAutocomplete()
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -153,13 +167,35 @@ struct ChatView: View {
                     }
                 }
 
+                // @mention autocomplete popup
+                if mentionAutocomplete.isActive {
+                    MentionSuggestionsPopup(
+                        suggestions: mentionAutocomplete.suggestions,
+                        onSelect: { bot in
+                            let result = mentionAutocomplete.accept(bot: bot, in: messageText)
+                            messageText = result.newText
+                        }
+                    )
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+
                 ChatInputBar(
                     text: $messageText,
+                    attachments: $pendingAttachments,
                     isStreaming: viewModel.botState != .idle,
+                    queuedCount: viewModel.queuedMessageCount,
                     onSend: sendMessage,
                     onAbort: abortMessage
                 )
+                .onChange(of: messageText) { _, newText in
+                    mentionAutocomplete.update(
+                        text: newText,
+                        cursorOffset: newText.count,
+                        bots: appState.bots
+                    )
+                }
             }
+            .animation(.spring(response: 0.3, dampingFraction: 0.8), value: mentionAutocomplete.isActive)
 
             // Connection toast
             if showConnectionToast {
@@ -211,6 +247,7 @@ struct ChatView: View {
                 } label: {
                     Image(systemName: "square.and.arrow.up")
                 }
+                .accessibilityLabel("Export chat")
                 .disabled(viewModel.messages.isEmpty)
             }
             ToolbarItem(placement: .navigationBarTrailing) {
@@ -228,9 +265,15 @@ struct ChatView: View {
                 } label: {
                     Image(systemName: "ellipsis.circle")
                 }
+                .accessibilityLabel("More options")
             }
             ToolbarItem(placement: .navigationBarTrailing) {
-                sessionModePicker
+                Button {
+                    showChannelSwitcher = true
+                } label: {
+                    channelIndicator
+                }
+                .accessibilityLabel("Switch channel")
             }
         }
         .onAppear {
@@ -247,7 +290,7 @@ struct ChatView: View {
                 }
                 Task {
                     try? await Task.sleep(nanoseconds: 2_000_000_000)
-                    withAnimation(.easeOut(duration: 0.3)) {
+                    withAnimation(.optaSpring) {
                         showConnectionToast = false
                     }
                 }
@@ -258,7 +301,7 @@ struct ChatView: View {
                 }
                 Task {
                     try? await Task.sleep(nanoseconds: 3_000_000_000)
-                    withAnimation(.easeOut(duration: 0.3)) {
+                    withAnimation(.optaSpring) {
                         showConnectionToast = false
                     }
                 }
@@ -300,6 +343,42 @@ struct ChatView: View {
         .sheet(isPresented: $showBookmarksSheet) {
             BookmarksView()
         }
+        .sheet(isPresented: $showChannelSwitcher) {
+            ChannelSwitcherSheet(viewModel: viewModel, botConfig: botConfig)
+        }
+        .searchable(text: $searchEngine.query, prompt: "Search messages...")
+        .searchScopes($searchEngine.scope) {
+            ForEach(SearchScope.allCases, id: \.self) { scope in
+                Text(scope.rawValue).tag(scope)
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .searchEngineQueryReady)) { _ in
+            if searchEngine.scope == .thisChat {
+                searchEngine.searchLocal(messages: viewModel.messages)
+            } else {
+                searchEngine.searchGlobal(viewModel: viewModel)
+            }
+        }
+        .onChange(of: searchEngine.scope) { _, _ in
+            let trimmed = searchEngine.query.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { return }
+            if searchEngine.scope == .thisChat {
+                searchEngine.searchLocal(messages: viewModel.messages)
+            } else {
+                searchEngine.searchGlobal(viewModel: viewModel)
+            }
+        }
+        .searchSuggestions {
+            if !searchEngine.query.isEmpty && !searchEngine.results.isEmpty {
+                ForEach(searchEngine.results.prefix(8)) { result in
+                    Button {
+                        scrollToMessageId = result.messageId
+                    } label: {
+                        SearchSnippetView(result: result, query: searchEngine.query)
+                    }
+                }
+            }
+        }
     }
 
     // MARK: - Message List
@@ -317,6 +396,9 @@ struct ChatView: View {
                     }
 
                     ForEach(Array(viewModel.messages.enumerated()), id: \.element.id) { index, message in
+                        let isSearchMatch = !searchEngine.query.isEmpty && searchEngine.results.contains(where: { $0.messageId == message.id })
+                        let isCurrentMatch = searchEngine.currentResult?.messageId == message.id
+
                         VStack(spacing: 4) {
                             if shouldShowDateSeparator(messages: viewModel.messages, at: index) {
                                 DateSeparatorPill(text: dateSeparatorText(message.timestamp))
@@ -332,6 +414,7 @@ struct ChatView: View {
                                 onReply: { msg in viewModel.replyingTo = msg },
                                 onScrollTo: { id in scrollToMessageId = id }
                             )
+                            .searchMatchGlow(isMatch: isSearchMatch, isCurrent: isCurrentMatch)
                             .id(message.id)
                         }
                     }
@@ -359,17 +442,30 @@ struct ChatView: View {
                     Color.clear
                         .frame(height: 1)
                         .id("bottomAnchor")
-                        .onAppear {
-                            isAtBottom = true
-                            unreadCount = 0
-                        }
-                        .onDisappear {
-                            isAtBottom = false
-                        }
+                        .background(
+                            GeometryReader { geo in
+                                Color.clear.preference(
+                                    key: BottomAnchorYKey.self,
+                                    value: geo.frame(in: .named("chatScroll")).minY
+                                )
+                            }
+                        )
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 12)
                 .padding(.bottom, 8)
+            }
+            .coordinateSpace(name: "chatScroll")
+            .onPreferenceChange(BottomAnchorYKey.self) { bottomY in
+                let threshold: CGFloat = 80
+                let scrollViewHeight = UIScreen.main.bounds.height
+                let newAtBottom = bottomY <= scrollViewHeight + threshold
+                if newAtBottom != isAtBottom {
+                    withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
+                        isAtBottom = newAtBottom
+                    }
+                    if newAtBottom { unreadCount = 0 }
+                }
             }
             .refreshable {
                 await viewModel.loadHistory()
@@ -422,6 +518,8 @@ struct ChatView: View {
                     .padding(.trailing, 16)
                     .padding(.bottom, 8)
                     .transition(.scale.combined(with: .opacity))
+                    .accessibilityLabel("Scroll to bottom")
+                    .accessibilityHint(unreadCount > 0 ? "\(unreadCount) unread messages" : "Jump to latest messages")
                 }
             }
         }
@@ -483,6 +581,7 @@ struct ChatView: View {
                             .stroke(Color.optaPrimary, lineWidth: 1.5)
                     )
             }
+            .accessibilityLabel("Reconnect to \(botConfig.name)")
         }
         .padding(.top, 60)
     }
@@ -504,32 +603,51 @@ struct ChatView: View {
         }
     }
 
-    private var sessionModePicker: some View {
-        Menu {
-            if let session = viewModel.activeSession {
-                ForEach(SessionMode.allCases, id: \.self) { mode in
-                    Button {
-                        switchMode(to: mode)
-                    } label: {
-                        Label(mode.label, systemImage: mode.icon)
-                    }
-                    .disabled(session.mode == mode)
-                }
-            }
-        } label: {
-            Image(systemName: viewModel.activeSession?.mode.icon ?? "link")
-                .foregroundColor(.optaPrimary)
+    private var channelIndicator: some View {
+        HStack(spacing: 4) {
+            RoundedRectangle(cornerRadius: 2)
+                .fill(activeChannelColor)
+                .frame(width: 3, height: 16)
+
+            Image(systemName: viewModel.activeSession?.channelType?.icon ?? viewModel.activeSession?.mode.icon ?? "link")
+                .font(.system(size: 13))
+                .foregroundColor(activeChannelColor)
         }
+    }
+
+    private var activeChannelColor: Color {
+        if let ct = viewModel.activeSession?.channelType {
+            switch ct {
+            case .telegram: return .optaBlue
+            case .direct: return .optaCoral
+            case .whatsapp: return .optaGreen
+            case .discord: return .optaIndigo
+            }
+        }
+        return .optaPrimary
     }
 
     // MARK: - Actions
 
     private func sendMessage() {
         let text = messageText
+        let files = pendingAttachments
         messageText = ""
+        pendingAttachments = []
+        mentionAutocomplete.dismiss()
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        Task {
-            await viewModel.send(text)
+
+        // Check for @mention routing to a different bot
+        if let targetBotId = MentionParser.firstMentionedBotId(from: text, knownBots: appState.bots),
+           targetBotId != botConfig.id,
+           let targetBot = appState.bots.first(where: { $0.id == targetBotId }) {
+            let targetVM = appState.viewModel(for: targetBot)
+            if targetVM.connectionState == .disconnected {
+                targetVM.connect()
+            }
+            Task { await targetVM.send(text, attachments: files) }
+        } else {
+            Task { await viewModel.send(text, attachments: files) }
         }
     }
 
@@ -542,8 +660,9 @@ struct ChatView: View {
     private func switchMode(to mode: SessionMode) {
         guard let session = viewModel.activeSession else { return }
         if mode == .isolated {
-            let newSession = viewModel.createSession(name: mode.label, mode: mode)
-            viewModel.switchSession(newSession)
+            if let newSession = viewModel.createSession(name: mode.label, mode: mode) {
+                viewModel.switchSession(newSession)
+            }
         } else {
             if let idx = viewModel.sessions.firstIndex(where: { $0.id == session.id }) {
                 viewModel.sessions[idx] = ChatSession(
@@ -552,7 +671,9 @@ struct ChatView: View {
                     sessionKey: session.sessionKey,
                     mode: mode,
                     createdAt: session.createdAt,
-                    isPinned: session.isPinned
+                    isPinned: session.isPinned,
+                    channelType: session.channelType,
+                    colorTag: session.colorTag
                 )
                 viewModel.activeSession = viewModel.sessions[idx]
             }
@@ -561,7 +682,7 @@ struct ChatView: View {
 
     private func scrollToBottom(proxy: ScrollViewProxy) {
         let reduceMotion = UIAccessibility.isReduceMotionEnabled
-        let animation: Animation = reduceMotion ? .easeOut(duration: 0.15) : .spring(response: 0.3, dampingFraction: 0.8)
+        let animation: Animation = reduceMotion ? .optaSnap : .spring(response: 0.3, dampingFraction: 0.8)
         withAnimation(animation) {
             if !viewModel.streamingContent.isEmpty {
                 proxy.scrollTo("streaming", anchor: .bottom)
@@ -596,7 +717,7 @@ private struct BlinkingCursor: View {
             .opacity(visible ? 1.0 : 0.0)
             .onAppear {
                 if !UIAccessibility.isReduceMotionEnabled {
-                    withAnimation(.easeInOut(duration: 0.5).repeatForever(autoreverses: true)) {
+                    withAnimation(.optaPulse) {
                         visible = false
                     }
                 }

@@ -62,7 +62,7 @@ public struct ChartView: View {
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .onAppear {
             // Animate chart entrance
-            withAnimation(.easeOut(duration: 0.8)) {
+            withAnimation(.optaGentle) {
                 isAnimated = true
                 animationProgress = 1.0
             }
@@ -306,7 +306,7 @@ public struct ChartView: View {
         )
 
         if let category: String = proxy.value(atX: plotLocation.x) {
-            withAnimation(.easeInOut(duration: 0.15)) {
+            withAnimation(.optaSnap) {
                 selectedPoint = data.data.first { $0.label == category }
             }
         }

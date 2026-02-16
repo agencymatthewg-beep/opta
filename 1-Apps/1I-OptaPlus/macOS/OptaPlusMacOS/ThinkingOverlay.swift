@@ -99,10 +99,10 @@ struct ThinkingOverlay: View {
                             panelOffset = 0
                             panelOpacity = 1
                         }
-                        withAnimation(.easeInOut(duration: 2.5).repeatForever(autoreverses: true)) {
+                        withAnimation(.optaPulse) {
                             breathePhase = 1
                         }
-                        withAnimation(.easeInOut(duration: 1.8).repeatForever(autoreverses: true)) {
+                        withAnimation(.optaPulse) {
                             glowIntensity = 1
                         }
                     }
@@ -205,7 +205,7 @@ struct ThinkingOverlay: View {
                             ThinkingEventRow(event: event, isLatest: index == events.suffix(8).count - 1)
                                 .transition(.asymmetric(
                                     insertion: .push(from: .bottom).combined(with: .opacity),
-                                    removal: .opacity.animation(.easeOut(duration: 0.15))
+                                    removal: .opacity.animation(.optaSnap)
                                 ))
                         }
                     }

@@ -40,6 +40,7 @@ public struct MessageTemplate: Identifiable, Codable, Equatable {
 
 // MARK: - Template Manager
 
+@MainActor
 public final class MessageTemplateManager: ObservableObject {
     public static let shared = MessageTemplateManager()
     

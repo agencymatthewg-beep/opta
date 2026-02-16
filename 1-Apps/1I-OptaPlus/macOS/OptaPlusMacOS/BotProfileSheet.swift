@@ -65,6 +65,18 @@ struct BotProfileSheet: View {
     @State private var emojiGlow: CGFloat = 0
     @State private var appeared = false
 
+    // Config editing state
+    @State private var healthStatus: GatewayHealth?
+    @State private var availableModels: [GatewayModel] = []
+    @State private var currentModel: String = ""
+    @State private var selectedModel: String = ""
+    @State private var thinkingLevel: String = "off"
+    @State private var configHash: String = ""
+    @State private var isLoadingConfig = true
+    @State private var isApplying = false
+    @State private var configError: String?
+    @State private var showRestartConfirm = false
+
     var body: some View {
         VStack(spacing: 0) {
             // Header with large emoji
@@ -85,7 +97,7 @@ struct BotProfileSheet: View {
                 }
                 .shadow(color: accentColor.opacity(0.4), radius: 20 + 10 * emojiGlow)
                 .onAppear {
-                    withAnimation(.easeInOut(duration: 2.5).repeatForever(autoreverses: true)) {
+                    withAnimation(.optaPulse) {
                         emojiGlow = 1
                     }
                 }
@@ -109,7 +121,7 @@ struct BotProfileSheet: View {
                     .shadow(color: connectionColor.opacity(0.6), radius: 4)
 
                 Text(connectionLabel)
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.sora(12, weight: .medium))
                     .foregroundColor(connectionColor)
             }
             .padding(.horizontal, 14)
@@ -131,12 +143,12 @@ struct BotProfileSheet: View {
                         .font(.system(size: 11))
                         .foregroundColor(sessionModeColor(session.mode))
                     Text(session.name)
-                        .font(.system(size: 12, weight: .medium))
+                        .font(.sora(12, weight: .medium))
                         .foregroundColor(.optaTextSecondary)
                     Text("·")
                         .foregroundColor(.optaTextMuted)
                     Text(session.mode.label)
-                        .font(.system(size: 11))
+                        .font(.sora(11))
                         .foregroundColor(.optaTextMuted)
                 }
                 .padding(.bottom, 16)
@@ -167,7 +179,7 @@ struct BotProfileSheet: View {
 
                 HStack {
                     Text("Last message")
-                        .font(.system(size: 10))
+                        .font(.sora(10))
                         .foregroundColor(.optaTextMuted)
                     Spacer()
                     Text(lastMessageTime)
@@ -236,6 +248,114 @@ struct BotProfileSheet: View {
             )
             .padding(.horizontal, 24)
 
+            // Config editing sections
+            if !isLoadingConfig {
+                VStack(spacing: 12) {
+                    // Health status
+                    if let health = healthStatus {
+                        HStack(spacing: 8) {
+                            Circle()
+                                .fill(health.status == "ok" ? Color.optaGreen : Color.optaAmber)
+                                .frame(width: 6, height: 6)
+                            Text("v\(health.version)")
+                                .font(.system(size: 11, design: .monospaced))
+                                .foregroundColor(.optaTextSecondary)
+                            Spacer()
+                            Text(OptaFormatting.formatUptime(health.uptime))
+                                .font(.system(size: 11, design: .monospaced))
+                                .foregroundColor(.optaTextMuted)
+                        }
+                    }
+
+                    // Model picker
+                    if !availableModels.isEmpty {
+                        HStack {
+                            Text("Model")
+                                .font(.sora(11, weight: .medium))
+                                .foregroundColor(.optaTextSecondary)
+                            Spacer()
+                            Picker("", selection: $selectedModel) {
+                                ForEach(availableModels) { model in
+                                    Text(model.name ?? model.id)
+                                        .tag(model.id)
+                                }
+                            }
+                            .pickerStyle(.menu)
+                            .frame(maxWidth: 180)
+                        }
+                    }
+
+                    // Thinking level
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Thinking")
+                            .font(.sora(11, weight: .medium))
+                            .foregroundColor(.optaTextSecondary)
+                        Picker("", selection: $thinkingLevel) {
+                            Text("Off").tag("off")
+                            Text("Low").tag("low")
+                            Text("High").tag("high")
+                            Text("Stream").tag("stream")
+                        }
+                        .pickerStyle(.segmented)
+                    }
+
+                    // Action buttons
+                    HStack(spacing: 8) {
+                        Button(action: { applyConfig() }) {
+                            Text(isApplying ? "Applying…" : "Apply")
+                                .font(.sora(11, weight: .medium))
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(accentColor)
+                        .disabled(!hasConfigChanges || isApplying)
+                        .accessibilityLabel(isApplying ? "Applying configuration" : "Apply configuration changes")
+
+                        Button(action: { compactContext() }) {
+                            Text("Compact")
+                                .font(.sora(11, weight: .medium))
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.bordered)
+                        .accessibilityLabel("Compact context")
+                        .accessibilityHint("Compresses the current session context")
+
+                        Button(role: .destructive, action: { showRestartConfirm = true }) {
+                            Text("Restart")
+                                .font(.sora(11, weight: .medium))
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.bordered)
+                        .accessibilityLabel("Restart gateway")
+                    }
+                    .padding(.top, 4)
+
+                    if let error = configError {
+                        Text(error)
+                            .font(.sora(10))
+                            .foregroundColor(.optaRed)
+                            .lineLimit(2)
+                    }
+                }
+                .padding(16)
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color.optaSurface.opacity(0.5))
+                        .background(.ultraThinMaterial)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.optaBorder.opacity(0.1), lineWidth: 0.5)
+                )
+                .padding(.horizontal, 24)
+                .padding(.top, 12)
+            } else if viewModel.isGatewayReady {
+                ProgressView()
+                    .scaleEffect(0.7)
+                    .padding(.top, 12)
+            }
+
             Spacer()
 
             // Close button
@@ -243,7 +363,13 @@ struct BotProfileSheet: View {
                 .keyboardShortcut(.cancelAction)
                 .padding(.bottom, 20)
         }
-        .frame(width: 340, height: 440)
+        .frame(width: 360, height: 620)
+        .confirmationDialog("Restart Gateway?", isPresented: $showRestartConfirm) {
+            Button("Restart", role: .destructive) { restartGateway() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This will restart the bot's gateway with the current configuration.")
+        }
         .background(
             ZStack {
                 Color.optaVoid
@@ -269,7 +395,123 @@ struct BotProfileSheet: View {
                 appeared = true
             }
         }
+        .task {
+            await loadBotConfig()
+        }
     }
+
+    // MARK: - Config Management
+
+    private var hasConfigChanges: Bool {
+        selectedModel != currentModel || thinkingLevel != "off"
+    }
+
+    private func loadBotConfig() async {
+        guard viewModel.isGatewayReady else { isLoadingConfig = false; return }
+        do {
+            async let h = viewModel.call("health")
+            async let c = viewModel.call("config.get")
+            async let m = viewModel.call("models.list")
+            let (healthRes, configRes, modelsRes) = try await (h, c, m)
+
+            if let hd = healthRes?.dict {
+                healthStatus = GatewayHealth(
+                    status: hd["status"] as? String ?? "unknown",
+                    uptime: hd["uptime"] as? Double ?? hd["uptimeMs"] as? Double ?? 0,
+                    version: hd["version"] as? String ?? "?",
+                    model: hd["model"] as? String,
+                    sessions: hd["sessions"] as? Int ?? hd["activeSessions"] as? Int ?? 0,
+                    cronJobs: hd["cronJobs"] as? Int ?? hd["scheduledJobs"] as? Int ?? 0
+                )
+                currentModel = hd["model"] as? String ?? ""
+                selectedModel = currentModel
+            }
+
+            if let cd = configRes?.dict {
+                configHash = cd["hash"] as? String ?? cd["baseHash"] as? String ?? ""
+                if let parsed = cd["parsed"] as? [String: Any],
+                   let agents = parsed["agents"] as? [String: Any],
+                   let defaults = agents["defaults"] as? [String: Any] {
+                    thinkingLevel = defaults["thinking"] as? String ?? "off"
+                }
+            }
+
+            if let md = modelsRes?.dict,
+               let models = md["models"] as? [[String: Any]] {
+                availableModels = models.compactMap { m in
+                    guard let id = m["id"] as? String else { return nil }
+                    return GatewayModel(id: id, name: m["name"] as? String, provider: m["provider"] as? String)
+                }
+            } else if let arr = modelsRes?.array as? [[String: Any]] {
+                availableModels = arr.compactMap { m in
+                    guard let id = m["id"] as? String else { return nil }
+                    return GatewayModel(id: id, name: m["name"] as? String, provider: m["provider"] as? String)
+                }
+            }
+        } catch {
+            configError = error.localizedDescription
+        }
+        isLoadingConfig = false
+    }
+
+    private func applyConfig() {
+        isApplying = true
+        configError = nil
+        Task {
+            do {
+                let config = try await viewModel.call("config.get")
+                let raw = config?.dict?["raw"] as? String ?? ""
+                let hash = config?.dict?["hash"] as? String ?? configHash
+                _ = try await viewModel.call("config.patch", params: [
+                    "raw": raw,
+                    "baseHash": hash,
+                    "note": "Model: \(selectedModel), Thinking: \(thinkingLevel)"
+                ] as [String: Any])
+                SoundManager.shared.play(.sendMessage)
+                currentModel = selectedModel
+            } catch {
+                configError = error.localizedDescription
+                SoundManager.shared.play(.error)
+            }
+            isApplying = false
+        }
+    }
+
+    private func compactContext() {
+        guard let session = viewModel.activeSession else { return }
+        Task {
+            do {
+                _ = try await viewModel.call("sessions.patch", params: [
+                    "sessionKey": session.sessionKey,
+                    "patch": ["compact": true] as [String: Any]
+                ] as [String: Any])
+                SoundManager.shared.play(.sendMessage)
+            } catch {
+                configError = error.localizedDescription
+            }
+        }
+    }
+
+    private func restartGateway() {
+        Task {
+            do {
+                let config = try await viewModel.call("config.get")
+                let raw = config?.dict?["raw"] as? String ?? ""
+                let hash = config?.dict?["hash"] as? String ?? configHash
+                _ = try await viewModel.call("gateway.restart", params: [
+                    "raw": raw,
+                    "baseHash": hash,
+                    "note": "Restart from OptaPlus"
+                ] as [String: Any])
+                SoundManager.shared.play(.sendMessage)
+                await loadBotConfig()
+            } catch {
+                configError = error.localizedDescription
+                SoundManager.shared.play(.error)
+            }
+        }
+    }
+
 }
 
 // MARK: - Stat Cell
@@ -285,7 +527,7 @@ private struct StatCell: View {
                 .font(.system(size: 20, weight: .bold, design: .monospaced))
                 .foregroundColor(color)
             Text(label)
-                .font(.system(size: 10))
+                .font(.sora(10))
                 .foregroundColor(.optaTextMuted)
         }
         .frame(minWidth: 60)

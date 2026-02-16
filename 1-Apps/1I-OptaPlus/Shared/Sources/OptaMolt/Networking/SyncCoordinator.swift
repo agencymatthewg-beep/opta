@@ -9,6 +9,7 @@
 
 import Foundation
 import CryptoKit
+import os.log
 
 // MARK: - Message Mapping
 
@@ -37,6 +38,8 @@ struct QueuedMessage: Codable, Sendable {
 
 @MainActor
 public final class SyncCoordinator: ObservableObject {
+
+    private static let logger = Logger(subsystem: "biz.optamize.OptaPlus", category: "Sync")
 
     // MARK: - Published
 
@@ -78,7 +81,7 @@ public final class SyncCoordinator: ObservableObject {
         seenFingerprints.removeAll { now.timeIntervalSince($0.addedAt) > fingerprintTTL }
 
         if seenFingerprints.contains(where: { $0.fingerprint == fingerprint }) {
-            NSLog("[Sync] Duplicate detected, discarding: \(content.prefix(30))...")
+            Self.logger.debug("Duplicate detected, discarding: \(content.prefix(30))...")
             return false
         }
 
@@ -126,7 +129,7 @@ public final class SyncCoordinator: ObservableObject {
     /// this will forward messages to the Telegram bot chat.
     public func sendViaTelegram(_ text: String, gatewayKey: String) {
         // TODO: Re-enable when TDLibKit dependency is restored
-        NSLog("[Sync] Telegram send not available (TDLibKit not linked)")
+        Self.logger.info("Telegram send not available (TDLibKit not linked)")
         enqueue(text: text, targetGateway: false, targetTelegram: true)
     }
 
@@ -134,7 +137,7 @@ public final class SyncCoordinator: ObservableObject {
 
     private func enqueue(text: String, targetGateway: Bool, targetTelegram: Bool) {
         guard offlineQueue.count < maxQueueSize else {
-            NSLog("[Sync] Offline queue full, dropping message")
+            Self.logger.error("Offline queue full, dropping message")
             return
         }
         let msg = QueuedMessage(
@@ -159,7 +162,7 @@ public final class SyncCoordinator: ObservableObject {
 
         for var msg in offlineQueue {
             if now.timeIntervalSince(msg.createdAt) > maxQueueAge || msg.retryCount >= maxRetries {
-                NSLog("[Sync] Dropping expired/over-retried queued message: \(msg.id)")
+                Self.logger.info("Dropping expired/over-retried queued message: \(msg.id)")
                 continue
             }
             // Telegram delivery not available yet — keep in queue

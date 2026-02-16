@@ -9,6 +9,7 @@
 import Foundation
 import SwiftUI
 import Combine
+import os.log
 
 // MARK: - Agent Stream Event
 
@@ -122,7 +123,9 @@ public struct BotConfig: Identifiable, Codable, Sendable, Hashable {
 /// - Bot state tracking (idle/thinking/typing)
 @MainActor
 public final class ChatViewModel: ObservableObject {
-    
+
+    private static let logger = Logger(subsystem: "biz.optamize.OptaPlus", category: "ChatVM")
+
     // MARK: - Published State
     
     /// All messages in the active session.
@@ -226,10 +229,9 @@ public final class ChatViewModel: ObservableObject {
     /// Timestamp when user sent last message (for response time tracking)
     private var lastSendTime: Date?
     
-    /// Offline message queue (FIFO, max 50)
-    private var messageQueue: [(text: String, attachments: [ChatAttachment], messageId: String)] = []
-    private static let maxQueueSize = 50
-    
+    /// Persistent offline message queue.
+    public let offlineQueue: OfflineQueue
+
     /// UserDefaults key prefixes for session persistence
     private var sessionListKey: String { "optaplus.sessions.\(botConfig.id)" }
     private var activeSessionKey: String { "optaplus.activeSession.\(botConfig.id)" }
@@ -244,7 +246,8 @@ public final class ChatViewModel: ObservableObject {
         self.syncCoordinator = syncCoordinator
         self.networkEnv = networkEnv ?? NetworkEnvironment()
         self.messageStats = MessageStatsManager.load(botId: botConfig.id)
-        
+        self.offlineQueue = OfflineQueue(botId: botConfig.id)
+
         // Restore persisted sessions or use defaults
         if let data = UserDefaults.standard.data(forKey: "optaplus.sessions.\(botConfig.id)"),
            let saved = try? JSONDecoder().decode([ChatSession].self, from: data),
@@ -261,6 +264,13 @@ public final class ChatViewModel: ObservableObject {
         } else {
             self.activeSession = sessions.first
         }
+
+        // Sync queued message count from persistent queue
+        queuedMessageCount = offlineQueue.count
+        offlineQueue.$messages
+            .map(\.count)
+            .receive(on: DispatchQueue.main)
+            .assign(to: &$queuedMessageCount)
 
         // Load locally persisted messages
         Task {
@@ -284,6 +294,7 @@ public final class ChatViewModel: ObservableObject {
     /// Clear messages with local persistence cleanup.
     public func clearChat() {
         messages.removeAll()
+        offlineQueue.clear()
         if let session = activeSession {
             sessionMessages[session.id] = []
         }
@@ -322,7 +333,7 @@ public final class ChatViewModel: ObservableObject {
         newClient.$state
             .receive(on: DispatchQueue.main)
             .sink { [weak self] state in
-                NSLog("[OC-VM] State changed: \(state)")
+                Self.logger.debug("State changed: \(String(describing: state))")
                 let oldState = self?.connectionState
                 self?.connectionState = state
                 if state == .connected {
@@ -426,8 +437,13 @@ public final class ChatViewModel: ObservableObject {
         }
     }
     
-    /// Create a new session.
-    public func createSession(name: String, mode: SessionMode) -> ChatSession {
+    /// Maximum sessions per bot.
+    public static let maxSessionsPerBot = 5
+
+    /// Create a new session. Returns nil if the limit is reached.
+    public func createSession(name: String, mode: SessionMode, channelType: ChannelType? = nil) -> ChatSession? {
+        guard sessions.count < Self.maxSessionsPerBot else { return nil }
+
         let sessionKey: String
         switch mode {
         case .synced:
@@ -437,11 +453,17 @@ public final class ChatViewModel: ObservableObject {
         case .isolated:
             sessionKey = "optaplus-\(UUID().uuidString.prefix(8).lowercased())"
         }
-        
+
+        // Assign color from remaining palette
+        let usedColors = Set(sessions.compactMap(\.colorTag))
+        let nextColor = ChatSessionColor.allCases.first { !usedColors.contains($0.swiftUIColor) }
+
         let session = ChatSession(
             name: name,
             sessionKey: sessionKey,
-            mode: mode
+            mode: mode,
+            channelType: channelType,
+            colorTag: channelType?.accentColor ?? nextColor?.swiftUIColor
         )
         sessions.append(session)
         persistSessions()
@@ -513,7 +535,7 @@ public final class ChatViewModel: ObservableObject {
                 before: beforeId
             )
             
-            NSLog("[OC-VM] History loaded: \(history.messages.count) messages (earlier=\(earlier))")
+            Self.logger.info("History loaded: \(history.messages.count) messages (earlier=\(earlier))")
             let loadedMessages = history.messages.map { msg in
                 ChatMessage(
                     id: msg.id,
@@ -536,9 +558,9 @@ public final class ChatViewModel: ObservableObject {
             }
             
             sessionMessages[session.id] = messages
-            NSLog("[OC-VM] Messages set: \(self.messages.count) total")
+            Self.logger.debug("Messages set: \(self.messages.count) total")
         } catch {
-            NSLog("[OC-VM] History load FAILED: \(error)")
+            Self.logger.error("History load failed: \(error.localizedDescription)")
             handleError(error, context: "load history")
         }
     }
@@ -563,7 +585,7 @@ public final class ChatViewModel: ObservableObject {
             ? "[\(attachments.count) file\(attachments.count == 1 ? "" : "s")]"
             : trimmed
 
-        NSLog("[OC-VM] Sending message: '\(displayText.prefix(50))' with \(attachments.count) attachments to session '\(session.sessionKey)' mode=\(session.mode.rawValue) deliver=\(session.mode.shouldDeliver)")
+        Self.logger.info("Sending message: '\(displayText.prefix(50))' with \(attachments.count) attachments to session '\(session.sessionKey)' mode=\(session.mode.rawValue) deliver=\(session.resolvedShouldDeliver)")
 
         // Capture and clear reply state
         let replyId = replyingTo?.id
@@ -584,7 +606,7 @@ public final class ChatViewModel: ObservableObject {
         lastSendTime = Date()
         persistStats()
         schedulePersist()
-        NSLog("[OC-VM] User message appended, total messages: \(messages.count)")
+        Self.logger.debug("User message appended, total messages: \(self.messages.count)")
 
         // If disconnected, queue for later
         guard let client = client, connectionState == .connected else {
@@ -605,25 +627,16 @@ public final class ChatViewModel: ObservableObject {
             let key = try await client.chatSend(
                 sessionKey: session.sessionKey,
                 message: wireText,
-                deliver: session.mode.shouldDeliver,
+                deliver: session.resolvedShouldDeliver,
                 attachments: wireAttachments
             )
-            NSLog("[OC-VM] Send success, idempotencyKey: \(key)")
+            Self.logger.info("Send success, idempotencyKey: \(key)")
             currentIdempotencyKey = key
             isSending = false
             
             // Update message status to sent
             if let idx = messages.lastIndex(where: { $0.id == userMessage.id }) {
-                messages[idx] = ChatMessage(
-                    id: userMessage.id,
-                    content: userMessage.content,
-                    sender: .user,
-                    timestamp: userMessage.timestamp,
-                    status: .sent,
-                    source: .optaplus,
-                    attachments: attachments,
-                    replyTo: replyId
-                )
+                messages[idx].status = .sent
                 sessionMessages[session.id] = messages
             }
 
@@ -633,23 +646,14 @@ public final class ChatViewModel: ObservableObject {
                 sync.sendViaTelegram(trimmed, gatewayKey: key)
             }
         } catch {
-            NSLog("[OC-VM] Send FAILED: \(error)")
+            Self.logger.error("Send failed: \(error.localizedDescription)")
             isSending = false
             botState = .idle
             handleError(error, context: "send message")
 
             // Mark user message as failed
             if let idx = messages.lastIndex(where: { $0.id == userMessage.id }) {
-                messages[idx] = ChatMessage(
-                    id: userMessage.id,
-                    content: userMessage.content,
-                    sender: .user,
-                    timestamp: userMessage.timestamp,
-                    status: .failed,
-                    source: .optaplus,
-                    attachments: attachments,
-                    replyTo: replyId
-                )
+                messages[idx].status = .failed
                 sessionMessages[session.id] = messages
             }
         }
@@ -662,6 +666,9 @@ public final class ChatViewModel: ObservableObject {
         let anyCodable = params.isEmpty ? nil : AnyCodable(params)
         return try await client.request(method, params: anyCodable)
     }
+
+    /// Ping latency from the underlying WebSocket client (ping/pong).
+    public var pingLatencyMs: Double? { client?.latencyMs }
 
     /// Whether the client is connected and ready for method calls.
     public var isGatewayReady: Bool {
@@ -677,7 +684,13 @@ public final class ChatViewModel: ObservableObject {
             errorMessage = "Abort failed: \(error.localizedDescription)"
         }
     }
-    
+
+    /// Send a reaction command to the bot.
+    public func sendReaction(_ action: ReactionAction, for messageId: String) async {
+        ReactionStore.shared.toggleReaction(action.rawValue, for: messageId)
+        await send(action.commandText)
+    }
+
     // MARK: - Telegram Incoming (Stub)
 
     /// Placeholder for incoming Telegram messages. Will be implemented when TDLibKit is integrated.
@@ -686,7 +699,7 @@ public final class ChatViewModel: ObservableObject {
     // MARK: - Event Handling
 
     private func handleEvent(_ event: EventFrame) {
-        NSLog("[OC-VM] Event received: '\(event.event)' payload keys: \(event.payload?.dict?.keys.sorted().joined(separator: ",") ?? "nil")")
+        Self.logger.debug("Event received: '\(event.event)' payload keys: \(event.payload?.dict?.keys.sorted().joined(separator: ",") ?? "nil")")
         switch event.event {
         case "chat":
             handleChatEvent(event.payload)
@@ -698,19 +711,19 @@ public final class ChatViewModel: ObservableObject {
     }
     
     private func handleChatEvent(_ payload: AnyCodable?) {
-        guard let dict = payload?.dict else { NSLog("[OC-VM] Chat event: no dict payload"); return }
+        guard let dict = payload?.dict else { Self.logger.debug("Chat event: no dict payload"); return }
         
         // Check if this event belongs to the active session
         // Gateway uses qualified keys like "agent:main:main" while we store "main"
         let eventSessionKey = dict["sessionKey"] as? String
-        NSLog("[OC-VM] Chat event: sessionKey=\(eventSessionKey ?? "nil") state=\(dict["state"] as? String ?? "nil") activeSession=\(activeSession?.sessionKey ?? "nil")")
+        Self.logger.debug("Chat event: sessionKey=\(eventSessionKey ?? "nil") state=\(dict["state"] as? String ?? "nil") activeSession=\(self.activeSession?.sessionKey ?? "nil")")
         if let eventSessionKey = eventSessionKey,
            let session = activeSession {
             let matches = eventSessionKey == session.sessionKey
                 || eventSessionKey.hasSuffix(":\(session.sessionKey)")
                 || session.sessionKey.hasSuffix(":\(eventSessionKey)")
             if !matches {
-                NSLog("[OC-VM] Chat event for different session (\(eventSessionKey) vs \(session.sessionKey)), ignoring")
+                Self.logger.debug("Chat event for different session (\(eventSessionKey) vs \(session.sessionKey)), ignoring")
                 return
             }
         }
@@ -737,12 +750,12 @@ public final class ChatViewModel: ObservableObject {
                 } else {
                     text = extractMessageText(message)
                 }
-                NSLog("[OC-VM] Delta: \(text.count) chars (was \(streamingContent.count))")
+                Self.logger.debug("Delta: \(text.count) chars (was \(self.streamingContent.count))")
                 if text.count >= streamingContent.count {
                     streamingContent = text
                 }
             } else {
-                NSLog("[OC-VM] Delta: no 'message' key in payload. Keys: \(dict.keys.sorted())")
+                Self.logger.debug("Delta: no 'message' key in payload. Keys: \(dict.keys.sorted())")
             }
             
             // Track run ID
@@ -763,7 +776,7 @@ public final class ChatViewModel: ObservableObject {
                 finalText = streamingContent
             }
             
-            NSLog("[OC-VM] Final: \(finalText.count) chars, appending bot message")
+            Self.logger.info("Final: \(finalText.count) chars, appending bot message")
             
             if !finalText.isEmpty {
                 let botMessage = ChatMessage(
@@ -893,62 +906,64 @@ public final class ChatViewModel: ObservableObject {
     }
     
     // MARK: - Message Queue (Offline Support)
-    
+
     private func enqueueMessage(text: String, attachments: [ChatAttachment], messageId: String) {
-        if messageQueue.count >= Self.maxQueueSize {
-            messageQueue.removeFirst()
+        guard let session = activeSession else { return }
+
+        let queuedAttachments: [QueuedAttachment] = attachments.compactMap { att in
+            guard let data = att.data else { return nil }
+            return QueuedAttachment(
+                filename: att.filename,
+                mimeType: att.mimeType,
+                base64Data: data.base64EncodedString()
+            )
         }
-        messageQueue.append((text: text, attachments: attachments, messageId: messageId))
-        queuedMessageCount = messageQueue.count
-        NSLog("[OC-VM] Message queued (\(messageQueue.count) in queue)")
+
+        let queued = OfflineQueuedMessage(
+            text: text,
+            botId: botConfig.id,
+            sessionKey: session.sessionKey,
+            deliver: session.resolvedShouldDeliver,
+            chatMessageId: messageId,
+            attachments: queuedAttachments
+        )
+        offlineQueue.add(queued)
+        Self.logger.info("Message queued via OfflineQueue (\(self.offlineQueue.count) in queue)")
     }
-    
+
     private func flushMessageQueue() {
-        guard !messageQueue.isEmpty, let client = client, let session = activeSession else { return }
-        let queue = messageQueue
-        messageQueue.removeAll()
-        queuedMessageCount = 0
-        
-        NSLog("[OC-VM] Flushing \(queue.count) queued messages")
-        Task {
-            for item in queue {
-                let wireAttachments: [ChatSendAttachment]? = item.attachments.isEmpty
+        guard let client = client else { return }
+
+        offlineQueue.flush(
+            sender: { message in
+                let wireAttachments: [ChatSendAttachment]? = message.attachments.isEmpty
                     ? nil
-                    : item.attachments.compactMap { ChatSendAttachment(from: $0) }
+                    : message.attachments.map {
+                        ChatSendAttachment(filename: $0.filename, mimeType: $0.mimeType, base64Data: $0.base64Data)
+                    }
                 do {
                     _ = try await client.chatSend(
-                        sessionKey: session.sessionKey,
-                        message: item.text,
-                        deliver: session.mode.shouldDeliver,
+                        sessionKey: message.sessionKey,
+                        message: message.text,
+                        deliver: message.deliver,
                         attachments: wireAttachments
                     )
-                    // Update status from pending to sent
-                    if let idx = messages.lastIndex(where: { $0.id == item.messageId }) {
-                        let msg = messages[idx]
-                        messages[idx] = ChatMessage(
-                            id: msg.id, content: msg.content, sender: msg.sender,
-                            timestamp: msg.timestamp, status: .sent,
-                            source: msg.source, attachments: msg.attachments,
-                            replyTo: msg.replyTo
-                        )
-                    }
+                    return true
                 } catch {
-                    NSLog("[OC-VM] Queued message send failed: \(error)")
-                    if let idx = messages.lastIndex(where: { $0.id == item.messageId }) {
-                        let msg = messages[idx]
-                        messages[idx] = ChatMessage(
-                            id: msg.id, content: msg.content, sender: msg.sender,
-                            timestamp: msg.timestamp, status: .failed,
-                            source: msg.source, attachments: msg.attachments,
-                            replyTo: msg.replyTo
-                        )
-                    }
+                    Self.logger.error("Queued message send failed: \(error.localizedDescription)")
+                    return false
+                }
+            },
+            onStatusUpdate: { [weak self] chatMessageId, status in
+                guard let self else { return }
+                if let idx = self.messages.lastIndex(where: { $0.id == chatMessageId }) {
+                    self.messages[idx].status = status
+                }
+                if let session = self.activeSession {
+                    self.sessionMessages[session.id] = self.messages
                 }
             }
-            if let session = activeSession {
-                sessionMessages[session.id] = messages
-            }
-        }
+        )
     }
     
     // MARK: - Session Persistence
@@ -968,14 +983,14 @@ public final class ChatViewModel: ObservableObject {
         if let ocError = error as? OpenClawError {
             errorMessage = ocError.errorDescription
             if !ocError.isTransient {
-                NSLog("[OC-VM] Permanent error in \(context): \(ocError)")
+                Self.logger.error("Permanent error in \(context): \(ocError.localizedDescription)")
                 // Don't auto-retry permanent errors
                 return
             }
         } else {
             errorMessage = "\(context) failed: \(error.localizedDescription)"
         }
-        NSLog("[OC-VM] Transient error in \(context): \(error)")
+        Self.logger.error("Transient error in \(context): \(error.localizedDescription)")
         errorCount += 1
         updateHealth()
         ActivityFeedManager.shared.addEvent(

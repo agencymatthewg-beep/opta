@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import os.log
 
 // MARK: - Codable Wrappers
 
@@ -53,6 +54,7 @@ struct StoredMessage: Codable {
 
 /// Thread-safe message store that persists chat history per bot as JSON files.
 public actor MessageStore {
+    private static let logger = Logger(subsystem: "biz.optamize.OptaPlus", category: "Storage")
     public static let shared = MessageStore()
 
     private let maxMessagesPerBot = 200
@@ -84,7 +86,7 @@ public actor MessageStore {
             let stored = try decoder.decode([StoredMessage].self, from: data)
             return stored.suffix(maxMessagesPerBot).map { $0.toChatMessage() }
         } catch {
-            NSLog("[MessageStore] Failed to load messages for \(botId): \(error)")
+            Self.logger.error("Failed to load messages for \(botId): \(error.localizedDescription)")
             return []
         }
     }
@@ -117,7 +119,7 @@ public actor MessageStore {
             let data = try encoder.encode(stored)
             try data.write(to: fileURL(for: botId), options: .atomic)
         } catch {
-            NSLog("[MessageStore] Failed to save messages for \(botId): \(error)")
+            Self.logger.error("Failed to save messages for \(botId): \(error.localizedDescription)")
         }
     }
 

@@ -30,7 +30,7 @@ struct DashboardView: View {
                     // Header
                     HStack {
                         Text("Dashboard")
-                            .font(.system(size: 28, weight: .bold))
+                            .font(.sora(28, weight: .bold))
                             .foregroundColor(.optaTextPrimary)
 
                         Spacer()
@@ -39,13 +39,13 @@ struct DashboardView: View {
                             connectAll()
                         }
                         .buttonStyle(.bordered)
-                        .tint(.green)
+                        .tint(.optaGreen)
 
                         Button("Disconnect All") {
                             disconnectAll()
                         }
                         .buttonStyle(.bordered)
-                        .tint(.red)
+                        .tint(.optaRed)
                     }
                     .padding(.horizontal)
 
@@ -65,7 +65,7 @@ struct DashboardView: View {
                     if !activityFeed.events.isEmpty {
                         VStack(alignment: .leading, spacing: 12) {
                             Text("Activity")
-                                .font(.system(size: 18, weight: .semibold))
+                                .font(.sora(18, weight: .semibold))
                                 .foregroundColor(.optaTextPrimary)
                                 .padding(.horizontal)
 
@@ -76,7 +76,7 @@ struct DashboardView: View {
                                 }
                             }
                         }
-                        .animation(.easeInOut(duration: 0.3), value: activityFeed.events.count)
+                        .animation(.optaSpring, value: activityFeed.events.count)
                     }
 
                     Spacer(minLength: 40)
@@ -127,17 +127,17 @@ struct BotCardView: View {
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(bot.name)
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(.sora(16, weight: .semibold))
                         .foregroundColor(.optaTextPrimary)
 
                     HStack(spacing: 6) {
                         // Animated status dot
                         Circle()
-                            .fill(isConnected ? Color.green : Color.gray)
+                            .fill(isConnected ? Color.optaGreen : Color.optaTextMuted)
                             .frame(width: 8, height: 8)
 
                         Text(connectionLabel)
-                            .font(.system(size: 12))
+                            .font(.sora(12))
                             .foregroundColor(.optaTextSecondary)
                     }
                 }
@@ -168,7 +168,7 @@ struct BotCardView: View {
             // Last message preview
             if let preview = viewModel.lastMessagePreview {
                 Text(preview)
-                    .font(.system(size: 12))
+                    .font(.sora(12))
                     .foregroundColor(.optaTextMuted)
                     .lineLimit(2)
             }
@@ -230,7 +230,7 @@ struct ActivityEventRow: View {
                 .font(.system(size: 14))
 
             Text("\(event.botName) \(event.message)")
-                .font(.system(size: 13))
+                .font(.sora(13))
                 .foregroundColor(.optaTextSecondary)
                 .lineLimit(1)
 

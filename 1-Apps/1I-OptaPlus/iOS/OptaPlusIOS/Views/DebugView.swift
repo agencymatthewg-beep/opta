@@ -2,8 +2,9 @@
 //  DebugView.swift
 //  OptaPlusIOS
 //
-//  Gateway diagnostics — health, connectivity, sessions, and nodes.
-//  Inspired by the OpenClaw.app desktop debug page.
+//  Gateway diagnostics — health, connectivity, sessions, nodes, and timeline.
+//  Enriched with health explanations, port probing, session management,
+//  node detail sheets, and connection timeline.
 //
 
 import SwiftUI
@@ -20,6 +21,8 @@ struct DebugView: View {
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var showSettings = false
+    @State private var selectedNode: [String: Any]?
+    @State private var sectionsVisible = false
 
     private var selectedVM: ChatViewModel? {
         guard let bot = appState.selectedBot else { return nil }
@@ -30,7 +33,6 @@ struct DebugView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 16) {
-                    // Bot selector
                     botPicker
 
                     if isLoading && healthData == nil {
@@ -40,9 +42,15 @@ struct DebugView: View {
                         disconnectedState
                     } else {
                         gatewayHealthSection
+                            .optaEntrance(delay: 0.0)
                         connectivitySection
+                            .optaEntrance(delay: 0.05)
+                        connectionTimelineSection
+                            .optaEntrance(delay: 0.10)
                         sessionsSection
+                            .optaEntrance(delay: 0.15)
                         nodesSection
+                            .optaEntrance(delay: 0.20)
                     }
                 }
                 .padding()
@@ -57,6 +65,7 @@ struct DebugView: View {
                         Image(systemName: "gearshape")
                             .foregroundColor(.optaTextSecondary)
                     }
+                    .accessibilityLabel("Settings")
                 }
                 ToolbarItem(placement: .primaryAction) {
                     Button {
@@ -64,6 +73,7 @@ struct DebugView: View {
                     } label: {
                         Image(systemName: "arrow.clockwise")
                     }
+                    .accessibilityLabel("Refresh diagnostics")
                 }
             }
             .refreshable {
@@ -75,6 +85,12 @@ struct DebugView: View {
             .sheet(isPresented: $showSettings) {
                 SettingsView()
                     .environmentObject(appState)
+            }
+            .sheet(item: Binding(
+                get: { selectedNode.map { IdentifiableNode(node: $0) } },
+                set: { selectedNode = $0?.node }
+            )) { wrapper in
+                NodeDetailSheet(node: wrapper.node)
             }
         }
     }
@@ -92,9 +108,9 @@ struct DebugView: View {
                     } label: {
                         HStack(spacing: 6) {
                             Text(bot.emoji)
-                                .font(.system(size: 14))
+                                .font(.sora(14, weight: .regular))
                             Text(bot.name)
-                                .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
+                                .font(.sora(13, weight: isSelected ? .semibold : .regular))
                         }
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
@@ -106,6 +122,7 @@ struct DebugView: View {
                         )
                     }
                     .foregroundColor(isSelected ? .optaPrimary : .optaTextSecondary)
+                    .accessibilityLabel("\(bot.name), \(isSelected ? "selected" : "not selected")")
                 }
             }
         }
@@ -116,10 +133,10 @@ struct DebugView: View {
     private var disconnectedState: some View {
         VStack(spacing: 12) {
             Image(systemName: "wifi.slash")
-                .font(.system(size: 32))
+                .font(.sora(32, weight: .regular))
                 .foregroundColor(.optaTextMuted)
             Text("Not connected")
-                .font(.headline)
+                .font(.soraHeadline)
                 .foregroundColor(.optaTextSecondary)
             if let bot = appState.selectedBot {
                 Button("Connect to \(bot.name)") {
@@ -127,6 +144,7 @@ struct DebugView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(.optaPrimary)
+                .accessibilityHint("Establishes a WebSocket connection to \(bot.name)")
             }
         }
         .padding(.top, 40)
@@ -141,11 +159,11 @@ struct DebugView: View {
 
                 HStack {
                     Circle()
-                        .fill(healthy ? Color.green : Color.red)
+                        .fill(healthy ? Color.optaGreen : Color.optaRed)
                         .frame(width: 10, height: 10)
                     Text(healthy ? "Healthy" : "Unhealthy")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(healthy ? .green : .red)
+                        .font(.sora(14, weight: .semibold))
+                        .foregroundColor(healthy ? .optaGreen : .optaRed)
                     Spacer()
 
                     if let authAge = health["authAge"] as? Int {
@@ -159,9 +177,9 @@ struct DebugView: View {
                 DebugRow(label: "PID", value: "\(health["pid"] ?? "?")")
 
                 if let uptime = health["uptime"] as? Int {
-                    DebugRow(label: "Uptime", value: formatUptime(uptime))
+                    DebugRow(label: "Uptime", value: OptaFormatting.formatUptime(Double(uptime)))
                 } else if let uptime = health["uptimeMs"] as? Int {
-                    DebugRow(label: "Uptime", value: formatUptime(uptime / 1000))
+                    DebugRow(label: "Uptime", value: OptaFormatting.formatUptime(Double(uptime / 1000)))
                 }
 
                 if let protocol_ = health["protocol"] as? Int {
@@ -171,9 +189,19 @@ struct DebugView: View {
                 if let version = health["version"] as? String {
                     DebugRow(label: "Version", value: version)
                 }
+
+                // Health explanations (actionable warnings)
+                if let vm = selectedVM {
+                    HealthExplanation(
+                        healthData: health,
+                        connectionState: vm.connectionState,
+                        connectionRoute: vm.connectionRoute,
+                        latencyMs: vm.pingLatencyMs
+                    )
+                }
             } else {
                 Text("No health data")
-                    .font(.system(size: 13))
+                    .font(.sora(13, weight: .regular))
                     .foregroundColor(.optaTextMuted)
             }
         }
@@ -185,16 +213,42 @@ struct DebugView: View {
         DebugSection(title: "Connectivity", icon: "network") {
             if let vm = selectedVM {
                 DebugRow(label: "WebSocket", value: vm.connectionState.displayName,
-                         color: vm.connectionState == .connected ? .green : .optaAmber)
+                         color: vm.connectionState == .connected ? .optaGreen : .optaAmber)
 
                 DebugRow(label: "Route", value: vm.connectionRoute.rawValue.capitalized,
                          icon: vm.connectionRoute == .lan ? "wifi" : "globe")
 
-                if let latency = vm.client_latencyMs {
-                    DebugRow(label: "Latency", value: "\(Int(latency))ms")
+                if let latency = vm.pingLatencyMs {
+                    DebugRow(label: "Latency", value: "\(Int(latency))ms",
+                             color: latency > 500 ? .optaAmber : nil)
                 }
 
-                DebugRow(label: "Reconnects", value: "\(vm.reconnectCount)")
+                DebugRow(label: "Reconnects", value: "\(vm.reconnectCount)",
+                         color: vm.reconnectCount > 3 ? .optaAmber : nil)
+
+                // Connection URL info
+                if let bot = appState.selectedBot {
+                    DebugRow(label: "LAN", value: "\(bot.host):\(bot.port)", icon: "wifi")
+                    if let remote = bot.remoteURL, !remote.isEmpty {
+                        DebugRow(label: "Remote", value: remote, icon: "globe")
+                    }
+                    DebugRow(label: "Mode", value: bot.connectionMode.rawValue.capitalized)
+                }
+
+                // Port probe
+                if let bot = appState.selectedBot {
+                    PortProbeView(host: bot.host, port: bot.port)
+                }
+            }
+        }
+    }
+
+    // MARK: - Connection Timeline Section
+
+    private var connectionTimelineSection: some View {
+        DebugSection(title: "Connection Timeline", icon: "clock.arrow.2.circlepath") {
+            if let vm = selectedVM {
+                ConnectionTimelineView(viewModel: vm)
             }
         }
     }
@@ -205,11 +259,17 @@ struct DebugView: View {
         DebugSection(title: "Sessions (\(sessions.count))", icon: "text.bubble") {
             if sessions.isEmpty {
                 Text("No active sessions")
-                    .font(.system(size: 13))
+                    .font(.sora(13, weight: .regular))
                     .foregroundColor(.optaTextMuted)
             } else {
-                ForEach(Array(sessions.prefix(20).enumerated()), id: \.offset) { _, session in
-                    SessionRow(session: session)
+                ForEach(Array(sessions.prefix(20).enumerated()), id: \.offset) { index, session in
+                    let sessionKey = session["sessionKey"] as? String ?? session["key"] as? String ?? "?"
+                    EnhancedSessionRow(session: session) {
+                        deleteSession(key: sessionKey)
+                    }
+                    if index < min(sessions.count, 20) - 1 {
+                        Divider().opacity(0.3)
+                    }
                 }
             }
         }
@@ -221,11 +281,16 @@ struct DebugView: View {
         DebugSection(title: "Nodes", icon: "desktopcomputer") {
             if nodes.isEmpty {
                 Text("No nodes connected")
-                    .font(.system(size: 13))
+                    .font(.sora(13, weight: .regular))
                     .foregroundColor(.optaTextMuted)
             } else {
                 ForEach(Array(nodes.enumerated()), id: \.offset) { _, node in
-                    NodeRow(node: node)
+                    Button {
+                        selectedNode = node
+                    } label: {
+                        NodeRow(node: node)
+                    }
+                    .buttonStyle(.plain)
                 }
             }
         }
@@ -262,25 +327,34 @@ struct DebugView: View {
         _ = await (healthTask, sessionsTask, nodesTask)
     }
 
-    // MARK: - Helpers
+    // MARK: - Session Delete
 
-    private func formatUptime(_ seconds: Int) -> String {
-        let days = seconds / 86400
-        let hours = (seconds % 86400) / 3600
-        let mins = (seconds % 3600) / 60
-        if days > 0 { return "\(days)d \(hours)h" }
-        if hours > 0 { return "\(hours)h \(mins)m" }
-        return "\(mins)m"
+    private func deleteSession(key: String) {
+        guard let vm = selectedVM else { return }
+        UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+        Task {
+            do {
+                _ = try await vm.call("sessions.delete", params: ["sessionKey": key])
+                withAnimation(.optaSpring) {
+                    sessions.removeAll { ($0["sessionKey"] as? String ?? $0["key"] as? String) == key }
+                }
+            } catch {
+                errorMessage = "Delete failed: \(error.localizedDescription)"
+            }
+        }
     }
+
 }
 
-// MARK: - Latency Extension
+// MARK: - Identifiable Node Wrapper
 
-extension ChatViewModel {
-    var client_latencyMs: Double? {
-        // Access latency from the underlying connection stats
-        // The client tracks this via ping/pong
-        nil // Will be populated when client is connected and ping data is available
+private struct IdentifiableNode: Identifiable {
+    let id: String
+    let node: [String: Any]
+
+    init(node: [String: Any]) {
+        self.id = node["nodeId"] as? String ?? node["name"] as? String ?? UUID().uuidString
+        self.node = node
     }
 }
 
@@ -294,7 +368,7 @@ struct DebugSection<Content: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Label(title, systemImage: icon)
-                .font(.system(size: 13, weight: .semibold))
+                .font(.sora(13, weight: .semibold))
                 .foregroundColor(.optaTextSecondary)
 
             VStack(alignment: .leading, spacing: 6) {
@@ -325,22 +399,23 @@ struct DebugRow: View {
     var body: some View {
         HStack {
             Text(label)
-                .font(.system(size: 12))
+                .font(.sora(12, weight: .regular))
                 .foregroundColor(.optaTextMuted)
             Spacer()
             if let icon = icon {
                 Image(systemName: icon)
-                    .font(.system(size: 10))
+                    .font(.sora(10, weight: .regular))
                     .foregroundColor(color ?? .optaTextSecondary)
             }
             Text(value)
                 .font(.system(size: 12, design: .monospaced))
                 .foregroundColor(color ?? .optaTextPrimary)
+                .lineLimit(1)
         }
     }
 }
 
-// MARK: - Session Row
+// MARK: - Session Row (legacy, kept for compatibility)
 
 struct SessionRow: View {
     let session: [String: Any]
@@ -365,9 +440,9 @@ struct SessionRow: View {
     }
 
     private var barColor: Color {
-        if contextRatio < 0.5 { return .green }
+        if contextRatio < 0.5 { return .optaGreen }
         if contextRatio < 0.8 { return .optaAmber }
-        return .red
+        return .optaRed
     }
 
     var body: some View {
@@ -399,7 +474,7 @@ struct SessionRow: View {
                 let date = Date(timeIntervalSince1970: lastActive / 1000)
                 let seconds = Int(Date().timeIntervalSince(date))
                 Text(seconds < 60 ? "just now" : seconds < 3600 ? "\(seconds / 60)m ago" : "\(seconds / 3600)h ago")
-                    .font(.system(size: 10))
+                    .font(.sora(10, weight: .regular))
                     .foregroundColor(.optaTextMuted)
             }
         }
@@ -415,19 +490,19 @@ struct NodeRow: View {
     var body: some View {
         HStack(spacing: 10) {
             Image(systemName: nodeIcon)
-                .font(.system(size: 14))
+                .font(.sora(14, weight: .regular))
                 .foregroundColor(.optaTextSecondary)
                 .frame(width: 20)
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack {
                     Text(node["name"] as? String ?? node["nodeId"] as? String ?? "Unknown")
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.sora(13, weight: .semibold))
                         .foregroundColor(.optaTextPrimary)
 
                     if let os = node["os"] as? String {
                         Text(os)
-                            .font(.system(size: 10))
+                            .font(.sora(10, weight: .regular))
                             .foregroundColor(.optaTextMuted)
                             .padding(.horizontal, 5)
                             .padding(.vertical, 1)
@@ -444,13 +519,13 @@ struct NodeRow: View {
 
                     if let version = node["version"] as? String {
                         Text("v\(version)")
-                            .font(.system(size: 10))
+                            .font(.sora(10, weight: .regular))
                             .foregroundColor(.optaTextMuted)
                     }
 
                     let connected = node["connected"] as? Bool ?? (node["status"] as? String == "connected")
                     Circle()
-                        .fill(connected ? Color.green : Color.red)
+                        .fill(connected ? Color.optaGreen : Color.optaRed)
                         .frame(width: 6, height: 6)
                 }
             }

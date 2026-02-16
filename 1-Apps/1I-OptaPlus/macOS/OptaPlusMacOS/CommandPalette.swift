@@ -94,8 +94,9 @@ struct CommandPaletteView: View {
         actions.append(PaletteAction(icon: "plus.message", title: "New Session", subtitle: "Create a new chat session") {
             if let bot = windowState.selectedBot(in: appState) {
                 let vm = appState.viewModel(for: bot)
-                let session = vm.createSession(name: "Quick", mode: .direct)
-                vm.switchSession(session)
+                if let session = vm.createSession(name: "Quick", mode: .direct) {
+                    vm.switchSession(session)
+                }
             }
             isPresented = false
         })
@@ -129,6 +130,21 @@ struct CommandPaletteView: View {
             isPresented = false
         })
 
+        actions.append(PaletteAction(icon: "bolt.circle", title: "Automations", subtitle: "Toggle cron job manager (⌘J)") {
+            NotificationCenter.default.post(name: .toggleAutomations, object: nil)
+            isPresented = false
+        })
+
+        actions.append(PaletteAction(icon: "globe.americas", title: "Bot Web", subtitle: "Toggle network topology (⌘⇧B)") {
+            NotificationCenter.default.post(name: .toggleBotWeb, object: nil)
+            isPresented = false
+        })
+
+        actions.append(PaletteAction(icon: "ant", title: "Debug", subtitle: "Toggle debug panel (⌘⇧G)") {
+            NotificationCenter.default.post(name: .toggleDebug, object: nil)
+            isPresented = false
+        })
+
         return actions
     }
 
@@ -144,7 +160,7 @@ struct CommandPaletteView: View {
     var body: some View {
         ZStack {
             // Backdrop
-            Color.black.opacity(0.4)
+            Color.optaVoid.opacity(0.4)
                 .ignoresSafeArea()
                 .onTapGesture { isPresented = false }
 
@@ -157,10 +173,11 @@ struct CommandPaletteView: View {
 
                     TextField("Type a command…", text: $query)
                         .textFieldStyle(.plain)
-                        .font(.system(size: 16, weight: .regular))
+                        .font(.sora(16))
                         .foregroundColor(.optaTextPrimary)
                         .focused($isFocused)
                         .onSubmit { executeSelected() }
+                        .accessibilityLabel("Command palette search")
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 14)
@@ -255,7 +272,7 @@ struct CommandPaletteView: View {
                         .fill(Color.optaSurface.opacity(0.6))
                 )
             Text(label)
-                .font(.system(size: 10))
+                .font(.sora(10))
                 .foregroundColor(.optaTextMuted)
         }
     }
@@ -284,12 +301,12 @@ struct PaletteRow: View {
 
             VStack(alignment: .leading, spacing: 1) {
                 Text(action.title)
-                    .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
+                    .font(.sora(13, weight: isSelected ? .semibold : .regular))
                     .foregroundColor(.optaTextPrimary)
 
                 if let subtitle = action.subtitle {
                     Text(subtitle)
-                        .font(.system(size: 11))
+                        .font(.sora(11))
                         .foregroundColor(.optaTextMuted)
                 }
             }

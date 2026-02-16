@@ -103,7 +103,8 @@ final class ChatNSTextView: NSTextView {
         if let image = pb.readObjects(forClasses: [NSImage.self])?.first as? NSImage,
            let tiff = image.tiffRepresentation,
            let rep = NSBitmapImageRep(data: tiff),
-           let pngData = rep.representation(using: .png, properties: [:]) {
+           let pngData = rep.representation(using: .png, properties: [:]),
+           pngData.count <= AttachmentLimits.maxFileBytes {
             let attachment = ChatAttachment(
                 filename: "pasted-image.png",
                 mimeType: "image/png",

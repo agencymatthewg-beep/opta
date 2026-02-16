@@ -31,6 +31,7 @@ struct SessionDrawerView: View {
                         .foregroundColor(.optaTextSecondary)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("New session")
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
@@ -76,7 +77,7 @@ struct SessionDrawerView: View {
                 // Subtle top highlight
                 VStack {
                     LinearGradient(
-                        colors: [Color.white.opacity(0.03), .clear],
+                        colors: [Color.optaGlassHighlight, .clear],
                         startPoint: .top,
                         endPoint: .bottom
                     )
@@ -114,12 +115,12 @@ struct SessionRow: View {
                 
                 VStack(alignment: .leading, spacing: 1) {
                     Text(session.name)
-                        .font(.system(size: 12, weight: isActive ? .semibold : .regular))
+                        .font(.sora(12, weight: isActive ? .semibold : .regular))
                         .foregroundColor(isActive ? .optaTextPrimary : .optaTextSecondary)
                         .lineLimit(1)
-                    
+
                     Text(session.mode.label)
-                        .font(.system(size: 9))
+                        .font(.sora(9))
                         .foregroundColor(.optaTextMuted)
                 }
                 
@@ -144,6 +145,7 @@ struct SessionRow: View {
             )
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("\(session.name) session, \(session.mode.label)\(isActive ? ", active" : "")")
         .onHover { isHovering = $0 }
         .contextMenu {
             Button(action: onTogglePin) {
@@ -171,7 +173,7 @@ struct NewSessionSheet: View {
     var body: some View {
         VStack(spacing: 20) {
             Text("New Session")
-                .font(.system(size: 18, weight: .bold))
+                .font(.sora(18, weight: .bold))
                 .foregroundColor(.optaTextPrimary)
             
             // Name field
@@ -180,7 +182,7 @@ struct NewSessionSheet: View {
             // Mode picker
             VStack(alignment: .leading, spacing: 8) {
                 Text("Mode")
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.sora(11, weight: .medium))
                     .foregroundColor(.optaTextMuted)
                 
                 ForEach(SessionMode.allCases, id: \.self) { mode in
@@ -199,11 +201,12 @@ struct NewSessionSheet: View {
                 Spacer()
                 
                 Button("Create") {
-                    let session = viewModel.createSession(
+                    if let session = viewModel.createSession(
                         name: name.isEmpty ? selectedMode.label : name,
                         mode: selectedMode
-                    )
-                    viewModel.switchSession(session)
+                    ) {
+                        viewModel.switchSession(session)
+                    }
                     dismiss()
                 }
                 .keyboardShortcut(.defaultAction)
@@ -241,11 +244,11 @@ struct SessionModeOption: View {
                 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(mode.label)
-                        .font(.system(size: 13, weight: .medium))
+                        .font(.sora(13, weight: .medium))
                         .foregroundColor(.optaTextPrimary)
-                    
+
                     Text(mode.description)
-                        .font(.system(size: 11))
+                        .font(.sora(11))
                         .foregroundColor(.optaTextMuted)
                 }
                 

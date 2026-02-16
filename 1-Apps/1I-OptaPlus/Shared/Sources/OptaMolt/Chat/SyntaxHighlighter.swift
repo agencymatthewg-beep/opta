@@ -171,8 +171,8 @@ public enum SyntaxHighlighter {
 
     // MARK: - Language-Specific Patterns
 
-    /// Swift syntax patterns
-    private static var swiftPatterns: [HighlightPattern] {
+    /// Swift syntax patterns (cached — compiled once, reused on every highlight call)
+    private static let swiftPatterns: [HighlightPattern] = {
         [
             // Comments (lowest priority - apply first)
             HighlightPattern(#"//.*$"#, color: SyntaxHighlighter.commentColor),
@@ -198,10 +198,10 @@ public enum SyntaxHighlighter {
             // Property wrappers
             HighlightPattern(#"@\w+"#, color: SyntaxHighlighter.keywordColor),
         ].compactMap { $0 }
-    }
+    }()
 
-    /// Python syntax patterns
-    private static var pythonPatterns: [HighlightPattern] {
+    /// Python syntax patterns (cached)
+    private static let pythonPatterns: [HighlightPattern] = {
         [
             // Comments
             HighlightPattern(#"#.*$"#, color: SyntaxHighlighter.commentColor),
@@ -228,10 +228,10 @@ public enum SyntaxHighlighter {
             // Decorators
             HighlightPattern(#"@\w+"#, color: SyntaxHighlighter.keywordColor),
         ].compactMap { $0 }
-    }
+    }()
 
-    /// JavaScript/TypeScript syntax patterns
-    private static var javascriptPatterns: [HighlightPattern] {
+    /// JavaScript/TypeScript syntax patterns (cached)
+    private static let javascriptPatterns: [HighlightPattern] = {
         [
             // Comments
             HighlightPattern(#"//.*$"#, color: SyntaxHighlighter.commentColor),
@@ -258,10 +258,10 @@ public enum SyntaxHighlighter {
             // Arrow functions
             HighlightPattern(#"=>"#, color: SyntaxHighlighter.keywordColor),
         ].compactMap { $0 }
-    }
+    }()
 
-    /// Rust syntax patterns
-    private static var rustPatterns: [HighlightPattern] {
+    /// Rust syntax patterns (cached)
+    private static let rustPatterns: [HighlightPattern] = {
         [
             // Comments
             HighlightPattern(#"//.*$"#, color: SyntaxHighlighter.commentColor),
@@ -291,10 +291,10 @@ public enum SyntaxHighlighter {
             // Lifetimes
             HighlightPattern(#"'[a-z_]\w*"#, color: SyntaxHighlighter.keywordColor),
         ].compactMap { $0 }
-    }
+    }()
 
-    /// Go syntax patterns
-    private static var goPatterns: [HighlightPattern] {
+    /// Go syntax patterns (cached)
+    private static let goPatterns: [HighlightPattern] = {
         [
             // Comments
             HighlightPattern(#"//.*$"#, color: SyntaxHighlighter.commentColor),
@@ -320,10 +320,10 @@ public enum SyntaxHighlighter {
             // Short variable declaration
             HighlightPattern(#":="#, color: SyntaxHighlighter.keywordColor),
         ].compactMap { $0 }
-    }
+    }()
 
-    /// JSON syntax patterns
-    private static var jsonPatterns: [HighlightPattern] {
+    /// JSON syntax patterns (cached)
+    private static let jsonPatterns: [HighlightPattern] = {
         [
             // Strings (keys and values)
             HighlightPattern(#""(?:[^"\\]|\\.)*""#, color: SyntaxHighlighter.stringColor),
@@ -334,10 +334,10 @@ public enum SyntaxHighlighter {
             // Keywords
             HighlightPattern(#"\b(true|false|null)\b"#, color: SyntaxHighlighter.keywordColor),
         ].compactMap { $0 }
-    }
+    }()
 
-    /// Shell/Bash syntax patterns
-    private static var shellPatterns: [HighlightPattern] {
+    /// Shell/Bash syntax patterns (cached)
+    private static let shellPatterns: [HighlightPattern] = {
         [
             // Comments
             HighlightPattern(#"#.*$"#, color: SyntaxHighlighter.commentColor),
@@ -358,10 +358,10 @@ public enum SyntaxHighlighter {
                 color: .optaPrimary
             ),
         ].compactMap { $0 }
-    }
+    }()
 
-    /// HTML/XML syntax patterns
-    private static var htmlPatterns: [HighlightPattern] {
+    /// HTML/XML syntax patterns (cached)
+    private static let htmlPatterns: [HighlightPattern] = {
         [
             // Comments
             HighlightPattern(#"<!--[\s\S]*?-->"#, color: SyntaxHighlighter.commentColor),
@@ -377,10 +377,10 @@ public enum SyntaxHighlighter {
             // Attributes
             HighlightPattern(#"\b[a-zA-Z-]+(?==)"#, color: SyntaxHighlighter.typeColor),
         ].compactMap { $0 }
-    }
+    }()
 
-    /// CSS syntax patterns
-    private static var cssPatterns: [HighlightPattern] {
+    /// CSS syntax patterns (cached)
+    private static let cssPatterns: [HighlightPattern] = {
         [
             // Comments
             HighlightPattern(#"/\*[\s\S]*?\*/"#, color: SyntaxHighlighter.commentColor),
@@ -401,10 +401,10 @@ public enum SyntaxHighlighter {
             // Selectors (classes, ids)
             HighlightPattern(#"[.#][a-zA-Z_-][a-zA-Z0-9_-]*"#, color: SyntaxHighlighter.typeColor),
         ].compactMap { $0 }
-    }
+    }()
 
-    /// Generic syntax patterns (fallback)
-    private static var genericPatterns: [HighlightPattern] {
+    /// Generic syntax patterns (fallback, cached)
+    private static let genericPatterns: [HighlightPattern] = {
         [
             // C-style comments
             HighlightPattern(#"//.*$"#, color: SyntaxHighlighter.commentColor),
@@ -429,7 +429,7 @@ public enum SyntaxHighlighter {
                 color: .optaPrimary
             ),
         ].compactMap { $0 }
-    }
+    }()
 
     // MARK: - Highlighting Application
 

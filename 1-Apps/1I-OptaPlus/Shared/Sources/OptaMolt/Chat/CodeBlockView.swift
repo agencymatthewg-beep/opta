@@ -14,11 +14,6 @@
 //
 
 import SwiftUI
-#if os(iOS)
-import UIKit
-#elseif os(macOS)
-import AppKit
-#endif
 
 // MARK: - CodeBlockView
 
@@ -117,28 +112,47 @@ public struct CodeBlockView: View {
 
     private var header: some View {
         HStack(spacing: 8) {
-            // Language badge
+            // Language badge with icon
             if let lang = language, !lang.isEmpty {
-                Text(lang)
-                    .font(.caption.weight(.medium))
-                    .foregroundColor(.optaTextSecondary)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color.optaSurfaceElevated)
-                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                HStack(spacing: 4) {
+                    Image(systemName: languageIcon(for: lang))
+                        .font(.system(size: 10))
+                        .foregroundColor(.optaPrimary.opacity(0.7))
+                    Text(lang.lowercased())
+                        .font(.system(size: 11, weight: .medium, design: .monospaced))
+                        .foregroundColor(.optaTextSecondary)
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(Color.optaPrimary.opacity(0.08))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6)
+                                .stroke(Color.optaPrimary.opacity(0.12), lineWidth: 0.5)
+                        )
+                )
             }
 
             // Line numbers toggle
             if lineCount > 3 && !isStreaming {
-                Button(action: { withAnimation(.easeInOut(duration: 0.2)) { showLineNumbers.toggle() } }) {
-                    Image(systemName: showLineNumbers ? "list.number" : "list.number")
+                Button(action: { withAnimation(.optaSnap) { showLineNumbers.toggle() } }) {
+                    Image(systemName: "list.number")
                         .font(.caption)
                         .foregroundColor(showLineNumbers ? .optaPrimary : .optaTextMuted)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(showLineNumbers ? "Hide line numbers" : "Show line numbers")
             }
 
             Spacer()
+
+            // Line count badge (for non-trivial blocks)
+            if lineCount > 5 && !isStreaming {
+                Text("\(lineCount) lines")
+                    .font(.system(size: 10))
+                    .foregroundColor(.optaTextMuted)
+            }
 
             // Streaming indicator
             if isStreaming {
@@ -162,43 +176,65 @@ public struct CodeBlockView: View {
         .background(Color.optaSurfaceElevated)
     }
 
+    /// SF Symbol icon for common languages
+    private func languageIcon(for language: String) -> String {
+        switch language.lowercased() {
+        case "swift": return "swift"
+        case "python", "py": return "chevron.left.forwardslash.chevron.right"
+        case "javascript", "js", "typescript", "ts": return "curlybraces"
+        case "html", "xml": return "chevron.left.slash.chevron.right"
+        case "css", "scss": return "paintbrush"
+        case "json": return "doc.text"
+        case "bash", "sh", "shell", "zsh": return "terminal"
+        case "rust", "rs": return "gearshape"
+        case "go", "golang": return "arrow.right.arrow.left"
+        case "sql": return "cylinder"
+        case "markdown", "md": return "text.document"
+        default: return "chevron.left.forwardslash.chevron.right"
+        }
+    }
+
     // MARK: - Copy Button
 
     @State private var copied = false
+    @State private var copyScale: CGFloat = 1.0
 
     private var copyButton: some View {
-        Button(action: copyToClipboard) {
+        Button(action: {
+            OptaFormatting.copyToClipboard(code)
+            withAnimation(.optaSpring) {
+                copied = true
+                copyScale = 1.2
+            }
+            // Bounce back
+            withAnimation(.optaSpring.delay(0.1)) {
+                copyScale = 1.0
+            }
+            Task { @MainActor in
+                try? await Task.sleep(for: .seconds(2.0))
+                withAnimation(.optaSpring) {
+                    copied = false
+                }
+            }
+        }) {
             HStack(spacing: 4) {
-                Image(systemName: copied ? "checkmark" : "doc.on.doc")
+                Image(systemName: copied ? "checkmark.circle.fill" : "doc.on.doc")
                     .font(.caption)
-                Text(copied ? "Copied ✓" : "Copy")
-                    .font(.caption)
+                    .contentTransition(.symbolEffect(.replace))
+                Text(copied ? "Copied" : "Copy")
+                    .font(.caption.weight(.medium))
             }
             .foregroundColor(copied ? .optaGreen : .optaTextSecondary)
-            .shadow(color: copied ? Color.optaGreen.opacity(0.4) : Color.optaPrimary.opacity(0.2), radius: 4)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(copied ? Color.optaGreen.opacity(0.12) : Color.clear)
+            )
+            .scaleEffect(copyScale)
         }
         .buttonStyle(.plain)
-    }
-
-    private func copyToClipboard() {
-        #if os(iOS)
-        UIPasteboard.general.string = code
-        #elseif os(macOS)
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(code, forType: .string)
-        #endif
-
-        withAnimation(.optaSpring) {
-            copied = true
-        }
-
-        // Reset after delay
-        Task { @MainActor in
-            try? await Task.sleep(for: .seconds(1.5))
-            withAnimation(.optaSpring) {
-                copied = false
-            }
-        }
+        .accessibilityLabel(copied ? "Copied to clipboard" : "Copy code")
     }
 
     // MARK: - Code Content
@@ -216,16 +252,17 @@ public struct CodeBlockView: View {
                     VStack(alignment: .trailing, spacing: 0) {
                         ForEach(Array(codeLines.enumerated()), id: \.offset) { index, _ in
                             Text("\(index + 1)")
-                                .font(.system(size: 12, design: .monospaced))
-                                .foregroundColor(.optaTextMuted.opacity(0.4))
-                                .frame(minWidth: 28, alignment: .trailing)
+                                .font(.system(size: 11, design: .monospaced))
+                                .foregroundColor(.optaTextMuted.opacity(0.3))
+                                .frame(minWidth: lineCount >= 100 ? 36 : 28, alignment: .trailing)
+                                .frame(height: 18)
                         }
                     }
-                    .padding(.trailing, 8)
+                    .padding(.trailing, 10)
                     .padding(.leading, 4)
                     .overlay(alignment: .trailing) {
                         Rectangle()
-                            .fill(Color.optaBorder.opacity(0.15))
+                            .fill(Color.optaBorder.opacity(0.2))
                             .frame(width: 0.5)
                     }
                 }
@@ -256,6 +293,7 @@ public struct CodeBlockView: View {
             .foregroundColor(.optaPrimary)
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(isExpanded ? "Show less code" : "Show \(hiddenLineCount) more lines")
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
         .frame(maxWidth: .infinity, alignment: .center)

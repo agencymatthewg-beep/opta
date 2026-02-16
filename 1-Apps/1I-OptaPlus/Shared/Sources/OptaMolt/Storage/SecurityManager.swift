@@ -8,6 +8,7 @@
 import Foundation
 import SwiftUI
 import Combine
+import os.log
 #if canImport(LocalAuthentication)
 import LocalAuthentication
 #endif
@@ -16,6 +17,7 @@ import LocalAuthentication
 
 @MainActor
 public final class PrivacyManager: ObservableObject {
+    private static let logger = Logger(subsystem: "biz.optamize.OptaPlus", category: "Security")
     public static let shared = PrivacyManager()
     
     /// When true, message previews are hidden throughout the app.
@@ -123,7 +125,7 @@ public final class PrivacyManager: ObservableObject {
             try? FileManager.default.removeItem(at: chatDir)
         }
         
-        NSLog("[SecurityManager] All data wiped — app reset to first-launch state")
+        Self.logger.info("All data wiped — app reset to first-launch state")
     }
 }
 

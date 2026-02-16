@@ -41,6 +41,62 @@ public extension Animation {
     /// Parameters: response 0.5, dampingFraction 0.85.
     static let optaGentle: Animation = .spring(response: 0.5, dampingFraction: 0.85)
 
-    /// Pulse animation — gentle repeating for loading/active states.
-    static let optaPulse: Animation = .easeInOut(duration: 1.2).repeatForever(autoreverses: true)
+    /// Pulse animation — gentle spring-based repeating for loading/active states.
+    /// Uses an underdamped spring that naturally oscillates, approximating a breathing feel.
+    static let optaPulse: Animation = .spring(response: 0.6, dampingFraction: 0.4).repeatForever(autoreverses: true)
+
+    /// Continuous rotation — the one case where linear is physics-correct
+    /// (constant angular velocity has no acceleration to spring toward).
+    static let optaSpin: Animation = .linear(duration: 1.0).repeatForever(autoreverses: false)
+}
+
+// MARK: - Breathing Modifier (Spring-Based Repeating)
+
+/// A PhaseAnimator-based breathing effect using spring physics.
+/// Replaces all `.easeInOut(duration: X).repeatForever(autoreverses: true)` patterns.
+public struct OptaBreathingModifier: ViewModifier {
+    let minOpacity: Double
+    let maxOpacity: Double
+    let minScale: CGFloat
+    let maxScale: CGFloat
+
+    public init(
+        minOpacity: Double = 0.4,
+        maxOpacity: Double = 1.0,
+        minScale: CGFloat = 1.0,
+        maxScale: CGFloat = 1.0
+    ) {
+        self.minOpacity = minOpacity
+        self.maxOpacity = maxOpacity
+        self.minScale = minScale
+        self.maxScale = maxScale
+    }
+
+    public func body(content: Content) -> some View {
+        content
+            .phaseAnimator([false, true]) { view, phase in
+                view
+                    .opacity(phase ? maxOpacity : minOpacity)
+                    .scaleEffect(phase ? maxScale : minScale)
+            } animation: { _ in
+                .spring(response: 1.2, dampingFraction: 0.5)
+            }
+    }
+}
+
+public extension View {
+    /// Spring-physics breathing effect — replaces easeInOut.repeatForever patterns.
+    func optaBreathing(
+        minOpacity: Double = 0.4,
+        maxOpacity: Double = 1.0,
+        minScale: CGFloat = 1.0,
+        maxScale: CGFloat = 1.0
+    ) -> some View {
+        modifier(OptaBreathingModifier(
+            minOpacity: minOpacity,
+            maxOpacity: maxOpacity,
+            minScale: minScale,
+            maxScale: maxScale
+        ))
+    }
 }

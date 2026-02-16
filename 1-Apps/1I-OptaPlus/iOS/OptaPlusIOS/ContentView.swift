@@ -13,7 +13,7 @@ struct ContentView: View {
     @AppStorage("optaplus.onboardingDone") private var onboardingDone = false
 
     enum Tab: String {
-        case dashboard, history, chat, automations, debug
+        case dashboard, web, chat, automations, debug
     }
 
     var body: some View {
@@ -29,12 +29,12 @@ struct ContentView: View {
                     }
                     .tag(Tab.dashboard)
 
-                ChatHistoryView()
+                BotWebView()
                     .environmentObject(appState)
                     .tabItem {
-                        Label("History", systemImage: selectedTab == .history ? "clock.arrow.circlepath" : "clock.arrow.circlepath")
+                        Label("Web", systemImage: selectedTab == .web ? "globe.americas.fill" : "globe.americas")
                     }
-                    .tag(Tab.history)
+                    .tag(Tab.web)
 
                 ChatPagerTab()
                     .environmentObject(appState)
@@ -67,6 +67,8 @@ struct ContentView: View {
 struct ChatPagerTab: View {
     @EnvironmentObject var appState: AppState
     @State private var showSettings = false
+    @State private var showBotConfig = false
+    @State private var showHistory = false
 
     var body: some View {
         NavigationStack {
@@ -81,16 +83,42 @@ struct ChatPagerTab: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showSettings = true
-                    } label: {
-                        Image(systemName: "gearshape")
-                            .foregroundColor(.optaTextSecondary)
+                    HStack(spacing: 14) {
+                        Button {
+                            showHistory = true
+                        } label: {
+                            Image(systemName: "clock.arrow.circlepath")
+                                .foregroundColor(.optaTextSecondary)
+                        }
+                        .accessibilityLabel("Chat history")
+                        Button {
+                            showBotConfig = true
+                        } label: {
+                            Image(systemName: "slider.horizontal.3")
+                                .foregroundColor(.optaTextSecondary)
+                        }
+                        .accessibilityLabel("Bot configuration")
+                        Button {
+                            showSettings = true
+                        } label: {
+                            Image(systemName: "gearshape")
+                                .foregroundColor(.optaTextSecondary)
+                        }
+                        .accessibilityLabel("Settings")
                     }
                 }
             }
             .sheet(isPresented: $showSettings) {
                 SettingsView()
+                    .environmentObject(appState)
+            }
+            .sheet(isPresented: $showBotConfig) {
+                if let bot = appState.selectedBot {
+                    BotManagementSheet(viewModel: appState.viewModel(for: bot))
+                }
+            }
+            .sheet(isPresented: $showHistory) {
+                ChatHistoryView()
                     .environmentObject(appState)
             }
         }
@@ -101,6 +129,7 @@ struct ChatPagerTab: View {
 
 struct AutomationsPagerTab: View {
     @EnvironmentObject var appState: AppState
+    @State private var showCreateSheet = false
 
     var body: some View {
         NavigationStack {
@@ -113,6 +142,28 @@ struct AutomationsPagerTab: View {
             }
             .navigationTitle("Automations")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showCreateSheet = true
+                    } label: {
+                        Image(systemName: "plus")
+                            .foregroundColor(.optaPrimary)
+                    }
+                    .accessibilityLabel("Create automation")
+                }
+            }
+            .sheet(isPresented: $showCreateSheet) {
+                if let bot = appState.selectedBot {
+                    let vm = appState.viewModel(for: bot)
+                    CreateJobSheet(
+                        viewModel: vm,
+                        botConfig: bot,
+                        existingJob: nil,
+                        onSaved: {}
+                    )
+                }
+            }
         }
     }
 }

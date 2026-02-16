@@ -37,12 +37,24 @@ struct BotPageHeader: View {
 
                 if !compact {
                     HStack(spacing: 8) {
+                        // Channel indicator
+                        if let ct = viewModel.activeSession?.channelType {
+                            HStack(spacing: 4) {
+                                RoundedRectangle(cornerRadius: 2)
+                                    .fill(ct.color)
+                                    .frame(width: 3, height: 10)
+                                Text(ct.label)
+                                    .font(.system(size: 10, weight: .medium))
+                                    .foregroundColor(ct.color)
+                            }
+                        }
+
                         Text(connectionLabel)
                             .font(.system(size: 11, weight: .medium))
                             .foregroundColor(.optaTextMuted)
 
                         if isConnected, viewModel.sessions.count > 1 {
-                            Text("\(viewModel.sessions.count) sessions")
+                            Text("\(viewModel.sessions.count) chats")
                                 .font(.system(size: 10))
                                 .foregroundColor(.optaTextMuted)
                                 .padding(.horizontal, 6)
@@ -65,6 +77,8 @@ struct BotPageHeader: View {
         .padding(.vertical, compact ? 6 : 10)
         .glassSubtle()
         .optaEntrance()
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(bot.name), \(connectionLabel)")
     }
 
     private var connectionDotColor: Color {

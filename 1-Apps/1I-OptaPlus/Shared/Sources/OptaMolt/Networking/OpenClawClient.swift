@@ -8,6 +8,7 @@
 
 import Foundation
 import Network
+import os.log
 
 // MARK: - Connection State
 
@@ -22,7 +23,9 @@ public enum ConnectionState: Equatable, Sendable {
 
 @MainActor
 public final class OpenClawClient: ObservableObject {
-    
+
+    private static let logger = Logger(subsystem: "biz.optamize.OptaPlus", category: "Networking")
+
     // MARK: - Configuration
     
     public let host: String
@@ -141,7 +144,74 @@ public final class OpenClawClient: ObservableObject {
         let response = try await request("sessions.list", params: params)
         return parseSessionsList(response)
     }
-    
+
+    // MARK: - Config Convenience
+
+    /// Fetch the gateway configuration (raw text + hash).
+    public func configGet() async throws -> GatewayConfig {
+        let response = try await request("config.get")
+        return parseConfigGet(response)
+    }
+
+    /// Patch (partial update) the gateway configuration.
+    public func configPatch(raw: String, baseHash: String, note: String? = nil) async throws {
+        let params = ConfigPatchParams(raw: raw, baseHash: baseHash, note: note)
+        _ = try await request("config.patch", params: params)
+    }
+
+    /// Restart gateway with full config replacement.
+    public func gatewayRestart(raw: String, baseHash: String? = nil, note: String? = nil) async throws {
+        let params = GatewayRestartParams(raw: raw, baseHash: baseHash, note: note)
+        _ = try await request("gateway.restart", params: params)
+    }
+
+    // MARK: - Gateway Convenience
+
+    /// Fetch gateway health (status, uptime, version, model).
+    public func gatewayHealth() async throws -> GatewayHealth {
+        let response = try await request("health")
+        return parseGatewayHealth(response)
+    }
+
+    /// Fetch gateway status (version, model, channels).
+    public func gatewayStatus() async throws -> GatewayStatus {
+        let response = try await request("status")
+        return parseGatewayStatus(response)
+    }
+
+    // MARK: - Models Convenience
+
+    /// List available models on the gateway.
+    public func modelsList() async throws -> [GatewayModel] {
+        let response = try await request("models.list")
+        return parseModelsList(response)
+    }
+
+    // MARK: - Cron Convenience
+
+    /// Create a new cron job. Returns the job ID.
+    @discardableResult
+    public func cronAdd(job: CronJobCreate) async throws -> String {
+        let response = try await request("cron.add", params: job)
+        return response?.dict?["jobId"] as? String
+            ?? response?.dict?["id"] as? String
+            ?? ""
+    }
+
+    /// Fetch execution history for a cron job.
+    public func cronRuns(jobId: String) async throws -> [CronRun] {
+        let response = try await request("cron.runs", params: AnyCodable(["jobId": jobId]))
+        return parseCronRuns(response)
+    }
+
+    // MARK: - Sessions Convenience
+
+    /// Patch a session (e.g. clear context, rename, etc.).
+    public func sessionsPatch(sessionKey: String, patch: [String: Any]) async throws {
+        let params = SessionsPatchParams(sessionKey: sessionKey, patch: patch)
+        _ = try await request("sessions.patch", params: params)
+    }
+
     // MARK: - NWConnection Lifecycle
     
     private func openConnection() {
@@ -198,22 +268,22 @@ public final class OpenClawClient: ObservableObject {
     }
     
     private func handleConnectionState(_ newState: NWConnection.State) {
-        NSLog("[OC] NWConnection state: \(newState)")
+        Self.logger.debug("NWConnection state: \(String(describing: newState))")
         switch newState {
         case .ready:
             // WebSocket is connected, start receiving
-            NSLog("[OC] Connection READY — starting receive loop")
+            Self.logger.info("Connection ready — starting receive loop")
             startReceiving()
             
         case .failed(let error):
-            NSLog("[OC] Connection FAILED: \(error)")
+            Self.logger.error("Connection failed: \(error.localizedDescription)")
             lastError = "Connection failed: \(error.localizedDescription)"
             connection = nil
             flushPending(error: error)
             scheduleReconnect()
             
         case .cancelled:
-            NSLog("[OC] Connection CANCELLED (isClosed=\(isClosed))")
+            Self.logger.info("Connection cancelled (isClosed=\(self.isClosed))")
             if !isClosed {
                 lastError = "Connection cancelled"
                 connection = nil
@@ -222,11 +292,11 @@ public final class OpenClawClient: ObservableObject {
             }
             
         case .waiting(let error):
-            NSLog("[OC] Connection WAITING: \(error)")
+            Self.logger.info("Connection waiting: \(error.localizedDescription)")
             lastError = "Waiting: \(error.localizedDescription)"
             
         default:
-            NSLog("[OC] Connection state: \(newState)")
+            Self.logger.debug("Connection state: \(String(describing: newState))")
             break
         }
     }
@@ -261,13 +331,13 @@ public final class OpenClawClient: ObservableObject {
                 if let content = content, !content.isEmpty {
                     // Check if it's a WebSocket text message
                     if let text = String(data: content, encoding: .utf8) {
-                        NSLog("[OC] Received WS message (\(content.count) bytes): \(String(text.prefix(200)))")
+                        Self.logger.debug("Received WS message (\(content.count) bytes): \(String(text.prefix(200)))")
                         self.handleMessage(text)
                     } else {
-                        NSLog("[OC] Received non-text data: \(content.count) bytes")
+                        Self.logger.debug("Received non-text data: \(content.count) bytes")
                     }
                 } else {
-                    NSLog("[OC] receiveMessage: empty content, isComplete=\(isComplete)")
+                    Self.logger.debug("receiveMessage: empty content, isComplete=\(isComplete)")
                 }
                 
                 // Continue receiving
@@ -279,10 +349,13 @@ public final class OpenClawClient: ObservableObject {
     // MARK: - Sending
     
     private func sendText(_ text: String) {
-        guard let conn = connection else { NSLog("[OC] sendText: no connection!"); return }
-        
-        NSLog("[OC] Sending WS text (\(text.count) chars): \(String(text.prefix(200)))")
-        let data = text.data(using: .utf8)!
+        guard let conn = connection else { Self.logger.error("sendText: no connection"); return }
+
+        Self.logger.debug("Sending WS text (\(text.count) chars): \(String(text.prefix(200)))")
+        guard let data = text.data(using: .utf8) else {
+            Self.logger.error("sendText: failed to encode text as UTF-8")
+            return
+        }
         
         // Create WebSocket metadata for text frame
         let metadata = NWProtocolWebSocket.Metadata(opcode: .text)
@@ -338,7 +411,7 @@ public final class OpenClawClient: ObservableObject {
             onEvent?(frame)
         } else {
             let payload = json["payload"].map { AnyCodable($0) }
-            let frame = EventFrame(type: "event", event: eventName, payload: payload, seq: json["seq"] as? Int)
+            let frame = EventFrame(type: .event, event: eventName, payload: payload, seq: json["seq"] as? Int)
             onEvent?(frame)
         }
     }
@@ -375,9 +448,9 @@ public final class OpenClawClient: ObservableObject {
     // MARK: - Connect Handshake
     
     private func sendConnect() async {
-        guard !connectSent else { NSLog("[OC] sendConnect: already sent, skipping"); return }
+        guard !connectSent else { Self.logger.debug("sendConnect: already sent, skipping"); return }
         connectSent = true
-        NSLog("[OC] Sending connect handshake...")
+        Self.logger.info("Sending connect handshake")
         
         let params = ConnectParams(
             token: token,
@@ -387,7 +460,7 @@ public final class OpenClawClient: ObservableObject {
         
         do {
             let response = try await request("connect", params: params)
-            NSLog("[OC] Connect handshake SUCCESS")
+            Self.logger.info("Connect handshake succeeded")
             let helloDict = response?.dict ?? [:]
             self.hello = helloDict
             self.backoffMs = 800
@@ -397,7 +470,7 @@ public final class OpenClawClient: ObservableObject {
             startPingTimer()
             onHello?(helloDict)
         } catch {
-            NSLog("[OC] Connect handshake FAILED: \(error)")
+            Self.logger.error("Connect handshake failed: \(error.localizedDescription)")
             lastError = "Connect handshake failed: \(error.localizedDescription)"
             connection?.cancel()
             scheduleReconnect()
@@ -406,21 +479,35 @@ public final class OpenClawClient: ObservableObject {
     
     // MARK: - Request/Response
     
+    /// Request timeout in seconds. Prevents memory leaks from abandoned pending handlers.
+    private static let requestTimeoutSeconds: UInt64 = 30
+
     private func sendRequest(_ frame: RequestFrame) async throws -> AnyCodable? {
         guard connection != nil else {
             throw OpenClawError.notConnected
         }
-        
+
         let data = try JSONEncoder().encode(frame)
         guard let text = String(data: data, encoding: .utf8) else {
             throw OpenClawError.encodingFailed
         }
-        
+
+        let requestId = frame.id
         return try await withCheckedThrowingContinuation { continuation in
-            pending[frame.id] = { result in
+            pending[requestId] = { result in
                 continuation.resume(with: result)
             }
             sendText(text)
+
+            // Timeout: if no response within limit, fail the request
+            Task { [weak self] in
+                try? await Task.sleep(nanoseconds: Self.requestTimeoutSeconds * 1_000_000_000)
+                guard let self = self else { return }
+                if let handler = self.pending.removeValue(forKey: requestId) {
+                    Self.logger.error("Request '\(frame.method)' timed out after \(Self.requestTimeoutSeconds)s")
+                    handler(.failure(OpenClawError.timeout))
+                }
+            }
         }
     }
     
@@ -465,7 +552,7 @@ public final class OpenClawClient: ObservableObject {
             try? await Task.sleep(nanoseconds: 5_000_000_000)
             guard !Task.isCancelled else { return }
             guard let self = self, self.state == .connected else { return }
-            NSLog("[OC] Ping timeout — no pong in 5s, reconnecting")
+            Self.logger.error("Ping timeout — no pong in 5s, reconnecting")
             self.latencyMs = nil
             self.connection?.cancel()
             self.connection = nil
@@ -487,7 +574,7 @@ public final class OpenClawClient: ObservableObject {
         let delay = backoffMs * jitter
         backoffMs = min(backoffMs * 1.7, 15_000)
         
-        NSLog("[OC] Reconnect #\(reconnectAttempts) in \(Int(delay))ms (base=\(Int(backoffMs / 1.7)))")
+        Self.logger.info("Reconnect #\(self.reconnectAttempts) in \(Int(delay))ms (base=\(Int(self.backoffMs / 1.7)))")
         
         Task {
             try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000))
@@ -566,12 +653,12 @@ public final class OpenClawClient: ObservableObject {
             guard let key = s["sessionKey"] as? String ?? s["key"] as? String else {
                 return nil
             }
-            
+
             var lastActive: Date? = nil
             if let ts = s["lastActiveAt"] as? Double {
                 lastActive = Date(timeIntervalSince1970: ts / 1000)
             }
-            
+
             return GatewaySession(
                 id: key,
                 agentId: s["agentId"] as? String,
@@ -579,6 +666,92 @@ public final class OpenClawClient: ObservableObject {
                 label: s["label"] as? String,
                 lastActiveAt: lastActive,
                 channel: s["channel"] as? String
+            )
+        }
+    }
+
+    // MARK: - Config & Gateway Parsing
+
+    private func parseConfigGet(_ response: AnyCodable?) -> GatewayConfig {
+        guard let dict = response?.dict else {
+            return GatewayConfig(raw: "", hash: "", parsed: [:])
+        }
+        return GatewayConfig(
+            raw: dict["raw"] as? String ?? "",
+            hash: dict["hash"] as? String ?? dict["baseHash"] as? String ?? "",
+            parsed: dict["parsed"] as? [String: Any] ?? dict
+        )
+    }
+
+    private func parseGatewayHealth(_ response: AnyCodable?) -> GatewayHealth {
+        guard let dict = response?.dict else {
+            return GatewayHealth(status: "unknown", uptime: 0, version: "?")
+        }
+        return GatewayHealth(
+            status: dict["status"] as? String ?? "unknown",
+            uptime: dict["uptime"] as? Double ?? dict["uptimeMs"] as? Double ?? 0,
+            version: dict["version"] as? String ?? "?",
+            model: dict["model"] as? String,
+            sessions: dict["sessions"] as? Int ?? dict["activeSessions"] as? Int ?? 0,
+            cronJobs: dict["cronJobs"] as? Int ?? dict["scheduledJobs"] as? Int ?? 0
+        )
+    }
+
+    private func parseGatewayStatus(_ response: AnyCodable?) -> GatewayStatus {
+        guard let dict = response?.dict else {
+            return GatewayStatus(version: "?")
+        }
+        var channels: [String: ChannelStatus] = [:]
+        if let rawChannels = dict["channels"] as? [String: [String: Any]] {
+            for (key, ch) in rawChannels {
+                channels[key] = ChannelStatus(
+                    connected: ch["connected"] as? Bool ?? false,
+                    type: ch["type"] as? String ?? "unknown"
+                )
+            }
+        }
+        return GatewayStatus(
+            version: dict["version"] as? String ?? "?",
+            model: dict["model"] as? String,
+            channels: channels
+        )
+    }
+
+    private func parseModelsList(_ response: AnyCodable?) -> [GatewayModel] {
+        // Try {models: [...]} first, then top-level array
+        if let dict = response?.dict,
+           let rawModels = dict["models"] as? [[String: Any]] {
+            return rawModels.compactMap { m in
+                guard let id = m["id"] as? String else { return nil }
+                return GatewayModel(id: id, name: m["name"] as? String, provider: m["provider"] as? String)
+            }
+        }
+        if let arr = response?.array as? [[String: Any]] {
+            return arr.compactMap { m in
+                guard let id = m["id"] as? String else { return nil }
+                return GatewayModel(id: id, name: m["name"] as? String, provider: m["provider"] as? String)
+            }
+        }
+        return []
+    }
+
+    private func parseCronRuns(_ response: AnyCodable?) -> [CronRun] {
+        guard let dict = response?.dict,
+              let rawRuns = dict["runs"] as? [[String: Any]] else {
+            return []
+        }
+        return rawRuns.compactMap { r in
+            guard let runId = r["runId"] as? String ?? r["id"] as? String else { return nil }
+            var startedAt: Date? = nil
+            if let ts = r["startedAt"] as? Double { startedAt = Date(timeIntervalSince1970: ts / 1000) }
+            var finishedAt: Date? = nil
+            if let ts = r["finishedAt"] as? Double { finishedAt = Date(timeIntervalSince1970: ts / 1000) }
+            return CronRun(
+                id: runId,
+                startedAt: startedAt,
+                finishedAt: finishedAt,
+                status: r["status"] as? String ?? "ok",
+                error: r["error"] as? String
             )
         }
     }

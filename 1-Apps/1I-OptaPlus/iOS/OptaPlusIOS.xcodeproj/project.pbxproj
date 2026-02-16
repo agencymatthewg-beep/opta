@@ -28,6 +28,12 @@
 		DB00000AAAAA000C00000001 /* BotPagerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB000009AAAA000C00000001 /* BotPagerView.swift */; };
 		DB00000CAAAA000D00000001 /* BotPageHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB00000BAAAA000D00000001 /* BotPageHeader.swift */; };
 		DB00000EAAAA000E00000001 /* BotAutomationsPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB00000DAAAA000E00000001 /* BotAutomationsPage.swift */; };
+		DB000010AAAA000F00000001 /* CreateJobSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB000011AAAA000F00000001 /* CreateJobSheet.swift */; };
+		DB000012AAAA001000000001 /* JobHistorySheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB000013AAAA001000000001 /* JobHistorySheet.swift */; };
+		DB000014AAAA001100000001 /* DebugDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB000015AAAA001100000001 /* DebugDiagnostics.swift */; };
+		DB000016AAAA001200000001 /* BotWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB000017AAAA001200000001 /* BotWebView.swift */; };
+		DB000018AAAA001300000001 /* BotManagementSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB000019AAAA001300000001 /* BotManagementSheet.swift */; };
+		DB00001AAAAA001400000001 /* ChannelSwitcherSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB00001BAAAA001400000001 /* ChannelSwitcherSheet.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -52,6 +58,12 @@
 		DB000009AAAA000C00000001 /* BotPagerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BotPagerView.swift; sourceTree = "<group>"; };
 		DB00000BAAAA000D00000001 /* BotPageHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BotPageHeader.swift; sourceTree = "<group>"; };
 		DB00000DAAAA000E00000001 /* BotAutomationsPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BotAutomationsPage.swift; sourceTree = "<group>"; };
+		DB000011AAAA000F00000001 /* CreateJobSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateJobSheet.swift; sourceTree = "<group>"; };
+		DB000013AAAA001000000001 /* JobHistorySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobHistorySheet.swift; sourceTree = "<group>"; };
+		DB000015AAAA001100000001 /* DebugDiagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugDiagnostics.swift; sourceTree = "<group>"; };
+		DB000017AAAA001200000001 /* BotWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BotWebView.swift; sourceTree = "<group>"; };
+		DB000019AAAA001300000001 /* BotManagementSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BotManagementSheet.swift; sourceTree = "<group>"; };
+		DB00001BAAAA001400000001 /* ChannelSwitcherSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChannelSwitcherSheet.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -114,6 +126,12 @@
 				DB000009AAAA000C00000001 /* BotPagerView.swift */,
 				DB00000BAAAA000D00000001 /* BotPageHeader.swift */,
 				DB00000DAAAA000E00000001 /* BotAutomationsPage.swift */,
+				DB000011AAAA000F00000001 /* CreateJobSheet.swift */,
+				DB000013AAAA001000000001 /* JobHistorySheet.swift */,
+				DB000015AAAA001100000001 /* DebugDiagnostics.swift */,
+				DB000017AAAA001200000001 /* BotWebView.swift */,
+				DB000019AAAA001300000001 /* BotManagementSheet.swift */,
+				DB00001BAAAA001400000001 /* ChannelSwitcherSheet.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -212,6 +230,12 @@
 				DB00000AAAAA000C00000001 /* BotPagerView.swift in Sources */,
 				DB00000CAAAA000D00000001 /* BotPageHeader.swift in Sources */,
 				DB00000EAAAA000E00000001 /* BotAutomationsPage.swift in Sources */,
+				DB000010AAAA000F00000001 /* CreateJobSheet.swift in Sources */,
+				DB000012AAAA001000000001 /* JobHistorySheet.swift in Sources */,
+				DB000014AAAA001100000001 /* DebugDiagnostics.swift in Sources */,
+				DB000016AAAA001200000001 /* BotWebView.swift in Sources */,
+				DB000018AAAA001300000001 /* BotManagementSheet.swift in Sources */,
+				DB00001AAAAA001400000001 /* ChannelSwitcherSheet.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

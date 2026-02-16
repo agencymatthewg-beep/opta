@@ -25,6 +25,8 @@ struct CronJobItem: Identifiable {
     let botName: String
     let botEmoji: String
     let botId: String
+    let rawSchedule: [String: Any]?
+    let rawPayload: [String: Any]?
 
     var displayName: String {
         name.isEmpty ? id : name
@@ -91,14 +93,14 @@ struct AutomationsView: View {
                 Section {
                     HStack {
                         Circle()
-                            .fill(status.running ? Color.green : Color.red)
+                            .fill(status.running ? Color.optaGreen : Color.optaRed)
                             .frame(width: 8, height: 8)
                         Text("Scheduler: \(status.running ? "Running" : "Stopped")")
-                            .font(.system(size: 14, weight: .medium))
+                            .font(.sora(14, weight: .medium))
                             .foregroundColor(.optaTextPrimary)
                         Spacer()
                         Text("\(status.jobCount) jobs (\(status.activeCount) active)")
-                            .font(.system(size: 12))
+                            .font(.sora(12, weight: .regular))
                             .foregroundColor(.optaTextMuted)
                     }
                     .listRowBackground(Color.optaElevated)
@@ -174,7 +176,7 @@ struct AutomationsView: View {
             if let error = errorMessage {
                 Section {
                     Text(error)
-                        .font(.caption)
+                        .font(.soraCaption)
                         .foregroundColor(.optaRed)
                 }
             }
@@ -185,13 +187,13 @@ struct AutomationsView: View {
     private var emptyState: some View {
         VStack(spacing: 16) {
             Image(systemName: "bolt.circle")
-                .font(.system(size: 48))
+                .font(.sora(48, weight: .regular))
                 .foregroundColor(.optaTextMuted)
             Text("No automations")
-                .font(.headline)
+                .font(.soraHeadline)
                 .foregroundColor(.optaTextSecondary)
             Text("Connect to a bot to manage cron jobs")
-                .font(.subheadline)
+                .font(.soraSubhead)
                 .foregroundColor(.optaTextMuted)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -236,13 +238,16 @@ struct AutomationsView: View {
                     // Parse payload
                     let payloadKind: String
                     let model: String?
-                    if let payload = job["payload"] as? [String: Any] {
+                    let rawPayload = job["payload"] as? [String: Any]
+                    if let payload = rawPayload {
                         payloadKind = payload["kind"] as? String ?? "unknown"
                         model = payload["model"] as? String
                     } else {
                         payloadKind = "unknown"
                         model = nil
                     }
+
+                    let rawSchedule = job["schedule"] as? [String: Any]
 
                     // Parse dates
                     let lastRunAt = parseDate(job["lastRunAt"])
@@ -261,7 +266,9 @@ struct AutomationsView: View {
                         nextRunAt: nextRunAt,
                         botName: bot.name,
                         botEmoji: bot.emoji,
-                        botId: bot.id
+                        botId: bot.id,
+                        rawSchedule: rawSchedule,
+                        rawPayload: rawPayload
                     ))
                 }
 
@@ -320,7 +327,7 @@ struct AutomationsView: View {
         guard let vm = viewModel(for: job) else { return }
         Task {
             do {
-                _ = try await vm.call("cron.delete", params: ["jobId": job.id])
+                _ = try await vm.call("cron.remove", params: ["jobId": job.id])
                 withAnimation(.optaSpring) {
                     jobs.removeAll { $0.id == job.id }
                 }
@@ -410,9 +417,9 @@ struct JobRow: View {
             VStack(alignment: .leading, spacing: 6) {
                 HStack {
                     Text(job.botEmoji)
-                        .font(.system(size: 14))
+                        .font(.sora(14, weight: .regular))
                     Text(job.displayName)
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(.sora(15, weight: .semibold))
                         .foregroundColor(.optaTextPrimary)
                     Spacer()
                     Toggle("", isOn: Binding(
@@ -421,27 +428,29 @@ struct JobRow: View {
                     ))
                     .labelsHidden()
                     .tint(.optaPrimary)
+                    .accessibilityLabel("\(job.displayName) \(job.enabled ? "enabled" : "disabled")")
+                    .accessibilityHint("Double tap to \(job.enabled ? "disable" : "enable") this automation")
                 }
 
                 HStack(spacing: 8) {
                     Image(systemName: "clock")
-                        .font(.system(size: 10))
+                        .font(.sora(10, weight: .regular))
                         .foregroundColor(.optaTextMuted)
                     Text(job.scheduleText)
-                        .font(.system(size: 12))
+                        .font(.sora(12, weight: .regular))
                         .foregroundColor(.optaTextSecondary)
 
                     if let model = job.model {
                         Text("· \(model)")
-                            .font(.system(size: 11))
+                            .font(.sora(11, weight: .regular))
                             .foregroundColor(.optaTextMuted)
                     }
                 }
 
                 HStack {
                     if let lastRun = job.lastRunAt {
-                        Text("Last: \(relativeTime(lastRun))")
-                            .font(.system(size: 11))
+                        Text("Last: \(OptaFormatting.relativeTime(lastRun))")
+                            .font(.sora(11, weight: .regular))
                             .foregroundColor(.optaTextMuted)
                     }
 
@@ -456,10 +465,10 @@ struct JobRow: View {
                                         .tint(.optaPrimary)
                                 } else {
                                     Image(systemName: "play.fill")
-                                        .font(.system(size: 10))
+                                        .font(.sora(10, weight: .regular))
                                 }
                                 Text("Run Now")
-                                    .font(.system(size: 11, weight: .medium))
+                                    .font(.sora(11, weight: .medium))
                             }
                             .foregroundColor(.optaPrimary)
                             .padding(.horizontal, 10)
@@ -468,19 +477,12 @@ struct JobRow: View {
                         }
                         .buttonStyle(.plain)
                         .disabled(isRunning)
+                        .accessibilityLabel(isRunning ? "Running \(job.displayName)" : "Run \(job.displayName) now")
                     }
                 }
             }
             .padding(.vertical, 4)
         }
-    }
-
-    private func relativeTime(_ date: Date) -> String {
-        let seconds = Int(Date().timeIntervalSince(date))
-        if seconds < 60 { return "just now" }
-        if seconds < 3600 { return "\(seconds / 60)m ago" }
-        if seconds < 86400 { return "\(seconds / 3600)h ago" }
-        return "\(seconds / 86400)d ago"
     }
 }
 
@@ -490,6 +492,9 @@ struct JobDetailSheet: View {
     let job: CronJobItem
     let onToggle: () -> Void
     let onRun: () -> Void
+    var onEdit: (() -> Void)? = nil
+    var onDuplicate: (() -> Void)? = nil
+    var onHistory: (() -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -506,10 +511,10 @@ struct JobDetailSheet: View {
                     LabeledRow(label: "Type", value: job.scheduleKind.capitalized)
                     LabeledRow(label: "Schedule", value: job.scheduleText)
                     if let next = job.nextRunAt {
-                        LabeledRow(label: "Next Run", value: formatDate(next))
+                        LabeledRow(label: "Next Run", value: OptaFormatting.formatDate(next))
                     }
                     if let last = job.lastRunAt {
-                        LabeledRow(label: "Last Run", value: formatDate(last))
+                        LabeledRow(label: "Last Run", value: OptaFormatting.formatDate(last))
                     }
                 }
 
@@ -542,6 +547,36 @@ struct JobDetailSheet: View {
                                 .foregroundColor(.optaPrimary)
                         }
                     }
+
+                    if let onEdit = onEdit {
+                        Button(action: {
+                            dismiss()
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { onEdit() }
+                        }) {
+                            Label("Edit Job", systemImage: "pencil")
+                                .foregroundColor(.optaTextPrimary)
+                        }
+                    }
+
+                    if let onDuplicate = onDuplicate {
+                        Button(action: {
+                            dismiss()
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { onDuplicate() }
+                        }) {
+                            Label("Duplicate", systemImage: "doc.on.doc")
+                                .foregroundColor(.optaTextPrimary)
+                        }
+                    }
+
+                    if let onHistory = onHistory {
+                        Button(action: {
+                            dismiss()
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { onHistory() }
+                        }) {
+                            Label("Run History", systemImage: "clock.arrow.circlepath")
+                                .foregroundColor(.optaTextPrimary)
+                        }
+                    }
                 }
             }
             .scrollContentBackground(.hidden)
@@ -555,13 +590,6 @@ struct JobDetailSheet: View {
             }
         }
     }
-
-    private func formatDate(_ date: Date) -> String {
-        let f = DateFormatter()
-        f.dateStyle = .medium
-        f.timeStyle = .short
-        return f.string(from: date)
-    }
 }
 
 // MARK: - Labeled Row Helper
@@ -574,7 +602,7 @@ struct LabeledRow: View {
     var body: some View {
         HStack {
             Text(label)
-                .font(.system(size: 14))
+                .font(.sora(14, weight: .regular))
                 .foregroundColor(.optaTextSecondary)
             Spacer()
             Text(value)

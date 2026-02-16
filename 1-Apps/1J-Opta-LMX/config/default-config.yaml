@@ -1,0 +1,28 @@
+# Opta-LMX Default Configuration
+# Copy to ~/.opta-lmx/config.yaml and customize
+
+server:
+  host: "127.0.0.1"
+  port: 1234
+  workers: 1
+  timeout_sec: 300
+
+models:
+  default_model: null
+  models_directory: "/Users/Shared/Opta-LMX/models"
+  auto_load: []
+  use_batching: true
+
+memory:
+  max_memory_percent: 90
+  auto_evict_lru: true
+
+logging:
+  level: "INFO"
+  format: "structured"
+  file: null
+  max_file_bytes: 52428800   # 50MB
+  backup_count: 5
+
+security:
+  admin_key: null  # Set to a string to require X-Admin-Key header on /admin/* endpoints
