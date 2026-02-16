@@ -236,6 +236,16 @@ struct OptaPlusMacOSApp: App {
     }
     
     init() {
+        // One-time migration from BotConfig to BotNode + PairingToken
+        if !UserDefaults.standard.bool(forKey: "optaplus.v2.migrated") {
+            if let data = UserDefaults.standard.data(forKey: "optaplus.bots"),
+               let bots = try? JSONDecoder().decode([BotConfig].self, from: data) {
+                let store = BotPairingStore()
+                _ = store.migrateFromBotConfigs(bots, gatewayFingerprint: "legacy")
+            }
+            UserDefaults.standard.set(true, forKey: "optaplus.v2.migrated")
+        }
+
         // Request notification permission on first launch
         NotificationManager.shared.requestPermission()
         

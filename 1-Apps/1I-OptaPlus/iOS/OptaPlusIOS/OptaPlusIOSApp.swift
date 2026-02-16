@@ -134,6 +134,13 @@ struct OptaPlusIOSApp: App {
                 .environment(\.backgroundMode, themeManager.backgroundMode)
                 .preferredColorScheme(.dark)
                 .onAppear {
+                    // One-time migration from BotConfig to BotNode + PairingToken
+                    if !UserDefaults.standard.bool(forKey: "optaplus.v2.migrated") {
+                        let store = BotPairingStore()
+                        _ = store.migrateFromBotConfigs(appState.bots, gatewayFingerprint: "legacy")
+                        UserDefaults.standard.set(true, forKey: "optaplus.v2.migrated")
+                    }
+
                     if let bot = appState.selectedBot {
                         appState.selectBot(bot)
                     }

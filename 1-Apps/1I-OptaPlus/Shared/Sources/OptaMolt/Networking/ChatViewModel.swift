@@ -109,6 +109,21 @@ public struct BotConfig: Identifiable, Codable, Sendable, Hashable {
         remoteURL = try container.decodeIfPresent(String.self, forKey: .remoteURL)
         connectionMode = try container.decodeIfPresent(ConnectionMode.self, forKey: .connectionMode) ?? .auto
     }
+
+    /// Create a BotConfig from a BotNode and its pairing token.
+    /// Used as a bridge during migration from the old BotConfig model
+    /// to the new BotNode + PairingToken pairing system.
+    public init(botNode: BotNode, token: String) {
+        self.init(
+            id: botNode.botId,
+            name: botNode.name,
+            host: botNode.gatewayHost ?? "127.0.0.1",
+            port: botNode.gatewayPort ?? 3000,
+            token: token,
+            emoji: botNode.emoji,
+            remoteURL: botNode.remoteURL
+        )
+    }
 }
 
 // MARK: - Chat View Model
