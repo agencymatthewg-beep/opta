@@ -1,6 +1,6 @@
 import { nanoid } from 'nanoid';
 import type { OptaConfig } from './config.js';
-import type { SubAgentTask, SubAgentResult } from './subagent.js';
+import type { SubAgentTask, SubAgentResult, SubAgentContext } from './subagent.js';
 import type { ToolRegistry } from '../mcp/registry.js';
 
 interface DelegationPlan {
@@ -16,7 +16,8 @@ type SpawnFn = (
   task: SubAgentTask,
   config: OptaConfig,
   client: import('openai').default,
-  registry: ToolRegistry
+  registry: ToolRegistry,
+  parentContext?: SubAgentContext
 ) => Promise<SubAgentResult>;
 
 const MAX_SUBTASKS = 5;

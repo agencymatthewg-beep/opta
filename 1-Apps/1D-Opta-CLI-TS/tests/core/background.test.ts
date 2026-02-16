@@ -279,3 +279,25 @@ describe('ProcessManager.timeout', () => {
     await pm.killAll();
   });
 });
+
+describe('ProcessManager.error handling', () => {
+  it('transitions to failed state on child error event', async () => {
+    const pm = new ProcessManager({ maxConcurrent: 5, defaultTimeout: 60000, maxBufferSize: 1024 });
+    const handle = await pm.start('sleep 30');
+    // Access internal state to simulate an error event
+    const procs = (pm as unknown as { processes: Map<string, { child: { emit: (e: string, err: Error) => void }; state: string }> }).processes;
+    const proc = procs.get(handle.id)!;
+    proc.child.emit('error', new Error('test spawn error'));
+    expect(proc.state).toBe('failed');
+    await pm.killAll();
+  });
+
+  it('cleanup awaits killAll and clears processes', async () => {
+    const pm = new ProcessManager({ maxConcurrent: 5, defaultTimeout: 60000, maxBufferSize: 1024 });
+    await pm.start('sleep 30');
+    await pm.start('sleep 30');
+    expect(pm.activeCount).toBe(2);
+    await pm.cleanup();
+    expect(pm.activeCount).toBe(0);
+  });
+});

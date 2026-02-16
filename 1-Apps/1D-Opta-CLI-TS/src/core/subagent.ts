@@ -211,6 +211,11 @@ export async function spawnSubAgent(
   // Import resolvePermission once outside the loop
   const { resolvePermission } = await import('./tools.js');
 
+  // Set registry.parentContext so nested spawn_agent calls see correct depth.
+  // Restored after the loop. Safe because sub-agents run sequentially.
+  const previousContext = registry.parentContext;
+  registry.parentContext = parentContext;
+
   const runLoop = async (): Promise<SubAgentResult> => {
     while (true) {
       // Check budget before each LLM call
@@ -344,7 +349,7 @@ export async function spawnSubAgent(
     }
   };
 
-  // Wrap with timeout
+  // Wrap with timeout, always restore registry context
   try {
     const result = await Promise.race([
       runLoop(),
@@ -377,6 +382,8 @@ export async function spawnSubAgent(
       filesModified: [...new Set(filesModified)],
       durationMs: Date.now() - startTime,
     };
+  } finally {
+    registry.parentContext = previousContext;
   }
 }
 

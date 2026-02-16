@@ -141,7 +141,7 @@ export class ProcessManager {
     });
 
     if (!child.pid) {
-      throw new Error(`Failed to spawn process for command: ${command}`);
+      throw new Error(`Background process: Failed to spawn "${command}". Verify the command exists and is executable.`);
     }
 
     const proc: ManagedProcess = {

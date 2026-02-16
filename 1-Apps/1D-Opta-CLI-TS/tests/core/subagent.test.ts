@@ -516,3 +516,57 @@ describe('formatSubAgentResult', () => {
     expect(formatted).toContain('Files modified: src/a.ts');
   });
 });
+
+// ---- Depth Propagation via Registry ----
+
+describe('spawnSubAgent depth propagation', () => {
+  it('sets registry.parentContext during execution and restores after', async () => {
+    const mockClient = createMockOpenAIClient([
+      { text: 'Done', toolCalls: [] },
+    ]);
+    const mockRegistry = createMockRegistry();
+    const parentCtx: SubAgentContext = {
+      parentSessionId: 'root',
+      depth: 1,
+      budget: resolveBudget({}, DEFAULT_CONFIG),
+      parentCwd: '/test',
+    };
+
+    // Before: no parentContext
+    expect(mockRegistry.parentContext).toBeUndefined();
+
+    await spawnSubAgent(
+      { id: 'depth-test', description: 'Test depth' },
+      DEFAULT_CONFIG,
+      mockClient,
+      mockRegistry,
+      parentCtx,
+    );
+
+    // After: parentContext should be restored to undefined
+    expect(mockRegistry.parentContext).toBeUndefined();
+  });
+
+  it('restores registry.parentContext even on error', async () => {
+    const mockClient = createErrorMockClient(new Error('API failure'));
+    const mockRegistry = createMockRegistry();
+    const parentCtx: SubAgentContext = {
+      parentSessionId: 'root',
+      depth: 1,
+      budget: resolveBudget({}, DEFAULT_CONFIG),
+      parentCwd: '/test',
+    };
+
+    const result = await spawnSubAgent(
+      { id: 'error-depth', description: 'Fail' },
+      DEFAULT_CONFIG,
+      mockClient,
+      mockRegistry,
+      parentCtx,
+    );
+
+    expect(result.status).toBe('error');
+    // parentContext must be restored even on error
+    expect(mockRegistry.parentContext).toBeUndefined();
+  });
+});

@@ -12,11 +12,12 @@ process.on('SIGINT', () => {
   if (isShuttingDown) process.exit(EXIT.SIGINT);
   isShuttingDown = true;
   console.log('\n' + chalk.dim('Interrupted.'));
-  // Force-kill background processes (sync-safe, fire-and-forget)
+  // Force-kill background processes, then exit
   import('./core/tools.js').then(({ forceKillAllProcesses }) => {
     forceKillAllProcesses();
-  }).catch(() => {});
-  process.exit(EXIT.SIGINT);
+  }).catch(() => {}).finally(() => {
+    process.exit(EXIT.SIGINT);
+  });
 });
 
 const program = new Command();

@@ -91,9 +91,12 @@ export async function buildToolRegistry(
 
   const totalTools = baseSchemas.length + mcpSchemas.length + subAgentSchemas.length;
   const contextLimit = config.model?.contextLimit ?? 32768;
+  // ~256 tokens of context per tool is a reasonable budget; exceeding this
+  // means tool schemas consume too much of the model's working memory.
   const toolThreshold = Math.floor(contextLimit / 256);
   if (totalTools > toolThreshold) {
-    const estimatedTokens = Math.ceil(totalTools * 59);
+    const schemaJson = JSON.stringify(baseSchemas) + JSON.stringify(subAgentSchemas) + JSON.stringify(mcpSchemas);
+    const estimatedTokens = Math.ceil(schemaJson.length / 4);
     console.warn(
       `  ${totalTools} tools (~${estimatedTokens} tokens) may degrade inference on ${(contextLimit / 1024).toFixed(0)}K context. Consider: lsp.enabled=false or reducing MCP servers.`
     );
@@ -261,7 +264,7 @@ async function execSubAgentTool(
         config,
         client,
         registry,
-        (task, cfg, cli, reg) => spawnSubAgent(task, cfg, cli, reg),
+        (task, cfg, cli, reg) => spawnSubAgent(task, cfg, cli, reg, childContext),
       );
     } catch (err) {
       return `Error: ${err instanceof Error ? err.message : String(err)}`;

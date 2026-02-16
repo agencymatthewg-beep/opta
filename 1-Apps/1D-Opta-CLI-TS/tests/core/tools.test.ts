@@ -470,6 +470,19 @@ describe('bg_kill', () => {
   });
 });
 
+describe('forceKillAllProcesses', () => {
+  it('kills running processes and nullifies manager', async () => {
+    const { forceKillAllProcesses } = await import('../../src/core/tools.js');
+    // Start a process to ensure the manager exists
+    await executeTool('bg_start', JSON.stringify({ command: 'sleep 30' }));
+    // Force kill should not throw
+    forceKillAllProcesses();
+    // After force kill, status should show no processes (fresh manager)
+    const result = await executeTool('bg_status', JSON.stringify({}));
+    expect(result).toContain('No background processes');
+  });
+});
+
 describe('executeTool', () => {
   it('returns error for invalid JSON', async () => {
     const result = await executeTool('read_file', 'not json');
