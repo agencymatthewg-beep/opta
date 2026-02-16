@@ -15,6 +15,7 @@ import OptaMolt
 struct BotMapView: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var pairingCoordinator: PairingCoordinator
+    @ObservedObject var activityFeed = ActivityFeedManager.shared
     @StateObject private var scanner = BotScanner()
     @StateObject private var clipboardMonitor = ClipboardMonitor()
     @Environment(\.scenePhase) private var scenePhase
@@ -24,6 +25,7 @@ struct BotMapView: View {
     @State private var appeared = false
     @State private var starPositions: [StarPosition] = []
     @State private var showQRScanner = false
+    @State private var showActivityFeed = false
 
     private let store = BotPairingStore()
     private let device = DeviceIdentity.current
@@ -66,6 +68,63 @@ struct BotMapView: View {
                     Spacer()
                 }
                 .animation(.optaSpring, value: clipboardMonitor.detectedPairing != nil)
+
+                // Activity feed overlay (collapsible, bottom)
+                VStack {
+                    Spacer()
+
+                    if !activityFeed.events.isEmpty {
+                        VStack(spacing: 0) {
+                            // Toggle bar
+                            Button {
+                                withAnimation(.optaSpring) {
+                                    showActivityFeed.toggle()
+                                }
+                            } label: {
+                                HStack {
+                                    Image(systemName: "bolt.fill")
+                                        .font(.sora(11, weight: .regular))
+                                        .foregroundColor(.optaPrimary)
+                                    Text("Activity")
+                                        .font(.sora(12, weight: .semibold))
+                                        .foregroundColor(.optaTextSecondary)
+                                    Spacer()
+                                    Text("\(activityFeed.events.count)")
+                                        .font(.sora(11, weight: .medium))
+                                        .foregroundColor(.optaTextMuted)
+                                    Image(systemName: showActivityFeed ? "chevron.down" : "chevron.up")
+                                        .font(.sora(10, weight: .regular))
+                                        .foregroundColor(.optaTextMuted)
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 10)
+                            }
+                            .buttonStyle(.plain)
+
+                            // Expandable event list
+                            if showActivityFeed {
+                                ScrollView {
+                                    VStack(spacing: 0) {
+                                        ForEach(activityFeed.events.prefix(10)) { event in
+                                            IOSActivityRow(event: event)
+                                        }
+                                    }
+                                }
+                                .frame(maxHeight: 180)
+                                .transition(.move(edge: .bottom).combined(with: .opacity))
+                            }
+                        }
+                        .background(
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .fill(.ultraThinMaterial)
+                                .environment(\.colorScheme, .dark)
+                        )
+                        .padding(.horizontal, 12)
+                        .padding(.bottom, 8)
+                    }
+                }
+                .animation(.optaSpring, value: showActivityFeed)
+                .animation(.optaSpring, value: activityFeed.events.count)
             }
             .navigationTitle("Bot Map")
             .navigationBarTitleDisplayMode(.inline)
