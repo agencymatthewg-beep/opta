@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import VisionKit
 import OptaMolt
 
 // MARK: - Bot Map View
@@ -18,6 +19,7 @@ struct BotMapView: View {
     @State private var selectedBot: BotNode?
     @State private var appeared = false
     @State private var starPositions: [StarPosition] = []
+    @State private var showQRScanner = false
 
     private let store = BotPairingStore()
     private let device = DeviceIdentity.current
@@ -43,15 +45,29 @@ struct BotMapView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        scanner.startActiveScan()
-                    } label: {
-                        Image(systemName: "antenna.radiowaves.left.and.right")
-                            .foregroundColor(scanner.isScanning ? .optaPrimaryGlow : .optaTextSecondary)
-                            .symbolEffect(.variableColor.iterative, isActive: scanner.isScanning)
+                    HStack(spacing: 16) {
+                        // QR code scanner button
+                        if DataScannerViewController.isSupported {
+                            Button {
+                                showQRScanner = true
+                            } label: {
+                                Image(systemName: "qrcode.viewfinder")
+                                    .foregroundColor(.optaTextSecondary)
+                            }
+                            .accessibilityLabel("Scan QR code")
+                        }
+
+                        // Bonjour scan button
+                        Button {
+                            scanner.startActiveScan()
+                        } label: {
+                            Image(systemName: "antenna.radiowaves.left.and.right")
+                                .foregroundColor(scanner.isScanning ? .optaPrimaryGlow : .optaTextSecondary)
+                                .symbolEffect(.variableColor.iterative, isActive: scanner.isScanning)
+                        }
+                        .disabled(scanner.isScanning)
+                        .accessibilityLabel(scanner.isScanning ? "Scanning for bots" : "Scan for bots")
                     }
-                    .disabled(scanner.isScanning)
-                    .accessibilityLabel(scanner.isScanning ? "Scanning for bots" : "Scan for bots")
                 }
             }
             .onAppear {
@@ -84,6 +100,18 @@ struct BotMapView: View {
                 .presentationDetents([.medium])
                 .presentationDragIndicator(.hidden)
                 .presentationBackground(Color.optaElevated)
+            }
+            .sheet(isPresented: $showQRScanner) {
+                QRScannerSheet(
+                    onPairingDetected: { info in
+                        pairingCoordinator.pendingPairingInfo = info
+                        loadBots()
+                    },
+                    onDismiss: {
+                        showQRScanner = false
+                    }
+                )
+                .interactiveDismissDisabled()
             }
         }
     }
@@ -129,6 +157,25 @@ struct BotMapView: View {
                 )
             }
             .padding(.top, 8)
+
+            if DataScannerViewController.isSupported {
+                Button {
+                    showQRScanner = true
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "qrcode.viewfinder")
+                        Text("Scan QR Code")
+                            .font(.soraHeadline)
+                    }
+                    .foregroundColor(.optaTextPrimary)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 12)
+                    .background(
+                        Capsule()
+                            .stroke(Color.optaPrimary.opacity(0.5), lineWidth: 1)
+                    )
+                }
+            }
         }
         .ignition(delay: 0.2)
     }
@@ -157,7 +204,7 @@ struct BotMapView: View {
                 }
 
                 // Center device node
-                DeviceNode(
+                ConstellationDeviceNode(
                     emoji: deviceEmoji,
                     name: device.deviceName,
                     appeared: appeared
@@ -262,7 +309,7 @@ struct StarFieldView: View {
 
 // MARK: - Device Node (Center)
 
-struct DeviceNode: View {
+struct ConstellationDeviceNode: View {
     let emoji: String
     let name: String
     let appeared: Bool
