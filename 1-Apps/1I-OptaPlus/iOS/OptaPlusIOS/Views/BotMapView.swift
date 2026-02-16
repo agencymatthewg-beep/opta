@@ -13,6 +13,7 @@ import OptaMolt
 
 struct BotMapView: View {
     @EnvironmentObject var pairingCoordinator: PairingCoordinator
+    @StateObject private var scanner = BotScanner()
     @State private var botNodes: [BotNode] = []
     @State private var selectedBot: BotNode?
     @State private var appeared = false
@@ -34,14 +35,36 @@ struct BotMapView: View {
                 } else {
                     constellationView
                 }
+
+                // Radar sweep overlay (renders above constellation, below toolbar)
+                RadarScanView(isScanning: $scanner.isScanning)
             }
             .navigationTitle("Bot Map")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        scanner.startActiveScan()
+                    } label: {
+                        Image(systemName: "antenna.radiowaves.left.and.right")
+                            .foregroundColor(scanner.isScanning ? .optaPrimaryGlow : .optaTextSecondary)
+                            .symbolEffect(.variableColor.iterative, isActive: scanner.isScanning)
+                    }
+                    .disabled(scanner.isScanning)
+                    .accessibilityLabel(scanner.isScanning ? "Scanning for bots" : "Scan for bots")
+                }
+            }
             .onAppear {
                 loadBots()
                 generateStars()
                 withAnimation(.optaGentle.delay(0.1)) {
                     appeared = true
+                }
+            }
+            .onChange(of: scanner.isScanning) { _, scanning in
+                if !scanning {
+                    // Scan finished — merge discovered gateways into bot nodes
+                    reloadAfterScan()
                 }
             }
         }
@@ -73,7 +96,7 @@ struct BotMapView: View {
                 .padding(.horizontal, 40)
 
             Button {
-                // Scan action — will be connected to BotScanner in Task 9
+                scanner.startActiveScan()
             } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "antenna.radiowaves.left.and.right")
@@ -166,6 +189,15 @@ struct BotMapView: View {
 
     private func loadBots() {
         botNodes = store.loadBotNodes()
+    }
+
+    /// Merges newly discovered gateways into the bot node list after a scan completes.
+    private func reloadAfterScan() {
+        let merged = BotScanner.merge(paired: botNodes, discovered: scanner.discoveredGateways)
+        let deduplicated = BotScanner.deduplicate(merged)
+        withAnimation(.optaSpring) {
+            botNodes = deduplicated
+        }
     }
 
     private func generateStars() {
