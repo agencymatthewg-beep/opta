@@ -2,6 +2,7 @@ import chalk from 'chalk';
 import type { OptaConfig } from './config.js';
 import { resolvePermission } from './tools.js';
 import { debug } from './debug.js';
+import { maskOldObservations } from './context.js';
 import { createSpinner } from '../ui/spinner.js';
 import { renderMarkdown } from '../ui/markdown.js';
 
@@ -267,6 +268,11 @@ export async function agentLoop(
   const registry = await buildToolRegistry(config);
 
   while (true) {
+    // 0. Observation masking (free context savings)
+    const maskedMessages = maskOldObservations(messages, 4);
+    messages.length = 0;
+    messages.push(...maskedMessages);
+
     // 1. Context compaction
     const tokenEstimate = estimateTokens(messages);
     const threshold = config.model.contextLimit * config.safety.compactAt;

@@ -14,10 +14,10 @@ export function maskOldObservations(
     if (m.role === 'tool') toolResultIndices.push(i);
   });
 
-  const toMask = toolResultIndices.slice(0, -windowSize || undefined);
+  const toMask = new Set(toolResultIndices.slice(0, -windowSize || undefined));
 
   return messages.map((m, i) => {
-    if (toMask.includes(i) && m.content && m.content.length > 200) {
+    if (toMask.has(i) && m.content && m.content.length > 200) {
       const firstLine = m.content.split('\n')[0]?.slice(0, 100) ?? '';
       return {
         ...m,
