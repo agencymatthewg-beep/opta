@@ -764,3 +764,50 @@ public struct SessionsPatchParams: Codable, Sendable {
         self.patch = AnyCodable(patch)
     }
 }
+
+// MARK: - Device Pairing
+
+/// Response from `gateway.discover` — lists available bots on a gateway.
+public struct GatewayDiscoverResponse: Codable, Sendable {
+    public let gatewayFingerprint: String
+    public let gatewayName: String
+    public let bots: [DiscoveredBot]
+    public let pairingRequired: Bool
+}
+
+/// A bot discovered via `gateway.discover`.
+public struct DiscoveredBot: Codable, Sendable, Identifiable {
+    public let botId: String
+    public let name: String
+    public let emoji: String
+    public let status: String
+    public var id: String { botId }
+}
+
+/// Parameters for `device.pair` — pair this device with specific bots.
+public struct DevicePairParams: Codable, Sendable {
+    public let deviceId: String
+    public let deviceName: String
+    public let platform: String
+    public let requestedBots: [String]
+}
+
+/// Response from `device.pair` — contains tokens for each paired bot.
+public struct DevicePairResponse: Codable, Sendable {
+    public let pairings: [BotPairingResult]
+    public let gatewayFingerprint: String
+}
+
+/// A single bot pairing result with its token.
+public struct BotPairingResult: Codable, Sendable {
+    public let botId: String
+    public let token: String
+    public let name: String
+    public let emoji: String
+}
+
+/// Parameters for `device.unpair` — remove pairing for specific bots.
+public struct DeviceUnpairParams: Codable, Sendable {
+    public let deviceId: String
+    public let botIds: [String]
+}

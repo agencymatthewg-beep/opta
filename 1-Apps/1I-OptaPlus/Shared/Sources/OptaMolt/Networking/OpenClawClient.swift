@@ -212,8 +212,25 @@ public final class OpenClawClient: ObservableObject {
         _ = try await request("sessions.patch", params: params)
     }
 
+    // MARK: - Device Pairing
+
+    /// Discover available bots without authentication.
+    public func gatewayDiscover() async throws -> AnyCodable? {
+        try await request("gateway.discover", params: nil as AnyCodable?)
+    }
+
+    /// Pair this device with specific bots on the gateway.
+    public func devicePair(params: DevicePairParams) async throws -> AnyCodable? {
+        try await request("device.pair", params: params)
+    }
+
+    /// Unpair this device from specific bots.
+    public func deviceUnpair(params: DeviceUnpairParams) async throws {
+        _ = try await request("device.unpair", params: params)
+    }
+
     // MARK: - NWConnection Lifecycle
-    
+
     private func openConnection() {
         setState(.connecting)
         connectSent = false
