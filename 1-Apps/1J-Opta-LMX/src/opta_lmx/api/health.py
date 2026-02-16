@@ -2,24 +2,21 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Header, Request
+from fastapi import APIRouter
 
 from opta_lmx import __version__
-from opta_lmx.api.deps import verify_admin_key
-from opta_lmx.manager.memory import MemoryMonitor
+from opta_lmx.api.deps import AdminAuth, Memory
 
 router = APIRouter()
 
 
 @router.get("/admin/health")
-async def health_check(request: Request, x_admin_key: str | None = Header(None)) -> dict:
+async def health_check(_auth: AdminAuth, memory: Memory) -> dict:
     """Simple health check for monitoring.
 
     Returns 'ok' when server is running and responsive.
     Returns 'degraded' if memory pressure is high.
     """
-    verify_admin_key(request, x_admin_key)
-    memory: MemoryMonitor = request.app.state.memory_monitor
     usage = memory.usage_percent()
 
     if usage > 95:

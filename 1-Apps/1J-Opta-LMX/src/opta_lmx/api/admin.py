@@ -7,27 +7,26 @@ import json
 import logging
 import secrets
 import time
-import uuid
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from opta_lmx.inference.engine import InferenceEngine
     from opta_lmx.manager.model import ModelManager
 
-from fastapi import APIRouter, Header, Request
+from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse, PlainTextResponse, StreamingResponse
 
 from opta_lmx import __version__
 from opta_lmx.api.deps import (
-    get_engine,
-    get_event_bus,
-    get_memory,
-    get_metrics,
-    get_model_manager,
-    get_preset_manager,
-    get_router,
-    get_start_time,
-    verify_admin_key,
+    AdminAuth,
+    Engine,
+    Events,
+    Manager,
+    Memory,
+    Metrics,
+    Presets,
+    Router,
+    StartTime,
 )
 from opta_lmx.config import load_config
 from opta_lmx.api.errors import (
@@ -112,11 +111,10 @@ router = APIRouter()
 
 
 @router.get("/admin/models", responses={403: {"model": ErrorResponse}})
-async def list_admin_models(request: Request, x_admin_key: str | None = Header(None)) -> AdminModelsResponse:
+async def list_admin_models(
+    _auth: AdminAuth, engine: Engine,
+) -> AdminModelsResponse:
     """List all loaded models with detailed statistics."""
-    verify_admin_key(request, x_admin_key)
-    engine = get_engine(request)
-
     loaded = engine.get_loaded_models_detailed()
     return AdminModelsResponse(
         loaded=[
@@ -145,17 +143,16 @@ async def list_admin_models(request: Request, x_admin_key: str | None = Header(N
         507: {"model": ErrorResponse},
     },
 )
-async def load_model(body: AdminLoadRequest, request: Request, x_admin_key: str | None = Header(None)):
+async def load_model(
+    body: AdminLoadRequest, _auth: AdminAuth, engine: Engine, manager: Manager,
+    request: Request,
+):
     """Load a model into memory.
 
     If the model is not on disk:
     - Returns 202 with a confirmation token (user must confirm download)
     - If auto_download=True, skips confirmation and starts download immediately
     """
-    verify_admin_key(request, x_admin_key)
-    engine = get_engine(request)
-    manager = get_model_manager(request)
-
     # Check if model is already loaded
     if engine.is_model_loaded(body.model_id):
         return AdminLoadResponse(success=True, model_id=body.model_id)
@@ -246,15 +243,14 @@ async def load_model(body: AdminLoadRequest, request: Request, x_admin_key: str 
     },
 )
 async def confirm_and_load(
-    body: ConfirmLoadRequest, request: Request, x_admin_key: str | None = Header(None),
+    body: ConfirmLoadRequest, _auth: AdminAuth, engine: Engine, manager: Manager,
+    request: Request,
 ):
     """Confirm a pending download and start download + auto-load.
 
     Uses the confirmation_token returned by the load endpoint when
     a model was not found locally.
     """
-    verify_admin_key(request, x_admin_key)
-
     async with _pending_lock:
         pending: dict = getattr(request.app.state, "pending_downloads", {})
         entry = pending.pop(body.confirmation_token, None)
@@ -276,8 +272,6 @@ async def confirm_and_load(
             code="token_expired",
         )
 
-    manager = get_model_manager(request)
-    engine = get_engine(request)
     model_id = entry["model_id"]
 
     task = await manager.start_download(repo_id=model_id)
@@ -300,11 +294,10 @@ async def confirm_and_load(
     response_model=None,
     responses={403: {"model": ErrorResponse}, 404: {"model": ErrorResponse}},
 )
-async def unload_model(body: AdminUnloadRequest, request: Request, x_admin_key: str | None = Header(None)):
+async def unload_model(
+    body: AdminUnloadRequest, _auth: AdminAuth, engine: Engine,
+):
     """Unload a model and free memory."""
-    verify_admin_key(request, x_admin_key)
-    engine = get_engine(request)
-
     try:
         freed = await engine.unload_model(body.model_id)
     except KeyError:
@@ -318,13 +311,10 @@ async def unload_model(body: AdminUnloadRequest, request: Request, x_admin_key: 
 
 
 @router.get("/admin/status", responses={403: {"model": ErrorResponse}})
-async def get_status(request: Request, x_admin_key: str | None = Header(None)) -> AdminStatusResponse:
+async def get_status(
+    _auth: AdminAuth, engine: Engine, memory: Memory, start_time: StartTime,
+) -> AdminStatusResponse:
     """Full system status: version, uptime, models, memory."""
-    verify_admin_key(request, x_admin_key)
-    engine = get_engine(request)
-    memory = get_memory(request)
-    start_time = get_start_time(request)
-
     models = engine.get_loaded_models()
     return AdminStatusResponse(
         version=__version__,
@@ -336,12 +326,10 @@ async def get_status(request: Request, x_admin_key: str | None = Header(None)) -
 
 
 @router.get("/admin/memory", responses={403: {"model": ErrorResponse}})
-async def memory_status(request: Request, x_admin_key: str | None = Header(None)) -> AdminMemoryResponse:
+async def memory_status(
+    _auth: AdminAuth, engine: Engine, memory: Memory,
+) -> AdminMemoryResponse:
     """Detailed memory breakdown including per-model usage."""
-    verify_admin_key(request, x_admin_key)
-    engine = get_engine(request)
-    memory = get_memory(request)
-
     models = engine.get_loaded_models()
     model_details = {
         m.model_id: {
@@ -362,12 +350,9 @@ async def memory_status(request: Request, x_admin_key: str | None = Header(None)
 
 @router.get("/admin/models/available", responses={403: {"model": ErrorResponse}})
 async def list_available_models(
-    request: Request, x_admin_key: str | None = Header(None),
+    _auth: AdminAuth, manager: Manager,
 ) -> list[AvailableModel]:
     """List all models available on disk (downloaded but not necessarily loaded)."""
-    verify_admin_key(request, x_admin_key)
-    manager = get_model_manager(request)
-
     models = await manager.list_available()
     return [
         AvailableModel(
@@ -389,14 +374,9 @@ async def list_available_models(
     responses={403: {"model": ErrorResponse}},
 )
 async def start_download(
-    body: AdminDownloadRequest,
-    request: Request,
-    x_admin_key: str | None = Header(None),
+    body: AdminDownloadRequest, _auth: AdminAuth, manager: Manager,
 ):
     """Start an async model download from HuggingFace Hub."""
-    verify_admin_key(request, x_admin_key)
-    manager = get_model_manager(request)
-
     try:
         task = await manager.start_download(
             repo_id=body.repo_id,
@@ -421,14 +401,9 @@ async def start_download(
     responses={403: {"model": ErrorResponse}, 404: {"model": ErrorResponse}},
 )
 async def get_download_progress(
-    download_id: str,
-    request: Request,
-    x_admin_key: str | None = Header(None),
+    download_id: str, _auth: AdminAuth, manager: Manager,
 ):
     """Get the progress of a model download."""
-    verify_admin_key(request, x_admin_key)
-    manager = get_model_manager(request)
-
     task = manager.get_download_progress(download_id)
     if task is None:
         return download_not_found(download_id)
@@ -456,19 +431,12 @@ async def get_download_progress(
     },
 )
 async def delete_model(
-    model_id: str,
-    request: Request,
-    x_admin_key: str | None = Header(None),
+    model_id: str, _auth: AdminAuth, engine: Engine, manager: Manager,
 ):
     """Delete a model from disk. Returns 409 if the model is currently loaded."""
-    verify_admin_key(request, x_admin_key)
-
     # Path traversal validation
     if ".." in model_id or model_id.startswith("/"):
         return openai_error(400, "Invalid model_id format", "invalid_request_error", "model_id")
-
-    engine = get_engine(request)
-    manager = get_model_manager(request)
 
     # Safety check: don't delete a loaded model
     if engine.is_model_loaded(model_id):
@@ -497,14 +465,12 @@ async def delete_model(
     responses={403: {"model": ErrorResponse}},
 )
 async def prometheus_metrics(
-    request: Request, x_admin_key: str | None = Header(None),
+    _auth: AdminAuth, metrics: Metrics,
 ) -> PlainTextResponse:
     """Prometheus-compatible metrics endpoint.
 
     Returns metrics in Prometheus text exposition format for scraping.
     """
-    verify_admin_key(request, x_admin_key)
-    metrics = get_metrics(request)
     return PlainTextResponse(
         content=metrics.prometheus(),
         media_type="text/plain; version=0.0.4; charset=utf-8",
@@ -513,11 +479,9 @@ async def prometheus_metrics(
 
 @router.get("/admin/metrics/json", responses={403: {"model": ErrorResponse}})
 async def metrics_json(
-    request: Request, x_admin_key: str | None = Header(None),
+    _auth: AdminAuth, metrics: Metrics,
 ) -> dict:
     """JSON metrics summary for admin dashboards."""
-    verify_admin_key(request, x_admin_key)
-    metrics = get_metrics(request)
     return metrics.summary()
 
 
@@ -530,7 +494,12 @@ async def metrics_json(
     responses={403: {"model": ErrorResponse}},
 )
 async def reload_config(
-    request: Request, x_admin_key: str | None = Header(None),
+    _auth: AdminAuth,
+    task_router: Router,
+    memory: Memory,
+    event_bus: Events,
+    preset_mgr: Presets,
+    request: Request,
 ) -> dict:
     """Hot-reload configuration from disk without restarting.
 
@@ -542,8 +511,6 @@ async def reload_config(
 
     Does NOT unload/reload models or change server bind address.
     """
-    verify_admin_key(request, x_admin_key)
-
     try:
         new_config = load_config()
     except Exception as e:
@@ -551,11 +518,9 @@ async def reload_config(
         return internal_error(f"Failed to parse config: {e}")
 
     # Update routing
-    task_router = get_router(request)
     task_router.update_config(new_config.routing)
 
     # Update memory threshold
-    memory = get_memory(request)
     memory.threshold_percent = new_config.memory.max_memory_percent
 
     # Update admin key
@@ -578,7 +543,6 @@ async def reload_config(
 
     # Publish config_reloaded event
     from opta_lmx.monitoring.events import ServerEvent
-    event_bus = get_event_bus(request)
     await event_bus.publish(ServerEvent(
         event_type="config_reloaded",
         data={
@@ -589,7 +553,6 @@ async def reload_config(
     ))
 
     # Reload presets
-    preset_mgr = get_preset_manager(request)
     if new_config.presets.enabled:
         preset_mgr.reload()
 
@@ -604,12 +567,9 @@ async def reload_config(
 
 @router.get("/admin/presets", responses={403: {"model": ErrorResponse}})
 async def list_presets(
-    request: Request, x_admin_key: str | None = Header(None),
+    _auth: AdminAuth, preset_mgr: Presets,
 ) -> PresetListResponse:
     """List all loaded presets."""
-    verify_admin_key(request, x_admin_key)
-    preset_mgr = get_preset_manager(request)
-
     presets = preset_mgr.list_all()
     return PresetListResponse(
         presets=[
@@ -634,12 +594,9 @@ async def list_presets(
     responses={403: {"model": ErrorResponse}, 404: {"model": ErrorResponse}},
 )
 async def get_preset(
-    name: str, request: Request, x_admin_key: str | None = Header(None),
+    name: str, _auth: AdminAuth, preset_mgr: Presets,
 ):
     """Get full details for a single preset."""
-    verify_admin_key(request, x_admin_key)
-    preset_mgr = get_preset_manager(request)
-
     preset = preset_mgr.get(name)
     if preset is None:
         return model_not_found(f"preset:{name}")
@@ -660,12 +617,9 @@ async def get_preset(
     responses={403: {"model": ErrorResponse}},
 )
 async def reload_presets(
-    request: Request, x_admin_key: str | None = Header(None),
+    _auth: AdminAuth, preset_mgr: Presets,
 ) -> dict:
     """Re-read preset files from disk."""
-    verify_admin_key(request, x_admin_key)
-    preset_mgr = get_preset_manager(request)
-
     count = preset_mgr.reload()
     return {"success": True, "presets_loaded": count}
 
@@ -675,7 +629,7 @@ async def reload_presets(
 
 @router.get("/admin/events", responses={403: {"model": ErrorResponse}})
 async def admin_event_stream(
-    request: Request, x_admin_key: str | None = Header(None),
+    _auth: AdminAuth, event_bus: Events, request: Request,
 ):
     """Server-Sent Events feed for real-time admin monitoring.
 
@@ -683,8 +637,6 @@ async def admin_event_stream(
     download_completed, download_failed, request_completed, memory_warning,
     config_reloaded. Sends heartbeat every 30 seconds.
     """
-    verify_admin_key(request, x_admin_key)
-    event_bus = get_event_bus(request)
     heartbeat_sec = getattr(request.app.state.config.server, "sse_heartbeat_interval_sec", 30)
 
     async def generate():

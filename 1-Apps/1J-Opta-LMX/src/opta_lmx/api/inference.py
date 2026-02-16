@@ -5,12 +5,11 @@ from __future__ import annotations
 import logging
 import secrets
 import time
-import uuid
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 
-from opta_lmx.api.deps import get_engine, get_metrics, get_preset_manager, get_router
+from opta_lmx.api.deps import Engine, Metrics, Presets, Router
 from opta_lmx.api.errors import internal_error, model_not_found, openai_error
 from opta_lmx.presets.manager import PRESET_PREFIX
 from opta_lmx.monitoring.metrics import RequestMetric
@@ -33,16 +32,17 @@ router = APIRouter()
     response_model=None,
     responses={404: {"model": ErrorResponse}, 500: {"model": ErrorResponse}},
 )
-async def chat_completions(body: ChatCompletionRequest, request: Request):
+async def chat_completions(
+    body: ChatCompletionRequest,
+    engine: Engine,
+    task_router: Router,
+    metrics: Metrics,
+    preset_mgr: Presets,
+):
     """OpenAI-compatible chat completion.
 
     Supports both streaming (SSE) and non-streaming modes.
     """
-    engine = get_engine(request)
-    router = get_router(request)
-    metrics = get_metrics(request)
-    preset_mgr = get_preset_manager(request)
-
     # Resolve preset (e.g. "preset:code-assistant") — applies defaults + swaps model ID
     if body.model.startswith(PRESET_PREFIX):
         preset_name = body.model[len(PRESET_PREFIX):]
@@ -53,7 +53,7 @@ async def chat_completions(body: ChatCompletionRequest, request: Request):
 
     # Resolve alias (e.g. "auto", "code") to a real loaded model ID
     loaded_ids = [m.model_id for m in engine.get_loaded_models()]
-    resolved_model = router.resolve(body.model, loaded_ids)
+    resolved_model = task_router.resolve(body.model, loaded_ids)
 
     # Check model is loaded
     if not engine.is_model_loaded(resolved_model):
@@ -123,9 +123,8 @@ async def chat_completions(body: ChatCompletionRequest, request: Request):
 
 
 @router.get("/v1/models")
-async def list_models(request: Request) -> ModelsListResponse:
+async def list_models(engine: Engine) -> ModelsListResponse:
     """List all loaded models in OpenAI format."""
-    engine = get_engine(request)
     models = engine.get_loaded_models()
     return ModelsListResponse(
         object="list",
@@ -142,7 +141,7 @@ async def list_models(request: Request) -> ModelsListResponse:
 
 
 @router.post("/v1/completions", response_model=None)
-async def legacy_completions(request: Request):
+async def legacy_completions():
     """Legacy text completions endpoint — not supported.
 
     Opta-LMX only supports chat completions (/v1/chat/completions).

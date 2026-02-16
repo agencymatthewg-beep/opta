@@ -1,10 +1,16 @@
-"""Shared dependencies for API route handlers."""
+"""Shared dependencies for API route handlers.
+
+Provides both raw dependency functions (get_engine, etc.) and
+Annotated type aliases (Engine, Memory, etc.) for FastAPI's modern
+Depends() injection pattern.
+"""
 
 from __future__ import annotations
 
 import secrets
+from typing import Annotated
 
-from fastapi import Header, HTTPException, Request
+from fastapi import Depends, Header, HTTPException, Request
 
 from opta_lmx.inference.engine import InferenceEngine
 from opta_lmx.manager.memory import MemoryMonitor
@@ -66,3 +72,16 @@ def verify_admin_key(request: Request, x_admin_key: str | None = Header(None)) -
         return  # No auth configured — trust LAN
     if x_admin_key is None or not secrets.compare_digest(x_admin_key, config_key):
         raise HTTPException(status_code=403, detail="Invalid or missing admin key")
+
+
+# ─── Annotated type aliases for Depends() injection ────────────────────────
+
+Engine = Annotated[InferenceEngine, Depends(get_engine)]
+Memory = Annotated[MemoryMonitor, Depends(get_memory)]
+StartTime = Annotated[float, Depends(get_start_time)]
+Metrics = Annotated[MetricsCollector, Depends(get_metrics)]
+Router = Annotated[TaskRouter, Depends(get_router)]
+Manager = Annotated[ModelManager, Depends(get_model_manager)]
+Presets = Annotated[PresetManager, Depends(get_preset_manager)]
+Events = Annotated[EventBus, Depends(get_event_bus)]
+AdminAuth = Annotated[None, Depends(verify_admin_key)]

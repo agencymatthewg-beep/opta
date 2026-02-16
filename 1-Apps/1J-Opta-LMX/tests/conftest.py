@@ -65,24 +65,20 @@ def mock_model_manager(tmp_path: Path) -> ModelManager:
     return manager
 
 
-@pytest.fixture
-async def client(
-    mock_engine: InferenceEngine, mock_model_manager: ModelManager, tmp_path: Path,
+async def _make_test_client(
+    mock_engine: InferenceEngine,
+    mock_model_manager: ModelManager,
+    tmp_path: Path,
+    *,
+    admin_key: str | None = None,
 ) -> AsyncIterator[AsyncClient]:
-    """Test HTTP client with mocked engine.
+    """Shared test client factory — injects mock services into app state."""
+    test_app = create_app(LMXConfig())
 
-    The engine is pre-configured with a mock model so tests
-    can call /v1/chat/completions without real MLX inference.
-    """
-    config = LMXConfig()
-    test_app = create_app(config)
-
-    # Override lifespan-created engine with our mock
     async with AsyncClient(
         transport=ASGITransport(app=test_app),
         base_url="http://test",
     ) as http_client:
-        # Inject mock engine into app state
         test_app.state.engine = mock_engine
         test_app.state.memory_monitor = MemoryMonitor(max_percent=90)
         test_app.state.model_manager = mock_model_manager
@@ -92,8 +88,18 @@ async def client(
         test_app.state.event_bus = EventBus()
         test_app.state.pending_downloads = {}
         test_app.state.start_time = 0.0
-        test_app.state.admin_key = None
+        test_app.state.admin_key = admin_key
+        test_app.state.config = LMXConfig()
         yield http_client
+
+
+@pytest.fixture
+async def client(
+    mock_engine: InferenceEngine, mock_model_manager: ModelManager, tmp_path: Path,
+) -> AsyncIterator[AsyncClient]:
+    """Test HTTP client with mocked engine (no auth)."""
+    async for c in _make_test_client(mock_engine, mock_model_manager, tmp_path):
+        yield c
 
 
 @pytest.fixture
@@ -101,21 +107,7 @@ async def client_with_auth(
     mock_engine: InferenceEngine, mock_model_manager: ModelManager, tmp_path: Path,
 ) -> AsyncIterator[AsyncClient]:
     """Test HTTP client with admin key authentication enabled."""
-    config = LMXConfig()
-    test_app = create_app(config)
-
-    async with AsyncClient(
-        transport=ASGITransport(app=test_app),
-        base_url="http://test",
-    ) as http_client:
-        test_app.state.engine = mock_engine
-        test_app.state.memory_monitor = MemoryMonitor(max_percent=90)
-        test_app.state.model_manager = mock_model_manager
-        test_app.state.router = TaskRouter(RoutingConfig())
-        test_app.state.metrics = MetricsCollector()
-        test_app.state.preset_manager = PresetManager(tmp_path / "presets")
-        test_app.state.event_bus = EventBus()
-        test_app.state.pending_downloads = {}
-        test_app.state.start_time = 0.0
-        test_app.state.admin_key = "test-secret-key"
-        yield http_client
+    async for c in _make_test_client(
+        mock_engine, mock_model_manager, tmp_path, admin_key="test-secret-key"
+    ):
+        yield c
