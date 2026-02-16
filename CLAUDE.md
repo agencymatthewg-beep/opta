@@ -116,6 +116,7 @@ Referenced as `workspace:*` dependencies. pnpm workspace config maps `packages/*
 | `6B-ESLint-Config` (`@opta/eslint-config`) | `@opta/eslint-config`, `@opta/eslint-config/next` | Shared ESLint 9 flat configs |
 | `6C-TSConfig` (`@opta/tsconfig`) | `@opta/tsconfig/base.json`, `nextjs.json`, `library.json` | TS config presets |
 | `6D-UI` (`@opta/ui`) | `@opta/ui`, `@opta/ui/components/*` | React 19 components (CVA + clsx + tailwind-merge) |
+| `6E-Logger` (`@opta/logger`) | `@opta/logger` | Structured logging with levels, component prefixes, configurable sink |
 
 ## Architecture
 
@@ -171,3 +172,32 @@ When working in the desktop app, these are **mandatory** (enforced via `1-Apps/1
 - **Per-app CLAUDE.md files**: Optamize MacOS and Opta Scan iOS have their own CLAUDE.md with app-specific rules. Always read them before working in those apps.
 - **MCP servers**: Configured in `.mcp.json` — Google Drive, Gmail, Google Calendar, YouTube, Gemini.
 - **Session protocol**: At session start, check `7-Personal/calendar.md` for today's events.
+
+## Autonomous Git Management
+
+### Commit Rules
+- After completing a feature, phase, or significant unit of work: commit all related changes automatically
+- Use Conventional Commits format: `type(scope): description`
+- Scope = app name lowercase (lmx, cli, ios, optaplus, web, optamize)
+- Commit per logical unit — not per file, not per session
+- Never commit .env files, API keys, or secrets
+- Never commit node_modules, .next, DerivedData, __pycache__, .venv
+- Always run tests before committing (if tests exist)
+
+### Push Rules
+- Push to GitHub after every commit
+- Always push to origin/main (no feature branches unless requested)
+- Never force-push
+- If push fails (remote has new commits), pull --rebase first
+
+### What NOT to Do
+- Never ask "which option?" for git — just commit and push
+- Never create branches unless explicitly asked
+- Never create Pull Requests unless explicitly asked
+- Never amend commits — always create new ones
+- Never use interactive rebase
+
+### Multi-App Commits
+- If work spans multiple apps, create one commit per app
+- Example: `feat(lmx): add WebSocket streaming` then `feat(optaplus): connect to WebSocket endpoint`
+- Shared config changes (root CLAUDE.md, pnpm-lock) go with the app that triggered them
