@@ -48,7 +48,6 @@ def ws_app(tmp_path):
     return app
 
 
-@pytest.mark.asyncio
 async def test_ws_connect_and_disconnect(ws_app) -> None:
     """WebSocket connects and disconnects cleanly."""
     from starlette.testclient import TestClient
@@ -58,7 +57,6 @@ async def test_ws_connect_and_disconnect(ws_app) -> None:
         pass  # Just connect and disconnect
 
 
-@pytest.mark.asyncio
 async def test_ws_chat_request_non_streaming(ws_app) -> None:
     """Non-streaming chat request returns a chat.done response."""
     from starlette.testclient import TestClient
@@ -84,7 +82,6 @@ async def test_ws_chat_request_non_streaming(ws_app) -> None:
         assert "usage" in response
 
 
-@pytest.mark.asyncio
 async def test_ws_chat_request_streaming(ws_app) -> None:
     """Streaming chat request returns token chunks followed by done."""
     from starlette.testclient import TestClient
@@ -132,7 +129,6 @@ async def test_ws_chat_request_streaming(ws_app) -> None:
         assert done_msgs[0]["finish_reason"] == "stop"
 
 
-@pytest.mark.asyncio
 async def test_ws_model_not_loaded(ws_app) -> None:
     """Requesting a model that isn't loaded returns chat.error."""
     from starlette.testclient import TestClient
@@ -150,7 +146,6 @@ async def test_ws_model_not_loaded(ws_app) -> None:
         assert "not loaded" in response["error"]
 
 
-@pytest.mark.asyncio
 async def test_ws_unknown_message_type(ws_app) -> None:
     """Unknown message type returns error."""
     from starlette.testclient import TestClient
@@ -164,7 +159,6 @@ async def test_ws_unknown_message_type(ws_app) -> None:
         assert "Unknown message type" in response["error"]
 
 
-@pytest.mark.asyncio
 async def test_ws_cancel_nonexistent_request(ws_app) -> None:
     """Cancelling a non-existent request_id is silently ignored."""
     from starlette.testclient import TestClient

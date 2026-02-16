@@ -6,7 +6,6 @@ import time
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
-import pytest
 from httpx import AsyncClient
 
 from opta_lmx.manager.model import ModelManager
@@ -15,7 +14,6 @@ from opta_lmx.manager.model import ModelManager
 # ─── Unit Tests: is_model_available ──────────────────────────────────────────
 
 
-@pytest.mark.asyncio
 async def test_is_model_available_local_file(tmp_path: Path) -> None:
     """is_model_available returns True for existing local file paths."""
     model_file = tmp_path / "model.gguf"
@@ -25,7 +23,6 @@ async def test_is_model_available_local_file(tmp_path: Path) -> None:
     assert await manager.is_model_available(str(model_file)) is True
 
 
-@pytest.mark.asyncio
 async def test_is_model_available_missing_file(tmp_path: Path) -> None:
     """is_model_available returns False for non-existent file paths."""
     manager = ModelManager(models_directory=tmp_path)
@@ -33,7 +30,6 @@ async def test_is_model_available_missing_file(tmp_path: Path) -> None:
         assert await manager.is_model_available("/nonexistent/model.gguf") is False
 
 
-@pytest.mark.asyncio
 async def test_is_model_available_hf_cache(tmp_path: Path) -> None:
     """is_model_available returns True when model is in HF cache."""
     manager = ModelManager(models_directory=tmp_path)
@@ -60,7 +56,6 @@ def test_human_size() -> None:
 # ─── API Tests: Two-Phase Download Flow ──────────────────────────────────────
 
 
-@pytest.mark.asyncio
 async def test_load_available_model_returns_200(client: AsyncClient) -> None:
     """Loading a model that's on disk returns 200 (existing behavior)."""
     # mock_model_manager.is_model_available always returns True
@@ -72,7 +67,6 @@ async def test_load_available_model_returns_200(client: AsyncClient) -> None:
     assert resp.json()["success"] is True
 
 
-@pytest.mark.asyncio
 async def test_load_unavailable_model_returns_202_with_token(client: AsyncClient) -> None:
     """Loading a model not on disk returns 202 with confirmation token."""
     app = client._transport.app  # type: ignore[union-attr]
@@ -107,7 +101,6 @@ async def test_load_unavailable_model_returns_202_with_token(client: AsyncClient
     assert data["message"] == "Model not found locally. Confirm download?"
 
 
-@pytest.mark.asyncio
 async def test_confirm_valid_token_starts_download(client: AsyncClient) -> None:
     """Confirming with a valid token starts download."""
     app = client._transport.app  # type: ignore[union-attr]
@@ -148,7 +141,6 @@ async def test_confirm_valid_token_starts_download(client: AsyncClient) -> None:
     assert token not in app.state.pending_downloads
 
 
-@pytest.mark.asyncio
 async def test_confirm_invalid_token_returns_404(client: AsyncClient) -> None:
     """Confirming with an invalid/expired token returns 404."""
     resp = await client.post(
@@ -158,7 +150,6 @@ async def test_confirm_invalid_token_returns_404(client: AsyncClient) -> None:
     assert resp.status_code == 404
 
 
-@pytest.mark.asyncio
 async def test_confirm_expired_token_returns_404(client: AsyncClient) -> None:
     """Confirming with an expired token (>10 min) returns 404."""
     app = client._transport.app  # type: ignore[union-attr]
@@ -178,7 +169,6 @@ async def test_confirm_expired_token_returns_404(client: AsyncClient) -> None:
     assert "expired" in resp.json()["error"]["message"].lower()
 
 
-@pytest.mark.asyncio
 async def test_auto_download_skips_confirmation(client: AsyncClient) -> None:
     """auto_download=True skips confirmation and starts download immediately."""
     app = client._transport.app  # type: ignore[union-attr]
@@ -219,7 +209,6 @@ async def test_auto_download_skips_confirmation(client: AsyncClient) -> None:
     assert "auto-load" in data["message"].lower()
 
 
-@pytest.mark.asyncio
 async def test_load_already_loaded_model_returns_200(client: AsyncClient) -> None:
     """Loading a model that's already loaded returns success immediately."""
     app = client._transport.app  # type: ignore[union-attr]
@@ -235,7 +224,6 @@ async def test_load_already_loaded_model_returns_200(client: AsyncClient) -> Non
     assert resp.json()["success"] is True
 
 
-@pytest.mark.asyncio
 async def test_confirm_requires_auth(client_with_auth: AsyncClient) -> None:
     """Confirm endpoint requires admin key when auth is configured."""
     resp = await client_with_auth.post(

@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import secrets
 import time
 import uuid
 from typing import TYPE_CHECKING
@@ -62,6 +63,9 @@ logger = logging.getLogger(__name__)
 
 # Token expiry for pending download confirmations (seconds)
 _TOKEN_EXPIRY_SEC = 600  # 10 minutes
+
+# Lock for pending_downloads dict (single-threaded async concurrency)
+_pending_lock = asyncio.Lock()
 
 
 def _human_size(size_bytes: int) -> str:
@@ -165,14 +169,23 @@ async def load_model(body: AdminLoadRequest, request: Request, x_admin_key: str 
 
         if not body.auto_download:
             # Two-phase: return confirmation prompt
-            token = f"dl-{uuid.uuid4().hex[:12]}"
-            pending: dict = getattr(request.app.state, "pending_downloads", {})
-            pending[token] = {
-                "model_id": body.model_id,
-                "estimated_bytes": estimated,
-                "created_at": time.time(),
-            }
-            request.app.state.pending_downloads = pending
+            token = f"dl-{secrets.token_urlsafe(16)}"
+            async with _pending_lock:
+                pending: dict = getattr(request.app.state, "pending_downloads", {})
+
+                # Clean up expired pending downloads
+                now = time.time()
+                expired = [k for k, v in pending.items()
+                           if now - v["created_at"] > _TOKEN_EXPIRY_SEC]
+                for k in expired:
+                    pending.pop(k, None)
+
+                pending[token] = {
+                    "model_id": body.model_id,
+                    "estimated_bytes": estimated,
+                    "created_at": time.time(),
+                }
+                request.app.state.pending_downloads = pending
 
             return JSONResponse(
                 status_code=202,
@@ -242,8 +255,9 @@ async def confirm_and_load(
     """
     verify_admin_key(request, x_admin_key)
 
-    pending: dict = getattr(request.app.state, "pending_downloads", {})
-    entry = pending.pop(body.confirmation_token, None)
+    async with _pending_lock:
+        pending: dict = getattr(request.app.state, "pending_downloads", {})
+        entry = pending.pop(body.confirmation_token, None)
 
     if entry is None:
         return openai_error(
@@ -254,7 +268,7 @@ async def confirm_and_load(
         )
 
     # Check token age (10 minute expiry)
-    if time.time() - entry["created_at"] > 600:
+    if time.time() - entry["created_at"] > _TOKEN_EXPIRY_SEC:
         return openai_error(
             status_code=404,
             message="Confirmation token expired (10 minute limit)",
@@ -448,6 +462,11 @@ async def delete_model(
 ):
     """Delete a model from disk. Returns 409 if the model is currently loaded."""
     verify_admin_key(request, x_admin_key)
+
+    # Path traversal validation
+    if ".." in model_id or model_id.startswith("/"):
+        return openai_error(400, "Invalid model_id format", "invalid_request_error", "model_id")
+
     engine = get_engine(request)
     manager = get_model_manager(request)
 

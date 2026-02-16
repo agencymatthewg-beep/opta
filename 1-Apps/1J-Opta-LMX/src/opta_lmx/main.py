@@ -37,16 +37,20 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     # Initialize core services
     memory_monitor = MemoryMonitor(max_percent=config.memory.max_memory_percent)
+    event_bus = EventBus()
+
     engine = InferenceEngine(
         memory_monitor=memory_monitor,
         use_batching=config.models.use_batching,
         auto_evict_lru=config.memory.auto_evict_lru,
         gguf_context_length=config.models.gguf_context_length,
         gguf_gpu_layers=config.models.gguf_gpu_layers,
+        event_bus=event_bus,
     )
 
     model_manager = ModelManager(
         models_directory=config.models.models_directory,
+        event_bus=event_bus,
     )
 
     task_router = TaskRouter(config.routing)
@@ -55,8 +59,6 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     preset_manager = PresetManager(config.presets.directory)
     if config.presets.enabled:
         preset_manager.load_presets()
-
-    event_bus = EventBus()
 
     app.state.engine = engine
     app.state.memory_monitor = memory_monitor

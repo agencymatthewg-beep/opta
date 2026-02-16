@@ -6,14 +6,12 @@ import json
 import logging
 from unittest.mock import AsyncMock, patch
 
-import pytest
 from httpx import AsyncClient
 
 from opta_lmx.inference.types import DownloadTask
-from opta_lmx.monitoring.logging import JSONFormatter
+from opta_lmx.monitoring.logging import _filter_sensitive_keys
 
 
-@pytest.mark.asyncio
 async def test_health_check(client: AsyncClient) -> None:
     """GET /admin/health returns ok."""
     response = await client.get("/admin/health")
@@ -23,7 +21,6 @@ async def test_health_check(client: AsyncClient) -> None:
     assert data["version"] == "0.1.0"
 
 
-@pytest.mark.asyncio
 async def test_admin_status(client: AsyncClient) -> None:
     """GET /admin/status returns system info."""
     response = await client.get("/admin/status")
@@ -34,7 +31,6 @@ async def test_admin_status(client: AsyncClient) -> None:
     assert data["memory"]["threshold_percent"] == 90
 
 
-@pytest.mark.asyncio
 async def test_admin_memory(client: AsyncClient) -> None:
     """GET /admin/memory returns memory details."""
     response = await client.get("/admin/memory")
@@ -44,7 +40,6 @@ async def test_admin_memory(client: AsyncClient) -> None:
     assert data["threshold_percent"] == 90
 
 
-@pytest.mark.asyncio
 async def test_list_models_empty(client: AsyncClient) -> None:
     """GET /v1/models returns empty list when nothing loaded."""
     response = await client.get("/v1/models")
@@ -54,7 +49,6 @@ async def test_list_models_empty(client: AsyncClient) -> None:
     assert data["data"] == []
 
 
-@pytest.mark.asyncio
 async def test_chat_completion_model_not_loaded(client: AsyncClient) -> None:
     """POST /v1/chat/completions with unloaded model returns 404."""
     response = await client.post(
@@ -69,7 +63,6 @@ async def test_chat_completion_model_not_loaded(client: AsyncClient) -> None:
     assert data["error"]["code"] == "model_not_found"
 
 
-@pytest.mark.asyncio
 async def test_chat_completion_missing_model(client: AsyncClient) -> None:
     """POST /v1/chat/completions without model field returns 422."""
     response = await client.post(
@@ -79,7 +72,6 @@ async def test_chat_completion_missing_model(client: AsyncClient) -> None:
     assert response.status_code == 422
 
 
-@pytest.mark.asyncio
 async def test_chat_completion_missing_messages(client: AsyncClient) -> None:
     """POST /v1/chat/completions without messages returns 422."""
     response = await client.post(
@@ -89,7 +81,6 @@ async def test_chat_completion_missing_messages(client: AsyncClient) -> None:
     assert response.status_code == 422
 
 
-@pytest.mark.asyncio
 async def test_load_and_chat(client: AsyncClient) -> None:
     """Load a mock model, then chat with it."""
     # Load model
@@ -122,7 +113,6 @@ async def test_load_and_chat(client: AsyncClient) -> None:
     assert data["usage"]["total_tokens"] > 0
 
 
-@pytest.mark.asyncio
 async def test_unload_model(client: AsyncClient) -> None:
     """Load then unload a model."""
     # Load
@@ -141,7 +131,6 @@ async def test_unload_model(client: AsyncClient) -> None:
     assert models_response.json()["data"] == []
 
 
-@pytest.mark.asyncio
 async def test_unload_nonexistent_model(client: AsyncClient) -> None:
     """Unloading a model that isn't loaded returns 404."""
     response = await client.post(
@@ -154,7 +143,6 @@ async def test_unload_nonexistent_model(client: AsyncClient) -> None:
 # --- Admin models list tests (M4) ---
 
 
-@pytest.mark.asyncio
 async def test_admin_models_empty(client: AsyncClient) -> None:
     """GET /admin/models returns empty list when nothing loaded."""
     response = await client.get("/admin/models")
@@ -164,7 +152,6 @@ async def test_admin_models_empty(client: AsyncClient) -> None:
     assert data["count"] == 0
 
 
-@pytest.mark.asyncio
 async def test_admin_models_after_load(client: AsyncClient) -> None:
     """GET /admin/models returns detailed model info after loading."""
     await client.post("/admin/models/load", json={"model_id": "test-model"})
@@ -185,7 +172,6 @@ async def test_admin_models_after_load(client: AsyncClient) -> None:
 # --- Legacy completions stub tests (M5) ---
 
 
-@pytest.mark.asyncio
 async def test_legacy_completions_returns_501(client: AsyncClient) -> None:
     """POST /v1/completions returns 501 Not Implemented."""
     response = await client.post(
@@ -201,21 +187,18 @@ async def test_legacy_completions_returns_501(client: AsyncClient) -> None:
 # --- Admin key authentication tests ---
 
 
-@pytest.mark.asyncio
 async def test_admin_no_auth_when_key_is_none(client: AsyncClient) -> None:
     """Admin endpoints work without auth header when admin_key is None."""
     response = await client.get("/admin/health")
     assert response.status_code == 200
 
 
-@pytest.mark.asyncio
 async def test_admin_rejects_missing_key(client_with_auth: AsyncClient) -> None:
     """Admin endpoints reject requests without X-Admin-Key when auth is enabled."""
     response = await client_with_auth.get("/admin/health")
     assert response.status_code == 403
 
 
-@pytest.mark.asyncio
 async def test_admin_rejects_wrong_key(client_with_auth: AsyncClient) -> None:
     """Admin endpoints reject requests with wrong X-Admin-Key."""
     response = await client_with_auth.get(
@@ -225,7 +208,6 @@ async def test_admin_rejects_wrong_key(client_with_auth: AsyncClient) -> None:
     assert response.status_code == 403
 
 
-@pytest.mark.asyncio
 async def test_admin_accepts_correct_key(client_with_auth: AsyncClient) -> None:
     """Admin endpoints accept requests with correct X-Admin-Key."""
     response = await client_with_auth.get(
@@ -236,7 +218,6 @@ async def test_admin_accepts_correct_key(client_with_auth: AsyncClient) -> None:
     assert response.json()["status"] == "ok"
 
 
-@pytest.mark.asyncio
 async def test_admin_status_requires_key(client_with_auth: AsyncClient) -> None:
     """GET /admin/status rejects without key, accepts with key."""
     no_key = await client_with_auth.get("/admin/status")
@@ -252,58 +233,40 @@ async def test_admin_status_requires_key(client_with_auth: AsyncClient) -> None:
 # --- Logging tests ---
 
 
-def test_json_formatter_captures_extra_fields() -> None:
-    """JSONFormatter includes extra={} fields in output (C4 fix)."""
-    formatter = JSONFormatter()
-    record = logging.LogRecord(
-        name="test",
-        level=logging.INFO,
-        pathname="test.py",
-        lineno=1,
-        msg="model_loaded",
-        args=(),
-        exc_info=None,
-    )
-    # Simulate logger.info("model_loaded", extra={"model_id": "test", "duration_sec": 1.5})
-    record.model_id = "test"  # type: ignore[attr-defined]
-    record.duration_sec = 1.5  # type: ignore[attr-defined]
+def test_sensitive_key_filter_redacts_keys() -> None:
+    """_filter_sensitive_keys redacts sensitive keys from event dict (G-LMX-03)."""
+    event_dict = {
+        "event": "auth_attempt",
+        "api_key": "sk-secret123",
+        "token": "bearer-xxx",
+        "safe_field": "visible",
+    }
 
-    output = formatter.format(record)
-    data = json.loads(output)
+    result = _filter_sensitive_keys(None, "info", event_dict)  # type: ignore[arg-type]
 
-    assert data["message"] == "model_loaded"
-    assert data["model_id"] == "test"
-    assert data["duration_sec"] == 1.5
+    assert result["api_key"] == "***REDACTED***"
+    assert result["token"] == "***REDACTED***"
+    assert result["safe_field"] == "visible"
 
 
-def test_json_formatter_redacts_sensitive_keys() -> None:
-    """JSONFormatter strips sensitive keys from output (G-LMX-03)."""
-    formatter = JSONFormatter()
-    record = logging.LogRecord(
-        name="test",
-        level=logging.INFO,
-        pathname="test.py",
-        lineno=1,
-        msg="event",
-        args=(),
-        exc_info=None,
-    )
-    record.api_key = "sk-secret123"  # type: ignore[attr-defined]
-    record.token = "bearer-xxx"  # type: ignore[attr-defined]
-    record.safe_field = "visible"  # type: ignore[attr-defined]
+def test_sensitive_key_filter_preserves_non_sensitive() -> None:
+    """_filter_sensitive_keys passes through non-sensitive keys unchanged."""
+    event_dict = {
+        "event": "model_loaded",
+        "model_id": "test",
+        "duration_sec": 1.5,
+    }
 
-    output = formatter.format(record)
-    data = json.loads(output)
+    result = _filter_sensitive_keys(None, "info", event_dict)  # type: ignore[arg-type]
 
-    assert "api_key" not in data
-    assert "token" not in data
-    assert data["safe_field"] == "visible"
+    assert result["event"] == "model_loaded"
+    assert result["model_id"] == "test"
+    assert result["duration_sec"] == 1.5
 
 
 # --- Available models tests ---
 
 
-@pytest.mark.asyncio
 async def test_available_models_empty(client: AsyncClient) -> None:
     """GET /admin/models/available returns empty when no models on disk."""
     with patch(
@@ -316,7 +279,6 @@ async def test_available_models_empty(client: AsyncClient) -> None:
     assert response.json() == []
 
 
-@pytest.mark.asyncio
 async def test_available_models_returns_disk_inventory(client: AsyncClient) -> None:
     """GET /admin/models/available returns cached model info."""
     with patch(
@@ -342,7 +304,6 @@ async def test_available_models_returns_disk_inventory(client: AsyncClient) -> N
 # --- Phase 3: Download endpoint tests ---
 
 
-@pytest.mark.asyncio
 async def test_download_returns_download_id(client: AsyncClient) -> None:
     """POST /admin/models/download returns a download_id."""
     mock_task = DownloadTask(
@@ -366,7 +327,6 @@ async def test_download_returns_download_id(client: AsyncClient) -> None:
     assert data["status"] == "downloading"
 
 
-@pytest.mark.asyncio
 async def test_download_progress_404_for_unknown(client: AsyncClient) -> None:
     """GET /admin/models/download/{id}/progress returns 404 for unknown IDs."""
     response = await client.get("/admin/models/download/nonexistent/progress")
@@ -375,7 +335,6 @@ async def test_download_progress_404_for_unknown(client: AsyncClient) -> None:
     assert data["error"]["code"] == "download_not_found"
 
 
-@pytest.mark.asyncio
 async def test_download_progress_returns_status(client: AsyncClient) -> None:
     """GET /admin/models/download/{id}/progress returns current progress."""
     # Inject a download task directly into the manager
@@ -397,7 +356,6 @@ async def test_download_progress_returns_status(client: AsyncClient) -> None:
     assert data["status"] == "downloading"
 
 
-@pytest.mark.asyncio
 async def test_delete_404_for_missing_model(client: AsyncClient) -> None:
     """DELETE /admin/models/{id} returns 404 for unknown models."""
     with patch(
@@ -411,7 +369,6 @@ async def test_delete_404_for_missing_model(client: AsyncClient) -> None:
     assert response.status_code == 404
 
 
-@pytest.mark.asyncio
 async def test_delete_409_for_loaded_model(client: AsyncClient) -> None:
     """DELETE /admin/models/{id} returns 409 if model is currently loaded."""
     # Load a model first
@@ -423,7 +380,6 @@ async def test_delete_409_for_loaded_model(client: AsyncClient) -> None:
     assert data["error"]["code"] == "model_in_use"
 
 
-@pytest.mark.asyncio
 async def test_delete_success(client: AsyncClient) -> None:
     """DELETE /admin/models/{id} deletes and returns freed bytes."""
     with patch(
@@ -440,7 +396,6 @@ async def test_delete_success(client: AsyncClient) -> None:
     assert data["freed_bytes"] == 4_000_000_000
 
 
-@pytest.mark.asyncio
 async def test_download_requires_auth(client_with_auth: AsyncClient) -> None:
     """POST /admin/models/download rejects without X-Admin-Key."""
     response = await client_with_auth.post(
@@ -450,7 +405,6 @@ async def test_download_requires_auth(client_with_auth: AsyncClient) -> None:
     assert response.status_code == 403
 
 
-@pytest.mark.asyncio
 async def test_delete_requires_auth(client_with_auth: AsyncClient) -> None:
     """DELETE /admin/models/{id} rejects without X-Admin-Key."""
     response = await client_with_auth.request(
@@ -462,7 +416,6 @@ async def test_delete_requires_auth(client_with_auth: AsyncClient) -> None:
 # --- Smart routing tests ---
 
 
-@pytest.mark.asyncio
 async def test_auto_routes_to_loaded_model(client: AsyncClient) -> None:
     """model='auto' resolves to a loaded model."""
     # Load a model first
@@ -481,7 +434,6 @@ async def test_auto_routes_to_loaded_model(client: AsyncClient) -> None:
     assert data["model"] == "test-model"
 
 
-@pytest.mark.asyncio
 async def test_auto_returns_404_when_nothing_loaded(client: AsyncClient) -> None:
     """model='auto' returns 404 when no models are loaded."""
     response = await client.post(
@@ -494,7 +446,6 @@ async def test_auto_returns_404_when_nothing_loaded(client: AsyncClient) -> None
     assert response.status_code == 404
 
 
-@pytest.mark.asyncio
 async def test_alias_routes_to_preferred_model(client: AsyncClient) -> None:
     """A configured alias resolves to its preferred loaded model."""
     from opta_lmx.config import RoutingConfig
@@ -523,7 +474,6 @@ async def test_alias_routes_to_preferred_model(client: AsyncClient) -> None:
 # --- Metrics endpoint tests ---
 
 
-@pytest.mark.asyncio
 async def test_prometheus_metrics_endpoint(client: AsyncClient) -> None:
     """GET /admin/metrics returns Prometheus text format."""
     response = await client.get("/admin/metrics")
@@ -533,7 +483,6 @@ async def test_prometheus_metrics_endpoint(client: AsyncClient) -> None:
     assert "lmx_uptime_seconds" in response.text
 
 
-@pytest.mark.asyncio
 async def test_metrics_json_endpoint(client: AsyncClient) -> None:
     """GET /admin/metrics/json returns JSON summary."""
     response = await client.get("/admin/metrics/json")
@@ -543,7 +492,6 @@ async def test_metrics_json_endpoint(client: AsyncClient) -> None:
     assert "per_model" in data
 
 
-@pytest.mark.asyncio
 async def test_metrics_increment_after_chat(client: AsyncClient) -> None:
     """Metrics counters increment after a chat completion."""
     # Load model and chat
@@ -563,7 +511,6 @@ async def test_metrics_increment_after_chat(client: AsyncClient) -> None:
     assert "test-model" in data["per_model"]
 
 
-@pytest.mark.asyncio
 async def test_metrics_requires_auth(client_with_auth: AsyncClient) -> None:
     """GET /admin/metrics rejects without X-Admin-Key."""
     response = await client_with_auth.get("/admin/metrics")
@@ -573,7 +520,6 @@ async def test_metrics_requires_auth(client_with_auth: AsyncClient) -> None:
 # --- Config reload tests ---
 
 
-@pytest.mark.asyncio
 async def test_config_reload_returns_success(client: AsyncClient) -> None:
     """POST /admin/config/reload returns success with updated sections."""
     response = await client.post("/admin/config/reload")
@@ -584,7 +530,6 @@ async def test_config_reload_returns_success(client: AsyncClient) -> None:
     assert "memory" in data["updated"]
 
 
-@pytest.mark.asyncio
 async def test_config_reload_requires_auth(client_with_auth: AsyncClient) -> None:
     """POST /admin/config/reload rejects without X-Admin-Key."""
     response = await client_with_auth.post("/admin/config/reload")

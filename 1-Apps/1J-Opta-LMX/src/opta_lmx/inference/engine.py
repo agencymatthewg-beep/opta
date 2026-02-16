@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import gc
 import logging
 import time
@@ -64,6 +65,7 @@ class InferenceEngine:
         self._gguf_context_length = gguf_context_length
         self._gguf_gpu_layers = gguf_gpu_layers
         self._event_bus = event_bus
+        self._load_lock = asyncio.Lock()
 
     async def load_model(self, model_id: str, use_batching: bool | None = None) -> ModelInfo:
         """Load an MLX model into memory via vllm-mlx.
@@ -79,36 +81,44 @@ class InferenceEngine:
             MemoryError: If loading would exceed 90% memory threshold.
             RuntimeError: If model loading fails.
         """
-        # Already loaded?
-        if model_id in self._models:
-            logger.info("model_already_loaded", extra={"model_id": model_id})
-            existing = self._models[model_id]
-            return ModelInfo(
-                model_id=model_id,
-                loaded=True,
-                memory_used_gb=existing.estimated_memory_gb,
-                loaded_at=existing.loaded_at,
-            )
-
-        # GUARDRAIL G-LMX-01: Check memory threshold before loading
-        current_usage = self._memory.usage_percent()
-        if current_usage >= self._memory.threshold_percent:
-            # Try LRU eviction before refusing (G-LMX-01 fallback)
-            if self._auto_evict_lru and self._models:
-                evicted_id = await self._evict_least_recently_used()
-                if evicted_id:
-                    logger.info("lru_evicted_for_load", extra={
-                        "evicted": evicted_id, "loading": model_id,
-                    })
-                    # Re-check after eviction
-                    current_usage = self._memory.usage_percent()
-
-            if current_usage >= self._memory.threshold_percent:
-                raise MemoryError(
-                    f"Memory usage at {current_usage:.1f}% — "
-                    f"already at or above {self._memory.threshold_percent}% threshold. "
-                    f"Unload a model first."
+        # Lock the check-and-mutate section to prevent two concurrent
+        # load_model() calls for the same model from both passing the
+        # "already loaded?" check.
+        async with self._load_lock:
+            # Already loaded?
+            if model_id in self._models:
+                logger.info("model_already_loaded", extra={"model_id": model_id})
+                existing = self._models[model_id]
+                return ModelInfo(
+                    model_id=model_id,
+                    loaded=True,
+                    memory_used_gb=existing.estimated_memory_gb,
+                    loaded_at=existing.loaded_at,
                 )
+
+            # NOTE: Memory check is best-effort due to TOCTOU — other processes may
+            # consume memory between this check and the actual model load. The post-load
+            # verification (below) catches this case and triggers eviction if needed.
+
+            # GUARDRAIL G-LMX-01: Check memory threshold before loading
+            current_usage = self._memory.usage_percent()
+            if current_usage >= self._memory.threshold_percent:
+                # Try LRU eviction before refusing (G-LMX-01 fallback)
+                if self._auto_evict_lru and self._models:
+                    evicted_id = await self._evict_least_recently_used()
+                    if evicted_id:
+                        logger.info("lru_evicted_for_load", extra={
+                            "evicted": evicted_id, "loading": model_id,
+                        })
+                        # Re-check after eviction
+                        current_usage = self._memory.usage_percent()
+
+                if current_usage >= self._memory.threshold_percent:
+                    raise MemoryError(
+                        f"Memory usage at {current_usage:.1f}% — "
+                        f"already at or above {self._memory.threshold_percent}% threshold. "
+                        f"Unload a model first."
+                    )
 
         fmt = _detect_format(model_id)
         batching = use_batching if use_batching is not None else self._use_batching
@@ -165,7 +175,8 @@ class InferenceEngine:
             backend_type=fmt,
             backend=backend_instance,
         )
-        self._models[model_id] = loaded
+        async with self._load_lock:
+            self._models[model_id] = loaded
 
         logger.info(
             "model_loaded",
@@ -226,12 +237,12 @@ class InferenceEngine:
         Raises:
             KeyError: If model is not loaded.
         """
-        if model_id not in self._models:
-            raise KeyError(f"Model {model_id} is not loaded")
+        async with self._load_lock:
+            if model_id not in self._models:
+                raise KeyError(f"Model {model_id} is not loaded")
+            loaded = self._models.pop(model_id)
 
         memory_before = self._memory.used_memory_gb()
-
-        loaded = self._models.pop(model_id)
 
         # Close backend if present (GGUF)
         if loaded.backend is not None:

@@ -60,7 +60,6 @@ class TestGGUFBackend:
         }
         return llama
 
-    @pytest.mark.asyncio
     async def test_generate_returns_content_and_tokens(self, mock_llama: MagicMock) -> None:
         """generate() returns content and token counts from llama-cpp-python."""
         with patch.dict("sys.modules", {"llama_cpp": MagicMock()}):
@@ -82,7 +81,6 @@ class TestGGUFBackend:
             assert prompt_tokens == 5
             assert completion_tokens == 4
 
-    @pytest.mark.asyncio
     async def test_generate_passes_stop_sequences(self, mock_llama: MagicMock) -> None:
         """generate() passes stop sequences to llama-cpp-python."""
         with patch.dict("sys.modules", {"llama_cpp": MagicMock()}):
@@ -103,7 +101,6 @@ class TestGGUFBackend:
             call_kwargs = mock_llama.create_chat_completion.call_args[1]
             assert call_kwargs["stop"] == ["```"]
 
-    @pytest.mark.asyncio
     async def test_stream_yields_tokens(self) -> None:
         """stream() yields individual tokens from llama-cpp-python streaming."""
         mock_llama = MagicMock()
@@ -165,7 +162,6 @@ class TestGGUFBackend:
 # ─── Integration Tests: Engine with GGUF ──────────────────────────────────
 
 
-@pytest.mark.asyncio
 async def test_engine_loads_gguf_model(tmp_path: Path) -> None:
     """InferenceEngine detects GGUF format and uses GGUFBackend."""
     monitor = MemoryMonitor(max_percent=90)
@@ -188,7 +184,6 @@ async def test_engine_loads_gguf_model(tmp_path: Path) -> None:
         assert loaded.engine is None  # No vllm-mlx engine for GGUF
 
 
-@pytest.mark.asyncio
 async def test_engine_unload_gguf_calls_close(tmp_path: Path) -> None:
     """Unloading a GGUF model calls backend.close()."""
     monitor = MemoryMonitor(max_percent=90)
@@ -207,7 +202,6 @@ async def test_engine_unload_gguf_calls_close(tmp_path: Path) -> None:
         assert not engine.is_model_loaded(fake_gguf)
 
 
-@pytest.mark.asyncio
 async def test_engine_gguf_generate_delegates_to_backend(tmp_path: Path) -> None:
     """generate() delegates to GGUF backend for GGUF models."""
     monitor = MemoryMonitor(max_percent=90)
@@ -234,7 +228,6 @@ async def test_engine_gguf_generate_delegates_to_backend(tmp_path: Path) -> None
         mock_backend.generate.assert_called_once()
 
 
-@pytest.mark.asyncio
 async def test_engine_gguf_stream_delegates_to_backend(tmp_path: Path) -> None:
     """stream_generate() delegates to GGUF backend for GGUF models."""
     monitor = MemoryMonitor(max_percent=90)

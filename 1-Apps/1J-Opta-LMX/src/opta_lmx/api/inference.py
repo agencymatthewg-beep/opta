@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import secrets
 import time
 import uuid
 
@@ -61,7 +62,7 @@ async def chat_completions(body: ChatCompletionRequest, request: Request):
     start_time = time.monotonic()
 
     if body.stream:
-        request_id = f"chatcmpl-{uuid.uuid4().hex[:12]}"
+        request_id = f"chatcmpl-{secrets.token_urlsafe(16)}"
         try:
             token_stream = engine.stream_generate(
                 model_id=resolved_model,
@@ -110,8 +111,6 @@ async def chat_completions(body: ChatCompletionRequest, request: Request):
                 stream=False,
             ))
             return response
-        except KeyError:
-            return model_not_found(body.model)  # type: ignore[return-value]
         except Exception as e:
             logger.error("completion_error", extra={"model": resolved_model, "error": str(e)})
             metrics.record(RequestMetric(

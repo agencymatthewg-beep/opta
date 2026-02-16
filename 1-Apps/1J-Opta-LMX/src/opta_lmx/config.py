@@ -1,4 +1,9 @@
-"""Configuration loading from YAML with Pydantic validation."""
+"""Configuration loading from YAML with Pydantic validation.
+
+Supports environment variable overrides via pydantic-settings.
+Env vars use ``LMX_`` prefix with ``__`` as nested delimiter, e.g.
+``LMX_SERVER__PORT=8080`` overrides ``server.port``.
+"""
 
 from __future__ import annotations
 
@@ -7,6 +12,7 @@ from pathlib import Path
 
 import yaml
 from pydantic import BaseModel, Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 logger = logging.getLogger(__name__)
 
@@ -89,8 +95,20 @@ class SecurityConfig(BaseModel):
     admin_key: str | None = Field(None, description="Required key for /admin/* endpoints. None = no auth.")
 
 
-class LMXConfig(BaseModel):
-    """Root configuration for Opta-LMX."""
+class LMXConfig(BaseSettings):
+    """Root configuration for Opta-LMX.
+
+    Environment variables override YAML values using ``LMX_`` prefix
+    and ``__`` as nested delimiter.  For example::
+
+        LMX_SERVER__PORT=8080      -> server.port = 8080
+        LMX_MEMORY__MAX_MEMORY_PERCENT=85  -> memory.max_memory_percent = 85
+    """
+
+    model_config = SettingsConfigDict(
+        env_prefix="LMX_",
+        env_nested_delimiter="__",
+    )
 
     server: ServerConfig = Field(default_factory=ServerConfig)
     models: ModelsConfig = Field(default_factory=ModelsConfig)

@@ -5,7 +5,6 @@ from __future__ import annotations
 import asyncio
 import json
 
-import pytest
 from httpx import AsyncClient
 
 from opta_lmx.monitoring.events import EventBus, ServerEvent
@@ -14,7 +13,6 @@ from opta_lmx.monitoring.events import EventBus, ServerEvent
 # ─── Unit Tests: EventBus ──────────────────────────────────────────────────
 
 
-@pytest.mark.asyncio
 async def test_subscribe_and_receive() -> None:
     """Subscriber receives published events."""
     bus = EventBus()
@@ -28,7 +26,6 @@ async def test_subscribe_and_receive() -> None:
     assert received.data == {"key": "value"}
 
 
-@pytest.mark.asyncio
 async def test_multiple_subscribers() -> None:
     """All subscribers receive the same event."""
     bus = EventBus()
@@ -41,7 +38,6 @@ async def test_multiple_subscribers() -> None:
     assert q2.get_nowait().event_type == "multi"
 
 
-@pytest.mark.asyncio
 async def test_unsubscribe() -> None:
     """Unsubscribed queues don't receive events."""
     bus = EventBus()
@@ -53,7 +49,6 @@ async def test_unsubscribe() -> None:
     assert queue.empty()
 
 
-@pytest.mark.asyncio
 async def test_full_queue_drops_subscriber() -> None:
     """Subscriber with full queue gets dropped silently."""
     bus = EventBus(max_queue_size=2)
@@ -68,7 +63,6 @@ async def test_full_queue_drops_subscriber() -> None:
     assert bus.subscriber_count == 0
 
 
-@pytest.mark.asyncio
 async def test_subscriber_count() -> None:
     """subscriber_count tracks active subscriptions."""
     bus = EventBus()
@@ -87,14 +81,12 @@ async def test_subscriber_count() -> None:
     assert bus.subscriber_count == 0
 
 
-@pytest.mark.asyncio
 async def test_publish_with_no_subscribers() -> None:
     """Publishing with no subscribers doesn't raise."""
     bus = EventBus()
     await bus.publish(ServerEvent(event_type="orphan", data={}))
 
 
-@pytest.mark.asyncio
 async def test_event_timestamp() -> None:
     """ServerEvent has a timestamp set automatically."""
     event = ServerEvent(event_type="timed", data={})
@@ -104,7 +96,6 @@ async def test_event_timestamp() -> None:
 # ─── API Tests: SSE Endpoint ──────────────────────────────────────────────
 
 
-@pytest.mark.asyncio
 async def test_sse_endpoint_returns_event_stream(client: AsyncClient) -> None:
     """GET /admin/events returns text/event-stream content type."""
     app = client._transport.app  # type: ignore[union-attr]
@@ -131,7 +122,6 @@ async def test_sse_endpoint_returns_event_stream(client: AsyncClient) -> None:
     event_bus.unsubscribe(queue)
 
 
-@pytest.mark.asyncio
 async def test_sse_receives_published_event(client: AsyncClient) -> None:
     """Published events appear in the SSE stream."""
     app = client._transport.app  # type: ignore[union-attr]
@@ -151,7 +141,6 @@ async def test_sse_receives_published_event(client: AsyncClient) -> None:
     event_bus.unsubscribe(queue)
 
 
-@pytest.mark.asyncio
 async def test_sse_auth_required(client_with_auth: AsyncClient) -> None:
     """SSE endpoint requires admin key when auth is configured."""
     resp = await client_with_auth.get("/admin/events")
@@ -161,7 +150,6 @@ async def test_sse_auth_required(client_with_auth: AsyncClient) -> None:
 # ─── Integration: Engine Events ──────────────────────────────────────────
 
 
-@pytest.mark.asyncio
 async def test_engine_publishes_model_loaded_event() -> None:
     """InferenceEngine publishes model_loaded event when a model is loaded."""
     from unittest.mock import MagicMock
@@ -190,7 +178,6 @@ async def test_engine_publishes_model_loaded_event() -> None:
     assert event.data["format"] == "mlx"
 
 
-@pytest.mark.asyncio
 async def test_engine_publishes_model_unloaded_event() -> None:
     """InferenceEngine publishes model_unloaded event on unload."""
     from unittest.mock import MagicMock

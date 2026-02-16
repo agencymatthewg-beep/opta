@@ -92,26 +92,45 @@ class GGUFBackend:
         stop: list[str] | None,
         tools: list[dict] | None,
     ) -> AsyncIterator[str]:
-        """Streaming GGUF generation — yields token strings."""
-        kwargs: dict[str, Any] = {
-            "messages": messages,
-            "temperature": temperature,
-            "max_tokens": max_tokens,
-            "top_p": top_p,
-            "stream": True,
-        }
-        if stop:
-            kwargs["stop"] = stop
+        """Streaming GGUF generation — yields token strings.
 
-        # llama-cpp-python streaming is blocking — run in thread
-        stream_iter = await asyncio.to_thread(
-            self._llm.create_chat_completion, **kwargs
-        )
+        Uses a queue-based approach: a background thread runs the blocking
+        llama-cpp-python iterator and pushes tokens into an asyncio.Queue,
+        while the async generator awaits on the queue without blocking the
+        event loop.
+        """
+        queue: asyncio.Queue[str | None] = asyncio.Queue()
+        loop = asyncio.get_running_loop()
 
-        for chunk in stream_iter:
-            delta = chunk["choices"][0].get("delta", {})
-            if content := delta.get("content"):
-                yield content
+        def _run_stream() -> None:
+            """Run blocking llama-cpp stream in thread, push tokens to queue."""
+            chat_messages = [{"role": m["role"], "content": m["content"]} for m in messages]
+            kwargs: dict[str, Any] = {
+                "messages": chat_messages,
+                "temperature": temperature,
+                "max_tokens": max_tokens,
+                "top_p": top_p,
+                "stream": True,
+            }
+            if stop:
+                kwargs["stop"] = stop
+
+            for chunk in self._llm.create_chat_completion(**kwargs):
+                delta = chunk["choices"][0].get("delta", {})
+                if content := delta.get("content"):
+                    loop.call_soon_threadsafe(queue.put_nowait, content)
+            loop.call_soon_threadsafe(queue.put_nowait, None)  # Sentinel
+
+        # Run the entire blocking iteration in a background thread
+        thread_task = loop.run_in_executor(None, _run_stream)
+
+        while True:
+            token = await queue.get()
+            if token is None:
+                break
+            yield token
+
+        await thread_task  # Ensure thread completes cleanly
 
     def close(self) -> None:
         """Release the GGUF model from memory."""

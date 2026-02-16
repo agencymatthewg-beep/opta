@@ -39,7 +39,12 @@ class EventBus:
 
         Returns:
             asyncio.Queue that receives published events.
+
+        Raises:
+            ValueError: If subscriber limit (50) is reached.
         """
+        if len(self._subscribers) >= 50:
+            raise ValueError("Maximum SSE subscriber limit reached")
         queue: asyncio.Queue[ServerEvent] = asyncio.Queue(maxsize=self._max_queue_size)
         self._subscribers.append(queue)
         logger.debug("sse_subscriber_added", extra={"total": len(self._subscribers)})
@@ -54,18 +59,20 @@ class EventBus:
         """Publish an event to all subscribers.
 
         Slow consumers (full queues) are silently dropped.
+        Iterates over a copy of the subscriber list to avoid mutation
+        during iteration.
         """
-        dead_queues: list[asyncio.Queue[ServerEvent]] = []
-        for queue in self._subscribers:
+        dead: list[asyncio.Queue[ServerEvent]] = []
+        for queue in self._subscribers[:]:  # Iterate over copy
             try:
                 queue.put_nowait(event)
             except asyncio.QueueFull:
-                dead_queues.append(queue)
+                dead.append(queue)
                 logger.warning("sse_subscriber_dropped", extra={
                     "reason": "queue_full",
                     "event_type": event.event_type,
                 })
-        for q in dead_queues:
+        for q in dead:
             self._subscribers.remove(q)
 
     @property

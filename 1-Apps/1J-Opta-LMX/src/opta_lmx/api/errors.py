@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+import logging
+
 from fastapi.responses import JSONResponse
+
+logger = logging.getLogger(__name__)
 
 
 def openai_error(
@@ -59,10 +63,11 @@ def insufficient_memory(detail: str) -> JSONResponse:
 
 
 def internal_error(detail: str) -> JSONResponse:
-    """Internal server error."""
+    """Internal server error. Logs full detail but returns generic message to clients."""
+    logger.error("internal_error", extra={"detail": detail})
     return openai_error(
         status_code=500,
-        message=detail,
+        message="Internal server error",
         error_type="internal_server_error",
         code="internal_error",
     )

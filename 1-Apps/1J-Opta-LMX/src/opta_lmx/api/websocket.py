@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
+import secrets
 import time
 import uuid
 from typing import Any
@@ -39,11 +41,21 @@ async def websocket_chat(websocket: WebSocket) -> None:
 
     try:
         while True:
-            data = await websocket.receive_json()
+            try:
+                data = await asyncio.wait_for(websocket.receive_json(), timeout=300.0)
+            except asyncio.TimeoutError:
+                logger.info("ws_idle_timeout")
+                break
+
+            # Message size limit (1MB)
+            if len(json.dumps(data)) > 1_000_000:
+                await websocket.close(code=1009, reason="Message too large")
+                break
+
             msg_type = data.get("type")
 
             if msg_type == "chat.request":
-                request_id = f"chatcmpl-{uuid.uuid4().hex[:12]}"
+                request_id = f"chatcmpl-{secrets.token_urlsafe(16)}"
                 task = asyncio.create_task(
                     _handle_chat_request(websocket, request_id, data, engine)
                 )
@@ -76,6 +88,10 @@ async def websocket_chat(websocket: WebSocket) -> None:
         for task in active_tasks.values():
             task.cancel()
         active_tasks.clear()
+        try:
+            await websocket.close()
+        except Exception:
+            pass
 
 
 async def _handle_chat_request(
@@ -115,6 +131,8 @@ async def _handle_chat_request(
         if stream:
             completion_tokens = 0
             prompt_text = " ".join(m.content or "" for m in messages)
+            # Approximate token count (~4 chars/token). For accurate counts,
+            # use the model's tokenizer. This heuristic is sufficient for usage tracking.
             prompt_tokens = max(1, len(prompt_text) // 4)
 
             async for token in engine.stream_generate(

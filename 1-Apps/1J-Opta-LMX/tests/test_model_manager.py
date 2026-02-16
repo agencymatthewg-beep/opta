@@ -21,7 +21,6 @@ def manager(tmp_path: Path) -> ModelManager:
 # --- start_download ---
 
 
-@pytest.mark.asyncio
 async def test_start_download_returns_download_id(manager: ModelManager) -> None:
     """start_download returns a DownloadTask with a unique ID."""
     with patch.object(manager, "_estimate_size", return_value=1000), \
@@ -34,7 +33,6 @@ async def test_start_download_returns_download_id(manager: ModelManager) -> None
     assert task.status == "downloading"
 
 
-@pytest.mark.asyncio
 async def test_start_download_estimates_size(manager: ModelManager) -> None:
     """start_download populates total_bytes from dry run estimate."""
     with patch.object(manager, "_estimate_size", return_value=5_000_000_000), \
@@ -44,7 +42,6 @@ async def test_start_download_estimates_size(manager: ModelManager) -> None:
     assert task.total_bytes == 5_000_000_000
 
 
-@pytest.mark.asyncio
 async def test_download_progress_tracking(manager: ModelManager) -> None:
     """get_download_progress returns the task state."""
     with patch.object(manager, "_estimate_size", return_value=100), \
@@ -57,13 +54,11 @@ async def test_download_progress_tracking(manager: ModelManager) -> None:
     assert progress.repo_id == "mlx-community/test-model"
 
 
-@pytest.mark.asyncio
 async def test_download_progress_none_for_unknown(manager: ModelManager) -> None:
     """get_download_progress returns None for unknown IDs."""
     assert manager.get_download_progress("nonexistent") is None
 
 
-@pytest.mark.asyncio
 async def test_download_failure_sets_error(manager: ModelManager) -> None:
     """A failed download sets status='failed' and captures the error message."""
     with patch.object(manager, "_estimate_size", return_value=0):
@@ -90,7 +85,6 @@ async def test_download_failure_sets_error(manager: ModelManager) -> None:
 # --- list_available ---
 
 
-@pytest.mark.asyncio
 async def test_list_available_empty(manager: ModelManager) -> None:
     """list_available returns empty when no models cached."""
     mock_cache = MagicMock()
@@ -102,7 +96,6 @@ async def test_list_available_empty(manager: ModelManager) -> None:
     assert models == []
 
 
-@pytest.mark.asyncio
 async def test_list_available_returns_cached_models(manager: ModelManager) -> None:
     """list_available returns model info from HF cache."""
     mock_revision = MagicMock()
@@ -128,7 +121,6 @@ async def test_list_available_returns_cached_models(manager: ModelManager) -> No
 # --- delete_model ---
 
 
-@pytest.mark.asyncio
 async def test_delete_raises_for_missing_model(manager: ModelManager) -> None:
     """delete_model raises KeyError when model not in cache."""
     mock_cache = MagicMock()
@@ -139,7 +131,6 @@ async def test_delete_raises_for_missing_model(manager: ModelManager) -> None:
             await manager.delete_model("nonexistent/model")
 
 
-@pytest.mark.asyncio
 async def test_delete_model_returns_freed_bytes(manager: ModelManager) -> None:
     """delete_model calls cache deletion and returns bytes freed."""
     mock_revision = MagicMock()
@@ -169,7 +160,6 @@ async def test_delete_model_returns_freed_bytes(manager: ModelManager) -> None:
 # --- cancel_active_downloads ---
 
 
-@pytest.mark.asyncio
 async def test_cancel_active_downloads(manager: ModelManager) -> None:
     """cancel_active_downloads cancels running tasks."""
     # Create a fake download task with an asyncio.Task

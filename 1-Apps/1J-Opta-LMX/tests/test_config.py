@@ -58,14 +58,14 @@ def test_load_config_missing_file() -> None:
 def test_memory_percent_validation() -> None:
     """Memory percent must be between 50 and 99."""
     with pytest.raises(Exception):
-        LMXConfig(memory={"max_memory_percent": 101})  # type: ignore
+        LMXConfig(memory={"max_memory_percent": 101})  # type: ignore[arg-type]
 
     with pytest.raises(Exception):
-        LMXConfig(memory={"max_memory_percent": 10})  # type: ignore
+        LMXConfig(memory={"max_memory_percent": 10})  # type: ignore[arg-type]
 
 
 def test_auto_load_list() -> None:
     """Auto-load accepts a list of model IDs."""
-    config = LMXConfig(models={"auto_load": ["model-a", "model-b"]})  # type: ignore
+    config = LMXConfig(models={"auto_load": ["model-a", "model-b"]})  # type: ignore[arg-type]
     assert len(config.models.auto_load) == 2
     assert "model-a" in config.models.auto_load
