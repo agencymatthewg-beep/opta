@@ -18,8 +18,8 @@ afterEach(async () => {
 });
 
 describe('tool schemas', () => {
-  it('defines exactly 10 tools', () => {
-    expect(TOOL_SCHEMAS).toHaveLength(10);
+  it('defines exactly 14 tools', () => {
+    expect(TOOL_SCHEMAS).toHaveLength(14);
   });
 
   it('has all expected tool names', () => {
@@ -34,6 +34,10 @@ describe('tool schemas', () => {
     expect(names).toContain('ask_user');
     expect(names).toContain('read_project_docs');
     expect(names).toContain('web_search');
+    expect(names).toContain('web_fetch');
+    expect(names).toContain('delete_file');
+    expect(names).toContain('multi_edit');
+    expect(names).toContain('save_memory');
   });
 
   it('each schema has type, function.name, function.parameters', () => {
@@ -230,6 +234,135 @@ describe('read_project_docs', () => {
       const result = await executeTool('read_project_docs', JSON.stringify({ file: 'ARCHITECTURE.md' }));
       expect(result).toContain('not found');
       expect(result).toContain('opta init');
+    } finally {
+      process.chdir(originalCwd);
+    }
+  });
+});
+
+describe('delete_file', () => {
+  it('deletes an existing file', async () => {
+    const result = await executeTool('delete_file', JSON.stringify({
+      path: join(TEST_DIR, 'hello.txt'),
+    }));
+    expect(result).toContain('File deleted');
+  });
+
+  it('returns error for missing file', async () => {
+    const result = await executeTool('delete_file', JSON.stringify({
+      path: join(TEST_DIR, 'nonexistent.txt'),
+    }));
+    expect(result).toContain('Error:');
+  });
+});
+
+describe('multi_edit', () => {
+  it('applies multiple edits to a file', async () => {
+    const result = await executeTool('multi_edit', JSON.stringify({
+      path: join(TEST_DIR, 'code.ts'),
+      edits: [
+        { old_text: 'const x = 1;', new_text: 'const x = 10;' },
+        { old_text: 'const y = 2;', new_text: 'const y = 20;' },
+      ],
+    }));
+    expect(result).toContain('2 edits applied');
+
+    // Verify changes
+    const content = await executeTool('read_file', JSON.stringify({
+      path: join(TEST_DIR, 'code.ts'),
+    }));
+    expect(content).toContain('const x = 10;');
+    expect(content).toContain('const y = 20;');
+  });
+
+  it('fails when old_text not found', async () => {
+    const result = await executeTool('multi_edit', JSON.stringify({
+      path: join(TEST_DIR, 'code.ts'),
+      edits: [
+        { old_text: 'not in file', new_text: 'replacement' },
+      ],
+    }));
+    expect(result).toContain('Error: Edit 1');
+    expect(result).toContain('not found');
+  });
+
+  it('fails when old_text appears multiple times', async () => {
+    await writeFile(join(TEST_DIR, 'dupe2.txt'), 'foo bar foo');
+    const result = await executeTool('multi_edit', JSON.stringify({
+      path: join(TEST_DIR, 'dupe2.txt'),
+      edits: [
+        { old_text: 'foo', new_text: 'baz' },
+      ],
+    }));
+    expect(result).toContain('appears 2 times');
+  });
+
+  it('returns error when no edits provided', async () => {
+    const result = await executeTool('multi_edit', JSON.stringify({
+      path: join(TEST_DIR, 'code.ts'),
+      edits: [],
+    }));
+    expect(result).toBe('Error: No edits provided');
+  });
+});
+
+describe('save_memory', () => {
+  it('creates memory file with entry', async () => {
+    const originalCwd = process.cwd();
+    try {
+      process.chdir(TEST_DIR);
+      const result = await executeTool('save_memory', JSON.stringify({
+        content: 'Always use ESM imports',
+        category: 'decision',
+      }));
+      expect(result).toContain('Memory saved');
+      expect(result).toContain('decision');
+
+      // Verify file was created
+      const content = await executeTool('read_file', JSON.stringify({
+        path: join(TEST_DIR, '.opta', 'memory.md'),
+      }));
+      expect(content).toContain('# Project Memory');
+      expect(content).toContain('[decision]');
+      expect(content).toContain('Always use ESM imports');
+    } finally {
+      process.chdir(originalCwd);
+    }
+  });
+
+  it('appends to existing memory file', async () => {
+    const originalCwd = process.cwd();
+    try {
+      process.chdir(TEST_DIR);
+      await executeTool('save_memory', JSON.stringify({
+        content: 'First entry',
+        category: 'note',
+      }));
+      await executeTool('save_memory', JSON.stringify({
+        content: 'Second entry',
+        category: 'lesson',
+      }));
+
+      const content = await executeTool('read_file', JSON.stringify({
+        path: join(TEST_DIR, '.opta', 'memory.md'),
+      }));
+      expect(content).toContain('First entry');
+      expect(content).toContain('Second entry');
+      expect(content).toContain('[note]');
+      expect(content).toContain('[lesson]');
+    } finally {
+      process.chdir(originalCwd);
+    }
+  });
+
+  it('defaults category to note', async () => {
+    const originalCwd = process.cwd();
+    try {
+      process.chdir(TEST_DIR);
+      const result = await executeTool('save_memory', JSON.stringify({
+        content: 'Some note without category',
+      }));
+      expect(result).toContain('note');
     } finally {
       process.chdir(originalCwd);
     }

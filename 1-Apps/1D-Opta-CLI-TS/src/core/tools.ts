@@ -163,16 +163,86 @@ export const TOOL_SCHEMAS = [
       },
     },
   },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'web_fetch',
+      description: 'Fetch and extract text content from a URL. Returns cleaned text.',
+      parameters: {
+        type: 'object',
+        properties: {
+          url: { type: 'string', description: 'URL to fetch' },
+          max_length: { type: 'number', description: 'Max characters to return (default: 4000)' },
+        },
+        required: ['url'],
+      },
+    },
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'delete_file',
+      description: 'Delete a file from the filesystem.',
+      parameters: {
+        type: 'object',
+        properties: {
+          path: { type: 'string', description: 'File path (relative to cwd)' },
+        },
+        required: ['path'],
+      },
+    },
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'multi_edit',
+      description: 'Apply multiple edits to a single file. Each edit replaces an exact unique string.',
+      parameters: {
+        type: 'object',
+        properties: {
+          path: { type: 'string', description: 'File path (relative to cwd)' },
+          edits: {
+            type: 'array',
+            description: 'Array of {old_text, new_text} pairs',
+            items: {
+              type: 'object',
+              properties: {
+                old_text: { type: 'string', description: 'Exact text to find' },
+                new_text: { type: 'string', description: 'Replacement text' },
+              },
+              required: ['old_text', 'new_text'],
+            },
+          },
+        },
+        required: ['path', 'edits'],
+      },
+    },
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'save_memory',
+      description: 'Save a piece of knowledge to the project memory file (.opta/memory.md) for cross-session persistence.',
+      parameters: {
+        type: 'object',
+        properties: {
+          content: { type: 'string', description: 'Knowledge to persist (decisions, patterns, lessons)' },
+          category: { type: 'string', description: 'Category: decision, pattern, lesson, note' },
+        },
+        required: ['content'],
+      },
+    },
+  },
 ];
 
 // --- Permission Resolution ---
 
 const MODE_PERMISSIONS: Record<string, Record<string, 'allow' | 'ask' | 'deny'>> = {
   safe: {},
-  auto: { edit_file: 'allow', write_file: 'allow' },
-  plan: { edit_file: 'deny', write_file: 'deny', run_command: 'deny' },
-  dangerous: { edit_file: 'allow', write_file: 'allow', run_command: 'allow' },
-  ci: { edit_file: 'deny', write_file: 'deny', run_command: 'deny', ask_user: 'deny' },
+  auto: { edit_file: 'allow', write_file: 'allow', delete_file: 'allow', multi_edit: 'allow' },
+  plan: { edit_file: 'deny', write_file: 'deny', delete_file: 'deny', multi_edit: 'deny', run_command: 'deny' },
+  dangerous: { edit_file: 'allow', write_file: 'allow', delete_file: 'allow', multi_edit: 'allow', run_command: 'allow' },
+  ci: { edit_file: 'deny', write_file: 'deny', delete_file: 'deny', multi_edit: 'deny', run_command: 'deny', ask_user: 'deny' },
 };
 
 const DEFAULT_TOOL_PERMISSIONS: Record<string, string> = {
@@ -186,6 +256,10 @@ const DEFAULT_TOOL_PERMISSIONS: Record<string, string> = {
   ask_user: 'allow',
   read_project_docs: 'allow',
   web_search: 'allow',
+  web_fetch: 'allow',
+  delete_file: 'ask',
+  multi_edit: 'ask',
+  save_memory: 'allow',
 };
 
 export function resolvePermission(
@@ -248,6 +322,14 @@ export async function executeTool(
         return await execReadProjectDocs(args);
       case 'web_search':
         return await execWebSearch(args);
+      case 'web_fetch':
+        return await execWebFetch(args);
+      case 'delete_file':
+        return await execDeleteFile(args);
+      case 'multi_edit':
+        return await execMultiEdit(args);
+      case 'save_memory':
+        return await execSaveMemory(args);
       default:
         return `Error: Unknown tool "${name}"`;
     }
@@ -474,6 +556,96 @@ async function execWebSearch(args: Record<string, unknown>): Promise<string> {
   } catch (err) {
     return `Error: Search failed — ${err instanceof Error ? err.message : String(err)}`;
   }
+}
+
+async function execWebFetch(args: Record<string, unknown>): Promise<string> {
+  const url = String(args['url'] ?? '');
+  const maxLength = Number(args['max_length'] ?? 4000);
+
+  try {
+    const response = await fetch(url, {
+      signal: AbortSignal.timeout(15000),
+      headers: { 'User-Agent': 'Opta-CLI/1.0' },
+    });
+    if (!response.ok) return `Error: Fetch returned ${response.status}`;
+
+    const html = await response.text();
+
+    // Simple HTML-to-text: strip tags, decode entities, collapse whitespace
+    const text = html
+      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    return text.slice(0, maxLength);
+  } catch (err) {
+    return `Error: Fetch failed — ${err instanceof Error ? err.message : String(err)}`;
+  }
+}
+
+async function execDeleteFile(args: Record<string, unknown>): Promise<string> {
+  const filePath = resolve(String(args['path'] ?? ''));
+  const { unlink } = await import('node:fs/promises');
+  await unlink(filePath);
+  return `File deleted: ${relative(process.cwd(), filePath)}`;
+}
+
+async function execMultiEdit(args: Record<string, unknown>): Promise<string> {
+  const filePath = resolve(String(args['path'] ?? ''));
+  const edits = args['edits'] as Array<{ old_text: string; new_text: string }> ?? [];
+
+  if (edits.length === 0) return 'Error: No edits provided';
+
+  let content = await readFile(filePath, 'utf-8');
+  const applied: string[] = [];
+
+  for (let i = 0; i < edits.length; i++) {
+    const { old_text, new_text } = edits[i]!;
+    const occurrences = content.split(old_text).length - 1;
+    if (occurrences === 0) {
+      return `Error: Edit ${i + 1} — old_text not found in ${relative(process.cwd(), filePath)}`;
+    }
+    if (occurrences > 1) {
+      return `Error: Edit ${i + 1} — old_text appears ${occurrences} times (must be unique)`;
+    }
+    content = content.replace(old_text, new_text);
+    applied.push(`Edit ${i + 1}: applied`);
+  }
+
+  await writeFile(filePath, content, 'utf-8');
+  return `File edited: ${relative(process.cwd(), filePath)} (${applied.length} edits applied)`;
+}
+
+async function execSaveMemory(args: Record<string, unknown>): Promise<string> {
+  const content = String(args['content'] ?? '');
+  const category = String(args['category'] ?? 'note');
+  const timestamp = new Date().toISOString().split('T')[0];
+
+  const memoryPath = resolve(process.cwd(), '.opta', 'memory.md');
+
+  const { mkdir } = await import('node:fs/promises');
+  const { dirname } = await import('node:path');
+  await mkdir(dirname(memoryPath), { recursive: true });
+
+  let existing = '';
+  try {
+    existing = await readFile(memoryPath, 'utf-8');
+  } catch {
+    existing = '# Project Memory\n\n';
+  }
+
+  const entry = `\n## [${category}] ${timestamp}\n\n${content}\n`;
+  await writeFile(memoryPath, existing + entry, 'utf-8');
+
+  return `Memory saved to .opta/memory.md (${category})`;
 }
 
 // --- Utility ---
