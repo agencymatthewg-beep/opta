@@ -88,7 +88,7 @@ const scanHandler = async (_args: string, ctx: SlashContext): Promise<SlashResul
   }
 
   // Presets
-  if (presetsRes && presetsRes.presets.length > 0) {
+  if (presetsRes?.presets.length) {
     lines.push('');
     lines.push(chalk.bold('Presets'));
     for (const p of presetsRes.presets) {
@@ -192,12 +192,12 @@ const serveHandler = async (args: string, ctx: SlashContext): Promise<SlashResul
   const action = args.trim().toLowerCase() || 'status';
   const { host, port } = ctx.config.connection;
 
-  if (action === 'status' || action === '') {
+  if (action === 'status') {
     const { LmxClient } = await import('../../lmx/client.js');
     const lmx = new LmxClient({ host, port, adminKey: ctx.config.connection.adminKey });
 
     try {
-      const health = await lmx.health();
+      await lmx.health();
       const status = await lmx.status();
       const lines: string[] = [
         kv('Status', chalk.green('running')),

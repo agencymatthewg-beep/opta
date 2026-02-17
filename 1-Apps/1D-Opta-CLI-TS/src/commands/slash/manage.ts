@@ -3,7 +3,7 @@
  */
 
 import chalk from 'chalk';
-import { box, kv, statusDot } from '../../ui/box.js';
+import { box, kv } from '../../ui/box.js';
 import type { SlashCommandDef, SlashContext, SlashResult } from './types.js';
 
 const configHandler = async (args: string, ctx: SlashContext): Promise<SlashResult> => {
@@ -12,7 +12,7 @@ const configHandler = async (args: string, ctx: SlashContext): Promise<SlashResu
   const key = parts[1];
   const value = parts.slice(2).join(' ');
 
-  if (action === 'list' || action === '') {
+  if (action === 'list') {
     const lines: string[] = [
       chalk.dim('Connection'),
       kv('host', ctx.config.connection.host, 20),

@@ -23,8 +23,7 @@ const modelHandler = async (args: string, ctx: SlashContext): Promise<SlashResul
   // Interactive model picker: scan LMX loaded + on-disk + Anthropic
   try {
     const { LmxClient, lookupContextLimit } = await import('../../lmx/client.js');
-    const { Separator } = await import('@inquirer/prompts');
-    const { select } = await import('@inquirer/prompts');
+    const { select, Separator } = await import('@inquirer/prompts');
 
     const lmx = new LmxClient({
       host: ctx.config.connection.host,
