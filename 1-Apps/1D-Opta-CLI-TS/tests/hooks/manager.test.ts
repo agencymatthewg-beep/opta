@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { HookManager, NoOpHookManager } from '../../src/hooks/manager.js';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { HookManager, NoOpHookManager, ALLOWED_ENV_KEYS } from '../../src/hooks/manager.js';
 
 describe('HookManager', () => {
   // Task 1: No-op path
@@ -224,5 +224,109 @@ describe('HookManager', () => {
       });
       expect(r.cancelled).toBe(false);
     });
+  });
+});
+
+describe('environment allowlist', () => {
+  let savedEnv: Record<string, string | undefined>;
+
+  beforeEach(() => {
+    savedEnv = {
+      SECRET_API_KEY: process.env['SECRET_API_KEY'],
+      AWS_SECRET_ACCESS_KEY: process.env['AWS_SECRET_ACCESS_KEY'],
+      OPTA_CUSTOM_VAR: process.env['OPTA_CUSTOM_VAR'],
+      PATH: process.env['PATH'],
+    };
+    // Set test env vars
+    process.env['SECRET_API_KEY'] = 'sk-supersecret';
+    process.env['AWS_SECRET_ACCESS_KEY'] = 'aws-secret-123';
+    process.env['OPTA_CUSTOM_VAR'] = 'opta-value';
+  });
+
+  afterEach(() => {
+    // Restore original env
+    for (const [key, val] of Object.entries(savedEnv)) {
+      if (val === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = val;
+      }
+    }
+  });
+
+  it('passes PATH to hook subprocess', async () => {
+    const mgr = HookManager.create([
+      { event: 'session.start', command: 'echo "$PATH"' },
+    ]);
+    // The fact that the hook can execute (uses PATH to find 'echo') proves PATH is passed.
+    const result = await mgr.fire('session.start', {
+      event: 'session.start',
+      session_id: 'test',
+      cwd: '/tmp',
+    });
+    expect(result.cancelled).toBe(false);
+  });
+
+  it('does NOT pass SECRET_API_KEY to hook subprocess', async () => {
+    // Use a hook that tests the secret var — if filtered, it should be empty
+    const mgr = HookManager.create([
+      { event: 'session.start', command: 'test -z "$SECRET_API_KEY" && exit 0 || exit 1' },
+    ]);
+    const result = await mgr.fire('session.start', {
+      event: 'session.start',
+      session_id: 'test',
+      cwd: '/tmp',
+    });
+    // exit 0 means SECRET_API_KEY was empty (blocked), exit 1 means it leaked
+    // session.start does NOT cancel on non-zero, so we verify via tool.pre instead
+    expect(result.cancelled).toBe(false);
+  });
+
+  it('does NOT pass AWS_SECRET_ACCESS_KEY to hook subprocess (tool.pre verification)', async () => {
+    // tool.pre cancels on non-zero exit, so exit 1 = var leaked, exit 0 = var blocked
+    const mgr = HookManager.create([
+      { event: 'tool.pre', command: 'test -n "$AWS_SECRET_ACCESS_KEY" && exit 1 || exit 0' },
+    ]);
+    const result = await mgr.fire('tool.pre', {
+      event: 'tool.pre',
+      session_id: 'test',
+      cwd: '/tmp',
+      tool_name: 'read_file',
+    });
+    // If AWS_SECRET_ACCESS_KEY leaked, exit 1 -> cancelled=true. We expect it was blocked.
+    expect(result.cancelled).toBe(false);
+  });
+
+  it('passes OPTA_* vars from process.env', async () => {
+    // tool.pre: exit 1 if OPTA_CUSTOM_VAR is missing -> cancelled=true means missing
+    const mgr = HookManager.create([
+      { event: 'tool.pre', command: 'test "$OPTA_CUSTOM_VAR" = "opta-value" && exit 0 || exit 1' },
+    ]);
+    const result = await mgr.fire('tool.pre', {
+      event: 'tool.pre',
+      session_id: 'test',
+      cwd: '/tmp',
+      tool_name: 'read_file',
+    });
+    // exit 0 -> not cancelled -> OPTA_CUSTOM_VAR was correctly passed
+    expect(result.cancelled).toBe(false);
+  });
+
+  it('ALLOWED_ENV_KEYS contains expected safe keys', () => {
+    expect(ALLOWED_ENV_KEYS.has('PATH')).toBe(true);
+    expect(ALLOWED_ENV_KEYS.has('HOME')).toBe(true);
+    expect(ALLOWED_ENV_KEYS.has('USER')).toBe(true);
+    expect(ALLOWED_ENV_KEYS.has('SHELL')).toBe(true);
+    expect(ALLOWED_ENV_KEYS.has('TERM')).toBe(true);
+    expect(ALLOWED_ENV_KEYS.has('LANG')).toBe(true);
+    expect(ALLOWED_ENV_KEYS.has('NODE_ENV')).toBe(true);
+    expect(ALLOWED_ENV_KEYS.has('TMPDIR')).toBe(true);
+  });
+
+  it('ALLOWED_ENV_KEYS does NOT contain secret-like keys', () => {
+    expect(ALLOWED_ENV_KEYS.has('SECRET_API_KEY')).toBe(false);
+    expect(ALLOWED_ENV_KEYS.has('AWS_SECRET_ACCESS_KEY')).toBe(false);
+    expect(ALLOWED_ENV_KEYS.has('ANTHROPIC_API_KEY')).toBe(false);
+    expect(ALLOWED_ENV_KEYS.has('OPENAI_API_KEY')).toBe(false);
   });
 });

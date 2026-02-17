@@ -1,20 +1,27 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { writeFile, mkdir, rm } from 'node:fs/promises';
 import { join } from 'node:path';
+import { realpathSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { executeTool, resolvePermission, TOOL_SCHEMAS, getToolNames } from '../../src/core/tools.js';
 import { DEFAULT_CONFIG } from '../../src/core/config.js';
 
-const TEST_DIR = join(tmpdir(), 'opta-test-' + Date.now());
+const RAW_TEST_DIR = join(tmpdir(), 'opta-test-' + Date.now());
+let TEST_DIR: string;
+let originalCwd: string;
 
 beforeEach(async () => {
-  await mkdir(TEST_DIR, { recursive: true });
+  originalCwd = process.cwd();
+  await mkdir(RAW_TEST_DIR, { recursive: true });
+  TEST_DIR = realpathSync(RAW_TEST_DIR);
   await writeFile(join(TEST_DIR, 'hello.txt'), 'line one\nline two\nline three\n');
   await writeFile(join(TEST_DIR, 'code.ts'), 'const x = 1;\nconst y = 2;\nconst z = x + y;\n');
+  process.chdir(TEST_DIR);
 });
 
 afterEach(async () => {
-  await rm(TEST_DIR, { recursive: true, force: true });
+  process.chdir(originalCwd);
+  await rm(RAW_TEST_DIR, { recursive: true, force: true });
 });
 
 describe('tool schemas', () => {
@@ -242,27 +249,15 @@ describe('read_project_docs', () => {
     await mkdir(join(TEST_DIR, 'docs'), { recursive: true });
     await writeFile(join(TEST_DIR, 'docs', 'KNOWLEDGE.md'), '# Knowledge\nImportant facts here.\n');
 
-    const originalCwd = process.cwd();
-    try {
-      process.chdir(TEST_DIR);
-      const result = await executeTool('read_project_docs', JSON.stringify({ file: 'KNOWLEDGE.md' }));
-      expect(result).toContain('# Knowledge');
-      expect(result).toContain('Important facts here.');
-    } finally {
-      process.chdir(originalCwd);
-    }
+    const result = await executeTool('read_project_docs', JSON.stringify({ file: 'KNOWLEDGE.md' }));
+    expect(result).toContain('# Knowledge');
+    expect(result).toContain('Important facts here.');
   });
 
   it('returns helpful message for missing docs', async () => {
-    const originalCwd = process.cwd();
-    try {
-      process.chdir(TEST_DIR);
-      const result = await executeTool('read_project_docs', JSON.stringify({ file: 'ARCHITECTURE.md' }));
-      expect(result).toContain('not found');
-      expect(result).toContain('opta init');
-    } finally {
-      process.chdir(originalCwd);
-    }
+    const result = await executeTool('read_project_docs', JSON.stringify({ file: 'ARCHITECTURE.md' }));
+    expect(result).toContain('not found');
+    expect(result).toContain('opta init');
   });
 });
 
@@ -381,64 +376,46 @@ describe('multi_edit', () => {
 
 describe('save_memory', () => {
   it('creates memory file with entry', async () => {
-    const originalCwd = process.cwd();
-    try {
-      process.chdir(TEST_DIR);
-      const result = await executeTool('save_memory', JSON.stringify({
-        content: 'Always use ESM imports',
-        category: 'decision',
-      }));
-      expect(result).toContain('Memory saved');
-      expect(result).toContain('decision');
+    const result = await executeTool('save_memory', JSON.stringify({
+      content: 'Always use ESM imports',
+      category: 'decision',
+    }));
+    expect(result).toContain('Memory saved');
+    expect(result).toContain('decision');
 
-      // Verify file was created
-      const content = await executeTool('read_file', JSON.stringify({
-        path: join(TEST_DIR, '.opta', 'memory.md'),
-      }));
-      expect(content).toContain('# Project Memory');
-      expect(content).toContain('[decision]');
-      expect(content).toContain('Always use ESM imports');
-    } finally {
-      process.chdir(originalCwd);
-    }
+    // Verify file was created
+    const content = await executeTool('read_file', JSON.stringify({
+      path: join(TEST_DIR, '.opta', 'memory.md'),
+    }));
+    expect(content).toContain('# Project Memory');
+    expect(content).toContain('[decision]');
+    expect(content).toContain('Always use ESM imports');
   });
 
   it('appends to existing memory file', async () => {
-    const originalCwd = process.cwd();
-    try {
-      process.chdir(TEST_DIR);
-      await executeTool('save_memory', JSON.stringify({
-        content: 'First entry',
-        category: 'note',
-      }));
-      await executeTool('save_memory', JSON.stringify({
-        content: 'Second entry',
-        category: 'lesson',
-      }));
+    await executeTool('save_memory', JSON.stringify({
+      content: 'First entry',
+      category: 'note',
+    }));
+    await executeTool('save_memory', JSON.stringify({
+      content: 'Second entry',
+      category: 'lesson',
+    }));
 
-      const content = await executeTool('read_file', JSON.stringify({
-        path: join(TEST_DIR, '.opta', 'memory.md'),
-      }));
-      expect(content).toContain('First entry');
-      expect(content).toContain('Second entry');
-      expect(content).toContain('[note]');
-      expect(content).toContain('[lesson]');
-    } finally {
-      process.chdir(originalCwd);
-    }
+    const content = await executeTool('read_file', JSON.stringify({
+      path: join(TEST_DIR, '.opta', 'memory.md'),
+    }));
+    expect(content).toContain('First entry');
+    expect(content).toContain('Second entry');
+    expect(content).toContain('[note]');
+    expect(content).toContain('[lesson]');
   });
 
   it('defaults category to note', async () => {
-    const originalCwd = process.cwd();
-    try {
-      process.chdir(TEST_DIR);
-      const result = await executeTool('save_memory', JSON.stringify({
-        content: 'Some note without category',
-      }));
-      expect(result).toContain('note');
-    } finally {
-      process.chdir(originalCwd);
-    }
+    const result = await executeTool('save_memory', JSON.stringify({
+      content: 'Some note without category',
+    }));
+    expect(result).toContain('note');
   });
 });
 

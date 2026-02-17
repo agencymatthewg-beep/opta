@@ -47,6 +47,9 @@ export interface HookResult {
 const NOOP_RESULT: HookResult = Object.freeze({ cancelled: false });
 const DEFAULT_TIMEOUT = 10_000;
 
+/** Only these env vars are passed to hook subprocesses (security: prevents API key leaks). */
+export const ALLOWED_ENV_KEYS = new Set(['PATH', 'HOME', 'USER', 'SHELL', 'TERM', 'LANG', 'LC_ALL', 'NODE_ENV', 'TMPDIR']);
+
 // ── Compiled hook (internal) ────────────────────────────────────────────
 
 interface CompiledHook extends HookDefinition {
@@ -122,6 +125,7 @@ export class HookManager {
     try {
       const result = await execa('sh', ['-c', hook.command], {
         env,
+        extendEnv: false,
         timeout,
         reject: false,
       });
@@ -147,14 +151,27 @@ export class HookManager {
 
   /**
    * Build environment variables from HookContext.
+   * Only passes an allowlist of safe env vars (PATH, HOME, etc.) plus OPTA_* vars.
+   * This prevents leaking API keys or secrets to hook subprocesses.
    */
   protected buildEnv(context: HookContext): Record<string, string> {
-    const env: Record<string, string> = {
-      ...process.env as Record<string, string>,
-      OPTA_EVENT: context.event,
-      OPTA_SESSION_ID: context.session_id,
-      OPTA_CWD: context.cwd,
-    };
+    const env: Record<string, string> = {};
+
+    // Only pass safe env vars from the allowlist
+    for (const key of ALLOWED_ENV_KEYS) {
+      const val = process.env[key];
+      if (val !== undefined) env[key] = val;
+    }
+
+    // Also pass OPTA_* vars from process.env
+    for (const [key, val] of Object.entries(process.env)) {
+      if (key.startsWith('OPTA_') && val !== undefined) env[key] = val;
+    }
+
+    // Add hook-specific OPTA_ vars
+    env.OPTA_EVENT = context.event;
+    env.OPTA_SESSION_ID = context.session_id;
+    env.OPTA_CWD = context.cwd;
 
     if (context.model) env['OPTA_MODEL'] = context.model;
     if (context.tool_name) env['OPTA_TOOL_NAME'] = context.tool_name;

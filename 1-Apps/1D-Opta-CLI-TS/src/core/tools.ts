@@ -1,5 +1,6 @@
 import { readFile, writeFile, readdir } from 'node:fs/promises';
 import { resolve, relative } from 'node:path';
+import { realpathSync } from 'node:fs';
 import { debug } from './debug.js';
 import type { OptaConfig } from './config.js';
 import { isCI } from '../ui/output.js';
@@ -613,10 +614,31 @@ export async function executeTool(
   }
 }
 
+// --- Path Traversal Guard ---
+
+export function assertWithinCwd(resolvedPath: string): void {
+  // Use realpathSync on cwd to resolve symlinks (e.g., macOS /var -> /private/var).
+  // For the target path, try realpathSync first; if it doesn't exist yet, walk up
+  // to the nearest existing ancestor and check from there.
+  const cwd = realpathSync(process.cwd());
+  let normalized: string;
+  try {
+    normalized = realpathSync(resolvedPath);
+  } catch {
+    // Path doesn't exist yet (e.g., write_file to new location).
+    // Resolve without symlink expansion but normalize cwd-relative.
+    normalized = resolve(cwd, resolvedPath);
+  }
+  if (!normalized.startsWith(cwd + '/') && normalized !== cwd) {
+    throw new Error(`Path traversal blocked: "${normalized}" is outside working directory "${cwd}"`);
+  }
+}
+
 // --- Individual Tool Implementations ---
 
 async function execReadFile(args: Record<string, unknown>): Promise<string> {
   const path = resolve(String(args['path'] ?? ''));
+  assertWithinCwd(path);
   const offset = Number(args['offset'] ?? 1);
   const limit = Number(args['limit'] ?? 0);
 
@@ -632,6 +654,7 @@ async function execReadFile(args: Record<string, unknown>): Promise<string> {
 
 async function execWriteFile(args: Record<string, unknown>): Promise<string> {
   const path = resolve(String(args['path'] ?? ''));
+  assertWithinCwd(path);
   const content = String(args['content'] ?? '');
 
   const { mkdir } = await import('node:fs/promises');
@@ -644,6 +667,7 @@ async function execWriteFile(args: Record<string, unknown>): Promise<string> {
 
 async function execEditFile(args: Record<string, unknown>): Promise<string> {
   const path = resolve(String(args['path'] ?? ''));
+  assertWithinCwd(path);
   const oldText = String(args['old_text'] ?? '');
   const newText = String(args['new_text'] ?? '');
 
@@ -665,6 +689,7 @@ async function execEditFile(args: Record<string, unknown>): Promise<string> {
 
 async function execListDir(args: Record<string, unknown>): Promise<string> {
   const path = resolve(String(args['path'] ?? '.'));
+  assertWithinCwd(path);
   const recursive = Boolean(args['recursive']);
 
   if (recursive) {
@@ -885,6 +910,7 @@ async function execWebFetch(args: Record<string, unknown>): Promise<string> {
 
 async function execDeleteFile(args: Record<string, unknown>): Promise<string> {
   const filePath = resolve(String(args['path'] ?? ''));
+  assertWithinCwd(filePath);
   const { unlink } = await import('node:fs/promises');
   await unlink(filePath);
   return `File deleted: ${relative(process.cwd(), filePath)}`;

@@ -2,6 +2,7 @@ import { readFile, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { debug } from '../core/debug.js';
 import { getToolNames } from '../core/tools.js';
+import { ALLOWED_ENV_KEYS } from '../hooks/manager.js';
 
 // --- Custom Tool Definition ---
 
@@ -91,11 +92,22 @@ export async function executeCustomTool(
 ): Promise<string> {
   const { execa } = await import('execa');
 
-  // Build environment variables from args
-  const env: Record<string, string> = {
-    ...process.env,
-    OPTA_TOOL_ARGS: JSON.stringify(args),
-  };
+  // Build environment variables from args (filtered allowlist — prevents API key leaks)
+  const env: Record<string, string> = {};
+
+  // Only pass safe env vars from the allowlist
+  for (const key of ALLOWED_ENV_KEYS) {
+    const val = process.env[key];
+    if (val !== undefined) env[key] = val;
+  }
+
+  // Also pass OPTA_* vars from process.env
+  for (const [pKey, pVal] of Object.entries(process.env)) {
+    if (pKey.startsWith('OPTA_') && pVal !== undefined) env[pKey] = pVal;
+  }
+
+  // Add tool-specific vars
+  env.OPTA_TOOL_ARGS = JSON.stringify(args);
 
   for (const [key, value] of Object.entries(args)) {
     const envKey = `OPTA_TOOL_ARG_${key.toUpperCase()}`;
@@ -110,6 +122,7 @@ export async function executeCustomTool(
       timeout: tool.timeout,
       cwd: process.cwd(),
       env,
+      extendEnv: false,
     });
 
     if (result.timedOut) {
