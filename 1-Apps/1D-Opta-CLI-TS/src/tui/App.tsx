@@ -6,6 +6,7 @@ import { InputBox } from './InputBox.js';
 import { InkStatusBar } from './StatusBar.js';
 import { useTerminalSize } from './hooks/useTerminalSize.js';
 import { useKeyboard } from './hooks/useKeyboard.js';
+import { StreamingIndicator } from './StreamingIndicator.js';
 
 interface AppProps {
   model: string;
@@ -66,6 +67,7 @@ export function App({ model, sessionId, connectionStatus = true, onMessage }: Ap
 
       <Box flexDirection="column" height={messageAreaHeight} overflow="hidden">
         <MessageList messages={messages} />
+        {isLoading && <StreamingIndicator />}
       </Box>
 
       <InputBox onSubmit={handleSubmit} mode={mode} isLoading={isLoading} />
