@@ -15,7 +15,7 @@
 //    ⌘⇧A  — Capture region (interactive)
 //
 //  Event bus:
-//    Posts:    .screenCaptureAttached (ChatAttachment)
+//    Posts:    .module_screen_captureAttached (ChatAttachment)
 //    Listens:  (none)
 //
 //  Frameworks: ScreenCaptureKit (macOS 13+), CoreGraphics
@@ -612,7 +612,7 @@ struct ScreenContextToggle: View {
         pendingAttachments.append(attachment)
 
         NotificationCenter.default.post(
-            name: .screenCaptureAttached,
+            name: .module_screen_captureAttached,
             object: nil,
             userInfo: ["attachment": attachment]
         )
@@ -784,5 +784,5 @@ struct CaptureIndicator: View {
 // MARK: - Notification Names
 
 extension Notification.Name {
-    static let screenCaptureAttached = Notification.Name("screenCaptureAttached")
+    static let module_screen_captureAttached = Notification.Name("module.screen.captureAttached")
 }

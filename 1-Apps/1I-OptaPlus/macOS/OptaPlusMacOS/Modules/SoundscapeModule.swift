@@ -13,7 +13,7 @@
 //    ⌘⇧M  — Toggle master mute
 //
 //  Event bus:
-//    Listens:  .pipelineCompleted, .pipelineStepCompleted, connection state changes
+//    Listens:  .module_choreography_completed, .module_choreography_stepCompleted, connection state changes
 //    Posts:    (none — audio only)
 //
 //  Frameworks: AVFoundation (AVAudioEngine for mixing/spatial)
@@ -743,6 +743,7 @@ struct SoundscapeSettingsView: View {
 ///
 /// **To remove:** Delete this file. Remove the register call and settings view.
 ///                The existing SoundManager continues to work independently.
+@MainActor
 enum SoundscapeModule {
     static func register(appState: AppState) {
         let engine = SoundEngine.shared
@@ -797,11 +798,11 @@ enum SoundscapeModule {
         }
 
         // Pipeline completion sounds
-        NotificationCenter.default.publisher(for: .pipelineStepCompleted)
+        NotificationCenter.default.publisher(for: .module_choreography_stepCompleted)
             .sink { _ in engine.playStepComplete() }
             .store(in: &registrationCancellables)
 
-        NotificationCenter.default.publisher(for: .pipelineCompleted)
+        NotificationCenter.default.publisher(for: .module_choreography_completed)
             .sink { _ in engine.playPipelineComplete() }
             .store(in: &registrationCancellables)
     }

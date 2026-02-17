@@ -15,8 +15,8 @@
 //    ⌘⇧R  — Rerun last pipeline
 //
 //  Event bus:
-//    Posts:    .pipelineStarted, .pipelineCompleted, .pipelineStepCompleted
-//    Listens:  .toggleChoreography
+//    Posts:    .module_choreography_started, .module_choreography_completed, .module_choreography_stepCompleted
+//    Listens:  .module_choreography_toggle
 //
 
 import SwiftUI
@@ -327,7 +327,7 @@ final class PipelineExecutor: ObservableObject {
         currentRun = run
         PipelineStore.shared.addRun(run)
 
-        NotificationCenter.default.post(name: .pipelineStarted, object: nil,
+        NotificationCenter.default.post(name: .module_choreography_started, object: nil,
                                         userInfo: ["pipelineId": pipeline.id])
 
         executionTask = Task { [weak self] in
@@ -429,7 +429,7 @@ final class PipelineExecutor: ObservableObject {
                 run.stepResults.append(result)
                 currentInput = transformed
 
-                NotificationCenter.default.post(name: .pipelineStepCompleted, object: nil,
+                NotificationCenter.default.post(name: .module_choreography_stepCompleted, object: nil,
                                                 userInfo: ["stepId": step.id, "pipelineId": pipeline.id])
             }
 
@@ -439,7 +439,7 @@ final class PipelineExecutor: ObservableObject {
             PipelineStore.shared.updateRun(run)
             self.isRunning = false
 
-            NotificationCenter.default.post(name: .pipelineCompleted, object: nil,
+            NotificationCenter.default.post(name: .module_choreography_completed, object: nil,
                                             userInfo: ["pipelineId": pipeline.id])
         }
     }
@@ -746,7 +746,7 @@ struct PipelineEditorView: View {
             }
         }
         .padding(14)
-        .frame(width: 140, minHeight: 120)
+        .frame(minWidth: 140, maxWidth: 140, minHeight: 120)
         .background(
             RoundedRectangle(cornerRadius: 12)
                 .fill(.ultraThinMaterial)
@@ -1042,8 +1042,8 @@ struct TemplatePickerSheet: View {
 // MARK: - Notification Names
 
 extension Notification.Name {
-    static let toggleChoreography = Notification.Name("toggleChoreography")
-    static let pipelineStarted = Notification.Name("pipelineStarted")
-    static let pipelineCompleted = Notification.Name("pipelineCompleted")
-    static let pipelineStepCompleted = Notification.Name("pipelineStepCompleted")
+    static let module_choreography_toggle = Notification.Name("module.choreography.toggle")
+    static let module_choreography_started = Notification.Name("module.choreography.started")
+    static let module_choreography_completed = Notification.Name("module.choreography.completed")
+    static let module_choreography_stepCompleted = Notification.Name("module.choreography.stepCompleted")
 }

@@ -14,7 +14,7 @@
 //
 //  Event bus:
 //    Listens:  Connection state changes, new messages, health updates
-//    Posts:    .widgetDeepLink (botId, action)
+//    Posts:    .module_widget_deepLink (botId, action)
 //
 //  Frameworks: WidgetKit, SwiftUI, Intents
 //
@@ -806,7 +806,7 @@ struct HealthDashboardWidgetView: View {
 // MARK: - Notification Names
 
 extension Notification.Name {
-    static let widgetDeepLink = Notification.Name("widgetDeepLink")
+    static let module_widget_deepLink = Notification.Name("module.widget.deepLink")
 }
 
 // MARK: - Module Registration
@@ -823,6 +823,7 @@ extension Notification.Name {
 /// **To remove:**
 ///   Delete this file and the widget extension target. Remove register call
 ///   and settings view. App is completely unaffected.
+@MainActor
 enum WidgetModule {
     private static var cancellables = Set<AnyCancellable>()
 

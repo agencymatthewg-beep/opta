@@ -37,6 +37,9 @@ enum DropType {
 
 enum DetailMode: Equatable {
     case chat, dashboard, automations, botWeb, debug, botMap
+    // Modules (delete case + its switch branch to remove module)
+    case splitPane, analytics, choreography, themeCreator
+    case smartContext, semanticSearch, screenContext
 }
 
 // MARK: - Content View
@@ -51,72 +54,36 @@ struct ContentView: View {
     @State private var showMessageSearch = false
     @State private var botSwitchOverlay: String? = nil
     @State private var detailMode: DetailMode = .chat
+    @State private var moduleCaptureSettings = CaptureSettings()
     
     var body: some View {
+        mainContent
+            .background { hiddenKeyboardShortcuts }
+            .modifier(DetailModeNotificationModifier(detailMode: $detailMode))
+            .onChange(of: windowState.selectedBotId) { oldId, newId in
+                guard let newId, oldId != nil, oldId != newId,
+                      let bot = appState.bots.first(where: { $0.id == newId }) else { return }
+                detailMode = .chat
+                showBotSwitchHUD(bot.emoji + " " + bot.name)
+            }
+    }
+
+    // MARK: - Main Content (ZStack with overlays)
+
+    @ViewBuilder
+    private var mainContent: some View {
         ZStack {
             VStack(spacing: 0) {
-                // Custom drag handle for hidden title bar
                 WindowDragHandle()
-                
                 NavigationSplitView {
                     SidebarView()
                 } detail: {
-                    switch detailMode {
-                    case .dashboard:
-                        DashboardView()
-                            .environmentObject(appState)
-                            .environmentObject(windowState)
-                    case .automations:
-                        if let bot = windowState.selectedBot(in: appState) {
-                            AutomationsView(bot: bot, viewModel: appState.viewModel(for: bot))
-                                .environmentObject(appState)
-                        } else {
-                            AutomationsView(bot: nil, viewModel: nil)
-                                .environmentObject(appState)
-                        }
-                    case .botWeb:
-                        BotWebView()
-                            .environmentObject(appState)
-                            .environmentObject(windowState)
-                    case .debug:
-                        if let bot = windowState.selectedBot(in: appState) {
-                            DebugView(bot: bot, viewModel: appState.viewModel(for: bot))
-                                .environmentObject(appState)
-                        } else {
-                            DebugView(bot: nil, viewModel: nil)
-                                .environmentObject(appState)
-                        }
-                    case .botMap:
-                        BotMapView()
-                            .environmentObject(appState)
-                    case .chat:
-                        if let bot = windowState.selectedBot(in: appState) {
-                            let vm = appState.viewModel(for: bot)
-                            ZStack {
-                                AmbientBackground(
-                                    botAccentColor: botAccentColor(for: bot),
-                                    botState: ambientState(from: vm.botState),
-                                    isConnected: vm.connectionState == .connected
-                                )
-                                ChatContainerView(viewModel: vm, showMessageSearch: $showMessageSearch)
-                            }
-                        } else {
-                            ZStack {
-                                AmbientBackground(
-                                    botAccentColor: .optaPrimary,
-                                    botState: .idle,
-                                    isConnected: false
-                                )
-                                EmptyStateView()
-                            }
-                        }
-                    }
+                    detailContent
                 }
                 .background(Color.optaVoid)
                 .navigationSplitViewStyle(.balanced)
             }
 
-            // Command Palette overlay
             if showCommandPalette {
                 CommandPaletteView(
                     isPresented: $showCommandPalette,
@@ -133,13 +100,11 @@ struct ContentView: View {
                 .zIndex(100)
             }
 
-            // Keyboard Shortcuts overlay
             if showKeyboardShortcuts {
                 KeyboardShortcutsView(isPresented: $showKeyboardShortcuts)
                     .zIndex(101)
             }
 
-            // Bot Switch HUD overlay
             if let botName = botSwitchOverlay {
                 BotSwitchHUD(botName: botName)
                     .transition(.opacity.combined(with: .scale(scale: 0.9)))
@@ -149,53 +114,45 @@ struct ContentView: View {
         .animation(.optaSnap, value: showCommandPalette)
         .animation(.optaSnap, value: showKeyboardShortcuts)
         .animation(.optaSpring, value: botSwitchOverlay != nil)
-        .background {
-            // Hidden buttons for keyboard shortcuts
-            Group {
-                Button("") { showCommandPalette.toggle() }
-                    .keyboardShortcut("p", modifiers: .command)
-                Button("") { showMessageSearch.toggle() }
-                    .keyboardShortcut("f", modifiers: .command)
-                Button("") { showKeyboardShortcuts.toggle() }
-                    .keyboardShortcut("/", modifiers: .command)
-                Button("") { detailMode = detailMode == .dashboard ? .chat : .dashboard }
-                    .keyboardShortcut("d", modifiers: .command)
-                Button("") { detailMode = detailMode == .automations ? .chat : .automations }
-                    .keyboardShortcut("j", modifiers: .command)
-                Button("") { detailMode = detailMode == .botWeb ? .chat : .botWeb }
-                    .keyboardShortcut("b", modifiers: [.command, .shift])
-                Button("") { detailMode = detailMode == .debug ? .chat : .debug }
-                    .keyboardShortcut("g", modifiers: [.command, .shift])
-                Button("") { detailMode = detailMode == .botMap ? .chat : .botMap }
-                    .keyboardShortcut("m", modifiers: [.command, .shift])
-            }
-            .frame(width: 0, height: 0)
-            .opacity(0)
+    }
+
+    // MARK: - Hidden Keyboard Shortcuts
+
+    @ViewBuilder
+    private var hiddenKeyboardShortcuts: some View {
+        Group {
+            Button("") { showCommandPalette.toggle() }
+                .keyboardShortcut("p", modifiers: .command)
+            Button("") { showMessageSearch.toggle() }
+                .keyboardShortcut("f", modifiers: .command)
+            Button("") { showKeyboardShortcuts.toggle() }
+                .keyboardShortcut("/", modifiers: .command)
+            Button("") { detailMode = detailMode == .dashboard ? .chat : .dashboard }
+                .keyboardShortcut("d", modifiers: .command)
+            Button("") { detailMode = detailMode == .automations ? .chat : .automations }
+                .keyboardShortcut("j", modifiers: .command)
+            Button("") { detailMode = detailMode == .botWeb ? .chat : .botWeb }
+                .keyboardShortcut("b", modifiers: [.command, .shift])
+            Button("") { detailMode = detailMode == .debug ? .chat : .debug }
+                .keyboardShortcut("g", modifiers: [.command, .shift])
+            Button("") { detailMode = detailMode == .botMap ? .chat : .botMap }
+                .keyboardShortcut("m", modifiers: [.command, .shift])
+            // Module keyboard shortcuts (delete to unwire module)
+            Button("") { detailMode = detailMode == .splitPane ? .chat : .splitPane }
+                .keyboardShortcut("s", modifiers: [.command, .shift])
+            Button("") { detailMode = detailMode == .analytics ? .chat : .analytics }
+                .keyboardShortcut("a", modifiers: [.command, .shift])
+            Button("") { detailMode = detailMode == .choreography ? .chat : .choreography }
+                .keyboardShortcut("h", modifiers: [.command, .shift])
+            Button("") { detailMode = detailMode == .smartContext ? .chat : .smartContext }
+                .keyboardShortcut("c", modifiers: [.command, .shift])
+            Button("") { detailMode = detailMode == .semanticSearch ? .chat : .semanticSearch }
+                .keyboardShortcut("f", modifiers: [.command, .shift])
+            Button("") { detailMode = detailMode == .screenContext ? .chat : .screenContext }
+                .keyboardShortcut("x", modifiers: [.command, .shift])
         }
-        .onReceive(NotificationCenter.default.publisher(for: .toggleDashboard)) { _ in
-            detailMode = detailMode == .dashboard ? .chat : .dashboard
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .toggleAutomations)) { _ in
-            detailMode = detailMode == .automations ? .chat : .automations
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .toggleBotWeb)) { _ in
-            detailMode = detailMode == .botWeb ? .chat : .botWeb
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .toggleDebug)) { _ in
-            detailMode = detailMode == .debug ? .chat : .debug
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .toggleBotMap)) { _ in
-            detailMode = detailMode == .botMap ? .chat : .botMap
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .switchToChat)) { _ in
-            detailMode = .chat
-        }
-        .onChange(of: windowState.selectedBotId) { oldId, newId in
-            guard let newId, oldId != nil, oldId != newId,
-                  let bot = appState.bots.first(where: { $0.id == newId }) else { return }
-            detailMode = .chat
-            showBotSwitchHUD(bot.emoji + " " + bot.name)
-        }
+        .frame(width: 0, height: 0)
+        .opacity(0)
     }
 
     private func showBotSwitchHUD(_ name: String) {
@@ -205,6 +162,117 @@ struct ContentView: View {
                 botSwitchOverlay = nil
             }
         }
+    }
+
+    // MARK: - Detail Content (extracted to help type-checker)
+
+    @ViewBuilder
+    private var detailContent: some View {
+        switch detailMode {
+        case .dashboard:
+            DashboardView()
+                .environmentObject(appState)
+                .environmentObject(windowState)
+        case .automations:
+            if let bot = windowState.selectedBot(in: appState) {
+                AutomationsView(bot: bot, viewModel: appState.viewModel(for: bot))
+                    .environmentObject(appState)
+            } else {
+                AutomationsView(bot: nil, viewModel: nil)
+                    .environmentObject(appState)
+            }
+        case .botWeb:
+            BotWebView()
+                .environmentObject(appState)
+                .environmentObject(windowState)
+        case .debug:
+            if let bot = windowState.selectedBot(in: appState) {
+                DebugView(bot: bot, viewModel: appState.viewModel(for: bot))
+                    .environmentObject(appState)
+            } else {
+                DebugView(bot: nil, viewModel: nil)
+                    .environmentObject(appState)
+            }
+        case .botMap:
+            BotMapView()
+                .environmentObject(appState)
+        // Module detail views (delete case to unwire module)
+        case .splitPane:
+            SplitPaneContainerView()
+                .environmentObject(appState)
+                .environmentObject(animPrefs)
+        case .analytics:
+            AnalyticsDashboardView()
+                .environmentObject(appState)
+                .environmentObject(animPrefs)
+        case .choreography:
+            PipelineEditorView()
+                .environmentObject(appState)
+        case .themeCreator:
+            ThemeCreatorView(themeManager: ThemeManager.shared)
+                .environmentObject(appState)
+        case .smartContext:
+            if let bot = windowState.selectedBot(in: appState) {
+                let vm = appState.viewModel(for: bot)
+                SmartContextPanel(
+                    items: Self.buildContextItems(from: vm.contextFiles),
+                    isExpanded: .constant(true),
+                    botId: bot.id
+                )
+            } else {
+                Text("Select a bot to inspect context")
+                    .font(.sora(14))
+                    .foregroundColor(.optaTextMuted)
+            }
+        case .semanticSearch:
+            SemanticSearchPanel(
+                isPresented: Binding(
+                    get: { detailMode == .semanticSearch },
+                    set: { if !$0 { detailMode = .chat } }
+                )
+            )
+            .environmentObject(appState)
+        case .screenContext:
+            CaptureSettingsView(settings: $moduleCaptureSettings)
+                .environmentObject(appState)
+        case .chat:
+            if let bot = windowState.selectedBot(in: appState) {
+                let vm = appState.viewModel(for: bot)
+                ZStack {
+                    AmbientBackground(
+                        botAccentColor: botAccentColor(for: bot),
+                        botState: ambientState(from: vm.botState),
+                        isConnected: vm.connectionState == .connected
+                    )
+                    ChatContainerView(viewModel: vm, showMessageSearch: $showMessageSearch)
+                }
+            } else {
+                ZStack {
+                    AmbientBackground(
+                        botAccentColor: .optaPrimary,
+                        botState: .idle,
+                        isConnected: false
+                    )
+                    EmptyStateView()
+                }
+            }
+        }
+    }
+
+    // Build ContextItem array from ChatViewModel.contextFiles for SmartContextPanel
+    static func buildContextItems(from contextFiles: [[String: Any]]) -> [ContextItem] {
+        var items: [ContextItem] = [
+            ContextItem(name: "System Prompt", path: "system", kind: .system, sizeHint: nil),
+        ]
+        for file in contextFiles {
+            if let name = file["name"] as? String ?? file["path"] as? String {
+                let kind: ContextItem.ContextKind = name.contains("memory") ? .memory : .injected
+                let size = file["size"] as? Int
+                let sizeHint = size.map { "\($0 / 1024)KB" }
+                items.append(ContextItem(name: name, path: name, kind: kind, sizeHint: sizeHint))
+            }
+        }
+        return items
     }
 }
 
@@ -233,6 +301,57 @@ struct BotSwitchHUD: View {
             Spacer().frame(height: 80)
         }
         .allowsHitTesting(false)
+    }
+}
+
+// MARK: - Detail Mode Notification Modifier
+
+/// Extracts all `.onReceive` notification listeners from ContentView body to reduce type-checker complexity.
+struct DetailModeNotificationModifier: ViewModifier {
+    @Binding var detailMode: DetailMode
+
+    func body(content: Content) -> some View {
+        content
+            .onReceive(NotificationCenter.default.publisher(for: .toggleDashboard)) { _ in
+                detailMode = detailMode == .dashboard ? .chat : .dashboard
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .toggleAutomations)) { _ in
+                detailMode = detailMode == .automations ? .chat : .automations
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .toggleBotWeb)) { _ in
+                detailMode = detailMode == .botWeb ? .chat : .botWeb
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .toggleDebug)) { _ in
+                detailMode = detailMode == .debug ? .chat : .debug
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .toggleBotMap)) { _ in
+                detailMode = detailMode == .botMap ? .chat : .botMap
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .switchToChat)) { _ in
+                detailMode = .chat
+            }
+            // Module notification listeners (delete to unwire module)
+            .onReceive(NotificationCenter.default.publisher(for: .module_splitpane_toggle)) { _ in
+                detailMode = detailMode == .splitPane ? .chat : .splitPane
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .module_analytics_toggle)) { _ in
+                detailMode = detailMode == .analytics ? .chat : .analytics
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .module_choreography_toggle)) { _ in
+                detailMode = detailMode == .choreography ? .chat : .choreography
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .module_theme_toggle)) { _ in
+                detailMode = detailMode == .themeCreator ? .chat : .themeCreator
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .module_context_toggle)) { _ in
+                detailMode = detailMode == .smartContext ? .chat : .smartContext
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .module_search_toggle)) { _ in
+                detailMode = detailMode == .semanticSearch ? .chat : .semanticSearch
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .module_screen_captureAttached)) { _ in
+                detailMode = detailMode == .screenContext ? .chat : .screenContext
+            }
     }
 }
 

@@ -15,9 +15,9 @@
 //    Cmd+Shift+Z  — Redo theme change (within creator)
 //
 //  Event bus:
-//    Posts:    .customThemeApplied(themeId: String)
-//              .themeExported(json: String)
-//    Listens:  .toggleThemeCreator
+//    Posts:    .module_theme_applied(themeId: String)
+//              .module_theme_exported(json: String)
+//    Listens:  .module_theme_toggle
 //              .importTheme(json: String)
 //
 //  Persistence:
@@ -31,7 +31,7 @@
 //
 //  How to add:
 //    1. Add a "Custom Themes" tab to SettingsView
-//    2. Add .onReceive(publisher(for: .toggleThemeCreator)) listener
+//    2. Add .onReceive(publisher(for: .module_theme_toggle)) listener
 //    3. Wire Cmd+Shift+T keyboard shortcut
 //    4. Add "Theme Creator" to CommandPalette
 //
@@ -329,7 +329,7 @@ final class ThemeCreatorViewModel: ObservableObject {
         let appTheme = theme.toAppTheme()
         ThemeManager.shared.currentTheme = appTheme
         NotificationCenter.default.post(
-            name: .customThemeApplied,
+            name: .module_theme_applied,
             object: nil,
             userInfo: ["themeId": theme.id]
         )
@@ -993,17 +993,17 @@ struct ThemeLivePreview: View {
 // MARK: - Notification Names
 
 extension Notification.Name {
-    static let toggleThemeCreator = Notification.Name("toggleThemeCreator")
-    static let customThemeApplied = Notification.Name("customThemeApplied")
-    static let themeExported = Notification.Name("themeExported")
-    static let importThemeRequest = Notification.Name("importThemeRequest")
+    static let module_theme_toggle = Notification.Name("module.theme.toggle")
+    static let module_theme_applied = Notification.Name("module.theme.applied")
+    static let module_theme_exported = Notification.Name("module.theme.exported")
+    static let module_theme_importRequest = Notification.Name("module.theme.importRequest")
 }
 
 // MARK: - Module Registration
 
 /// **To add:**
 ///   1. Add "Custom Themes" tab to SettingsView
-///   2. Add Cmd+Shift+T shortcut to toggle .toggleThemeCreator
+///   2. Add Cmd+Shift+T shortcut to toggle .module_theme_toggle
 ///   3. Add "Theme Creator" to CommandPalette
 ///   4. In SettingsView: `ThemeCreatorView(themeManager: themeManager)`
 ///

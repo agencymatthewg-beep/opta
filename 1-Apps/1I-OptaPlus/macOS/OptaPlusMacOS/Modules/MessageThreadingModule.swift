@@ -14,10 +14,10 @@
 //    Escape       — Close active thread view
 //
 //  Event bus:
-//    Posts:    .threadOpened(parentMessageId: String)
-//              .threadClosed
-//    Listens:  .replyToMessage(messageId: String)
-//              .openThread(parentMessageId: String)
+//    Posts:    .module_threading_opened(parentMessageId: String)
+//              .module_threading_closed
+//    Listens:  .module_threading_replyTo(messageId: String)
+//              .module_threading_open(parentMessageId: String)
 //
 //  Persistence:
 //    No new persistence — uses ChatMessage.replyTo which is already stored by MessageStore.
@@ -141,7 +141,7 @@ final class ThreadStateManager: ObservableObject {
             expandedThreadIds.insert(parentId)
         }
         NotificationCenter.default.post(
-            name: .threadOpened,
+            name: .module_threading_opened,
             object: nil,
             userInfo: ["parentMessageId": parentId]
         )
@@ -150,7 +150,7 @@ final class ThreadStateManager: ObservableObject {
     func closeComposer() {
         activeThreadParentId = nil
         threadComposerText = ""
-        NotificationCenter.default.post(name: .threadClosed, object: nil)
+        NotificationCenter.default.post(name: .module_threading_closed, object: nil)
     }
 }
 
@@ -161,12 +161,17 @@ final class ThreadStateManager: ObservableObject {
 struct ThreadedMessageView: View {
     let message: ChatMessage
     let threadInfo: ThreadInfo?
-    let botState: BotState
-    let streamingContent: String?
-    let accentColor: Color
+    let botId: String
 
     @ObservedObject var threadState: ThreadStateManager
     @EnvironmentObject var appState: AppState
+
+    private var accentColor: Color {
+        if let bot = appState.bots.first(where: { $0.id == botId }) {
+            return botAccentColor(for: bot)
+        }
+        return .optaPrimary
+    }
 
     private var isExpanded: Bool {
         guard let info = threadInfo else { return false }
@@ -182,9 +187,7 @@ struct ThreadedMessageView: View {
             // Main message bubble
             MessageBubble(
                 message: message,
-                botState: botState,
-                streamingContent: streamingContent,
-                accentColor: accentColor
+                botId: botId
             )
             .overlay(alignment: .bottomTrailing) {
                 if threadInfo != nil {
@@ -382,10 +385,12 @@ struct ThreadedMessageView: View {
         let text = threadState.threadComposerText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
 
-        // Send via the view model — the message has replyTo set
-        if let bot = appState.bots.first(where: { $0.id == message.sender.botId }),
+        // Send via the view model — set replyingTo so send() captures the reply link
+        if let bot = appState.bots.first(where: { $0.id == botId }),
            let vm = appState.chatViewModels[bot.id] {
-            vm.send(text, replyTo: parentId)
+            let parentMsg = vm.messages.first(where: { $0.id == parentId })
+            vm.replyingTo = parentMsg
+            Task { await vm.send(text) }
         }
 
         threadState.threadComposerText = ""
@@ -446,24 +451,13 @@ struct ThreadReplyBubble: View {
     }
 }
 
-// MARK: - MessageSender Extension
-
-private extension MessageSender {
-    var botId: String? {
-        switch self {
-        case .user: return nil
-        case .bot: return nil // Bot ID not carried in sender — look up via context
-        }
-    }
-}
-
 // MARK: - Notification Names
 
 extension Notification.Name {
-    static let threadOpened = Notification.Name("threadOpened")
-    static let threadClosed = Notification.Name("threadClosed")
-    static let replyToMessage = Notification.Name("replyToMessage")
-    static let openThread = Notification.Name("openThread")
+    static let module_threading_opened = Notification.Name("module.threading.opened")
+    static let module_threading_closed = Notification.Name("module.threading.closed")
+    static let module_threading_replyTo = Notification.Name("module.threading.replyTo")
+    static let module_threading_open = Notification.Name("module.threading.open")
 }
 
 // MARK: - Module Registration
@@ -478,9 +472,7 @@ extension Notification.Name {
 ///          ThreadedMessageView(
 ///              message: msg,
 ///              threadInfo: threads[msg.id],
-///              botState: vm.botState,
-///              streamingContent: ...,
-///              accentColor: ...,
+///              botId: bot.id,
 ///              threadState: threadState
 ///          )
 ///      }

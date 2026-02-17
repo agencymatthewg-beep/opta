@@ -10,16 +10,16 @@
 //  Module removal:       Delete this file, remove notification listeners and context menu items.
 //
 //  Keyboard shortcuts:
-//    Cmd+Shift+F  — Fork conversation at selected message
+//    Cmd+Opt+F    — Fork conversation at selected message
 //    Cmd+Opt+Left — Switch to previous branch
 //    Cmd+Opt+Right — Switch to next branch
 //    Cmd+Shift+T  — Toggle branch navigator
 //
 //  Event bus:
-//    Posts:    .branchCreated(branchId: String, parentMessageId: String)
-//              .branchSwitched(branchId: String)
-//    Listens:  .toggleBranchNavigator
-//              .forkAtMessage(messageId: String)
+//    Posts:    .module_branching_created(branchId: String, parentMessageId: String)
+//              .module_branching_switched(branchId: String)
+//    Listens:  .module_branching_toggleNavigator
+//              .module_branching_fork(messageId: String)
 //
 //  Persistence:
 //    JSON files in App Support/OptaPlus/Branches/ (one file per bot)
@@ -32,7 +32,7 @@
 //  How to add:
 //    1. Add branch navigator toggle to ContentView sidebar
 //    2. Add "Fork" to MessageBubble context menu
-//    3. Add .onReceive(publisher(for: .toggleBranchNavigator)) listener
+//    3. Add .onReceive(publisher(for: .module_branching_toggleNavigator)) listener
 //
 //  How to remove:
 //    1. Delete this file
@@ -124,7 +124,9 @@ struct ConversationTree: Codable, Equatable {
             senderIsUser: senderIsUser,
             branchLabel: label
         )
-        if insertFork(node: &root!, targetMessageId: messageId, newChild: newNode) {
+        var rootCopy = root!
+        if insertFork(node: &rootCopy, targetMessageId: messageId, newChild: newNode) {
+            root = rootCopy
             branchCount += 1
             return newBranchId
         }
@@ -317,7 +319,7 @@ final class BranchingViewModel: ObservableObject {
         ) else { return }
 
         NotificationCenter.default.post(
-            name: .branchCreated,
+            name: .module_branching_created,
             object: nil,
             userInfo: ["branchId": branchId, "parentMessageId": messageId]
         )
@@ -330,7 +332,7 @@ final class BranchingViewModel: ObservableObject {
     func switchBranch(at forkMessageId: String, toIndex: Int) async {
         tree.switchBranch(at: forkMessageId, toBranchIndex: toIndex)
         NotificationCenter.default.post(
-            name: .branchSwitched,
+            name: .module_branching_switched,
             object: nil,
             userInfo: ["forkMessageId": forkMessageId, "branchIndex": toIndex]
         )
@@ -746,10 +748,10 @@ struct ForkIndicator: View {
 // MARK: - Notification Names
 
 extension Notification.Name {
-    static let toggleBranchNavigator = Notification.Name("toggleBranchNavigator")
-    static let forkAtMessage = Notification.Name("forkAtMessage")
-    static let branchCreated = Notification.Name("branchCreated")
-    static let branchSwitched = Notification.Name("branchSwitched")
+    static let module_branching_toggleNavigator = Notification.Name("module.branching.toggleNavigator")
+    static let module_branching_fork = Notification.Name("module.branching.fork")
+    static let module_branching_created = Notification.Name("module.branching.created")
+    static let module_branching_switched = Notification.Name("module.branching.switched")
 }
 
 // MARK: - Module Registration
@@ -760,14 +762,14 @@ extension Notification.Name {
 ///      ```swift
 ///      Button("Fork Conversation") {
 ///          NotificationCenter.default.post(
-///              name: .forkAtMessage,
+///              name: .module_branching_fork,
 ///              object: nil,
 ///              userInfo: ["messageId": message.id]
 ///          )
 ///      }
 ///      ```
-///   3. Wire Cmd+Shift+T to toggle `.toggleBranchNavigator`
-///   4. Wire Cmd+Shift+F to post `.forkAtMessage` for selected message
+///   3. Wire Cmd+Shift+T to toggle `.module_branching_toggleNavigator`
+///   4. Wire Cmd+Opt+F to post `.module_branching_fork` for selected message
 ///
 /// **To remove:**
 ///   1. Delete this file

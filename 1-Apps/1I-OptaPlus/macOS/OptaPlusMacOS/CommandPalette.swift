@@ -145,6 +145,32 @@ struct CommandPaletteView: View {
             isPresented = false
         })
 
+        // Module actions (delete to unwire module from palette)
+        actions.append(PaletteAction(icon: "rectangle.split.2x1", title: "Split-Pane Chat", subtitle: "Multi-bot side-by-side (⌘⇧S)") {
+            NotificationCenter.default.post(name: .module_splitpane_toggle, object: nil)
+            isPresented = false
+        })
+        actions.append(PaletteAction(icon: "chart.xyaxis.line", title: "Analytics Dashboard", subtitle: "Bot performance metrics (⌘⇧A)") {
+            NotificationCenter.default.post(name: .module_analytics_toggle, object: nil)
+            isPresented = false
+        })
+        actions.append(PaletteAction(icon: "flowchart", title: "Bot Choreography", subtitle: "Multi-bot pipelines (⌘⇧H)") {
+            NotificationCenter.default.post(name: .module_choreography_toggle, object: nil)
+            isPresented = false
+        })
+        actions.append(PaletteAction(icon: "brain.head.profile", title: "Smart Context", subtitle: "View bot context window (⌘⇧C)") {
+            NotificationCenter.default.post(name: .module_context_toggle, object: nil)
+            isPresented = false
+        })
+        actions.append(PaletteAction(icon: "brain", title: "Semantic Search", subtitle: "Search by meaning (⌘⇧F)") {
+            NotificationCenter.default.post(name: .module_search_toggle, object: nil)
+            isPresented = false
+        })
+        actions.append(PaletteAction(icon: "camera.viewfinder", title: "Screen Context", subtitle: "Share screen with bot (⌘⇧X)") {
+            NotificationCenter.default.post(name: .module_screen_captureAttached, object: nil)
+            isPresented = false
+        })
+
         return actions
     }
 

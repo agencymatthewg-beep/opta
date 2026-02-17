@@ -31,6 +31,17 @@
 		DV000001FFFF000100000001 /* DebugView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DV000002FFFF000100000001 /* DebugView.swift */; };
 		BW000001FFFF000100000001 /* BotWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BW000002FFFF000100000001 /* BotWebView.swift */; };
 		BM000001FFFF000100000001 /* BotMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BM000002FFFF000100000001 /* BotMapView.swift */; };
+		MD000001AAAA000100000001 /* SplitPaneChatModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = MD000002AAAA000100000001 /* SplitPaneChatModule.swift */; };
+		MD000001AAAA000200000001 /* AnalyticsDashboardModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = MD000002AAAA000200000001 /* AnalyticsDashboardModule.swift */; };
+		MD000001AAAA000300000001 /* ChoreographyModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = MD000002AAAA000300000001 /* ChoreographyModule.swift */; };
+		MD000001AAAA000400000001 /* ThemeCreatorModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = MD000002AAAA000400000001 /* ThemeCreatorModule.swift */; };
+		MD000001AAAA000500000001 /* SmartContextPanelModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = MD000002AAAA000500000001 /* SmartContextPanelModule.swift */; };
+		MD000001AAAA000600000001 /* SemanticSearchModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = MD000002AAAA000600000001 /* SemanticSearchModule.swift */; };
+		MD000001AAAA000700000001 /* ScreenContextModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = MD000002AAAA000700000001 /* ScreenContextModule.swift */; };
+		MD000001AAAA000800000001 /* MessageThreadingModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = MD000002AAAA000800000001 /* MessageThreadingModule.swift */; };
+		MD000001AAAA000900000001 /* ConversationBranchingModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = MD000002AAAA000900000001 /* ConversationBranchingModule.swift */; };
+		MD000001AAAA001000000001 /* SoundscapeModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = MD000002AAAA001000000001 /* SoundscapeModule.swift */; };
+		MD000001AAAA001100000001 /* WidgetModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = MD000002AAAA001100000001 /* WidgetModule.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -59,6 +70,17 @@
 		DV000002FFFF000100000001 /* DebugView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugView.swift; sourceTree = "<group>"; };
 		BW000002FFFF000100000001 /* BotWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BotWebView.swift; sourceTree = "<group>"; };
 		BM000002FFFF000100000001 /* BotMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BotMapView.swift; sourceTree = "<group>"; };
+		MD000002AAAA000100000001 /* SplitPaneChatModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitPaneChatModule.swift; sourceTree = "<group>"; };
+		MD000002AAAA000200000001 /* AnalyticsDashboardModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsDashboardModule.swift; sourceTree = "<group>"; };
+		MD000002AAAA000300000001 /* ChoreographyModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChoreographyModule.swift; sourceTree = "<group>"; };
+		MD000002AAAA000400000001 /* ThemeCreatorModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeCreatorModule.swift; sourceTree = "<group>"; };
+		MD000002AAAA000500000001 /* SmartContextPanelModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartContextPanelModule.swift; sourceTree = "<group>"; };
+		MD000002AAAA000600000001 /* SemanticSearchModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SemanticSearchModule.swift; sourceTree = "<group>"; };
+		MD000002AAAA000700000001 /* ScreenContextModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenContextModule.swift; sourceTree = "<group>"; };
+		MD000002AAAA000800000001 /* MessageThreadingModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageThreadingModule.swift; sourceTree = "<group>"; };
+		MD000002AAAA000900000001 /* ConversationBranchingModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationBranchingModule.swift; sourceTree = "<group>"; };
+		MD000002AAAA001000000001 /* SoundscapeModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundscapeModule.swift; sourceTree = "<group>"; };
+		MD000002AAAA001100000001 /* WidgetModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetModule.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -106,11 +128,30 @@
 				DV000002FFFF000100000001 /* DebugView.swift */,
 				BW000002FFFF000100000001 /* BotWebView.swift */,
 				BM000002FFFF000100000001 /* BotMapView.swift */,
+				MD000000AAAA000000000001 /* Modules */,
 				CD000008BBBB000200000001 /* Assets.xcassets */,
 				CD00000ABBBB000200000001 /* Info.plist */,
 				CD00000BBBBB000200000001 /* OptaPlusMacOS.entitlements */,
 			);
 			path = OptaPlusMacOS;
+			sourceTree = "<group>";
+		};
+		MD000000AAAA000000000001 /* Modules */ = {
+			isa = PBXGroup;
+			children = (
+				MD000002AAAA000100000001 /* SplitPaneChatModule.swift */,
+				MD000002AAAA000200000001 /* AnalyticsDashboardModule.swift */,
+				MD000002AAAA000300000001 /* ChoreographyModule.swift */,
+				MD000002AAAA000400000001 /* ThemeCreatorModule.swift */,
+				MD000002AAAA000500000001 /* SmartContextPanelModule.swift */,
+				MD000002AAAA000600000001 /* SemanticSearchModule.swift */,
+				MD000002AAAA000700000001 /* ScreenContextModule.swift */,
+				MD000002AAAA000800000001 /* MessageThreadingModule.swift */,
+				MD000002AAAA000900000001 /* ConversationBranchingModule.swift */,
+				MD000002AAAA001000000001 /* SoundscapeModule.swift */,
+				MD000002AAAA001100000001 /* WidgetModule.swift */,
+			);
+			path = Modules;
 			sourceTree = "<group>";
 		};
 		CD00000FBBBB000100000001 /* Products */ = {
@@ -218,6 +259,17 @@
 				DV000001FFFF000100000001 /* DebugView.swift in Sources */,
 				BW000001FFFF000100000001 /* BotWebView.swift in Sources */,
 				BM000001FFFF000100000001 /* BotMapView.swift in Sources */,
+				MD000001AAAA000100000001 /* SplitPaneChatModule.swift in Sources */,
+				MD000001AAAA000200000001 /* AnalyticsDashboardModule.swift in Sources */,
+				MD000001AAAA000300000001 /* ChoreographyModule.swift in Sources */,
+				MD000001AAAA000400000001 /* ThemeCreatorModule.swift in Sources */,
+				MD000001AAAA000500000001 /* SmartContextPanelModule.swift in Sources */,
+				MD000001AAAA000600000001 /* SemanticSearchModule.swift in Sources */,
+				MD000001AAAA000700000001 /* ScreenContextModule.swift in Sources */,
+				MD000001AAAA000800000001 /* MessageThreadingModule.swift in Sources */,
+				MD000001AAAA000900000001 /* ConversationBranchingModule.swift in Sources */,
+				MD000001AAAA001000000001 /* SoundscapeModule.swift in Sources */,
+				MD000001AAAA001100000001 /* WidgetModule.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

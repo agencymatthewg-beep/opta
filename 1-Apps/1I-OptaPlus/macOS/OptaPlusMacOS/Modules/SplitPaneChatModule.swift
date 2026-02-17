@@ -17,8 +17,8 @@
 //    Cmd+Shift+1..4 — Focus pane N
 //
 //  Event bus:
-//    Posts:    .splitPaneLinkedMessage(content: String)
-//    Listens:  .toggleSplitPane
+//    Posts:    .module_splitpane_linkedMessage(content: String)
+//    Listens:  .module_splitpane_toggle
 //
 //  Persistence:
 //    UserDefaults key "optaplus.splitpane.config" — stores PaneConfiguration
@@ -30,8 +30,8 @@
 //
 //  How to add:
 //    1. Add `case splitPane` to DetailMode in ContentView.swift
-//    2. Add `.onReceive(publisher(for: .toggleSplitPane))` to toggle mode
-//    3. Add keyboard shortcut Cmd+Shift+S to trigger .toggleSplitPane
+//    2. Add `.onReceive(publisher(for: .module_splitpane_toggle))` to toggle mode
+//    3. Add keyboard shortcut Cmd+Shift+S to trigger .module_splitpane_toggle
 //    4. In the detail switch, add `case .splitPane: SplitPaneContainerView()`
 //
 //  How to remove:
@@ -243,11 +243,11 @@ final class SplitPaneViewModel: ObservableObject {
         for pane in config.panes {
             if let bot = appState.bots.first(where: { $0.id == pane.botId }) {
                 let vm = appState.viewModel(for: bot)
-                vm.send(content)
+                Task { await vm.send(content) }
             }
         }
         NotificationCenter.default.post(
-            name: .splitPaneLinkedMessage,
+            name: .module_splitpane_linkedMessage,
             object: nil,
             userInfo: ["content": content]
         )
@@ -296,7 +296,7 @@ struct SplitPaneContainerView: View {
         .onAppear {
             vm.initialize(appState: appState)
         }
-        .onReceive(NotificationCenter.default.publisher(for: .toggleSplitPane)) { _ in
+        .onReceive(NotificationCenter.default.publisher(for: .module_splitpane_toggle)) { _ in
             // handled by parent — this view is shown when splitPane mode is active
         }
         .sheet(isPresented: $vm.showPaneSelector) {
@@ -599,9 +599,7 @@ struct PaneChatView: View {
                             ForEach(vm.messages) { message in
                                 MessageBubble(
                                     message: message,
-                                    botState: vm.botState,
-                                    streamingContent: message.id == vm.messages.last?.id ? vm.streamingContent : nil,
-                                    accentColor: .optaPrimary
+                                    botId: pane.botId
                                 )
                                 .id(message.id)
                             }
@@ -716,8 +714,8 @@ struct PaneChatView: View {
 
         if isLinked {
             onLinkedSend(trimmed)
-        } else {
-            viewModel?.send(trimmed)
+        } else if let viewModel {
+            Task { await viewModel.send(trimmed) }
         }
         messageText = ""
     }
@@ -741,12 +739,20 @@ struct SplitDivider: View {
             .contentShape(Rectangle())
             .onHover { hover in
                 withAnimation(.optaSnap) { isHovered = hover }
-                if isVertical {
-                    NSCursor.resizeLeftRight.push()
+                if hover {
+                    if isVertical {
+                        NSCursor.resizeLeftRight.push()
+                    } else {
+                        NSCursor.resizeUpDown.push()
+                    }
                 } else {
-                    NSCursor.resizeUpDown.push()
+                    NSCursor.pop()
                 }
-                if !hover { NSCursor.pop() }
+            }
+            .onDisappear {
+                if isHovered {
+                    NSCursor.pop()
+                }
             }
             .gesture(
                 DragGesture()
@@ -815,16 +821,16 @@ struct PaneBotSelectorSheet: View {
 // MARK: - Notification Names
 
 extension Notification.Name {
-    static let toggleSplitPane = Notification.Name("toggleSplitPane")
-    static let splitPaneLinkedMessage = Notification.Name("splitPaneLinkedMessage")
+    static let module_splitpane_toggle = Notification.Name("module.splitpane.toggle")
+    static let module_splitpane_linkedMessage = Notification.Name("module.splitpane.linkedMessage")
 }
 
 // MARK: - Module Registration
 
 /// **To add:**
 ///   1. Add `case splitPane` to `DetailMode` in ContentView.swift
-///   2. Add notification listener: `.onReceive(.toggleSplitPane) { detailMode = .splitPane }`
-///   3. Add keyboard shortcut Cmd+Shift+S to post .toggleSplitPane
+///   2. Add notification listener: `.onReceive(.module_splitpane_toggle) { detailMode = .splitPane }`
+///   3. Add keyboard shortcut Cmd+Shift+S to post .module_splitpane_toggle
 ///   4. In detail switch: `case .splitPane: SplitPaneContainerView()`
 ///   5. Add "Split Pane" action to CommandPalette
 ///

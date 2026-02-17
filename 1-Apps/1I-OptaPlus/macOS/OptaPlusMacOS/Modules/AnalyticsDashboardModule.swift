@@ -14,8 +14,8 @@
 //    Cmd+Opt+1..4 — Switch time range (1D, 7D, 30D, All)
 //
 //  Event bus:
-//    Posts:    .analyticsTimeRangeChanged(range: AnalyticsTimeRange)
-//    Listens:  .toggleAnalytics
+//    Posts:    .module_analytics_timeRangeChanged(range: AnalyticsTimeRange)
+//    Listens:  .module_analytics_toggle
 //
 //  Persistence:
 //    Reads from existing BotMessageStats (UserDefaults) and BotHealth.
@@ -31,7 +31,7 @@
 //
 //  How to add:
 //    1. Add `case analytics` to DetailMode in ContentView.swift
-//    2. Add `.onReceive(publisher(for: .toggleAnalytics))` listener
+//    2. Add `.onReceive(publisher(for: .module_analytics_toggle))` listener
 //    3. Add Cmd+Shift+A shortcut
 //    4. In detail switch: `case .analytics: AnalyticsDashboardView()`
 //
@@ -762,16 +762,16 @@ private extension View {
 // MARK: - Notification Names
 
 extension Notification.Name {
-    static let toggleAnalytics = Notification.Name("toggleAnalytics")
-    static let analyticsTimeRangeChanged = Notification.Name("analyticsTimeRangeChanged")
+    static let module_analytics_toggle = Notification.Name("module.analytics.toggle")
+    static let module_analytics_timeRangeChanged = Notification.Name("module.analytics.timeRangeChanged")
 }
 
 // MARK: - Module Registration
 
 /// **To add:**
 ///   1. Add `case analytics` to `DetailMode` in ContentView.swift
-///   2. Add notification listener: `.onReceive(.toggleAnalytics) { detailMode = .analytics }`
-///   3. Add keyboard shortcut Cmd+Shift+A to post .toggleAnalytics
+///   2. Add notification listener: `.onReceive(.module_analytics_toggle) { detailMode = .analytics }`
+///   3. Add keyboard shortcut Cmd+Shift+A to post .module_analytics_toggle
 ///   4. In detail switch: `case .analytics: AnalyticsDashboardView()`
 ///   5. Add "Analytics Dashboard" to CommandPalette
 ///

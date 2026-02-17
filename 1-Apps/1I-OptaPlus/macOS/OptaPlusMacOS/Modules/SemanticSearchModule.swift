@@ -15,7 +15,7 @@
 //    ⌘G   — Next result, ⌘⇧G — Previous result
 //
 //  Event bus:
-//    Posts:    .semanticSearchResultSelected (messageId, botId)
+//    Posts:    .module_search_resultSelected (messageId, botId)
 //    Listens:  .searchEngineQueryReady (query string)
 //
 
@@ -392,7 +392,7 @@ final class SemanticSearchViewModel: ObservableObject {
                 let vm = appState.viewModel(for: bot)
                 var newCount = 0
                 for msg in vm.messages {
-                    let alreadyIndexed = await vectorStore.contains(msg.messageId)
+                    let alreadyIndexed = await vectorStore.contains(msg.id)
                     guard !alreadyIndexed else { continue }
 
                     if let embedding = await embeddingEngine.embed(msg.content) {
@@ -898,8 +898,8 @@ struct SemanticResultRow: View {
 // MARK: - Notification Names
 
 extension Notification.Name {
-    static let semanticSearchResultSelected = Notification.Name("semanticSearchResultSelected")
-    static let toggleSemanticSearch = Notification.Name("toggleSemanticSearch")
+    static let module_search_resultSelected = Notification.Name("module.search.resultSelected")
+    static let module_search_toggle = Notification.Name("module.search.toggle")
 }
 
 // MARK: - Module Registration
@@ -907,12 +907,13 @@ extension Notification.Name {
 /// Module registration point. Call from ContentView or AppState to wire up.
 ///
 /// **To add:** Call `SemanticSearchModule.register(appState:)` in AppState.init()
-///             Add `.onReceive(NotificationCenter.default.publisher(for: .toggleSemanticSearch))`
+///             Add `.onReceive(NotificationCenter.default.publisher(for: .module_search_toggle))`
 ///             to ContentView to toggle the panel.
 ///             Add PaletteAction for "Semantic Search" in CommandPalette.allActions.
 ///
 /// **To remove:** Delete this file. Remove the notification listener and palette action.
 ///                Search falls back to the existing keyword-only SearchEngine.
+@MainActor
 enum SemanticSearchModule {
     /// Wire up incremental indexing on new messages.
     static func register(appState: AppState) {
