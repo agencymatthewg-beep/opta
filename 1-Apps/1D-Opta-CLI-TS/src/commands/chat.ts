@@ -475,27 +475,82 @@ async function handleSlashCommand(
     }
 
     case '/sessions': {
-      const { listSessions } = await import('../memory/store.js');
+      const { listSessions, deleteSession } = await import('../memory/store.js');
+      const { formatSessionExport } = await import('./share.js');
+      const { select } = await import('@inquirer/prompts');
       const allSessions = await listSessions();
       if (allSessions.length === 0) {
         console.log(chalk.dim('  No saved sessions'));
         return 'handled';
       }
-      const items = allSessions.slice(0, 10);
-      const lines: string[] = [];
-      for (let i = 0; i < items.length; i++) {
-        const s = items[i]!;
-        const isLast = i === items.length - 1;
+
+      const items = allSessions.slice(0, 15);
+      const choices = items.map(s => {
         const isCurrent = s.id === session.id;
-        const prefix = isLast ? '└─' : '├─';
-        const id = isCurrent ? chalk.green(s.id.slice(0, 8)) : chalk.cyan(s.id.slice(0, 8));
-        const title = (s.title || 'Untitled').slice(0, 35);
+        const dot = isCurrent ? chalk.green('● ') : '  ';
+        const title = (s.title || 'Untitled').slice(0, 30);
         const meta = chalk.dim(`${s.messageCount} msgs · ${new Date(s.created).toLocaleDateString()}`);
-        const tag = isCurrent ? chalk.green(' ◀') : '';
-        lines.push(`${chalk.dim(prefix)} ${id}  ${title}  ${meta}${tag}`);
+        return {
+          name: `${dot}${s.id.slice(0, 8)}  ${title}  ${meta}`,
+          value: s.id,
+        };
+      });
+
+      let selectedId: string;
+      try {
+        selectedId = await select({
+          message: chalk.dim('Select session'),
+          choices,
+        });
+      } catch {
+        return 'handled'; // Ctrl+C
       }
-      console.log('\n' + box('Recent Sessions', lines));
-      console.log(chalk.dim('  Resume: opta chat -r <id>\n'));
+
+      // Action picker for selected session
+      const isCurrent = selectedId === session.id;
+      const actionChoices = [
+        ...(isCurrent ? [] : [{ name: 'Resume this session', value: 'resume' }]),
+        { name: 'Export session', value: 'export' },
+        { name: 'Delete session', value: 'delete' },
+        { name: 'Cancel', value: 'cancel' },
+      ];
+
+      let action: string;
+      try {
+        action = await select({
+          message: chalk.dim(`Action for ${selectedId.slice(0, 8)}`),
+          choices: actionChoices,
+        });
+      } catch {
+        return 'handled';
+      }
+
+      switch (action) {
+        case 'resume':
+          console.log(chalk.dim(`  To resume, run: opta chat -r ${selectedId.slice(0, 8)}`));
+          break;
+        case 'export': {
+          const { writeFile } = await import('node:fs/promises');
+          const { join } = await import('node:path');
+          const { loadSession: loadSess } = await import('../memory/store.js');
+          const sess = await loadSess(selectedId);
+          const content = formatSessionExport(sess, 'markdown');
+          const filename = `opta-session-${selectedId.slice(0, 8)}-${Date.now()}.md`;
+          await writeFile(join(process.cwd(), filename), content, 'utf-8');
+          console.log(chalk.green('✓') + ` Exported to ${chalk.cyan(filename)}`);
+          break;
+        }
+        case 'delete':
+          if (isCurrent) {
+            console.log(chalk.yellow('  Cannot delete current session'));
+          } else {
+            await deleteSession(selectedId);
+            console.log(chalk.green('✓') + ` Deleted session ${selectedId.slice(0, 8)}`);
+          }
+          break;
+        default:
+          break;
+      }
       return 'handled';
     }
 
