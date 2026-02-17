@@ -37,7 +37,7 @@ def memory_monitor() -> MemoryMonitor:
 def mock_engine() -> InferenceEngine:
     """Mock inference engine that doesn't require MLX hardware."""
     monitor = MemoryMonitor(max_percent=90)
-    engine = InferenceEngine(memory_monitor=monitor, use_batching=False)
+    engine = InferenceEngine(memory_monitor=monitor, use_batching=False, warmup_on_load=False)
 
     # Patch _create_engine to avoid importing vllm-mlx
     async def mock_create(model_id: str, use_batching: bool, **_kw: object) -> MagicMock:

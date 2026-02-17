@@ -165,7 +165,7 @@ class TestGGUFBackend:
 async def test_engine_loads_gguf_model(tmp_path: Path) -> None:
     """InferenceEngine detects GGUF format and uses GGUFBackend."""
     monitor = MemoryMonitor(max_percent=90)
-    engine = InferenceEngine(memory_monitor=monitor, use_batching=False)
+    engine = InferenceEngine(memory_monitor=monitor, use_batching=False, warmup_on_load=False)
 
     mock_backend = MagicMock()
 
@@ -187,7 +187,7 @@ async def test_engine_loads_gguf_model(tmp_path: Path) -> None:
 async def test_engine_unload_gguf_calls_close(tmp_path: Path) -> None:
     """Unloading a GGUF model calls backend.close()."""
     monitor = MemoryMonitor(max_percent=90)
-    engine = InferenceEngine(memory_monitor=monitor, use_batching=False)
+    engine = InferenceEngine(memory_monitor=monitor, use_batching=False, warmup_on_load=False)
 
     mock_backend = MagicMock()
 
@@ -205,7 +205,7 @@ async def test_engine_unload_gguf_calls_close(tmp_path: Path) -> None:
 async def test_engine_gguf_generate_delegates_to_backend(tmp_path: Path) -> None:
     """generate() delegates to GGUF backend for GGUF models."""
     monitor = MemoryMonitor(max_percent=90)
-    engine = InferenceEngine(memory_monitor=monitor, use_batching=False)
+    engine = InferenceEngine(memory_monitor=monitor, use_batching=False, warmup_on_load=False)
 
     mock_backend = MagicMock()
     mock_backend.generate = AsyncMock(return_value=("GGUF response", 10, 5))
@@ -231,7 +231,7 @@ async def test_engine_gguf_generate_delegates_to_backend(tmp_path: Path) -> None
 async def test_engine_gguf_stream_delegates_to_backend(tmp_path: Path) -> None:
     """stream_generate() delegates to GGUF backend for GGUF models."""
     monitor = MemoryMonitor(max_percent=90)
-    engine = InferenceEngine(memory_monitor=monitor, use_batching=False)
+    engine = InferenceEngine(memory_monitor=monitor, use_batching=False, warmup_on_load=False)
 
     async def mock_stream(*args, **kwargs):
         for token in ["Hello", " from", " GGUF"]:

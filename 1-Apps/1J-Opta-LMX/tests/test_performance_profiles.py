@@ -14,7 +14,7 @@ from opta_lmx.manager.memory import MemoryMonitor
 def engine() -> InferenceEngine:
     """Engine with default config (no global overrides)."""
     monitor = MemoryMonitor(max_percent=90)
-    return InferenceEngine(memory_monitor=monitor, use_batching=False)
+    return InferenceEngine(memory_monitor=monitor, use_batching=False, warmup_on_load=False)
 
 
 @pytest.fixture
@@ -24,6 +24,7 @@ def engine_with_globals() -> InferenceEngine:
     return InferenceEngine(
         memory_monitor=monitor,
         use_batching=False,
+        warmup_on_load=False,
         kv_bits=8,
         kv_group_size=64,
         prefix_cache_enabled=True,

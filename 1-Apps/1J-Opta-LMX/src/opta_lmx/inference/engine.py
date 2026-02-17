@@ -94,6 +94,9 @@ class InferenceEngine:
         kv_bits: int | None = None,
         kv_group_size: int = 64,
         prefix_cache_enabled: bool = True,
+        max_concurrent_requests: int = 4,
+        inference_timeout_sec: int = 300,
+        warmup_on_load: bool = True,
     ) -> None:
         self._models: dict[str, LoadedModel] = {}
         self._memory = memory_monitor
@@ -109,6 +112,10 @@ class InferenceEngine:
         self._prefix_cache_enabled = prefix_cache_enabled
         self._load_lock = asyncio.Lock()
         self._loading_models: set[str] = set()  # Models currently being loaded
+        self._inference_semaphore = asyncio.Semaphore(max_concurrent_requests)
+        self._inference_timeout = inference_timeout_sec
+        self._warmup_on_load = warmup_on_load
+        self._in_flight = 0  # Active inference requests (for graceful shutdown)
 
     async def load_model(
         self,
@@ -280,6 +287,10 @@ class InferenceEngine:
                 },
             ))
 
+        # Warmup: run a minimal inference to prime JIT/Metal shaders
+        if self._warmup_on_load:
+            await self._warmup_model(model_id)
+
         return ModelInfo(
             model_id=model_id,
             loaded=True,
@@ -393,6 +404,44 @@ class InferenceEngine:
 
         return freed
 
+    @property
+    def in_flight_count(self) -> int:
+        """Number of currently active inference requests."""
+        return self._in_flight
+
+    async def _warmup_model(self, model_id: str) -> None:
+        """Run a minimal inference to prime JIT compilation and KV cache.
+
+        This eliminates the cold-start penalty on the first real request
+        (typically 2-3x slower without warmup on Apple Silicon due to MLX
+        Metal shader compilation).
+        """
+        loaded = self._models.get(model_id)
+        if loaded is None:
+            return
+
+        warmup_messages = [{"role": "user", "content": "Hi"}]
+        start = time.monotonic()
+
+        try:
+            if loaded.backend is not None:
+                await loaded.backend.generate(
+                    messages=warmup_messages, temperature=0.0, max_tokens=1,
+                    top_p=1.0, stop=None, tools=None, response_format=None,
+                )
+            elif loaded.engine is not None:
+                await loaded.engine.chat(
+                    messages=warmup_messages, temperature=0.0, max_tokens=1,
+                )
+            elapsed = time.monotonic() - start
+            logger.info("model_warmup_complete", extra={
+                "model_id": model_id, "warmup_ms": round(elapsed * 1000, 1),
+            })
+        except Exception as e:
+            logger.warning("model_warmup_failed", extra={
+                "model_id": model_id, "error": str(e),
+            })
+
     async def generate(
         self,
         model_id: str,
@@ -424,46 +473,25 @@ class InferenceEngine:
 
         msg_dicts = [{"role": m.role, "content": m.content or ""} for m in messages]
 
-        try:
-            if loaded.backend is not None:
-                # GGUF backend — returns (content, prompt_tokens, completion_tokens)
-                content, prompt_tokens, completion_tokens = await loaded.backend.generate(
-                    messages=msg_dicts,
-                    temperature=temperature,
-                    max_tokens=max_tokens or 2048,
-                    top_p=top_p,
-                    stop=stop,
-                    tools=tools,
-                    response_format=response_format,
+        async with self._inference_semaphore:
+            self._in_flight += 1
+            try:
+                content, prompt_tokens, completion_tokens = await asyncio.wait_for(
+                    self._do_generate(loaded, msg_dicts, messages, temperature, max_tokens, top_p, stop, tools, response_format),
+                    timeout=self._inference_timeout,
                 )
-            else:
-                # MLX backend (vllm-mlx) — run in thread to avoid blocking event loop
-                chat_kwargs: dict[str, Any] = {
-                    "messages": msg_dicts,
-                    "temperature": temperature,
-                    "max_tokens": max_tokens or 2048,
-                    "top_p": top_p,
-                }
-                if stop:
-                    chat_kwargs["stop"] = stop
-                if tools:
-                    chat_kwargs["tools"] = tools
-                if response_format:
-                    chat_kwargs["response_format"] = response_format
-                result = await loaded.engine.chat(**chat_kwargs)
-                # vllm-mlx returns GenerationOutput with .new_text, .prompt_tokens, .completion_tokens
-                if hasattr(result, "text"):
-                    content = result.text
-                    prompt_tokens = getattr(result, "prompt_tokens", 0) or max(1, len(" ".join(m.content or "" for m in messages)) // 4)
-                    completion_tokens = getattr(result, "completion_tokens", 0) or max(1, len(content) // 4)
-                else:
-                    content = result if isinstance(result, str) else str(result)
-                    prompt_text = " ".join(m.content or "" for m in messages)
-                    prompt_tokens = max(1, len(prompt_text) // 4)
-                    completion_tokens = max(1, len(content) // 4)
-        except Exception as e:
-            logger.error("inference_failed", extra={"model_id": model_id, "error": str(e)})
-            raise RuntimeError(f"Inference failed: {e}") from e
+            except asyncio.TimeoutError:
+                logger.error("inference_timeout", extra={
+                    "model_id": model_id, "timeout_sec": self._inference_timeout,
+                })
+                raise RuntimeError(
+                    f"Inference timed out after {self._inference_timeout}s"
+                ) from None
+            except Exception as e:
+                logger.error("inference_failed", extra={"model_id": model_id, "error": str(e)})
+                raise RuntimeError(f"Inference failed: {e}") from e
+            finally:
+                self._in_flight -= 1
 
         # Parse MiniMax XML tool calls if tools were requested
         response_message: ResponseMessage
@@ -515,6 +543,55 @@ class InferenceEngine:
             ),
         )
 
+    async def _do_generate(
+        self,
+        loaded: LoadedModel,
+        msg_dicts: list[dict[str, str]],
+        messages: list[ChatMessage],
+        temperature: float,
+        max_tokens: int | None,
+        top_p: float,
+        stop: list[str] | None,
+        tools: list[dict[str, Any]] | None,
+        response_format: dict[str, Any] | None,
+    ) -> tuple[str, int, int]:
+        """Execute inference and return (content, prompt_tokens, completion_tokens)."""
+        if loaded.backend is not None:
+            return await loaded.backend.generate(
+                messages=msg_dicts,
+                temperature=temperature,
+                max_tokens=max_tokens or 2048,
+                top_p=top_p,
+                stop=stop,
+                tools=tools,
+                response_format=response_format,
+            )
+
+        chat_kwargs: dict[str, Any] = {
+            "messages": msg_dicts,
+            "temperature": temperature,
+            "max_tokens": max_tokens or 2048,
+            "top_p": top_p,
+        }
+        if stop:
+            chat_kwargs["stop"] = stop
+        if tools:
+            chat_kwargs["tools"] = tools
+        if response_format:
+            chat_kwargs["response_format"] = response_format
+        result = await loaded.engine.chat(**chat_kwargs)
+
+        if hasattr(result, "text"):
+            content = result.text
+            prompt_tokens = getattr(result, "prompt_tokens", 0) or max(1, len(" ".join(m.content or "" for m in messages)) // 4)
+            completion_tokens = getattr(result, "completion_tokens", 0) or max(1, len(content) // 4)
+        else:
+            content = result if isinstance(result, str) else str(result)
+            prompt_text = " ".join(m.content or "" for m in messages)
+            prompt_tokens = max(1, len(prompt_text) // 4)
+            completion_tokens = max(1, len(content) // 4)
+        return content, prompt_tokens, completion_tokens
+
     async def stream_generate(
         self,
         model_id: str,
@@ -546,43 +623,43 @@ class InferenceEngine:
 
         msg_dicts = [{"role": m.role, "content": m.content or ""} for m in messages]
 
-        try:
-            if loaded.backend is not None:
-                # GGUF backend streaming
-                async for token in loaded.backend.stream(
-                    messages=msg_dicts,
-                    temperature=temperature,
-                    max_tokens=max_tokens or 2048,
-                    top_p=top_p,
-                    stop=stop,
-                    tools=tools,
-                    response_format=response_format,
-                ):
-                    yield token
-            else:
-                # MLX backend (vllm-mlx) streaming
-                chat_kwargs: dict[str, Any] = {
-                    "messages": msg_dicts,
-                    "temperature": temperature,
-                    "max_tokens": max_tokens or 2048,
-                    "top_p": top_p,
-                }
-                if stop:
-                    chat_kwargs["stop"] = stop
-                if tools:
-                    chat_kwargs["tools"] = tools
-                if response_format:
-                    chat_kwargs["response_format"] = response_format
-                # vllm-mlx uses stream_chat (async generator) for streaming
-                stream = loaded.engine.stream_chat(**chat_kwargs)
-                async for chunk in stream:
-                    # chunk is GenerationOutput; new_text has the delta
-                    delta = chunk.new_text if hasattr(chunk, "new_text") else str(chunk)
-                    if delta:
-                        yield delta
-        except Exception as e:
-            logger.error("stream_failed", extra={"model_id": model_id, "error": str(e)})
-            raise RuntimeError(f"Stream inference failed: {e}") from e
+        async with self._inference_semaphore:
+            self._in_flight += 1
+            try:
+                if loaded.backend is not None:
+                    async for token in loaded.backend.stream(
+                        messages=msg_dicts,
+                        temperature=temperature,
+                        max_tokens=max_tokens or 2048,
+                        top_p=top_p,
+                        stop=stop,
+                        tools=tools,
+                        response_format=response_format,
+                    ):
+                        yield token
+                else:
+                    chat_kwargs: dict[str, Any] = {
+                        "messages": msg_dicts,
+                        "temperature": temperature,
+                        "max_tokens": max_tokens or 2048,
+                        "top_p": top_p,
+                    }
+                    if stop:
+                        chat_kwargs["stop"] = stop
+                    if tools:
+                        chat_kwargs["tools"] = tools
+                    if response_format:
+                        chat_kwargs["response_format"] = response_format
+                    stream = loaded.engine.stream_chat(**chat_kwargs)
+                    async for chunk in stream:
+                        delta = chunk.new_text if hasattr(chunk, "new_text") else str(chunk)
+                        if delta:
+                            yield delta
+            except Exception as e:
+                logger.error("stream_failed", extra={"model_id": model_id, "error": str(e)})
+                raise RuntimeError(f"Stream inference failed: {e}") from e
+            finally:
+                self._in_flight -= 1
 
     def get_loaded_models(self) -> list[ModelInfo]:
         """Return info about all currently loaded models."""
@@ -662,6 +739,32 @@ class InferenceEngine:
                     })
 
         return evicted
+
+    async def drain(self, timeout_sec: float = 30.0) -> bool:
+        """Wait for all in-flight inference requests to complete.
+
+        Args:
+            timeout_sec: Maximum seconds to wait for drain.
+
+        Returns:
+            True if all requests completed, False if timed out.
+        """
+        if self._in_flight == 0:
+            return True
+
+        logger.info("drain_started", extra={"in_flight": self._in_flight})
+        deadline = time.monotonic() + timeout_sec
+        while self._in_flight > 0 and time.monotonic() < deadline:
+            await asyncio.sleep(0.1)
+
+        if self._in_flight > 0:
+            logger.warning("drain_timeout", extra={
+                "remaining": self._in_flight, "timeout_sec": timeout_sec,
+            })
+            return False
+
+        logger.info("drain_complete")
+        return True
 
     def get_model(self, model_id: str) -> LoadedModel:
         """Get a loaded model or raise KeyError."""

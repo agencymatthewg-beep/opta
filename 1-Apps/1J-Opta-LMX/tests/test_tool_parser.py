@@ -588,6 +588,7 @@ class TestEngineIntegration:
         engine = InferenceEngine(
             memory_monitor=MemoryMonitor(max_percent=90),
             use_batching=False,
+            warmup_on_load=False,
         )
 
         # Mock engine to return tool call XML
@@ -632,6 +633,7 @@ class TestEngineIntegration:
         engine = InferenceEngine(
             memory_monitor=MemoryMonitor(max_percent=90),
             use_batching=False,
+            warmup_on_load=False,
         )
 
         mock_result = MagicMock()
@@ -668,6 +670,7 @@ class TestEngineIntegration:
         engine = InferenceEngine(
             memory_monitor=MemoryMonitor(max_percent=90),
             use_batching=False,
+            warmup_on_load=False,
         )
 
         mock_result = MagicMock()

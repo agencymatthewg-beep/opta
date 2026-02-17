@@ -57,6 +57,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         kv_bits=config.models.kv_bits,
         kv_group_size=config.models.kv_group_size,
         prefix_cache_enabled=config.models.prefix_cache_enabled,
+        max_concurrent_requests=config.models.max_concurrent_requests,
+        inference_timeout_sec=config.models.inference_timeout_sec,
+        warmup_on_load=config.models.warmup_on_load,
     )
 
     model_manager = ModelManager(
@@ -193,6 +196,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # Cleanup: unload embedding model
     if embedding_engine.is_loaded:
         await embedding_engine.unload()
+
+    # Cleanup: drain in-flight requests before unloading
+    await engine.drain(timeout_sec=30.0)
 
     # Cleanup: cancel active downloads
     await model_manager.cancel_active_downloads()

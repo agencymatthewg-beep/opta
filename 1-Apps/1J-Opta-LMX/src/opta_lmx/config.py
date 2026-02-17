@@ -41,6 +41,15 @@ class ModelsConfig(BaseModel):
     models_directory: Path = Path("/Users/Shared/Opta-LMX/models")
     auto_load: list[str] = Field(default_factory=list)
     use_batching: bool = True
+    max_concurrent_requests: int = Field(
+        4, ge=1, le=64, description="Max parallel inference requests (semaphore limit)",
+    )
+    inference_timeout_sec: int = Field(
+        300, ge=10, le=3600, description="Max seconds per inference request before timeout",
+    )
+    warmup_on_load: bool = Field(
+        True, description="Run a small inference after model load to prime JIT/KV cache",
+    )
     gguf_context_length: int = Field(4096, ge=512, description="Default context length for GGUF models")
     gguf_gpu_layers: int = Field(-1, ge=-1, description="GPU layers for GGUF (-1 = full Metal offload)")
     kv_bits: int | None = Field(None, description="KV cache quantization bits (4 or 8, None=FP16)")

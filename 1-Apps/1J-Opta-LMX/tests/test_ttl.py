@@ -16,7 +16,7 @@ from opta_lmx.manager.memory import MemoryMonitor
 def ttl_engine() -> InferenceEngine:
     """Engine with mocked model loading for TTL tests."""
     monitor = MemoryMonitor(max_percent=90)
-    engine = InferenceEngine(memory_monitor=monitor, use_batching=False)
+    engine = InferenceEngine(memory_monitor=monitor, use_batching=False, warmup_on_load=False)
 
     async def mock_create(model_id: str, use_batching: bool, **_kw: object) -> MagicMock:
         mock = MagicMock()
