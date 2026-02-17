@@ -7,29 +7,10 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Box, Text, useInput } from 'ink';
+import { TOOL_ICONS, formatPath } from './utils.js';
 
 /** Default timeout before auto-deny (seconds). */
 const AUTO_DENY_TIMEOUT = 30;
-
-/** Tool icons matching ToolCard.tsx. */
-const TOOL_ICONS: Record<string, string> = {
-  read_file: '\u{1F4C4}',
-  write_file: '\u270F\uFE0F',
-  edit_file: '\u{1F527}',
-  list_dir: '\u{1F4C1}',
-  search_files: '\u{1F50D}',
-  find_files: '\u{1F50E}',
-  run_command: '\u26A1',
-  ask_user: '\u{1F4AC}',
-  delete_file: '\u{1F5D1}',
-  multi_edit: '\u{1F527}',
-  bg_start: '\u{1F680}',
-  bg_kill: '\u{1F6D1}',
-  spawn_agent: '\u{1F916}',
-  delegate_task: '\u{1F4CB}',
-  lsp_rename: '\u270F\uFE0F',
-  git_commit: '\u{1F4BE}',
-};
 
 export type PermissionDecision = 'allow' | 'deny' | 'always';
 
@@ -37,16 +18,6 @@ export interface PermissionPromptProps {
   toolName: string;
   args: Record<string, unknown>;
   onDecision: (decision: PermissionDecision) => void;
-}
-
-/** Truncate a file path to last 3 segments for compactness. */
-function formatPath(path: unknown): string {
-  const p = String(path ?? '');
-  const parts = p.split('/');
-  if (parts.length > 3) {
-    return '.../' + parts.slice(-3).join('/');
-  }
-  return p;
 }
 
 /** Render tool-specific context details. */

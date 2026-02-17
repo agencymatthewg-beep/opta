@@ -15,6 +15,7 @@ import { HelpOverlay } from './HelpOverlay.js';
 import { estimateTokens } from '../utils/tokens.js';
 import type { TuiEmitter, TurnStats, PermissionRequest } from './adapter.js';
 import type { PermissionDecision } from './PermissionPrompt.js';
+import type { ConnectionState } from './utils.js';
 import type { SlashResult } from '../commands/slash/index.js';
 
 /** Max characters of a tool result displayed in the message list. */
@@ -98,7 +99,7 @@ function AppInner({
 
   // New streaming progress state
   const [turnPhase, setTurnPhase] = useState<'idle' | 'connecting' | 'waiting' | 'streaming' | 'tool-call' | 'done'>('idle');
-  const [connectionState, setConnectionState] = useState<'checking' | 'connected' | 'disconnected' | 'error'>('connected');
+  const [connectionState, setConnectionState] = useState<ConnectionState>('connected');
   const [turnElapsed, setTurnElapsed] = useState(0);
   const [firstTokenLatency, setFirstTokenLatency] = useState<number | null>(null);
   const [turnSpeed, setTurnSpeed] = useState(0);

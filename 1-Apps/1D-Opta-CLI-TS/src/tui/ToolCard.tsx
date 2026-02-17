@@ -1,18 +1,6 @@
 import React, { memo } from 'react';
 import { Box, Text } from 'ink';
-
-// --- Icon map (matches src/ui/toolcards.ts) ---
-
-export const TOOL_ICONS: Record<string, string> = {
-  read_file: '\u{1F4C4}',
-  write_file: '\u270F\uFE0F',
-  edit_file: '\u{1F527}',
-  list_dir: '\u{1F4C1}',
-  search_files: '\u{1F50D}',
-  find_files: '\u{1F50E}',
-  run_command: '\u26A1',
-  ask_user: '\u{1F4AC}',
-};
+import { TOOL_ICONS, formatPath } from './utils.js';
 
 /** Status indicators for tool call states. */
 const STATUS = {
@@ -35,16 +23,6 @@ export interface ToolCardProps {
   args?: Record<string, unknown>;
   result?: string;
   collapsed?: boolean;
-}
-
-function formatPath(path: unknown): string {
-  const p = String(path ?? '');
-  // Show only the last 2-3 path segments for compactness
-  const parts = p.split('/');
-  if (parts.length > 3) {
-    return '.../' + parts.slice(-3).join('/');
-  }
-  return p;
 }
 
 function countLines(content: unknown): number {

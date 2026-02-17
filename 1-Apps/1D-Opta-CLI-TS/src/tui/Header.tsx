@@ -1,7 +1,6 @@
 import React from 'react';
 import { Box, Text } from 'ink';
-
-type ConnectionState = 'checking' | 'connected' | 'disconnected' | 'error';
+import { type ConnectionState, connectionDot, shortModelName } from './utils.js';
 
 interface HeaderProps {
   model: string;
@@ -11,25 +10,6 @@ interface HeaderProps {
   title?: string;
   /** When true, truncate model name and hide session ID. */
   compact?: boolean;
-}
-
-function connectionDot(state?: ConnectionState, legacyStatus?: boolean) {
-  if (state) {
-    switch (state) {
-      case 'checking': return { char: '◌', color: 'yellow' };
-      case 'connected': return { char: '●', color: 'green' };
-      case 'disconnected': return { char: '○', color: 'red' };
-      case 'error': return { char: '✗', color: 'red' };
-    }
-  }
-  return { char: legacyStatus ? '●' : '○', color: legacyStatus ? 'green' : 'red' };
-}
-
-function shortModelName(model: string): string {
-  return model
-    .replace(/^lmstudio-community\//, '')
-    .replace(/^mlx-community\//, '')
-    .replace(/^huggingface\//, '');
 }
 
 export function Header({ model, sessionId, connectionStatus, connectionState, title, compact }: HeaderProps) {

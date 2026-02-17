@@ -1,7 +1,6 @@
 import React from 'react';
 import { Box, Text } from 'ink';
-
-type ConnectionState = 'checking' | 'connected' | 'disconnected' | 'error';
+import { type ConnectionState, connectionDot, shortModelName, formatContext } from './utils.js';
 
 export interface WelcomeScreenProps {
   connectionState?: ConnectionState;
@@ -9,31 +8,10 @@ export interface WelcomeScreenProps {
   contextTotal?: number;
 }
 
-function connectionLine(state?: ConnectionState): { icon: string; color: string; label: string } {
-  switch (state) {
-    case 'checking': return { icon: '\u25CC', color: 'yellow', label: 'Connecting...' };
-    case 'connected': return { icon: '\u25CF', color: 'green', label: 'Connected' };
-    case 'disconnected': return { icon: '\u25CB', color: 'red', label: 'Disconnected' };
-    case 'error': return { icon: '\u2717', color: 'red', label: 'Connection Error' };
-    default: return { icon: '\u25CF', color: 'green', label: 'Ready' };
-  }
-}
-
-function shortModelName(model: string): string {
-  return model
-    .replace(/^lmstudio-community\//, '')
-    .replace(/^mlx-community\//, '')
-    .replace(/^huggingface\//, '');
-}
-
-function formatContext(total?: number): string {
-  if (!total) return '\u2014';
-  if (total >= 1024) return `${Math.round(total / 1024)}K`;
-  return String(total);
-}
-
 export function WelcomeScreen({ connectionState, model, contextTotal }: WelcomeScreenProps) {
-  const conn = connectionLine(connectionState);
+  const conn = connectionState
+    ? connectionDot(connectionState)
+    : { char: '\u25CF', color: 'green', label: 'Ready' };
   const displayModel = model ? shortModelName(model) : 'default';
 
   return (
@@ -46,7 +24,7 @@ export function WelcomeScreen({ connectionState, model, contextTotal }: WelcomeS
       <Box marginTop={1} flexDirection="column">
         {/* Connection status */}
         <Box>
-          <Text color={conn.color}>{conn.icon} </Text>
+          <Text color={conn.color}>{conn.char} </Text>
           <Text dimColor>{conn.label} to </Text>
           <Text bold>{displayModel}</Text>
         </Box>

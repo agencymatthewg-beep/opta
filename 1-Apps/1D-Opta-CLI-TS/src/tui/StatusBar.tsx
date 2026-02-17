@@ -1,8 +1,7 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 import { formatTokens } from '../utils/tokens.js';
-
-type ConnectionState = 'checking' | 'connected' | 'disconnected' | 'error';
+import { type ConnectionState, connectionDot, shortModelName, contextBar, contextBarColor } from './utils.js';
 
 interface InkStatusBarProps {
   model: string;
@@ -23,39 +22,6 @@ interface InkStatusBarProps {
   contextTotal?: number;
 }
 
-function connectionDot(state?: ConnectionState) {
-  if (state) {
-    switch (state) {
-      case 'checking': return { char: '◌', color: 'yellow' };
-      case 'connected': return { char: '●', color: 'green' };
-      case 'disconnected': return { char: '○', color: 'red' };
-      case 'error': return { char: '✗', color: 'red' };
-    }
-  }
-  return { char: '●', color: 'green' };
-}
-
-function shortModelName(model: string): string {
-  return model
-    .replace(/^lmstudio-community\//, '')
-    .replace(/^mlx-community\//, '')
-    .replace(/^huggingface\//, '');
-}
-
-function contextBar(used: number, total: number): string {
-  const pct = Math.min(used / total, 1);
-  const filled = Math.round(pct * 10);
-  const empty = 10 - filled;
-  return '\u25B0'.repeat(filled) + '\u25B1'.repeat(empty);
-}
-
-function contextBarColor(used: number, total: number): string {
-  const pct = used / total;
-  if (pct >= 0.8) return 'red';
-  if (pct >= 0.5) return 'yellow';
-  return 'green';
-}
-
 const ACTIVE_PHASES = new Set(['streaming', 'waiting', 'tool-call']);
 
 export function InkStatusBar({
@@ -64,7 +30,7 @@ export function InkStatusBar({
   promptTokens, completionTokens,
   contextUsed, contextTotal,
 }: InkStatusBarProps) {
-  const dot = connectionDot(connectionState);
+  const dot = connectionDot(connectionState, true);
   const isActive = turnPhase != null && ACTIVE_PHASES.has(turnPhase);
   const hasContext = contextUsed != null && contextTotal != null && contextTotal > 0;
   const hasTokenSplit = promptTokens != null && promptTokens > 0;

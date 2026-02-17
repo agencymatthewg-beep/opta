@@ -1,8 +1,7 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 import { formatTokens } from '../utils/tokens.js';
-
-type ConnectionState = 'checking' | 'connected' | 'disconnected' | 'error';
+import { type ConnectionState, connectionDot, shortModelName, contextBar, contextBarColor } from './utils.js';
 
 interface SidebarProps {
   model: string;
@@ -18,44 +17,11 @@ interface SidebarProps {
   contextUsage?: { used: number; total: number };
 }
 
-function connectionDot(state?: ConnectionState) {
-  if (state) {
-    switch (state) {
-      case 'checking': return { char: '◌', color: 'yellow', label: 'Checking...' };
-      case 'connected': return { char: '●', color: 'green', label: 'Connected' };
-      case 'disconnected': return { char: '○', color: 'red', label: 'Disconnected' };
-      case 'error': return { char: '✗', color: 'red', label: 'Error' };
-    }
-  }
-  return { char: '●', color: 'green', label: 'Connected' };
-}
-
-function shortModelName(model: string): string {
-  return model
-    .replace(/^lmstudio-community\//, '')
-    .replace(/^mlx-community\//, '')
-    .replace(/^huggingface\//, '');
-}
-
-function contextBar(used: number, total: number): string {
-  const pct = Math.min(used / total, 1);
-  const filled = Math.round(pct * 10);
-  const empty = 10 - filled;
-  return '\u25B0'.repeat(filled) + '\u25B1'.repeat(empty);
-}
-
-function contextBarColor(used: number, total: number): string {
-  const pct = used / total;
-  if (pct >= 0.8) return 'red';
-  if (pct >= 0.5) return 'yellow';
-  return 'green';
-}
-
 export function Sidebar({
   model, sessionId, tokens, tools, cost, mode, elapsed, speed, title,
   connectionState, contextUsage,
 }: SidebarProps) {
-  const dot = connectionDot(connectionState);
+  const dot = connectionDot(connectionState, true);
   const hasContext = contextUsage != null && contextUsage.total > 0;
   const ctxPct = hasContext ? Math.round((contextUsage!.used / contextUsage!.total) * 100) : 0;
 
