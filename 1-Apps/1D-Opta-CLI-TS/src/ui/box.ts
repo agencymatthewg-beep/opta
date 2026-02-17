@@ -6,13 +6,17 @@ const BOX = { tl: '┌', tr: '┐', bl: '└', br: '┘', h: '─', v: '│', ml
 
 /**
  * Render a bordered box with a title and content lines.
- * Width auto-sizes to the longest line (min 40).
+ * Width auto-sizes to the longest line (min 40), capped at terminal width.
  */
 export function box(title: string, lines: string[], { width: fixedWidth }: { width?: number } = {}): string {
   const stripped = lines.map(stripAnsi);
   const titleLen = stripAnsi(title).length;
   const maxContent = Math.max(...stripped.map(l => l.length), 0);
-  const width = fixedWidth ?? Math.max(maxContent + 4, titleLen + 6, 40);
+  const termWidth = process.stdout.columns || 80;
+  const width = fixedWidth ?? Math.min(
+    Math.max(maxContent + 4, titleLen + 6, 40),
+    termWidth - 4
+  );
   const inner = width - 2;
 
   const out: string[] = [];
