@@ -586,9 +586,16 @@ async def reload_config(
         },
     ))
 
-    # Reload presets
+    # Reload presets and merge routing aliases
     if new_config.presets.enabled:
         preset_mgr.reload()
+        preset_aliases = preset_mgr.get_routing_aliases()
+        if preset_aliases:
+            for alias, models in preset_aliases.items():
+                existing = new_config.routing.aliases.get(alias, [])
+                merged = list(dict.fromkeys(existing + models))
+                new_config.routing.aliases[alias] = merged
+            task_router.update_config(new_config.routing)
 
     return JSONResponse(content={
         "success": True,
