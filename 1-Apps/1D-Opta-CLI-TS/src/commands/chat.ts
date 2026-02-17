@@ -10,7 +10,7 @@ import {
   saveSession,
   generateTitle,
 } from '../memory/store.js';
-import { resolveFileRefs, buildContextWithRefs } from '../core/fileref.js';
+import { resolveFileRefs, buildContextWithRefs, resolveImageRefs } from '../core/fileref.js';
 import { box, kv, statusDot } from '../ui/box.js';
 import { InputEditor } from '../ui/input.js';
 import { InputHistory } from '../ui/history.js';
@@ -138,9 +138,10 @@ export async function startChat(opts: ChatOptions): Promise<void> {
       onSubmit: (text: string) => {
         // Fire-and-forget: the emitter events drive the TUI updates
         (async () => {
-          // Resolve @file references before sending to agent
+          // Resolve @file and @image references before sending to agent
           const { refs } = await resolveFileRefs(text);
-          const enrichedInput = buildContextWithRefs(text, refs);
+          const { cleanMessage, images } = await resolveImageRefs(text);
+          const enrichedInput = buildContextWithRefs(images.length > 0 ? cleanMessage : text, refs);
 
           // Generate session title from first user message
           if (!session.title) {
@@ -148,7 +149,10 @@ export async function startChat(opts: ChatOptions): Promise<void> {
             emitter.emit('title', session.title);
           }
 
-          const result = await runAgentWithEvents(emitter, enrichedInput, config, session);
+          const result = await runAgentWithEvents(
+            emitter, enrichedInput, config, session,
+            images.length > 0 ? images.map(img => ({ base64: img.base64, mimeType: img.mimeType, name: img.name })) : undefined,
+          );
           session.messages = result.messages;
           session.toolCallCount += result.toolCallCount;
           await saveSession(session);
@@ -281,9 +285,10 @@ export async function startChat(opts: ChatOptions): Promise<void> {
       }
     }
 
-    // Resolve @file references
+    // Resolve @file and @image references
     const { refs } = await resolveFileRefs(userInput);
-    const enrichedInput = buildContextWithRefs(userInput, refs);
+    const { cleanMessage, images } = await resolveImageRefs(userInput);
+    const enrichedInput = buildContextWithRefs(images.length > 0 ? cleanMessage : userInput, refs);
 
     // Set title from first user message
     if (!session.title) {
@@ -297,6 +302,7 @@ export async function startChat(opts: ChatOptions): Promise<void> {
         silent: jsonMode,
         mode: chatState.currentMode === 'plan' ? 'plan' : undefined,
         profile: chatState.agentProfile !== 'default' ? chatState.agentProfile : undefined,
+        images: images.length > 0 ? images.map(img => ({ base64: img.base64, mimeType: img.mimeType, name: img.name })) : undefined,
       });
 
       session.messages = result.messages;

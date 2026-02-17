@@ -87,6 +87,7 @@ export async function runAgentWithEvents(
   task: string,
   config: OptaConfig,
   session: Session,
+  images?: Array<{ base64: string; mimeType: string; name?: string }>,
 ): Promise<AgentLoopResult> {
   const turnStartTime = Date.now();
   let completionTokens = 0;
@@ -110,6 +111,7 @@ export async function runAgentWithEvents(
     existingMessages: session.messages,
     sessionId: session.id,
     silent: true, // We handle display in the TUI
+    images,
     onStream: {
       onToken(text: string) {
         // Track first token latency

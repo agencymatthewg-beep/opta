@@ -105,6 +105,9 @@ const ChatMessage = memo(function ChatMessage({ msg, index, isStreaming, markdow
           <Text color={msg.role === 'user' ? 'cyan' : 'green'} bold>
             {msg.role === 'user' ? '> you' : '\u25C6 opta'}
           </Text>
+          {msg.imageCount ? (
+            <Text dimColor> [{msg.imageCount} image{msg.imageCount > 1 ? 's' : ''}]</Text>
+          ) : null}
           {msg.toolCalls ? (
             <Text dimColor> ({msg.toolCalls} tool calls)</Text>
           ) : null}

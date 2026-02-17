@@ -1,5 +1,6 @@
 import { TOOL_SCHEMAS, SUB_AGENT_TOOL_SCHEMAS, executeTool } from '../core/tools/index.js';
 import { connectMcpServer, type McpConnection } from './client.js';
+import { ToolResultCache } from './cache.js';
 import { debug } from '../core/debug.js';
 import type { OptaConfig } from '../core/config.js';
 import type { SubAgentContext } from '../core/subagent.js';
@@ -18,9 +19,8 @@ interface ToolSchema {
 
 export interface ToolRegistry {
   schemas: ToolSchema[];
-  execute: (name: string, argsJson: string) => Promise<string>;
+  execute: (name: string, argsJson: string, parentCtx?: SubAgentContext) => Promise<string>;
   close: () => Promise<void>;
-  parentContext?: SubAgentContext;
 }
 
 export async function buildToolRegistry(
@@ -33,9 +33,16 @@ export async function buildToolRegistry(
 
   const serverEntries = Object.entries(config.mcp?.servers ?? {});
 
-  for (const [name, serverConfig] of serverEntries) {
-    try {
-      const conn = await connectMcpServer(name, serverConfig);
+  // Connect all MCP servers in parallel for faster startup
+  const connectResults = await Promise.allSettled(
+    serverEntries.map(([name, serverConfig]) =>
+      connectMcpServer(name, serverConfig).then(conn => ({ name, conn }))
+    )
+  );
+
+  for (const result of connectResults) {
+    if (result.status === 'fulfilled') {
+      const { name, conn } = result.value;
       connections.push(conn);
 
       for (const tool of conn.tools) {
@@ -52,8 +59,11 @@ export async function buildToolRegistry(
       }
 
       debug(`MCP "${name}": ${conn.tools.length} tools registered`);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
+    } else {
+      // Extract server name from the settled result — map index matches serverEntries order
+      const idx = connectResults.indexOf(result);
+      const name = serverEntries[idx]?.[0] ?? 'unknown';
+      const msg = result.reason instanceof Error ? result.reason.message : String(result.reason);
       debug(`MCP "${name}" failed to connect: ${msg}`);
       console.warn(`  MCP server "${name}" unavailable: ${msg}`);
     }
@@ -129,9 +139,28 @@ export async function buildToolRegistry(
   // Build a self-reference for sub-agent tool execution
   const registryRef: { current: ToolRegistry | null } = { current: null };
 
+  // TTL cache for read-only tool results (avoids redundant file reads in multi-turn convos)
+  const cache = new ToolResultCache();
+
   const registry: ToolRegistry = {
     schemas: filteredSchemas,
-    async execute(name: string, argsJson: string): Promise<string> {
+    async execute(name: string, argsJson: string, parentCtx?: SubAgentContext): Promise<string> {
+      // Check cache for read-only tools
+      if (cache.isCacheable(name)) {
+        const cacheKey = ToolResultCache.key(name, argsJson);
+        const cached = cache.get(cacheKey);
+        if (cached !== undefined) {
+          debug(`Cache hit: ${name}`);
+          return cached;
+        }
+      }
+
+      // Flush cache on write operations
+      if (cache.isWriteTool(name) && cache.size > 0) {
+        debug(`Cache flush: ${name} (${cache.size} entries)`);
+        cache.flush();
+      }
+
       const mcpConn = mcpRoutes.get(name);
       if (mcpConn) {
         let args: Record<string, unknown>;
@@ -145,9 +174,9 @@ export async function buildToolRegistry(
         return mcpConn.call(originalName, args);
       }
 
-      // Route sub-agent tools
+      // Route sub-agent tools (pass context explicitly for concurrency safety)
       if (name === 'spawn_agent' || name === 'delegate_task') {
-        return execSubAgentTool(name, argsJson, config, registryRef.current!);
+        return execSubAgentTool(name, argsJson, config, registryRef.current!, parentCtx);
       }
 
       // Route LSP tools through LspManager
@@ -158,7 +187,12 @@ export async function buildToolRegistry(
         } catch {
           return 'Error: Invalid JSON arguments';
         }
-        return lspManager.execute(name, args);
+        const result = await lspManager.execute(name, args);
+        // Cache LSP read results
+        if (cache.isCacheable(name)) {
+          cache.set(ToolResultCache.key(name, argsJson), result);
+        }
+        return result;
       }
 
       // Route custom tools
@@ -175,6 +209,11 @@ export async function buildToolRegistry(
 
       // Execute standard tools, then notify LSP of file changes
       const result = await executeTool(name, argsJson);
+
+      // Cache read-only tool results
+      if (cache.isCacheable(name)) {
+        cache.set(ToolResultCache.key(name, argsJson), result);
+      }
 
       // Notify LSP of file changes after write operations
       if (lspManager && (name === 'edit_file' || name === 'write_file' || name === 'multi_edit')) {
@@ -216,7 +255,8 @@ async function execSubAgentTool(
   name: string,
   argsJson: string,
   config: OptaConfig,
-  registry: ToolRegistry
+  registry: ToolRegistry,
+  parentCtx?: SubAgentContext
 ): Promise<string> {
   let args: Record<string, unknown>;
   try {
@@ -229,12 +269,12 @@ async function execSubAgentTool(
   const { spawnSubAgent, formatSubAgentResult, createSubAgentContext } = await import('../core/subagent.js');
   const { nanoid } = await import('nanoid');
 
-  // Validate depth before spawning
+  // Validate depth before spawning (uses explicit context, not mutable registry state)
   let childContext: SubAgentContext;
   try {
     childContext = createSubAgentContext(
-      registry.parentContext?.parentSessionId ?? 'root',
-      registry.parentContext,
+      parentCtx?.parentSessionId ?? 'root',
+      parentCtx,
       config,
     );
   } catch (err) {

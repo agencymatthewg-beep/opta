@@ -98,6 +98,8 @@ export interface AgentLoopOptions {
   silent?: boolean;
   mode?: string;
   imageBase64?: string;
+  /** Multiple images for multimodal vision support. */
+  images?: Array<{ base64: string; mimeType: string; name?: string }>;
   subAgentContext?: SubAgentContext;
   profile?: string;
   onStream?: OnStreamCallbacks;
@@ -386,12 +388,24 @@ export async function agentLoop(
   ensureModel(model);
 
   // Use existing messages (multi-turn) or start fresh (single-shot)
-  const userMessage: AgentMessage = options?.imageBase64
+  // Build multimodal content if images are provided (single or multiple)
+  const allImages: Array<{ base64: string; mimeType: string; name?: string }> = [];
+  if (options?.imageBase64) {
+    allImages.push({ base64: options.imageBase64, mimeType: 'image/png' });
+  }
+  if (options?.images) {
+    allImages.push(...options.images);
+  }
+
+  const userMessage: AgentMessage = allImages.length > 0
     ? {
         role: 'user',
         content: [
           { type: 'text', text: task },
-          { type: 'image_url', image_url: { url: options.imageBase64 } },
+          ...allImages.map(img => ({
+            type: 'image_url' as const,
+            image_url: { url: img.base64.startsWith('data:') ? img.base64 : `data:${img.mimeType};base64,${img.base64}` },
+          })),
         ],
       }
     : { role: 'user', content: task };
@@ -548,28 +562,28 @@ export async function agentLoop(
         })),
       });
 
-      // 6. Execute each tool call with permission checks
+      // 6. Execute tool calls with permission checks (parallel where possible)
+      //
+      // Phase 1: Resolve permissions sequentially (prompts must be one-at-a-time)
+      // Phase 2: Execute approved calls in parallel with concurrency limit
+      // Phase 3: Collect results in original order for model context coherence
+      const maxParallel = effectiveConfig.safety.maxParallelTools;
+
+      type ToolDecision = { call: ToolCallAccum; approved: boolean; denialReason?: string };
+      const decisions: ToolDecision[] = [];
+
       for (const call of toolCalls) {
         const permission = resolvePermission(call.name, effectiveConfig);
 
         if (permission === 'deny') {
-          messages.push({
-            role: 'tool',
-            content: 'Permission denied by configuration.',
-            tool_call_id: call.id,
-          });
+          decisions.push({ call, approved: false, denialReason: 'Permission denied by configuration.' });
           if (!silent) console.log(chalk.dim(`  ✗ ${call.name} — denied`));
           continue;
         }
 
         if (permission === 'ask') {
-          // Sub-agents cannot prompt users — deny silently
           if (isSubAgent) {
-            messages.push({
-              role: 'tool',
-              content: 'Permission denied (sub-agent cannot prompt user).',
-              tool_call_id: call.id,
-            });
+            decisions.push({ call, approved: false, denialReason: 'Permission denied (sub-agent cannot prompt user).' });
             continue;
           }
 
@@ -580,27 +594,16 @@ export async function agentLoop(
             args = { raw: call.args };
           }
 
-          // TUI mode: use the stream callback for permission prompts
           if (streamCallbacks?.onPermissionRequest) {
             const decision = await streamCallbacks.onPermissionRequest(call.name, args);
             if (decision === 'deny') {
-              messages.push({
-                role: 'tool',
-                content: 'User declined this action.',
-                tool_call_id: call.id,
-              });
+              decisions.push({ call, approved: false, denialReason: 'User declined this action.' });
               continue;
             }
-            // 'allow' and 'always' both proceed (persistence handled by caller)
           } else {
-            // REPL mode: use @inquirer/prompts confirm dialog
             const approved = await promptToolApproval(call.name, args);
             if (!approved) {
-              messages.push({
-                role: 'tool',
-                content: 'User declined this action.',
-                tool_call_id: call.id,
-              });
+              decisions.push({ call, approved: false, denialReason: 'User declined this action.' });
               continue;
             }
           }
@@ -609,16 +612,30 @@ export async function agentLoop(
         // Fire pre-tool hook (can cancel execution)
         const preResult = await fireToolPre(hooks, call.name, call.args, sessionCtx);
         if (preResult.cancelled) {
-          messages.push({
-            role: 'tool',
-            content: `Tool blocked by hook: ${preResult.reason ?? 'no reason given'}`,
-            tool_call_id: call.id,
-          });
+          decisions.push({ call, approved: false, denialReason: `Tool blocked by hook: ${preResult.reason ?? 'no reason given'}` });
           if (!silent) console.log(chalk.dim(`  ✗ ${call.name} — blocked by hook`));
           continue;
         }
 
-        // Display tool call card
+        decisions.push({ call, approved: true });
+      }
+
+      // Phase 2: Execute approved calls in parallel (bounded concurrency)
+      const approvedCalls = decisions.filter(d => d.approved);
+
+      // Simple semaphore for bounded concurrency
+      let running = 0;
+      const queue: Array<() => void> = [];
+      const acquire = () => new Promise<void>(resolve => {
+        if (running < maxParallel) { running++; resolve(); }
+        else queue.push(() => { running++; resolve(); });
+      });
+      const release = () => { running--; const next = queue.shift(); if (next) next(); };
+
+      const executionResults = new Map<string, { result: string; error?: undefined } | { result?: undefined; error: string }>();
+
+      // Display tool cards for approved calls
+      for (const { call } of approvedCalls) {
         if (!silent) {
           let parsedArgs: Record<string, unknown>;
           try {
@@ -628,18 +645,48 @@ export async function agentLoop(
           }
           console.log(formatToolCall(call.name, parsedArgs));
         }
-
-        // Execute the tool
         streamCallbacks?.onToolStart?.(call.name, call.id, call.args);
-        spinner.start(`${call.name}...`);
-        const result = await registry.execute(call.name, call.args);
-        spinner.succeed(`${call.name}`);
-        streamCallbacks?.onToolEnd?.(call.name, call.id, result);
+      }
 
-        // Fire post-tool hook
-        await fireToolPost(hooks, call.name, call.args, result, sessionCtx);
+      // Execute in parallel with semaphore
+      if (approvedCalls.length > 0) {
+        spinner.start(`Running ${approvedCalls.length} tool${approvedCalls.length > 1 ? 's' : ''}...`);
+        await Promise.all(
+          approvedCalls.map(async ({ call }) => {
+            await acquire();
+            try {
+              const result = await registry.execute(call.name, call.args);
+              executionResults.set(call.id, { result });
+              streamCallbacks?.onToolEnd?.(call.name, call.id, result);
+              await fireToolPost(hooks, call.name, call.args, result, sessionCtx);
+            } catch (err) {
+              const errMsg = err instanceof Error ? err.message : String(err);
+              executionResults.set(call.id, { error: `Error: ${errMsg}` });
+              streamCallbacks?.onToolEnd?.(call.name, call.id, `Error: ${errMsg}`);
+            } finally {
+              release();
+            }
+          })
+        );
+        spinner.succeed(`${approvedCalls.length} tool${approvedCalls.length > 1 ? 's' : ''} done`);
+      }
 
-        // Display tool result
+      // Phase 3: Collect results in original order
+      for (const decision of decisions) {
+        const { call } = decision;
+
+        if (!decision.approved) {
+          messages.push({
+            role: 'tool',
+            content: decision.denialReason ?? 'Permission denied.',
+            tool_call_id: call.id,
+          });
+          continue;
+        }
+
+        const execResult = executionResults.get(call.id);
+        const result = execResult?.result ?? execResult?.error ?? 'Error: no result';
+
         if (!silent && result) {
           console.log(formatToolResult(call.name, result));
         }

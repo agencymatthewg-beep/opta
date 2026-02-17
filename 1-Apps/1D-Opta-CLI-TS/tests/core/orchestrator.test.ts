@@ -89,7 +89,7 @@ describe('delegate_task orchestrator', () => {
         plan: 'Failing plan',
         subtasks: [
           { task: 'Failing step' },
-          { task: 'Next step' },
+          { task: 'Next step', depends_on: 0 },  // Wave 2 — won't start after wave 1 error
         ],
       },
       DEFAULT_CONFIG,
@@ -162,16 +162,16 @@ describe('delegate_task orchestrator', () => {
     expect(firstCall.scope).toBe('src/core');
   });
 
-  it('warns on forward reference depends_on and ignores it', async () => {
+  it('handles forward reference depends_on via topological sort', async () => {
     const spawnSpy = vi.fn<(task: SubAgentTask, ...args: unknown[]) => Promise<SubAgentResult>>()
-      .mockResolvedValueOnce(makeResult('task-0', 'Done first'))
-      .mockResolvedValueOnce(makeResult('task-1', 'Done second'));
+      .mockResolvedValueOnce(makeResult('task-1', 'Done first'))
+      .mockResolvedValueOnce(makeResult('task-0', 'Done second'));
 
     const result = await executeDelegation(
       {
         plan: 'Forward ref plan',
         subtasks: [
-          { task: 'First task', depends_on: 1 },  // Forward reference: invalid
+          { task: 'First task', depends_on: 1 },  // Depends on task 1 — DAG resolves this
           { task: 'Second task' },
         ],
       },
@@ -181,14 +181,16 @@ describe('delegate_task orchestrator', () => {
       spawnSpy,
     );
 
-    // Should warn about invalid depends_on
-    expect(result).toContain('Warning');
-    expect(result).toContain('invalid depends_on=1');
-    // Both tasks should still execute
+    // DAG puts "Second task" in wave 1 (no deps), "First task" in wave 2 (depends on 1)
     expect(spawnSpy).toHaveBeenCalledTimes(2);
-    // First task should NOT have dependency context injected
+    // Second task runs first (wave 1)
     const firstCall = spawnSpy.mock.calls[0]![0] as SubAgentTask;
-    expect(firstCall.description).toBe('First task');
+    expect(firstCall.description).toBe('Second task');
+    // First task gets dependency context injected (wave 2)
+    const secondCall = spawnSpy.mock.calls[1]![0] as SubAgentTask;
+    expect(secondCall.description).toContain('First task');
+    expect(secondCall.description).toContain('Context from previous subtask');
+    expect(result).toContain('Completed: 2/2');
   });
 
   it('warns on negative depends_on index', async () => {

@@ -86,6 +86,7 @@ export const OptaConfigSchema = z.object({
   safety: z
     .object({
       maxToolCalls: z.number().default(30), // backward compat
+      maxParallelTools: z.number().min(1).max(10).default(5),
       compactAt: z.number().default(0.7),
       circuitBreaker: z
         .object({
@@ -161,7 +162,7 @@ export const OptaConfigSchema = z.object({
     .object({
       enabled: z.boolean().default(true),
       maxDepth: z.number().default(2),
-      maxConcurrent: z.number().default(1),
+      maxConcurrent: z.number().default(3),
       defaultBudget: z
         .object({
           maxToolCalls: z.number().default(15),

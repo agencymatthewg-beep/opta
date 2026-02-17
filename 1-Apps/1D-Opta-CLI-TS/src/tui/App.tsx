@@ -38,6 +38,8 @@ export interface TuiMessage {
   thinkingTokens?: number;
   /** Accumulated thinking/reasoning content from the model. */
   thinking?: { text: string; tokens: number };
+  /** Number of images attached to this message (for visual indicator). */
+  imageCount?: number;
 }
 
 /** Result from dispatching a slash command in TUI mode. */
@@ -424,7 +426,16 @@ function AppInner({
       return;
     }
 
-    setMessages(prev => [...prev, { role: 'user', content: text }]);
+    // Check for @image references and show indicator
+    const imagePattern = /@\S+\.(png|jpg|jpeg|gif|webp)/gi;
+    const imageMatches = [...text.matchAll(imagePattern)];
+    const hasImages = imageMatches.length > 0;
+
+    setMessages(prev => [...prev, {
+      role: 'user',
+      content: text,
+      ...(hasImages ? { imageCount: imageMatches.length } : {}),
+    } as TuiMessage]);
 
     if (isStreamingMode && onSubmit) {
       // Streaming mode: emitter events will update messages

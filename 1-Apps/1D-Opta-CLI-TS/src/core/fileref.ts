@@ -71,3 +71,78 @@ export function buildContextWithRefs(message: string, refs: FileRef[]): string {
 
   return message + context;
 }
+
+// --- Image Reference Support ---
+
+const IMAGE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp']);
+
+export interface ImageRef {
+  original: string;  // @screenshot.png
+  path: string;      // resolved absolute path
+  base64: string;    // base64-encoded content
+  mimeType: string;  // image/png, image/jpeg, etc.
+  name: string;      // filename
+}
+
+function getImageMimeType(ext: string): string {
+  const mimes: Record<string, string> = {
+    png: 'image/png',
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    gif: 'image/gif',
+    webp: 'image/webp',
+  };
+  return mimes[ext.toLowerCase()] ?? 'application/octet-stream';
+}
+
+/**
+ * Check if a path refers to an image file (by extension).
+ */
+export function isImagePath(path: string): boolean {
+  const ext = path.split('.').pop()?.toLowerCase() ?? '';
+  return IMAGE_EXTENSIONS.has(ext);
+}
+
+/**
+ * Resolve @image references in a message — reads image files as base64.
+ *
+ * Returns the clean message (with @image refs removed) and an array of
+ * ImageRef objects containing the base64 data.
+ */
+export async function resolveImageRefs(message: string): Promise<{ cleanMessage: string; images: ImageRef[] }> {
+  const pattern = /@((?:\.{1,2}\/|[a-z_])[^\s,;:!?'")\]}>]+)/g;
+  const images: ImageRef[] = [];
+  const matches = [...message.matchAll(pattern)];
+  let cleanMessage = message;
+
+  for (const match of matches) {
+    const refPath = match[1]!;
+    if (!isImagePath(refPath)) continue;
+
+    const fullPath = resolve(process.cwd(), refPath);
+    const ext = refPath.split('.').pop()?.toLowerCase() ?? '';
+
+    try {
+      const data = await readFile(fullPath);
+      const base64 = data.toString('base64');
+      const mimeType = getImageMimeType(ext);
+      const name = refPath.split('/').pop() ?? refPath;
+
+      images.push({
+        original: match[0],
+        path: fullPath,
+        base64,
+        mimeType,
+        name,
+      });
+
+      // Remove the @image reference from the message
+      cleanMessage = cleanMessage.replace(match[0], '').trim();
+      console.log(chalk.dim(`  attached image: ${relative(process.cwd(), fullPath)} (${(data.length / 1024).toFixed(1)} KB)`));
+    } catch {
+      // File doesn't exist — leave the @reference as-is
+    }
+  }
+
+  return { cleanMessage, images };
+}

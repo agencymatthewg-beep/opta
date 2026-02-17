@@ -215,11 +215,6 @@ export async function spawnSubAgent(
   // Import resolvePermission once outside the loop
   const { resolvePermission } = await import('./tools/index.js');
 
-  // Set registry.parentContext so nested spawn_agent calls see correct depth.
-  // Restored after the loop. Safe because sub-agents run sequentially.
-  const previousContext = registry.parentContext;
-  registry.parentContext = parentContext;
-
   // AbortController for cancelling inflight LLM requests on timeout
   const abortController = new AbortController();
 
@@ -327,8 +322,8 @@ export async function spawnSubAgent(
           continue;
         }
 
-        // Execute the tool
-        const result = await registry.execute(toolName, tc.function.arguments);
+        // Execute the tool (pass context explicitly for concurrency safety)
+        const result = await registry.execute(toolName, tc.function.arguments, parentContext);
         messages.push({
           role: 'tool',
           content: result,
@@ -408,7 +403,6 @@ export async function spawnSubAgent(
     };
   } finally {
     if (timeoutHandle !== undefined) clearTimeout(timeoutHandle);
-    registry.parentContext = previousContext;
   }
 }
 
