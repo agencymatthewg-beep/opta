@@ -74,3 +74,30 @@ describe('shell mode', () => {
     expect(editor.isShellMode()).toBe(false);
   });
 });
+
+describe('escape handling', () => {
+  it('should track escape state', () => {
+    const editor = new InputEditor({ prompt: '>' });
+    expect(editor.shouldCancel()).toBe(false);
+    editor.handleEscape();
+    expect(editor.shouldCancel()).toBe(true);
+  });
+
+  it('should exit shell mode on escape', () => {
+    const editor = new InputEditor({ prompt: '>' });
+    editor.insertText('!ls');
+    expect(editor.isShellMode()).toBe(true);
+    editor.handleEscape();
+    expect(editor.isShellMode()).toBe(false);
+    expect(editor.getBuffer()).toBe('');
+  });
+
+  it('should clear multiline on escape', () => {
+    const editor = new InputEditor({ prompt: '>', multiline: true });
+    editor.insertText('line 1');
+    editor.insertNewline();
+    editor.insertText('line 2');
+    editor.handleEscape();
+    expect(editor.getBuffer()).toBe('');
+  });
+});

@@ -63,6 +63,24 @@ export class InputEditor {
     return this.buffer.slice(1).trim();
   }
 
+  private cancelled = false;
+
+  handleEscape(): void {
+    if (this.buffer.length > 0) {
+      this.clear();
+    } else {
+      this.cancelled = true;
+    }
+  }
+
+  shouldCancel(): boolean {
+    return this.cancelled;
+  }
+
+  resetCancel(): void {
+    this.cancelled = false;
+  }
+
   getPromptDisplay(): string {
     switch (this.options.mode) {
       case 'shell': return chalk.yellow('!') + chalk.dim(' >');
