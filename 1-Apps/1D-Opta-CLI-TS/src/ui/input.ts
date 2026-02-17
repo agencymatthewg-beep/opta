@@ -23,6 +23,49 @@ export class InputEditor {
     return this.buffer;
   }
 
+  getCursor(): number {
+    return this.cursor;
+  }
+
+  setBuffer(text: string): void {
+    this.buffer = text;
+    this.cursor = text.length;
+  }
+
+  deleteBackward(): void {
+    if (this.cursor === 0) return;
+    this.buffer =
+      this.buffer.slice(0, this.cursor - 1) + this.buffer.slice(this.cursor);
+    this.cursor--;
+  }
+
+  deleteForward(): void {
+    if (this.cursor >= this.buffer.length) return;
+    this.buffer =
+      this.buffer.slice(0, this.cursor) + this.buffer.slice(this.cursor + 1);
+  }
+
+  moveLeft(): void {
+    if (this.cursor > 0) this.cursor--;
+  }
+
+  moveRight(): void {
+    if (this.cursor < this.buffer.length) this.cursor++;
+  }
+
+  moveToStart(): void {
+    // Move to start of current line
+    const before = this.buffer.slice(0, this.cursor);
+    const lastNewline = before.lastIndexOf('\n');
+    this.cursor = lastNewline + 1;
+  }
+
+  moveToEnd(): void {
+    // Move to end of current line
+    const after = this.buffer.indexOf('\n', this.cursor);
+    this.cursor = after === -1 ? this.buffer.length : after;
+  }
+
   insertText(text: string): void {
     this.buffer =
       this.buffer.slice(0, this.cursor) + text + this.buffer.slice(this.cursor);

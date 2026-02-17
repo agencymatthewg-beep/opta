@@ -1,24 +1,245 @@
-import React, { useState } from 'react';
-import { Box, Text } from 'ink';
-import TextInput from 'ink-text-input';
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import { Box, Text, useInput } from 'ink';
+import { InputEditor } from '../ui/input.js';
+import { InputHistory } from '../ui/history.js';
+import fg from 'fast-glob';
 
 interface InputBoxProps {
   onSubmit: (text: string) => void;
   mode: 'normal' | 'plan' | 'shell' | 'auto';
   isLoading?: boolean;
+  history?: InputHistory;
 }
 
-export function InputBox({ onSubmit, mode, isLoading }: InputBoxProps) {
-  const [value, setValue] = useState('');
+/** Debounce interval for @file glob searches (ms). */
+const AUTOCOMPLETE_DEBOUNCE = 200;
 
-  const handleSubmit = (text: string) => {
-    if (!text.trim()) return;
-    onSubmit(text);
-    setValue('');
-  };
+/** Maximum number of file suggestions to display. */
+const MAX_SUGGESTIONS = 5;
+
+/**
+ * Extract the @-prefixed partial path from the buffer at the cursor position.
+ * Returns null if the cursor is not on an @-reference.
+ */
+function extractAtPrefix(buffer: string, cursor: number): string | null {
+  // Walk backwards from cursor to find @
+  let i = cursor - 1;
+  while (i >= 0) {
+    const ch = buffer[i];
+    if (ch === '@') {
+      const prefix = buffer.slice(i + 1, cursor);
+      // Only trigger if there's no space before @ (start of word)
+      if (i === 0 || /\s/.test(buffer[i - 1] ?? '')) {
+        return prefix.length > 0 ? prefix : null;
+      }
+      return null;
+    }
+    // Stop at whitespace — the @ must be in the current word
+    if (/\s/.test(ch ?? '')) return null;
+    i--;
+  }
+  return null;
+}
+
+export function InputBox({ onSubmit, mode, isLoading, history: historyProp }: InputBoxProps) {
+  const editor = useMemo(() => new InputEditor({ prompt: '>', multiline: true, mode }), []);
+  const history = useMemo(() => historyProp ?? new InputHistory(), [historyProp]);
+
+  // Force re-render on every keystroke
+  const [, setTick] = useState(0);
+  const rerender = useCallback(() => setTick(t => t + 1), []);
+
+  // Track whether we're navigating history (to know when to call startNavigation)
+  const navigatingHistory = useRef(false);
+
+  // @file autocomplete state
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Keep editor mode in sync with prop
+  useEffect(() => {
+    editor.setMode(mode);
+  }, [mode, editor]);
+
+  // Debounced @file search
+  const updateSuggestions = useCallback((buffer: string, cursor: number) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    const prefix = extractAtPrefix(buffer, cursor);
+    if (!prefix) {
+      setSuggestions([]);
+      return;
+    }
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const matches = await fg(`**/${prefix}*`, {
+          cwd: process.cwd(),
+          onlyFiles: true,
+          ignore: ['node_modules/**', '.git/**', 'dist/**', 'coverage/**'],
+          deep: 5,
+        });
+        setSuggestions(matches.slice(0, MAX_SUGGESTIONS));
+      } catch {
+        setSuggestions([]);
+      }
+    }, AUTOCOMPLETE_DEBOUNCE);
+  }, []);
+
+  useInput((input, key) => {
+    if (isLoading) return;
+
+    // Meta+Return (Alt+Enter) — insert newline
+    // Detection: either ink parses it as meta+return, or the terminal sends \x1B\r
+    // as a combined chunk where parseKeypress yields input='\r' with return=false.
+    if ((key.return && key.meta) || (input === '\r' && !key.return)) {
+      editor.insertNewline();
+      navigatingHistory.current = false;
+      rerender();
+      updateSuggestions(editor.getBuffer(), editor.getCursor());
+      return;
+    }
+
+    // Return — submit
+    if (key.return) {
+      const text = editor.getSubmitText();
+      if (!text.trim()) return;
+      history.push(text);
+      onSubmit(text);
+      editor.clear();
+      navigatingHistory.current = false;
+      setSuggestions([]);
+      rerender();
+      return;
+    }
+
+    // Escape — clear buffer
+    if (key.escape) {
+      editor.handleEscape();
+      navigatingHistory.current = false;
+      setSuggestions([]);
+      rerender();
+      return;
+    }
+
+    // Tab — accept first @file suggestion
+    if (key.tab && suggestions.length > 0) {
+      const buffer = editor.getBuffer();
+      const cursor = editor.getCursor();
+      const prefix = extractAtPrefix(buffer, cursor);
+      if (prefix !== null) {
+        // Find the @ position
+        let atPos = cursor - 1;
+        while (atPos >= 0 && buffer[atPos] !== '@') atPos--;
+        // Replace @prefix with @suggestion
+        const replacement = `@${suggestions[0]}`;
+        const newBuffer = buffer.slice(0, atPos) + replacement + buffer.slice(cursor);
+        editor.setBuffer(newBuffer);
+        // Place cursor after the replacement (not at end of full buffer)
+        // setBuffer puts cursor at end, but we need it after the replacement
+        const newCursorPos = atPos + replacement.length;
+        editor.setBuffer(newBuffer.slice(0, newCursorPos) + newBuffer.slice(newCursorPos));
+        setSuggestions([]);
+        rerender();
+        return;
+      }
+    }
+
+    // Up arrow — history previous
+    if (key.upArrow) {
+      if (!navigatingHistory.current) {
+        history.startNavigation();
+        navigatingHistory.current = true;
+      }
+      const prev = history.previous();
+      editor.setBuffer(prev);
+      setSuggestions([]);
+      rerender();
+      return;
+    }
+
+    // Down arrow — history next
+    if (key.downArrow) {
+      if (navigatingHistory.current) {
+        const next = history.next();
+        editor.setBuffer(next);
+        setSuggestions([]);
+        rerender();
+        return;
+      }
+    }
+
+    // Backspace — delete char before cursor
+    if (key.backspace || key.delete) {
+      editor.deleteBackward();
+      navigatingHistory.current = false;
+      rerender();
+      updateSuggestions(editor.getBuffer(), editor.getCursor());
+      return;
+    }
+
+    // Left arrow — move cursor left
+    if (key.leftArrow) {
+      editor.moveLeft();
+      rerender();
+      return;
+    }
+
+    // Right arrow — move cursor right
+    if (key.rightArrow) {
+      editor.moveRight();
+      rerender();
+      return;
+    }
+
+    // Ctrl+A / Home — move to start of line
+    if (input === 'a' && key.ctrl) {
+      editor.moveToStart();
+      rerender();
+      return;
+    }
+
+    // Ctrl+E / End — move to end of line
+    if (input === 'e' && key.ctrl) {
+      editor.moveToEnd();
+      rerender();
+      return;
+    }
+
+    // Ctrl+D — delete forward
+    if (input === 'd' && key.ctrl) {
+      editor.deleteForward();
+      navigatingHistory.current = false;
+      rerender();
+      updateSuggestions(editor.getBuffer(), editor.getCursor());
+      return;
+    }
+
+    // Ctrl+U — clear line
+    if (input === 'u' && key.ctrl) {
+      editor.clear();
+      navigatingHistory.current = false;
+      setSuggestions([]);
+      rerender();
+      return;
+    }
+
+    // Regular character input (ignore control sequences)
+    if (input && !key.ctrl && !key.meta) {
+      editor.insertText(input);
+      navigatingHistory.current = false;
+      rerender();
+      updateSuggestions(editor.getBuffer(), editor.getCursor());
+      return;
+    }
+  }, { isActive: !isLoading });
+
+  // Build the displayed text with cursor
+  const buffer = editor.getBuffer();
+  const cursor = editor.getCursor();
+  const lineCount = editor.getLineCount();
 
   const modeIndicator = (() => {
-    switch (mode) {
+    const effectiveMode = buffer.startsWith('!') ? 'shell' : mode;
+    switch (effectiveMode) {
       case 'plan': return <Text color="magenta">plan</Text>;
       case 'shell': return <Text color="yellow">!</Text>;
       case 'auto': return <Text color="yellow">auto</Text>;
@@ -35,12 +256,67 @@ export function InputBox({ onSubmit, mode, isLoading }: InputBoxProps) {
     );
   }
 
+  // Render the buffer with a cursor indicator
+  const beforeCursor = buffer.slice(0, cursor);
+  const cursorChar = cursor < buffer.length ? buffer[cursor] : ' ';
+  const afterCursor = cursor < buffer.length ? buffer.slice(cursor + 1) : '';
+
+  // Split into lines for multiline display
+  const displayLines = buffer.split('\n');
+  const cursorLine = editor.getCursorLine();
+  const cursorCol = editor.getCursorCol();
+
+  // Helper: render a line with cursor at the given column, using sibling <Text> elements
+  const renderLineWithCursor = (line: string, col: number) => (
+    <>
+      <Text>{line.slice(0, col)}</Text>
+      <Text inverse>{col < line.length ? line[col] : '\u2588'}</Text>
+      {col < line.length && <Text>{line.slice(col + 1)}</Text>}
+    </>
+  );
+
   return (
-    <Box paddingX={1}>
-      {modeIndicator && <>{modeIndicator}<Text dimColor> </Text></>}
-      <Text color="cyan">&gt;</Text>
-      <Text> </Text>
-      <TextInput value={value} onChange={setValue} onSubmit={handleSubmit} />
+    <Box flexDirection="column" paddingX={1}>
+      <Box>
+        {modeIndicator && <>{modeIndicator}<Text dimColor> </Text></>}
+        <Text color="cyan">&gt;</Text>
+        <Text> </Text>
+        {displayLines.length === 1 ? (
+          // Single line: render inline with cursor using sibling Texts
+          renderLineWithCursor(buffer, cursor)
+        ) : (
+          // First line of multiline
+          cursorLine === 0
+            ? renderLineWithCursor(displayLines[0]!, cursorCol)
+            : <Text>{displayLines[0]}</Text>
+        )}
+        {lineCount > 1 && (
+          <Text dimColor> [{lineCount} lines]</Text>
+        )}
+      </Box>
+
+      {/* Additional lines for multiline input */}
+      {displayLines.length > 1 && displayLines.slice(1).map((line, idx) => {
+        const lineIdx = idx + 1;
+        const isCurrentLine = lineIdx === cursorLine;
+        return (
+          <Box key={lineIdx} paddingLeft={modeIndicator ? 4 : 2}>
+            <Text dimColor>{'  '}</Text>
+            {isCurrentLine ? renderLineWithCursor(line, cursorCol) : <Text>{line}</Text>}
+          </Box>
+        );
+      })}
+
+      {/* @file autocomplete suggestions */}
+      {suggestions.length > 0 && (
+        <Box flexDirection="column" paddingLeft={modeIndicator ? 4 : 2}>
+          {suggestions.map((s, i) => (
+            <Text key={s} dimColor>
+              {i === 0 ? 'Tab> ' : '     '}{s}
+            </Text>
+          ))}
+        </Box>
+      )}
     </Box>
   );
 }
