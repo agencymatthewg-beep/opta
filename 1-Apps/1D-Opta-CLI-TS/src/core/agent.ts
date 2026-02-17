@@ -70,6 +70,8 @@ export interface OnStreamCallbacks {
   onPermissionRequest?: (toolName: string, args: Record<string, unknown>) => Promise<'allow' | 'deny' | 'always'>;
   /** Called when connection status changes during streaming (reconnection attempts). */
   onConnectionStatus?: (status: 'checking' | 'connected' | 'disconnected' | 'reconnecting', attempt?: number) => void;
+  /** Called with inference observability insights (performance, context, tool selection). */
+  onInsight?: (insight: import('./insights.js').Insight) => void;
 }
 
 export interface AgentLoopOptions {
@@ -517,6 +519,19 @@ export async function agentLoop(
   let lastThinkingRenderer: ThinkingRenderer | undefined;
   const streamCallbacks = options?.onStream;
 
+  // Insight engine for REPL mode (non-TUI, non-silent)
+  // TUI mode uses its own InsightEngine wired through the adapter.
+  let insightEngine: import('./insights.js').InsightEngine | null = null;
+  if (!silent && !streamCallbacks?.onInsight && effectiveConfig.insights.enabled) {
+    const { InsightEngine } = await import('./insights.js');
+    const { formatInsight } = await import('../ui/insights.js');
+    insightEngine = new InsightEngine((insight) => {
+      console.log(formatInsight(insight));
+    });
+    insightEngine.setModel(model);
+    insightEngine.setContextLimit(effectiveConfig.model.contextLimit);
+  }
+
   // Initialize background process manager (skip for sub-agents to avoid replacing parent's)
   const { initProcessManager, shutdownProcessManager } = await import('./tools/index.js');
   if (!isSubAgent) {
@@ -560,18 +575,23 @@ export async function agentLoop(
 
       // 1. Context compaction
       const tokenEstimate = estimateTokens(messages);
+      insightEngine?.contextUpdate(tokenEstimate);
       const threshold = effectiveConfig.model.contextLimit * effectiveConfig.safety.compactAt;
       if (tokenEstimate > threshold) {
         debug(`Token estimate ${tokenEstimate} exceeds threshold ${threshold}`);
         spinner.start('Compacting conversation history...');
+        const preCompactCount = messages.length;
         const compacted = await compactHistory(messages, client, model, effectiveConfig.model.contextLimit);
+        const recoveredTokens = tokenEstimate - estimateTokens(compacted);
         messages.length = 0;
         messages.push(...compacted);
         spinner.succeed('Context compacted');
+        insightEngine?.compaction(preCompactCount, recoveredTokens);
         await fireCompact(hooks, sessionCtx);
       }
 
       // 2. Call Opta LMX
+      insightEngine?.turnStart();
       debug(`Sending ${messages.length} messages to ${model}`);
       spinner.start('Thinking...');
 
@@ -592,11 +612,14 @@ export async function agentLoop(
       // 3. Stream tokens to terminal, collect tool calls
       statusBar?.newTurn();
       let firstText = true;
+      const streamStartTime = Date.now();
       const { text, toolCalls, thinkingRenderer: lastThinking } = await collectStream(stream, (chunk) => {
         if (silent) return;
         if (firstText) {
           console.log(); // blank line before response
           firstText = false;
+          // Fire first-token insight for REPL mode
+          insightEngine?.firstToken(Date.now() - streamStartTime);
         }
         process.stdout.write(chunk);
       }, statusBar, streamCallbacks);
@@ -614,7 +637,17 @@ export async function agentLoop(
 
       // 4. No tool calls = task complete
       if (toolCalls.length === 0) {
-        // Text was already streamed to terminal — no need to re-render
+        // Fire turn-end insight for REPL mode
+        const turnElapsed = (Date.now() - streamStartTime) / 1000;
+        const turnTokens = estimateTokens([{ role: 'assistant', content: text }]);
+        const turnSpeed = turnElapsed > 0.1 ? turnTokens / turnElapsed : 0;
+        insightEngine?.turnEnd({
+          tokens: turnTokens,
+          toolCalls: 0,
+          elapsed: turnElapsed,
+          speed: turnSpeed,
+          firstTokenLatencyMs: null,
+        });
         statusBar?.clear();
         break;
       }
@@ -714,6 +747,7 @@ export async function agentLoop(
           console.log(formatToolCall(call.name, parsedArgs));
         }
         streamCallbacks?.onToolStart?.(call.name, call.id, call.args);
+        insightEngine?.toolStart(call.name, call.args);
       }
 
       // Execute in parallel with semaphore

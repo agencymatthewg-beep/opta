@@ -11,6 +11,7 @@ import type { OptaConfig } from '../core/config.js';
 import type { AgentLoopOptions, AgentLoopResult } from '../core/agent.js';
 import type { Session } from '../memory/store.js';
 import type { PermissionDecision } from './PermissionPrompt.js';
+import { InsightEngine, type Insight } from '../core/insights.js';
 
 /** Average characters per token for rough estimation. */
 const CHARS_PER_TOKEN = 4;
@@ -50,6 +51,7 @@ export interface TuiEventMap {
   'permission:request': [request: PermissionRequest];
   'permission:response': [id: string, decision: PermissionDecision];
   'title': [title: string];
+  'insight': [insight: Insight];
 }
 
 export class TuiEmitter extends EventEmitter {
@@ -94,7 +96,15 @@ export async function runAgentWithEvents(
   let toolCallCount = 0;
   let firstTokenTime: number | null = null;
 
+  // Insight engine — observes agent events and emits ★ blocks
+  const insights = new InsightEngine((insight) => {
+    emitter.emit('insight', insight);
+  });
+  insights.setModel(config.model.default);
+  insights.setContextLimit(config.model.contextLimit);
+
   emitter.emit('turn:start');
+  insights.turnStart();
 
   // Progress timer: emits turn:progress every 500ms with live stats
   const progressInterval = setInterval(() => {
@@ -103,6 +113,7 @@ export async function runAgentWithEvents(
       ? completionTokens / elapsed
       : 0;
     emitter.emit('turn:progress', { elapsed, speed, completionTokens });
+    insights.progress(completionTokens, speed, elapsed);
   }, 500);
 
   const { agentLoop } = await import('../core/agent.js');
@@ -119,6 +130,7 @@ export async function runAgentWithEvents(
           firstTokenTime = Date.now();
           const latencyMs = firstTokenTime - turnStartTime;
           emitter.emit('turn:first-token', latencyMs);
+          insights.firstToken(latencyMs);
         }
 
         completionTokens += Math.ceil(text.length / CHARS_PER_TOKEN);
@@ -127,15 +139,18 @@ export async function runAgentWithEvents(
       onToolStart(name: string, id: string, args: string) {
         toolCallCount++;
         emitter.emit('tool:start', name, id, args);
+        insights.toolStart(name, args);
       },
       onToolEnd(name: string, id: string, result: string) {
         emitter.emit('tool:end', name, id, result);
+        insights.toolEnd(name, id, result);
       },
       onThinking(text: string) {
         emitter.emit('thinking', text);
       },
       onConnectionStatus(status: 'checking' | 'connected' | 'disconnected' | 'reconnecting') {
         emitter.emit('connection:status', status as 'checking' | 'connected' | 'disconnected' | 'error');
+        insights.connectionStatus(status);
       },
       /**
        * Bridge permission requests from the agent loop to the TUI.
@@ -178,7 +193,7 @@ export async function runAgentWithEvents(
       ? firstTokenTime - turnStartTime
       : null;
 
-    emitter.emit('turn:end', {
+    const turnStats = {
       tokens: completionTokens,
       promptTokens: 0, // Not available from current API
       completionTokens,
@@ -186,7 +201,10 @@ export async function runAgentWithEvents(
       elapsed,
       speed,
       firstTokenLatencyMs,
-    });
+    };
+
+    insights.turnEnd(turnStats);
+    emitter.emit('turn:end', turnStats);
 
     return result;
   } catch (err) {

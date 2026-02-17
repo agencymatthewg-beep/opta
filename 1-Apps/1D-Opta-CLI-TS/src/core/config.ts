@@ -194,6 +194,11 @@ export const OptaConfigSchema = z.object({
         .default({}),
     })
     .default({}),
+  insights: z
+    .object({
+      enabled: z.boolean().default(true),
+    })
+    .default({}),
   tui: z
     .object({
       default: z.boolean().default(false),

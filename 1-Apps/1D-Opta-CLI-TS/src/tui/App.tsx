@@ -13,8 +13,10 @@ import { FocusProvider, useFocusPanel } from './FocusContext.js';
 import { PermissionPrompt } from './PermissionPrompt.js';
 import { HelpOverlay } from './HelpOverlay.js';
 import { ModelPicker } from './ModelPicker.js';
+import { InsightBlock, type InsightEntry } from './InsightBlock.js';
 import { estimateTokens } from '../utils/tokens.js';
 import type { TuiEmitter, TurnStats, PermissionRequest } from './adapter.js';
+import type { Insight } from '../core/insights.js';
 import type { PermissionDecision } from './PermissionPrompt.js';
 import type { ConnectionState } from './utils.js';
 import type { SlashResult } from '../commands/slash/index.js';
@@ -112,6 +114,11 @@ function AppInner({
   // Permission prompt state
   const [permissionPending, setPermissionPending] = useState<(PermissionRequest & { resolve: (decision: PermissionDecision) => void }) | null>(null);
   const [alwaysMessage, setAlwaysMessage] = useState<string | null>(null);
+
+  // Insight engine state — ★ blocks shown inline between messages
+  const [insights, setInsights] = useState<InsightEntry[]>([]);
+  /** Max insights kept to prevent unbounded growth. */
+  const MAX_INSIGHTS = 20;
 
   // Track whether we're in streaming mode (emitter-based)
   const isStreamingMode = !!emitter;
@@ -281,6 +288,7 @@ function AppInner({
       setTurnElapsed(0);
       setTurnCompletionTokens(0);
       setTurnSpeed(0);
+      setInsights([]);
     };
 
     const onTurnEnd = (stats: TurnStats) => {
@@ -329,6 +337,13 @@ function AppInner({
 
     const onTitle = (title: string) => {
       setSessionTitle(title);
+    };
+
+    const onInsight = (insight: Insight) => {
+      setInsights(prev => {
+        const next = [...prev, insight];
+        return next.length > MAX_INSIGHTS ? next.slice(-MAX_INSIGHTS) : next;
+      });
     };
 
     const onConnectionStatus = (status: 'checking' | 'connected' | 'disconnected' | 'error' | 'reconnecting') => {
@@ -382,6 +397,7 @@ function AppInner({
     emitter.on('error', onError);
     emitter.on('permission:request', onPermissionRequest);
     emitter.on('title', onTitle);
+    emitter.on('insight', onInsight);
 
     return () => {
       emitter.off('token', onToken);
@@ -396,6 +412,7 @@ function AppInner({
       emitter.off('error', onError);
       emitter.off('permission:request', onPermissionRequest);
       emitter.off('title', onTitle);
+      emitter.off('insight', onInsight);
     };
   }, [emitter]);
 
@@ -545,6 +562,7 @@ function AppInner({
                 firstTokenLatency={firstTokenLatency}
               />
             )}
+            {insights.length > 0 && <InsightBlock insights={insights} />}
           </>
         )}
       </Box>

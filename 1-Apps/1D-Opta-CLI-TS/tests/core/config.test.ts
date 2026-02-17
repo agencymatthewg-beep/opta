@@ -48,6 +48,21 @@ describe('config', () => {
       })
     ).toThrow();
   });
+
+  it('has insight defaults', () => {
+    expect(DEFAULT_CONFIG.insights.enabled).toBe(true);
+  });
+
+  it('can disable insights', () => {
+    const config = OptaConfigSchema.parse({ insights: { enabled: false } });
+    expect(config.insights.enabled).toBe(false);
+  });
+
+  it('has connection retry defaults', () => {
+    expect(DEFAULT_CONFIG.connection.retry.maxRetries).toBe(3);
+    expect(DEFAULT_CONFIG.connection.retry.backoffMs).toBe(1000);
+    expect(DEFAULT_CONFIG.connection.retry.backoffMultiplier).toBe(2);
+  });
 });
 
 describe('MCP config schema', () => {
