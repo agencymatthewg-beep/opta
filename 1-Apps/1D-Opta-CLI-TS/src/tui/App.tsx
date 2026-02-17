@@ -4,6 +4,8 @@ import { Header } from './Header.js';
 import { MessageList } from './MessageList.js';
 import { InputBox } from './InputBox.js';
 import { InkStatusBar } from './StatusBar.js';
+import { SplitPane } from './SplitPane.js';
+import { Sidebar } from './Sidebar.js';
 import { useTerminalSize } from './hooks/useTerminalSize.js';
 import { useKeyboard } from './hooks/useKeyboard.js';
 import { StreamingIndicator } from './StreamingIndicator.js';
@@ -25,8 +27,11 @@ function AppInner({ model, sessionId, connectionStatus = true, onMessage }: AppP
   const [isLoading, setIsLoading] = useState(false);
   const [mode, setMode] = useState<'normal' | 'plan' | 'shell' | 'auto'>('normal');
   const [tokens, setTokens] = useState(0);
+  const [promptTokens, setPromptTokens] = useState(0);
+  const [completionTokens, setCompletionTokens] = useState(0);
   const [tools, setTools] = useState(0);
   const [sidebarVisible, setSidebarVisible] = useState(false);
+  const [elapsed, setElapsed] = useState(0);
 
   useKeyboard({
     onExit: () => exit(),
@@ -51,9 +56,11 @@ function AppInner({ model, sessionId, connectionStatus = true, onMessage }: AppP
     setMessages(prev => [...prev, { role: 'user', content: text }]);
     setIsLoading(true);
 
+    const startTime = Date.now();
     if (onMessage) {
       const response = await onMessage(text);
       setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+      setElapsed((Date.now() - startTime) / 1000);
     }
 
     setIsLoading(false);
@@ -63,6 +70,29 @@ function AppInner({ model, sessionId, connectionStatus = true, onMessage }: AppP
   // Calculate message area height (total - header - statusbar - input)
   const messageAreaHeight = Math.max(height - 6, 10);
 
+  const mainContent = (
+    <Box flexDirection="column" flexGrow={1}>
+      <Box flexDirection="column" height={messageAreaHeight} overflow="hidden">
+        <MessageList messages={messages} height={messageAreaHeight} />
+        {isLoading && <StreamingIndicator />}
+      </Box>
+
+      <InputBox onSubmit={handleSubmit} mode={mode} isLoading={isLoading} />
+    </Box>
+  );
+
+  const sidebarContent = (
+    <Sidebar
+      model={model}
+      sessionId={sessionId}
+      tokens={{ prompt: promptTokens, completion: completionTokens, total: tokens }}
+      tools={tools}
+      cost="$0.00"
+      mode={mode}
+      elapsed={elapsed}
+    />
+  );
+
   return (
     <Box flexDirection="column" height={height} width="100%">
       <Header
@@ -71,12 +101,12 @@ function AppInner({ model, sessionId, connectionStatus = true, onMessage }: AppP
         connectionStatus={connectionStatus}
       />
 
-      <Box flexDirection="column" height={messageAreaHeight} overflow="hidden">
-        <MessageList messages={messages} />
-        {isLoading && <StreamingIndicator />}
-      </Box>
-
-      <InputBox onSubmit={handleSubmit} mode={mode} isLoading={isLoading} />
+      <SplitPane
+        main={mainContent}
+        sidebar={sidebarContent}
+        sidebarWidth={28}
+        sidebarVisible={sidebarVisible}
+      />
 
       <InkStatusBar
         model={model}
