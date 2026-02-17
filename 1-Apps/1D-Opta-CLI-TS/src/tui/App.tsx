@@ -52,7 +52,7 @@ function AppInner({
   onSubmit,
 }: AppProps) {
   const { exit } = useApp();
-  const { height } = useTerminalSize();
+  const { width, height } = useTerminalSize();
   const { activePanel, nextPanel, previousPanel } = useFocusPanel();
 
   const [messages, setMessages] = useState<TuiMessage[]>([]);
@@ -223,7 +223,7 @@ function AppInner({
         borderStyle={activePanel === 'messages' ? 'single' : undefined}
         borderColor={activePanel === 'messages' ? 'cyan' : 'gray'}
       >
-        <MessageList messages={messages} height={activePanel === 'messages' ? messageAreaHeight - 2 : messageAreaHeight} focusable={activePanel === 'messages'} />
+        <MessageList messages={messages} height={activePanel === 'messages' ? messageAreaHeight - 2 : messageAreaHeight} focusable={activePanel === 'messages'} streamingIdx={streamingMsgIdx.current} terminalWidth={width} />
         {isLoading && <StreamingIndicator label={streamingLabel} />}
       </Box>
 

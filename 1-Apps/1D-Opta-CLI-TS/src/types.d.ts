@@ -33,4 +33,5 @@ declare module 'marked-terminal' {
   }
 
   export default function TerminalRenderer(options?: TerminalRendererOptions): MarkedExtension;
+  export function markedTerminal(options?: TerminalRendererOptions): MarkedExtension;
 }

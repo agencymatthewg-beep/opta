@@ -18,4 +18,31 @@ describe('MessageList', () => {
     const { lastFrame } = render(<MessageList messages={[]} />);
     expect(lastFrame()).toContain('Start typing');
   });
+
+  it('should render assistant markdown content', () => {
+    const messages = [
+      { role: 'assistant', content: '**bold** and `code`' },
+    ];
+    const { lastFrame } = render(<MessageList messages={messages} />);
+    // Should contain the text (with ANSI styling applied by marked-terminal)
+    expect(lastFrame()).toContain('bold');
+    expect(lastFrame()).toContain('code');
+  });
+
+  it('should render user messages as plain text', () => {
+    const messages = [
+      { role: 'user', content: '**not rendered as markdown**' },
+    ];
+    const { lastFrame } = render(<MessageList messages={messages} />);
+    // User messages stay raw — no markdown processing
+    expect(lastFrame()).toContain('**not rendered as markdown**');
+  });
+
+  it('should accept streamingIdx prop', () => {
+    const messages = [
+      { role: 'assistant', content: 'Hello' },
+    ];
+    const { lastFrame } = render(<MessageList messages={messages} streamingIdx={0} />);
+    expect(lastFrame()).toContain('Hello');
+  });
 });

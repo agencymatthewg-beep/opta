@@ -1,15 +1,23 @@
-import React, { type ReactNode } from 'react';
+import React, { type ReactNode, memo } from 'react';
 import { Box, Text } from 'ink';
 import { ScrollView } from './ScrollView.js';
+import { MarkdownText } from './MarkdownText.js';
 import type { TuiMessage } from './App.js';
 
 /** Max characters shown inline for a completed tool result. */
 const TOOL_INLINE_PREVIEW_LENGTH = 80;
 
+/** Padding consumed by left/right paddingX on the message area. */
+const PADDING_CHARS = 4;
+
 interface MessageListProps {
   messages: TuiMessage[];
   height?: number;
   focusable?: boolean;
+  /** Index of the currently streaming message, or null/undefined if idle. */
+  streamingIdx?: number | null;
+  /** Terminal width in columns. Defaults to 100. */
+  terminalWidth?: number;
 }
 
 function renderToolMessage(msg: TuiMessage, i: number): ReactNode {
@@ -44,9 +52,18 @@ function renderErrorMessage(msg: TuiMessage, i: number): ReactNode {
   );
 }
 
-function renderChatMessage(msg: TuiMessage, i: number): ReactNode {
+interface ChatMessageProps {
+  msg: TuiMessage;
+  index: number;
+  isStreaming: boolean;
+  markdownWidth: number;
+}
+
+const ChatMessage = memo(function ChatMessage({ msg, index, isStreaming, markdownWidth }: ChatMessageProps) {
+  const isAssistant = msg.role === 'assistant';
+
   return (
-    <Box key={i} flexDirection="column" marginBottom={1}>
+    <Box key={index} flexDirection="column" marginBottom={1}>
       <Box>
         <Text color={msg.role === 'user' ? 'cyan' : 'green'} bold>
           {msg.role === 'user' ? '> you' : '  opta'}
@@ -59,13 +76,23 @@ function renderChatMessage(msg: TuiMessage, i: number): ReactNode {
         ) : null}
       </Box>
       <Box paddingLeft={2}>
-        <Text wrap="wrap">{msg.content}</Text>
+        {isAssistant ? (
+          <MarkdownText text={msg.content} isStreaming={isStreaming} width={markdownWidth} />
+        ) : (
+          <Text wrap="wrap">{msg.content}</Text>
+        )}
       </Box>
     </Box>
   );
-}
+});
 
-export function MessageList({ messages, height, focusable = false }: MessageListProps) {
+export function MessageList({
+  messages,
+  height,
+  focusable = false,
+  streamingIdx,
+  terminalWidth = 100,
+}: MessageListProps) {
   if (messages.length === 0) {
     return (
       <Box paddingX={1} paddingY={1}>
@@ -74,6 +101,9 @@ export function MessageList({ messages, height, focusable = false }: MessageList
     );
   }
 
+  // Account for padding when calculating markdown rendering width
+  const markdownWidth = Math.max(terminalWidth - PADDING_CHARS, 40);
+
   const messageRows = messages.map((msg, i) => {
     if (msg.role === 'tool') {
       return renderToolMessage(msg, i);
@@ -81,7 +111,16 @@ export function MessageList({ messages, height, focusable = false }: MessageList
     if (msg.role === 'error') {
       return renderErrorMessage(msg, i);
     }
-    return renderChatMessage(msg, i);
+    const isStreaming = msg.role === 'assistant' && i === streamingIdx;
+    return (
+      <ChatMessage
+        key={i}
+        msg={msg}
+        index={i}
+        isStreaming={isStreaming}
+        markdownWidth={markdownWidth}
+      />
+    );
   });
 
   if (height !== undefined && height > 0) {
