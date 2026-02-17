@@ -43,6 +43,12 @@ class ModelsConfig(BaseModel):
     use_batching: bool = True
     gguf_context_length: int = Field(4096, description="Default context length for GGUF models")
     gguf_gpu_layers: int = Field(-1, description="GPU layers for GGUF (-1 = full Metal offload)")
+    speculative_model: str | None = Field(
+        None, description="Draft model HF ID for speculative decoding",
+    )
+    speculative_num_tokens: int = Field(
+        5, ge=1, le=20, description="Tokens per speculative step",
+    )
 
 
 class MemoryConfig(BaseModel):

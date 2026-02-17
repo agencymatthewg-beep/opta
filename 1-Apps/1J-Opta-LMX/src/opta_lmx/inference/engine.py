@@ -62,6 +62,8 @@ class InferenceEngine:
         gguf_context_length: int = 4096,
         gguf_gpu_layers: int = -1,
         event_bus: EventBus | None = None,
+        speculative_model: str | None = None,
+        speculative_num_tokens: int = 5,
     ) -> None:
         self._models: dict[str, LoadedModel] = {}
         self._memory = memory_monitor
@@ -70,6 +72,8 @@ class InferenceEngine:
         self._gguf_context_length = gguf_context_length
         self._gguf_gpu_layers = gguf_gpu_layers
         self._event_bus = event_bus
+        self._speculative_model = speculative_model
+        self._speculative_num_tokens = speculative_num_tokens
         self._load_lock = asyncio.Lock()
         self._loading_models: set[str] = set()  # Models currently being loaded
 
@@ -234,17 +238,23 @@ class InferenceEngine:
 
         Uses BatchedEngine for concurrent request support,
         SimpleEngine for maximum single-request throughput.
+        Passes speculative decoding config when configured.
         """
+        spec_kwargs: dict[str, Any] = {}
+        if self._speculative_model:
+            spec_kwargs["speculative_model"] = self._speculative_model
+            spec_kwargs["num_speculative_tokens"] = self._speculative_num_tokens
+
         if use_batching:
             from vllm_mlx.engine.batched import BatchedEngine
 
-            engine = BatchedEngine(model_name=model_id)
+            engine = BatchedEngine(model_name=model_id, **spec_kwargs)
             await engine.start()
             return engine
         else:
             from vllm_mlx.engine.simple import SimpleEngine
 
-            return SimpleEngine(model_name=model_id)
+            return SimpleEngine(model_name=model_id, **spec_kwargs)
 
     async def unload_model(self, model_id: str) -> float:
         """Unload a model and free memory.

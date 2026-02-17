@@ -50,6 +50,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         gguf_context_length=config.models.gguf_context_length,
         gguf_gpu_layers=config.models.gguf_gpu_layers,
         event_bus=event_bus,
+        speculative_model=config.models.speculative_model,
+        speculative_num_tokens=config.models.speculative_num_tokens,
     )
 
     model_manager = ModelManager(
