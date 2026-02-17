@@ -123,7 +123,9 @@ async def start_quantize(
     })
 
     # Run in background thread
-    asyncio.create_task(_run_quantize(job))
+    task = asyncio.create_task(_run_quantize(job))
+    # Task reference stored to prevent garbage collection
+    _ = task
 
     return job
 

@@ -291,7 +291,13 @@ class ModelManager:
                 "repo_id": repo.repo_id,
                 "local_path": str(repo.repo_path),
                 "size_bytes": repo.size_on_disk,
-                "downloaded_at": float(latest_revision.last_modified.timestamp()) if latest_revision and hasattr(latest_revision.last_modified, "timestamp") else float(latest_revision.last_modified) if latest_revision and isinstance(latest_revision.last_modified, (float, int)) else 0.0,
+                "downloaded_at": (
+                    float(latest_revision.last_modified.timestamp())
+                    if latest_revision and hasattr(latest_revision.last_modified, "timestamp")
+                    else float(latest_revision.last_modified)
+                    if latest_revision and isinstance(latest_revision.last_modified, (float, int))
+                    else 0.0
+                ),
             })
 
         return models

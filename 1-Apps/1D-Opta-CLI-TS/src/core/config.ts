@@ -28,6 +28,14 @@ export const OptaConfigSchema = z.object({
       port: z.number().default(1234),
       protocol: z.literal('http').default('http'),
       adminKey: z.string().optional(),
+      ssh: z
+        .object({
+          user: z.string().default('opta'),
+          identityFile: z.string().default('~/.ssh/id_ed25519'),
+          lmxPath: z.string().default('/Users/Shared/312/Opta/1-Apps/1J-Opta-LMX'),
+          pythonPath: z.string().default('/Users/opta/.mlx-env/bin/python'),
+        })
+        .default({}),
       retry: z
         .object({
           maxRetries: z.number().min(0).max(10).default(3),

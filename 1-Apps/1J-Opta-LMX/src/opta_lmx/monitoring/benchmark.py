@@ -80,7 +80,9 @@ class BenchmarkSuite:
             "max_tokens_per_second": round(max(tok_rates), 1),
             "avg_total_time_ms": round(sum(total_times) / len(total_times), 1),
             "total_tokens_generated": sum(r.tokens_generated for r in self.runs),
-            "duration_sec": round(self.completed_at - self.started_at, 1) if self.completed_at else 0,
+            "duration_sec": (
+                round(self.completed_at - self.started_at, 1) if self.completed_at else 0
+            ),
         }
 
 

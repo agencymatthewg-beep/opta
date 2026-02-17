@@ -559,7 +559,7 @@ class InferenceEngine:
             try:
                 content, prompt_tokens, completion_tokens = await asyncio.wait_for(
                     self._do_generate(
-                        loaded, msg_dicts, messages, temperature, 
+                        loaded, msg_dicts, messages, temperature,
                         max_tokens, top_p, stop, tools, response_format
                     ),
                     timeout=self._inference_timeout,
@@ -667,8 +667,14 @@ class InferenceEngine:
 
         if hasattr(result, "text"):
             content = result.text
-            prompt_tokens = getattr(result, "prompt_tokens", 0) or self._estimate_prompt_tokens(messages)
-            completion_tokens = getattr(result, "completion_tokens", 0) or max(1, len(content) // 4)
+            prompt_tokens = (
+                getattr(result, "prompt_tokens", 0)
+                or self._estimate_prompt_tokens(messages)
+            )
+            completion_tokens = (
+                getattr(result, "completion_tokens", 0)
+                or max(1, len(content) // 4)
+            )
         else:
             content = result if isinstance(result, str) else str(result)
             prompt_tokens = self._estimate_prompt_tokens(messages)

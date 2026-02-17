@@ -81,13 +81,15 @@ async function serveStart(opts?: ServeOptions): Promise<void> {
 
   try {
     if (isRemote) {
-      // Remote start via SSH (execFileSync — no shell injection)
+      // Remote start via SSH with configured identity and user
+      const { ssh } = config.connection;
+      const identityFile = ssh.identityFile.replace('~', process.env.HOME ?? '');
+      const sshTarget = `${ssh.user}@${host}`;
       const sshCmd = [
-        'cd /Users/Shared/312/Opta/1-Apps/1J-Opta-LMX &&',
-        'source .venv/bin/activate &&',
-        `nohup python -m opta_lmx --host 0.0.0.0 --port ${port} > /tmp/opta-lmx.log 2>&1 &`,
+        `cd ${ssh.lmxPath} &&`,
+        `nohup ${ssh.pythonPath} -m opta_lmx --host 0.0.0.0 --port ${port} > /tmp/opta-lmx.log 2>&1 &`,
       ].join(' ');
-      execFileSync('ssh', [host, sshCmd], { timeout: 15_000 });
+      execFileSync('ssh', ['-i', identityFile, sshTarget, sshCmd], { timeout: 15_000 });
     } else {
       // Local start — detached process
       const child = spawn(
@@ -135,7 +137,7 @@ async function serveStart(opts?: ServeOptions): Promise<void> {
   }
 }
 
-async function serveStop(opts?: ServeOptions): Promise<void> {
+async function serveStop(_opts?: ServeOptions): Promise<void> {
   const config = await loadConfig();
   const { host } = config.connection;
   const isRemote = host !== '127.0.0.1' && host !== 'localhost';
@@ -146,7 +148,10 @@ async function serveStop(opts?: ServeOptions): Promise<void> {
   try {
     if (isRemote) {
       try {
-        execFileSync('ssh', [host, 'pkill -f "python -m opta_lmx"'], { timeout: 10_000 });
+        const { ssh } = config.connection;
+        const identityFile = ssh.identityFile.replace('~', process.env.HOME ?? '');
+        const sshTarget = `${ssh.user}@${host}`;
+        execFileSync('ssh', ['-i', identityFile, sshTarget, 'pkill -f "python -m opta_lmx"'], { timeout: 10_000 });
       } catch {
         // pkill returns non-zero when no process found — that's fine
       }
@@ -184,7 +189,10 @@ async function serveLogs(): Promise<void> {
   try {
     let output: string;
     if (isRemote) {
-      output = execFileSync('ssh', [host, 'tail -50 /tmp/opta-lmx.log'], {
+      const { ssh } = config.connection;
+      const identityFile = ssh.identityFile.replace('~', process.env.HOME ?? '');
+      const sshTarget = `${ssh.user}@${host}`;
+      output = execFileSync('ssh', ['-i', identityFile, sshTarget, 'tail -50 /tmp/opta-lmx.log'], {
         timeout: 10_000,
         encoding: 'utf8',
       });
