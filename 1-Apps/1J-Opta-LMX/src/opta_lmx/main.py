@@ -87,6 +87,19 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     if config.presets.enabled:
         preset_manager.load_presets()
 
+        # Merge preset routing aliases into the task router
+        preset_aliases = preset_manager.get_routing_aliases()
+        if preset_aliases:
+            for alias, models in preset_aliases.items():
+                existing = config.routing.aliases.get(alias, [])
+                # Preset models are appended (config takes priority)
+                merged = list(dict.fromkeys(existing + models))
+                config.routing.aliases[alias] = merged
+            task_router.update_config(config.routing)
+            logger.info("preset_routing_aliases_merged", extra={
+                "aliases": list(preset_aliases.keys()),
+            })
+
     # Initialize embedding engine (lazy-load — only loads model on first request)
     from opta_lmx.inference.embedding_engine import EmbeddingEngine
 
@@ -136,8 +149,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         },
     )
 
-    # Auto-load configured models (with preset performance overrides if available)
-    for model_id in config.models.auto_load:
+    # Auto-load configured models + preset auto_load models (deduplicated)
+    auto_load_ids = list(dict.fromkeys(
+        config.models.auto_load + preset_manager.get_auto_load_models()
+    ))
+    for model_id in auto_load_ids:
         try:
             perf = _find_performance_for_model(preset_manager, model_id)
             await engine.load_model(model_id, performance_overrides=perf)
