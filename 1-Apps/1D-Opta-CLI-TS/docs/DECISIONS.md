@@ -18,8 +18,6 @@ Each decision lists the question, options considered, the choice made, and the r
 ### Question
 Should Opta CLI connect directly to the inference server, or through an Opta daemon service?
 
-(Originally designed for LM Studio, now migrated to Opta-LMX.)
-
 ### Options Considered
 1. **Direct API** — CLI talks directly to Opta-LMX via HTTP
 2. **Daemon** — Mac Studio runs a daemon; CLI connects to daemon

@@ -30,7 +30,6 @@ export function connectionDot(state?: ConnectionState, legacyStatus?: boolean): 
 
 export function shortModelName(model: string): string {
   return model
-    .replace(/^lmstudio-community\//, '')
     .replace(/^mlx-community\//, '')
     .replace(/^huggingface\//, '');
 }

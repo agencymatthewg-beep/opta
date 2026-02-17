@@ -187,7 +187,6 @@ export class InsightEngine {
 
 function shortName(model: string): string {
   return model
-    .replace(/^lmstudio-community\//, '')
     .replace(/^mlx-community\//, '')
     .replace(/^huggingface\//, '');
 }
