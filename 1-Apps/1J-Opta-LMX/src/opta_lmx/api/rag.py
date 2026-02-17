@@ -77,6 +77,11 @@ class QueryRequest(BaseModel):
     min_score: float = Field(0.0, ge=0.0, le=1.0, description="Minimum similarity threshold")
     model: str | None = Field(None, description="Embedding model (uses configured default if omitted)")
     include_embeddings: bool = Field(False, description="Include embedding vectors in response")
+    search_mode: str = Field(
+        "vector",
+        pattern="^(vector|keyword|hybrid)$",
+        description="Search mode: vector (semantic), keyword (BM25), or hybrid (RRF fusion)",
+    )
 
 
 class QueryResult(BaseModel):
@@ -282,6 +287,8 @@ async def query_collection(
         query_embedding=query_embeddings[0],
         top_k=body.top_k,
         min_score=body.min_score,
+        mode=body.search_mode,
+        query_text=body.query,
     )
 
     elapsed_ms = (time.monotonic() - start) * 1000

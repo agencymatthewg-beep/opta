@@ -19,6 +19,7 @@ from opta_lmx.inference.schema import (
     ToolCall,
     Usage,
 )
+from opta_lmx.inference.context import fit_to_context
 from opta_lmx.inference.tool_parser import TOOL_CALL_OPEN, MiniMaxToolParser
 from opta_lmx.inference.types import LoadedModel, ModelInfo
 from opta_lmx.manager.memory import MemoryMonitor
@@ -488,6 +489,14 @@ class InferenceEngine:
         loaded.request_count += 1
         loaded.last_used_at = time.time()
 
+        # Trim context to fit model's window (if known)
+        if loaded.context_length:
+            messages = fit_to_context(
+                messages,
+                max_context_tokens=loaded.context_length,
+                reserve_for_output=max_tokens or 1024,
+            )
+
         msg_dicts = _resolve_messages(messages)
 
         async with self._inference_semaphore:
@@ -637,6 +646,14 @@ class InferenceEngine:
         loaded = self.get_model(model_id)
         loaded.request_count += 1
         loaded.last_used_at = time.time()
+
+        # Trim context to fit model's window (if known)
+        if loaded.context_length:
+            messages = fit_to_context(
+                messages,
+                max_context_tokens=loaded.context_length,
+                reserve_for_output=max_tokens or 1024,
+            )
 
         msg_dicts = _resolve_messages(messages)
 

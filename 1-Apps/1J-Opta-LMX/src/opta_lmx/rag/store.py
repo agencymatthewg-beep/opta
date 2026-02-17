@@ -1,8 +1,16 @@
-"""In-memory vector store with cosine similarity search and JSON persistence.
+"""In-memory vector store with FAISS-accelerated search and JSON persistence.
 
 Stores document chunks as embeddings with metadata. Supports multiple
 named collections for organizing different types of content (project docs,
 conversation history, code snippets, etc.).
+
+Search backends:
+- **FAISS** (preferred): Uses IndexFlatIP with L2-normalised vectors for
+  cosine similarity. SIMD-optimised on Apple Silicon via faiss-cpu.
+- **NumPy fallback**: Batch cosine similarity when faiss-cpu is not installed.
+
+Hybrid search combines vector similarity with BM25 keyword matching
+via Reciprocal Rank Fusion (RRF).
 """
 
 from __future__ import annotations
@@ -18,7 +26,17 @@ from typing import Any
 import numpy as np
 from numpy.typing import NDArray
 
+from opta_lmx.rag.bm25 import BM25Index, reciprocal_rank_fusion
+
 logger = logging.getLogger(__name__)
+
+# Try to import FAISS — purely optional accelerator
+try:
+    import faiss
+
+    _FAISS_AVAILABLE = True
+except ImportError:
+    _FAISS_AVAILABLE = False
 
 
 @dataclass
@@ -64,12 +82,78 @@ class SearchResult:
     score: float
 
 
+def _build_faiss_index(embeddings: NDArray[np.float32]) -> Any:
+    """Build a FAISS inner-product index from L2-normalised vectors."""
+    if not _FAISS_AVAILABLE or len(embeddings) == 0:
+        return None
+    dim = embeddings.shape[1]
+    index = faiss.IndexFlatIP(dim)
+    # Normalise so inner product = cosine similarity
+    normed = embeddings.copy()
+    faiss.normalize_L2(normed)
+    index.add(normed)
+    return index
+
+
+def _search_faiss(
+    index: Any,
+    query: NDArray[np.float32],
+    top_k: int,
+) -> list[tuple[int, float]]:
+    """Search FAISS index. Returns [(doc_index, score), ...]."""
+    q = query.reshape(1, -1).copy()
+    faiss.normalize_L2(q)
+    scores, indices = index.search(q, min(top_k, index.ntotal))
+    results: list[tuple[int, float]] = []
+    for i in range(len(indices[0])):
+        idx = int(indices[0][i])
+        if idx == -1:
+            break
+        results.append((idx, float(scores[0][i])))
+    return results
+
+
+def _search_numpy(
+    docs: list[Document],
+    query_vec: NDArray[np.float32],
+    top_k: int,
+    min_score: float,
+) -> list[SearchResult]:
+    """NumPy fallback: batch cosine similarity search."""
+    query_norm = np.linalg.norm(query_vec)
+    if query_norm == 0:
+        return []
+
+    doc_embeddings = np.array([d.embedding for d in docs])
+    doc_norms = np.linalg.norm(doc_embeddings, axis=1)
+
+    valid_mask = doc_norms > 0
+    similarities = np.zeros(len(docs), dtype=np.float32)
+    if valid_mask.any():
+        similarities[valid_mask] = (
+            doc_embeddings[valid_mask] @ query_vec
+        ) / (doc_norms[valid_mask] * query_norm)
+
+    indices = np.argsort(-similarities)
+    results: list[SearchResult] = []
+    for idx in indices:
+        score = float(similarities[idx])
+        if score < min_score:
+            break
+        results.append(SearchResult(document=docs[idx], score=score))
+        if len(results) >= top_k:
+            break
+
+    return results
+
+
 class VectorStore:
-    """In-memory vector store with cosine similarity search.
+    """In-memory vector store with FAISS-accelerated cosine similarity search.
 
     Organizes documents into named collections. Supports:
     - Adding documents with pre-computed embeddings
-    - Cosine similarity search within a collection
+    - FAISS-accelerated cosine similarity search (with numpy fallback)
+    - Hybrid search combining vector + BM25 keyword matching via RRF
     - JSON persistence to disk
     - Collection management (create, list, delete, stats)
 
@@ -79,7 +163,14 @@ class VectorStore:
 
     def __init__(self, persist_path: Path | None = None) -> None:
         self._collections: dict[str, list[Document]] = {}
+        self._faiss_indexes: dict[str, Any] = {}
+        self._bm25_indexes: dict[str, BM25Index] = {}
         self._persist_path = persist_path
+
+    @property
+    def faiss_available(self) -> bool:
+        """Whether FAISS is installed and usable."""
+        return _FAISS_AVAILABLE
 
     @property
     def collection_names(self) -> list[str]:
@@ -135,10 +226,14 @@ class VectorStore:
             self._collections[collection].append(doc)
             doc_ids.append(doc_id)
 
+        # Rebuild FAISS + BM25 indexes for this collection
+        self._rebuild_indexes(collection)
+
         logger.info("documents_added", extra={
             "collection": collection,
             "count": len(texts),
             "total": len(self._collections[collection]),
+            "faiss": collection in self._faiss_indexes,
         })
 
         return doc_ids
@@ -149,55 +244,131 @@ class VectorStore:
         query_embedding: list[float],
         top_k: int = 5,
         min_score: float = 0.0,
+        mode: str = "vector",
+        query_text: str | None = None,
     ) -> list[SearchResult]:
-        """Search for similar documents using cosine similarity.
+        """Search for similar documents.
 
         Args:
             collection: Collection to search in.
             query_embedding: Query vector.
             top_k: Maximum results to return.
-            min_score: Minimum cosine similarity threshold (0-1).
+            min_score: Minimum similarity threshold (0-1).
+            mode: Search mode — "vector", "keyword", or "hybrid".
+            query_text: Raw query text (required for keyword/hybrid modes).
 
         Returns:
-            Top matching documents sorted by descending similarity.
+            Top matching documents sorted by descending relevance.
         """
         docs = self._collections.get(collection, [])
         if not docs:
             return []
 
         query_vec = np.array(query_embedding, dtype=np.float32)
-        query_norm = np.linalg.norm(query_vec)
-        if query_norm == 0:
+
+        if mode == "keyword":
+            return self._search_keyword(collection, query_text or "", top_k, docs)
+
+        if mode == "hybrid":
+            return self._search_hybrid(
+                collection, query_vec, query_text or "", top_k, min_score, docs,
+            )
+
+        # Default: vector search
+        return self._search_vector(collection, query_vec, top_k, min_score, docs)
+
+    def _search_vector(
+        self,
+        collection: str,
+        query_vec: NDArray[np.float32],
+        top_k: int,
+        min_score: float,
+        docs: list[Document],
+    ) -> list[SearchResult]:
+        """Pure vector similarity search (FAISS or numpy)."""
+        faiss_index = self._faiss_indexes.get(collection)
+        if faiss_index is not None:
+            raw = _search_faiss(faiss_index, query_vec, top_k)
+            results: list[SearchResult] = []
+            for idx, score in raw:
+                if score < min_score:
+                    continue
+                if idx < len(docs):
+                    results.append(SearchResult(document=docs[idx], score=score))
+            return results
+
+        return _search_numpy(docs, query_vec, top_k, min_score)
+
+    def _search_keyword(
+        self,
+        collection: str,
+        query_text: str,
+        top_k: int,
+        docs: list[Document],
+    ) -> list[SearchResult]:
+        """BM25 keyword search."""
+        bm25 = self._bm25_indexes.get(collection)
+        if bm25 is None or not query_text:
             return []
 
-        # Batch compute cosine similarity
-        doc_embeddings = np.array([d.embedding for d in docs])
-        doc_norms = np.linalg.norm(doc_embeddings, axis=1)
-
-        # Avoid division by zero
-        valid_mask = doc_norms > 0
-        similarities = np.zeros(len(docs), dtype=np.float32)
-        if valid_mask.any():
-            similarities[valid_mask] = (
-                doc_embeddings[valid_mask] @ query_vec
-            ) / (doc_norms[valid_mask] * query_norm)
-
-        # Filter by min_score and get top_k
-        indices = np.argsort(-similarities)
+        raw = bm25.search(query_text, top_k)
         results: list[SearchResult] = []
-        for idx in indices:
-            score = float(similarities[idx])
-            if score < min_score:
-                break
-            results.append(SearchResult(document=docs[idx], score=score))
-            if len(results) >= top_k:
-                break
-
+        for idx, score in raw:
+            if idx < len(docs):
+                results.append(SearchResult(document=docs[idx], score=score))
         return results
+
+    def _search_hybrid(
+        self,
+        collection: str,
+        query_vec: NDArray[np.float32],
+        query_text: str,
+        top_k: int,
+        min_score: float,
+        docs: list[Document],
+    ) -> list[SearchResult]:
+        """Hybrid search: merge vector + BM25 results via RRF."""
+        # Get vector results (double top_k to ensure good candidates)
+        vector_results = self._search_vector(
+            collection, query_vec, top_k * 2, min_score, docs,
+        )
+        vector_ranked = [
+            (self._doc_index(collection, r.document.id), r.score)
+            for r in vector_results
+        ]
+
+        # Get keyword results
+        bm25 = self._bm25_indexes.get(collection)
+        keyword_ranked: list[tuple[int, float]] = []
+        if bm25 is not None and query_text:
+            keyword_ranked = bm25.search(query_text, top_k * 2)
+
+        if not vector_ranked and not keyword_ranked:
+            return []
+
+        # Merge via RRF
+        ranked_lists = [r for r in [vector_ranked, keyword_ranked] if r]
+        merged = reciprocal_rank_fusion(ranked_lists)
+
+        results: list[SearchResult] = []
+        for idx, rrf_score in merged[:top_k]:
+            if idx < len(docs):
+                results.append(SearchResult(document=docs[idx], score=rrf_score))
+        return results
+
+    def _doc_index(self, collection: str, doc_id: str) -> int:
+        """Find the position index of a document by ID."""
+        docs = self._collections.get(collection, [])
+        for i, d in enumerate(docs):
+            if d.id == doc_id:
+                return i
+        return -1
 
     def delete_collection(self, collection: str) -> int:
         """Delete a collection and all its documents. Returns count deleted."""
         docs = self._collections.pop(collection, [])
+        self._faiss_indexes.pop(collection, None)
+        self._bm25_indexes.pop(collection, None)
         count = len(docs)
         if count:
             logger.info("collection_deleted", extra={
@@ -217,6 +388,7 @@ class VectorStore:
         deleted = before - len(self._collections[collection])
 
         if deleted:
+            self._rebuild_indexes(collection)
             logger.info("documents_deleted", extra={
                 "collection": collection, "count": deleted,
             })
@@ -233,13 +405,40 @@ class VectorStore:
             collections[name] = {
                 "document_count": len(docs),
                 "embedding_dimensions": dim,
+                "faiss_indexed": name in self._faiss_indexes,
+                "bm25_indexed": name in self._bm25_indexes,
             }
 
         return {
             "total_documents": self.total_documents(),
             "collection_count": len(self._collections),
+            "faiss_available": _FAISS_AVAILABLE,
             "collections": collections,
         }
+
+    # ── Index management ─────────────────────────────────────────────────
+
+    def _rebuild_indexes(self, collection: str) -> None:
+        """Rebuild FAISS and BM25 indexes for a collection."""
+        docs = self._collections.get(collection, [])
+        if not docs:
+            self._faiss_indexes.pop(collection, None)
+            self._bm25_indexes.pop(collection, None)
+            return
+
+        # FAISS index
+        if _FAISS_AVAILABLE:
+            embeddings = np.array([d.embedding for d in docs])
+            faiss_idx = _build_faiss_index(embeddings)
+            if faiss_idx is not None:
+                self._faiss_indexes[collection] = faiss_idx
+        else:
+            self._faiss_indexes.pop(collection, None)
+
+        # BM25 index
+        bm25 = BM25Index()
+        bm25.add([d.text for d in docs])
+        self._bm25_indexes[collection] = bm25
 
     # ── Persistence ──────────────────────────────────────────────────────
 
@@ -273,16 +472,20 @@ class VectorStore:
             data = json.load(f)
 
         self._collections.clear()
+        self._faiss_indexes.clear()
+        self._bm25_indexes.clear()
         total = 0
         for collection, doc_dicts in data.items():
             self._collections[collection] = [
                 Document.from_dict(d) for d in doc_dicts
             ]
             total += len(doc_dicts)
+            self._rebuild_indexes(collection)
 
         logger.info("store_loaded", extra={
             "path": str(target),
             "total_documents": total,
             "collections": len(self._collections),
+            "faiss": _FAISS_AVAILABLE,
         })
         return total
