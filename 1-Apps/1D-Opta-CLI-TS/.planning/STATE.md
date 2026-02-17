@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-17)
 ## Current Position
 
 Phase: 1 of 10 (tui-markdown)
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-02-17 — Milestone v0.6.0 created
+Plan: 01-01 — TUI Markdown Rendering (4 tasks)
+Status: Planned, ready to execute
+Last activity: 2026-02-17 — Phase 1 plan created
 
 Progress: ░░░░░░░░░░ 0%
 
@@ -38,6 +38,8 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - Ink 5 + React 18 locked as rendering framework
 - EventEmitter bridge pattern for agent-to-TUI streaming
 - Alternate screen buffer for TUI isolation
+- Phase 1: Use marked + marked-terminal (existing deps) for TUI markdown, not ink-markdown or custom AST renderer
+- Phase 1: Debounce streaming markdown re-renders at 150ms to prevent flicker
 
 ### Deferred Issues
 
@@ -59,6 +61,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-17 18:30
-Stopped at: Milestone v0.6.0 initialization
-Resume file: None
+Last session: 2026-02-17
+Stopped at: Phase 1 plan created, ready for execution
+Resume file: .planning/phases/01-tui-markdown/01-01-PLAN.md

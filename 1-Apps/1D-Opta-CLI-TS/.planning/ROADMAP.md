@@ -38,7 +38,7 @@ None (internal project, no external domain skills)
 **Research topics**: Ink-compatible markdown rendering libraries, terminal syntax highlighting in React/Ink, how OpenCode renders markdown in bubbletea
 
 Plans:
-- [ ] 01-01: TBD (run /gsd:plan-phase 1 to break down)
+- [ ] 01-01: TUI Markdown Rendering (4 tasks: MarkdownText component, streaming debounce, MessageList integration, cache + width)
 
 #### Phase 2: tui-input
 **Goal**: Replace single-line ink-text-input with multiline editor supporting input history (up/down), paste detection, and @file autocomplete hints
@@ -120,7 +120,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 
 | Phase | Milestone | Plans | Status | Completed |
 |-------|-----------|-------|--------|-----------|
-| 1. tui-markdown | v0.6.0 | 0/? | Not started | - |
+| 1. tui-markdown | v0.6.0 | 0/1 | Planned | - |
 | 2. tui-input | v0.6.0 | 0/? | Not started | - |
 | 3. tui-slash-commands | v0.6.0 | 0/? | Not started | - |
 | 4. tui-tool-display | v0.6.0 | 0/? | Not started | - |
