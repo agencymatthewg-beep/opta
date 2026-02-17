@@ -334,3 +334,88 @@ class TestAdminStack:
         response = await client.get("/admin/stack")
         data = response.json()
         assert data["remote_helpers"] == {}
+
+    @pytest.mark.asyncio
+    async def test_stack_shows_loaded_model(self, client: AsyncClient) -> None:
+        """Stack lists loaded models after loading one."""
+        await client.post("/admin/models/load", json={"model_id": "test/model"})
+
+        response = await client.get("/admin/stack")
+        data = response.json()
+        assert "test/model" in data["loaded_models"]
+
+
+# ─── Config Reload ───────────────────────────────────────────────────────
+
+
+class TestConfigReload:
+    """Tests for POST /admin/config/reload."""
+
+    @pytest.mark.asyncio
+    async def test_reload_returns_success(self, client: AsyncClient) -> None:
+        """Config reload returns updated sections list."""
+        response = await client.post("/admin/config/reload")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["success"] is True
+        assert "routing" in data["updated"]
+        assert "memory" in data["updated"]
+
+    @pytest.mark.asyncio
+    async def test_reload_updates_memory_threshold(self, client: AsyncClient) -> None:
+        """Config reload updates the memory threshold."""
+        app = client._transport.app  # type: ignore[union-attr]
+        original = app.state.memory_monitor.threshold_percent
+
+        # Reload (uses default config, so threshold stays at 90)
+        response = await client.post("/admin/config/reload")
+        assert response.status_code == 200
+
+        # Should still be valid (default config = 90%)
+        assert app.state.memory_monitor.threshold_percent == 90
+
+
+# ─── Benchmark ───────────────────────────────────────────────────────────
+
+
+class TestBenchmark:
+    """Tests for POST /admin/benchmark."""
+
+    @pytest.mark.asyncio
+    async def test_benchmark_model_not_loaded(self, client: AsyncClient) -> None:
+        """Benchmark returns 404 when model is not loaded."""
+        response = await client.post("/admin/benchmark", json={
+            "model_id": "nonexistent/model",
+            "prompt": "Hello",
+        })
+        assert response.status_code == 404
+
+    @pytest.mark.asyncio
+    async def test_benchmark_returns_results(self, client: AsyncClient) -> None:
+        """Benchmark returns timing results for loaded model."""
+        app = client._transport.app  # type: ignore[union-attr]
+
+        # Load model first
+        await client.post("/admin/models/load", json={"model_id": "test/model"})
+
+        # Patch stream_generate to yield tokens
+        async def mock_stream(**kwargs):
+            for token in ["Hello", " World", "!"]:
+                yield token
+
+        app.state.engine.stream_generate = mock_stream
+
+        response = await client.post("/admin/benchmark", json={
+            "model_id": "test/model",
+            "prompt": "Say hello",
+            "max_tokens": 100,
+            "runs": 2,
+        })
+        assert response.status_code == 200
+        data = response.json()
+        assert data["model_id"] == "test/model"
+        assert data["runs"] == 2
+        assert len(data["results"]) == 2
+        assert data["results"][0]["tokens_generated"] == 3
+        assert data["avg_tokens_per_second"] > 0
+        assert data["avg_time_to_first_token_ms"] >= 0
