@@ -7,6 +7,7 @@ import { InkStatusBar } from './StatusBar.js';
 import { useTerminalSize } from './hooks/useTerminalSize.js';
 import { useKeyboard } from './hooks/useKeyboard.js';
 import { StreamingIndicator } from './StreamingIndicator.js';
+import { FocusProvider, useFocusPanel } from './FocusContext.js';
 
 interface AppProps {
   model: string;
@@ -15,19 +16,24 @@ interface AppProps {
   onMessage?: (text: string) => Promise<string>;
 }
 
-export function App({ model, sessionId, connectionStatus = true, onMessage }: AppProps) {
+function AppInner({ model, sessionId, connectionStatus = true, onMessage }: AppProps) {
   const { exit } = useApp();
   const { height } = useTerminalSize();
+  const { activePanel, nextPanel, previousPanel } = useFocusPanel();
 
   const [messages, setMessages] = useState<Array<{ role: string; content: string }>>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [mode, setMode] = useState<'normal' | 'plan' | 'shell' | 'auto'>('normal');
   const [tokens, setTokens] = useState(0);
   const [tools, setTools] = useState(0);
+  const [sidebarVisible, setSidebarVisible] = useState(false);
 
   useKeyboard({
     onExit: () => exit(),
     onClear: () => setMessages([]),
+    onNextPanel: nextPanel,
+    onPreviousPanel: previousPanel,
+    onToggleSidebar: () => setSidebarVisible(prev => !prev),
   });
 
   const handleSubmit = useCallback(async (text: string) => {
@@ -81,5 +87,13 @@ export function App({ model, sessionId, connectionStatus = true, onMessage }: Ap
         mode={mode}
       />
     </Box>
+  );
+}
+
+export function App(props: AppProps) {
+  return (
+    <FocusProvider>
+      <AppInner {...props} />
+    </FocusProvider>
   );
 }
