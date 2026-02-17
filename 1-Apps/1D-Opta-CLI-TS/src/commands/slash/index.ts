@@ -24,6 +24,8 @@ import { workflowCommands } from './workflow.js';
 import { debugCommands } from './debug.js';
 import { reviewCommands } from './review.js';
 import { researchCommands } from './research.js';
+import { lmxCommands } from './lmx.js';
+import { manageCommands } from './manage.js';
 
 // --- Build the registry ---
 
@@ -35,6 +37,8 @@ const allCommandDefs: SlashCommandDef[] = [
   ...debugCommands,
   ...reviewCommands,
   ...researchCommands,
+  ...lmxCommands,
+  ...manageCommands,
 ];
 
 /** Map from command/alias name (without slash) to the command definition. */
@@ -108,6 +112,7 @@ async function browseCommands(ctx: SlashContext): Promise<SlashResult> {
   const infoCommands = allCommandDefs.filter(c => c.category === 'info');
   const sessionCmds = allCommandDefs.filter(c => c.category === 'session');
   const toolsCmds = allCommandDefs.filter(c => c.category === 'tools');
+  const serverCmds = allCommandDefs.filter(c => c.category === 'server');
 
   const formatChoice = (def: SlashCommandDef) => ({
     name: `/${def.command.padEnd(14)}${def.description}`,
@@ -120,6 +125,8 @@ async function browseCommands(ctx: SlashContext): Promise<SlashResult> {
     ...sessionCmds.map(formatChoice),
     new Separator(chalk.dim('\u2500\u2500\u2500\u2500 Tools \u2500\u2500\u2500\u2500')),
     ...toolsCmds.map(formatChoice),
+    new Separator(chalk.dim('\u2500\u2500\u2500\u2500 Server \u2500\u2500\u2500\u2500')),
+    ...serverCmds.map(formatChoice),
   ];
 
   try {

@@ -46,6 +46,18 @@ const helpHandler = async (_args: string, _ctx: SlashContext): Promise<SlashResu
     cmdLine('/expand', 'Toggle thinking display'),
     cmdLine('/keys', 'Show keybindings'),
     cmdLine('/clear', 'Clear screen'),
+    '',
+    chalk.dim('Server'),
+    cmdLine('/scan', 'Scan all available models'),
+    cmdLine('/load <id>', 'Load model into LMX'),
+    cmdLine('/unload <id>', 'Unload model (free memory)'),
+    cmdLine('/serve', 'LMX server start/stop/status'),
+    cmdLine('/memory', 'LMX memory breakdown'),
+    '',
+    chalk.dim('Management'),
+    cmdLine('/config', 'View/change settings'),
+    cmdLine('/doctor', 'Environment health check'),
+    cmdLine('/mcp', 'List MCP servers'),
   ]));
   console.log(chalk.dim('  Tip: type / to browse commands interactively\n'));
   return 'handled';

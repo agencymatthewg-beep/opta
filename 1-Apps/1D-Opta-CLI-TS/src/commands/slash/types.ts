@@ -33,5 +33,5 @@ export interface SlashCommandDef {
   /** The handler function */
   handler: SlashHandler;
   /** Category for grouping in the interactive browser */
-  category: 'session' | 'tools' | 'info';
+  category: 'session' | 'tools' | 'info' | 'server';
 }
