@@ -105,11 +105,10 @@ def _search_faiss(
     faiss.normalize_L2(q)
     scores, indices = index.search(q, min(top_k, index.ntotal))
     results: list[tuple[int, float]] = []
-    for i in range(len(indices[0])):
-        idx = int(indices[0][i])
+    for idx, score in zip(indices[0], scores[0]):
         if idx == -1:
             break
-        results.append((idx, float(scores[0][i])))
+        results.append((int(idx), float(score)))
     return results
 
 
@@ -328,12 +327,15 @@ class VectorStore:
         docs: list[Document],
     ) -> list[SearchResult]:
         """Hybrid search: merge vector + BM25 results via RRF."""
+        # Build ID→index map for O(1) lookup (avoids linear scan per result)
+        id_to_idx = {d.id: i for i, d in enumerate(docs)}
+
         # Get vector results (double top_k to ensure good candidates)
         vector_results = self._search_vector(
             collection, query_vec, top_k * 2, min_score, docs,
         )
         vector_ranked = [
-            (self._doc_index(collection, r.document.id), r.score)
+            (id_to_idx.get(r.document.id, -1), r.score)
             for r in vector_results
         ]
 

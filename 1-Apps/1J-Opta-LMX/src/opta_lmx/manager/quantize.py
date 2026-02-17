@@ -124,15 +124,15 @@ async def start_quantize(
     })
 
     # Run in background thread
-    loop = asyncio.get_event_loop()
-    asyncio.ensure_future(_run_quantize(loop, job))
+    asyncio.create_task(_run_quantize(job))
 
     return job
 
 
-async def _run_quantize(loop: asyncio.AbstractEventLoop, job: QuantizeJob) -> None:
+async def _run_quantize(job: QuantizeJob) -> None:
     """Run quantization in executor and update job status."""
     try:
+        loop = asyncio.get_running_loop()
         size_bytes = await loop.run_in_executor(
             _executor,
             _do_quantize,

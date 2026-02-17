@@ -203,8 +203,13 @@ class RemoteHelperClient:
             Dict with url, model, healthy, latency stats, success rate, etc.
         """
         latency_list = list(self._latencies)
-        avg_latency = sum(latency_list) / len(latency_list) if latency_list else 0
-        p95_latency = sorted(latency_list)[int(len(latency_list) * 0.95)] if len(latency_list) >= 2 else avg_latency
+        avg_latency = sum(latency_list) / len(latency_list) if latency_list else 0.0
+        if len(latency_list) >= 2:
+            sorted_latencies = sorted(latency_list)
+            p95_idx = min(int(len(sorted_latencies) * 0.95), len(sorted_latencies) - 1)
+            p95_latency = sorted_latencies[p95_idx]
+        else:
+            p95_latency = avg_latency
 
         success_rate = (
             self._success_count / self._total_requests * 100

@@ -53,6 +53,8 @@ _MARKDOWN_FRONTMATTER_RE = re.compile(r"^---\s*\n.*?\n---\s*\n", re.DOTALL)
 _MARKDOWN_IMAGE_RE = re.compile(r"!\[[^\]]*\]\([^)]+\)")
 _MARKDOWN_LINK_RE = re.compile(r"\[([^\]]+)\]\([^)]+\)")
 _WHITESPACE_COLLAPSE_RE = re.compile(r"\n{3,}")
+_HTML_SCRIPT_STYLE_RE = re.compile(r"<(script|style)[^>]*>.*?</\1>", re.DOTALL | re.IGNORECASE)
+_SPACES_COLLAPSE_RE = re.compile(r"[ \t]+")
 
 
 @dataclass
@@ -221,7 +223,7 @@ def process_html(content: str, source: str = "") -> ProcessedDocument:
     text = _HTML_COMMENT_RE.sub("", text)
 
     # Remove script and style blocks
-    text = re.sub(r"<(script|style)[^>]*>.*?</\1>", "", text, flags=re.DOTALL | re.IGNORECASE)
+    text = _HTML_SCRIPT_STYLE_RE.sub("", text)
 
     # Remove tags
     text = _HTML_TAG_RE.sub(" ", text)
@@ -231,7 +233,7 @@ def process_html(content: str, source: str = "") -> ProcessedDocument:
 
     # Collapse whitespace
     text = _WHITESPACE_COLLAPSE_RE.sub("\n\n", text)
-    text = re.sub(r"[ \t]+", " ", text)
+    text = _SPACES_COLLAPSE_RE.sub(" ", text)
     text = text.strip()
 
     return ProcessedDocument(
@@ -253,7 +255,7 @@ def process_code(
     but adds language metadata for downstream processing.
     """
     lines = content.split("\n")
-    non_empty = [l for l in lines if l.strip()]
+    non_empty = [line for line in lines if line.strip()]
 
     return ProcessedDocument(
         text=content,

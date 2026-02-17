@@ -83,11 +83,12 @@ def _human_size(size_bytes: int) -> str:
     """Convert bytes to human-readable string (e.g. '37.5 GB')."""
     if size_bytes <= 0:
         return "unknown"
+    value = float(size_bytes)
     for unit in ("B", "KB", "MB", "GB", "TB"):
-        if abs(size_bytes) < 1024:
-            return f"{size_bytes:.1f} {unit}"
-        size_bytes /= 1024  # type: ignore[assignment]
-    return f"{size_bytes:.1f} PB"
+        if abs(value) < 1024:
+            return f"{value:.1f} {unit}"
+        value /= 1024
+    return f"{value:.1f} PB"
 
 
 async def _load_after_download(

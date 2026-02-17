@@ -91,14 +91,7 @@ class BM25Index:
         if not query_tokens:
             return []
 
-        try:
-            from rank_bm25 import BM25Okapi
-
-            bm25: BM25Okapi = self._bm25  # type: ignore[assignment]
-            scores = bm25.get_scores(query_tokens)
-        except ImportError:
-            logger.warning("rank_bm25_not_installed")
-            return []
+        scores = self._bm25.get_scores(query_tokens)  # type: ignore[union-attr]
 
         # Get top-k indices with positive scores
         indexed_scores = [

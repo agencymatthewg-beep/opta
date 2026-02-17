@@ -11,6 +11,7 @@ import logging
 import time
 from collections import Counter, deque
 from dataclasses import dataclass, field
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -102,7 +103,7 @@ class UsagePredictor:
         """
         return self._access_counts.most_common(top_k)
 
-    def get_stats(self) -> dict[str, object]:
+    def get_stats(self) -> dict[str, Any]:
         """Return predictor statistics for admin endpoints."""
         return {
             "total_accesses": sum(self._access_counts.values()),

@@ -630,7 +630,7 @@ class InferenceEngine:
     async def _do_generate(
         self,
         loaded: LoadedModel,
-        msg_dicts: list[dict[str, str]],
+        msg_dicts: list[dict[str, Any]],
         messages: list[ChatMessage],
         temperature: float,
         max_tokens: int | None,
@@ -667,12 +667,11 @@ class InferenceEngine:
 
         if hasattr(result, "text"):
             content = result.text
-            prompt_tokens = getattr(result, "prompt_tokens", 0) or max(1, len(" ".join(m.content if isinstance(m.content, str) else "" for m in messages)) // 4)
+            prompt_tokens = getattr(result, "prompt_tokens", 0) or self._estimate_prompt_tokens(messages)
             completion_tokens = getattr(result, "completion_tokens", 0) or max(1, len(content) // 4)
         else:
             content = result if isinstance(result, str) else str(result)
-            prompt_text = " ".join(m.content if isinstance(m.content, str) else "" for m in messages)
-            prompt_tokens = max(1, len(prompt_text) // 4)
+            prompt_tokens = self._estimate_prompt_tokens(messages)
             completion_tokens = max(1, len(content) // 4)
         return content, prompt_tokens, completion_tokens
 
@@ -858,6 +857,15 @@ class InferenceEngine:
 
         logger.info("drain_complete")
         return True
+
+    @staticmethod
+    def _estimate_prompt_tokens(messages: list[ChatMessage]) -> int:
+        """Estimate prompt token count from message content (~4 chars/token)."""
+        prompt_text = " ".join(
+            m.content if isinstance(m.content, str) else ""
+            for m in messages
+        )
+        return max(1, len(prompt_text) // 4)
 
     def get_model(self, model_id: str) -> LoadedModel:
         """Get a loaded model or raise KeyError."""

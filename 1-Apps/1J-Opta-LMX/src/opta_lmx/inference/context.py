@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import logging
 
-from opta_lmx.inference.schema import ChatMessage, ContentPart
+from opta_lmx.inference.schema import ChatMessage, ContentPart, ImageContentPart, TextContentPart
 
 logger = logging.getLogger(__name__)
 
@@ -52,12 +52,10 @@ def estimate_message_tokens(message: ChatMessage) -> int:
 
 def _estimate_content_part(part: ContentPart) -> int:
     """Estimate tokens for a content part."""
-    if hasattr(part, "text"):
+    if isinstance(part, TextContentPart):
         return estimate_tokens(part.text)
-    # Images: rough estimate based on detail level
-    if hasattr(part, "image_url"):
-        detail = getattr(part.image_url, "detail", "auto")
-        if detail == "low":
+    if isinstance(part, ImageContentPart):
+        if part.image_url.detail == "low":
             return 85
         return 765  # high/auto
     return 0
