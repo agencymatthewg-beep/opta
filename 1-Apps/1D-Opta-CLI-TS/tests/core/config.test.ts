@@ -63,6 +63,13 @@ describe('config', () => {
     expect(DEFAULT_CONFIG.connection.retry.backoffMs).toBe(1000);
     expect(DEFAULT_CONFIG.connection.retry.backoffMultiplier).toBe(2);
   });
+
+  it('has correct SSH config defaults', () => {
+    expect(DEFAULT_CONFIG.connection.ssh.user).toBe('opta');
+    expect(DEFAULT_CONFIG.connection.ssh.identityFile).toBe('~/.ssh/id_ed25519');
+    expect(DEFAULT_CONFIG.connection.ssh.lmxPath).toBe('/Users/Shared/312/Opta/1-Apps/1J-Opta-LMX');
+    expect(DEFAULT_CONFIG.connection.ssh.pythonPath).toBe('/Users/opta/.mlx-env/bin/python');
+  });
 });
 
 describe('MCP config schema', () => {
