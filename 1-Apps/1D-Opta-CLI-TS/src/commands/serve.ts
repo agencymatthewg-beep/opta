@@ -129,10 +129,11 @@ async function serveStart(opts?: ServeOptions): Promise<void> {
       EXIT.ERROR,
       [err instanceof Error ? err.message : String(err)],
       [
-        isRemote ? `Check SSH access: ssh ${host}` : 'Check Python environment',
+        isRemote ? `Check SSH access: ssh -i ~/.ssh/id_ed25519 ${config.connection.ssh.user}@${host}` : 'Check Python environment',
+        isRemote ? `SSH config: opta config set connection.ssh.user <user>` : '',
         `Verify install: pip show opta-lmx`,
         `Check logs: opta serve logs`,
-      ],
+      ].filter(Boolean),
     );
   }
 }
