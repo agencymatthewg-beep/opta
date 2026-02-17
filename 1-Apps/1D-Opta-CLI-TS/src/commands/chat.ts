@@ -256,21 +256,83 @@ async function handleSlashCommand(
       return 'handled';
     }
 
-    case '/model':
-      if (!arg) {
-        console.log(chalk.dim(`  Current model: ${config.model.default}`));
-        return 'handled';
+    case '/model': {
+      if (arg) {
+        // Direct switch: /model <name>
+        try {
+          const { saveConfig } = await import('../core/config.js');
+          await saveConfig({ model: { default: arg } });
+          session.model = arg;
+          console.log(chalk.green('✓') + ` Switched to ${arg}`);
+          return 'model-switched';
+        } catch (err) {
+          console.error(chalk.red('✗') + ` Failed to switch model: ${err}`);
+          return 'handled';
+        }
       }
+
+      // Interactive model picker: fetch from LMX
       try {
+        const { LmxClient } = await import('../lmx/client.js');
+        const lmx = new LmxClient({
+          host: config.connection.host,
+          port: config.connection.port,
+          adminKey: config.connection.adminKey,
+        });
+        const { models: loadedModels } = await lmx.models();
+
+        if (loadedModels.length === 0) {
+          console.log(chalk.dim('  No models loaded on LMX'));
+          return 'handled';
+        }
+
+        const { select } = await import('@inquirer/prompts');
+        const { lookupContextLimit } = await import('../lmx/client.js');
+        const { fmtTokens: fmtTok } = await import('../ui/box.js');
+
+        const choices = loadedModels.map(m => {
+          const isCurrent = m.model_id === config.model.default;
+          const dot = isCurrent ? chalk.green('● ') : '  ';
+          const ctx = lookupContextLimit(m.model_id);
+          const memStr = m.memory_bytes ? `${(m.memory_bytes / 1e9).toFixed(0)}GB` : '';
+          const meta = chalk.dim([
+            `${fmtTok(ctx)} ctx`,
+            memStr,
+            m.request_count !== undefined ? `${m.request_count} reqs` : '',
+          ].filter(Boolean).join(' · '));
+          return {
+            name: `${dot}${m.model_id}  ${meta}`,
+            value: m.model_id,
+          };
+        });
+
+        let selectedModel: string;
+        try {
+          selectedModel = await select({
+            message: chalk.dim('Select model'),
+            choices,
+          });
+        } catch {
+          return 'handled'; // Ctrl+C
+        }
+
+        if (selectedModel === config.model.default) {
+          console.log(chalk.dim(`  Already using ${selectedModel}`));
+          return 'handled';
+        }
+
         const { saveConfig } = await import('../core/config.js');
-        await saveConfig({ model: { default: arg } });
-        session.model = arg;
-        console.log(chalk.green('✓') + ` Switched to ${arg}`);
+        await saveConfig({ model: { default: selectedModel } });
+        session.model = selectedModel;
+        console.log(chalk.green('✓') + ` Switched to ${selectedModel}`);
         return 'model-switched';
       } catch (err) {
-        console.error(chalk.red('✗') + ` Failed to switch model: ${err}`);
+        // Fallback: just show current model if LMX is unreachable
+        console.log(chalk.dim(`  Current model: ${config.model.default}`));
+        console.log(chalk.dim(`  LMX unreachable — use /model <name> to switch manually`));
         return 'handled';
       }
+    }
 
     case '/history': {
       const userMessages = session.messages.filter(
