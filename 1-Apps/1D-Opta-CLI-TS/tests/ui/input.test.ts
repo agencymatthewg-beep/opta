@@ -21,3 +21,31 @@ describe('InputEditor', () => {
     expect(editor.getBuffer()).toBe('');
   });
 });
+
+describe('multiline', () => {
+  it('should insert newline in multiline mode', () => {
+    const editor = new InputEditor({ prompt: '>', multiline: true });
+    editor.insertText('line 1');
+    editor.insertNewline();
+    editor.insertText('line 2');
+    expect(editor.getBuffer()).toBe('line 1\nline 2');
+    expect(editor.getLineCount()).toBe(2);
+  });
+
+  it('should NOT insert newline in single-line mode', () => {
+    const editor = new InputEditor({ prompt: '>', multiline: false });
+    editor.insertText('line 1');
+    editor.insertNewline();
+    expect(editor.getBuffer()).toBe('line 1');
+    expect(editor.getLineCount()).toBe(1);
+  });
+
+  it('should track cursor position across lines', () => {
+    const editor = new InputEditor({ prompt: '>', multiline: true });
+    editor.insertText('abc');
+    editor.insertNewline();
+    editor.insertText('def');
+    expect(editor.getCursorLine()).toBe(1);
+    expect(editor.getCursorCol()).toBe(3);
+  });
+});

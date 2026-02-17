@@ -34,6 +34,26 @@ export class InputEditor {
     this.cursor = 0;
   }
 
+  insertNewline(): void {
+    if (!this.options.multiline) return;
+    this.buffer =
+      this.buffer.slice(0, this.cursor) + '\n' + this.buffer.slice(this.cursor);
+    this.cursor += 1;
+  }
+
+  getLineCount(): number {
+    return this.buffer.split('\n').length;
+  }
+
+  getCursorLine(): number {
+    return this.buffer.slice(0, this.cursor).split('\n').length - 1;
+  }
+
+  getCursorCol(): number {
+    const lines = this.buffer.slice(0, this.cursor).split('\n');
+    return lines[lines.length - 1]!.length;
+  }
+
   getPromptDisplay(): string {
     switch (this.options.mode) {
       case 'shell': return chalk.yellow('!') + chalk.dim(' >');
