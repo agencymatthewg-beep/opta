@@ -8,7 +8,7 @@
 |-----|------|----------|----------|--------|------|------|------------|
 | 1D-Opta-CLI-TS | CLI tool (Node.js, TypeScript) | — | — | BETA (v0.1.0, unfinished Aider fork) | ✅ | — | — |
 | 1I-OptaPlus | — | — | — | active | ✅ | — | — |
-| 1J-Opta-LMX | — | — | — | — | ✅ | — | — |
+| 1J-Opta-LMX | Python/FastAPI | macOS (Apple Silicon) | 3,853L / 30 files | ~80% (Phase 6 done) | ✅ | Headless MLX inference server — replaces LM Studio | Deploy to Mono512 |
 
 ## Projects Without OPIS
 

@@ -141,7 +141,7 @@ struct PortProbeView: View {
             if reachable {
                 HapticManager.shared.notification(.success)
             } else {
-                UINotificationFeedbackGenerator().notificationOccurred(.error)
+                HapticManager.shared.notification(.error)
             }
             // Reset after 5 seconds
             try? await Task.sleep(nanoseconds: 5_000_000_000)
