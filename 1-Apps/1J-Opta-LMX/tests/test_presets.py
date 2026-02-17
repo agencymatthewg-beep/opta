@@ -117,6 +117,28 @@ class TestPresetManagerLookup:
         auto = mgr.get_auto_load_models()
         assert sorted(auto) == ["m1", "m3"]
 
+    def test_find_performance_for_model(self, tmp_path: Path) -> None:
+        presets_dir = tmp_path / "presets"
+        _write_preset(presets_dir, "a", {
+            "name": "a", "model": "m1",
+            "performance": {"kv_bits": 4, "prefix_cache": False},
+        })
+        _write_preset(presets_dir, "b", {"name": "b", "model": "m2"})
+
+        mgr = PresetManager(presets_dir)
+        mgr.load_presets()
+
+        # Model with performance section → returns it
+        perf = mgr.find_performance_for_model("m1")
+        assert perf is not None
+        assert perf["kv_bits"] == 4
+
+        # Model without performance section → None
+        assert mgr.find_performance_for_model("m2") is None
+
+        # Unknown model → None
+        assert mgr.find_performance_for_model("nonexistent") is None
+
     def test_routing_aliases(self, tmp_path: Path) -> None:
         presets_dir = tmp_path / "presets"
         _write_preset(presets_dir, "a", {"name": "a", "model": "m1", "routing_alias": "code"})

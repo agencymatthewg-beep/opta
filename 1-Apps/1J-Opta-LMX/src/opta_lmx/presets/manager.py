@@ -138,6 +138,17 @@ class PresetManager:
         """Return model IDs from presets with auto_load=True."""
         return [p.model for p in self._presets.values() if p.auto_load and p.model]
 
+    def find_performance_for_model(self, model_id: str) -> dict[str, Any] | None:
+        """Find performance overrides from a preset that maps to this model_id.
+
+        Returns the preset's performance dict if a matching preset with a non-empty
+        performance section is found, otherwise None.
+        """
+        for preset in self._presets.values():
+            if preset.model == model_id and preset.performance:
+                return preset.performance
+        return None
+
     def get_routing_aliases(self) -> dict[str, list[str]]:
         """Return {alias: [model_id]} mappings from presets with routing_alias set."""
         aliases: dict[str, list[str]] = {}

@@ -69,16 +69,6 @@ from opta_lmx.inference.schema import (
 logger = logging.getLogger(__name__)
 
 
-def _find_performance_for_model(
-    preset_mgr: Any, model_id: str,
-) -> dict[str, Any] | None:
-    """Find performance overrides from a preset that maps to this model_id."""
-    for preset in preset_mgr.list_all():
-        if preset.model == model_id and preset.performance:
-            return preset.performance
-    return None
-
-
 # Token expiry for pending download confirmations (seconds)
 _TOKEN_EXPIRY_SEC = 600  # 10 minutes
 
@@ -222,7 +212,7 @@ async def load_model(
             )
 
         # auto_download=True: skip confirmation, start download + auto-load
-        perf = _find_performance_for_model(preset_mgr, body.model_id)
+        perf = preset_mgr.find_performance_for_model(body.model_id)
         task = await manager.start_download(repo_id=body.model_id)
         bg = asyncio.create_task(
             _load_after_download(task.download_id, body.model_id, manager, engine, perf),
@@ -244,7 +234,7 @@ async def load_model(
         )
 
     # Model is on disk — load immediately (with preset performance if available)
-    perf = _find_performance_for_model(preset_mgr, body.model_id)
+    perf = preset_mgr.find_performance_for_model(body.model_id)
     start = time.monotonic()
     try:
         info = await engine.load_model(body.model_id, performance_overrides=perf)
