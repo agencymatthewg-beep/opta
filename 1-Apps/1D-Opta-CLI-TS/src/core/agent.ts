@@ -84,6 +84,12 @@ export interface OnStreamCallbacks {
   onToolStart?: (name: string, id: string, args: string) => void;
   onToolEnd?: (name: string, id: string, result: string) => void;
   onThinking?: (text: string) => void;
+  /**
+   * Called when a tool requires 'ask' permission.
+   * The callback must return a Promise that resolves to true (allow) or false (deny).
+   * If 'always' is chosen, the caller should persist the permission and return true.
+   */
+  onPermissionRequest?: (toolName: string, args: Record<string, unknown>) => Promise<'allow' | 'deny' | 'always'>;
 }
 
 export interface AgentLoopOptions {
@@ -574,14 +580,29 @@ export async function agentLoop(
             args = { raw: call.args };
           }
 
-          const approved = await promptToolApproval(call.name, args);
-          if (!approved) {
-            messages.push({
-              role: 'tool',
-              content: 'User declined this action.',
-              tool_call_id: call.id,
-            });
-            continue;
+          // TUI mode: use the stream callback for permission prompts
+          if (streamCallbacks?.onPermissionRequest) {
+            const decision = await streamCallbacks.onPermissionRequest(call.name, args);
+            if (decision === 'deny') {
+              messages.push({
+                role: 'tool',
+                content: 'User declined this action.',
+                tool_call_id: call.id,
+              });
+              continue;
+            }
+            // 'allow' and 'always' both proceed (persistence handled by caller)
+          } else {
+            // REPL mode: use @inquirer/prompts confirm dialog
+            const approved = await promptToolApproval(call.name, args);
+            if (!approved) {
+              messages.push({
+                role: 'tool',
+                content: 'User declined this action.',
+                tool_call_id: call.id,
+              });
+              continue;
+            }
           }
         }
 

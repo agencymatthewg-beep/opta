@@ -10,6 +10,7 @@ import { EventEmitter } from 'node:events';
 import type { OptaConfig } from '../core/config.js';
 import type { AgentLoopOptions, AgentLoopResult } from '../core/agent.js';
 import type { Session } from '../memory/store.js';
+import type { PermissionDecision } from './PermissionPrompt.js';
 
 /** Average characters per token for rough estimation. */
 const CHARS_PER_TOKEN = 4;
@@ -28,6 +29,12 @@ export interface TurnStats {
   speed: number;
 }
 
+export interface PermissionRequest {
+  id: string;
+  toolName: string;
+  args: Record<string, unknown>;
+}
+
 export interface TuiEventMap {
   'token': [text: string];
   'tool:start': [name: string, id: string, args: string];
@@ -36,6 +43,8 @@ export interface TuiEventMap {
   'turn:start': [];
   'turn:end': [stats: TurnStats];
   'error': [msg: string];
+  'permission:request': [request: PermissionRequest];
+  'permission:response': [id: string, decision: PermissionDecision];
 }
 
 export class TuiEmitter extends EventEmitter {
@@ -58,6 +67,9 @@ export interface TuiAdapterOptions {
   config: OptaConfig;
   session: Session;
 }
+
+/** Counter for unique permission request IDs. */
+let permissionRequestCounter = 0;
 
 /**
  * Run the agent loop for a user message and emit streaming events.
@@ -97,6 +109,30 @@ export async function runAgentWithEvents(
       },
       onThinking(text: string) {
         emitter.emit('thinking', text);
+      },
+      /**
+       * Bridge permission requests from the agent loop to the TUI.
+       *
+       * Emits a 'permission:request' event and returns a Promise that
+       * resolves when the TUI sends back a 'permission:response' event.
+       * This blocks the agent loop until the user makes a decision.
+       */
+      onPermissionRequest(toolName: string, args: Record<string, unknown>): Promise<PermissionDecision> {
+        const requestId = `perm-${++permissionRequestCounter}`;
+
+        return new Promise<PermissionDecision>((resolve) => {
+          // Listen for the response matching this request ID
+          const onResponse = (id: string, decision: PermissionDecision) => {
+            if (id === requestId) {
+              emitter.off('permission:response', onResponse);
+              resolve(decision);
+            }
+          };
+          emitter.on('permission:response', onResponse);
+
+          // Emit the request to the TUI
+          emitter.emit('permission:request', { id: requestId, toolName, args });
+        });
       },
     },
   };

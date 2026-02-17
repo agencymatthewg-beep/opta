@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { Box, useApp } from 'ink';
+import { Box, Text, useApp } from 'ink';
 import { Header } from './Header.js';
 import { MessageList } from './MessageList.js';
 import { InputBox } from './InputBox.js';
@@ -10,8 +10,10 @@ import { useTerminalSize } from './hooks/useTerminalSize.js';
 import { useKeyboard } from './hooks/useKeyboard.js';
 import { StreamingIndicator } from './StreamingIndicator.js';
 import { FocusProvider, useFocusPanel } from './FocusContext.js';
+import { PermissionPrompt } from './PermissionPrompt.js';
 import { estimateTokens } from '../utils/tokens.js';
-import type { TuiEmitter, TurnStats } from './adapter.js';
+import type { TuiEmitter, TurnStats, PermissionRequest } from './adapter.js';
+import type { PermissionDecision } from './PermissionPrompt.js';
 import type { SlashResult } from '../commands/slash/index.js';
 
 /** Max characters of a tool result displayed in the message list. */
@@ -86,6 +88,10 @@ function AppInner({
   const [speed, setSpeed] = useState(0);
   const [streamingLabel, setStreamingLabel] = useState('thinking');
   const [thinkingExpanded, setThinkingExpanded] = useState(false);
+
+  // Permission prompt state
+  const [permissionPending, setPermissionPending] = useState<(PermissionRequest & { resolve: (decision: PermissionDecision) => void }) | null>(null);
+  const [alwaysMessage, setAlwaysMessage] = useState<string | null>(null);
 
   // Track whether we're in streaming mode (emitter-based)
   const isStreamingMode = !!emitter;
@@ -216,6 +222,32 @@ function AppInner({
       setMessages(prev => [...prev, { role: 'error', content: msg }]);
     };
 
+    const onPermissionRequest = (request: PermissionRequest) => {
+      // Create a Promise-based bridge: the resolve function is stored in state
+      // so the PermissionPrompt component can call it when the user decides.
+      setPermissionPending({
+        ...request,
+        resolve: (decision: PermissionDecision) => {
+          // Send the response back to the adapter (which unblocks the agent loop)
+          emitter.emit('permission:response', request.id, decision);
+          setPermissionPending(null);
+
+          // If "always" was chosen, persist the permission and show confirmation
+          if (decision === 'always') {
+            setAlwaysMessage(`${request.toolName} set to always allow`);
+            // Clear the confirmation after 3 seconds
+            setTimeout(() => setAlwaysMessage(null), 3000);
+            // Persist to config asynchronously
+            import('../core/config.js').then(({ saveConfig }) => {
+              saveConfig({ [`permissions.${request.toolName}`]: 'allow' }).catch(() => {
+                // Config save failed — non-fatal
+              });
+            }).catch(() => {});
+          }
+        },
+      });
+    };
+
     emitter.on('token', onToken);
     emitter.on('tool:start', onToolStart);
     emitter.on('tool:end', onToolEnd);
@@ -223,6 +255,7 @@ function AppInner({
     emitter.on('turn:start', onTurnStart);
     emitter.on('turn:end', onTurnEnd);
     emitter.on('error', onError);
+    emitter.on('permission:request', onPermissionRequest);
 
     return () => {
       emitter.off('token', onToken);
@@ -232,6 +265,7 @@ function AppInner({
       emitter.off('turn:start', onTurnStart);
       emitter.off('turn:end', onTurnEnd);
       emitter.off('error', onError);
+      emitter.off('permission:request', onPermissionRequest);
     };
   }, [emitter]);
 
@@ -306,12 +340,28 @@ function AppInner({
         {isLoading && <StreamingIndicator label={streamingLabel} />}
       </Box>
 
-      <Box
-        borderStyle={activePanel === 'input' ? 'single' : undefined}
-        borderColor={activePanel === 'input' ? 'cyan' : 'gray'}
-      >
-        <InputBox onSubmit={handleSubmit} mode={mode} isLoading={isLoading} />
-      </Box>
+      {/* Permission prompt replaces the input area when active */}
+      {permissionPending ? (
+        <PermissionPrompt
+          toolName={permissionPending.toolName}
+          args={permissionPending.args}
+          onDecision={permissionPending.resolve}
+        />
+      ) : (
+        <Box
+          borderStyle={activePanel === 'input' ? 'single' : undefined}
+          borderColor={activePanel === 'input' ? 'cyan' : 'gray'}
+        >
+          <InputBox onSubmit={handleSubmit} mode={mode} isLoading={isLoading || !!permissionPending} />
+        </Box>
+      )}
+
+      {/* Brief "always allow" confirmation */}
+      {alwaysMessage && (
+        <Box paddingX={1}>
+          <Text color="green">{'\u2714'} {alwaysMessage}</Text>
+        </Box>
+      )}
     </Box>
   );
 

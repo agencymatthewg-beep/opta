@@ -1,0 +1,255 @@
+/**
+ * PermissionPrompt — Ink component for inline tool permission prompts.
+ *
+ * Renders a bordered yellow card asking the user to approve/deny a tool call.
+ * Supports Y/n/a key input and a 30-second auto-deny countdown.
+ */
+
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Box, Text, useInput } from 'ink';
+
+/** Default timeout before auto-deny (seconds). */
+const AUTO_DENY_TIMEOUT = 30;
+
+/** Tool icons matching ToolCard.tsx. */
+const TOOL_ICONS: Record<string, string> = {
+  read_file: '\u{1F4C4}',
+  write_file: '\u270F\uFE0F',
+  edit_file: '\u{1F527}',
+  list_dir: '\u{1F4C1}',
+  search_files: '\u{1F50D}',
+  find_files: '\u{1F50E}',
+  run_command: '\u26A1',
+  ask_user: '\u{1F4AC}',
+  delete_file: '\u{1F5D1}',
+  multi_edit: '\u{1F527}',
+  bg_start: '\u{1F680}',
+  bg_kill: '\u{1F6D1}',
+  spawn_agent: '\u{1F916}',
+  delegate_task: '\u{1F4CB}',
+  lsp_rename: '\u270F\uFE0F',
+  git_commit: '\u{1F4BE}',
+};
+
+export type PermissionDecision = 'allow' | 'deny' | 'always';
+
+export interface PermissionPromptProps {
+  toolName: string;
+  args: Record<string, unknown>;
+  onDecision: (decision: PermissionDecision) => void;
+}
+
+/** Truncate a file path to last 3 segments for compactness. */
+function formatPath(path: unknown): string {
+  const p = String(path ?? '');
+  const parts = p.split('/');
+  if (parts.length > 3) {
+    return '.../' + parts.slice(-3).join('/');
+  }
+  return p;
+}
+
+/** Render tool-specific context details. */
+function ToolContext({ toolName, args }: { toolName: string; args: Record<string, unknown> }) {
+  switch (toolName) {
+    case 'edit_file': {
+      const oldText = String(args['old_text'] ?? args['old_string'] ?? '');
+      const newText = String(args['new_text'] ?? args['new_string'] ?? '');
+      return (
+        <Box flexDirection="column" paddingLeft={2}>
+          <Text color="cyan">File: {formatPath(args['path'])}</Text>
+          {oldText && (
+            <Text color="red">- {oldText.slice(0, 80)}{oldText.length > 80 ? '...' : ''}</Text>
+          )}
+          {newText && (
+            <Text color="green">+ {newText.slice(0, 80)}{newText.length > 80 ? '...' : ''}</Text>
+          )}
+        </Box>
+      );
+    }
+
+    case 'multi_edit':
+      return (
+        <Box flexDirection="column" paddingLeft={2}>
+          <Text color="cyan">File: {formatPath(args['path'])}</Text>
+          {Array.isArray(args['edits']) && (
+            <Text dimColor>{(args['edits'] as unknown[]).length} edit(s)</Text>
+          )}
+        </Box>
+      );
+
+    case 'write_file': {
+      const content = String(args['content'] ?? '');
+      const lineCount = content.split('\n').length;
+      return (
+        <Box paddingLeft={2}>
+          <Text color="cyan">File: {formatPath(args['path'])}</Text>
+          <Text dimColor> ({lineCount} line{lineCount !== 1 ? 's' : ''})</Text>
+        </Box>
+      );
+    }
+
+    case 'delete_file':
+      return (
+        <Box paddingLeft={2}>
+          <Text color="red">File: {formatPath(args['path'])}</Text>
+        </Box>
+      );
+
+    case 'run_command':
+      return (
+        <Box paddingLeft={2}>
+          <Text color="yellow">$ {String(args['command'] ?? '')}</Text>
+        </Box>
+      );
+
+    case 'bg_start':
+      return (
+        <Box paddingLeft={2}>
+          <Text color="yellow">$ {String(args['command'] ?? '')}</Text>
+          {args['name'] != null && <Text dimColor> (name: {String(args['name'])})</Text>}
+        </Box>
+      );
+
+    case 'bg_kill':
+      return (
+        <Box paddingLeft={2}>
+          <Text color="red">Kill process: {String(args['id'] ?? args['name'] ?? '')}</Text>
+        </Box>
+      );
+
+    case 'spawn_agent':
+    case 'delegate_task':
+      return (
+        <Box flexDirection="column" paddingLeft={2}>
+          {args['task'] != null && <Text dimColor>Task: {String(args['task']).slice(0, 80)}</Text>}
+          {args['mode'] != null && <Text dimColor>Mode: {String(args['mode'])}</Text>}
+        </Box>
+      );
+
+    case 'lsp_rename':
+      return (
+        <Box paddingLeft={2}>
+          <Text color="cyan">{formatPath(args['path'])}</Text>
+          {args['newName'] != null && <Text dimColor> {'\u2192'} {String(args['newName'])}</Text>}
+        </Box>
+      );
+
+    case 'git_commit':
+      return (
+        <Box paddingLeft={2}>
+          <Text dimColor>Message: {String(args['message'] ?? '').slice(0, 60)}</Text>
+        </Box>
+      );
+
+    default: {
+      // Generic: show first 3 key-value pairs
+      const entries = Object.entries(args).slice(0, 3);
+      if (entries.length === 0) return null;
+      return (
+        <Box flexDirection="column" paddingLeft={2}>
+          {entries.map(([k, v]) => (
+            <Box key={k}>
+              <Text dimColor>{k}: </Text>
+              <Text>{String(v).slice(0, 60)}</Text>
+            </Box>
+          ))}
+        </Box>
+      );
+    }
+  }
+}
+
+export function PermissionPrompt({ toolName, args, onDecision }: PermissionPromptProps) {
+  const [countdown, setCountdown] = useState(AUTO_DENY_TIMEOUT);
+  const decided = useRef(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const icon = TOOL_ICONS[toolName] ?? '\u{1F527}';
+
+  const handleDecision = useCallback((decision: PermissionDecision) => {
+    if (decided.current) return;
+    decided.current = true;
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    onDecision(decision);
+  }, [onDecision]);
+
+  // Countdown timer
+  useEffect(() => {
+    intervalRef.current = setInterval(() => {
+      setCountdown(prev => {
+        const next = prev - 1;
+        if (next <= 0) {
+          handleDecision('deny');
+          return 0;
+        }
+        return next;
+      });
+    }, 1000);
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, [handleDecision]);
+
+  // Key input
+  useInput((input, key) => {
+    if (decided.current) return;
+
+    // y/Y or Enter -> allow
+    if (input === 'y' || input === 'Y' || key.return) {
+      handleDecision('allow');
+      return;
+    }
+
+    // n/N -> deny
+    if (input === 'n' || input === 'N') {
+      handleDecision('deny');
+      return;
+    }
+
+    // a/A -> always
+    if (input === 'a' || input === 'A') {
+      handleDecision('always');
+      return;
+    }
+  });
+
+  return (
+    <Box
+      flexDirection="column"
+      borderStyle="round"
+      borderColor="yellow"
+      paddingX={1}
+      paddingY={0}
+    >
+      {/* Header */}
+      <Box>
+        <Text color="yellow" bold>{icon} Permission Required</Text>
+      </Box>
+
+      {/* Tool name */}
+      <Box paddingLeft={2}>
+        <Text bold>{toolName}</Text>
+        <Text dimColor> wants to execute</Text>
+      </Box>
+
+      {/* Tool-specific context */}
+      <ToolContext toolName={toolName} args={args} />
+
+      {/* Prompt line */}
+      <Box marginTop={1}>
+        <Text color="yellow">
+          [<Text bold>Y</Text>]es / [<Text bold>n</Text>]o / [<Text bold>a</Text>]lways
+        </Text>
+        <Text dimColor>  ({countdown}s)</Text>
+      </Box>
+    </Box>
+  );
+}
