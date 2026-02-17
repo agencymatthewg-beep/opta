@@ -173,6 +173,21 @@ program
   });
 
 program
+  .command('server')
+  .description('Start an HTTP API server for non-interactive use')
+  .option('-p, --port <port>', 'server port', '3456')
+  .option('--host <host>', 'server bind address', '127.0.0.1')
+  .option('-m, --model <name>', 'override default model')
+  .action(async (opts) => {
+    const { startServer } = await import('./commands/server.js');
+    await startServer({
+      port: parseInt(opts.port, 10),
+      host: opts.host,
+      model: opts.model,
+    });
+  });
+
+program
   .command('completions <shell>')
   .description('Generate shell completions (bash/zsh/fish)')
   .action(async (shell: string) => {
