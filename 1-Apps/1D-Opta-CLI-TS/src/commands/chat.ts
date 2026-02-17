@@ -119,12 +119,21 @@ export async function startChat(opts: ChatOptions): Promise<void> {
   };
   if (opts.dangerous || opts.yolo) chatState.currentMode = 'normal'; // dangerous handled by config mode
 
+  // InputEditor for buffer management and mode detection
+  const editor = new InputEditor({
+    prompt: '>',
+    mode: chatState.currentMode === 'plan' ? 'plan' : (chatState.currentMode === 'auto-accept' ? 'auto' : 'normal'),
+  });
+
+  // Input history with deduplication
+  const history = new InputHistory();
+
   function getPromptMessage(): string {
-    switch (chatState.currentMode) {
-      case 'plan': return chalk.magenta('plan') + chalk.dim(' ›');
-      case 'auto-accept': return chalk.yellow('auto') + chalk.dim(' ›');
-      default: return chalk.cyan('›');
-    }
+    // Sync editor mode with chat state
+    editor.setMode(
+      chatState.currentMode === 'plan' ? 'plan' : (chatState.currentMode === 'auto-accept' ? 'auto' : 'normal')
+    );
+    return editor.getPromptDisplay();
   }
 
   // REPL loop
@@ -148,6 +157,9 @@ export async function startChat(opts: ChatOptions): Promise<void> {
 
     if (!userInput.trim()) continue;
 
+    // Track input in history
+    history.push(userInput);
+
     // Slash commands
     if (userInput.startsWith('/')) {
       const handled = await handleSlashCommand(userInput, session, config, chatState);
@@ -168,6 +180,38 @@ export async function startChat(opts: ChatOptions): Promise<void> {
         config = await loadConfig(overrides);
       }
       continue;
+    }
+
+    // Shell mode: !command executes directly
+    if (userInput.startsWith('!')) {
+      const cmd = userInput.slice(1).trim();
+      if (!cmd) continue;
+      console.log(chalk.dim(`  $ ${cmd}`));
+      try {
+        const { execSync } = await import('node:child_process');
+        const output = execSync(cmd, { encoding: 'utf-8', cwd: process.cwd(), timeout: 30000 });
+        if (output.trim()) console.log(output);
+        console.log(chalk.green('✓') + chalk.dim(' exit 0'));
+      } catch (err: unknown) {
+        const e = err as { status?: number; stderr?: string; stdout?: string };
+        if (e.stdout) console.log(e.stdout);
+        if (e.stderr) console.error(chalk.red(e.stderr));
+        console.log(chalk.red('✗') + chalk.dim(` exit ${e.status ?? 1}`));
+      }
+      continue;
+    }
+
+    // Show @ file autocomplete hints (lightweight — full interactive autocomplete in Phase 2)
+    if (userInput.includes('@') && !userInput.startsWith('/')) {
+      const { getProjectFiles, getCompletions } = await import('../ui/autocomplete.js');
+      const atMatch = userInput.match(/@(\S*)$/);
+      if (atMatch?.[1]) {
+        const files = await getProjectFiles(process.cwd());
+        const matches = getCompletions(atMatch[1], files, 5);
+        if (matches.length > 0 && matches[0] !== atMatch[1]) {
+          console.log(chalk.dim('  Matches: ') + matches.map(f => chalk.cyan(`@${f}`)).join(chalk.dim(', ')));
+        }
+      }
     }
 
     // Resolve @file references
@@ -667,6 +711,10 @@ async function handleSlashCommand(
     case '/image': {
       if (!arg) {
         console.log(chalk.dim('  Usage: /image <path> [question]'));
+        console.log(chalk.dim('  Examples:'));
+        console.log(chalk.dim('    /image screenshot.png What is this?'));
+        console.log(chalk.dim('    /image ./designs/mockup.png Review this UI'));
+        console.log(chalk.dim('  Supports: png, jpg, jpeg, gif, webp'));
         return 'handled';
       }
 
