@@ -22,7 +22,7 @@ from opta_lmx.api.anthropic import router as anthropic_router
 from opta_lmx.api.embeddings import router as embeddings_router
 from opta_lmx.api.health import router as health_router
 from opta_lmx.api.inference import router as inference_router
-from opta_lmx.api.middleware import RequestIDMiddleware
+from opta_lmx.api.middleware import RequestIDMiddleware, RequestLoggingMiddleware
 from opta_lmx.api.rerank import router as rerank_router
 from opta_lmx.api.websocket import router as websocket_router
 from opta_lmx.config import LMXConfig, load_config
@@ -242,6 +242,9 @@ def create_app(config: LMXConfig | None = None) -> FastAPI:
 
     # Store config in app state for route handlers
     app.state.config = config
+
+    # Request logging — method, path, status, latency for all HTTP requests
+    app.add_middleware(RequestLoggingMiddleware)
 
     # Request ID middleware — adds X-Request-ID to all responses and logs
     app.add_middleware(RequestIDMiddleware)

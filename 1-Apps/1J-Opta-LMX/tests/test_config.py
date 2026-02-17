@@ -68,3 +68,57 @@ def test_auto_load_list() -> None:
     config = LMXConfig(models={"auto_load": ["model-a", "model-b"]})  # type: ignore[arg-type]
     assert len(config.models.auto_load) == 2
     assert "model-a" in config.models.auto_load
+
+
+# ─── Config Validation Tests ────────────────────────────────────────────
+
+
+def test_port_validation() -> None:
+    """Port must be between 1 and 65535."""
+    with pytest.raises(ValueError):
+        LMXConfig(server={"port": 0})  # type: ignore[arg-type]
+
+    with pytest.raises(ValueError):
+        LMXConfig(server={"port": 70000})  # type: ignore[arg-type]
+
+    config = LMXConfig(server={"port": 65535})  # type: ignore[arg-type]
+    assert config.server.port == 65535
+
+
+def test_workers_validation() -> None:
+    """Workers must be >= 1."""
+    with pytest.raises(ValueError):
+        LMXConfig(server={"workers": 0})  # type: ignore[arg-type]
+
+
+def test_gguf_context_length_validation() -> None:
+    """GGUF context length must be >= 512."""
+    with pytest.raises(ValueError):
+        LMXConfig(models={"gguf_context_length": 256})  # type: ignore[arg-type]
+
+
+def test_gguf_gpu_layers_validation() -> None:
+    """GGUF GPU layers must be >= -1."""
+    with pytest.raises(ValueError):
+        LMXConfig(models={"gguf_gpu_layers": -2})  # type: ignore[arg-type]
+
+    config = LMXConfig(models={"gguf_gpu_layers": -1})  # type: ignore[arg-type]
+    assert config.models.gguf_gpu_layers == -1
+
+
+def test_logging_level_validation() -> None:
+    """Logging level must be a valid level string."""
+    with pytest.raises(ValueError):
+        LMXConfig(logging={"level": "TRACE"})  # type: ignore[arg-type]
+
+    config = LMXConfig(logging={"level": "DEBUG"})  # type: ignore[arg-type]
+    assert config.logging.level == "DEBUG"
+
+
+def test_logging_format_validation() -> None:
+    """Logging format must be 'structured' or 'text'."""
+    with pytest.raises(ValueError):
+        LMXConfig(logging={"format": "json"})  # type: ignore[arg-type]
+
+    config = LMXConfig(logging={"format": "text"})  # type: ignore[arg-type]
+    assert config.logging.format == "text"

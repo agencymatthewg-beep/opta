@@ -26,12 +26,12 @@ class ServerConfig(BaseModel):
     """Server binding and timeout settings."""
 
     host: str = "127.0.0.1"
-    port: int = Field(1234, description="Port 1234 = drop-in LM Studio replacement")
-    workers: int = 1
-    timeout_sec: int = 300
+    port: int = Field(1234, ge=1, le=65535, description="Port 1234 = drop-in LM Studio replacement")
+    workers: int = Field(1, ge=1)
+    timeout_sec: int = Field(300, ge=1)
     websocket_enabled: bool = Field(True, description="Enable WebSocket streaming endpoint")
     sse_events_enabled: bool = Field(True, description="Enable /admin/events SSE endpoint")
-    sse_heartbeat_interval_sec: int = Field(30, description="SSE heartbeat interval in seconds")
+    sse_heartbeat_interval_sec: int = Field(30, ge=1, description="SSE heartbeat interval in seconds")
 
 
 class ModelsConfig(BaseModel):
@@ -41,8 +41,8 @@ class ModelsConfig(BaseModel):
     models_directory: Path = Path("/Users/Shared/Opta-LMX/models")
     auto_load: list[str] = Field(default_factory=list)
     use_batching: bool = True
-    gguf_context_length: int = Field(4096, description="Default context length for GGUF models")
-    gguf_gpu_layers: int = Field(-1, description="GPU layers for GGUF (-1 = full Metal offload)")
+    gguf_context_length: int = Field(4096, ge=512, description="Default context length for GGUF models")
+    gguf_gpu_layers: int = Field(-1, ge=-1, description="GPU layers for GGUF (-1 = full Metal offload)")
     kv_bits: int | None = Field(None, description="KV cache quantization bits (4 or 8, None=FP16)")
     kv_group_size: int = Field(64, ge=1, description="KV cache quantization group size")
     prefix_cache_enabled: bool = Field(True, description="Enable prefix caching for multi-turn")
@@ -70,8 +70,8 @@ class MemoryConfig(BaseModel):
 class LoggingConfig(BaseModel):
     """Logging level, format, and rotation settings."""
 
-    level: str = "INFO"
-    format: str = "structured"
+    level: str = Field("INFO", pattern="^(DEBUG|INFO|WARNING|ERROR)$")
+    format: str = Field("structured", pattern="^(structured|text)$")
     file: str | None = None
     max_file_bytes: int = Field(
         50 * 1024 * 1024, description="Max log file size before rotation (default 50MB)",
