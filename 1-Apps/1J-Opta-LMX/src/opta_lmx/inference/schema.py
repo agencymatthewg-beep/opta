@@ -93,12 +93,32 @@ class ChatCompletionResponse(BaseModel):
 # ─── Response Models (Streaming) ─────────────────────────────────────────────
 
 
+class FunctionCallDelta(BaseModel):
+    """Incremental function call in a streaming tool call delta."""
+
+    name: str | None = None
+    arguments: str | None = None
+
+
+class ToolCallDelta(BaseModel):
+    """A tool call delta in a streaming chunk.
+
+    Unlike ToolCall, fields are optional because streaming sends
+    id/type/name only on the first chunk for each tool call.
+    """
+
+    index: int
+    id: str | None = None
+    type: str | None = None
+    function: FunctionCallDelta | None = None
+
+
 class DeltaMessage(BaseModel):
     """Delta content in a streaming chunk."""
 
     role: str | None = None
     content: str | None = None
-    tool_calls: list[ToolCall] | None = None
+    tool_calls: list[ToolCallDelta] | None = None
 
 
 class ChunkChoice(BaseModel):

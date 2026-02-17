@@ -19,7 +19,8 @@ from opta_lmx.inference.schema import (
     ModelObject,
     ModelsListResponse,
 )
-from opta_lmx.inference.streaming import format_sse_stream
+from opta_lmx.inference.streaming import format_sse_stream, format_sse_tool_stream
+from opta_lmx.inference.tool_parser import wrap_stream_with_tool_parsing
 from opta_lmx.monitoring.metrics import MetricsCollector, RequestMetric
 from opta_lmx.presets.manager import PRESET_PREFIX
 
@@ -109,7 +110,19 @@ async def chat_completions(
             counted_stream = _counting_stream(
                 token_stream, resolved_model, start_time, est_prompt_tokens, metrics,
             )
-            sse_stream = format_sse_stream(counted_stream, request_id, resolved_model)
+
+            if body.tools:
+                # Parse MiniMax XML tool calls from the token stream
+                chunk_stream = wrap_stream_with_tool_parsing(
+                    counted_stream, tools=body.tools,
+                )
+                sse_stream = format_sse_tool_stream(
+                    chunk_stream, request_id, resolved_model,
+                )
+            else:
+                sse_stream = format_sse_stream(
+                    counted_stream, request_id, resolved_model,
+                )
             return StreamingResponse(sse_stream, media_type="text/event-stream")
         except Exception as e:
             logger.error("stream_error", extra={"model": resolved_model, "error": str(e)})

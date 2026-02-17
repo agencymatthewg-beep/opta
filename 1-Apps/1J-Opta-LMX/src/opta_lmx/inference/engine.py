@@ -14,9 +14,12 @@ from opta_lmx.inference.schema import (
     ChatCompletionResponse,
     ChatMessage,
     Choice,
+    FunctionCall,
     ResponseMessage,
+    ToolCall,
     Usage,
 )
+from opta_lmx.inference.tool_parser import TOOL_CALL_OPEN, MiniMaxToolParser
 from opta_lmx.inference.types import LoadedModel, ModelInfo
 from opta_lmx.manager.memory import MemoryMonitor
 from opta_lmx.monitoring.events import EventBus, ServerEvent
@@ -363,6 +366,38 @@ class InferenceEngine:
             logger.error("inference_failed", extra={"model_id": model_id, "error": str(e)})
             raise RuntimeError(f"Inference failed: {e}") from e
 
+        # Parse MiniMax XML tool calls if tools were requested
+        response_message: ResponseMessage
+        finish_reason: str = "stop"
+
+        if tools and TOOL_CALL_OPEN in content:
+            parser = MiniMaxToolParser()
+            parsed = parser.parse_tool_calls(content, tools)
+            if parsed.has_tool_calls and parsed.tool_calls:
+                response_message = ResponseMessage(
+                    role="assistant",
+                    content=parsed.content,
+                    tool_calls=[
+                        ToolCall(
+                            id=tc.id,
+                            type="function",
+                            function=FunctionCall(
+                                name=tc.name, arguments=tc.arguments,
+                            ),
+                        )
+                        for tc in parsed.tool_calls
+                    ],
+                )
+                finish_reason = "tool_calls"
+            else:
+                response_message = ResponseMessage(
+                    role="assistant", content=content,
+                )
+        else:
+            response_message = ResponseMessage(
+                role="assistant", content=content,
+            )
+
         return ChatCompletionResponse(
             id=f"chatcmpl-{secrets.token_urlsafe(16)}",
             created=int(time.time()),
@@ -370,8 +405,8 @@ class InferenceEngine:
             choices=[
                 Choice(
                     index=0,
-                    message=ResponseMessage(role="assistant", content=content),
-                    finish_reason="stop",
+                    message=response_message,
+                    finish_reason=finish_reason,
                 )
             ],
             usage=Usage(
