@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import asyncio
 import contextlib
 import logging
 import time
@@ -92,7 +93,29 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         except Exception as e:
             logger.error("auto_load_failed", extra={"model_id": model_id, "error": str(e)})
 
+    # Start TTL eviction background task if enabled
+    ttl_task: asyncio.Task[None] | None = None
+    if config.memory.ttl_enabled:
+        async def _ttl_loop() -> None:
+            while True:
+                await asyncio.sleep(config.memory.ttl_check_interval_sec)
+                evicted = await engine.evict_idle_models(config.memory.ttl_seconds)
+                if evicted:
+                    logger.info("ttl_eviction_cycle", extra={"evicted": evicted})
+
+        ttl_task = asyncio.create_task(_ttl_loop())
+        logger.info("ttl_enabled", extra={
+            "ttl_seconds": config.memory.ttl_seconds,
+            "check_interval_sec": config.memory.ttl_check_interval_sec,
+        })
+
     yield
+
+    # Cleanup: cancel TTL task
+    if ttl_task is not None:
+        ttl_task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await ttl_task
 
     # Cleanup: cancel active downloads
     await model_manager.cancel_active_downloads()

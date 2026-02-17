@@ -50,6 +50,9 @@ class MemoryConfig(BaseModel):
 
     max_memory_percent: int = Field(90, ge=50, le=99)
     auto_evict_lru: bool = True
+    ttl_enabled: bool = Field(False, description="Auto-unload models after idle timeout")
+    ttl_seconds: int = Field(3600, ge=60, description="Idle timeout before eviction (seconds)")
+    ttl_check_interval_sec: int = Field(60, ge=10, description="How often to check for idle models")
 
 
 class LoggingConfig(BaseModel):

@@ -524,6 +524,42 @@ class InferenceEngine:
         await self.unload_model(model_id)
         return model_id
 
+    async def evict_idle_models(self, ttl_seconds: float) -> list[str]:
+        """Unload models idle longer than ttl_seconds.
+
+        Args:
+            ttl_seconds: Maximum idle time before eviction.
+
+        Returns:
+            List of evicted model IDs.
+        """
+        now = time.time()
+        evicted: list[str] = []
+
+        # Snapshot model IDs to avoid mutating dict during iteration
+        for model_id, loaded in list(self._models.items()):
+            idle_time = now - loaded.last_used_at
+            if idle_time > ttl_seconds:
+                logger.info("ttl_eviction", extra={
+                    "model_id": model_id,
+                    "idle_seconds": round(idle_time, 1),
+                    "ttl_seconds": ttl_seconds,
+                })
+                try:
+                    await self.unload_model(model_id)
+                    evicted.append(model_id)
+                    if self._event_bus:
+                        await self._event_bus.publish(ServerEvent(
+                            event_type="model_ttl_evicted",
+                            data={"model_id": model_id, "idle_seconds": round(idle_time, 1)},
+                        ))
+                except Exception as e:
+                    logger.error("ttl_eviction_failed", extra={
+                        "model_id": model_id, "error": str(e),
+                    })
+
+        return evicted
+
     def get_model(self, model_id: str) -> LoadedModel:
         """Get a loaded model or raise KeyError."""
         if model_id not in self._models:
