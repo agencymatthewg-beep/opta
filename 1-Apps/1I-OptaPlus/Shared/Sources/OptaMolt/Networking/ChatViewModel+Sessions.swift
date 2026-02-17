@@ -20,17 +20,17 @@ extension ChatViewModel {
     public func switchSession(_ session: ChatSession) {
         // Save current session's messages
         if let current = activeSession {
-            sessionMessagesCache[current.id] = messages
-            sessionStreamContentCache[current.id] = streamingContent
+            sessionMessages[current.id] = messages
+            sessionStreamContent[current.id] = streamingContent
         }
 
         activeSession = session
-        UserDefaults.standard.set(session.id, forKey: activeSessionIdKey)
+        UserDefaults.standard.set(session.id, forKey: activeSessionKey)
 
         // Restore cached messages or load fresh
-        if let cached = sessionMessagesCache[session.id] {
+        if let cached = sessionMessages[session.id] {
             messages = cached
-            streamingContent = sessionStreamContentCache[session.id] ?? ""
+            streamingContent = sessionStreamContent[session.id] ?? ""
         } else {
             messages = []
             streamingContent = ""
@@ -38,7 +38,7 @@ extension ChatViewModel {
         }
 
         // Reset bot state for new session view
-        if sessionStreamContentCache[session.id]?.isEmpty ?? true {
+        if sessionStreamContent[session.id]?.isEmpty ?? true {
             botState = .idle
         }
     }
@@ -80,8 +80,8 @@ extension ChatViewModel {
     public func deleteSession(_ session: ChatSession) {
         guard sessions.count > 1 else { return }
         sessions.removeAll { $0.id == session.id }
-        sessionMessagesCache.removeValue(forKey: session.id)
-        sessionStreamContentCache.removeValue(forKey: session.id)
+        sessionMessages.removeValue(forKey: session.id)
+        sessionStreamContent.removeValue(forKey: session.id)
         persistSessions()
 
         // If deleted the active session, switch to first
@@ -118,10 +118,10 @@ extension ChatViewModel {
 
     func persistSessions() {
         if let data = try? JSONEncoder().encode(sessions) {
-            UserDefaults.standard.set(data, forKey: sessionListDefaultsKey)
+            UserDefaults.standard.set(data, forKey: sessionListKey)
         }
         if let activeId = activeSession?.id {
-            UserDefaults.standard.set(activeId, forKey: activeSessionIdKey)
+            UserDefaults.standard.set(activeId, forKey: activeSessionKey)
         }
     }
 }

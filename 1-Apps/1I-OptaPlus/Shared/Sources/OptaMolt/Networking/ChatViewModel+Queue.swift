@@ -41,7 +41,7 @@ extension ChatViewModel {
     }
 
     func flushMessageQueue() {
-        guard let client = activeClient else { return }
+        guard let client = client else { return }
 
         offlineQueue.flush(
             sender: { message in
@@ -69,7 +69,7 @@ extension ChatViewModel {
                     self.messages[idx].status = status
                 }
                 if let session = self.activeSession {
-                    self.sessionMessagesCache[session.id] = self.messages
+                    self.sessionMessages[session.id] = self.messages
                 }
             }
         )

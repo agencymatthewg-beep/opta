@@ -50,13 +50,86 @@ extension ChatViewModel {
 
         switch stateStr {
         case "delta":
-            handleChatDelta(dict)
+            // Track time to first streaming byte
+            if botState != .typing, let sendTime = lastSendTime {
+                messageStats.recordResponseTime(Date().timeIntervalSince(sendTime))
+                lastSendTime = nil
+                persistStats()
+            }
+            botState = .typing
+
+            // Extract accumulated message text
+            // The "message" field is an object with {role, content, timestamp}
+            // Content can be a string or array of blocks [{type:"text", text:"..."}]
+            if let message = dict["message"] {
+                let text: String
+                if let msgDict = message as? [String: Any], let content = msgDict["content"] {
+                    text = extractMessageText(content)
+                } else {
+                    text = extractMessageText(message)
+                }
+                Self.logger.debug("Delta: \(text.count) chars (was \(self.streamingContent.count))")
+                if text.count >= streamingContent.count {
+                    streamingContent = text
+                }
+            } else {
+                Self.logger.debug("Delta: no 'message' key in payload. Keys: \(dict.keys.sorted())")
+            }
+
+            // Track run ID
+            if let runId = dict["runId"] as? String {
+                activeRunId = runId
+            }
 
         case "final":
-            handleChatFinal(dict)
+            // Finalize the streaming message
+            let finalText: String
+            if let message = dict["message"] {
+                if let msgDict = message as? [String: Any], let content = msgDict["content"] {
+                    finalText = extractMessageText(content)
+                } else {
+                    finalText = extractMessageText(message)
+                }
+            } else {
+                finalText = streamingContent
+            }
+
+            Self.logger.info("Final: \(finalText.count) chars, appending bot message")
+
+            if !finalText.isEmpty {
+                let botMessage = ChatMessage(
+                    content: finalText,
+                    sender: .bot(name: botConfig.name),
+                    status: .delivered
+                )
+                messages.append(botMessage)
+                messageStats.recordReceived(at: botMessage.timestamp)
+                if let sendTime = lastSendTime {
+                    messageStats.recordResponseTime(Date().timeIntervalSince(sendTime))
+                    lastSendTime = nil
+                }
+                persistStats()
+                schedulePersist()
+                if let session = activeSession {
+                    sessionMessages[session.id] = messages
+                }
+            }
+
+            resetStreamState()
 
         case "aborted":
-            handleChatAborted()
+            if !streamingContent.isEmpty {
+                let partialMessage = ChatMessage(
+                    content: streamingContent + "\n\n_(aborted)_",
+                    sender: .bot(name: botConfig.name),
+                    status: .delivered
+                )
+                messages.append(partialMessage)
+                if let session = activeSession {
+                    sessionMessages[session.id] = messages
+                }
+            }
+            resetStreamState()
 
         case "error":
             let errorMsg = dict["errorMessage"] as? String ?? "Chat error"
@@ -66,91 +139,6 @@ extension ChatViewModel {
         default:
             break
         }
-    }
-
-    // MARK: - Chat Event Sub-Handlers
-
-    private func handleChatDelta(_ dict: [String: Any]) {
-        // Track time to first streaming byte
-        if botState != .typing, let sendTime = lastSendTimestamp {
-            recordResponseTime(Date().timeIntervalSince(sendTime))
-            clearLastSendTime()
-        }
-        botState = .typing
-
-        // Extract accumulated message text
-        // The "message" field is an object with {role, content, timestamp}
-        // Content can be a string or array of blocks [{type:"text", text:"..."}]
-        if let message = dict["message"] {
-            let text: String
-            if let msgDict = message as? [String: Any], let content = msgDict["content"] {
-                text = extractMessageText(content)
-            } else {
-                text = extractMessageText(message)
-            }
-            Self.logger.debug("Delta: \(text.count) chars (was \(self.streamingContent.count))")
-            if text.count >= streamingContent.count {
-                streamingContent = text
-            }
-        } else {
-            Self.logger.debug("Delta: no 'message' key in payload. Keys: \(dict.keys.sorted())")
-        }
-
-        // Track run ID
-        if let runId = dict["runId"] as? String {
-            activeRunId = runId
-        }
-    }
-
-    private func handleChatFinal(_ dict: [String: Any]) {
-        // Finalize the streaming message
-        let finalText: String
-        if let message = dict["message"] {
-            if let msgDict = message as? [String: Any], let content = msgDict["content"] {
-                finalText = extractMessageText(content)
-            } else {
-                finalText = extractMessageText(message)
-            }
-        } else {
-            finalText = streamingContent
-        }
-
-        Self.logger.info("Final: \(finalText.count) chars, appending bot message")
-
-        if !finalText.isEmpty {
-            let botMessage = ChatMessage(
-                content: finalText,
-                sender: .bot(name: botConfig.name),
-                status: .delivered
-            )
-            messages.append(botMessage)
-            recordReceivedMessage(at: botMessage.timestamp)
-            if let sendTime = lastSendTimestamp {
-                recordResponseTime(Date().timeIntervalSince(sendTime))
-                clearLastSendTime()
-            }
-            schedulePersist()
-            if let session = activeSession {
-                sessionMessagesCache[session.id] = messages
-            }
-        }
-
-        resetStreamState()
-    }
-
-    private func handleChatAborted() {
-        if !streamingContent.isEmpty {
-            let partialMessage = ChatMessage(
-                content: streamingContent + "\n\n_(aborted)_",
-                sender: .bot(name: botConfig.name),
-                status: .delivered
-            )
-            messages.append(partialMessage)
-            if let session = activeSession {
-                sessionMessagesCache[session.id] = messages
-            }
-        }
-        resetStreamState()
     }
 
     func handleAgentEvent(_ payload: AnyCodable?) {
@@ -199,7 +187,7 @@ extension ChatViewModel {
                     botState = .thinking
                     activeRunId = dict["runId"] as? String
                 case "end":
-                    // Don't reset to idle here — wait for chat final event
+                    // Don't reset to idle here - wait for chat final event
                     break
                 default:
                     break
