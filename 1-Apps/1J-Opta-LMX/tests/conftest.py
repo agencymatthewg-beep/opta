@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from pathlib import Path
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -41,7 +41,7 @@ def mock_engine() -> InferenceEngine:
     # Patch _create_engine to avoid importing vllm-mlx
     async def mock_create(model_id: str, use_batching: bool) -> MagicMock:
         mock = MagicMock()
-        mock.chat = MagicMock(return_value="Hello! I'm a test response.")
+        mock.chat = AsyncMock(return_value="Hello! I'm a test response.")
         return mock
 
     engine._create_engine = mock_create  # type: ignore[assignment]

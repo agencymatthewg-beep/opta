@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -27,7 +27,7 @@ def ws_app(tmp_path):
 
     async def mock_create(model_id: str, use_batching: bool) -> MagicMock:
         mock = MagicMock()
-        mock.chat = MagicMock(return_value="Hello from WebSocket test!")
+        mock.chat = AsyncMock(return_value="Hello from WebSocket test!")
         return mock
 
     engine._create_engine = mock_create  # type: ignore[assignment]
@@ -90,11 +90,13 @@ async def test_ws_chat_request_streaming(ws_app) -> None:
     # Override mock engine to stream tokens
     async def mock_create(model_id: str, use_batching: bool) -> MagicMock:
         mock = MagicMock()
+        mock.chat = AsyncMock(return_value="Hello World")
 
-        def stream_chat(**kwargs):
-            return iter(["Hello", " World"])
+        async def mock_stream_chat(**kwargs):
+            for token in ["Hello", " World"]:
+                yield token
 
-        mock.chat = stream_chat
+        mock.stream_chat = mock_stream_chat
         return mock
 
     engine._create_engine = mock_create  # type: ignore[assignment]
