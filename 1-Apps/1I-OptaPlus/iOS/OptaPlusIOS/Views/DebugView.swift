@@ -64,6 +64,7 @@ struct DebugView: View {
                         Image(systemName: "arrow.clockwise")
                     }
                     .accessibilityLabel("Refresh diagnostics")
+                    .accessibilityHint("Reloads health, sessions, and node data from the gateway")
                 }
             }
             .refreshable {
@@ -109,6 +110,7 @@ struct DebugView: View {
                     }
                     .foregroundColor(isSelected ? .optaPrimary : .optaTextSecondary)
                     .accessibilityLabel("\(bot.name), \(isSelected ? "selected" : "not selected")")
+                    .accessibilityHint("Double-tap to view diagnostics for \(bot.name)")
                 }
             }
         }

@@ -50,6 +50,9 @@ struct SettingsView: View {
                             }
                         }
                         .listRowBackground(Color.optaSurface)
+                        .accessibilityLabel("\(bot.emoji) \(bot.name)")
+                        .accessibilityValue("\(bot.host):\(bot.port)")
+                        .accessibilityHint("Double-tap to edit bot settings")
                     }
                     .onDelete { indexSet in
                         for idx in indexSet {
@@ -64,6 +67,8 @@ struct SettingsView: View {
                             .foregroundColor(.optaPrimary)
                     }
                     .listRowBackground(Color.optaSurface)
+                    .accessibilityLabel("Add bot")
+                    .accessibilityHint("Opens a form to add a new bot connection")
                 } header: {
                     Label("Bots", systemImage: "cpu")
                         .foregroundColor(.optaTextSecondary)
@@ -96,6 +101,8 @@ struct SettingsView: View {
                                                 .stroke(deviceEmoji == e ? Color.optaPrimary : Color.clear, lineWidth: 2)
                                         )
                                 }
+                                .accessibilityLabel("Device emoji \(e)")
+                                .accessibilityValue(deviceEmoji == e ? "Selected" : "Not selected")
                             }
                         }
                     }
@@ -156,6 +163,8 @@ struct SettingsView: View {
                         Slider(value: $fontScaleIndex, in: 0...3, step: 1) {
                             Text("Font Size")
                         }
+                        .accessibilityLabel("Font size")
+                        .accessibilityValue(themeManager.fontScale.label)
                         .onChange(of: fontScaleIndex) { _, newVal in
                             themeManager.fontScale = FontScale(index: newVal)
                         }
@@ -195,6 +204,9 @@ struct SettingsView: View {
                     }
                     .tint(.optaPrimary)
                     .listRowBackground(Color.optaSurface)
+                    .accessibilityLabel("Sounds")
+                    .accessibilityValue(soundsEnabled ? "On" : "Off")
+                    .accessibilityHint("Double-tap to toggle interface sounds")
                 } header: {
                     Label("Appearance", systemImage: "sparkles")
                         .foregroundColor(.optaTextSecondary)
@@ -208,6 +220,9 @@ struct SettingsView: View {
                     }
                     .tint(.optaPrimary)
                     .listRowBackground(Color.optaSurface)
+                    .accessibilityLabel("Notifications")
+                    .accessibilityValue(notificationsEnabled ? "On" : "Off")
+                    .accessibilityHint("Double-tap to toggle push notifications")
                 } header: {
                     Label("Notifications", systemImage: "bell")
                         .foregroundColor(.optaTextSecondary)
@@ -221,6 +236,9 @@ struct SettingsView: View {
                     }
                     .tint(.optaPrimary)
                     .listRowBackground(Color.optaSurface)
+                    .accessibilityLabel("Biometric Lock")
+                    .accessibilityValue(biometricLock ? "On" : "Off")
+                    .accessibilityHint("Double-tap to toggle Face ID or Touch ID lock")
 
                     Toggle(isOn: $privacyMode) {
                         Label("Privacy Mode", systemImage: "eye.slash")
@@ -228,6 +246,9 @@ struct SettingsView: View {
                     }
                     .tint(.optaPrimary)
                     .listRowBackground(Color.optaSurface)
+                    .accessibilityLabel("Privacy Mode")
+                    .accessibilityValue(privacyMode ? "On" : "Off")
+                    .accessibilityHint("Double-tap to toggle message content hiding")
                 } header: {
                     Label("Privacy & Security", systemImage: "lock.shield")
                         .foregroundColor(.optaTextSecondary)
@@ -252,6 +273,8 @@ struct SettingsView: View {
                         }
                     }
                     .listRowBackground(Color.optaSurface)
+                    .accessibilityLabel("Gateway Diagnostics")
+                    .accessibilityHint("View health, connectivity, sessions, and node information")
 
                     NavigationLink {
                         AboutView()
@@ -260,6 +283,8 @@ struct SettingsView: View {
                             .foregroundColor(.optaPrimary)
                     }
                     .listRowBackground(Color.optaSurface)
+                    .accessibilityLabel("About OptaPlus")
+                    .accessibilityHint("View app information, links, and statistics")
 
                     HStack {
                         Label("Version", systemImage: "info.circle")
@@ -323,6 +348,8 @@ struct SettingsView: View {
             .fill(vm.connectionState == .connected ? Color.optaGreen :
                   vm.connectionState == .disconnected ? Color.optaTextMuted : Color.optaAmber)
             .frame(width: 8, height: 8)
+            .accessibilityLabel("Connection status")
+            .accessibilityValue(vm.connectionState == .connected ? "Connected" : vm.connectionState == .disconnected ? "Disconnected" : "Connecting")
     }
 }
 
@@ -385,6 +412,8 @@ struct BotEditSheet: View {
                                                 .stroke(emoji == e ? Color.optaPrimary : Color.clear, lineWidth: 2)
                                         )
                                 }
+                                .accessibilityLabel("Bot emoji \(e)")
+                                .accessibilityValue(emoji == e ? "Selected" : "Not selected")
                             }
                         }
                     }
@@ -450,6 +479,8 @@ struct BotEditSheet: View {
                         }
                     }
                     .disabled(!canSave)
+                    .accessibilityLabel("Test connection")
+                    .accessibilityHint("Tests connectivity to the bot gateway")
 
                     if case .failure(let msg) = testResult {
                         Text(msg)

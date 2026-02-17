@@ -61,6 +61,7 @@ private struct TimestampSeparator: View {
             .foregroundColor(.optaTextMuted)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 6)
+            .accessibilityLabel("Timestamp: \(groupTimestamp(date))")
     }
 }
 
@@ -78,6 +79,7 @@ private struct DateSeparatorPill: View {
             .background(Capsule().fill(Color.optaSurface))
             .frame(maxWidth: .infinity)
             .padding(.vertical, 8)
+            .accessibilityLabel("Date: \(text)")
     }
 }
 
@@ -107,6 +109,7 @@ private struct TypingIndicator: View {
         .onReceive(timer) { _ in
             phase = (phase + 1) % 4
         }
+        .accessibilityLabel("Bot is typing")
     }
 }
 
@@ -197,7 +200,14 @@ struct ChatView: View {
             }
             .animation(.spring(response: 0.3, dampingFraction: 0.8), value: mentionAutocomplete.isActive)
 
-            // Connection toast
+            // Offline banner (shown when not connected and not showing success toast)
+            if !showConnectionToast && viewModel.connectionState != .connected {
+                offlineBanner
+                    .padding(.top, 4)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            }
+
+            // Connection success toast
             if showConnectionToast {
                 Text(connectionToastMessage)
                     .font(.caption.weight(.medium))
@@ -207,6 +217,7 @@ struct ChatView: View {
                     .background(Capsule().fill(Color.optaGreen.opacity(0.9)))
                     .padding(.top, 8)
                     .transition(.move(edge: .top).combined(with: .opacity))
+                    .accessibilityLabel(connectionToastMessage)
             }
 
             if viewModel.botState == .thinking || !viewModel.agentEvents.isEmpty {
@@ -215,7 +226,7 @@ struct ChatView: View {
                     events: viewModel.agentEvents,
                     isExpanded: $showThinkingExpanded
                 )
-                .padding(.top, showConnectionToast ? 40 : 0)
+                .padding(.top, showConnectionToast || viewModel.connectionState != .connected ? 56 : 0)
             }
         }
         .navigationTitle(botConfig.name)
@@ -229,6 +240,8 @@ struct ChatView: View {
                         .foregroundColor(.optaTextPrimary)
                     connectionBadge
                 }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("\(botConfig.name), \(viewModel.connectionState == .connected ? "connected" : viewModel.connectionState == .disconnected ? "disconnected" : "connecting")")
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Menu {
@@ -248,6 +261,7 @@ struct ChatView: View {
                     Image(systemName: "square.and.arrow.up")
                 }
                 .accessibilityLabel("Export chat")
+                .accessibilityHint("Export chat history in various formats")
                 .disabled(viewModel.messages.isEmpty)
             }
             ToolbarItem(placement: .navigationBarTrailing) {
@@ -266,6 +280,7 @@ struct ChatView: View {
                     Image(systemName: "ellipsis.circle")
                 }
                 .accessibilityLabel("More options")
+                .accessibilityHint("View pinned messages and bookmarks")
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button {
@@ -274,6 +289,7 @@ struct ChatView: View {
                     channelIndicator
                 }
                 .accessibilityLabel("Switch channel")
+                .accessibilityHint("Opens channel and session switcher")
             }
         }
         .onAppear {
@@ -417,6 +433,10 @@ struct ChatView: View {
                                 onReact: { action, messageId in
                                     HapticManager.shared.impact(.medium)
                                     Task { await viewModel.sendReaction(action, for: messageId) }
+                                },
+                                onRetry: { failedMsg in
+                                    HapticManager.shared.impact(.light)
+                                    Task { await viewModel.retrySend(failedMsg) }
                                 }
                             )
                             .searchMatchGlow(isMatch: isSearchMatch, isCurrent: isCurrentMatch)
@@ -553,6 +573,8 @@ struct ChatView: View {
             )
             Spacer(minLength: 60)
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Bot is responding: \(viewModel.streamingContent)")
     }
 
     private var emptyChat: some View {
@@ -564,6 +586,8 @@ struct ChatView: View {
                 .foregroundColor(.optaTextSecondary)
         }
         .padding(.top, 60)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("No messages yet. Start a conversation with \(botConfig.name)")
     }
 
     private var disconnectedState: some View {
@@ -588,8 +612,83 @@ struct ChatView: View {
                     )
             }
             .accessibilityLabel("Reconnect to \(botConfig.name)")
+            .accessibilityHint("Attempts to establish a WebSocket connection")
         }
         .padding(.top, 60)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Disconnected from \(botConfig.name)")
+    }
+
+    // MARK: - Offline Banner
+
+    private var offlineBanner: some View {
+        HStack(spacing: 8) {
+            Image(systemName: viewModel.connectionState == .reconnecting ? "arrow.triangle.2.circlepath" : "wifi.slash")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(.white)
+                .rotationEffect(viewModel.connectionState == .reconnecting ? .degrees(360) : .degrees(0))
+                .animation(.optaSpin, value: viewModel.connectionState == .reconnecting)
+
+            VStack(alignment: .leading, spacing: 1) {
+                if viewModel.connectionState == .reconnecting {
+                    if let countdown = viewModel.reconnectCountdown {
+                        Text("Reconnecting in \(countdown)s...")
+                            .font(.caption.weight(.medium))
+                            .foregroundColor(.white)
+                    } else {
+                        Text("Reconnecting...")
+                            .font(.caption.weight(.medium))
+                            .foregroundColor(.white)
+                    }
+                } else {
+                    Text("Offline")
+                        .font(.caption.weight(.medium))
+                        .foregroundColor(.white)
+                }
+
+                if viewModel.queuedMessageCount > 0 {
+                    Text("\(viewModel.queuedMessageCount) message\(viewModel.queuedMessageCount == 1 ? "" : "s") queued")
+                        .font(.caption2)
+                        .foregroundColor(.white.opacity(0.8))
+                } else {
+                    Text("Messages will be sent when connected")
+                        .font(.caption2)
+                        .foregroundColor(.white.opacity(0.8))
+                }
+            }
+
+            Spacer()
+
+            Button {
+                HapticManager.shared.impact(.medium)
+                viewModel.reconnect()
+            } label: {
+                Text("Reconnect")
+                    .font(.caption.weight(.semibold))
+                    .foregroundColor(.optaAmber)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(
+                        Capsule()
+                            .fill(Color.white.opacity(0.15))
+                    )
+            }
+            .accessibilityLabel("Reconnect now")
+            .accessibilityHint("Immediately attempts to reconnect to \(botConfig.name)")
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.optaAmber.opacity(0.85))
+        )
+        .padding(.horizontal, 12)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(
+            viewModel.connectionState == .reconnecting
+                ? "Reconnecting to \(botConfig.name). \(viewModel.queuedMessageCount) messages queued."
+                : "Offline. \(viewModel.queuedMessageCount) messages queued."
+        )
     }
 
     // MARK: - Toolbar
@@ -607,6 +706,9 @@ struct ChatView: View {
                     .foregroundColor(viewModel.connectionRoute == .remote ? .optaAmber : .optaGreen)
             }
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Connection status")
+        .accessibilityValue(viewModel.connectionState == .connected ? "Connected via \(viewModel.connectionRoute == .remote ? "remote" : "LAN")" : viewModel.connectionState == .disconnected ? "Disconnected" : "Connecting")
     }
 
     private var channelIndicator: some View {
@@ -619,6 +721,8 @@ struct ChatView: View {
                 .font(.system(size: 13))
                 .foregroundColor(activeChannelColor)
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Channel: \(viewModel.activeSession?.channelType?.label ?? viewModel.activeSession?.mode.label ?? "Default")")
     }
 
     private var activeChannelColor: Color {

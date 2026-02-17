@@ -360,7 +360,7 @@ struct WaveformDots: View {
             }
         }
         .onAppear {
-            withAnimation(.linear(duration: 1.2).repeatForever(autoreverses: false)) {
+            withAnimation(.spring(response: 1.2, dampingFraction: 1.0).repeatForever(autoreverses: false)) {
                 phase = 2 * .pi
             }
         }

@@ -295,7 +295,7 @@ private struct SelfDeviceNode: View {
                 .foregroundColor(.optaPrimary)
         }
         .onAppear {
-            withAnimation(.linear(duration: 2).repeatForever(autoreverses: false)) {
+            withAnimation(.spring(response: 2, dampingFraction: 1.0).repeatForever(autoreverses: false)) {
                 isPulsing = true
             }
         }
@@ -517,7 +517,7 @@ private struct ThinkingArc: View {
             )
             .rotationEffect(.degrees(rotation))
             .onAppear {
-                withAnimation(.linear(duration: 1.2).repeatForever(autoreverses: false)) {
+                withAnimation(.spring(response: 1.2, dampingFraction: 1.0).repeatForever(autoreverses: false)) {
                     rotation = 360
                 }
             }

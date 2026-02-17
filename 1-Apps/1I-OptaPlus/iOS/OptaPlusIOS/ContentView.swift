@@ -28,6 +28,8 @@ struct ContentView: View {
                         Label("Map", systemImage: selectedTab == .map ? "circle.hexagongrid.fill" : "circle.hexagongrid")
                     }
                     .tag(Tab.map)
+                    .accessibilityLabel("Bot Map")
+                    .accessibilityHint("View paired bots in constellation layout")
 
                 ChatPagerTab()
                     .environmentObject(appState)
@@ -35,6 +37,8 @@ struct ContentView: View {
                         Label("Chat", systemImage: selectedTab == .chat ? "bubble.left.and.bubble.right.fill" : "bubble.left.and.bubble.right")
                     }
                     .tag(Tab.chat)
+                    .accessibilityLabel("Chat")
+                    .accessibilityHint("Chat with your bots")
 
                 AutomationsPagerTab()
                     .environmentObject(appState)
@@ -42,6 +46,8 @@ struct ContentView: View {
                         Label("Automations", systemImage: selectedTab == .automations ? "bolt.circle.fill" : "bolt.circle")
                     }
                     .tag(Tab.automations)
+                    .accessibilityLabel("Automations")
+                    .accessibilityHint("Manage cron jobs and scheduled tasks")
 
                 SettingsView(isModal: false)
                     .environmentObject(appState)
@@ -49,6 +55,8 @@ struct ContentView: View {
                         Label("Settings", systemImage: selectedTab == .settings ? "gearshape.fill" : "gearshape")
                     }
                     .tag(Tab.settings)
+                    .accessibilityLabel("Settings")
+                    .accessibilityHint("Configure bots, appearance, and preferences")
             }
             .tint(.optaPrimary)
             .onChange(of: selectedTab) { _, _ in
@@ -86,6 +94,7 @@ struct ChatPagerTab: View {
                                 .foregroundColor(.optaTextSecondary)
                         }
                         .accessibilityLabel("Chat history")
+                        .accessibilityHint("View past chat sessions")
                         Button {
                             showBotConfig = true
                         } label: {
@@ -93,6 +102,7 @@ struct ChatPagerTab: View {
                                 .foregroundColor(.optaTextSecondary)
                         }
                         .accessibilityLabel("Bot configuration")
+                        .accessibilityHint("Manage model, thinking level, and gateway settings")
                     }
                 }
             }
@@ -135,6 +145,7 @@ struct AutomationsPagerTab: View {
                             .foregroundColor(.optaPrimary)
                     }
                     .accessibilityLabel("Create automation")
+                    .accessibilityHint("Opens a form to create a new cron job")
                 }
             }
             .sheet(isPresented: $showCreateSheet) {

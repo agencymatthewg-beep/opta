@@ -121,6 +121,8 @@ struct OnboardingView: View {
                     currentPage = 1
                 }
             }
+            .accessibilityLabel("Get Started")
+            .accessibilityHint("Proceeds to bot discovery")
         }
         .padding(32)
     }
@@ -168,6 +170,8 @@ struct OnboardingView: View {
                             currentPage = 2
                         }
                     }
+                    .accessibilityLabel("Continue")
+                    .accessibilityHint("Proceeds with discovered bots")
                 } else {
                     // Rescan button
                     Button {
@@ -187,12 +191,16 @@ struct OnboardingView: View {
                         )
                     }
                     .disabled(scanner.isScanning)
+                    .accessibilityLabel("Scan again")
+                    .accessibilityHint("Scans the local network for bots")
 
                     primaryButton("Continue Without Pairing") {
                         withAnimation(.optaSpring) {
                             currentPage = 2
                         }
                     }
+                    .accessibilityLabel("Continue without pairing")
+                    .accessibilityHint("Skips bot discovery and proceeds to completion")
                 }
             }
             .padding(.horizontal, 32)
@@ -247,11 +255,15 @@ struct OnboardingView: View {
                     actionPill(icon: "qrcode.viewfinder", label: "QR Code") {
                         showQRScanner = true
                     }
+                    .accessibilityLabel("Scan QR code")
+                    .accessibilityHint("Opens camera to scan a bot pairing QR code")
                 }
 
                 actionPill(icon: "keyboard", label: "Manual") {
                     showManualEntry = true
                 }
+                .accessibilityLabel("Manual entry")
+                .accessibilityHint("Opens a form to manually enter bot connection details")
             }
             .padding(.top, 4)
         }
@@ -329,6 +341,8 @@ struct OnboardingView: View {
             primaryButton("Launch OptaPlus") {
                 onboardingDone = true
             }
+            .accessibilityLabel("Launch OptaPlus")
+            .accessibilityHint("Completes onboarding and opens the app")
 
             if botNodes.isEmpty {
                 Button("Skip for now") {
@@ -337,6 +351,8 @@ struct OnboardingView: View {
                 .font(.soraCaption)
                 .foregroundColor(.optaTextMuted)
                 .padding(.bottom, 8)
+                .accessibilityLabel("Skip for now")
+                .accessibilityHint("Skips onboarding and opens the app without paired bots")
             }
         }
         .padding(32)
@@ -462,12 +478,16 @@ struct OnboardingView: View {
                     }
                     .disabled(!canAddManualBot)
                     .opacity(canAddManualBot ? 1 : 0.5)
+                    .accessibilityLabel("Add bot")
+                    .accessibilityHint("Saves the bot connection and returns to discovery")
 
                     Button("Cancel") {
                         showManualEntry = false
                     }
                     .font(.soraCaption)
                     .foregroundColor(.optaTextMuted)
+                    .accessibilityLabel("Cancel")
+                    .accessibilityHint("Closes the manual entry form")
                 }
                 .padding(24)
             }

@@ -42,6 +42,18 @@ struct SessionDrawerView: View {
             // Session list
             ScrollView {
                 LazyVStack(spacing: 2) {
+                    if viewModel.sessions.isEmpty {
+                        VStack(spacing: 10) {
+                            Image(systemName: "bubble.left.and.bubble.right")
+                                .font(.system(size: 20))
+                                .foregroundColor(.optaTextMuted.opacity(0.4))
+                            Text("No sessions yet")
+                                .font(.sora(12))
+                                .foregroundColor(.optaTextMuted)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 24)
+                    }
                     // Pinned sessions first
                     ForEach(viewModel.sessions.filter(\.isPinned)) { session in
                         SessionRow(

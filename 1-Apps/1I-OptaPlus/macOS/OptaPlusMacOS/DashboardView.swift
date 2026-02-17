@@ -50,16 +50,49 @@ struct DashboardView: View {
                     .padding(.horizontal)
 
                     // Bot Grid
-                    LazyVGrid(columns: columns, spacing: 16) {
-                        ForEach(appState.bots) { bot in
-                            let vm = appState.viewModel(for: bot)
-                            BotCardView(bot: bot, viewModel: vm)
-                                .onTapGesture {
-                                    windowState.selectBot(bot, in: appState)
+                    if appState.bots.isEmpty {
+                        VStack(spacing: 16) {
+                            Image(systemName: "cpu")
+                                .font(.system(size: 40))
+                                .foregroundColor(.optaTextMuted.opacity(0.4))
+
+                            Text("No bots configured")
+                                .font(.sora(16, weight: .medium))
+                                .foregroundColor(.optaTextSecondary)
+
+                            Text("Add a bot in Settings to start monitoring")
+                                .font(.sora(13))
+                                .foregroundColor(.optaTextMuted)
+
+                            Button(action: { appState.showingSettings = true }) {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "plus.circle")
+                                        .font(.system(size: 13))
+                                    Text("Open Settings")
+                                        .font(.sora(13, weight: .medium))
                                 }
+                                .foregroundColor(.optaPrimary)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
+                                .background(Capsule().fill(Color.optaPrimary.opacity(0.12)))
+                                .overlay(Capsule().stroke(Color.optaPrimary.opacity(0.3), lineWidth: 0.5))
+                            }
+                            .buttonStyle(.plain)
                         }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 60)
+                    } else {
+                        LazyVGrid(columns: columns, spacing: 16) {
+                            ForEach(appState.bots) { bot in
+                                let vm = appState.viewModel(for: bot)
+                                BotCardView(bot: bot, viewModel: vm)
+                                    .onTapGesture {
+                                        windowState.selectBot(bot, in: appState)
+                                    }
+                            }
+                        }
+                        .padding(.horizontal)
                     }
-                    .padding(.horizontal)
 
                     // Activity Feed
                     if !activityFeed.events.isEmpty {
@@ -109,6 +142,7 @@ struct BotCardView: View {
     let bot: BotConfig
     @ObservedObject var viewModel: ChatViewModel
     @State private var pulse = false
+    @State private var isHovered = false
 
     private var accentColor: Color {
         botAccentColor(for: bot)
@@ -177,13 +211,19 @@ struct BotCardView: View {
         .background(
             RoundedRectangle(cornerRadius: 16)
                 .fill(Color.optaElevated)
-                .shadow(color: accentColor.opacity(isConnected ? 0.3 : 0.08), radius: isConnected ? 12 : 4)
+                .shadow(color: accentColor.opacity(isHovered ? 0.4 : (isConnected ? 0.3 : 0.08)),
+                        radius: isHovered ? 16 : (isConnected ? 12 : 4),
+                        y: isHovered ? 4 : 0)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 16)
-                .stroke(accentColor.opacity(isConnected ? 0.3 : 0.1), lineWidth: 1)
+                .stroke(accentColor.opacity(isHovered ? 0.5 : (isConnected ? 0.3 : 0.1)), lineWidth: isHovered ? 1.5 : 1)
         )
+        .scaleEffect(isHovered ? 1.02 : 1)
+        .animation(.optaSnap, value: isHovered)
+        .onHover { isHovered = $0 }
         .onAppear { pulse = true }
+        .accessibilityLabel("\(bot.name), \(connectionLabel), health \(viewModel.health.score)")
     }
 
     private var connectionLabel: String {
@@ -218,6 +258,7 @@ struct StatPill: View {
 
 struct ActivityEventRow: View {
     let event: ActivityEvent
+    @State private var isHovered = false
 
     var body: some View {
         HStack(spacing: 10) {
@@ -242,5 +283,11 @@ struct ActivityEventRow: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 6)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(isHovered ? Color.optaSurface.opacity(0.4) : Color.clear)
+        )
+        .animation(.optaSnap, value: isHovered)
+        .onHover { isHovered = $0 }
     }
 }

@@ -20,6 +20,7 @@ struct BotAutomationsPage: View {
     @State private var isLoading = false
     @State private var selectedJob: CronJobItem?
     @State private var runningJobIds: Set<String> = []
+    @State private var failedJobIds: Set<String> = []
     @State private var errorMessage: String?
     @State private var listVisible = false
     @State private var showCreateSheet = false
@@ -121,6 +122,7 @@ struct BotAutomationsPage: View {
                     JobRow(
                         job: job,
                         isRunning: runningJobIds.contains(job.id),
+                        isFailed: failedJobIds.contains(job.id),
                         onTap: { selectedJob = job },
                         onToggle: { toggleJob(job) },
                         onRun: { runJob(job) }
@@ -158,9 +160,25 @@ struct BotAutomationsPage: View {
 
             if let error = errorMessage {
                 Section {
-                    Text(error)
-                        .font(.soraCaption)
-                        .foregroundColor(.optaRed)
+                    HStack {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.caption)
+                            .foregroundColor(.optaRed)
+                        Text(error)
+                            .font(.soraCaption)
+                            .foregroundColor(.optaRed)
+                        Spacer()
+                        Button {
+                            withAnimation(.optaSnap) {
+                                errorMessage = nil
+                            }
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.caption)
+                                .foregroundColor(.optaTextMuted)
+                        }
+                        .accessibilityLabel("Dismiss error")
+                    }
                 }
             }
         }
@@ -193,6 +211,8 @@ struct BotAutomationsPage: View {
                             .padding(.vertical, 10)
                             .background(Capsule().stroke(Color.optaPrimary, lineWidth: 1.5))
                     }
+                    .accessibilityLabel("Connect to \(bot.name)")
+                    .accessibilityHint("Establishes a WebSocket connection to load automations")
                 } else {
                     Button {
                         showCreateSheet = true
@@ -204,6 +224,8 @@ struct BotAutomationsPage: View {
                             .padding(.vertical, 10)
                             .background(Capsule().stroke(Color.optaPrimary, lineWidth: 1.5))
                     }
+                    .accessibilityLabel("Create job")
+                    .accessibilityHint("Opens a form to create a new automation")
                 }
 
                 Button {
@@ -216,6 +238,8 @@ struct BotAutomationsPage: View {
                         .padding(.vertical, 10)
                         .background(Capsule().stroke(Color.optaBorder, lineWidth: 1))
                 }
+                .accessibilityLabel("Refresh automations")
+                .accessibilityHint("Reloads the job list from the gateway")
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -312,12 +336,15 @@ struct BotAutomationsPage: View {
 
     private func runJob(_ job: CronJobItem) {
         runningJobIds.insert(job.id)
+        failedJobIds.remove(job.id)
         Task {
             do {
                 _ = try await viewModel.call("cron.run", params: ["jobId": job.id])
                 HapticManager.shared.notification(.success)
+                failedJobIds.remove(job.id)
             } catch {
                 errorMessage = "Run failed: \(error.localizedDescription)"
+                failedJobIds.insert(job.id)
                 HapticManager.shared.notification(.error)
             }
             runningJobIds.remove(job.id)
@@ -403,6 +430,7 @@ extension String {
 struct JobRow: View {
     let job: CronJobItem
     let isRunning: Bool
+    var isFailed: Bool = false
     let onTap: () -> Void
     let onToggle: () -> Void
     let onRun: () -> Void
@@ -442,6 +470,37 @@ struct JobRow: View {
                         Text("· \(model)")
                             .font(.sora(11, weight: .regular))
                             .foregroundColor(.optaTextMuted)
+                    }
+                }
+
+                // Failed job indicator with "Run Again" button
+                if isFailed {
+                    HStack(spacing: 6) {
+                        Image(systemName: "exclamationmark.circle.fill")
+                            .font(.sora(11, weight: .regular))
+                            .foregroundColor(.optaRed)
+                        Text("Last run failed")
+                            .font(.sora(11, weight: .regular))
+                            .foregroundColor(.optaRed)
+                        Spacer()
+                        Button {
+                            HapticManager.shared.impact(.light)
+                            onRun()
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "arrow.clockwise")
+                                    .font(.sora(10, weight: .medium))
+                                Text("Run Again")
+                                    .font(.sora(11, weight: .medium))
+                            }
+                            .foregroundColor(.optaAmber)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 4)
+                            .background(Capsule().fill(Color.optaAmber.opacity(0.15)))
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Run \(job.displayName) again")
+                        .accessibilityHint("Retries the failed automation")
                     }
                 }
 
@@ -535,6 +594,8 @@ struct JobDetailSheet: View {
                         )
                         .foregroundColor(job.enabled ? .optaAmber : .optaGreen)
                     }
+                    .accessibilityLabel(job.enabled ? "Disable \(job.displayName)" : "Enable \(job.displayName)")
+                    .accessibilityHint(job.enabled ? "Pauses this automation" : "Resumes this automation")
 
                     if job.enabled {
                         Button(action: {
@@ -544,6 +605,8 @@ struct JobDetailSheet: View {
                             Label("Run Now", systemImage: "bolt.fill")
                                 .foregroundColor(.optaPrimary)
                         }
+                        .accessibilityLabel("Run \(job.displayName) now")
+                        .accessibilityHint("Executes this automation immediately")
                     }
 
                     if let onEdit = onEdit {

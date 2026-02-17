@@ -435,6 +435,23 @@ struct SidebarView: View {
                 }
             )) {
                 Section {
+                    if filteredBots.isEmpty {
+                        VStack(spacing: 12) {
+                            Image(systemName: appState.bots.isEmpty ? "antenna.radiowaves.left.and.right" : "magnifyingglass")
+                                .font(.system(size: 24))
+                                .foregroundColor(.optaTextMuted.opacity(0.5))
+                            Text(appState.bots.isEmpty ? "No bots configured" : "No matching bots")
+                                .font(.sora(13))
+                                .foregroundColor(.optaTextMuted)
+                            if appState.bots.isEmpty {
+                                Text("Add a bot to get started")
+                                    .font(.sora(11))
+                                    .foregroundColor(.optaTextMuted.opacity(0.6))
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 32)
+                    }
                     ForEach(filteredBots) { bot in
                         BotRow(bot: bot, viewModel: appState.viewModel(for: bot))
                             .tag(bot.id)

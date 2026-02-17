@@ -187,7 +187,7 @@ struct ShimmerModifier: ViewModifier {
                     .mask(content)
                 )
                 .onAppear {
-                    withAnimation(.linear(duration: 1.5).repeatForever(autoreverses: false)) {
+                    withAnimation(.spring(response: 1.5, dampingFraction: 1.0).repeatForever(autoreverses: false)) {
                         phase = 1
                     }
                 }

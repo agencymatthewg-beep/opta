@@ -15,6 +15,7 @@ struct MessageBubble: View {
     var onReply: ((ChatMessage) -> Void)? = nil
     var onScrollTo: ((String) -> Void)? = nil
     var onReact: ((ReactionAction, String) -> Void)? = nil
+    var onRetry: ((ChatMessage) -> Void)? = nil
     @StateObject private var pinManager = PinManager.shared
     @StateObject private var bookmarkManager = BookmarkManager.shared
 
@@ -74,7 +75,7 @@ struct MessageBubble: View {
                                 .textSelection(.enabled)
                         }
                         .padding(12)
-                        .background(bubbleBackground)
+                        .background(failedBubbleBackground)
                         .overlay(alignment: .topLeading) {
                             if isPinned {
                                 Image(systemName: "pin.fill")
@@ -91,10 +92,49 @@ struct MessageBubble: View {
                         )
                         .contextMenu { messageContextMenu }
                     }
+
+                    // Failed message: retry affordance
+                    if isUser && message.status == .failed {
+                        HStack(spacing: 6) {
+                            Image(systemName: "exclamationmark.circle.fill")
+                                .font(.system(size: 12))
+                                .foregroundColor(.optaRed)
+
+                            Text("Failed to send")
+                                .font(.caption2)
+                                .foregroundColor(.optaRed)
+
+                            Button {
+                                HapticManager.shared.impact(.light)
+                                onRetry?(message)
+                            } label: {
+                                Label("Retry", systemImage: "arrow.clockwise")
+                                    .font(.caption2.weight(.medium))
+                                    .foregroundColor(.optaPrimary)
+                            }
+                            .accessibilityLabel("Retry sending message")
+                            .accessibilityHint("Resends the failed message")
+                        }
+                        .transition(.opacity.combined(with: .scale(scale: 0.9)))
+                    }
+
+                    // Pending message indicator
+                    if isUser && message.status == .pending {
+                        HStack(spacing: 4) {
+                            ProgressView()
+                                .scaleEffect(0.5)
+                                .tint(.optaTextMuted)
+                            Text("Queued")
+                                .font(.caption2)
+                                .foregroundColor(.optaTextMuted)
+                        }
+                    }
                 }
 
                 if !isUser { Spacer(minLength: 60) }
             }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("\(isUser ? "You" : botName): \(message.content)\(isPinned ? ", pinned" : "")\(message.status == .failed ? ", failed to send" : "")")
         }
     }
 
@@ -133,6 +173,27 @@ struct MessageBubble: View {
             // Deletion handled by parent — this is a visual placeholder
         } label: {
             Label("Delete", systemImage: "trash")
+        }
+    }
+
+    /// Bubble background that tints red when the message has failed.
+    @ViewBuilder
+    private var failedBubbleBackground: some View {
+        if isUser && message.status == .failed {
+            RoundedRectangle(cornerRadius: 16)
+                .fill(
+                    LinearGradient(
+                        colors: [Color.optaRed.opacity(0.35), Color.optaRed.opacity(0.15)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.optaRed.opacity(0.4), lineWidth: 1)
+                )
+        } else {
+            bubbleBackground
         }
     }
 

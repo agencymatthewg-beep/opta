@@ -62,6 +62,8 @@ struct ChatInputBar: View {
                         Spacer()
                     }
                     .padding(.horizontal, 4)
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("Sending as \(deviceName)")
                 }
 
                 // Offline queue indicator
@@ -80,6 +82,8 @@ struct ChatInputBar: View {
                             .fill(Color.optaAmber.opacity(0.1))
                     )
                     .transition(.scale(scale: 0.8).combined(with: .opacity))
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("\(queuedCount) messages queued, waiting for connection")
                 }
 
                 // Voice recording indicator (shown when actively recording)
@@ -100,6 +104,8 @@ struct ChatInputBar: View {
                                 .font(.system(size: 13, weight: .medium))
                                 .foregroundColor(.optaTextMuted)
                         }
+                        .accessibilityLabel("Cancel recording")
+                        .accessibilityHint("Discards the current voice recording")
 
                         // Stop and send
                         Button(action: {
@@ -110,6 +116,7 @@ struct ChatInputBar: View {
                                 .foregroundColor(.optaPrimary)
                         }
                         .accessibilityLabel("Send voice message")
+                        .accessibilityHint("Stops recording and sends the voice message")
                     }
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
@@ -127,6 +134,8 @@ struct ChatInputBar: View {
                     .padding(.vertical, 4)
                     .background(Capsule().fill(Color.optaAmber.opacity(0.1)))
                     .transition(.scale(scale: 0.8).combined(with: .opacity))
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("Microphone access denied. Enable in Settings.")
                 }
 
                 if !voiceRecorder.isRecording {
@@ -141,6 +150,7 @@ struct ChatInputBar: View {
                             .lineLimit(1...6)
                             .focused($isFocused)
                             .accessibilityLabel("Message input")
+                            .accessibilityHint("Type a message to send to the bot")
                             .padding(.horizontal, 12)
                             .padding(.vertical, 10)
                             .background(
@@ -164,6 +174,7 @@ struct ChatInputBar: View {
                                     .foregroundColor(.optaRed)
                             }
                             .accessibilityLabel("Stop generation")
+                            .accessibilityHint("Stops the bot from generating a response")
                         } else if hasContent {
                             Button(action: {
                                 sendPulse = true
@@ -179,6 +190,7 @@ struct ChatInputBar: View {
                                     .animation(.spring(response: 0.25, dampingFraction: 0.5), value: sendPulse)
                             }
                             .accessibilityLabel("Send message")
+                            .accessibilityHint("Sends your message to the bot")
                             .overlay(alignment: .topTrailing) {
                                 if queuedCount > 0 {
                                     Text("\(queuedCount)")
@@ -200,6 +212,7 @@ struct ChatInputBar: View {
                                     .foregroundColor(.optaTextMuted)
                             }
                             .accessibilityLabel("Record voice message")
+                            .accessibilityHint("Hold to record a voice message")
                         }
                     }
                 }

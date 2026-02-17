@@ -309,6 +309,7 @@ struct CommandPaletteView: View {
 struct PaletteRow: View {
     let action: PaletteAction
     let isSelected: Bool
+    @State private var isPressed = false
 
     var body: some View {
         HStack(spacing: 12) {
@@ -349,5 +350,15 @@ struct PaletteRow: View {
             RoundedRectangle(cornerRadius: 8)
                 .stroke(isSelected ? Color.optaPrimary.opacity(0.3) : Color.clear, lineWidth: 1)
         )
+        .scaleEffect(isPressed ? 0.97 : 1)
+        .animation(.optaSnap, value: isPressed)
+        .animation(.optaSnap, value: isSelected)
+        .onTapGesture {}
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in isPressed = true }
+                .onEnded { _ in isPressed = false }
+        )
+        .accessibilityLabel(action.title)
     }
 }

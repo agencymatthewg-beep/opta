@@ -75,6 +75,9 @@ struct BotPagerView<Content: View>: View {
                                     currentBotId = bot.id
                                 }
                             }
+                            .accessibilityLabel("\(bot.emoji) \(bot.name)")
+                            .accessibilityValue(isActive ? "Selected" : "Not selected")
+                            .accessibilityHint("Double-tap to switch to \(bot.name)")
                     }
                 }
                 .padding(.horizontal, 16)

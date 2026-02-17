@@ -107,7 +107,7 @@ public struct LoadingSplash: View {
             .onAppear {
                 // Start ring rotation
                 if !reduceMotion {
-                    withAnimation(.linear(duration: 3).repeatForever(autoreverses: false)) {
+                    withAnimation(.spring(response: 3, dampingFraction: 1.0).repeatForever(autoreverses: false)) {
                         ringRotation = 360
                     }
                 }

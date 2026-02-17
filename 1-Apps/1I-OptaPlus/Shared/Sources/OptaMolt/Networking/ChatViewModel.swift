@@ -213,6 +213,10 @@ public final class ChatViewModel: ObservableObject {
     /// Current connection route (LAN vs Remote).
     @Published public var connectionRoute: NetworkEnvironment.ConnectionType = .unknown
 
+    /// Countdown (in seconds) until the next automatic reconnect attempt.
+    /// `nil` when not actively counting down (e.g. connected or manually disconnected).
+    @Published public var reconnectCountdown: Int? = nil
+
     // MARK: - Configuration
 
     /// The bot configuration.
@@ -232,6 +236,9 @@ public final class ChatViewModel: ObservableObject {
     private var client: OpenClawClient?
     private var currentIdempotencyKey: String?
     private var cancellables = Set<AnyCancellable>()
+
+    /// Task tracking the reconnect countdown timer.
+    private var reconnectCountdownTask: Task<Void, Never>?
 
     /// Per-session message cache (sessionId → messages)
     private var sessionMessages: [String: [ChatMessage]] = [:]
@@ -353,6 +360,7 @@ public final class ChatViewModel: ObservableObject {
                 let oldState = self?.connectionState
                 self?.connectionState = state
                 if state == .connected {
+                    self?.stopReconnectCountdown()
                     self?.errorMessage = nil
                     // Uptime tracking
                     if oldState != .connected {
@@ -369,6 +377,11 @@ public final class ChatViewModel: ObservableObject {
                         )
                     }
                     self?.flushMessageQueue()
+                } else if state == .reconnecting {
+                    // Start a countdown based on reconnect attempts (exponential backoff estimate)
+                    let attempt = self?.reconnectCount ?? 0
+                    let estimatedSeconds = max(1, min(15, Int(pow(1.7, Double(attempt)))))
+                    self?.startReconnectCountdown(seconds: estimatedSeconds)
                 } else if state == .disconnected, oldState == .connected {
                     // Accumulate uptime
                     if let since = self?.connectedSince {
@@ -418,10 +431,18 @@ public final class ChatViewModel: ObservableObject {
             totalUptimeSeconds += Date().timeIntervalSince(since)
             connectedSince = nil
         }
+        stopReconnectCountdown()
         client?.disconnect()
         client = nil
         connectionState = .disconnected
         updateHealth()
+    }
+
+    /// Force an immediate reconnection attempt, cancelling any pending backoff countdown.
+    public func reconnect() {
+        stopReconnectCountdown()
+        disconnect()
+        connect()
     }
     
     // MARK: - Session Management
@@ -1079,5 +1100,43 @@ public final class ChatViewModel: ObservableObject {
                 agentEvents.removeAll()
             }
         }
+    }
+
+    // MARK: - Reconnect Countdown
+
+    /// Start a countdown from `seconds` that ticks every second, updating `reconnectCountdown`.
+    private func startReconnectCountdown(seconds: Int) {
+        stopReconnectCountdown()
+        reconnectCountdown = seconds
+        reconnectCountdownTask = Task { [weak self] in
+            for remaining in stride(from: seconds, through: 1, by: -1) {
+                guard !Task.isCancelled else { return }
+                self?.reconnectCountdown = remaining
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
+            }
+            if !Task.isCancelled {
+                self?.reconnectCountdown = nil
+            }
+        }
+    }
+
+    /// Cancel any active countdown timer.
+    private func stopReconnectCountdown() {
+        reconnectCountdownTask?.cancel()
+        reconnectCountdownTask = nil
+        reconnectCountdown = nil
+    }
+
+    /// Retry sending a specific failed message by content. Marks the original as pending and re-sends.
+    public func retrySend(_ message: ChatMessage) async {
+        // Mark the failed message as pending
+        if let idx = messages.lastIndex(where: { $0.id == message.id }) {
+            messages[idx].status = .pending
+            if let session = activeSession {
+                sessionMessages[session.id] = messages
+            }
+        }
+        // Re-send the message content
+        await send(message.content, attachments: message.attachments)
     }
 }

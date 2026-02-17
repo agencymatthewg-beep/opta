@@ -33,6 +33,7 @@
 		DB00001AAAAA001400000001 /* ChannelSwitcherSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB00001BAAAA001400000001 /* ChannelSwitcherSheet.swift */; };
 		DB00001CAAAA001500000001 /* BotMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB00001DAAAA001500000001 /* BotMapView.swift */; };
 		DB00001EAAAA001600000001 /* QRScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB00001FAAAA001600000001 /* QRScannerView.swift */; };
+		DB000020AAAA001700000001 /* HapticManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB000021AAAA001700000001 /* HapticManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -62,6 +63,7 @@
 		DB00001BAAAA001400000001 /* ChannelSwitcherSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChannelSwitcherSheet.swift; sourceTree = "<group>"; };
 		DB00001DAAAA001500000001 /* BotMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BotMapView.swift; sourceTree = "<group>"; };
 		DB00001FAAAA001600000001 /* QRScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRScannerView.swift; sourceTree = "<group>"; };
+		DB000021AAAA001700000001 /* HapticManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -91,6 +93,7 @@
 				CB000002AAAA000100000001 /* OptaPlusIOSApp.swift */,
 				CB000004AAAA000100000001 /* ContentView.swift */,
 				CB000062AAAA000400000001 /* Views */,
+				DB000022AAAA001700000001 /* Managers */,
 				CB000008AAAA000200000001 /* Assets.xcassets */,
 				CB00000AAAAA000200000001 /* Info.plist */,
 			);
@@ -103,6 +106,14 @@
 				CB000009AAAA000100000001 /* OptaPlusIOS.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		DB000022AAAA001700000001 /* Managers */ = {
+			isa = PBXGroup;
+			children = (
+				DB000021AAAA001700000001 /* HapticManager.swift */,
+			);
+			path = Managers;
 			sourceTree = "<group>";
 		};
 		CB000062AAAA000400000001 /* Views */ = {
@@ -232,6 +243,7 @@
 				DB00001AAAAA001400000001 /* ChannelSwitcherSheet.swift in Sources */,
 				DB00001CAAAA001500000001 /* BotMapView.swift in Sources */,
 				DB00001EAAAA001600000001 /* QRScannerView.swift in Sources */,
+				DB000020AAAA001700000001 /* HapticManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

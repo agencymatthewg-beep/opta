@@ -100,6 +100,9 @@ struct BotMapView: View {
                                 .padding(.vertical, 10)
                             }
                             .buttonStyle(.plain)
+                            .accessibilityLabel("Activity feed")
+                            .accessibilityValue("\(activityFeed.events.count) events")
+                            .accessibilityHint(showActivityFeed ? "Double-tap to collapse" : "Double-tap to expand")
 
                             // Expandable event list
                             if showActivityFeed {
@@ -152,6 +155,7 @@ struct BotMapView: View {
                             .foregroundColor(.optaTextSecondary)
                     }
                     .accessibilityLabel("Connection options")
+                    .accessibilityHint("Connect or disconnect all bots")
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack(spacing: 16) {
@@ -164,6 +168,7 @@ struct BotMapView: View {
                                     .foregroundColor(.optaTextSecondary)
                             }
                             .accessibilityLabel("Scan QR code")
+                            .accessibilityHint("Opens camera to scan a bot pairing QR code")
                         }
 
                         // Bonjour scan button
@@ -276,6 +281,8 @@ struct BotMapView: View {
                     Capsule().fill(Color.optaPrimary)
                 )
             }
+            .accessibilityLabel("Scan for bots")
+            .accessibilityHint("Scans the local network for available bots")
             .padding(.top, 8)
 
             if DataScannerViewController.isSupported {
@@ -295,6 +302,8 @@ struct BotMapView: View {
                             .stroke(Color.optaPrimary.opacity(0.5), lineWidth: 1)
                     )
                 }
+                .accessibilityLabel("Scan QR code")
+                .accessibilityHint("Opens camera to scan a bot pairing QR code")
             }
         }
         .ignition(delay: 0.2)
@@ -508,6 +517,8 @@ struct ConstellationDeviceNode: View {
         .scaleEffect(appeared ? 1.0 : 0.3)
         .opacity(appeared ? 1.0 : 0)
         .animation(.optaSpring.delay(0.05), value: appeared)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(name), this device")
     }
 }
 
@@ -793,5 +804,7 @@ struct IOSActivityRow: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 4)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(event.botName) \(event.message), \(event.relativeTime)")
     }
 }

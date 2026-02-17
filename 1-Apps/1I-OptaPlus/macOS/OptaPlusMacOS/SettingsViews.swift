@@ -478,22 +478,9 @@ struct GeneralSettingsView: View {
                             .foregroundColor(.optaTextMuted)
                         HStack(spacing: 6) {
                             ForEach(["📱", "💻", "🖥️", "⌚", "🎧", "🎮", "📡", "🏠", "🏢", "🚀", "⚡", "🔮"], id: \.self) { e in
-                                Button {
+                                DeviceEmojiButton(emoji: e, isSelected: deviceEmoji == e) {
                                     deviceEmoji = (deviceEmoji == e) ? "" : e
-                                } label: {
-                                    Text(e)
-                                        .font(.system(size: 16))
-                                        .frame(width: 28, height: 28)
-                                        .background(
-                                            RoundedRectangle(cornerRadius: 6)
-                                                .fill(deviceEmoji == e ? Color.optaPrimary.opacity(0.2) : Color.optaElevated)
-                                        )
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 6)
-                                                .stroke(deviceEmoji == e ? Color.optaPrimary : Color.clear, lineWidth: 1.5)
-                                        )
                                 }
-                                .buttonStyle(.plain)
                             }
                         }
                     }
@@ -671,6 +658,7 @@ struct ThemePreviewCard: View {
     let theme: AppTheme
     let isSelected: Bool
     let onTap: () -> Void
+    @State private var isHovered = false
 
     var body: some View {
         Button(action: onTap) {
@@ -682,19 +670,51 @@ struct ThemePreviewCard: View {
                         Circle()
                             .fill(theme.accentColor)
                             .frame(width: 14, height: 14)
-                            .shadow(color: theme.accentColor.opacity(0.6), radius: 6)
+                            .shadow(color: theme.accentColor.opacity(isHovered ? 0.8 : 0.6), radius: isHovered ? 8 : 6)
                     )
                     .overlay(
                         RoundedRectangle(cornerRadius: 8)
-                            .stroke(isSelected ? theme.accentColor : Color.optaBorder, lineWidth: isSelected ? 2 : 0.5)
+                            .stroke(isSelected ? theme.accentColor : (isHovered ? Color.optaTextMuted.opacity(0.3) : Color.optaBorder), lineWidth: isSelected ? 2 : (isHovered ? 1 : 0.5))
                     )
 
                 Text(theme.name)
                     .font(.sora(10, weight: isSelected ? .semibold : .regular))
-                    .foregroundColor(isSelected ? .optaTextPrimary : .optaTextMuted)
+                    .foregroundColor(isSelected ? .optaTextPrimary : (isHovered ? .optaTextSecondary : .optaTextMuted))
             }
         }
         .buttonStyle(.plain)
+        .scaleEffect(isHovered ? 1.05 : 1)
+        .animation(.optaSnap, value: isHovered)
+        .onHover { isHovered = $0 }
+    }
+}
+
+// MARK: - Device Emoji Button
+
+struct DeviceEmojiButton: View {
+    let emoji: String
+    let isSelected: Bool
+    let onTap: () -> Void
+    @State private var isHovered = false
+
+    var body: some View {
+        Button(action: onTap) {
+            Text(emoji)
+                .font(.system(size: 16))
+                .frame(width: 28, height: 28)
+                .background(
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(isSelected ? Color.optaPrimary.opacity(0.2) : (isHovered ? Color.optaSurface.opacity(0.6) : Color.optaElevated))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6)
+                        .stroke(isSelected ? Color.optaPrimary : (isHovered ? Color.optaTextMuted.opacity(0.3) : Color.clear), lineWidth: 1.5)
+                )
+        }
+        .buttonStyle(.plain)
+        .scaleEffect(isHovered ? 1.1 : 1)
+        .animation(.optaSnap, value: isHovered)
+        .onHover { isHovered = $0 }
     }
 }
 
@@ -784,7 +804,7 @@ struct SkeletonBubble: View {
             if !isUser { Spacer(minLength: 0) }
         }
         .onAppear {
-            withAnimation(.linear(duration: 1.5).repeatForever(autoreverses: false)) {
+            withAnimation(.spring(response: 1.5, dampingFraction: 1.0).repeatForever(autoreverses: false)) {
                 shimmerOffset = 1.5
             }
         }

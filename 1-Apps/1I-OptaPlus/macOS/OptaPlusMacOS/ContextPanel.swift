@@ -280,9 +280,8 @@ struct ContextPill: View {
             withAnimation(.spring(response: 0.4, dampingFraction: 0.7).delay(entranceDelay)) {
                 appeared = true
             }
-            // Subtle ambient float (each pill slightly different)
-            let duration = 3.0 + Double.random(in: 0...1)
-            withAnimation(.spring(response: 1.2, dampingFraction: 0.5).repeatForever(autoreverses: true).delay(entranceDelay)) {
+            // Subtle ambient float (spring-based, each pill slightly different)
+            withAnimation(.spring(response: 3.0 + Double.random(in: 0...1), dampingFraction: 0.3).repeatForever(autoreverses: true).delay(entranceDelay)) {
                 floatOffset = CGFloat.random(in: -1.5...1.5)
             }
         }
