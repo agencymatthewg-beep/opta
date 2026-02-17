@@ -38,7 +38,7 @@ export const OptaConfigSchema = z.object({
     .default({}),
   defaultMode: z.enum(['safe', 'auto', 'plan', 'dangerous', 'ci']).default('safe'),
   // CANONICAL source of truth for all tool permission defaults.
-  // tools.ts DEFAULT_TOOL_PERMISSIONS should be kept in sync (TODO: import from here).
+  // tools/permissions.ts DEFAULT_TOOL_PERMISSIONS mirrors these for runtime fallback.
   permissions: z
     .record(z.string(), ToolPermission)
     .default({
@@ -170,6 +170,11 @@ export const OptaConfigSchema = z.object({
         })
         .default({}),
       inheritMode: z.boolean().default(true),
+    })
+    .default({}),
+  context: z
+    .object({
+      exportMap: z.boolean().default(true),
     })
     .default({}),
   tui: z
