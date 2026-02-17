@@ -239,6 +239,15 @@ program
   });
 
 program
+  .command('doctor')
+  .description('Check Opta setup and connectivity')
+  .option('-f, --format <type>', 'output format (text, json)')
+  .action(async (opts) => {
+    const { runDoctor } = await import('./commands/doctor.js');
+    await runDoctor(opts);
+  });
+
+program
   .command('completions <shell>')
   .description('Generate shell completions (bash/zsh/fish)')
   .action(async (shell: string) => {
