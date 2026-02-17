@@ -20,47 +20,84 @@ const modelHandler = async (args: string, ctx: SlashContext): Promise<SlashResul
     }
   }
 
-  // Interactive model picker: fetch from LMX
+  // Interactive model picker: scan LMX loaded + on-disk + Anthropic
   try {
-    const { LmxClient } = await import('../../lmx/client.js');
+    const { LmxClient, lookupContextLimit } = await import('../../lmx/client.js');
+    const { Separator } = await import('@inquirer/prompts');
+    const { select } = await import('@inquirer/prompts');
+
     const lmx = new LmxClient({
       host: ctx.config.connection.host,
       port: ctx.config.connection.port,
       adminKey: ctx.config.connection.adminKey,
     });
-    const { models: loadedModels } = await lmx.models();
 
-    if (loadedModels.length === 0) {
-      console.log(chalk.dim('  No models loaded on LMX'));
+    // Fetch loaded + available in parallel
+    const [loadedRes, availRes, cloudModels] = await Promise.all([
+      lmx.models().catch(() => null),
+      lmx.available().catch(() => null),
+      (async () => {
+        const hasKey = ctx.config.provider?.anthropic?.apiKey || process.env['ANTHROPIC_API_KEY'];
+        if (!hasKey) return [];
+        try {
+          const { getProvider } = await import('../../providers/manager.js');
+          const cfg = { ...ctx.config, provider: { ...ctx.config.provider, active: 'anthropic' as const } };
+          const p = await getProvider(cfg);
+          return p.listModels();
+        } catch { return []; }
+      })(),
+    ]);
+
+    const loadedModels = loadedRes?.models ?? [];
+    const loadedIds = new Set(loadedModels.map(m => m.model_id));
+    const onDisk = (availRes ?? []).filter(a => !loadedIds.has(a.repo_id));
+
+    if (loadedModels.length === 0 && onDisk.length === 0 && cloudModels.length === 0) {
+      console.log(chalk.dim('  No models found (LMX unreachable, no Anthropic key)'));
       return 'handled';
     }
 
-    const { select } = await import('@inquirer/prompts');
-    const { lookupContextLimit } = await import('../../lmx/client.js');
-    const { fmtTokens: fmtTok } = await import('../../ui/box.js');
+    type Choice = { name: string; value: string } | typeof Separator.prototype;
+    const choices: Choice[] = [];
 
-    const choices = loadedModels.map(m => {
-      const isCurrent = m.model_id === ctx.config.model.default;
-      const dot = isCurrent ? chalk.green('\u25cf ') : '  ';
-      const ctxLimit = lookupContextLimit(m.model_id);
-      const memStr = m.memory_bytes ? `${(m.memory_bytes / 1e9).toFixed(0)}GB` : '';
-      const meta = chalk.dim([
-        `${fmtTok(ctxLimit)} ctx`,
-        memStr,
-        m.request_count !== undefined ? `${m.request_count} reqs` : '',
-      ].filter(Boolean).join(' \u00b7 '));
-      return {
-        name: `${dot}${m.model_id}  ${meta}`,
-        value: m.model_id,
-      };
-    });
+    // Loaded models
+    if (loadedModels.length > 0) {
+      choices.push(new Separator(chalk.dim('\u2500\u2500 Loaded \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500')));
+      for (const m of loadedModels) {
+        const isCurrent = m.model_id === ctx.config.model.default;
+        const dot = isCurrent ? chalk.green('\u25cf ') : '  ';
+        const ctxLimit = m.context_length ?? lookupContextLimit(m.model_id);
+        const memStr = m.memory_bytes ? `${(m.memory_bytes / 1e9).toFixed(0)}GB` : '';
+        const reqStr = m.request_count ? `${m.request_count} reqs` : '';
+        const meta = chalk.dim([`${(ctxLimit / 1000).toFixed(0)}K ctx`, memStr, reqStr].filter(Boolean).join(' \u00b7 '));
+        choices.push({ name: `${dot}${m.model_id}  ${meta}`, value: m.model_id });
+      }
+    }
+
+    // On-disk models (not loaded)
+    if (onDisk.length > 0) {
+      choices.push(new Separator(chalk.dim('\u2500\u2500 On Disk \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500')));
+      for (const a of onDisk) {
+        const ctxLimit = lookupContextLimit(a.repo_id);
+        const sizeStr = a.size_bytes > 0 ? `${(a.size_bytes / 1e9).toFixed(1)}GB` : '';
+        const meta = chalk.dim([`${(ctxLimit / 1000).toFixed(0)}K ctx`, sizeStr, 'not loaded'].filter(Boolean).join(' \u00b7 '));
+        choices.push({ name: `  ${a.repo_id}  ${meta}`, value: a.repo_id });
+      }
+    }
+
+    // Cloud models
+    if (cloudModels.length > 0) {
+      choices.push(new Separator(chalk.dim('\u2500\u2500 Anthropic \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500')));
+      for (const m of cloudModels) {
+        const ctxStr = m.contextLength ? `${(m.contextLength / 1000).toFixed(0)}K ctx` : '';
+        const meta = chalk.dim([m.name ?? '', ctxStr].filter(Boolean).join(' \u00b7 '));
+        choices.push({ name: `  ${chalk.blue('\u2601')} ${m.id}  ${meta}`, value: m.id });
+      }
+    }
 
     let selectedModel: string;
     try {
-      selectedModel = await select({
-        message: chalk.dim('Select model'),
-        choices,
-      });
+      selectedModel = await select({ message: chalk.dim('Select model'), choices });
     } catch {
       return 'handled'; // Ctrl+C
     }
@@ -70,8 +107,33 @@ const modelHandler = async (args: string, ctx: SlashContext): Promise<SlashResul
       return 'handled';
     }
 
+    // If selected model is on disk but not loaded, offer to load it
+    if (onDisk.some(a => a.repo_id === selectedModel)) {
+      console.log(chalk.dim(`  Loading ${selectedModel}...`));
+      try {
+        await lmx.loadModel(selectedModel);
+        console.log(chalk.green('\u2713') + ` Loaded ${selectedModel}`);
+      } catch (err) {
+        console.error(chalk.red('\u2717') + ` Failed to load: ${err}`);
+        return 'handled';
+      }
+    }
+
+    // If selected model is a cloud model, switch provider
+    if (cloudModels.some(m => m.id === selectedModel)) {
+      const { saveConfig } = await import('../../core/config.js');
+      await saveConfig({
+        provider: { ...ctx.config.provider, active: 'anthropic' },
+        model: { default: selectedModel, contextLimit: 200000 },
+      });
+      ctx.session.model = selectedModel;
+      console.log(chalk.green('\u2713') + ` Switched to ${selectedModel} ${chalk.dim('(Anthropic)')}`);
+      return 'model-switched';
+    }
+
     const { saveConfig } = await import('../../core/config.js');
-    await saveConfig({ model: { default: selectedModel } });
+    const ctxLimit = lookupContextLimit(selectedModel);
+    await saveConfig({ model: { default: selectedModel, contextLimit: ctxLimit } });
     ctx.session.model = selectedModel;
     console.log(chalk.green('\u2713') + ` Switched to ${selectedModel}`);
     return 'model-switched';

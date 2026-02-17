@@ -127,7 +127,7 @@ program
 program
   .command('models')
   .description('List and manage loaded models')
-  .argument('[action]', 'use | info | load | unload')
+  .argument('[action]', 'scan | use | info | load | unload')
   .argument('[name]', 'model name')
   .option('--json', 'machine-readable output')
   .action(async (action, name, opts) => {

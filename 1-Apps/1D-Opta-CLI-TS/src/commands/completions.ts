@@ -48,7 +48,7 @@ _opta_completions() {
       return 0
       ;;
     models)
-      COMPREPLY=( $(compgen -W "use info load unload --json --help" -- "\${cur}") )
+      COMPREPLY=( $(compgen -W "scan use info load unload --json --help" -- "\${cur}") )
       return 0
       ;;
     config)
@@ -163,7 +163,7 @@ _opta() {
             '--json[machine-readable output]'
           ;;
         models)
-          _arguments '1:action:(use info load unload)' '--json[machine-readable output]'
+          _arguments '1:action:(scan use info load unload)' '--json[machine-readable output]'
           ;;
         config)
           _arguments '1:action:(list get set reset)' '--json[machine-readable output]'
@@ -264,7 +264,7 @@ complete -c opta -n '__fish_seen_subcommand_from do' -l yolo -d 'Alias for --dan
 complete -c opta -n '__fish_seen_subcommand_from status' -l json -d 'Machine-readable output'
 
 # models subcommands and flags
-complete -c opta -n '__fish_seen_subcommand_from models' -a 'use info load unload' -d 'Action'
+complete -c opta -n '__fish_seen_subcommand_from models' -a 'scan use info load unload' -d 'Action'
 complete -c opta -n '__fish_seen_subcommand_from models' -l json -d 'Machine-readable output'
 
 # config subcommands and flags

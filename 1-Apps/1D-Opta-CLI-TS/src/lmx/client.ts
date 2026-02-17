@@ -49,6 +49,50 @@ export interface LmxUnloadResponse {
   freed_bytes?: number;
 }
 
+export interface LmxAvailableModel {
+  repo_id: string;
+  local_path: string;
+  size_bytes: number;
+  downloaded_at?: number;
+}
+
+export interface LmxPreset {
+  name: string;
+  description?: string;
+  model: string;
+  parameters?: Record<string, unknown>;
+  system_prompt?: string;
+  routing_alias?: string;
+  auto_load?: boolean;
+  performance?: Record<string, unknown>;
+}
+
+export interface LmxPresetsResponse {
+  presets: LmxPreset[];
+  count: number;
+}
+
+export interface LmxStackRole {
+  preferences: string[];
+  resolved_model: string | null;
+  loaded: boolean;
+}
+
+export interface LmxStackResponse {
+  roles: Record<string, LmxStackRole>;
+  remote_helpers: Record<string, unknown>;
+  loaded_models: string[];
+  default_model: string | null;
+}
+
+export interface LmxMemoryResponse {
+  total_unified_memory_gb: number;
+  used_gb: number;
+  available_gb: number;
+  threshold_percent: number;
+  models: Record<string, { memory_gb: number; loaded: boolean }>;
+}
+
 // --- Raw LMX Server Response Types (what the API actually returns) ---
 
 interface RawAdminModelDetail {
@@ -203,5 +247,21 @@ export class LmxClient {
         ? raw.memory_freed_gb * GB_TO_BYTES
         : undefined,
     };
+  }
+
+  async available(): Promise<LmxAvailableModel[]> {
+    return this.fetch<LmxAvailableModel[]>('/admin/models/available');
+  }
+
+  async presets(): Promise<LmxPresetsResponse> {
+    return this.fetch<LmxPresetsResponse>('/admin/presets');
+  }
+
+  async stack(): Promise<LmxStackResponse> {
+    return this.fetch<LmxStackResponse>('/admin/stack');
+  }
+
+  async memory(): Promise<LmxMemoryResponse> {
+    return this.fetch<LmxMemoryResponse>('/admin/memory');
   }
 }
