@@ -10,6 +10,7 @@ import time
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import Any
 
 import uvicorn
 from fastapi import FastAPI
@@ -34,6 +35,20 @@ from opta_lmx.presets.manager import PresetManager
 from opta_lmx.router.strategy import TaskRouter
 
 logger = logging.getLogger(__name__)
+
+
+def _find_performance_for_model(
+    preset_manager: PresetManager, model_id: str,
+) -> dict[str, Any] | None:
+    """Find performance overrides from a preset that maps to this model_id.
+
+    Returns the preset's performance dict if a matching preset with a non-empty
+    performance section is found, otherwise None.
+    """
+    for preset in preset_manager.list_all():
+        if preset.model == model_id and preset.performance:
+            return preset.performance
+    return None
 
 
 @asynccontextmanager
@@ -98,11 +113,15 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         },
     )
 
-    # Auto-load configured models
+    # Auto-load configured models (with preset performance overrides if available)
     for model_id in config.models.auto_load:
         try:
-            await engine.load_model(model_id)
-            logger.info("auto_load_success", extra={"model_id": model_id})
+            perf = _find_performance_for_model(preset_manager, model_id)
+            await engine.load_model(model_id, performance_overrides=perf)
+            logger.info("auto_load_success", extra={
+                "model_id": model_id,
+                "has_performance_profile": perf is not None,
+            })
         except Exception as e:
             logger.error("auto_load_failed", extra={"model_id": model_id, "error": str(e)})
 

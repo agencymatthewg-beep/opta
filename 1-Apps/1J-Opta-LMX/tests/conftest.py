@@ -39,7 +39,7 @@ def mock_engine() -> InferenceEngine:
     engine = InferenceEngine(memory_monitor=monitor, use_batching=False)
 
     # Patch _create_engine to avoid importing vllm-mlx
-    async def mock_create(model_id: str, use_batching: bool) -> MagicMock:
+    async def mock_create(model_id: str, use_batching: bool, **_kw: object) -> MagicMock:
         mock = MagicMock()
         mock.chat = AsyncMock(return_value="Hello! I'm a test response.")
         return mock

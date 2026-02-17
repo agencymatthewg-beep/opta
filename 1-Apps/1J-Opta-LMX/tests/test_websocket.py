@@ -25,7 +25,7 @@ def ws_app(tmp_path):
     monitor = MemoryMonitor(max_percent=90)
     engine = InferenceEngine(memory_monitor=monitor, use_batching=False)
 
-    async def mock_create(model_id: str, use_batching: bool) -> MagicMock:
+    async def mock_create(model_id: str, use_batching: bool, **_kw: object) -> MagicMock:
         mock = MagicMock()
         mock.chat = AsyncMock(return_value="Hello from WebSocket test!")
         return mock
@@ -88,7 +88,7 @@ async def test_ws_chat_request_streaming(ws_app) -> None:
     engine = ws_app.state.engine
 
     # Override mock engine to stream tokens
-    async def mock_create(model_id: str, use_batching: bool) -> MagicMock:
+    async def mock_create(model_id: str, use_batching: bool, **_kw: object) -> MagicMock:
         mock = MagicMock()
         mock.chat = AsyncMock(return_value="Hello World")
 

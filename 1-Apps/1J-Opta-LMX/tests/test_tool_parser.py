@@ -596,7 +596,7 @@ class TestEngineIntegration:
         mock_result.prompt_tokens = 10
         mock_result.completion_tokens = 20
 
-        async def mock_create(model_id: str, use_batching: bool) -> MagicMock:
+        async def mock_create(model_id: str, use_batching: bool, **_kw: object) -> MagicMock:
             mock = MagicMock()
             mock.chat = AsyncMock(return_value=mock_result)
             return mock
@@ -639,7 +639,7 @@ class TestEngineIntegration:
         mock_result.prompt_tokens = 10
         mock_result.completion_tokens = 20
 
-        async def mock_create(model_id: str, use_batching: bool) -> MagicMock:
+        async def mock_create(model_id: str, use_batching: bool, **_kw: object) -> MagicMock:
             mock = MagicMock()
             mock.chat = AsyncMock(return_value=mock_result)
             return mock
@@ -675,7 +675,7 @@ class TestEngineIntegration:
         mock_result.prompt_tokens = 10
         mock_result.completion_tokens = 15
 
-        async def mock_create(model_id: str, use_batching: bool) -> MagicMock:
+        async def mock_create(model_id: str, use_batching: bool, **_kw: object) -> MagicMock:
             mock = MagicMock()
             mock.chat = AsyncMock(return_value=mock_result)
             return mock

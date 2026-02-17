@@ -66,6 +66,17 @@ from opta_lmx.inference.schema import (
 
 logger = logging.getLogger(__name__)
 
+
+def _find_performance_for_model(
+    preset_mgr: Any, model_id: str,
+) -> dict[str, Any] | None:
+    """Find performance overrides from a preset that maps to this model_id."""
+    for preset in preset_mgr.list_all():
+        if preset.model == model_id and preset.performance:
+            return preset.performance
+    return None
+
+
 # Token expiry for pending download confirmations (seconds)
 _TOKEN_EXPIRY_SEC = 600  # 10 minutes
 
@@ -92,6 +103,7 @@ async def _load_after_download(
     model_id: str,
     manager: ModelManager,
     engine: InferenceEngine,
+    performance_overrides: dict[str, Any] | None = None,
 ) -> None:
     """Wait for a download to complete, then auto-load the model."""
     while True:
@@ -102,7 +114,7 @@ async def _load_after_download(
 
     if task and task.status == "completed":
         try:
-            await engine.load_model(model_id)
+            await engine.load_model(model_id, performance_overrides=performance_overrides)
             logger.info("auto_load_after_download", extra={"model_id": model_id})
         except Exception as e:
             logger.error(
@@ -155,7 +167,7 @@ async def list_admin_models(
 )
 async def load_model(
     body: AdminLoadRequest, _auth: AdminAuth, engine: Engine, manager: Manager,
-    request: Request,
+    preset_mgr: Presets, request: Request,
 ) -> AdminLoadResponse | JSONResponse:
     """Load a model into memory.
 
@@ -208,9 +220,10 @@ async def load_model(
             )
 
         # auto_download=True: skip confirmation, start download + auto-load
+        perf = _find_performance_for_model(preset_mgr, body.model_id)
         task = await manager.start_download(repo_id=body.model_id)
         bg = asyncio.create_task(
-            _load_after_download(task.download_id, body.model_id, manager, engine),
+            _load_after_download(task.download_id, body.model_id, manager, engine, perf),
         )
         _background_tasks.add(bg)
         bg.add_done_callback(_background_tasks.discard)
@@ -228,10 +241,11 @@ async def load_model(
             ).model_dump(),
         )
 
-    # Model is on disk — load immediately
+    # Model is on disk — load immediately (with preset performance if available)
+    perf = _find_performance_for_model(preset_mgr, body.model_id)
     start = time.monotonic()
     try:
-        info = await engine.load_model(body.model_id)
+        info = await engine.load_model(body.model_id, performance_overrides=perf)
     except MemoryError as e:
         return insufficient_memory(str(e))
     except RuntimeError as e:

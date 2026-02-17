@@ -110,12 +110,19 @@ class InferenceEngine:
         self._load_lock = asyncio.Lock()
         self._loading_models: set[str] = set()  # Models currently being loaded
 
-    async def load_model(self, model_id: str, use_batching: bool | None = None) -> ModelInfo:
+    async def load_model(
+        self,
+        model_id: str,
+        use_batching: bool | None = None,
+        performance_overrides: dict[str, Any] | None = None,
+    ) -> ModelInfo:
         """Load an MLX model into memory via vllm-mlx.
 
         Args:
             model_id: HuggingFace model ID (e.g., 'mlx-community/Mistral-7B-Instruct-4bit').
             use_batching: Override default batching setting.
+            performance_overrides: Per-model performance settings from preset (kv_bits,
+                prefix_cache, speculative, max_concurrent). Overrides global defaults.
 
         Returns:
             ModelInfo with load details.
@@ -172,11 +179,16 @@ class InferenceEngine:
                     )
 
         try:
-            return await self._do_load(model_id, use_batching)
+            return await self._do_load(model_id, use_batching, performance_overrides)
         finally:
             self._loading_models.discard(model_id)
 
-    async def _do_load(self, model_id: str, use_batching: bool | None = None) -> ModelInfo:
+    async def _do_load(
+        self,
+        model_id: str,
+        use_batching: bool | None = None,
+        performance_overrides: dict[str, Any] | None = None,
+    ) -> ModelInfo:
         """Execute the actual model load (called after lock/guard checks)."""
         fmt = _detect_format(model_id)
         batching = use_batching if use_batching is not None else self._use_batching
@@ -197,7 +209,9 @@ class InferenceEngine:
                 )
                 engine = None  # GGUF models use backend, not vllm-mlx engine
             else:
-                engine = await self._create_engine(model_id, batching)
+                engine = await self._create_engine(
+                    model_id, batching, performance_overrides=performance_overrides,
+                )
         except Exception as e:
             logger.error("model_load_failed", extra={
                 "model_id": model_id, "format": fmt, "error": str(e),
@@ -274,22 +288,47 @@ class InferenceEngine:
             use_batching=batching if fmt == "mlx" else False,
         )
 
-    async def _create_engine(self, model_id: str, use_batching: bool) -> Any:
+    async def _create_engine(
+        self,
+        model_id: str,
+        use_batching: bool,
+        performance_overrides: dict[str, Any] | None = None,
+    ) -> Any:
         """Create a vllm-mlx engine instance.
 
         Uses BatchedEngine for concurrent request support,
         SimpleEngine for maximum single-request throughput.
-        Passes speculative decoding config when configured.
+        Merges per-model performance overrides (from preset) with global defaults.
         """
+        perf = performance_overrides or {}
+
         spec_kwargs: dict[str, Any] = {}
-        if self._speculative_model:
-            spec_kwargs["speculative_model"] = self._speculative_model
-            spec_kwargs["num_speculative_tokens"] = self._speculative_num_tokens
-        if self._kv_bits is not None:
-            spec_kwargs["kv_bits"] = self._kv_bits
-            spec_kwargs["kv_group_size"] = self._kv_group_size
-        if not self._prefix_cache_enabled:
+
+        # Speculative decoding: preset overrides global
+        spec_config = perf.get("speculative", {})
+        draft_model = spec_config.get("draft_model") or self._speculative_model
+        num_tokens = spec_config.get("num_tokens") or self._speculative_num_tokens
+        if draft_model:
+            spec_kwargs["speculative_model"] = draft_model
+            spec_kwargs["num_speculative_tokens"] = num_tokens
+
+        # KV cache: preset overrides global
+        kv_bits = perf.get("kv_bits", self._kv_bits)
+        kv_group_size = perf.get("kv_group_size", self._kv_group_size)
+        if kv_bits is not None:
+            spec_kwargs["kv_bits"] = kv_bits
+            spec_kwargs["kv_group_size"] = kv_group_size
+
+        # Prefix cache: preset overrides global
+        prefix_cache = perf.get("prefix_cache", self._prefix_cache_enabled)
+        if not prefix_cache:
             spec_kwargs["prefix_cache"] = False
+
+        if perf:
+            logger.info("performance_overrides_applied", extra={
+                "model_id": model_id,
+                "overrides": {k: v for k, v in perf.items() if k != "memory_estimate_gb"},
+            })
 
         if use_batching:
             from vllm_mlx.engine.batched import BatchedEngine

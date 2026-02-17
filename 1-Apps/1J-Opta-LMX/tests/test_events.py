@@ -160,7 +160,7 @@ async def test_engine_publishes_model_loaded_event() -> None:
     monitor = MemoryMonitor(max_percent=90)
     engine = InferenceEngine(memory_monitor=monitor, use_batching=False, event_bus=bus)
 
-    async def mock_create(model_id: str, use_batching: bool) -> MagicMock:
+    async def mock_create(model_id: str, use_batching: bool, **_kw: object) -> MagicMock:
         mock = MagicMock()
         mock.chat = MagicMock(return_value="test")
         return mock
@@ -188,7 +188,7 @@ async def test_engine_publishes_model_unloaded_event() -> None:
     monitor = MemoryMonitor(max_percent=90)
     engine = InferenceEngine(memory_monitor=monitor, use_batching=False, event_bus=bus)
 
-    async def mock_create(model_id: str, use_batching: bool) -> MagicMock:
+    async def mock_create(model_id: str, use_batching: bool, **_kw: object) -> MagicMock:
         return MagicMock()
 
     engine._create_engine = mock_create  # type: ignore[assignment]
