@@ -27,6 +27,7 @@ class Preset:
     system_prompt: str | None = None
     routing_alias: str | None = None
     auto_load: bool = False
+    performance: dict[str, Any] = field(default_factory=dict)
 
 
 class PresetManager:
@@ -168,4 +169,5 @@ class PresetManager:
             system_prompt=raw.get("system_prompt"),
             routing_alias=raw.get("routing_alias"),
             auto_load=raw.get("auto_load", False),
+            performance=raw.get("performance", {}),
         )

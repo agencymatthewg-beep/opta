@@ -402,6 +402,7 @@ class PresetResponse(BaseModel):
     system_prompt: str | None = None
     routing_alias: str | None = None
     auto_load: bool = False
+    performance: dict[str, Any] = Field(default_factory=dict)
 
 
 class PresetListResponse(BaseModel):

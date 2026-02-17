@@ -687,6 +687,7 @@ async def list_presets(
                 system_prompt=p.system_prompt,
                 routing_alias=p.routing_alias,
                 auto_load=p.auto_load,
+                performance=p.performance,
             )
             for p in presets
         ],
@@ -715,6 +716,7 @@ async def get_preset(
         system_prompt=preset.system_prompt,
         routing_alias=preset.routing_alias,
         auto_load=preset.auto_load,
+        performance=preset.performance,
     )
 
 

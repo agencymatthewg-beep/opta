@@ -91,6 +91,9 @@ class InferenceEngine:
         event_bus: EventBus | None = None,
         speculative_model: str | None = None,
         speculative_num_tokens: int = 5,
+        kv_bits: int | None = None,
+        kv_group_size: int = 64,
+        prefix_cache_enabled: bool = True,
     ) -> None:
         self._models: dict[str, LoadedModel] = {}
         self._memory = memory_monitor
@@ -101,6 +104,9 @@ class InferenceEngine:
         self._event_bus = event_bus
         self._speculative_model = speculative_model
         self._speculative_num_tokens = speculative_num_tokens
+        self._kv_bits = kv_bits
+        self._kv_group_size = kv_group_size
+        self._prefix_cache_enabled = prefix_cache_enabled
         self._load_lock = asyncio.Lock()
         self._loading_models: set[str] = set()  # Models currently being loaded
 
@@ -279,6 +285,11 @@ class InferenceEngine:
         if self._speculative_model:
             spec_kwargs["speculative_model"] = self._speculative_model
             spec_kwargs["num_speculative_tokens"] = self._speculative_num_tokens
+        if self._kv_bits is not None:
+            spec_kwargs["kv_bits"] = self._kv_bits
+            spec_kwargs["kv_group_size"] = self._kv_group_size
+        if not self._prefix_cache_enabled:
+            spec_kwargs["prefix_cache"] = False
 
         if use_batching:
             from vllm_mlx.engine.batched import BatchedEngine

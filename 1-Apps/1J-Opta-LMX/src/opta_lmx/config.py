@@ -43,6 +43,12 @@ class ModelsConfig(BaseModel):
     use_batching: bool = True
     gguf_context_length: int = Field(4096, description="Default context length for GGUF models")
     gguf_gpu_layers: int = Field(-1, description="GPU layers for GGUF (-1 = full Metal offload)")
+    kv_bits: int | None = Field(None, description="KV cache quantization bits (4 or 8, None=FP16)")
+    kv_group_size: int = Field(64, ge=1, description="KV cache quantization group size")
+    prefix_cache_enabled: bool = Field(True, description="Enable prefix caching for multi-turn")
+    embedding_model: str | None = Field(
+        None, description="Embedding model HF ID for /v1/embeddings (lazy-loaded)",
+    )
     speculative_model: str | None = Field(
         None, description="Draft model HF ID for speculative decoding",
     )

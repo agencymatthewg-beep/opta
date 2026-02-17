@@ -18,6 +18,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from opta_lmx import __version__
 from opta_lmx.api.admin import router as admin_router
 from opta_lmx.api.anthropic import router as anthropic_router
+from opta_lmx.api.embeddings import router as embeddings_router
 from opta_lmx.api.health import router as health_router
 from opta_lmx.api.inference import router as inference_router
 from opta_lmx.api.middleware import RequestIDMiddleware
@@ -53,6 +54,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         event_bus=event_bus,
         speculative_model=config.models.speculative_model,
         speculative_num_tokens=config.models.speculative_num_tokens,
+        kv_bits=config.models.kv_bits,
+        kv_group_size=config.models.kv_group_size,
+        prefix_cache_enabled=config.models.prefix_cache_enabled,
     )
 
     model_manager = ModelManager(
@@ -67,7 +71,13 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     if config.presets.enabled:
         preset_manager.load_presets()
 
+    # Initialize embedding engine (lazy-load — only loads model on first request)
+    from opta_lmx.inference.embedding_engine import EmbeddingEngine
+
+    embedding_engine = EmbeddingEngine()
+
     app.state.engine = engine
+    app.state.embedding_engine = embedding_engine
     app.state.memory_monitor = memory_monitor
     app.state.model_manager = model_manager
     app.state.router = task_router
@@ -96,6 +106,18 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         except Exception as e:
             logger.error("auto_load_failed", extra={"model_id": model_id, "error": str(e)})
 
+    # Pre-load embedding model if configured
+    if config.models.embedding_model:
+        try:
+            await embedding_engine.load_model(config.models.embedding_model)
+            logger.info("embedding_auto_load_success", extra={
+                "model_id": config.models.embedding_model,
+            })
+        except Exception as e:
+            logger.error("embedding_auto_load_failed", extra={
+                "model_id": config.models.embedding_model, "error": str(e),
+            })
+
     # Start TTL eviction background task if enabled
     ttl_task: asyncio.Task[None] | None = None
     if config.memory.ttl_enabled:
@@ -119,6 +141,10 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         ttl_task.cancel()
         with contextlib.suppress(asyncio.CancelledError):
             await ttl_task
+
+    # Cleanup: unload embedding model
+    if embedding_engine.is_loaded:
+        await embedding_engine.unload()
 
     # Cleanup: cancel active downloads
     await model_manager.cancel_active_downloads()
@@ -166,6 +192,7 @@ def create_app(config: LMXConfig | None = None) -> FastAPI:
 
     # Mount route groups
     app.include_router(inference_router)
+    app.include_router(embeddings_router)
     app.include_router(anthropic_router)
     app.include_router(admin_router)
     app.include_router(health_router)
