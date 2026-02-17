@@ -107,6 +107,30 @@ export class ThinkingRenderer {
     process.stdout.write(chalk.dim(`  ⚙ thinking (${tokens} tokens)\n\n`));
   }
 
+  /** Get the raw thinking text (for toggle display). */
+  getThinkingText(): string {
+    return this.thinkText;
+  }
+
+  /** Whether the renderer captured any thinking content. */
+  hasThinking(): boolean {
+    return this.thinkText.length > 0;
+  }
+
+  /** Generate a one-line collapsed summary showing token count. */
+  getCollapsedSummary(): string {
+    const tokens = Math.ceil(this.thinkText.length / 4);
+    return chalk.dim(`  ⚙ thinking (${tokens} tokens) `) + chalk.dim.italic('[/expand to view]');
+  }
+
+  /** Generate a full expanded view of the thinking content. */
+  getExpandedView(): string {
+    const lines = this.thinkText.split('\n');
+    const formatted = lines.map(l => chalk.dim('  │ ') + chalk.dim.italic(l)).join('\n');
+    const tokens = Math.ceil(this.thinkText.length / 4);
+    return chalk.dim(`  ⚙ thinking (${tokens} tokens)\n`) + formatted + '\n' + chalk.dim('  └─');
+  }
+
   /** Clean output text of any residual tags. */
   private cleanOutput(text: string): string {
     return text

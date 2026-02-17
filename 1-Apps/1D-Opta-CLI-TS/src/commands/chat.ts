@@ -11,6 +11,8 @@ import {
 } from '../memory/store.js';
 import { resolveFileRefs, buildContextWithRefs } from '../core/fileref.js';
 import { box, kv, statusDot, fmtTokens, progressBar } from '../ui/box.js';
+import { InputEditor } from '../ui/input.js';
+import { InputHistory } from '../ui/history.js';
 import type { Session } from '../memory/store.js';
 
 interface ChatOptions {
@@ -29,6 +31,9 @@ export type OptaMode = 'normal' | 'plan' | 'auto-accept';
 
 export interface ChatState {
   currentMode: OptaMode;
+  agentProfile: string;
+  lastThinkingRenderer?: import('../ui/thinking.js').ThinkingRenderer;
+  thinkingExpanded?: boolean;
 }
 
 export async function startChat(opts: ChatOptions): Promise<void> {
@@ -110,6 +115,7 @@ export async function startChat(opts: ChatOptions): Promise<void> {
   // Mode state
   const chatState: ChatState = {
     currentMode: opts.plan ? 'plan' : (opts.auto ? 'auto-accept' : 'normal'),
+    agentProfile: 'default',
   };
   if (opts.dangerous || opts.yolo) chatState.currentMode = 'normal'; // dangerous handled by config mode
 
@@ -183,6 +189,11 @@ export async function startChat(opts: ChatOptions): Promise<void> {
 
       session.messages = result.messages;
       session.toolCallCount += result.toolCallCount;
+      // Track thinking renderer for /expand toggle
+      if (result.lastThinkingRenderer) {
+        chatState.lastThinkingRenderer = result.lastThinkingRenderer;
+        chatState.thinkingExpanded = false;
+      }
       await saveSession(session);
 
       if (jsonMode) {
@@ -232,10 +243,12 @@ async function handleSlashCommand(
       console.log('\n' + box('Commands', [
         chalk.dim('Session'),
         cmdLine('/exit', 'Save and exit'),
-        cmdLine('/model <name>', 'Switch model'),
+        cmdLine('/model', 'Switch model (picker)'),
+        cmdLine('/agent', 'Switch agent profile'),
         cmdLine('/plan', 'Toggle plan mode'),
         cmdLine('/sessions', 'List recent sessions'),
         cmdLine('/share', 'Export conversation'),
+        cmdLine('/theme', 'Change UI theme'),
         '',
         chalk.dim('Tools'),
         cmdLine('/undo [n]', 'Reverse last checkpoint'),
@@ -250,6 +263,7 @@ async function handleSlashCommand(
         cmdLine('/stats', 'Session analytics'),
         cmdLine('/diff', 'Uncommitted changes'),
         cmdLine('/cost', 'Token usage breakdown'),
+        cmdLine('/expand', 'Toggle thinking display'),
         cmdLine('/clear', 'Clear screen'),
       ]));
       console.log(chalk.dim('  Tip: type / to browse commands interactively\n'));
@@ -725,11 +739,14 @@ async function handleSlashCommand(
         { name: '/stats        Session analytics', value: '/stats' },
         { name: '/diff         Uncommitted changes', value: '/diff' },
         { name: '/history      Conversation summary', value: '/history' },
+        { name: '/expand       Toggle thinking display', value: '/expand' },
         new Separator(chalk.dim('──── Session ────')),
-        { name: '/model        Switch model', value: '/model' },
+        { name: '/model        Switch model (picker)', value: '/model' },
+        { name: '/agent        Switch agent profile', value: '/agent' },
         { name: '/sessions     List recent sessions', value: '/sessions' },
         { name: '/share        Export conversation', value: '/share' },
         { name: '/plan         Toggle plan mode', value: '/plan' },
+        { name: '/theme        Change UI theme', value: '/theme' },
         new Separator(chalk.dim('──── Tools ────')),
         { name: '/undo         Reverse last checkpoint', value: '/undo' },
         { name: '/compact      Force compaction', value: '/compact' },
@@ -766,6 +783,72 @@ async function handleSlashCommand(
         console.log(chalk.green('✓') + ` Theme: ${theme.primary(theme.name)}`);
       } else {
         console.log(chalk.yellow(`  Unknown theme: ${arg}. Try /theme to see options.`));
+      }
+      return 'handled';
+    }
+
+    case '/expand':
+    case '/think': {
+      if (!state.lastThinkingRenderer?.hasThinking()) {
+        console.log(chalk.dim('  No thinking to display'));
+        return 'handled';
+      }
+      if (state.thinkingExpanded) {
+        console.log(state.lastThinkingRenderer.getCollapsedSummary());
+        state.thinkingExpanded = false;
+      } else {
+        console.log(state.lastThinkingRenderer.getExpandedView());
+        state.thinkingExpanded = true;
+      }
+      return 'handled';
+    }
+
+    case '/agent':
+    case '/profile': {
+      const { getAgentProfile, listAgentProfiles } = await import('../core/agent-profiles.js');
+
+      if (arg) {
+        // Direct switch: /agent <name>
+        const profile = getAgentProfile(arg);
+        if (!profile) {
+          console.log(chalk.yellow(`  Unknown agent profile: ${arg}`) + chalk.dim(' (try /agent to see options)'));
+          return 'handled';
+        }
+        state.agentProfile = profile.name;
+        console.log(chalk.green('✓') + ` Agent: ${chalk.bold(profile.name)} — ${chalk.dim(profile.description)}`);
+        console.log(chalk.dim(`  Tools: ${profile.tools.length} enabled`));
+        return 'handled';
+      }
+
+      // Interactive picker
+      const { select } = await import('@inquirer/prompts');
+      const profiles = listAgentProfiles();
+      const currentProfile = state.agentProfile;
+
+      const choices = profiles.map(p => {
+        const isCurrent = p.name === currentProfile;
+        const dot = isCurrent ? chalk.green('● ') : '  ';
+        return {
+          name: `${dot}${chalk.bold(p.name.padEnd(14))} ${chalk.dim(p.description)}  ${chalk.dim(`(${p.tools.length} tools)`)}`,
+          value: p.name,
+        };
+      });
+
+      let selected: string;
+      try {
+        selected = await select({
+          message: chalk.dim('Select agent profile'),
+          choices,
+        });
+      } catch {
+        return 'handled'; // Ctrl+C
+      }
+
+      const profile = getAgentProfile(selected);
+      if (profile) {
+        state.agentProfile = profile.name;
+        console.log(chalk.green('✓') + ` Agent: ${chalk.bold(profile.name)} — ${chalk.dim(profile.description)}`);
+        console.log(chalk.dim(`  Tools: ${profile.tools.length} enabled`));
       }
       return 'handled';
     }

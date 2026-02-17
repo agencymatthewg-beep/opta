@@ -53,6 +53,7 @@ export interface AgentLoopOptions {
 export interface AgentLoopResult {
   messages: AgentMessage[];
   toolCallCount: number;
+  lastThinkingRenderer?: ThinkingRenderer;
 }
 
 // --- System Prompt ---
@@ -210,7 +211,7 @@ async function collectStream(
   stream: AsyncIterable<import('openai').default.Chat.Completions.ChatCompletionChunk>,
   onText: (text: string) => void,
   statusBar?: StatusBar | null
-): Promise<{ text: string; toolCalls: ToolCallAccum[] }> {
+): Promise<{ text: string; toolCalls: ToolCallAccum[]; thinkingRenderer: ThinkingRenderer }> {
   let text = '';
   const toolCallMap = new Map<number, ToolCallAccum>();
   const thinking = new ThinkingRenderer();
@@ -261,6 +262,7 @@ async function collectStream(
   return {
     text,
     toolCalls: [...toolCallMap.values()],
+    thinkingRenderer: thinking,
   };
 }
 
@@ -368,6 +370,7 @@ export async function agentLoop(
     sessionId,
   });
   let checkpointCount = 0;
+  let lastThinkingRenderer: ThinkingRenderer | undefined;
 
   // Initialize background process manager
   const { initProcessManager, shutdownProcessManager } = await import('./tools.js');
@@ -423,7 +426,7 @@ export async function agentLoop(
     // 3. Stream tokens to terminal, collect tool calls
     statusBar?.newTurn();
     let firstText = true;
-    const { text, toolCalls } = await collectStream(stream, (chunk) => {
+    const { text, toolCalls, thinkingRenderer: lastThinking } = await collectStream(stream, (chunk) => {
       if (silent) return;
       if (firstText) {
         console.log(); // blank line before response
@@ -431,6 +434,9 @@ export async function agentLoop(
       }
       process.stdout.write(chunk);
     }, statusBar);
+
+    // Track last thinking renderer for expand/collapse toggle
+    lastThinkingRenderer = lastThinking;
 
     if (!silent && text && !firstText) {
       process.stdout.write('\n'); // newline after streamed text
@@ -622,5 +628,5 @@ export async function agentLoop(
     await fireSessionEnd(hooks, sessionCtx);
   }
 
-  return { messages, toolCallCount };
+  return { messages, toolCallCount, lastThinkingRenderer };
 }
