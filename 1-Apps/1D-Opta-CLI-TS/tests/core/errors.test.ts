@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { OptaError, EXIT, formatError } from '../../src/core/errors.js';
+import { OptaError, EXIT, formatError, ensureModel } from '../../src/core/errors.js';
 
 describe('errors', () => {
   it('defines POSIX-compatible exit codes', () => {
@@ -42,5 +42,39 @@ describe('errors', () => {
     const formatted = formatError(err);
     expect(formatted).toContain('Simple error');
     expect(formatted).not.toContain('Try:');
+  });
+});
+
+describe('ensureModel', () => {
+  it('does not throw when model is provided', () => {
+    expect(() => ensureModel('qwen2.5-72b')).not.toThrow();
+  });
+
+  it('throws OptaError when model is undefined', () => {
+    expect(() => ensureModel(undefined)).toThrow(OptaError);
+  });
+
+  it('throws with NO_CONNECTION exit code', () => {
+    try {
+      ensureModel(undefined);
+    } catch (err) {
+      expect(err).toBeInstanceOf(OptaError);
+      expect((err as OptaError).code).toBe(EXIT.NO_CONNECTION);
+    }
+  });
+
+  it('throws with actionable suggestions', () => {
+    try {
+      ensureModel(undefined);
+    } catch (err) {
+      expect((err as OptaError).suggestions).toBeDefined();
+      expect((err as OptaError).suggestions!.length).toBeGreaterThan(0);
+      expect((err as OptaError).suggestions!.join(' ')).toContain('opta connect');
+    }
+  });
+
+  it('throws when model is empty string', () => {
+    // Empty string is falsy, should be caught
+    expect(() => ensureModel('')).toThrow(OptaError);
   });
 });

@@ -1,5 +1,6 @@
 import chalk from 'chalk';
 import { getTheme } from './theme.js';
+import { formatTokens } from '../utils/tokens.js';
 
 // --- Box Drawing ---
 
@@ -70,12 +71,9 @@ export function progressBar(ratio: number, width = 20): string {
 
 /**
  * Format a token count with K suffix.
+ * @deprecated Use `formatTokens` from `../utils/tokens.js` directly.
  */
-export function fmtTokens(n: number): string {
-  if (n >= 100_000) return `${(n / 1000).toFixed(0)}K`;
-  if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
-  return String(n);
-}
+export const fmtTokens = formatTokens;
 
 /**
  * Right-pad a label to align values.

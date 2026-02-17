@@ -1,5 +1,6 @@
 import chalk from 'chalk';
 import { isTTY } from './output.js';
+import { formatTokens } from '../utils/tokens.js';
 
 export interface StatusBarConfig {
   model: string;
@@ -38,8 +39,7 @@ export class StatusBar {
   }
 
   private formatTokens(n: number): string {
-    if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
-    return `${n}`;
+    return formatTokens(n);
   }
 
   newTurn(): void {

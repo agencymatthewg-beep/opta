@@ -1,5 +1,6 @@
 import React from 'react';
 import { Box, Text } from 'ink';
+import { formatTokens } from '../utils/tokens.js';
 
 interface SidebarProps {
   model: string;
@@ -11,12 +12,6 @@ interface SidebarProps {
   elapsed: number;
   speed?: number;
   title?: string;
-}
-
-function fmtTokens(n: number): string {
-  if (n >= 100_000) return `${(n / 1000).toFixed(0)}K`;
-  if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
-  return String(n);
 }
 
 export function Sidebar({
@@ -34,9 +29,9 @@ export function Sidebar({
 
       <Box marginTop={1} flexDirection="column">
         <Text bold color="cyan">Tokens</Text>
-        <Row label="Prompt" value={fmtTokens(tokens.prompt)} />
-        <Row label="Reply" value={fmtTokens(tokens.completion)} />
-        <Row label="Total" value={fmtTokens(tokens.total)} />
+        <Row label="Prompt" value={formatTokens(tokens.prompt)} />
+        <Row label="Reply" value={formatTokens(tokens.completion)} />
+        <Row label="Total" value={formatTokens(tokens.total)} />
       </Box>
 
       <Box marginTop={1} flexDirection="column">

@@ -39,7 +39,23 @@ export function formatError(error: OptaError): string {
   return output;
 }
 
-export function die(error: OptaError): never {
-  console.error(formatError(error));
-  process.exit(error.code);
+/**
+ * Assert that a model is configured, or throw an actionable OptaError.
+ *
+ * TODO: chat.ts, do.ts, server.ts, agent.ts should use this instead of
+ * inline "no model" checks with process.exit().
+ */
+export function ensureModel(model: string | undefined): asserts model is string {
+  if (!model) {
+    throw new OptaError(
+      'No model configured. Run `opta connect` to set up your Opta-LMX connection, or `opta status` to check.',
+      EXIT.NO_CONNECTION,
+      [],
+      [
+        'Run: opta connect <host>:<port>',
+        'Check: opta status',
+        'Set manually: opta config set model <name>',
+      ],
+    );
+  }
 }

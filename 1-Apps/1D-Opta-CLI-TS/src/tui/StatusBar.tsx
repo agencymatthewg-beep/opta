@@ -1,5 +1,6 @@
 import React from 'react';
 import { Box, Text } from 'ink';
+import { formatTokens } from '../utils/tokens.js';
 
 interface InkStatusBarProps {
   model: string;
@@ -9,12 +10,6 @@ interface InkStatusBarProps {
   speed: number;
   mode?: string;
   sessionId?: string;
-}
-
-function fmtTokens(n: number): string {
-  if (n >= 100_000) return `${(n / 1000).toFixed(0)}K`;
-  if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
-  return String(n);
 }
 
 export function InkStatusBar({ model, tokens, cost, tools, speed, mode, sessionId }: InkStatusBarProps) {
@@ -37,7 +32,7 @@ export function InkStatusBar({ model, tokens, cost, tools, speed, mode, sessionI
         )}
       </Box>
       <Box>
-        <Text dimColor>~{fmtTokens(tokens)} tokens</Text>
+        <Text dimColor>~{formatTokens(tokens)} tokens</Text>
         <Text dimColor> | </Text>
         <Text dimColor>{tools} tools</Text>
         {speed > 0 && (

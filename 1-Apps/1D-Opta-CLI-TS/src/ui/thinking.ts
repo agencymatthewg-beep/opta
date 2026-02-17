@@ -1,5 +1,6 @@
 import chalk from 'chalk';
 import { isTTY } from './output.js';
+import { estimateTokens } from '../utils/tokens.js';
 
 /**
  * ThinkingRenderer — displays model thinking/reasoning in a distinct dim block.
@@ -94,7 +95,7 @@ export class ThinkingRenderer {
   private displayThinking(text: string): void {
     if (!isTTY) return;
 
-    const tokens = Math.ceil(text.length / 4);
+    const tokens = estimateTokens(text);
 
     if (this.thinkingDisplayed) {
       // We already showed streaming thinking text — now collapse it
@@ -119,7 +120,7 @@ export class ThinkingRenderer {
 
   /** Generate a one-line collapsed summary showing token count. */
   getCollapsedSummary(): string {
-    const tokens = Math.ceil(this.thinkText.length / 4);
+    const tokens = estimateTokens(this.thinkText);
     return chalk.dim(`  ⚙ thinking (${tokens} tokens) `) + chalk.dim.italic('[/expand to view]');
   }
 
@@ -127,7 +128,7 @@ export class ThinkingRenderer {
   getExpandedView(): string {
     const lines = this.thinkText.split('\n');
     const formatted = lines.map(l => chalk.dim('  │ ') + chalk.dim.italic(l)).join('\n');
-    const tokens = Math.ceil(this.thinkText.length / 4);
+    const tokens = estimateTokens(this.thinkText);
     return chalk.dim(`  ⚙ thinking (${tokens} tokens)\n`) + formatted + '\n' + chalk.dim('  └─');
   }
 
