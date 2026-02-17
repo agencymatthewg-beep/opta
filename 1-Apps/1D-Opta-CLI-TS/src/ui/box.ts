@@ -92,7 +92,6 @@ export function statusDot(ok: boolean): string {
 
 // --- ANSI Stripping ---
 
-// eslint-disable-next-line no-control-regex
 const ANSI_RE = /\x1b\[[0-9;]*m/g;
 
 function stripAnsi(s: string): string {

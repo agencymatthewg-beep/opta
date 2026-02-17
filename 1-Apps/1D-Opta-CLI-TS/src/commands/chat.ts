@@ -384,7 +384,7 @@ async function handleSlashCommand(
         session.model = selectedModel;
         console.log(chalk.green('✓') + ` Switched to ${selectedModel}`);
         return 'model-switched';
-      } catch (err) {
+      } catch {
         // Fallback: just show current model if LMX is unreachable
         console.log(chalk.dim(`  Current model: ${config.model.default}`));
         console.log(chalk.dim(`  LMX unreachable — use /model <name> to switch manually`));
