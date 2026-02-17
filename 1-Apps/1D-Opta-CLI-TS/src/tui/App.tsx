@@ -72,12 +72,23 @@ function AppInner({ model, sessionId, connectionStatus = true, onMessage }: AppP
 
   const mainContent = (
     <Box flexDirection="column" flexGrow={1}>
-      <Box flexDirection="column" height={messageAreaHeight} overflow="hidden">
-        <MessageList messages={messages} height={messageAreaHeight} />
+      <Box
+        flexDirection="column"
+        height={messageAreaHeight}
+        overflow="hidden"
+        borderStyle={activePanel === 'messages' ? 'single' : undefined}
+        borderColor={activePanel === 'messages' ? 'cyan' : 'gray'}
+      >
+        <MessageList messages={messages} height={activePanel === 'messages' ? messageAreaHeight - 2 : messageAreaHeight} />
         {isLoading && <StreamingIndicator />}
       </Box>
 
-      <InputBox onSubmit={handleSubmit} mode={mode} isLoading={isLoading} />
+      <Box
+        borderStyle={activePanel === 'input' ? 'single' : undefined}
+        borderColor={activePanel === 'input' ? 'cyan' : 'gray'}
+      >
+        <InputBox onSubmit={handleSubmit} mode={mode} isLoading={isLoading} />
+      </Box>
     </Box>
   );
 
