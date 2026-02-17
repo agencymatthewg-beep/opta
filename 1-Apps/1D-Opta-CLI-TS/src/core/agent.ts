@@ -7,6 +7,7 @@ import { createSpinner } from '../ui/spinner.js';
 import { renderMarkdown } from '../ui/markdown.js';
 import { ThinkingRenderer, stripThinkTags } from '../ui/thinking.js';
 import { StatusBar } from '../ui/statusbar.js';
+import { formatToolCall, formatToolResult } from '../ui/toolcards.js';
 import type { SubAgentContext } from './subagent.js';
 import {
   createHookManager,
@@ -512,6 +513,17 @@ export async function agentLoop(
         continue;
       }
 
+      // Display tool call card
+      if (!silent) {
+        let parsedArgs: Record<string, unknown>;
+        try {
+          parsedArgs = JSON.parse(call.args);
+        } catch {
+          parsedArgs = { raw: call.args };
+        }
+        console.log(formatToolCall(call.name, parsedArgs));
+      }
+
       // Execute the tool
       spinner.start(`${call.name}...`);
       const result = await registry.execute(call.name, call.args);
@@ -519,6 +531,11 @@ export async function agentLoop(
 
       // Fire post-tool hook
       await fireToolPost(hooks, call.name, call.args, result, sessionCtx);
+
+      // Display tool result
+      if (!silent && result) {
+        console.log(formatToolResult(call.name, result));
+      }
 
       messages.push({
         role: 'tool',
