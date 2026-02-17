@@ -112,10 +112,18 @@ export async function startChat(opts: ChatOptions): Promise<void> {
     console.log(chalk.dim('  Type /help for commands, / to browse, /exit to quit\n'));
   }
 
+  // Mode state (shared by both TUI and REPL modes)
+  const chatState: ChatState = {
+    currentMode: opts.plan ? 'plan' : (opts.auto ? 'auto-accept' : 'normal'),
+    agentProfile: 'default',
+  };
+  if (opts.dangerous || opts.yolo) chatState.currentMode = 'normal'; // dangerous handled by config mode
+
   // TUI mode: full-screen Ink rendering (--tui flag or tui.default config)
   if (opts.tui || config.tui.default) {
     const { renderTUI } = await import('../tui/render.js');
     const { createTuiEmitter, runAgentWithEvents } = await import('../tui/adapter.js');
+    const { captureConsoleOutput } = await import('../tui/capture.js');
 
     const emitter = createTuiEmitter();
 
@@ -135,16 +143,30 @@ export async function startChat(opts: ChatOptions): Promise<void> {
             // Error already emitted via emitter 'error' event
           });
       },
+      onSlashCommand: async (input: string) => {
+        // Bare `/` opens interactive browser in REPL mode, but in TUI mode
+        // redirect to /help since @inquirer/prompts doesn't work here.
+        const effectiveInput = input.trim() === '/' ? '/help' : input;
+
+        const { result, output } = await captureConsoleOutput(async () => {
+          return dispatchSlashCommand(effectiveInput, { session, config, chatState });
+        });
+
+        // Persist session after slash command (some modify session state)
+        await saveSession(session);
+
+        // If model was switched, reload config
+        let newModel: string | undefined;
+        if (result === 'model-switched') {
+          config = await loadConfig(overrides);
+          newModel = config.model.default;
+        }
+
+        return { result, output, newModel };
+      },
     });
     return;
   }
-
-  // Mode state
-  const chatState: ChatState = {
-    currentMode: opts.plan ? 'plan' : (opts.auto ? 'auto-accept' : 'normal'),
-    agentProfile: 'default',
-  };
-  if (opts.dangerous || opts.yolo) chatState.currentMode = 'normal'; // dangerous handled by config mode
 
   /** Map OptaMode to InputEditor mode string. */
   function toEditorMode(mode: OptaMode): 'normal' | 'plan' | 'auto' {

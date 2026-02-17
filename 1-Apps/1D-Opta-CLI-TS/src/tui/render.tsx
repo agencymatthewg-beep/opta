@@ -2,6 +2,7 @@ import React from 'react';
 import { render } from 'ink';
 import { App } from './App.js';
 import type { TuiEmitter } from './adapter.js';
+import type { SlashCommandResult } from './App.js';
 
 /** Legacy render options — waits for full response before display. */
 interface LegacyRenderOptions {
@@ -16,6 +17,7 @@ interface StreamingRenderOptions {
   sessionId: string;
   emitter: TuiEmitter;
   onSubmit: (text: string) => void;
+  onSlashCommand?: (input: string) => Promise<SlashCommandResult>;
 }
 
 type RenderOptions = LegacyRenderOptions | StreamingRenderOptions;
@@ -36,7 +38,7 @@ export async function renderTUI(options: RenderOptions): Promise<void> {
 
   const { model, sessionId } = options;
   const appProps = isStreamingOptions(options)
-    ? { model, sessionId, emitter: options.emitter, onSubmit: options.onSubmit }
+    ? { model, sessionId, emitter: options.emitter, onSubmit: options.onSubmit, onSlashCommand: options.onSlashCommand }
     : { model, sessionId, onMessage: options.onMessage };
 
   const { waitUntilExit } = render(

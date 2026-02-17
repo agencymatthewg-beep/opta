@@ -3,6 +3,8 @@ import { Box, Text, useInput } from 'ink';
 import { InputEditor } from '../ui/input.js';
 import { InputHistory } from '../ui/history.js';
 import fg from 'fast-glob';
+import { getAllCommands } from '../commands/slash/index.js';
+import type { SlashCommandDef } from '../commands/slash/index.js';
 
 interface InputBoxProps {
   onSubmit: (text: string) => void;
@@ -16,6 +18,40 @@ const AUTOCOMPLETE_DEBOUNCE = 200;
 
 /** Maximum number of file suggestions to display. */
 const MAX_SUGGESTIONS = 5;
+
+/** Maximum number of slash command suggestions to display. */
+const MAX_SLASH_SUGGESTIONS = 8;
+
+/** All slash commands (loaded once). */
+let cachedSlashCommands: SlashCommandDef[] | null = null;
+function getSlashCommands(): SlashCommandDef[] {
+  if (!cachedSlashCommands) {
+    cachedSlashCommands = getAllCommands();
+  }
+  return cachedSlashCommands;
+}
+
+/**
+ * Match slash commands by prefix. Input should be the partial command
+ * WITHOUT the leading slash (e.g. 'he' matches 'help', 'history').
+ * Returns matching commands sorted by command name.
+ */
+function matchSlashCommands(partial: string): SlashCommandDef[] {
+  const commands = getSlashCommands();
+  const lower = partial.toLowerCase();
+
+  if (!lower) {
+    // Show all commands when just "/" is typed
+    return commands.slice(0, MAX_SLASH_SUGGESTIONS);
+  }
+
+  return commands
+    .filter(cmd => {
+      if (cmd.command.startsWith(lower)) return true;
+      return cmd.aliases?.some(a => a.startsWith(lower)) ?? false;
+    })
+    .slice(0, MAX_SLASH_SUGGESTIONS);
+}
 
 /**
  * Extract the @-prefixed partial path from the buffer at the cursor position.
@@ -56,10 +92,25 @@ export function InputBox({ onSubmit, mode, isLoading, history: historyProp }: In
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Slash command autocomplete state
+  const [slashSuggestions, setSlashSuggestions] = useState<SlashCommandDef[]>([]);
+
   // Keep editor mode in sync with prop
   useEffect(() => {
     editor.setMode(mode);
   }, [mode, editor]);
+
+  // Update slash command suggestions (synchronous — no debounce needed)
+  const updateSlashSuggestions = useCallback((buffer: string) => {
+    // Only show slash suggestions when: buffer starts with `/`, is a single word (no spaces after command)
+    if (buffer.startsWith('/') && !buffer.includes(' ')) {
+      const partial = buffer.slice(1); // Remove leading /
+      const matches = matchSlashCommands(partial);
+      setSlashSuggestions(matches);
+    } else {
+      setSlashSuggestions([]);
+    }
+  }, []);
 
   // Debounced @file search
   const updateSuggestions = useCallback((buffer: string, cursor: number) => {
@@ -94,7 +145,9 @@ export function InputBox({ onSubmit, mode, isLoading, history: historyProp }: In
       editor.insertNewline();
       navigatingHistory.current = false;
       rerender();
-      updateSuggestions(editor.getBuffer(), editor.getCursor());
+      const buf = editor.getBuffer();
+      updateSuggestions(buf, editor.getCursor());
+      updateSlashSuggestions(buf);
       return;
     }
 
@@ -107,6 +160,7 @@ export function InputBox({ onSubmit, mode, isLoading, history: historyProp }: In
       editor.clear();
       navigatingHistory.current = false;
       setSuggestions([]);
+      setSlashSuggestions([]);
       rerender();
       return;
     }
@@ -116,30 +170,44 @@ export function InputBox({ onSubmit, mode, isLoading, history: historyProp }: In
       editor.handleEscape();
       navigatingHistory.current = false;
       setSuggestions([]);
+      setSlashSuggestions([]);
       rerender();
       return;
     }
 
-    // Tab — accept first @file suggestion
-    if (key.tab && suggestions.length > 0) {
-      const buffer = editor.getBuffer();
-      const cursor = editor.getCursor();
-      const prefix = extractAtPrefix(buffer, cursor);
-      if (prefix !== null) {
-        // Find the @ position
-        let atPos = cursor - 1;
-        while (atPos >= 0 && buffer[atPos] !== '@') atPos--;
-        // Replace @prefix with @suggestion
-        const replacement = `@${suggestions[0]}`;
-        const newBuffer = buffer.slice(0, atPos) + replacement + buffer.slice(cursor);
-        editor.setBuffer(newBuffer);
-        // Place cursor after the replacement (not at end of full buffer)
-        // setBuffer puts cursor at end, but we need it after the replacement
-        const newCursorPos = atPos + replacement.length;
-        editor.setBuffer(newBuffer.slice(0, newCursorPos) + newBuffer.slice(newCursorPos));
+    // Tab — accept first slash command or @file suggestion
+    if (key.tab) {
+      // Slash command completion takes priority
+      if (slashSuggestions.length > 0) {
+        const cmd = `/${slashSuggestions[0]!.command} `;
+        editor.setBuffer(cmd);
+        setSlashSuggestions([]);
         setSuggestions([]);
         rerender();
         return;
+      }
+
+      // @file completion
+      if (suggestions.length > 0) {
+        const buffer = editor.getBuffer();
+        const cursor = editor.getCursor();
+        const prefix = extractAtPrefix(buffer, cursor);
+        if (prefix !== null) {
+          // Find the @ position
+          let atPos = cursor - 1;
+          while (atPos >= 0 && buffer[atPos] !== '@') atPos--;
+          // Replace @prefix with @suggestion
+          const replacement = `@${suggestions[0]}`;
+          const newBuffer = buffer.slice(0, atPos) + replacement + buffer.slice(cursor);
+          editor.setBuffer(newBuffer);
+          // Place cursor after the replacement (not at end of full buffer)
+          // setBuffer puts cursor at end, but we need it after the replacement
+          const newCursorPos = atPos + replacement.length;
+          editor.setBuffer(newBuffer.slice(0, newCursorPos) + newBuffer.slice(newCursorPos));
+          setSuggestions([]);
+          rerender();
+          return;
+        }
       }
     }
 
@@ -152,6 +220,7 @@ export function InputBox({ onSubmit, mode, isLoading, history: historyProp }: In
       const prev = history.previous();
       editor.setBuffer(prev);
       setSuggestions([]);
+      setSlashSuggestions([]);
       rerender();
       return;
     }
@@ -162,6 +231,7 @@ export function InputBox({ onSubmit, mode, isLoading, history: historyProp }: In
         const next = history.next();
         editor.setBuffer(next);
         setSuggestions([]);
+        setSlashSuggestions([]);
         rerender();
         return;
       }
@@ -172,7 +242,9 @@ export function InputBox({ onSubmit, mode, isLoading, history: historyProp }: In
       editor.deleteBackward();
       navigatingHistory.current = false;
       rerender();
-      updateSuggestions(editor.getBuffer(), editor.getCursor());
+      const buf = editor.getBuffer();
+      updateSuggestions(buf, editor.getCursor());
+      updateSlashSuggestions(buf);
       return;
     }
 
@@ -209,7 +281,9 @@ export function InputBox({ onSubmit, mode, isLoading, history: historyProp }: In
       editor.deleteForward();
       navigatingHistory.current = false;
       rerender();
-      updateSuggestions(editor.getBuffer(), editor.getCursor());
+      const buf = editor.getBuffer();
+      updateSuggestions(buf, editor.getCursor());
+      updateSlashSuggestions(buf);
       return;
     }
 
@@ -218,6 +292,7 @@ export function InputBox({ onSubmit, mode, isLoading, history: historyProp }: In
       editor.clear();
       navigatingHistory.current = false;
       setSuggestions([]);
+      setSlashSuggestions([]);
       rerender();
       return;
     }
@@ -227,7 +302,9 @@ export function InputBox({ onSubmit, mode, isLoading, history: historyProp }: In
       editor.insertText(input);
       navigatingHistory.current = false;
       rerender();
-      updateSuggestions(editor.getBuffer(), editor.getCursor());
+      const buf = editor.getBuffer();
+      updateSuggestions(buf, editor.getCursor());
+      updateSlashSuggestions(buf);
       return;
     }
   }, { isActive: !isLoading });
@@ -307,8 +384,19 @@ export function InputBox({ onSubmit, mode, isLoading, history: historyProp }: In
         );
       })}
 
+      {/* Slash command autocomplete suggestions */}
+      {slashSuggestions.length > 0 && (
+        <Box flexDirection="column" paddingLeft={modeIndicator ? 4 : 2}>
+          {slashSuggestions.map((cmd, i) => (
+            <Text key={cmd.command} dimColor>
+              {i === 0 ? 'Tab> ' : '     '}/{cmd.command.padEnd(14)} {cmd.description}
+            </Text>
+          ))}
+        </Box>
+      )}
+
       {/* @file autocomplete suggestions */}
-      {suggestions.length > 0 && (
+      {suggestions.length > 0 && slashSuggestions.length === 0 && (
         <Box flexDirection="column" paddingLeft={modeIndicator ? 4 : 2}>
           {suggestions.map((s, i) => (
             <Text key={s} dimColor>

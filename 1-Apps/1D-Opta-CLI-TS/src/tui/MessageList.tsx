@@ -2,10 +2,9 @@ import React, { type ReactNode, memo } from 'react';
 import { Box, Text } from 'ink';
 import { ScrollView } from './ScrollView.js';
 import { MarkdownText } from './MarkdownText.js';
+import { ToolCard } from './ToolCard.js';
+import { ThinkingBlock } from './ThinkingBlock.js';
 import type { TuiMessage } from './App.js';
-
-/** Max characters shown inline for a completed tool result. */
-const TOOL_INLINE_PREVIEW_LENGTH = 80;
 
 /** Padding consumed by left/right paddingX on the message area. */
 const PADDING_CHARS = 4;
@@ -18,24 +17,24 @@ interface MessageListProps {
   streamingIdx?: number | null;
   /** Terminal width in columns. Defaults to 100. */
   terminalWidth?: number;
+  /** Whether thinking blocks are expanded (global toggle via Ctrl+T). */
+  thinkingExpanded?: boolean;
 }
 
 function renderToolMessage(msg: TuiMessage, i: number): ReactNode {
-  const isRunning = msg.toolStatus === 'running';
-  const icon = isRunning ? '*' : '+';
-  const color = isRunning ? 'yellow' : 'gray';
+  const status = msg.toolStatus === 'running' ? 'running'
+    : msg.toolStatus === 'error' ? 'error'
+    : 'done';
 
   return (
-    <Box key={`tool-${i}`} marginBottom={0} paddingLeft={2}>
-      <Text color={color}>
-        {icon} {msg.toolName ?? 'tool'}
-      </Text>
-      {isRunning ? (
-        <Text dimColor> running...</Text>
-      ) : (
-        <Text dimColor> {msg.content.slice(0, TOOL_INLINE_PREVIEW_LENGTH)}{msg.content.length > TOOL_INLINE_PREVIEW_LENGTH ? '...' : ''}</Text>
-      )}
-    </Box>
+    <ToolCard
+      key={`tool-${i}`}
+      name={msg.toolName ?? 'tool'}
+      status={status}
+      args={msg.toolArgs}
+      result={status !== 'running' ? msg.content : undefined}
+      collapsed={true}
+    />
   );
 }
 
@@ -52,14 +51,25 @@ function renderErrorMessage(msg: TuiMessage, i: number): ReactNode {
   );
 }
 
+function renderSystemMessage(msg: TuiMessage, i: number): ReactNode {
+  return (
+    <Box key={`sys-${i}`} flexDirection="column" marginBottom={1}>
+      <Box paddingLeft={2}>
+        <Text dimColor wrap="wrap">{msg.content}</Text>
+      </Box>
+    </Box>
+  );
+}
+
 interface ChatMessageProps {
   msg: TuiMessage;
   index: number;
   isStreaming: boolean;
   markdownWidth: number;
+  thinkingExpanded: boolean;
 }
 
-const ChatMessage = memo(function ChatMessage({ msg, index, isStreaming, markdownWidth }: ChatMessageProps) {
+const ChatMessage = memo(function ChatMessage({ msg, index, isStreaming, markdownWidth, thinkingExpanded }: ChatMessageProps) {
   const isAssistant = msg.role === 'assistant';
 
   return (
@@ -75,6 +85,13 @@ const ChatMessage = memo(function ChatMessage({ msg, index, isStreaming, markdow
           <Text dimColor> (thinking {msg.thinkingTokens})</Text>
         ) : null}
       </Box>
+      {isAssistant && msg.thinking && (
+        <ThinkingBlock
+          text={msg.thinking.text}
+          expanded={thinkingExpanded}
+          tokenCount={msg.thinking.tokens}
+        />
+      )}
       <Box paddingLeft={2}>
         {isAssistant ? (
           <MarkdownText text={msg.content} isStreaming={isStreaming} width={markdownWidth} />
@@ -92,6 +109,7 @@ export function MessageList({
   focusable = false,
   streamingIdx,
   terminalWidth = 100,
+  thinkingExpanded = false,
 }: MessageListProps) {
   if (messages.length === 0) {
     return (
@@ -111,6 +129,9 @@ export function MessageList({
     if (msg.role === 'error') {
       return renderErrorMessage(msg, i);
     }
+    if (msg.role === 'system') {
+      return renderSystemMessage(msg, i);
+    }
     const isStreaming = msg.role === 'assistant' && i === streamingIdx;
     return (
       <ChatMessage
@@ -119,6 +140,7 @@ export function MessageList({
         index={i}
         isStreaming={isStreaming}
         markdownWidth={markdownWidth}
+        thinkingExpanded={thinkingExpanded}
       />
     );
   });
