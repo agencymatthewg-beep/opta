@@ -54,6 +54,15 @@ export class InputEditor {
     return lines[lines.length - 1]!.length;
   }
 
+  isShellMode(): boolean {
+    return this.buffer.startsWith('!');
+  }
+
+  getShellCommand(): string | null {
+    if (!this.isShellMode()) return null;
+    return this.buffer.slice(1).trim();
+  }
+
   getPromptDisplay(): string {
     switch (this.options.mode) {
       case 'shell': return chalk.yellow('!') + chalk.dim(' >');

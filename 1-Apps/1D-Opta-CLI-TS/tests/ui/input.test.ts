@@ -49,3 +49,28 @@ describe('multiline', () => {
     expect(editor.getCursorCol()).toBe(3);
   });
 });
+
+describe('shell mode', () => {
+  it('should detect shell mode from ! prefix', () => {
+    const editor = new InputEditor({ prompt: '>' });
+    editor.insertText('!ls -la');
+    expect(editor.isShellMode()).toBe(true);
+    expect(editor.getShellCommand()).toBe('ls -la');
+  });
+
+  it('should NOT be shell mode without ! prefix', () => {
+    const editor = new InputEditor({ prompt: '>' });
+    editor.insertText('hello');
+    expect(editor.isShellMode()).toBe(false);
+    expect(editor.getShellCommand()).toBeNull();
+  });
+
+  it('should exit shell mode when ! is deleted', () => {
+    const editor = new InputEditor({ prompt: '>' });
+    editor.insertText('!cmd');
+    expect(editor.isShellMode()).toBe(true);
+    editor.clear();
+    editor.insertText('cmd');
+    expect(editor.isShellMode()).toBe(false);
+  });
+});
