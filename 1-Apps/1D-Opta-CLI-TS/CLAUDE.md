@@ -30,7 +30,7 @@ npm run dev
 # Edit src/commands/mycommand.ts, saves auto-reload
 
 # Run a single test file
-npm test -- src/__tests__/core/agent.test.ts
+npm test -- tests/core/config.test.ts
 
 # Check types before committing
 npm run typecheck && npm run lint
@@ -447,32 +447,21 @@ Primary agent loop is single-threaded (one model call at a time). Sub-agents can
 
 ## Testing Strategy
 
-> **Note:** Test files are not yet created. Vitest is configured but `src/__tests__/` does not exist yet. Below is the planned structure.
+> **Status:** 77 test files, 875+ tests passing. Tests live at `tests/` (not `src/__tests__/`).
 
-### Planned Unit Tests: `src/__tests__/core/`
+### Test Structure: `tests/`
 
-- `agent.test.ts` — Agent loop with mocked Opta-LMX responses
-- `config.test.ts` — Config loading and merging
-- `tools.test.ts` — Tool execution, permission checks
-
-### Planned Command Tests: `src/__tests__/commands/`
-
-- `status.test.ts` — LMX health check flow
-- `models.test.ts` — Model listing and switching
-- `init.test.ts` — OPIS project initialization
-
-### Planned E2E Test: `src/__tests__/cli.test.ts`
-
-- `opta --help` returns 0
-- `opta --version` returns version
-- `opta unknown-command` returns exit code 2 (misuse)
+- `tests/cli.test.ts` — CLI entry (--help, --version, error codes) — 20 tests
+- `tests/core/config.test.ts` — Config loading, merging, validation, SSH defaults — 20 tests
+- `tests/core/tools.test.ts` — Tool schemas, permissions, execution — 64 tests
+- Plus 74 more test files covering commands, TUI, providers, etc.
 
 ### Running Tests
 
 ```bash
-npm test                           # All
+npm test                           # All (takes ~60s)
 npm test -- --watch                # Watch mode
-npm test -- agent.test.ts           # Single file
+npm test -- tests/core/config.test.ts  # Single file
 npm test -- --ui                   # Browser UI
 ```
 
@@ -524,7 +513,7 @@ vi.mocked(lmx.complete).mockResolvedValue({
 1. Create `src/commands/mycommand.ts`
 2. Export async function `export async function executeMyCommand(options) { ... }`
 3. Add to `index.ts` with lazy import
-4. Add test file `src/__tests__/commands/mycommand.test.ts`
+4. Add test file `tests/commands/mycommand.test.ts`
 
 ### Add a New Tool
 
