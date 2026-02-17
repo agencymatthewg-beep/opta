@@ -22,6 +22,8 @@ import { modelCommands } from './model.js';
 import { displayCommands } from './display.js';
 import { workflowCommands } from './workflow.js';
 import { debugCommands } from './debug.js';
+import { reviewCommands } from './review.js';
+import { researchCommands } from './research.js';
 
 // --- Build the registry ---
 
@@ -31,6 +33,8 @@ const allCommandDefs: SlashCommandDef[] = [
   ...displayCommands,
   ...workflowCommands,
   ...debugCommands,
+  ...reviewCommands,
+  ...researchCommands,
 ];
 
 /** Map from command/alias name (without slash) to the command definition. */

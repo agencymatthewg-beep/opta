@@ -49,6 +49,7 @@ const DISPLAY_ORDER: (keyof KeybindingConfig)[] = [
   'slashMenu',
   'scrollUp',
   'scrollDown',
+  'modelSwitch',
 ];
 
 /** Width reserved for the key column in the two-column layout. */

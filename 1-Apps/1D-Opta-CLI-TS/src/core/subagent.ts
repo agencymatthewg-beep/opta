@@ -19,7 +19,7 @@ export interface SubAgentTask {
 
 export interface SubAgentResult {
   taskId: string;
-  status: 'completed' | 'budget_exceeded' | 'timeout' | 'error';
+  status: 'completed' | 'budget_exceeded' | 'timeout' | 'cancelled' | 'error';
   response: string;
   toolCallCount: number;
   tokenEstimate: number;
@@ -164,10 +164,25 @@ export async function spawnSubAgent(
   config: OptaConfig,
   client: import('openai').default,
   registry: import('../mcp/registry.js').ToolRegistry,
-  parentContext?: SubAgentContext
+  parentContext?: SubAgentContext,
+  signal?: AbortSignal
 ): Promise<SubAgentResult> {
   const startTime = Date.now();
   const budget = resolveBudget(task.budget ?? {}, config);
+
+  // Check if already cancelled before starting
+  if (signal?.aborted) {
+    return {
+      taskId: task.id,
+      status: 'cancelled',
+      response: 'Sub-agent cancelled before starting.',
+      toolCallCount: 0,
+      tokenEstimate: 0,
+      filesRead: [],
+      filesModified: [],
+      durationMs: Date.now() - startTime,
+    };
+  }
 
   try {
     validateBudget(budget);
@@ -215,8 +230,15 @@ export async function spawnSubAgent(
   // Import resolvePermission once outside the loop
   const { resolvePermission } = await import('./tools/index.js');
 
-  // AbortController for cancelling inflight LLM requests on timeout
+  // AbortController for cancelling inflight LLM requests on timeout or external cancellation
   const abortController = new AbortController();
+
+  // Link external signal to internal abort
+  if (signal) {
+    const onAbort = () => abortController.abort();
+    signal.addEventListener('abort', onAbort, { once: true });
+    // Clean up listener when done (handled in finally block via clearTimeout pattern)
+  }
 
   const runLoop = async (): Promise<SubAgentResult> => {
     while (true) {
@@ -379,10 +401,37 @@ export async function spawnSubAgent(
     return result;
   } catch (err) {
     if (err instanceof Error && err.message === 'TIMEOUT') {
+      // Distinguish external cancellation from internal timeout
+      if (signal?.aborted) {
+        return {
+          taskId: task.id,
+          status: 'cancelled',
+          response: 'Sub-agent cancelled by parent.',
+          toolCallCount,
+          tokenEstimate: estimateTokensSimple(messages),
+          filesRead: [...new Set(filesRead)],
+          filesModified: [...new Set(filesModified)],
+          durationMs: Date.now() - startTime,
+        };
+      }
       return {
         taskId: task.id,
         status: 'timeout',
         response: `Sub-agent timed out after ${budget.timeoutMs}ms.`,
+        toolCallCount,
+        tokenEstimate: estimateTokensSimple(messages),
+        filesRead: [...new Set(filesRead)],
+        filesModified: [...new Set(filesModified)],
+        durationMs: Date.now() - startTime,
+      };
+    }
+
+    // External cancellation may also surface as an AbortError
+    if (signal?.aborted) {
+      return {
+        taskId: task.id,
+        status: 'cancelled',
+        response: 'Sub-agent cancelled by parent.',
         toolCallCount,
         tokenEstimate: estimateTokensSimple(messages),
         filesRead: [...new Set(filesRead)],
@@ -415,6 +464,8 @@ export function formatSubAgentResult(result: SubAgentResult): string {
     ? '[BUDGET EXCEEDED] '
     : result.status === 'timeout'
     ? '[TIMEOUT] '
+    : result.status === 'cancelled'
+    ? '[CANCELLED] '
     : '';
 
   const lines: string[] = [];

@@ -20,42 +20,20 @@ import {
   type SessionContext,
 } from '../hooks/integration.js';
 
-// --- OpenAI Client Singleton ---
-// Cache the OpenAI client by baseURL+apiKey so we reuse the same HTTP client
-// across multiple agentLoop() calls within a session instead of creating one per call.
+// --- Provider-Based Client ---
+// Uses the provider system (src/providers/) for multi-provider support.
+// The provider manager caches clients internally.
 
-let cachedClient: import('openai').default | null = null;
-let cachedClientKey = '';
-
-function clientCacheKey(baseURL: string, apiKey: string): string {
-  return `${baseURL}|${apiKey}`;
-}
-
-/**
- * Returns a cached OpenAI client if the connection config hasn't changed,
- * otherwise creates a new one. This avoids creating a new HTTP client
- * on every agentLoop() invocation.
- */
 async function getOrCreateClient(config: OptaConfig): Promise<import('openai').default> {
-  const baseURL = `http://${config.connection.host}:${config.connection.port}/v1`;
-  const apiKey = 'opta-lmx';
-  const key = clientCacheKey(baseURL, apiKey);
-
-  if (cachedClient && cachedClientKey === key) {
-    return cachedClient;
-  }
-
-  const { default: OpenAI } = await import('openai');
-  cachedClient = new OpenAI({ baseURL, apiKey });
-  cachedClientKey = key;
-  debug(`Created new OpenAI client for ${baseURL}`);
-  return cachedClient;
+  const { getProvider } = await import('../providers/manager.js');
+  const provider = await getProvider(config);
+  debug(`Using provider: ${provider.name}`);
+  return provider.getClient();
 }
 
 /** Reset the cached client (useful for testing). */
 export function resetClientCache(): void {
-  cachedClient = null;
-  cachedClientKey = '';
+  import('../providers/manager.js').then(({ resetProviderCache }) => resetProviderCache()).catch(() => {});
 }
 
 interface ToolCallAccum {
@@ -90,6 +68,8 @@ export interface OnStreamCallbacks {
    * If 'always' is chosen, the caller should persist the permission and return true.
    */
   onPermissionRequest?: (toolName: string, args: Record<string, unknown>) => Promise<'allow' | 'deny' | 'always'>;
+  /** Called when connection status changes during streaming (reconnection attempts). */
+  onConnectionStatus?: (status: 'checking' | 'connected' | 'disconnected' | 'reconnecting', attempt?: number) => void;
 }
 
 export interface AgentLoopOptions {
@@ -186,6 +166,34 @@ PLANNING PROCESS:
 When your plan is complete, say: "Plan complete. Ready to implement?"`;
   }
 
+  if (mode === 'review') {
+    prompt += `\n\nYou are in CODE REVIEW MODE. You are a senior engineer performing a thorough code review.
+
+CRITICAL CONSTRAINTS:
+- You are READ-ONLY. You MUST NOT call edit_file, write_file, multi_edit, delete_file, or run_command.
+- You CAN use: read_file, list_dir, search_files, find_files, ask_user, web_search, web_fetch
+- Do NOT suggest fixes as tool calls — only describe what should change.
+
+REVIEW CHECKLIST:
+1. **Bugs** — Logic errors, edge cases, off-by-one, null handling
+2. **Security** — Injection, auth bypass, data exposure, unsafe operations
+3. **Performance** — N+1 queries, unnecessary allocations, blocking operations
+4. **Style** — Naming, consistency, dead code, complexity
+5. **Architecture** — Coupling, abstraction level, separation of concerns
+
+Format findings as: [SEVERITY] Category — Description — Location`;
+  }
+
+  if (mode === 'research') {
+    prompt += `\n\nYou are in RESEARCH MODE. You are exploring ideas, searching for information, and taking notes.
+
+CONSTRAINTS:
+- You MUST NOT call edit_file, write_file, multi_edit, or delete_file.
+- You CAN use: read_file, list_dir, search_files, find_files, run_command, ask_user, web_search, web_fetch
+- Focus on gathering information, exploring approaches, and documenting findings.
+- Summarize your research findings clearly for later reference.`;
+  }
+
   return prompt;
 }
 
@@ -260,6 +268,62 @@ async function compactHistory(
     debug(`Compaction failed: ${err}`);
     return messages; // Keep original if compaction fails
   }
+}
+
+// --- Streaming Retry ---
+
+/** Retryable errors: network failures, timeouts, 5xx server errors. */
+function isRetryableError(err: unknown): boolean {
+  if (err instanceof Error) {
+    const msg = err.message.toLowerCase();
+    if (msg.includes('econnrefused') || msg.includes('econnreset') || msg.includes('etimedout') ||
+        msg.includes('fetch failed') || msg.includes('network') || msg.includes('socket hang up')) {
+      return true;
+    }
+  }
+  // OpenAI SDK wraps HTTP errors with a status property
+  const status = (err as { status?: number }).status;
+  if (status && status >= 500) return true;
+  return false;
+}
+
+async function createStreamWithRetry(
+  client: import('openai').default,
+  params: Parameters<import('openai').default['chat']['completions']['create']>[0],
+  retryConfig: { maxRetries: number; backoffMs: number; backoffMultiplier: number },
+  onStatus?: (status: 'checking' | 'connected' | 'disconnected' | 'reconnecting', attempt?: number) => void,
+): Promise<AsyncIterable<import('openai').default.Chat.Completions.ChatCompletionChunk>> {
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt <= retryConfig.maxRetries; attempt++) {
+    try {
+      if (attempt > 0) {
+        onStatus?.('reconnecting', attempt);
+        const delay = retryConfig.backoffMs * Math.pow(retryConfig.backoffMultiplier, attempt - 1);
+        debug(`Retry attempt ${attempt}/${retryConfig.maxRetries} after ${delay}ms`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+
+      const stream = await client.chat.completions.create({
+        ...params,
+        stream: true,
+      });
+
+      if (attempt > 0) {
+        onStatus?.('connected');
+      }
+
+      return stream as AsyncIterable<import('openai').default.Chat.Completions.ChatCompletionChunk>;
+    } catch (err) {
+      lastError = err;
+      if (!isRetryableError(err) || attempt === retryConfig.maxRetries) {
+        if (attempt > 0) onStatus?.('disconnected');
+        throw err;
+      }
+    }
+  }
+
+  throw lastError;
 }
 
 // --- Stream Collector ---
@@ -511,13 +575,17 @@ export async function agentLoop(
       debug(`Sending ${messages.length} messages to ${model}`);
       spinner.start('Thinking...');
 
-      const stream = await client.chat.completions.create({
-        model,
-        messages: messages as Parameters<typeof client.chat.completions.create>[0]['messages'],
-        tools: activeSchemas as Parameters<typeof client.chat.completions.create>[0]['tools'],
-        tool_choice: 'auto',
-        stream: true,
-      });
+      const stream = await createStreamWithRetry(
+        client,
+        {
+          model,
+          messages: messages as Parameters<typeof client.chat.completions.create>[0]['messages'],
+          tools: activeSchemas as Parameters<typeof client.chat.completions.create>[0]['tools'],
+          tool_choice: 'auto',
+        },
+        effectiveConfig.connection.retry,
+        streamCallbacks?.onConnectionStatus,
+      );
 
       spinner.stop();
 

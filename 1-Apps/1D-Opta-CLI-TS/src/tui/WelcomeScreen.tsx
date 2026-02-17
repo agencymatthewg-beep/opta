@@ -6,9 +6,10 @@ export interface WelcomeScreenProps {
   connectionState?: ConnectionState;
   model?: string;
   contextTotal?: number;
+  toolCount?: number;
 }
 
-export function WelcomeScreen({ connectionState, model, contextTotal }: WelcomeScreenProps) {
+export function WelcomeScreen({ connectionState, model, contextTotal, toolCount }: WelcomeScreenProps) {
   const conn = connectionState
     ? connectionDot(connectionState)
     : { char: '\u25CF', color: 'green', label: 'Ready' };
@@ -36,7 +37,7 @@ export function WelcomeScreen({ connectionState, model, contextTotal }: WelcomeS
 
         {/* Tools count */}
         <Box>
-          <Text dimColor>{'\u25CC'} Tools: 8 registered</Text>
+          <Text dimColor>{'\u25CC'} Tools: {toolCount ?? 8} registered</Text>
         </Box>
       </Box>
 

@@ -36,7 +36,7 @@ _opta_completions() {
       return 0
       ;;
     chat)
-      COMPREPLY=( $(compgen -W "--resume --plan --model --format --no-commit --no-checkpoints --auto --dangerous --yolo --tui --help" -- "\${cur}") )
+      COMPREPLY=( $(compgen -W "--resume --plan --review --research --model --format --no-commit --no-checkpoints --auto --dangerous --yolo --tui --help" -- "\${cur}") )
       return 0
       ;;
     do)
@@ -134,7 +134,9 @@ _opta() {
         chat)
           _arguments \\
             '--resume[resume a previous session]:session id:' \\
-            '--plan[plan mode]' \\
+            '--plan[plan mode — design implementation approach]' \\
+            '--review[code review mode — structured review output]' \\
+            '--research[research mode — explore ideas, gather info]' \\
             '--model[override default model]:model name:' \\
             '--format[output format]:format:(text json)' \\
             '--no-commit[disable auto-commit]' \\
@@ -236,6 +238,8 @@ complete -c opta -l help -s h -d 'Show help'
 # chat flags
 complete -c opta -n '__fish_seen_subcommand_from chat' -l resume -s r -d 'Resume session' -x
 complete -c opta -n '__fish_seen_subcommand_from chat' -l plan -d 'Plan mode'
+complete -c opta -n '__fish_seen_subcommand_from chat' -l review -d 'Code review mode'
+complete -c opta -n '__fish_seen_subcommand_from chat' -l research -d 'Research mode'
 complete -c opta -n '__fish_seen_subcommand_from chat' -l model -s m -d 'Override model' -x
 complete -c opta -n '__fish_seen_subcommand_from chat' -l format -s f -d 'Output format' -x -a 'text json'
 complete -c opta -n '__fish_seen_subcommand_from chat' -l no-commit -d 'Disable auto-commit'

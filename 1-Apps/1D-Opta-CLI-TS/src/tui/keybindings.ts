@@ -14,6 +14,7 @@ export interface KeybindingConfig {
   clear: KeyBinding;
   slashMenu: KeyBinding;
   expandThinking: KeyBinding;
+  modelSwitch: KeyBinding;
 }
 
 export function defaultKeybindings(): KeybindingConfig {
@@ -28,6 +29,7 @@ export function defaultKeybindings(): KeybindingConfig {
     clear: { key: 'ctrl+l', description: 'Clear screen' },
     slashMenu: { key: 'escape', description: 'Open command menu' },
     expandThinking: { key: 'ctrl+t', description: 'Toggle thinking' },
+    modelSwitch: { key: 'ctrl+m', description: 'Switch model' },
   };
 }
 

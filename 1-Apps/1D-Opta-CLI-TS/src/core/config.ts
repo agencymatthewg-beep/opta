@@ -28,6 +28,13 @@ export const OptaConfigSchema = z.object({
       port: z.number().default(1234),
       protocol: z.literal('http').default('http'),
       adminKey: z.string().optional(),
+      retry: z
+        .object({
+          maxRetries: z.number().min(0).max(10).default(3),
+          backoffMs: z.number().min(100).default(1000),
+          backoffMultiplier: z.number().min(1).default(2),
+        })
+        .default({}),
     })
     .default({}),
   model: z
@@ -36,9 +43,7 @@ export const OptaConfigSchema = z.object({
       contextLimit: z.number().default(32768),
     })
     .default({}),
-  defaultMode: z.enum(['safe', 'auto', 'plan', 'dangerous', 'ci']).default('safe'),
-  // CANONICAL source of truth for all tool permission defaults.
-  // tools/permissions.ts DEFAULT_TOOL_PERMISSIONS mirrors these for runtime fallback.
+  defaultMode: z.enum(['safe', 'auto', 'plan', 'review', 'research', 'dangerous', 'ci']).default('safe'),
   permissions: z
     .record(z.string(), ToolPermission)
     .default({
@@ -178,6 +183,17 @@ export const OptaConfigSchema = z.object({
       exportMap: z.boolean().default(true),
     })
     .default({}),
+  provider: z
+    .object({
+      active: z.enum(['lmx', 'anthropic']).default('lmx'),
+      anthropic: z
+        .object({
+          apiKey: z.string().default(''),
+          model: z.string().default('claude-sonnet-4-5-20250929'),
+        })
+        .default({}),
+    })
+    .default({}),
   tui: z
     .object({
       default: z.boolean().default(false),
@@ -188,6 +204,9 @@ export const OptaConfigSchema = z.object({
 export type OptaConfig = z.infer<typeof OptaConfigSchema>;
 
 export const DEFAULT_CONFIG: OptaConfig = OptaConfigSchema.parse({});
+
+/** Canonical permission defaults derived from the Zod schema. Single source of truth. */
+export const DEFAULT_PERMISSIONS: Record<string, string> = DEFAULT_CONFIG.permissions;
 
 export async function loadConfig(
   overrides?: Record<string, unknown>

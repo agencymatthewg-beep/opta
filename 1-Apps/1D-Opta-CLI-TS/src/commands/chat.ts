@@ -9,6 +9,7 @@ import {
   loadSession,
   saveSession,
   generateTitle,
+  searchSessions,
 } from '../memory/store.js';
 import { resolveFileRefs, buildContextWithRefs, resolveImageRefs } from '../core/fileref.js';
 import { box, kv, statusDot } from '../ui/box.js';
@@ -20,6 +21,8 @@ import type { Session } from '../memory/store.js';
 interface ChatOptions {
   resume?: string;
   plan?: boolean;
+  review?: boolean;
+  research?: boolean;
   model?: string;
   commit?: boolean;
   checkpoints?: boolean;
@@ -30,7 +33,7 @@ interface ChatOptions {
   tui?: boolean;
 }
 
-export type OptaMode = 'normal' | 'plan' | 'auto-accept';
+export type OptaMode = 'normal' | 'plan' | 'review' | 'research' | 'auto-accept';
 
 /**
  * Format the last assistant message as a JSON line (JSONL) for --format json.
@@ -75,22 +78,37 @@ export async function startChat(opts: ChatOptions): Promise<void> {
   if (opts.resume) {
     try {
       session = await loadSession(opts.resume);
-      if (!jsonMode) {
-        const msgCount = session.messages.filter(m => m.role !== 'system').length;
-        console.log('\n' + box('Opta', [
-          kv('LMX', `${config.connection.host}:${config.connection.port} ${statusDot(true)}`),
-          kv('Model', session.model),
-          kv('Session', `${session.id.slice(0, 8)} ${chalk.dim('(resumed)')}`),
-          ...(session.title ? [kv('Title', chalk.italic(session.title.slice(0, 40)))] : []),
-          kv('Messages', String(msgCount)),
-        ]));
-      }
     } catch {
-      console.error(
-        chalk.red('✗') + ` Session not found: ${opts.resume}\n\n` +
-        chalk.dim('Run ') + chalk.cyan('opta sessions') + chalk.dim(' to list available sessions')
-      );
-      process.exit(EXIT.NOT_FOUND);
+      // Exact ID not found — try fuzzy search
+      const matches = await searchSessions(opts.resume);
+      if (matches.length === 1) {
+        session = await loadSession(matches[0]!.id);
+      } else if (matches.length > 1) {
+        console.log(chalk.yellow(`  Multiple sessions match "${opts.resume}":\n`));
+        for (const m of matches.slice(0, 5)) {
+          console.log(`  ${chalk.cyan(m.id.slice(0, 8))}  ${m.title.slice(0, 40)}`);
+        }
+        console.log(chalk.dim('\n  Use the full session ID to resume.'));
+        process.exit(EXIT.NOT_FOUND);
+        return; // unreachable but satisfies TS
+      } else {
+        console.error(
+          chalk.red('✗') + ` Session not found: ${opts.resume}\n\n` +
+          chalk.dim('Run ') + chalk.cyan('opta sessions') + chalk.dim(' to list available sessions')
+        );
+        process.exit(EXIT.NOT_FOUND);
+        return; // unreachable but satisfies TS
+      }
+    }
+    if (!jsonMode) {
+      const msgCount = session.messages.filter(m => m.role !== 'system').length;
+      console.log('\n' + box('Opta', [
+        kv('LMX', `${config.connection.host}:${config.connection.port} ${statusDot(true)}`),
+        kv('Model', session.model),
+        kv('Session', `${session.id.slice(0, 8)} ${chalk.dim('(resumed)')}`),
+        ...(session.title ? [kv('Title', chalk.italic(session.title.slice(0, 40)))] : []),
+        kv('Messages', String(msgCount)),
+      ]));
     }
   } else {
     session = await createSession(config.model.default);
@@ -114,7 +132,7 @@ export async function startChat(opts: ChatOptions): Promise<void> {
 
   // Mode state (shared by both TUI and REPL modes)
   const chatState: ChatState = {
-    currentMode: opts.plan ? 'plan' : (opts.auto ? 'auto-accept' : 'normal'),
+    currentMode: opts.plan ? 'plan' : opts.review ? 'review' : opts.research ? 'research' : (opts.auto ? 'auto-accept' : 'normal'),
     agentProfile: 'default',
   };
   if (opts.dangerous || opts.yolo) chatState.currentMode = 'normal'; // dangerous handled by config mode
@@ -187,7 +205,7 @@ export async function startChat(opts: ChatOptions): Promise<void> {
 
   /** Map OptaMode to InputEditor mode string. */
   function toEditorMode(mode: OptaMode): 'normal' | 'plan' | 'auto' {
-    if (mode === 'plan') return 'plan';
+    if (mode === 'plan' || mode === 'review' || mode === 'research') return 'plan';
     if (mode === 'auto-accept') return 'auto';
     return 'normal';
   }
@@ -300,7 +318,7 @@ export async function startChat(opts: ChatOptions): Promise<void> {
         existingMessages: session.messages,
         sessionId: session.id,
         silent: jsonMode,
-        mode: chatState.currentMode === 'plan' ? 'plan' : undefined,
+        mode: chatState.currentMode !== 'normal' && chatState.currentMode !== 'auto-accept' ? chatState.currentMode : undefined,
         profile: chatState.agentProfile !== 'default' ? chatState.agentProfile : undefined,
         images: images.length > 0 ? images.map(img => ({ base64: img.base64, mimeType: img.mimeType, name: img.name })) : undefined,
       });

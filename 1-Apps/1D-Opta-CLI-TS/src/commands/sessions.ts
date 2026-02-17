@@ -3,6 +3,7 @@ import {
   listSessions,
   deleteSession,
   exportSession,
+  searchSessions,
 } from '../memory/store.js';
 import { EXIT } from '../core/errors.js';
 
@@ -44,6 +45,16 @@ export async function sessions(
       console.log(chalk.green('✓') + ` Deleted session ${id}`);
       break;
 
+    case 'search':
+    case 'find':
+      if (!id) {
+        console.error(chalk.red('✗') + ' Search query required\n');
+        console.log(chalk.dim('Usage: opta sessions search <query>'));
+        process.exit(EXIT.MISUSE);
+      }
+      await searchSessionsFormatted(id, opts?.json);
+      break;
+
     case 'export':
       if (!id) {
         console.error(chalk.red('✗') + ' Session ID required\n');
@@ -61,7 +72,7 @@ export async function sessions(
 
     default:
       console.error(chalk.red('✗') + ` Unknown action: ${action}\n`);
-      console.log(chalk.dim('Available actions: list, resume, delete, export'));
+      console.log(chalk.dim('Available actions: list, resume, delete, export, search'));
       process.exit(EXIT.MISUSE);
   }
 }
@@ -92,6 +103,40 @@ async function listSessionsFormatted(json?: boolean): Promise<void> {
     const count = String(s.messageCount).padStart(4);
 
     console.log(`  ${shortId}  ${title} ${model} ${date} ${count}`);
+  }
+}
+
+async function searchSessionsFormatted(query: string, json?: boolean): Promise<void> {
+  const matches = await searchSessions(query);
+
+  if (matches.length === 0) {
+    console.log(chalk.dim(`No sessions matching "${query}"`));
+    return;
+  }
+
+  if (json) {
+    console.log(JSON.stringify(matches, null, 2));
+    return;
+  }
+
+  console.log(chalk.dim(`  Found ${matches.length} session${matches.length === 1 ? '' : 's'} matching "${query}":\n`));
+
+  console.log(
+    chalk.bold('  ID        Title                          Model           Date         Messages')
+  );
+
+  for (const s of matches) {
+    const shortId = s.id.slice(0, 8).padEnd(8);
+    const title = s.title.slice(0, 30).padEnd(30);
+    const model = s.model.slice(0, 15).padEnd(15);
+    const date = formatRelativeDate(s.created).padEnd(12);
+    const count = String(s.messageCount).padStart(4);
+
+    console.log(`  ${shortId}  ${title} ${model} ${date} ${count}`);
+  }
+
+  if (matches.length === 1) {
+    console.log(chalk.dim(`\n  Resume with: opta sessions resume ${matches[0]!.id}`));
   }
 }
 

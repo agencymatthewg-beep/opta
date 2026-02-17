@@ -5,7 +5,7 @@
 
 // ─── Connection State ───────────────────────────────────────────────────────
 
-export type ConnectionState = 'checking' | 'connected' | 'disconnected' | 'error';
+export type ConnectionState = 'checking' | 'connected' | 'disconnected' | 'error' | 'reconnecting';
 
 export interface ConnectionIndicator {
   char: string;
@@ -20,6 +20,7 @@ export function connectionDot(state?: ConnectionState, legacyStatus?: boolean): 
       case 'connected': return { char: '●', color: 'green', label: 'Connected' };
       case 'disconnected': return { char: '○', color: 'red', label: 'Disconnected' };
       case 'error': return { char: '✗', color: 'red', label: 'Error' };
+      case 'reconnecting': return { char: '◌', color: 'yellow', label: 'Reconnecting...' };
     }
   }
   return { char: legacyStatus ? '●' : '○', color: legacyStatus ? 'green' : 'red', label: legacyStatus ? 'Connected' : 'Disconnected' };

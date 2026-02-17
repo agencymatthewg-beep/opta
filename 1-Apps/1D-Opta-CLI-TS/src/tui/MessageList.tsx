@@ -5,7 +5,9 @@ import { MarkdownText } from './MarkdownText.js';
 import { ToolCard } from './ToolCard.js';
 import { ThinkingBlock } from './ThinkingBlock.js';
 import { WelcomeScreen } from './WelcomeScreen.js';
+import { ErrorDisplay } from './ErrorDisplay.js';
 import type { TuiMessage } from './App.js';
+import type { ConnectionState } from './utils.js';
 
 /** Padding consumed by left/right paddingX on the message area. */
 const PADDING_CHARS = 4;
@@ -21,11 +23,13 @@ interface MessageListProps {
   /** Whether thinking blocks are expanded (global toggle via Ctrl+T). */
   thinkingExpanded?: boolean;
   /** Connection state for the welcome screen. */
-  connectionState?: 'checking' | 'connected' | 'disconnected' | 'error';
+  connectionState?: ConnectionState;
   /** Current model name for the welcome screen. */
   model?: string;
   /** Total context window size (tokens) for the welcome screen. */
   contextTotal?: number;
+  /** Number of registered tools for the welcome screen. */
+  toolCount?: number;
 }
 
 /** Format a Date as a lowercase 12-hour time string (e.g. "2:35 pm"). */
@@ -65,13 +69,8 @@ function renderToolMessage(msg: TuiMessage, i: number): ReactNode {
 
 function renderErrorMessage(msg: TuiMessage, i: number): ReactNode {
   return (
-    <Box key={`err-${i}`} flexDirection="column" marginBottom={1}>
-      <Box>
-        <Text color="red" bold>  error</Text>
-      </Box>
-      <Box paddingLeft={2}>
-        <Text color="red" wrap="wrap">{msg.content}</Text>
-      </Box>
+    <Box key={`err-${i}`}>
+      <ErrorDisplay message={msg.content} />
     </Box>
   );
 }
@@ -145,6 +144,7 @@ export function MessageList({
   connectionState,
   model,
   contextTotal,
+  toolCount,
 }: MessageListProps) {
   if (messages.length === 0) {
     return (
@@ -153,6 +153,7 @@ export function MessageList({
           connectionState={connectionState}
           model={model}
           contextTotal={contextTotal}
+          toolCount={toolCount}
         />
       </Box>
     );

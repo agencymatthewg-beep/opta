@@ -10,6 +10,7 @@ interface KeyboardActions {
   onPreviousPanel?: () => void;
   onToggleSidebar?: () => void;
   onExpandThinking?: () => void;
+  onModelSwitch?: () => void;
 }
 
 interface KeyboardOptions {
@@ -73,6 +74,10 @@ export function useKeyboard(actions: KeyboardActions, options?: KeyboardOptions)
     // Slash menu
     if (matchesBinding(input, key, bindings.slashMenu)) {
       actions.onSlashMenu?.();
+    }
+    // Model switch
+    if (matchesBinding(input, key, bindings.modelSwitch)) {
+      actions.onModelSwitch?.();
     }
   });
 }

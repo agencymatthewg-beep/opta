@@ -11,12 +11,39 @@ const planHandler = async (args: string, ctx: SlashContext): Promise<SlashResult
   if (args === 'off' || (ctx.chatState.currentMode === 'plan' && !args)) {
     ctx.chatState.currentMode = 'normal';
     console.log(chalk.green('\u2713') + ' Exited plan mode');
-  } else {
+    return 'handled';
+  }
+
+  // --skip flag skips research check
+  if (args === '--skip') {
     ctx.chatState.currentMode = 'plan';
     console.log(chalk.magenta('\u2713') + ' Entered plan mode \u2014 read-only exploration');
     console.log(chalk.dim('  Tools: read, search, list, find, ask, web_search, web_fetch'));
     console.log(chalk.dim('  Type /plan off to exit'));
+    return 'handled';
   }
+
+  // Check if research has been done in this session
+  const hasResearch = ctx.session.messages.some(m =>
+    typeof m.content === 'string' && m.content.includes('[System: Research mode activated')
+  );
+
+  if (!hasResearch && !args) {
+    console.log(chalk.yellow('\n  No research context found for this planning session.\n'));
+    console.log(chalk.dim('  Options:'));
+    console.log(`  ${chalk.cyan('/research')}      Start deep research first`);
+    console.log(`  ${chalk.cyan('/plan --skip')}   Skip research, plan from existing context`);
+    console.log();
+    return 'handled';
+  }
+
+  ctx.chatState.currentMode = 'plan';
+  console.log(chalk.magenta('\u2713') + ' Entered plan mode \u2014 read-only exploration');
+  if (hasResearch) {
+    console.log(chalk.dim('  Research context detected \u2014 building on prior exploration'));
+  }
+  console.log(chalk.dim('  Tools: read, search, list, find, ask, web_search, web_fetch'));
+  console.log(chalk.dim('  Type /plan off to exit'));
   return 'handled';
 };
 
@@ -124,32 +151,91 @@ const undoHandler = async (args: string, ctx: SlashContext): Promise<SlashResult
       return 'handled';
     }
 
-    // --- /undo (no args): preview last checkpoint, then confirm ---
+    // --- /undo (no args): interactive checkpoint picker ---
     const checkpoints = await listCheckpoints(process.cwd(), ctx.session.id);
     if (checkpoints.length === 0) {
       console.log(chalk.dim('  No checkpoints in this session'));
       return 'handled';
     }
 
-    const last = checkpoints[checkpoints.length - 1]!;
-    const patch = await readPatchContent(process.cwd(), ctx.session.id, last.n);
-    const stat = patchStat(patch);
+    // Single checkpoint: show preview + confirm (original behavior)
+    if (checkpoints.length === 1) {
+      const last = checkpoints[0]!;
+      const patch = await readPatchContent(process.cwd(), ctx.session.id, last.n);
+      const stat = patchStat(patch);
 
-    console.log();
-    console.log(
-      chalk.bold(`  Checkpoint #${last.n}`) +
-      chalk.dim(` \u2014 ${last.tool} \u2014 `) +
-      formatPatchStat(stat.additions, stat.deletions)
+      console.log();
+      console.log(
+        chalk.bold(`  Checkpoint #${last.n}`) +
+        chalk.dim(` \u2014 ${last.tool} \u2014 `) +
+        formatPatchStat(stat.additions, stat.deletions)
+      );
+      console.log();
+      if (patch) {
+        console.log(formatTruncatedDiff(patch, last.path, 20));
+        console.log();
+      }
+
+      const { confirm } = await import('@inquirer/prompts');
+      const ok = await confirm({
+        message: 'Revert this checkpoint?',
+        default: true,
+      });
+      if (!ok) {
+        console.log(chalk.dim('  Cancelled'));
+        return 'handled';
+      }
+
+      await undoCheckpoint(process.cwd(), ctx.session.id);
+      console.log(chalk.green('\u2713') + ' Undone: Last checkpoint');
+      ctx.session.messages.push({
+        role: 'user',
+        content: `[System: User reversed Checkpoint #${last.n} \u2014 changes have been reverted. Adjust your approach accordingly.]`,
+      });
+      return 'handled';
+    }
+
+    // Multiple checkpoints: interactive picker
+    const { select } = await import('@inquirer/prompts');
+    const now = Date.now();
+
+    const choices = await Promise.all(
+      [...checkpoints].reverse().map(async (cp) => {
+        const cpPatch = await readPatchContent(process.cwd(), ctx.session.id, cp.n);
+        const cpStat = patchStat(cpPatch);
+        const ago = Math.floor((now - new Date(cp.timestamp).getTime()) / 60000);
+        const agoStr = ago < 1 ? 'just now' : `${ago}m ago`;
+        return {
+          name: `#${String(cp.n).padEnd(3)} ${cp.path.padEnd(35).slice(0, 35)}  ${formatPatchStat(cpStat.additions, cpStat.deletions)}  ${chalk.dim(`(${agoStr})`)}`,
+          value: cp.n,
+        };
+      })
     );
-    console.log();
-    if (patch) {
-      console.log(formatTruncatedDiff(patch, last.path, 20));
+
+    choices.push({ name: chalk.dim('\u2500\u2500 Cancel \u2500\u2500'), value: -1 });
+
+    const selectedN = await select({
+      message: chalk.dim('Select checkpoint to undo:'),
+      choices,
+    });
+
+    if (selectedN === -1) {
+      console.log(chalk.dim('  Cancelled'));
+      return 'handled';
+    }
+
+    // Show diff preview for selected checkpoint
+    const selectedCp = checkpoints.find(cp => cp.n === selectedN)!;
+    const selectedPatch = await readPatchContent(process.cwd(), ctx.session.id, selectedN);
+    if (selectedPatch) {
+      console.log();
+      console.log(formatTruncatedDiff(selectedPatch, selectedCp.path, 15));
       console.log();
     }
 
-    const { confirm } = await import('@inquirer/prompts');
-    const ok = await confirm({
-      message: 'Revert this checkpoint?',
+    const { confirm: confirmUndo } = await import('@inquirer/prompts');
+    const ok = await confirmUndo({
+      message: `Revert checkpoint #${selectedN}?`,
       default: true,
     });
     if (!ok) {
@@ -157,11 +243,11 @@ const undoHandler = async (args: string, ctx: SlashContext): Promise<SlashResult
       return 'handled';
     }
 
-    await undoCheckpoint(process.cwd(), ctx.session.id);
-    console.log(chalk.green('\u2713') + ' Undone: Last checkpoint');
+    await undoCheckpoint(process.cwd(), ctx.session.id, selectedN);
+    console.log(chalk.green('\u2713') + ` Undone: Checkpoint #${selectedN}`);
     ctx.session.messages.push({
       role: 'user',
-      content: `[System: User reversed Checkpoint #${last.n} \u2014 changes have been reverted. Adjust your approach accordingly.]`,
+      content: `[System: User reversed Checkpoint #${selectedN} \u2014 changes have been reverted. Adjust your approach accordingly.]`,
     });
   } catch (err) {
     if (err instanceof Error && err.message.includes('ExitPromptError')) {

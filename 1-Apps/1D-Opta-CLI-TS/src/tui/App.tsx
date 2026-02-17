@@ -12,6 +12,7 @@ import { StreamingIndicator } from './StreamingIndicator.js';
 import { FocusProvider, useFocusPanel } from './FocusContext.js';
 import { PermissionPrompt } from './PermissionPrompt.js';
 import { HelpOverlay } from './HelpOverlay.js';
+import { ModelPicker } from './ModelPicker.js';
 import { estimateTokens } from '../utils/tokens.js';
 import type { TuiEmitter, TurnStats, PermissionRequest } from './adapter.js';
 import type { PermissionDecision } from './PermissionPrompt.js';
@@ -96,6 +97,7 @@ function AppInner({
   const [streamingLabel, setStreamingLabel] = useState('thinking');
   const [thinkingExpanded, setThinkingExpanded] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [showModelPicker, setShowModelPicker] = useState(false);
   const [sessionTitle, setSessionTitle] = useState(initialTitle);
   const [cost, setCost] = useState('$0.00');
 
@@ -114,11 +116,40 @@ function AppInner({
   // Track whether we're in streaming mode (emitter-based)
   const isStreamingMode = !!emitter;
 
+  // Dynamic context limit from model metadata
+  const [contextLimit, setContextLimit] = useState(196608);
+  const [registeredToolCount, setRegisteredToolCount] = useState(8);
+
+  // Connection details for ModelPicker (loaded from config)
+  const [connectionHost, setConnectionHost] = useState('192.168.188.11');
+  const [connectionPort, setConnectionPort] = useState(1234);
+
+  useEffect(() => {
+    import('../core/models.js').then(({ getContextLimit }) => {
+      setContextLimit(getContextLimit(currentModel));
+    }).catch(() => {});
+  }, [currentModel]);
+
+  useEffect(() => {
+    import('../core/tools/schemas.js').then(({ TOOL_SCHEMAS }) => {
+      setRegisteredToolCount(TOOL_SCHEMAS.length);
+    }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    import('../core/config.js').then(({ loadConfig }) => {
+      loadConfig().then(cfg => {
+        setConnectionHost(cfg.connection.host);
+        setConnectionPort(cfg.connection.port);
+      }).catch(() => {});
+    }).catch(() => {});
+  }, []);
+
   // Derived context usage from token counts
   const contextUsage = useMemo(() => ({
     used: promptTokens + completionTokens,
-    total: 196608, // TODO: get from config/model metadata
-  }), [promptTokens, completionTokens]);
+    total: contextLimit,
+  }), [promptTokens, completionTokens, contextLimit]);
 
   // Ref to track the current streaming assistant message index
   const streamingMsgIdx = useRef<number | null>(null);
@@ -130,6 +161,7 @@ function AppInner({
   const handleToggleSidebar = useCallback(() => setSidebarVisible(prev => !prev), []);
   const handleExpandThinking = useCallback(() => setThinkingExpanded(prev => !prev), []);
   const handleHelp = useCallback(() => setShowHelp(prev => !prev), []);
+  const handleModelSwitch = useCallback(() => setShowModelPicker(prev => !prev), []);
 
   useKeyboard({
     onExit: exit,
@@ -139,6 +171,7 @@ function AppInner({
     onPreviousPanel: previousPanel,
     onToggleSidebar: handleToggleSidebar,
     onExpandThinking: handleExpandThinking,
+    onModelSwitch: handleModelSwitch,
   });
 
   // Elapsed timer -- ticks every 100ms while loading
@@ -298,7 +331,7 @@ function AppInner({
       setSessionTitle(title);
     };
 
-    const onConnectionStatus = (status: 'checking' | 'connected' | 'disconnected' | 'error') => {
+    const onConnectionStatus = (status: 'checking' | 'connected' | 'disconnected' | 'error' | 'reconnecting') => {
       setConnectionState(status);
     };
 
@@ -473,6 +506,21 @@ function AppInner({
       >
         {showHelp ? (
           <HelpOverlay onClose={() => setShowHelp(false)} />
+        ) : showModelPicker ? (
+          <ModelPicker
+            currentModel={currentModel}
+            connectionHost={connectionHost}
+            connectionPort={connectionPort}
+            onSelect={(model) => {
+              setCurrentModel(model);
+              setShowModelPicker(false);
+              // Persist model choice to config
+              import('../core/config.js').then(({ saveConfig }) => {
+                saveConfig({ 'model.default': model }).catch(() => {});
+              }).catch(() => {});
+            }}
+            onClose={() => setShowModelPicker(false)}
+          />
         ) : (
           <>
             <MessageList
@@ -485,6 +533,7 @@ function AppInner({
               connectionState={connectionState}
               model={currentModel}
               contextTotal={contextUsage.total}
+              toolCount={registeredToolCount}
             />
             {isLoading && (
               <StreamingIndicator

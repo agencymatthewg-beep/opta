@@ -45,7 +45,7 @@ export interface TuiEventMap {
   'turn:end': [stats: TurnStats];
   'turn:first-token': [latencyMs: number];
   'turn:progress': [stats: { elapsed: number; speed: number; completionTokens: number }];
-  'connection:status': [status: 'checking' | 'connected' | 'disconnected' | 'error'];
+  'connection:status': [status: 'checking' | 'connected' | 'disconnected' | 'error' | 'reconnecting'];
   'error': [msg: string];
   'permission:request': [request: PermissionRequest];
   'permission:response': [id: string, decision: PermissionDecision];
@@ -133,6 +133,9 @@ export async function runAgentWithEvents(
       },
       onThinking(text: string) {
         emitter.emit('thinking', text);
+      },
+      onConnectionStatus(status: 'checking' | 'connected' | 'disconnected' | 'reconnecting') {
+        emitter.emit('connection:status', status as 'checking' | 'connected' | 'disconnected' | 'error');
       },
       /**
        * Bridge permission requests from the agent loop to the TUI.

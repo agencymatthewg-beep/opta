@@ -163,6 +163,59 @@ export async function exportSession(id: string): Promise<string> {
   return JSON.stringify(session, null, 2);
 }
 
+// --- Search ---
+
+/**
+ * Fuzzy search sessions by query string.
+ * Matches against session ID prefix, title, model, and first user message.
+ * Returns results sorted by relevance score (highest first).
+ */
+export async function searchSessions(query: string): Promise<SessionSummary[]> {
+  const all = await listSessions();
+  const q = query.toLowerCase();
+
+  const scored = all.map(session => {
+    let score = 0;
+
+    // Exact ID prefix match (highest priority)
+    if (session.id.toLowerCase().startsWith(q)) {
+      score += 100;
+    } else if (session.id.toLowerCase().includes(q)) {
+      score += 50;
+    }
+
+    // Title match
+    const title = session.title.toLowerCase();
+    if (title === q) {
+      score += 90;
+    } else if (title.startsWith(q)) {
+      score += 70;
+    } else if (title.includes(q)) {
+      score += 40;
+    }
+
+    // Model match
+    if (session.model.toLowerCase().includes(q)) {
+      score += 20;
+    }
+
+    // Word-level fuzzy: check if all query words appear somewhere
+    const queryWords = q.split(/\s+/);
+    const haystack = `${session.id} ${session.title} ${session.model}`.toLowerCase();
+    const allWordsMatch = queryWords.every(w => haystack.includes(w));
+    if (allWordsMatch && queryWords.length > 1) {
+      score += 30;
+    }
+
+    return { session, score };
+  });
+
+  return scored
+    .filter(s => s.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .map(s => s.session);
+}
+
 // --- Helpers ---
 
 export function generateTitle(firstMessage: string): string {
