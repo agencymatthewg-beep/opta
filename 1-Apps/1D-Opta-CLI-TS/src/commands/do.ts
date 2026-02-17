@@ -2,6 +2,7 @@ import chalk from 'chalk';
 import { loadConfig } from '../core/config.js';
 import { agentLoop } from '../core/agent.js';
 import { formatError, OptaError, EXIT } from '../core/errors.js';
+import { buildConfigOverrides } from '../utils/config-helpers.js';
 
 // --- Types ---
 
@@ -82,22 +83,7 @@ export async function executeTask(task: string[], opts: DoOptions): Promise<void
     process.exit(EXIT.MISUSE);
   }
 
-  const overrides: Record<string, unknown> = {};
-  if (opts.model) {
-    overrides['model'] = { default: opts.model };
-  }
-  if (opts.commit === false) {
-    overrides['git'] = { ...((overrides['git'] as Record<string, unknown>) ?? {}), autoCommit: false };
-  }
-  if (opts.checkpoints === false) {
-    overrides['git'] = { ...((overrides['git'] as Record<string, unknown>) ?? {}), checkpoints: false };
-  }
-
-  if (opts.dangerous || opts.yolo) {
-    overrides['defaultMode'] = 'dangerous';
-  } else if (opts.auto) {
-    overrides['defaultMode'] = 'auto';
-  }
+  const overrides = buildConfigOverrides(opts);
 
   const silent = outputFormat === 'json' || outputFormat === 'quiet';
 

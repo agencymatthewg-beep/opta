@@ -1,4 +1,5 @@
 import { debug } from '../core/debug.js';
+import { getContextLimit } from '../core/models.js';
 import type { z } from 'zod';
 
 // --- Public Response Types (what commands consume) ---
@@ -94,23 +95,10 @@ interface RawAdminUnloadResponse {
 }
 
 // --- Context Limit Lookup ---
-
-const CONTEXT_LIMIT_TABLE: Record<string, number> = {
-  'glm-4.7-flash': 128_000,
-  'qwen2.5-72b': 32_768,
-  'step-3.5-flash': 32_768,
-  'qwq-32b': 32_768,
-  'deepseek-r1-distill': 32_768,
-  'wizardlm': 4_096,
-  'gemma-3-4b': 8_192,
-};
+// Delegates to the canonical MODEL_PROFILES in core/models.ts.
 
 export function lookupContextLimit(modelId: string): number {
-  const lower = modelId.toLowerCase();
-  for (const [pattern, limit] of Object.entries(CONTEXT_LIMIT_TABLE)) {
-    if (lower.includes(pattern)) return limit;
-  }
-  return 32_768;
+  return getContextLimit(modelId);
 }
 
 const GB_TO_BYTES = 1e9;

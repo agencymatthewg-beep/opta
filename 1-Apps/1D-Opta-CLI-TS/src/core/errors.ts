@@ -42,8 +42,8 @@ export function formatError(error: OptaError): string {
 /**
  * Assert that a model is configured, or throw an actionable OptaError.
  *
- * TODO: chat.ts, do.ts, server.ts, agent.ts should use this instead of
- * inline "no model" checks with process.exit().
+ * Used by agent.ts. Commands (chat.ts, do.ts) have format-aware inline
+ * checks that provide JSON/quiet/text error output before calling agentLoop().
  */
 export function ensureModel(model: string | undefined): asserts model is string {
   if (!model) {

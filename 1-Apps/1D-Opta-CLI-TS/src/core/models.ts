@@ -1,8 +1,6 @@
 /**
  * Canonical model metadata — single source of truth for model profiles.
- *
- * TODO: src/lmx/client.ts has a duplicate CONTEXT_LIMIT_TABLE that should
- * be replaced with getContextLimit() from this module.
+ * lmx/client.ts lookupContextLimit() delegates to getContextLimit() here.
  */
 
 export interface ModelProfile {

@@ -1,10 +1,8 @@
 /**
  * Shared config override builder.
  *
- * Extracts the duplicated override-construction logic from chat.ts and do.ts
- * into a single canonical function.
- *
- * TODO: chat.ts and do.ts should import this instead of inlining the logic.
+ * Canonical function for constructing config overrides from CLI flags.
+ * Imported by chat.ts and do.ts.
  */
 
 export function buildConfigOverrides(opts: {
