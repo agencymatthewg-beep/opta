@@ -60,6 +60,7 @@ class GGUFBackend:
         top_p: float,
         stop: list[str] | None,
         tools: list[dict[str, Any]] | None,
+        response_format: dict[str, Any] | None = None,
     ) -> tuple[str, int, int]:
         """Non-streaming GGUF generation."""
         kwargs: dict[str, Any] = {
@@ -70,6 +71,8 @@ class GGUFBackend:
         }
         if stop:
             kwargs["stop"] = stop
+        if response_format:
+            kwargs["response_format"] = response_format
 
         result = await asyncio.to_thread(
             self._llm.create_chat_completion, **kwargs
@@ -91,6 +94,7 @@ class GGUFBackend:
         top_p: float,
         stop: list[str] | None,
         tools: list[dict[str, Any]] | None,
+        response_format: dict[str, Any] | None = None,
     ) -> AsyncIterator[str]:
         """Streaming GGUF generation — yields token strings.
 

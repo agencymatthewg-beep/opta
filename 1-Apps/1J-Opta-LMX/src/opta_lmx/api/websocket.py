@@ -101,6 +101,7 @@ async def _handle_chat_request(
     top_p = data.get("top_p", 1.0)
     stop = data.get("stop")
     stream = data.get("stream", True)
+    response_format = data.get("response_format")
 
     messages = [ChatMessage(**m) for m in raw_messages]
 
@@ -135,6 +136,7 @@ async def _handle_chat_request(
                 max_tokens=max_tokens,
                 top_p=top_p,
                 stop=[stop] if isinstance(stop, str) else stop,
+                response_format=response_format,
             ):
                 completion_tokens += 1
                 await websocket.send_json({
@@ -160,6 +162,7 @@ async def _handle_chat_request(
                 max_tokens=max_tokens,
                 top_p=top_p,
                 stop=[stop] if isinstance(stop, str) else stop,
+                response_format=response_format,
             )
 
             await websocket.send_json({

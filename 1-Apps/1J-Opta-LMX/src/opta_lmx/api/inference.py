@@ -101,6 +101,7 @@ async def chat_completions(
                 top_p=body.top_p,
                 stop=[body.stop] if isinstance(body.stop, str) else body.stop,
                 tools=body.tools,
+                response_format=body.response_format,
             )
             # Approximate prompt tokens for metrics (4 chars ≈ 1 token)
             prompt_text = " ".join(m.content or "" for m in body.messages)
@@ -143,6 +144,7 @@ async def chat_completions(
                 top_p=body.top_p,
                 stop=[body.stop] if isinstance(body.stop, str) else body.stop,
                 tools=body.tools,
+                response_format=body.response_format,
             )
             metrics.record(RequestMetric(
                 model_id=resolved_model,

@@ -22,6 +22,7 @@ class InferenceBackend(Protocol):
         top_p: float,
         stop: list[str] | None,
         tools: list[dict[str, Any]] | None,
+        response_format: dict[str, Any] | None = None,
     ) -> tuple[str, int, int]:
         """Non-streaming generation.
 
@@ -32,6 +33,7 @@ class InferenceBackend(Protocol):
             top_p: Nucleus sampling parameter.
             stop: Stop sequences.
             tools: Tool definitions (pass-through).
+            response_format: Response format constraint (e.g. json_object).
 
         Returns:
             Tuple of (content, prompt_tokens, completion_tokens).
@@ -46,6 +48,7 @@ class InferenceBackend(Protocol):
         top_p: float,
         stop: list[str] | None,
         tools: list[dict[str, Any]] | None,
+        response_format: dict[str, Any] | None = None,
     ) -> AsyncIterator[str]:
         """Streaming generation — yields token strings.
 
@@ -56,6 +59,7 @@ class InferenceBackend(Protocol):
             top_p: Nucleus sampling parameter.
             stop: Stop sequences.
             tools: Tool definitions (pass-through).
+            response_format: Response format constraint (e.g. json_object).
 
         Yields:
             Individual token strings.

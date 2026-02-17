@@ -307,6 +307,7 @@ class InferenceEngine:
         top_p: float = 1.0,
         stop: list[str] | None = None,
         tools: list[dict[str, Any]] | None = None,
+        response_format: dict[str, Any] | None = None,
     ) -> ChatCompletionResponse:
         """Non-streaming chat completion.
 
@@ -338,6 +339,7 @@ class InferenceEngine:
                     top_p=top_p,
                     stop=stop,
                     tools=tools,
+                    response_format=response_format,
                 )
             else:
                 # MLX backend (vllm-mlx) — run in thread to avoid blocking event loop
@@ -351,6 +353,8 @@ class InferenceEngine:
                     chat_kwargs["stop"] = stop
                 if tools:
                     chat_kwargs["tools"] = tools
+                if response_format:
+                    chat_kwargs["response_format"] = response_format
                 result = await loaded.engine.chat(**chat_kwargs)
                 # vllm-mlx returns GenerationOutput with .new_text, .prompt_tokens, .completion_tokens
                 if hasattr(result, "text"):
@@ -425,6 +429,7 @@ class InferenceEngine:
         top_p: float = 1.0,
         stop: list[str] | None = None,
         tools: list[dict[str, Any]] | None = None,
+        response_format: dict[str, Any] | None = None,
     ) -> AsyncIterator[str]:
         """Streaming chat completion — yields token strings.
 
@@ -456,6 +461,7 @@ class InferenceEngine:
                     top_p=top_p,
                     stop=stop,
                     tools=tools,
+                    response_format=response_format,
                 ):
                     yield token
             else:
@@ -470,6 +476,8 @@ class InferenceEngine:
                     chat_kwargs["stop"] = stop
                 if tools:
                     chat_kwargs["tools"] = tools
+                if response_format:
+                    chat_kwargs["response_format"] = response_format
                 # vllm-mlx uses stream_chat (async generator) for streaming
                 stream = loaded.engine.stream_chat(**chat_kwargs)
                 async for chunk in stream:
