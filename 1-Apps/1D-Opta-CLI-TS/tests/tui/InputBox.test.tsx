@@ -28,6 +28,13 @@ describe('InputBox', () => {
     expect(lastFrame()).toContain('thinking...');
   });
 
+  it('should show custom loading label when provided', () => {
+    const { lastFrame } = render(<InputBox onSubmit={() => {}} mode="normal" isLoading loadingLabel="running edit_file" />);
+    const frame = lastFrame() ?? '';
+    expect(frame).toContain('running edit_file...');
+    expect(frame).not.toContain('thinking...');
+  });
+
   it('should show auto mode indicator', () => {
     const { lastFrame } = render(<InputBox onSubmit={() => {}} mode="auto" />);
     expect(lastFrame()).toContain('auto');

@@ -10,9 +10,11 @@ interface InkStatusBarProps {
   speed: number;
   mode?: string;
   sessionId?: string;
+  /** When true, show only model + tokens (skip cost, tools, speed). */
+  compact?: boolean;
 }
 
-export function InkStatusBar({ model, tokens, cost, tools, speed, mode, sessionId }: InkStatusBarProps) {
+export function InkStatusBar({ model, tokens, cost, tools, speed, mode, sessionId, compact }: InkStatusBarProps) {
   return (
     <Box
       borderStyle="single"
@@ -33,16 +35,20 @@ export function InkStatusBar({ model, tokens, cost, tools, speed, mode, sessionI
       </Box>
       <Box>
         <Text dimColor>~{formatTokens(tokens)} tokens</Text>
-        <Text dimColor> | </Text>
-        <Text dimColor>{tools} tools</Text>
-        {speed > 0 && (
+        {!compact && (
           <>
             <Text dimColor> | </Text>
-            <Text dimColor>{speed.toFixed(0)} t/s</Text>
+            <Text dimColor>{tools} tools</Text>
+            {speed > 0 && (
+              <>
+                <Text dimColor> | </Text>
+                <Text dimColor>{speed.toFixed(0)} t/s</Text>
+              </>
+            )}
+            <Text dimColor> | </Text>
+            <Text color="green">{cost}</Text>
           </>
         )}
-        <Text dimColor> | </Text>
-        <Text color="green">{cost}</Text>
       </Box>
     </Box>
   );

@@ -14,9 +14,12 @@ describe('MessageList', () => {
     expect(lastFrame()).toContain('Hi there!');
   });
 
-  it('should show empty state', () => {
+  it('should show empty state with keybinding hints', () => {
     const { lastFrame } = render(<MessageList messages={[]} />);
-    expect(lastFrame()).toContain('Start typing');
+    const frame = lastFrame() ?? '';
+    expect(frame).toContain('Start typing');
+    expect(frame).toContain('/help');
+    expect(frame).toContain('Ctrl+/');
   });
 
   it('should render assistant markdown content', () => {

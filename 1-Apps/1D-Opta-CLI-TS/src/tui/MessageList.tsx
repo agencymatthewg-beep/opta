@@ -113,8 +113,9 @@ export function MessageList({
 }: MessageListProps) {
   if (messages.length === 0) {
     return (
-      <Box paddingX={1} paddingY={1}>
+      <Box paddingX={1} paddingY={1} flexDirection="column">
         <Text dimColor>Start typing to begin a conversation.</Text>
+        <Text dimColor>Type /help for commands, Ctrl+/ for keybindings.</Text>
       </Box>
     );
   }

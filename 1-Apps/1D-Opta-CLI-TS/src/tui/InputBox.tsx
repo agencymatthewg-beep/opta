@@ -11,6 +11,8 @@ interface InputBoxProps {
   mode: 'normal' | 'plan' | 'shell' | 'auto';
   isLoading?: boolean;
   history?: InputHistory;
+  /** Label shown when loading (e.g. "running edit_file" instead of "thinking"). */
+  loadingLabel?: string;
 }
 
 /** Debounce interval for @file glob searches (ms). */
@@ -77,7 +79,7 @@ function extractAtPrefix(buffer: string, cursor: number): string | null {
   return null;
 }
 
-export function InputBox({ onSubmit, mode, isLoading, history: historyProp }: InputBoxProps) {
+export function InputBox({ onSubmit, mode, isLoading, history: historyProp, loadingLabel }: InputBoxProps) {
   const editor = useMemo(() => new InputEditor({ prompt: '>', multiline: true, mode }), []);
   const history = useMemo(() => historyProp ?? new InputHistory(), [historyProp]);
 
@@ -325,10 +327,11 @@ export function InputBox({ onSubmit, mode, isLoading, history: historyProp }: In
   })();
 
   if (isLoading) {
+    const label = loadingLabel || 'thinking';
     return (
       <Box paddingX={1}>
         <Text color="cyan">*</Text>
-        <Text dimColor> thinking...</Text>
+        <Text dimColor> {label}...</Text>
       </Box>
     );
   }

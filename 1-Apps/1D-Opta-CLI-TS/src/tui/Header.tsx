@@ -6,9 +6,13 @@ interface HeaderProps {
   sessionId: string;
   connectionStatus: boolean;
   title?: string;
+  /** When true, truncate model name and hide session ID. */
+  compact?: boolean;
 }
 
-export function Header({ model, sessionId, connectionStatus, title }: HeaderProps) {
+export function Header({ model, sessionId, connectionStatus, title, compact }: HeaderProps) {
+  const displayModel = compact ? model.slice(0, 16) : model;
+
   return (
     <Box
       borderStyle="single"
@@ -21,13 +25,15 @@ export function Header({ model, sessionId, connectionStatus, title }: HeaderProp
         <Text bold color="cyan">Opta</Text>
         <Text dimColor> | </Text>
         <Text color={connectionStatus ? 'green' : 'red'}>*</Text>
-        <Text> {model}</Text>
+        <Text> {displayModel}</Text>
       </Box>
-      <Box>
-        {title && <Text dimColor>{title.slice(0, 30)}</Text>}
-        <Text dimColor> | </Text>
-        <Text dimColor>{sessionId.slice(0, 8)}</Text>
-      </Box>
+      {!compact && (
+        <Box>
+          {title && <Text dimColor>{title.slice(0, 30)}</Text>}
+          <Text dimColor> | </Text>
+          <Text dimColor>{sessionId.slice(0, 8)}</Text>
+        </Box>
+      )}
     </Box>
   );
 }
