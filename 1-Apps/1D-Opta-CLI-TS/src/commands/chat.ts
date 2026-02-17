@@ -924,6 +924,12 @@ async function handleSlashCommand(
       return 'handled';
     }
 
+    case '/sidebar': {
+      // Toggle sidebar visibility (TUI mode only)
+      console.log(chalk.dim('  Sidebar toggle: Ctrl+B in TUI mode'));
+      return 'handled';
+    }
+
     case '/keys':
     case '/keybindings': {
       const { defaultKeybindings } = await import('../tui/keybindings.js');
