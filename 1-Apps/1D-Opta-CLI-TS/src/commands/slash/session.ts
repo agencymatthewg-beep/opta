@@ -5,6 +5,7 @@
 import chalk from 'chalk';
 import { agentLoop } from '../../core/agent.js';
 import { generateTitle, saveSession } from '../../memory/store.js';
+import { estimateTokens, formatTokens } from '../../utils/tokens.js';
 import type { SlashCommandDef, SlashContext, SlashResult } from './types.js';
 
 const exitHandler = async (_args: string, _ctx: SlashContext): Promise<SlashResult> => {
@@ -264,6 +265,70 @@ const renameHandler = async (args: string, ctx: SlashContext): Promise<SlashResu
   return 'handled';
 };
 
+const costHandler = async (_args: string, ctx: SlashContext): Promise<SlashResult> => {
+  const messages = ctx.session.messages;
+  const isLocal = ctx.config.provider.active === 'lmx';
+
+  let inputTokens = 0;
+  let outputTokens = 0;
+
+  for (const msg of messages) {
+    // Extract text content from string or ContentPart[] format
+    let text = '';
+    if (typeof msg.content === 'string') {
+      text = msg.content;
+    } else if (Array.isArray(msg.content)) {
+      text = msg.content
+        .filter((p): p is { type: 'text'; text: string } => p.type === 'text')
+        .map(p => p.text)
+        .join('');
+    }
+
+    const tokens = estimateTokens(text);
+
+    // Tool call arguments also count as output tokens
+    const toolTokens = msg.tool_calls
+      ? msg.tool_calls.reduce((sum, tc) => sum + estimateTokens(tc.function.arguments), 0)
+      : 0;
+
+    if (msg.role === 'assistant') {
+      outputTokens += tokens + toolTokens;
+    } else {
+      inputTokens += tokens;
+    }
+  }
+
+  const totalTokens = inputTokens + outputTokens;
+
+  console.log();
+  console.log(chalk.dim('  Session Token Usage'));
+  console.log(chalk.dim('  ' + '\u2500'.repeat(32)));
+  console.log(`  Input tokens:   ${chalk.cyan(formatTokens(inputTokens))}`);
+  console.log(`  Output tokens:  ${chalk.cyan(formatTokens(outputTokens))}`);
+  console.log(`  Total tokens:   ${chalk.cyan(formatTokens(totalTokens))}`);
+  console.log(`  Messages:       ${chalk.cyan(String(messages.length))}`);
+  console.log(`  Tool calls:     ${chalk.cyan(String(ctx.session.toolCallCount))}`);
+  console.log(chalk.dim('  ' + '\u2500'.repeat(32)));
+
+  if (isLocal) {
+    console.log(`  Cost:           ${chalk.green('Free')} ${chalk.dim('(local inference via Opta-LMX)')}`);
+  } else {
+    // Rough cost estimate for Anthropic Claude models
+    // claude-sonnet-4-5: $3/M input, $15/M output
+    const inputCost = (inputTokens / 1_000_000) * 3;
+    const outputCost = (outputTokens / 1_000_000) * 15;
+    const totalCost = inputCost + outputCost;
+
+    const model = ctx.config.provider.anthropic.model || 'claude-sonnet';
+    console.log(`  Provider:       ${chalk.dim('Anthropic')} ${chalk.dim(`(${model})`)}`);
+    console.log(`  Est. cost:      ${chalk.yellow('~$' + totalCost.toFixed(4) + ' USD')}`);
+    console.log(chalk.dim('  Note: Estimates based on approximate token counts'));
+  }
+
+  console.log();
+  return 'handled';
+};
+
 export const sessionCommands: SlashCommandDef[] = [
   {
     command: 'exit',
@@ -340,5 +405,14 @@ export const sessionCommands: SlashCommandDef[] = [
     category: 'session',
     usage: '/rename <new title>',
     examples: ['/rename Auth refactor session', '/title Fix login bug'],
+  },
+  {
+    command: 'cost',
+    aliases: ['tokens', 'usage'],
+    description: 'Show session token usage and cost estimate',
+    handler: costHandler,
+    category: 'session',
+    usage: '/cost',
+    examples: ['/cost', '/tokens', '/usage'],
   },
 ];
