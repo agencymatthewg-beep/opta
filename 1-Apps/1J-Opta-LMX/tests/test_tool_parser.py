@@ -186,6 +186,20 @@ class TestNonStreamingParsing:
         assert result.has_tool_calls is True
         assert result.content is None
 
+    def test_openai_native_tool_calls_bypass_xml_parser(self) -> None:
+        """Content without MiniMax XML tags passes through without parsing.
+
+        GLM-4, Kimi K2, and other models that use standard OpenAI tool call
+        format should not have their output mangled by the XML parser.
+        """
+        # Simulates a response from a model that uses OpenAI-native tool calling
+        content = "I'll help you check the weather. Let me look that up."
+        parser = MiniMaxToolParser()
+        result = parser.parse_tool_calls(content, WEATHER_TOOLS)
+
+        assert result.has_tool_calls is False
+        assert result.content == content
+
     def test_unquoted_attribute_names(self) -> None:
         """Handle unquoted attribute values in invoke/parameter tags."""
         xml = (

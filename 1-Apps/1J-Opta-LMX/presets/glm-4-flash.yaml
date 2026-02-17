@@ -1,0 +1,9 @@
+name: glm-4-flash
+description: "GLM-4.7 Flash — fast inference for simple tasks"
+model: "mlx-community/GLM-4.1V-9B-Thinking-4bit"
+parameters:
+  temperature: 0.5
+  top_p: 0.95
+  max_tokens: 2048
+routing_alias: chat
+auto_load: false

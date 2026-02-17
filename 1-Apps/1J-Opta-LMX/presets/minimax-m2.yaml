@@ -1,0 +1,12 @@
+name: minimax-m2
+description: "MiniMax M2.5 — tool calling with XML format"
+model: "mlx-community/MiniMax-M1-40k-4bit"
+parameters:
+  temperature: 0.7
+  top_p: 0.9
+  max_tokens: 4096
+system_prompt: |
+  You are a helpful assistant with access to tools.
+  Use the provided tools when appropriate to answer questions.
+routing_alias: chat
+auto_load: false

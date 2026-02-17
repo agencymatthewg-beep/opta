@@ -1,0 +1,12 @@
+name: glm-4
+description: "GLM-4 9B Chat — strong multilingual reasoning"
+model: "mlx-community/glm-4-9b-chat-4bit"
+parameters:
+  temperature: 0.7
+  top_p: 0.9
+  max_tokens: 4096
+system_prompt: |
+  You are a helpful, accurate, and thoughtful AI assistant.
+  Answer clearly and concisely.
+routing_alias: chat
+auto_load: false

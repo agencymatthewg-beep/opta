@@ -1,0 +1,12 @@
+name: kimi-k2
+description: "Kimi K2.5 — deep reasoning and analysis"
+model: "mlx-community/Kimi-K2-Instruct-4bit"
+parameters:
+  temperature: 0.6
+  top_p: 0.9
+  max_tokens: 8192
+system_prompt: |
+  You are a precise and thorough reasoning assistant.
+  Think step by step when solving complex problems.
+routing_alias: reasoning
+auto_load: false
