@@ -518,6 +518,20 @@ async function handleSlashCommand(
       return 'handled';
     }
 
+    case '/editor':
+    case '/e': {
+      const { editText } = await import('./editor.js');
+      const text = await editText(arg || '');
+      if (text) {
+        console.log(chalk.dim(`  Editor returned ${text.split('\n').length} lines`));
+        // Inject editor text as user message for processing
+        session.messages.push({ role: 'user', content: text });
+      } else {
+        console.log(chalk.dim('  Editor cancelled (empty content)'));
+      }
+      return 'handled';
+    }
+
     case '/image': {
       if (!arg) {
         console.log(chalk.dim('  Usage: /image <path> [question]'));
@@ -575,6 +589,7 @@ async function handleSlashCommand(
         { name: '/undo         Reverse last checkpoint', value: '/undo' },
         { name: '/compact      Force compaction', value: '/compact' },
         { name: '/image        Analyze an image', value: '/image' },
+        { name: '/editor       Open $EDITOR for input', value: '/editor' },
         { name: '/init         Generate project context', value: '/init' },
         new Separator(chalk.dim('────────────────')),
         { name: '/clear        Clear screen', value: '/clear' },
