@@ -5,6 +5,7 @@ import { MessageList } from './MessageList.js';
 import { InputBox } from './InputBox.js';
 import { InkStatusBar } from './StatusBar.js';
 import { useTerminalSize } from './hooks/useTerminalSize.js';
+import { useKeyboard } from './hooks/useKeyboard.js';
 
 interface AppProps {
   model: string;
@@ -22,6 +23,11 @@ export function App({ model, sessionId, connectionStatus = true, onMessage }: Ap
   const [mode, setMode] = useState<'normal' | 'plan' | 'shell' | 'auto'>('normal');
   const [tokens, setTokens] = useState(0);
   const [tools, setTools] = useState(0);
+
+  useKeyboard({
+    onExit: () => exit(),
+    onClear: () => setMessages([]),
+  });
 
   const handleSubmit = useCallback(async (text: string) => {
     // Handle slash commands
