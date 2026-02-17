@@ -1,0 +1,14 @@
+name: qwen3-30b-uncensored
+description: "Josiefied Qwen3 30B — uncensored, secondary use"
+model: "mlx-community/Qwen3-30B-A3B-Josiefied-4bit"
+parameters:
+  temperature: 0.7
+  top_p: 0.9
+  max_tokens: 4096
+routing_alias: chat
+auto_load: false
+performance:
+  prefix_cache: true
+  max_concurrent: 4
+  memory_estimate_gb: 15
+  # Avoid speculative decoding — Qwen3 bug #846 produces incorrect output

@@ -1,5 +1,5 @@
 name: glm-4-flash
-description: "GLM-4.7 Flash — fast inference for simple tasks"
+description: "GLM-4.7 Flash — fast inference, draft model for speculative decoding"
 model: "mlx-community/GLM-4.1V-9B-Thinking-4bit"
 parameters:
   temperature: 0.5
@@ -7,3 +7,7 @@ parameters:
   max_tokens: 2048
 routing_alias: chat
 auto_load: false
+performance:
+  prefix_cache: true
+  max_concurrent: 4
+  memory_estimate_gb: 15

@@ -10,3 +10,11 @@ system_prompt: |
   Answer clearly and concisely.
 routing_alias: chat
 auto_load: false
+performance:
+  kv_bits: 8
+  prefix_cache: true
+  speculative:
+    draft_model: "mlx-community/GLM-4.1V-9B-Thinking-4bit"
+    num_tokens: 5
+  max_concurrent: 2
+  memory_estimate_gb: 200

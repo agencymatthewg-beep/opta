@@ -1,5 +1,5 @@
 name: kimi-k2
-description: "Kimi K2.5 — deep reasoning and analysis"
+description: "Kimi K2.5 — MoE deep reasoning, 256K context"
 model: "mlx-community/Kimi-K2-Instruct-4bit"
 parameters:
   temperature: 0.6
@@ -10,3 +10,10 @@ system_prompt: |
   Think step by step when solving complex problems.
 routing_alias: reasoning
 auto_load: false
+performance:
+  kv_bits: 8
+  prefix_cache: true
+  max_concurrent: 1
+  memory_estimate_gb: 440
+  # MoE — do NOT enable speculative decoding (untested, likely divergent)
+  # Requires 8-bit KV cache to fit in 512GB unified memory
