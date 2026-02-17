@@ -247,6 +247,7 @@ async function handleSlashCommand(
         chalk.dim('Info'),
         cmdLine('/history', 'Conversation summary'),
         cmdLine('/status', 'System & LMX status'),
+        cmdLine('/stats', 'Session analytics'),
         cmdLine('/diff', 'Uncommitted changes'),
         cmdLine('/cost', 'Token usage breakdown'),
         cmdLine('/clear', 'Clear screen'),
@@ -573,11 +574,38 @@ async function handleSlashCommand(
       return 'handled';
     }
 
+    case '/stats':
+    case '/analytics': {
+      const { listSessions } = await import('../memory/store.js');
+      const { SessionAnalytics } = await import('../memory/analytics.js');
+      const allSessions = await listSessions();
+      const analytics = new SessionAnalytics(allSessions);
+
+      const modelLines = Object.entries(analytics.modelBreakdown)
+        .sort(([, a], [, b]) => b - a)
+        .map(([model, count]) => kv(model, `${count} sessions`, 20));
+
+      console.log('\n' + box('Session Analytics', [
+        kv('Total', `${analytics.totalSessions} sessions`, 14),
+        kv('Messages', `${analytics.totalMessages} total`, 14),
+        kv('Tool Calls', `${analytics.totalToolCalls} total`, 14),
+        kv('Avg/Session', `${analytics.avgMessagesPerSession.toFixed(1)} msgs`, 14),
+        kv('Today', `${analytics.sessionsToday()} sessions`, 14),
+        '',
+        chalk.dim('Model Usage:'),
+        ...modelLines,
+        '',
+        kv('Cost', chalk.green('$0.00') + chalk.dim(' (local inference)'), 14),
+      ]));
+      return 'handled';
+    }
+
     case '/': {
       const { select, Separator } = await import('@inquirer/prompts');
       const commands = [
         { name: '/status       System & LMX status', value: '/status' },
         { name: '/cost         Token usage breakdown', value: '/cost' },
+        { name: '/stats        Session analytics', value: '/stats' },
         { name: '/diff         Uncommitted changes', value: '/diff' },
         { name: '/history      Conversation summary', value: '/history' },
         new Separator(chalk.dim('──── Session ────')),

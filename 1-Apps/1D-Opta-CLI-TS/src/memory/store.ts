@@ -28,6 +28,7 @@ export interface SessionSummary {
   model: string;
   created: string;
   messageCount: number;
+  toolCallCount: number;
 }
 
 // --- Paths ---
@@ -92,6 +93,7 @@ export async function listSessions(): Promise<SessionSummary[]> {
         model: session.model,
         created: session.created,
         messageCount: session.messages.filter((m) => m.role !== 'system').length,
+        toolCallCount: session.toolCallCount ?? 0,
       });
     } catch {
       // Skip corrupt session files
