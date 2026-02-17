@@ -67,6 +67,7 @@ Rules:
 - Read files before editing them
 - Use edit_file for precise, targeted changes (not write_file to rewrite entire files)
 - Use search_files and find_files to understand the codebase before making changes
+- web_fetch: Fetch and read web pages (documentation, APIs, references)
 - Explain your reasoning before each action
 - When the task is complete, respond with a final summary (no tool calls)
 

@@ -84,6 +84,34 @@ describe('opta CLI', () => {
     expect(result.stdout).toContain('--json');
     expect(result.exitCode).toBe(0);
   });
+
+  it('do --format json outputs valid JSON on empty task error', async () => {
+    // Empty task with --format json should output JSON error, not chalk text
+    const result = await run(['do', '--format', 'json', '']);
+    // Should output JSON with error field
+    const lines = result.stdout.trim().split('\n').filter(Boolean);
+    if (lines.length > 0) {
+      const parsed = JSON.parse(lines[lines.length - 1]!);
+      expect(parsed).toHaveProperty('error');
+      expect(parsed).toHaveProperty('exit_code');
+    }
+    // No ANSI escape codes in stdout
+    // eslint-disable-next-line no-control-regex
+    expect(result.stdout).not.toMatch(/\x1b\[/);
+  });
+
+  it('do command shows --quiet and --output in help', async () => {
+    const result = await run(['do', '--help']);
+    expect(result.stdout).toContain('--quiet');
+    expect(result.stdout).toContain('--output');
+    expect(result.exitCode).toBe(0);
+  });
+
+  it('chat command shows --format flag with json description', async () => {
+    const result = await run(['chat', '--help']);
+    expect(result.stdout).toContain('--format');
+    expect(result.stdout).toContain('json');
+  });
 });
 
 describe('opta mcp', () => {

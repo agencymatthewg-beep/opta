@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { writeFile, mkdir, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -283,15 +283,15 @@ describe('delete_file', () => {
 });
 
 describe('multi_edit', () => {
-  it('applies multiple edits to a file', async () => {
+  it('applies multiple edits to a single file', async () => {
     const result = await executeTool('multi_edit', JSON.stringify({
-      path: join(TEST_DIR, 'code.ts'),
       edits: [
-        { old_text: 'const x = 1;', new_text: 'const x = 10;' },
-        { old_text: 'const y = 2;', new_text: 'const y = 20;' },
+        { path: join(TEST_DIR, 'code.ts'), old_text: 'const x = 1;', new_text: 'const x = 10;' },
+        { path: join(TEST_DIR, 'code.ts'), old_text: 'const y = 2;', new_text: 'const y = 20;' },
       ],
     }));
-    expect(result).toContain('2 edits applied');
+    expect(result).toContain('Applied 2/2 edits');
+    expect(result).toContain('code.ts (2 edits)');
 
     // Verify changes
     const content = await executeTool('read_file', JSON.stringify({
@@ -301,34 +301,81 @@ describe('multi_edit', () => {
     expect(content).toContain('const y = 20;');
   });
 
-  it('fails when old_text not found', async () => {
+  it('applies edits across multiple files', async () => {
     const result = await executeTool('multi_edit', JSON.stringify({
-      path: join(TEST_DIR, 'code.ts'),
       edits: [
-        { old_text: 'not in file', new_text: 'replacement' },
+        { path: join(TEST_DIR, 'code.ts'), old_text: 'const x = 1;', new_text: 'const x = 100;' },
+        { path: join(TEST_DIR, 'hello.txt'), old_text: 'line two', new_text: 'line TWO' },
       ],
     }));
-    expect(result).toContain('Error: Edit 1');
-    expect(result).toContain('not found');
+    expect(result).toContain('Applied 2/2 edits');
+    expect(result).toContain('2 files');
+
+    // Verify code.ts
+    const code = await executeTool('read_file', JSON.stringify({
+      path: join(TEST_DIR, 'code.ts'),
+    }));
+    expect(code).toContain('const x = 100;');
+
+    // Verify hello.txt
+    const hello = await executeTool('read_file', JSON.stringify({
+      path: join(TEST_DIR, 'hello.txt'),
+    }));
+    expect(hello).toContain('line TWO');
   });
 
-  it('fails when old_text appears multiple times', async () => {
-    await writeFile(join(TEST_DIR, 'dupe2.txt'), 'foo bar foo');
+  it('reports partial failure correctly', async () => {
     const result = await executeTool('multi_edit', JSON.stringify({
-      path: join(TEST_DIR, 'dupe2.txt'),
       edits: [
-        { old_text: 'foo', new_text: 'baz' },
+        { path: join(TEST_DIR, 'code.ts'), old_text: 'const x = 1;', new_text: 'const x = 10;' },
+        { path: join(TEST_DIR, 'code.ts'), old_text: 'NOT_IN_FILE', new_text: 'replacement' },
+        { path: join(TEST_DIR, 'hello.txt'), old_text: 'line one', new_text: 'LINE ONE' },
       ],
     }));
+    expect(result).toContain('Applied 2/3 edits');
+    expect(result).toContain('Failed');
+    expect(result).toContain('edit #2');
+    expect(result).toContain('not found');
+
+    // Verify successful edits still applied
+    const code = await executeTool('read_file', JSON.stringify({
+      path: join(TEST_DIR, 'code.ts'),
+    }));
+    expect(code).toContain('const x = 10;');
+
+    const hello = await executeTool('read_file', JSON.stringify({
+      path: join(TEST_DIR, 'hello.txt'),
+    }));
+    expect(hello).toContain('LINE ONE');
+  });
+
+  it('reports failure when old_text appears multiple times', async () => {
+    await writeFile(join(TEST_DIR, 'dupe2.txt'), 'foo bar foo');
+    const result = await executeTool('multi_edit', JSON.stringify({
+      edits: [
+        { path: join(TEST_DIR, 'dupe2.txt'), old_text: 'foo', new_text: 'baz' },
+      ],
+    }));
+    expect(result).toContain('Applied 0/1 edits');
     expect(result).toContain('appears 2 times');
   });
 
   it('returns error when no edits provided', async () => {
     const result = await executeTool('multi_edit', JSON.stringify({
-      path: join(TEST_DIR, 'code.ts'),
       edits: [],
     }));
     expect(result).toBe('Error: No edits provided');
+  });
+
+  it('rejects more than 20 edits', async () => {
+    const edits = Array.from({ length: 21 }, (_, i) => ({
+      path: join(TEST_DIR, 'code.ts'),
+      old_text: `edit_${i}`,
+      new_text: `replace_${i}`,
+    }));
+    const result = await executeTool('multi_edit', JSON.stringify({ edits }));
+    expect(result).toContain('Error: Too many edits');
+    expect(result).toContain('20');
   });
 });
 
@@ -492,5 +539,168 @@ describe('executeTool', () => {
   it('returns error for unknown tool', async () => {
     const result = await executeTool('nonexistent', '{}');
     expect(result).toContain('Unknown tool');
+  });
+});
+
+describe('web_fetch', () => {
+  it('schema is present in TOOL_SCHEMAS', () => {
+    const schema = TOOL_SCHEMAS.find((s) => s.function.name === 'web_fetch');
+    expect(schema).toBeDefined();
+    expect(schema!.function.parameters.properties).toHaveProperty('url');
+    expect(schema!.function.parameters.properties).toHaveProperty('max_chars');
+    expect(schema!.function.parameters.required).toContain('url');
+  });
+
+  it('schema description mentions fetching URL and extracting text', () => {
+    const schema = TOOL_SCHEMAS.find((s) => s.function.name === 'web_fetch');
+    expect(schema!.function.description).toMatch(/fetch/i);
+    expect(schema!.function.description).toMatch(/url/i);
+  });
+
+  it('rejects file:// URLs', async () => {
+    const result = await executeTool('web_fetch', JSON.stringify({ url: 'file:///etc/passwd' }));
+    expect(result).toContain('Error');
+    expect(result).toMatch(/http|https|not allowed|invalid/i);
+  });
+
+  it('rejects data: URLs', async () => {
+    const result = await executeTool('web_fetch', JSON.stringify({ url: 'data:text/html,<h1>hi</h1>' }));
+    expect(result).toContain('Error');
+    expect(result).toMatch(/http|https|not allowed|invalid/i);
+  });
+
+  it('rejects javascript: URLs', async () => {
+    const result = await executeTool('web_fetch', JSON.stringify({ url: 'javascript:alert(1)' }));
+    expect(result).toContain('Error');
+    expect(result).toMatch(/http|https|not allowed|invalid/i);
+  });
+
+  it('fetches and strips HTML from a mocked response', async () => {
+    const mockHtml = '<html><body><h1>Title</h1><p>Hello world</p></body></html>';
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(mockHtml, { status: 200, headers: { 'Content-Type': 'text/html' } })
+    );
+
+    const result = await executeTool('web_fetch', JSON.stringify({ url: 'https://example.com' }));
+    expect(result).toContain('Title');
+    expect(result).toContain('Hello world');
+    expect(result).not.toContain('<h1>');
+    expect(result).not.toContain('<p>');
+
+    fetchSpy.mockRestore();
+  });
+
+  it('truncates output to max_chars', async () => {
+    const longContent = '<html><body>' + 'a'.repeat(20000) + '</body></html>';
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(longContent, { status: 200, headers: { 'Content-Type': 'text/html' } })
+    );
+
+    const result = await executeTool('web_fetch', JSON.stringify({ url: 'https://example.com', max_chars: 500 }));
+    expect(result.length).toBeLessThanOrEqual(500);
+
+    fetchSpy.mockRestore();
+  });
+
+  it('defaults to 10000 max_chars', async () => {
+    const longContent = '<html><body>' + 'x'.repeat(20000) + '</body></html>';
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(longContent, { status: 200, headers: { 'Content-Type': 'text/html' } })
+    );
+
+    const result = await executeTool('web_fetch', JSON.stringify({ url: 'https://example.com' }));
+    expect(result.length).toBeLessThanOrEqual(10000);
+
+    fetchSpy.mockRestore();
+  });
+
+  it('extracts content from <main> tag when present', async () => {
+    const mockHtml = '<html><body><nav>Nav stuff</nav><main><p>Main content here</p></main><footer>Footer</footer></body></html>';
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(mockHtml, { status: 200, headers: { 'Content-Type': 'text/html' } })
+    );
+
+    const result = await executeTool('web_fetch', JSON.stringify({ url: 'https://example.com' }));
+    expect(result).toContain('Main content here');
+    // Should not include nav/footer since <main> is present
+    expect(result).not.toContain('Nav stuff');
+    expect(result).not.toContain('Footer');
+
+    fetchSpy.mockRestore();
+  });
+
+  it('extracts content from <article> tag when present (no <main>)', async () => {
+    const mockHtml = '<html><body><nav>Nav stuff</nav><article><p>Article content</p></article><footer>Footer</footer></body></html>';
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(mockHtml, { status: 200, headers: { 'Content-Type': 'text/html' } })
+    );
+
+    const result = await executeTool('web_fetch', JSON.stringify({ url: 'https://example.com' }));
+    expect(result).toContain('Article content');
+    expect(result).not.toContain('Nav stuff');
+    expect(result).not.toContain('Footer');
+
+    fetchSpy.mockRestore();
+  });
+
+  it('sets correct User-Agent header', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response('<html><body>test</body></html>', { status: 200 })
+    );
+
+    await executeTool('web_fetch', JSON.stringify({ url: 'https://example.com' }));
+
+    expect(fetchSpy).toHaveBeenCalledWith(
+      'https://example.com',
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          'User-Agent': 'Opta-CLI/0.1 (web-fetch)',
+        }),
+      })
+    );
+
+    fetchSpy.mockRestore();
+  });
+
+  it('handles fetch errors gracefully', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockRejectedValueOnce(
+      new Error('Network error')
+    );
+
+    const result = await executeTool('web_fetch', JSON.stringify({ url: 'https://unreachable.example.com' }));
+    expect(result).toContain('Error');
+    expect(result).toContain('Network error');
+
+    fetchSpy.mockRestore();
+  });
+
+  it('handles non-OK HTTP responses', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response('Not Found', { status: 404 })
+    );
+
+    const result = await executeTool('web_fetch', JSON.stringify({ url: 'https://example.com/missing' }));
+    expect(result).toContain('Error');
+    expect(result).toContain('404');
+
+    fetchSpy.mockRestore();
+  });
+
+  it('has allow permission by default', () => {
+    expect(resolvePermission('web_fetch', DEFAULT_CONFIG)).toBe('allow');
+  });
+
+  it('strips script and style tags', async () => {
+    const mockHtml = '<html><body><script>alert("xss")</script><style>.foo{color:red}</style><p>Clean text</p></body></html>';
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(mockHtml, { status: 200 })
+    );
+
+    const result = await executeTool('web_fetch', JSON.stringify({ url: 'https://example.com' }));
+    expect(result).toContain('Clean text');
+    expect(result).not.toContain('alert');
+    expect(result).not.toContain('color:red');
+
+    fetchSpy.mockRestore();
   });
 });

@@ -30,6 +30,20 @@ interface ChatOptions {
 
 export type OptaMode = 'normal' | 'plan' | 'auto-accept';
 
+/**
+ * Format the last assistant message as a JSON line (JSONL) for --format json.
+ * Extracts the most recent assistant message from the conversation history.
+ */
+export function formatChatJsonLine(messages: AgentMessage[]): string {
+  const assistantMsgs = messages.filter((m: AgentMessage) => m.role === 'assistant');
+  const lastMsg = assistantMsgs[assistantMsgs.length - 1];
+  return JSON.stringify({
+    role: 'assistant',
+    content: lastMsg?.content ?? '',
+    tool_calls: lastMsg?.tool_calls ?? [],
+  });
+}
+
 export interface ChatState {
   currentMode: OptaMode;
   agentProfile: string;
@@ -263,13 +277,7 @@ export async function startChat(opts: ChatOptions): Promise<void> {
       await saveSession(session);
 
       if (jsonMode) {
-        const assistantMsgs = result.messages.filter((m: AgentMessage) => m.role === 'assistant');
-        const lastMsg = assistantMsgs[assistantMsgs.length - 1];
-        console.log(JSON.stringify({
-          role: 'assistant',
-          content: lastMsg?.content ?? '',
-          tool_calls: lastMsg?.tool_calls ?? [],
-        }));
+        console.log(formatChatJsonLine(result.messages));
       }
     } catch (err) {
       if (err instanceof OptaError) {

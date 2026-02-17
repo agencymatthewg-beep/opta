@@ -167,12 +167,12 @@ export const TOOL_SCHEMAS = [
     type: 'function' as const,
     function: {
       name: 'web_fetch',
-      description: 'Fetch and extract text content from a URL. Returns cleaned text.',
+      description: 'Fetch a URL and extract readable text content (HTML → markdown). Use for reading documentation, API references, or web pages.',
       parameters: {
         type: 'object',
         properties: {
-          url: { type: 'string', description: 'URL to fetch' },
-          max_length: { type: 'number', description: 'Max characters to return (default: 4000)' },
+          url: { type: 'string', description: 'HTTP or HTTPS URL to fetch' },
+          max_chars: { type: 'number', description: 'Maximum characters to return (default: 10000)' },
         },
         required: ['url'],
       },
@@ -196,25 +196,25 @@ export const TOOL_SCHEMAS = [
     type: 'function' as const,
     function: {
       name: 'multi_edit',
-      description: 'Apply multiple edits to a single file. Each edit replaces an exact unique string.',
+      description: 'Apply multiple edits across one or more files in a single operation. More efficient than calling edit_file repeatedly. Each edit replaces old_text with new_text. Max 20 edits per call.',
       parameters: {
         type: 'object',
         properties: {
-          path: { type: 'string', description: 'File path (relative to cwd)' },
           edits: {
             type: 'array',
-            description: 'Array of {old_text, new_text} pairs',
+            description: 'Array of edit operations (max 20)',
             items: {
               type: 'object',
               properties: {
+                path: { type: 'string', description: 'File path (relative to cwd)' },
                 old_text: { type: 'string', description: 'Exact text to find' },
                 new_text: { type: 'string', description: 'Replacement text' },
               },
-              required: ['old_text', 'new_text'],
+              required: ['path', 'old_text', 'new_text'],
             },
           },
         },
-        required: ['path', 'edits'],
+        required: ['edits'],
       },
     },
   },
@@ -825,16 +825,34 @@ async function execWebSearch(args: Record<string, unknown>): Promise<string> {
 
 async function execWebFetch(args: Record<string, unknown>): Promise<string> {
   const url = String(args['url'] ?? '');
-  const maxLength = Number(args['max_length'] ?? 4000);
+  const maxChars = Number(args['max_chars'] ?? 10000);
+
+  // Security: only allow http:// and https:// URLs
+  if (!/^https?:\/\//i.test(url)) {
+    return `Error: Only http:// and https:// URLs are allowed (got "${url}")`;
+  }
 
   try {
     const response = await fetch(url, {
-      signal: AbortSignal.timeout(15000),
-      headers: { 'User-Agent': 'Opta-CLI/1.0' },
+      signal: AbortSignal.timeout(10000),
+      headers: { 'User-Agent': 'Opta-CLI/0.1 (web-fetch)' },
     });
     if (!response.ok) return `Error: Fetch returned ${response.status}`;
 
-    const html = await response.text();
+    let html = await response.text();
+
+    // Extract content from <main>, <article>, or <body> if present
+    const mainMatch = html.match(/<main[^>]*>([\s\S]*?)<\/main>/i);
+    const articleMatch = html.match(/<article[^>]*>([\s\S]*?)<\/article>/i);
+    const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+
+    if (mainMatch) {
+      html = mainMatch[1]!;
+    } else if (articleMatch) {
+      html = articleMatch[1]!;
+    } else if (bodyMatch) {
+      html = bodyMatch[1]!;
+    }
 
     // Simple HTML-to-text: strip tags, decode entities, collapse whitespace
     const text = html
@@ -850,7 +868,7 @@ async function execWebFetch(args: Record<string, unknown>): Promise<string> {
       .replace(/\s+/g, ' ')
       .trim();
 
-    return text.slice(0, maxLength);
+    return text.slice(0, maxChars);
   } catch (err) {
     return `Error: Fetch failed — ${err instanceof Error ? err.message : String(err)}`;
   }
@@ -864,29 +882,67 @@ async function execDeleteFile(args: Record<string, unknown>): Promise<string> {
 }
 
 async function execMultiEdit(args: Record<string, unknown>): Promise<string> {
-  const filePath = resolve(String(args['path'] ?? ''));
-  const edits = args['edits'] as Array<{ old_text: string; new_text: string }> ?? [];
+  const edits = args['edits'] as Array<{ path: string; old_text: string; new_text: string }> ?? [];
 
   if (edits.length === 0) return 'Error: No edits provided';
+  if (edits.length > 20) return `Error: Too many edits (${edits.length}). Maximum 20 per call.`;
 
-  let content = await readFile(filePath, 'utf-8');
-  const applied: string[] = [];
-
+  // Group edits by file path, preserving original indices for error reporting
+  const fileGroups = new Map<string, Array<{ index: number; old_text: string; new_text: string }>>();
   for (let i = 0; i < edits.length; i++) {
-    const { old_text, new_text } = edits[i]!;
-    const occurrences = content.split(old_text).length - 1;
-    if (occurrences === 0) {
-      return `Error: Edit ${i + 1} — old_text not found in ${relative(process.cwd(), filePath)}`;
-    }
-    if (occurrences > 1) {
-      return `Error: Edit ${i + 1} — old_text appears ${occurrences} times (must be unique)`;
-    }
-    content = content.replace(old_text, new_text);
-    applied.push(`Edit ${i + 1}: applied`);
+    const edit = edits[i]!;
+    const filePath = resolve(String(edit.path ?? ''));
+    const group = fileGroups.get(filePath) ?? [];
+    group.push({ index: i, old_text: edit.old_text, new_text: edit.new_text });
+    fileGroups.set(filePath, group);
   }
 
-  await writeFile(filePath, content, 'utf-8');
-  return `File edited: ${relative(process.cwd(), filePath)} (${applied.length} edits applied)`;
+  let appliedCount = 0;
+  const failures: string[] = [];
+  const fileSummaries: string[] = [];
+
+  for (const [filePath, group] of fileGroups) {
+    let content: string;
+    try {
+      content = await readFile(filePath, 'utf-8');
+    } catch (err) {
+      // All edits for this file fail
+      for (const edit of group) {
+        failures.push(`edit #${edit.index + 1} in ${relative(process.cwd(), filePath)}: ${err instanceof Error ? err.message : String(err)}`);
+      }
+      continue;
+    }
+
+    let fileApplied = 0;
+    for (const edit of group) {
+      const occurrences = content.split(edit.old_text).length - 1;
+      if (occurrences === 0) {
+        failures.push(`edit #${edit.index + 1} in ${relative(process.cwd(), filePath)}: old_text not found`);
+        continue;
+      }
+      if (occurrences > 1) {
+        failures.push(`edit #${edit.index + 1} in ${relative(process.cwd(), filePath)}: old_text appears ${occurrences} times (must be unique)`);
+        continue;
+      }
+      content = content.replace(edit.old_text, edit.new_text);
+      fileApplied++;
+    }
+
+    if (fileApplied > 0) {
+      await writeFile(filePath, content, 'utf-8');
+      fileSummaries.push(`${relative(process.cwd(), filePath)} (${fileApplied} edit${fileApplied > 1 ? 's' : ''})`);
+      appliedCount += fileApplied;
+    }
+  }
+
+  const total = edits.length;
+  let result = `Applied ${appliedCount}/${total} edits across ${fileGroups.size} file${fileGroups.size > 1 ? 's' : ''}: ${fileSummaries.join(', ')}`;
+
+  if (failures.length > 0) {
+    result += `\nFailed: ${failures.join('; ')}`;
+  }
+
+  return result;
 }
 
 async function execSaveMemory(args: Record<string, unknown>): Promise<string> {
