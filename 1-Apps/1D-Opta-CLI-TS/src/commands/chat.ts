@@ -113,8 +113,8 @@ export async function startChat(opts: ChatOptions): Promise<void> {
     console.log(chalk.dim('  Type /help for commands, / to browse, /exit to quit\n'));
   }
 
-  // TUI mode: full-screen Ink rendering
-  if (opts.tui) {
+  // TUI mode: full-screen Ink rendering (--tui flag or tui.default config)
+  if (opts.tui || config.tui.default) {
     const { renderTUI } = await import('../tui/render.js');
     await renderTUI({
       model: config.model.default,

@@ -153,6 +153,11 @@ export const OptaConfigSchema = z.object({
       inheritMode: z.boolean().default(true),
     })
     .default({}),
+  tui: z
+    .object({
+      default: z.boolean().default(false),
+    })
+    .default({}),
 });
 
 export type OptaConfig = z.infer<typeof OptaConfigSchema>;
