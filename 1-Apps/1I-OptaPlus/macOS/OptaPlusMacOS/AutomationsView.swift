@@ -11,38 +11,6 @@ import SwiftUI
 import OptaPlus
 import OptaMolt
 
-// MARK: - Cron Job Model
-
-struct CronJobItem: Identifiable {
-    let id: String
-    let name: String
-    var enabled: Bool
-    let scheduleText: String
-    let scheduleKind: String
-    let sessionTarget: String
-    let payloadKind: String
-    let model: String?
-    let lastRunAt: Date?
-    let nextRunAt: Date?
-    let botName: String
-    let botEmoji: String
-    let botId: String
-    let rawSchedule: [String: Any]?
-    let rawPayload: [String: Any]?
-
-    var displayName: String {
-        name.isEmpty ? id : name
-    }
-}
-
-// MARK: - Scheduler Status
-
-struct SchedulerStatus {
-    let running: Bool
-    let jobCount: Int
-    let activeCount: Int
-}
-
 // MARK: - Automations View
 
 struct AutomationsView: View {

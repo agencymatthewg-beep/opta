@@ -51,6 +51,7 @@ public struct MessageBubble: View {
     private let botName: String
     private let onReply: ((ChatMessage) -> Void)?
     private let onScrollTo: ((String) -> Void)?
+    private let onReact: ((ReactionAction, String) -> Void)?
 
     private var isStreaming: Bool { streamingContent != nil }
 
@@ -59,12 +60,13 @@ public struct MessageBubble: View {
     @State private var relativeTimestamp: String = ""
     @State private var showRunConfirm = false
     @State private var pendingCode = ""
+    @State private var showReactionBar = false
     @StateObject private var reactionStore = ReactionStore.shared
     @StateObject private var pinManager = PinManager.shared
     @StateObject private var bookmarkManager = BookmarkManager.shared
 
     // MARK: - Init (message)
-    
+
     public init(
         message: ChatMessage,
         hideTimestamp: Bool = false,
@@ -72,7 +74,8 @@ public struct MessageBubble: View {
         botId: String = "",
         botName: String = "",
         onReply: ((ChatMessage) -> Void)? = nil,
-        onScrollTo: ((String) -> Void)? = nil
+        onScrollTo: ((String) -> Void)? = nil,
+        onReact: ((ReactionAction, String) -> Void)? = nil
     ) {
         self.message = message
         self.streamingContent = nil
@@ -84,10 +87,11 @@ public struct MessageBubble: View {
         self.botName = botName
         self.onReply = onReply
         self.onScrollTo = onScrollTo
+        self.onReact = onReact
     }
 
     // MARK: - Init (streaming)
-    
+
     public init(
         streamingContent: String,
         sender: MessageSender = .bot(name: "Opta"),
@@ -103,6 +107,7 @@ public struct MessageBubble: View {
         self.botName = ""
         self.onReply = nil
         self.onScrollTo = nil
+        self.onReact = nil
     }
 
     // MARK: - Helpers
@@ -352,6 +357,19 @@ public struct MessageBubble: View {
                 if let msg = message {
                     ReactionPillsView(messageId: msg.id, store: reactionStore)
                 }
+
+                // Quick reaction bar (appears on hover for bot messages)
+                #if canImport(AppKit)
+                if let msg = message, !isUserMessage && !isStreaming && isHovered {
+                    QuickReactionBar(messageId: msg.id) { action in
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                            reactionStore.toggleReaction(action.rawValue, for: msg.id)
+                        }
+                        onReact?(action, msg.id)
+                    }
+                    .transition(.scale(scale: 0.8).combined(with: .opacity))
+                }
+                #endif
 
                 // Timestamp row (always visible when not hidden, or show on hover)
                 if !isStreaming && (!hideTimestamp || isHovered) {

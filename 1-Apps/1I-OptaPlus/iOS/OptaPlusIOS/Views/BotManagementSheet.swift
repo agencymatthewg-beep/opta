@@ -226,11 +226,11 @@ struct BotManagementSheet: View {
                     "baseHash": hash,
                     "note": "Model: \(selectedModel), Thinking: \(thinkingLevel)"
                 ] as [String: Any])
-                UINotificationFeedbackGenerator().notificationOccurred(.success)
+                HapticManager.shared.notification(.success)
                 currentModel = selectedModel
             } catch {
                 configError = error.localizedDescription
-                UINotificationFeedbackGenerator().notificationOccurred(.error)
+                HapticManager.shared.notification(.error)
             }
             isApplying = false
         }
@@ -244,7 +244,7 @@ struct BotManagementSheet: View {
                     "sessionKey": session.sessionKey,
                     "patch": ["compact": true] as [String: Any]
                 ] as [String: Any])
-                UINotificationFeedbackGenerator().notificationOccurred(.success)
+                HapticManager.shared.notification(.success)
             } catch {
                 configError = error.localizedDescription
             }
@@ -262,11 +262,11 @@ struct BotManagementSheet: View {
                     "baseHash": hash,
                     "note": "Restart from OptaPlus iOS"
                 ] as [String: Any])
-                UINotificationFeedbackGenerator().notificationOccurred(.success)
+                HapticManager.shared.notification(.success)
                 await loadBotConfig()
             } catch {
                 configError = error.localizedDescription
-                UINotificationFeedbackGenerator().notificationOccurred(.error)
+                HapticManager.shared.notification(.error)
             }
         }
     }

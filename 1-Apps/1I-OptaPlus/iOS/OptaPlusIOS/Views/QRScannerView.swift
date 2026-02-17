@@ -31,6 +31,7 @@ struct QRScannerSheet: View {
                 QRScannerRepresentable(
                     onPairingDetected: { info in
                         guard !showSuccess else { return }
+                        HapticManager.shared.notification(.success)
                         detectedInfo = info
                         withAnimation(.optaSpring) {
                             showSuccess = true

@@ -283,7 +283,7 @@ struct ChatView: View {
         }
         .onChange(of: viewModel.connectionState) { old, new in
             if old != .connected && new == .connected {
-                UINotificationFeedbackGenerator().notificationOccurred(.success)
+                HapticManager.shared.notification(.success)
                 connectionToastMessage = "Connected to \(botConfig.name)"
                 withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
                     showConnectionToast = true
@@ -295,6 +295,7 @@ struct ChatView: View {
                     }
                 }
             } else if old == .connected && new == .disconnected {
+                HapticManager.shared.notification(.warning)
                 connectionToastMessage = "Disconnected"
                 withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
                     showConnectionToast = true
@@ -309,7 +310,7 @@ struct ChatView: View {
         }
         .onChange(of: viewModel.errorMessage) { _, err in
             if err != nil {
-                UINotificationFeedbackGenerator().notificationOccurred(.error)
+                HapticManager.shared.notification(.error)
             }
         }
         .onChange(of: viewModel.messages.count) { old, new in
@@ -412,7 +413,11 @@ struct ChatView: View {
                                 botId: botConfig.id,
                                 allMessages: viewModel.messages,
                                 onReply: { msg in viewModel.replyingTo = msg },
-                                onScrollTo: { id in scrollToMessageId = id }
+                                onScrollTo: { id in scrollToMessageId = id },
+                                onReact: { action, messageId in
+                                    HapticManager.shared.impact(.medium)
+                                    Task { await viewModel.sendReaction(action, for: messageId) }
+                                }
                             )
                             .searchMatchGlow(isMatch: isSearchMatch, isCurrent: isCurrentMatch)
                             .id(message.id)
@@ -468,6 +473,7 @@ struct ChatView: View {
                 }
             }
             .refreshable {
+                HapticManager.shared.impact(.rigid)
                 await viewModel.loadHistory()
             }
             .scrollDismissesKeyboard(.interactively)
@@ -635,7 +641,7 @@ struct ChatView: View {
         messageText = ""
         pendingAttachments = []
         mentionAutocomplete.dismiss()
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        HapticManager.shared.impact(.light)
 
         // Check for @mention routing to a different bot
         if let targetBotId = MentionParser.firstMentionedBotId(from: text, knownBots: appState.bots),

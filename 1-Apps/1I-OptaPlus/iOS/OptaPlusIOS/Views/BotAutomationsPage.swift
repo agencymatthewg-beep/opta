@@ -11,38 +11,6 @@ import SwiftUI
 import OptaPlus
 import OptaMolt
 
-// MARK: - Cron Job Model (relocated from AutomationsView)
-
-struct CronJobItem: Identifiable {
-    let id: String
-    let name: String
-    var enabled: Bool
-    let scheduleText: String
-    let scheduleKind: String
-    let sessionTarget: String
-    let payloadKind: String
-    let model: String?
-    let lastRunAt: Date?
-    let nextRunAt: Date?
-    let botName: String
-    let botEmoji: String
-    let botId: String
-    let rawSchedule: [String: Any]?
-    let rawPayload: [String: Any]?
-
-    var displayName: String {
-        name.isEmpty ? id : name
-    }
-}
-
-// MARK: - Scheduler Status
-
-struct SchedulerStatus {
-    let running: Bool
-    let jobCount: Int
-    let activeCount: Int
-}
-
 // MARK: - Bot Automations Page
 
 struct BotAutomationsPage: View {
@@ -80,6 +48,7 @@ struct BotAutomationsPage: View {
             await loadJobs()
         }
         .refreshable {
+            HapticManager.shared.impact(.rigid)
             await loadJobs()
         }
         .onChange(of: viewModel.connectionState) { old, new in
@@ -174,7 +143,7 @@ struct BotAutomationsPage: View {
                 }
                 .swipeActions(edge: .leading, allowsFullSwipe: true) {
                     Button {
-                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        HapticManager.shared.selection()
                         toggleJob(job)
                     } label: {
                         Label(
@@ -346,17 +315,17 @@ struct BotAutomationsPage: View {
         Task {
             do {
                 _ = try await viewModel.call("cron.run", params: ["jobId": job.id])
-                UINotificationFeedbackGenerator().notificationOccurred(.success)
+                HapticManager.shared.notification(.success)
             } catch {
                 errorMessage = "Run failed: \(error.localizedDescription)"
-                UINotificationFeedbackGenerator().notificationOccurred(.error)
+                HapticManager.shared.notification(.error)
             }
             runningJobIds.remove(job.id)
         }
     }
 
     private func deleteJob(_ job: CronJobItem) {
-        UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+        HapticManager.shared.impact(.heavy)
         Task {
             do {
                 _ = try await viewModel.call("cron.remove", params: ["jobId": job.id])
@@ -450,7 +419,10 @@ struct JobRow: View {
                     Spacer()
                     Toggle("", isOn: Binding(
                         get: { job.enabled },
-                        set: { _ in onToggle() }
+                        set: { _ in
+                            HapticManager.shared.selection()
+                            onToggle()
+                        }
                     ))
                     .labelsHidden()
                     .tint(.optaPrimary)

@@ -1,0 +1,1950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OptaPlus iOS — Improvement Plan & Recommendations</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --void: #09090b;
+    --surface: #18181b;
+    --elevated: #27272a;
+    --border: #3f3f46;
+    --text-primary: #fafafa;
+    --text-secondary: #a1a1aa;
+    --text-muted: #52525b;
+    --primary: #8b5cf6;
+    --primary-glow: #a855f7;
+    --neon-blue: #3b82f6;
+    --neon-green: #22c55e;
+    --neon-amber: #f59e0b;
+    --neon-red: #ef4444;
+    --neon-cyan: #06b6d4;
+    --neon-pink: #ec4899;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--void);
+    color: var(--text-primary);
+    font-family: 'Sora', -apple-system, BlinkMacSystemFont, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    line-height: 1.6;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  .particle {
+    position: fixed;
+    border-radius: 50%;
+    pointer-events: none;
+    animation: float 20s ease-in-out infinite;
+    opacity: 0.04;
+  }
+  .particle-1 { width: 400px; height: 400px; background: var(--primary); top: -100px; right: -100px; animation-delay: 0s; }
+  .particle-2 { width: 300px; height: 300px; background: var(--neon-blue); bottom: -80px; left: -80px; animation-delay: -7s; }
+  .particle-3 { width: 250px; height: 250px; background: var(--neon-cyan); top: 40%; left: 60%; animation-delay: -13s; }
+  .particle-4 { width: 350px; height: 350px; background: var(--neon-green); bottom: 20%; right: 10%; animation-delay: -5s; }
+
+  @keyframes float {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    25% { transform: translate(30px, -20px) scale(1.05); }
+    50% { transform: translate(-20px, 30px) scale(0.95); }
+    75% { transform: translate(15px, 15px) scale(1.02); }
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes breathe {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+
+  @keyframes pulseGlow {
+    0%, 100% { box-shadow: 0 0 20px rgba(139, 92, 246, 0.15); }
+    50% { box-shadow: 0 0 40px rgba(139, 92, 246, 0.3); }
+  }
+
+  .container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 40px 24px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .glass {
+    background: rgba(24, 24, 27, 0.6);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  .glass::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+  }
+
+  .glass-subtle {
+    background: rgba(24, 24, 27, 0.35);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+  }
+
+  /* Header */
+  .hero {
+    text-align: center;
+    padding: 80px 24px 48px;
+    animation: slideUp 0.8s ease-out;
+  }
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 16px;
+    border-radius: 99px;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--primary);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    background: rgba(139, 92, 246, 0.08);
+    margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-size: 42px;
+    font-weight: 700;
+    letter-spacing: -1px;
+    background: linear-gradient(135deg, var(--text-primary), var(--primary-glow));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 16px;
+  }
+  .hero p {
+    font-size: 18px;
+    color: var(--text-secondary);
+    max-width: 700px;
+    margin: 0 auto;
+  }
+
+  /* Stats Row */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 16px;
+    padding: 24px;
+    margin-bottom: 32px;
+  }
+  .stat-card {
+    text-align: center;
+    padding: 20px 16px;
+  }
+  .stat-value {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 4px;
+  }
+  .stat-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* Score Badge */
+  .score-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .score-badge.critical { background: rgba(239, 68, 68, 0.15); color: var(--neon-red); border: 1px solid rgba(239, 68, 68, 0.3); }
+  .score-badge.high { background: rgba(245, 158, 11, 0.15); color: var(--neon-amber); border: 1px solid rgba(245, 158, 11, 0.3); }
+  .score-badge.medium { background: rgba(59, 130, 246, 0.15); color: var(--neon-blue); border: 1px solid rgba(59, 130, 246, 0.3); }
+  .score-badge.low { background: rgba(34, 197, 94, 0.15); color: var(--neon-green); border: 1px solid rgba(34, 197, 94, 0.3); }
+  .score-badge.ship { background: rgba(139, 92, 246, 0.15); color: var(--primary); border: 1px solid rgba(139, 92, 246, 0.3); }
+
+  /* Section */
+  .section {
+    margin-bottom: 48px;
+    animation: slideUp 0.8s ease-out backwards;
+  }
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding: 0 8px;
+  }
+  .section-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+  .section-icon.purple { background: rgba(139, 92, 246, 0.15); border: 1px solid rgba(139, 92, 246, 0.3); }
+  .section-icon.green { background: rgba(34, 197, 94, 0.15); border: 1px solid rgba(34, 197, 94, 0.3); }
+  .section-icon.blue { background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); }
+  .section-icon.amber { background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); }
+  .section-icon.red { background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); }
+  .section-icon.cyan { background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.3); }
+  .section-icon.pink { background: rgba(236, 72, 153, 0.15); border: 1px solid rgba(236, 72, 153, 0.3); }
+  .section-title {
+    font-size: 22px;
+    font-weight: 600;
+  }
+  .section-subtitle {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  /* Idea Card */
+  .idea-card {
+    padding: 28px;
+    margin-bottom: 20px;
+    transition: all 0.3s ease;
+  }
+  .idea-card:hover {
+    border-color: rgba(139, 92, 246, 0.2);
+    transform: translateY(-2px);
+  }
+  .idea-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .idea-title-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 300px;
+  }
+  .idea-number {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--primary);
+    font-family: 'JetBrains Mono', monospace;
+    flex-shrink: 0;
+  }
+  .idea-title {
+    font-size: 18px;
+    font-weight: 600;
+  }
+  .idea-badges {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+  }
+  .badge.effort { background: rgba(139, 92, 246, 0.1); color: var(--primary); border: 1px solid rgba(139, 92, 246, 0.2); }
+  .badge.version { background: rgba(6, 182, 212, 0.1); color: var(--neon-cyan); border: 1px solid rgba(6, 182, 212, 0.2); }
+  .badge.blocker { background: rgba(239, 68, 68, 0.1); color: var(--neon-red); border: 1px solid rgba(239, 68, 68, 0.2); }
+  .badge.quick-win { background: rgba(34, 197, 94, 0.1); color: var(--neon-green); border: 1px solid rgba(34, 197, 94, 0.2); }
+
+  .idea-description {
+    color: var(--text-secondary);
+    font-size: 14px;
+    line-height: 1.7;
+    margin-bottom: 20px;
+  }
+
+  /* Pros/Cons Grid */
+  .pros-cons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  @media (max-width: 640px) {
+    .pros-cons { grid-template-columns: 1fr; }
+  }
+  .pros-col, .cons-col {
+    padding: 16px;
+    border-radius: 12px;
+  }
+  .pros-col {
+    background: rgba(34, 197, 94, 0.05);
+    border: 1px solid rgba(34, 197, 94, 0.12);
+  }
+  .cons-col {
+    background: rgba(239, 68, 68, 0.05);
+    border: 1px solid rgba(239, 68, 68, 0.12);
+  }
+  .pros-cons-title {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+  }
+  .pros-col .pros-cons-title { color: var(--neon-green); }
+  .cons-col .pros-cons-title { color: var(--neon-red); }
+  .pros-cons ul {
+    list-style: none;
+    padding: 0;
+  }
+  .pros-cons li {
+    font-size: 13px;
+    color: var(--text-secondary);
+    padding: 4px 0;
+    padding-left: 20px;
+    position: relative;
+    line-height: 1.5;
+  }
+  .pros-col li::before {
+    content: '+';
+    position: absolute;
+    left: 0;
+    color: var(--neon-green);
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .cons-col li::before {
+    content: '−';
+    position: absolute;
+    left: 0;
+    color: var(--neon-red);
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* Recommendation */
+  .recommendation {
+    padding: 14px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .recommendation.do {
+    background: rgba(34, 197, 94, 0.08);
+    border: 1px solid rgba(34, 197, 94, 0.15);
+    color: var(--neon-green);
+  }
+  .recommendation.defer {
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px solid rgba(245, 158, 11, 0.15);
+    color: var(--neon-amber);
+  }
+  .recommendation.skip {
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px solid rgba(239, 68, 68, 0.15);
+    color: var(--neon-red);
+  }
+  .rec-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+  .rec-text { line-height: 1.5; }
+  .rec-text strong { color: var(--text-primary); }
+
+  /* Files list */
+  .files-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 12px;
+  }
+  .file-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: rgba(139, 92, 246, 0.08);
+    border: 1px solid rgba(139, 92, 246, 0.15);
+    color: var(--text-secondary);
+  }
+
+  /* Timeline */
+  .timeline {
+    position: relative;
+    padding: 24px;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 48px;
+    top: 24px;
+    bottom: 24px;
+    width: 2px;
+    background: linear-gradient(to bottom, var(--primary), var(--neon-cyan), var(--neon-green));
+    opacity: 0.3;
+  }
+  .timeline-item {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 32px;
+    position: relative;
+  }
+  .timeline-dot {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    position: relative;
+    z-index: 2;
+    margin-left: 25px;
+  }
+  .timeline-dot.now { background: var(--neon-green); color: var(--void); animation: pulseGlow 2s infinite; box-shadow: 0 0 20px rgba(34, 197, 94, 0.4); }
+  .timeline-dot.next { background: var(--primary); color: white; }
+  .timeline-dot.later { background: var(--neon-cyan); color: var(--void); }
+  .timeline-dot.future { background: var(--elevated); border: 2px solid var(--border); color: var(--text-muted); }
+  .timeline-content {
+    flex: 1;
+    padding-top: 2px;
+  }
+  .timeline-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+  .timeline-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .timeline-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+  .timeline-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+  }
+  .timeline-tag {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: var(--text-secondary);
+  }
+
+  /* Priority Matrix */
+  .matrix {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    padding: 24px;
+  }
+  @media (max-width: 768px) {
+    .matrix { grid-template-columns: 1fr; }
+  }
+  .matrix-quadrant {
+    padding: 20px;
+    border-radius: 12px;
+  }
+  .matrix-quadrant.q1 { background: rgba(34, 197, 94, 0.06); border: 1px solid rgba(34, 197, 94, 0.15); }
+  .matrix-quadrant.q2 { background: rgba(139, 92, 246, 0.06); border: 1px solid rgba(139, 92, 246, 0.15); }
+  .matrix-quadrant.q3 { background: rgba(245, 158, 11, 0.06); border: 1px solid rgba(245, 158, 11, 0.15); }
+  .matrix-quadrant.q4 { background: rgba(63, 63, 70, 0.3); border: 1px solid rgba(255,255,255,0.05); }
+  .matrix-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+  }
+  .q1 .matrix-label { color: var(--neon-green); }
+  .q2 .matrix-label { color: var(--primary); }
+  .q3 .matrix-label { color: var(--neon-amber); }
+  .q4 .matrix-label { color: var(--text-muted); }
+  .matrix-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+  .matrix-item .num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    width: 24px;
+    flex-shrink: 0;
+  }
+
+  /* Guardrail callout */
+  .guardrail {
+    padding: 14px 16px;
+    border-radius: 10px;
+    background: rgba(239, 68, 68, 0.06);
+    border: 1px solid rgba(239, 68, 68, 0.15);
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 12px;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .guardrail strong { color: var(--neon-red); }
+
+  /* Roadmap alignment */
+  .roadmap-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .roadmap-tag.blocks-v1 { background: rgba(239, 68, 68, 0.1); color: var(--neon-red); border: 1px solid rgba(239, 68, 68, 0.2); }
+  .roadmap-tag.v091 { background: rgba(34, 197, 94, 0.1); color: var(--neon-green); border: 1px solid rgba(34, 197, 94, 0.2); }
+  .roadmap-tag.v10 { background: rgba(59, 130, 246, 0.1); color: var(--neon-blue); border: 1px solid rgba(59, 130, 246, 0.2); }
+  .roadmap-tag.v11 { background: rgba(139, 92, 246, 0.1); color: var(--primary); border: 1px solid rgba(139, 92, 246, 0.2); }
+  .roadmap-tag.v20 { background: rgba(63, 63, 70, 0.3); color: var(--text-muted); border: 1px solid rgba(255,255,255,0.08); }
+
+  /* Divider */
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+    margin: 48px 0;
+  }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding: 40px 24px 60px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .footer a { color: var(--primary); text-decoration: none; }
+
+  /* Verdict bar */
+  .verdict-bar {
+    display: flex;
+    height: 6px;
+    border-radius: 3px;
+    overflow: hidden;
+    margin: 12px 0;
+    background: rgba(255,255,255,0.03);
+  }
+  .verdict-segment { height: 100%; }
+  .verdict-segment.green { background: var(--neon-green); }
+  .verdict-segment.amber { background: var(--neon-amber); }
+  .verdict-segment.red { background: var(--neon-red); }
+  .verdict-segment.blue { background: var(--neon-blue); }
+
+  /* Comparison table */
+  .compare-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .compare-table th {
+    text-align: left;
+    padding: 10px 12px;
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .compare-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    color: var(--text-secondary);
+  }
+  .compare-table tr:hover td {
+    background: rgba(255,255,255,0.02);
+  }
+
+  .animated { animation: slideUp 0.6s ease-out backwards; }
+  .delay-1 { animation-delay: 0.1s; }
+  .delay-2 { animation-delay: 0.2s; }
+  .delay-3 { animation-delay: 0.3s; }
+  .delay-4 { animation-delay: 0.4s; }
+  .delay-5 { animation-delay: 0.5s; }
+</style>
+</head>
+<body>
+
+<div class="particle particle-1"></div>
+<div class="particle particle-2"></div>
+<div class="particle particle-3"></div>
+<div class="particle particle-4"></div>
+
+<div class="container">
+
+<!-- Hero -->
+<div class="hero">
+  <div class="hero-badge">Opta + Atpo Analysis</div>
+  <h1>OptaPlus iOS Improvement Plan</h1>
+  <p>20 researched improvements with pros, cons, effort estimates, and roadmap alignment. Deep analysis of 23,750 lines across 86 Swift files.</p>
+</div>
+
+<!-- Stats -->
+<div class="glass stats-row animated delay-1">
+  <div class="stat-card">
+    <div class="stat-value">8.5</div>
+    <div class="stat-label">Current Score /10</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">20</div>
+    <div class="stat-label">Ideas Identified</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">~85h</div>
+    <div class="stat-label">Total Effort</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">4</div>
+    <div class="stat-label">Critical Issues</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">7</div>
+    <div class="stat-label">Quick Wins</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">0</div>
+    <div class="stat-label">External Deps</div>
+  </div>
+</div>
+
+<!-- Recommended Implementation Timeline -->
+<div class="section animated delay-2">
+  <div class="section-header">
+    <div class="section-icon purple">&#x1F4C5;</div>
+    <div>
+      <div class="section-title">Recommended Timeline</div>
+      <div class="section-subtitle">Aligned with existing v0.9.1 → v1.0 → v1.1 roadmap</div>
+    </div>
+  </div>
+
+  <div class="glass timeline">
+    <div class="timeline-item">
+      <div class="timeline-dot now">&#x25CF;</div>
+      <div class="timeline-content">
+        <div class="timeline-label">Now — This Session (3-4 hours)</div>
+        <div class="timeline-title">Quick Wins & Critical Fixes</div>
+        <div class="timeline-desc">Fix the data race, kill dead code, unify BotNode, wire ReactionBar, add haptics. High impact, low risk.</div>
+        <div class="timeline-items">
+          <span class="timeline-tag">#4 ParseCache Race</span>
+          <span class="timeline-tag">#3 Dead Code</span>
+          <span class="timeline-tag">#9 ReactionBar</span>
+          <span class="timeline-tag">#14 Haptics</span>
+        </div>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot next">&#x25CF;</div>
+      <div class="timeline-content">
+        <div class="timeline-label">v0.9.1 — Feb 28 (10-12 hours)</div>
+        <div class="timeline-title">Code Health & Accessibility</div>
+        <div class="timeline-desc">Decompose monolith files, complete VoiceOver coverage, add error recovery UX, performance benchmarks.</div>
+        <div class="timeline-items">
+          <span class="timeline-tag">#1 Decompose Files</span>
+          <span class="timeline-tag">#2 Accessibility</span>
+          <span class="timeline-tag">#10 Error Recovery</span>
+          <span class="timeline-tag">#17 Benchmarks</span>
+        </div>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot later">&#x25CF;</div>
+      <div class="timeline-content">
+        <div class="timeline-label">v1.0 — Apr 1 (40-50 hours)</div>
+        <div class="timeline-title">Platform Features (Blocks App Store)</div>
+        <div class="timeline-desc">Push notifications, WidgetKit, Siri Shortcuts, Live Activities. These are the v1.0 critical path per ROADMAP.md.</div>
+        <div class="timeline-items">
+          <span class="timeline-tag">#8 Push Notifications</span>
+          <span class="timeline-tag">#6 WidgetKit</span>
+          <span class="timeline-tag">#12 Siri Shortcuts</span>
+          <span class="timeline-tag">#7 Live Activities</span>
+          <span class="timeline-tag">#11 Encryption</span>
+        </div>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot future">&#x25CF;</div>
+      <div class="timeline-content">
+        <div class="timeline-label">v1.1+ — Jun 1+ (20-30 hours)</div>
+        <div class="timeline-title">Power User & Innovation</div>
+        <div class="timeline-desc">Command palette, dashboard view, gesture shortcuts, multi-bot orchestration, Watch companion.</div>
+        <div class="timeline-items">
+          <span class="timeline-tag">#5 Command Palette</span>
+          <span class="timeline-tag">#13 Dashboard</span>
+          <span class="timeline-tag">#15 Gestures</span>
+          <span class="timeline-tag">#18 Orchestration</span>
+          <span class="timeline-tag">#19 Watch</span>
+          <span class="timeline-tag">#20 visionOS</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- TIER 1: Critical & Quick Wins -->
+<div class="section animated delay-3">
+  <div class="section-header">
+    <div class="section-icon red">&#x26A0;</div>
+    <div>
+      <div class="section-title">Tier 1: Critical Fixes & Quick Wins</div>
+      <div class="section-subtitle">Do now — high impact, low effort, immediate code health improvement</div>
+    </div>
+  </div>
+
+  <!-- Idea 1 -->
+  <div class="idea-card glass">
+    <div class="idea-header">
+      <div class="idea-title-row">
+        <span class="idea-number">#01</span>
+        <span class="idea-title">Decompose the Big Four Files</span>
+      </div>
+      <div class="idea-badges">
+        <span class="badge effort">~4 hours</span>
+        <span class="roadmap-tag v091">v0.9.1</span>
+        <span class="score-badge high">HIGH</span>
+      </div>
+    </div>
+    <div class="idea-description">
+      Four files hold 55% of app logic: <strong>MarkdownContent</strong> (1,514 lines), <strong>ChatViewModel</strong> (1,082), <strong>BotMapView</strong> (797), <strong>ChatView</strong> (726). Each mixes unrelated concerns — parsing with rendering, session logic with event handling, layout with data fetching. Split each into focused extensions.
+    </div>
+    <div class="pros-cons">
+      <div class="pros-col">
+        <div class="pros-cons-title">Pros</div>
+        <ul>
+          <li>Enables targeted unit testing per concern</li>
+          <li>Faster Xcode autocomplete and indexing</li>
+          <li>Parallel development without merge conflicts</li>
+          <li>Pure refactor — zero behavior change, zero risk</li>
+          <li>Makes future features easier to add</li>
+        </ul>
+      </div>
+      <div class="cons-col">
+        <div class="pros-cons-title">Cons</div>
+        <ul>
+          <li>Large git diff (looks scary, but is mechanical)</li>
+          <li>Need to update Xcode project file references</li>
+          <li>Extensions can't add stored properties (design around)</li>
+        </ul>
+      </div>
+    </div>
+    <div class="recommendation do">
+      <span class="rec-icon">&#x2705;</span>
+      <span class="rec-text"><strong>DO — v0.9.1.</strong> Pure refactor with massive maintainability payoff. No risk if done file-by-file with build verification between each.</span>
+    </div>
+    <div class="files-list">
+      <span class="file-tag">MarkdownContent.swift → 3 files</span>
+      <span class="file-tag">ChatViewModel.swift → 4 files</span>
+      <span class="file-tag">BotMapView.swift → 3 files</span>
+      <span class="file-tag">ChatView.swift → 2 files</span>
+    </div>
+  </div>
+
+  <!-- Idea 2 -->
+  <div class="idea-card glass">
+    <div class="idea-header">
+      <div class="idea-title-row">
+        <span class="idea-number">#02</span>
+        <span class="idea-title">Complete VoiceOver Accessibility (WCAG AA)</span>
+      </div>
+      <div class="idea-badges">
+        <span class="badge effort">~6 hours</span>
+        <span class="roadmap-tag blocks-v1">Blocks v1.0</span>
+        <span class="score-badge critical">CRITICAL</span>
+      </div>
+    </div>
+    <div class="idea-description">
+      Only ~20% of interactive elements have VoiceOver labels. GUARDRAILS.md line 277 mandates all interactive elements must be labeled. Missing: <code>.accessibilityHint()</code> on ~100 buttons, <code>.accessibilityValue()</code> for dynamic states, element grouping for complex views. App Store could reject without this.
+    </div>
+    <div class="pros-cons">
+      <div class="pros-col">
+        <div class="pros-cons-title">Pros</div>
+        <ul>
+          <li>Unblocks App Store submission (Apple reviews accessibility)</li>
+          <li>Opens app to visually impaired users</li>
+          <li>Satisfies GUARDRAILS.md compliance requirement</li>
+          <li>Improves SwiftUI test automation (labels = test anchors)</li>
+          <li>Legal protection (ADA compliance)</li>
+        </ul>
+      </div>
+      <div class="cons-col">
+        <div class="pros-cons-title">Cons</div>
+        <ul>
+          <li>Tedious, repetitive work across 23 view files</li>
+          <li>Hard to verify without real VoiceOver testing on device</li>
+          <li>May expose layout issues when Dynamic Type scales up</li>
+        </ul>
+      </div>
+    </div>
+    <div class="recommendation do">
+      <span class="rec-icon">&#x2705;</span>
+      <span class="rec-text"><strong>DO — v0.9.1 / v1.0.</strong> Non-negotiable for App Store. Start with high-traffic views (ChatView, BotMapView, Settings), then complete remaining.</span>
+    </div>
+    <div class="guardrail">
+      <span>&#x1F6E1;</span>
+      <span><strong>GUARDRAILS A04/A05</strong> — All interactive elements require VoiceOver labels. Color contrast must meet WCAG AA 4.5:1. Reduce Motion must disable spring animations.</span>
+    </div>
+  </div>
+
+  <!-- Idea 3 -->
+  <div class="idea-card glass">
+    <div class="idea-header">
+      <div class="idea-title-row">
+        <span class="idea-number">#03</span>
+        <span class="idea-title">Kill Dead Code + Unify BotNode Model</span>
+      </div>
+      <div class="idea-badges">
+        <span class="badge effort">~3 hours</span>
+        <span class="badge quick-win">Quick Win</span>
+        <span class="roadmap-tag v091">v0.9.1</span>
+        <span class="score-badge high">HIGH</span>
+      </div>
+    </div>
+    <div class="idea-description">
+      Three dead files total ~500 lines: <strong>TelegramSyncManager</strong> (395 lines of stubs), <strong>OptaAccountService</strong> (58 lines, no references), <strong>BotPairingSyncService</strong> (49 lines, not wired up). Plus the BotConfig↔BotNode dual model adds ~100 lines of conversion code. And CronJobItem is duplicated across iOS and macOS.
+    </div>
+    <div class="pros-cons">
+      <div class="pros-col">
+        <div class="pros-cons-title">Pros</div>
+        <ul>
+          <li>~600 lines deleted — cleaner, smaller codebase</li>
+          <li>Single model (BotNode) eliminates conversion bugs</li>
+          <li>CronJobItem shared = changes only needed once</li>
+          <li>Reduces cognitive load for new contributors</li>
+        </ul>
+      </div>
+      <div class="cons-col">
+        <div class="pros-cons-title">Cons</div>
+        <ul>
+          <li>Need migration path for existing BotConfig data</li>
+          <li>TelegramSync stubs may be needed later (but can rebuild)</li>
+          <li>Must update both iOS and macOS targets</li>
+        </ul>
+      </div>
+    </div>
+    <div class="recommendation do">
+      <span class="rec-icon">&#x2705;</span>
+      <span class="rec-text"><strong>DO — This session.</strong> Dead code is technical debt accruing interest. Delete now, re-create from scratch when Telegram sync is actually ready. Git has the history.</span>
+    </div>
+  </div>
+
+  <!-- Idea 4 -->
+  <div class="idea-card glass">
+    <div class="idea-header">
+      <div class="idea-title-row">
+        <span class="idea-number">#04</span>
+        <span class="idea-title">Fix MarkdownParseCache Data Race</span>
+      </div>
+      <div class="idea-badges">
+        <span class="badge effort">~1 hour</span>
+        <span class="badge quick-win">Quick Win</span>
+        <span class="score-badge critical">CRITICAL</span>
+      </div>
+    </div>
+    <div class="idea-description">
+      <code>MarkdownParseCache</code> uses <code>@unchecked Sendable</code> — concurrent streaming updates from multiple bots could corrupt the dictionary. Fix: convert to <code>actor</code> or use <code>OSAllocatedUnfairLock</code> for thread-safe access. This is a correctness issue, not performance.
+    </div>
+    <div class="pros-cons">
+      <div class="pros-col">
+        <div class="pros-cons-title">Pros</div>
+        <ul>
+          <li>Eliminates potential crash during multi-bot streaming</li>
+          <li>1 hour max effort — tiny change, massive safety improvement</li>
+          <li>actor or lock both work; actor is more Swifty</li>
+        </ul>
+      </div>
+      <div class="cons-col">
+        <div class="pros-cons-title">Cons</div>
+        <ul>
+          <li>actor adds async overhead (negligible for cache lookups)</li>
+          <li>May need to audit other @unchecked Sendable uses</li>
+        </ul>
+      </div>
+    </div>
+    <div class="recommendation do">
+      <span class="rec-icon">&#x2705;</span>
+      <span class="rec-text"><strong>DO — This session.</strong> 1 hour to prevent a class of rare but catastrophic crashes. Non-negotiable.</span>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- TIER 2: Platform Features -->
+<div class="section animated delay-4">
+  <div class="section-header">
+    <div class="section-icon blue">&#x1F4F1;</div>
+    <div>
+      <div class="section-title">Tier 2: Platform Integration Features</div>
+      <div class="section-subtitle">v1.0 critical path — required for App Store and Telegram replacement goal</div>
+    </div>
+  </div>
+
+  <!-- Idea 5 -->
+  <div class="idea-card glass">
+    <div class="idea-header">
+      <div class="idea-title-row">
+        <span class="idea-number">#05</span>
+        <span class="idea-title">iPad Command Palette (&#x2318;K)</span>
+      </div>
+      <div class="idea-badges">
+        <span class="badge effort">~8 hours</span>
+        <span class="roadmap-tag v11">v1.1</span>
+        <span class="score-badge medium">MEDIUM</span>
+      </div>
+    </div>
+    <div class="idea-description">
+      macOS has a powerful command palette; iPad Pro + Magic Keyboard users have nothing. A floating glass overlay with fuzzy search across bots, sessions, cron jobs, and settings. Keyboard-only navigation with arrow keys and Enter. Recent commands history. Discoverable keyboard shortcuts.
+    </div>
+    <div class="pros-cons">
+      <div class="pros-col">
+        <div class="pros-cons-title">Pros</div>
+        <ul>
+          <li>Differentiates from every other iOS chat app</li>
+          <li>Power users will love it — huge engagement boost</li>
+          <li>Reuse macOS CommandPalette.swift logic</li>
+          <li>Hardware keyboard support is increasingly expected on iPad</li>
+        </ul>
+      </div>
+      <div class="cons-col">
+        <div class="pros-cons-title">Cons</div>
+        <ul>
+          <li>Only benefits iPad + keyboard users (small audience for now)</li>
+          <li>8 hours is substantial for a non-essential feature</li>
+          <li>SwiftUI keyboard shortcut API is limited on iOS</li>
+          <li>Not on v1.0 critical path</li>
+        </ul>
+      </div>
+    </div>
+    <div class="recommendation defer">
+      <span class="rec-icon">&#x23F3;</span>
+      <span class="rec-text"><strong>DEFER to v1.1.</strong> Impressive but not blocking. Focus on v1.0 platform features first. When ready, port the macOS CommandPalette.swift with iOS-specific adaptations.</span>
+    </div>
+  </div>
+
+  <!-- Idea 6 -->
+  <div class="idea-card glass">
+    <div class="idea-header">
+      <div class="idea-title-row">
+        <span class="idea-number">#06</span>
+        <span class="idea-title">WidgetKit Integration</span>
+      </div>
+      <div class="idea-badges">
+        <span class="badge effort">~12 hours</span>
+        <span class="roadmap-tag blocks-v1">Blocks v1.0</span>
+        <span class="score-badge critical">CRITICAL</span>
+      </div>
+    </div>
+    <div class="idea-description">
+      Roadmap lists widgets as v1.0 must-have. Four widget types: <strong>Bot Status</strong> (small — connection dot + last message), <strong>Multi-Bot Dashboard</strong> (medium — 2-4 bot cards), <strong>Cron Countdown</strong> (small — next job + timer), <strong>Quick Chat</strong> (large — last 3 messages + tap intent). Lock screen widgets for iOS 17+.
+    </div>
+    <div class="pros-cons">
+      <div class="pros-col">
+        <div class="pros-cons-title">Pros</div>
+        <ul>
+          <li>Home screen presence = daily engagement without opening app</li>
+          <li>Lock screen widgets are the most visible real estate on iPhone</li>
+          <li>WidgetKit is allowed per GUARDRAILS A01 (OS framework)</li>
+          <li>App Store reviewers look favorably on widget support</li>
+          <li>Cron countdown creates urgency/awareness of automation</li>
+        </ul>
+      </div>
+      <div class="cons-col">
+        <div class="pros-cons-title">Cons</div>
+        <ul>
+          <li>12 hours is significant — needs dedicated sprint</li>
+          <li>WidgetKit has strict 5-minute refresh limits</li>
+          <li>Data sharing via App Groups requires entitlement setup</li>
+          <li>Testing widgets is painful (Xcode preview is unreliable)</li>
+          <li>Must maintain widget data in App Group container</li>
+        </ul>
+      </div>
+    </div>
+    <div class="recommendation do">
+      <span class="rec-icon">&#x2705;</span>
+      <span class="rec-text"><strong>DO — v1.0.</strong> Start with Bot Status (small) widget — simplest to implement, highest daily value. Add others incrementally. Use App Groups for shared data.</span>
+    </div>
+  </div>
+
+  <!-- Idea 7 -->
+  <div class="idea-card glass">
+    <div class="idea-header">
+      <div class="idea-title-row">
+        <span class="idea-number">#07</span>
+        <span class="idea-title">Live Activities (Dynamic Island)</span>
+      </div>
+      <div class="idea-badges">
+        <span class="badge effort">~8 hours</span>
+        <span class="roadmap-tag v10">v1.0</span>
+        <span class="score-badge medium">MEDIUM</span>
+      </div>
+    </div>
+    <div class="idea-description">
+      Show bot thinking progress on the Dynamic Island and Lock Screen. Use cases: long-running agent tasks, cron job execution, connection recovery. ActivityKit is allowed per GUARDRAILS. Users can switch apps while staying informed about bot activity.
+    </div>
+    <div class="pros-cons">
+      <div class="pros-col">
+        <div class="pros-cons-title">Pros</div>
+        <ul>
+          <li>Reduces anxiety during long bot operations</li>
+          <li>Unique differentiator — no other bot chat app does this</li>
+          <li>Natural fit for streaming agent responses</li>
+          <li>Dynamic Island is premium Apple UX</li>
+        </ul>
+      </div>
+      <div class="cons-col">
+        <div class="pros-cons-title">Cons</div>
+        <ul>
+          <li>Only works on iPhone 14 Pro+ (Dynamic Island)</li>
+          <li>8 hours for a "nice-to-have" per roadmap</li>
+          <li>ActivityKit API is complex (attributes + content state)</li>
+          <li>Must handle activity expiration (8-hour max)</li>
+        </ul>
+      </div>
+    </div>
+    <div class="recommendation defer">
+      <span class="rec-icon">&#x23F3;</span>
+      <span class="rec-text"><strong>DEFER to v1.0 should-have.</strong> Impressive but not blocking. Implement after push notifications and widgets are done. Start with cron job progress — simplest use case.</span>
+    </div>
+  </div>
+
+  <!-- Idea 8 -->
+  <div class="idea-card glass">
+    <div class="idea-header">
+      <div class="idea-title-row">
+        <span class="idea-number">#08</span>
+        <span class="idea-title">Push Notifications (Local + Remote)</span>
+      </div>
+      <div class="idea-badges">
+        <span class="badge effort">~6h local / ~15h remote</span>
+        <span class="roadmap-tag blocks-v1">Blocks v1.0</span>
+        <span class="score-badge critical">CRITICAL</span>
+      </div>
+    </div>
+    <div class="idea-description">
+      Without notifications, the user must keep the app open to see bot responses. This is the single biggest gap vs Telegram. Start with local notifications (no server needed): bot response ready, cron job completed/failed, bot went offline. Add APNs remote push when cloud relay is ready.
+    </div>
+    <div class="pros-cons">
+      <div class="pros-col">
+        <div class="pros-cons-title">Pros</div>
+        <ul>
+          <li>Critical for "replace Telegram" goal — #1 missing feature</li>
+          <li>Local notifications need zero server setup</li>
+          <li>UNUserNotificationCenter is well-documented, stable API</li>
+          <li>Smart grouping prevents notification spam</li>
+          <li>Allowed per GUARDRAILS (OS framework)</li>
+        </ul>
+      </div>
+      <div class="cons-col">
+        <div class="pros-cons-title">Cons</div>
+        <ul>
+          <li>Local notifications only work while app is in foreground/background</li>
+          <li>Remote notifications need APNs setup (12h+ for full flow)</li>
+          <li>APNs requires gateway webhook integration</li>
+          <li>Must handle notification permissions gracefully</li>
+          <li>Risk of annoying users if not well-tuned</li>
+        </ul>
+      </div>
+    </div>
+    <div class="recommendation do">
+      <span class="rec-icon">&#x2705;</span>
+      <span class="rec-text"><strong>DO — v1.0 critical path.</strong> Start with local notifications (6 hours). Delivers 80% of value. Add APNs later when cloud relay infrastructure is ready. Use UNNotificationCategory for actionable notifications.</span>
+    </div>
+  </div>
+
+  <!-- Idea 9 -->
+  <div class="idea-card glass">
+    <div class="idea-header">
+      <div class="idea-title-row">
+        <span class="idea-number">#09</span>
+        <span class="idea-title">Wire Up ReactionBar to Gateway</span>
+      </div>
+      <div class="idea-badges">
+        <span class="badge effort">~2 hours</span>
+        <span class="badge quick-win">Quick Win</span>
+        <span class="score-badge high">HIGH</span>
+      </div>
+    </div>
+    <div class="idea-description">
+      ReactionBar exists with 4 reaction buttons (&#x1F44D; &#x2753; &#x1F44E; &#x1F504;) but they're cosmetic — commands never reach the bot. GUARDRAILS F01 explicitly states "Reactions are command handlers, not decorative." Fix: map each reaction to a <code>chat.send</code> payload.
+    </div>
+    <div class="pros-cons">
+      <div class="pros-col">
+        <div class="pros-cons-title">Pros</div>
+        <ul>
+          <li>2 hours for a fully functional feature (UI already exists)</li>
+          <li>Satisfies GUARDRAILS F01 compliance</li>
+          <li>One-tap bot commands = massive UX improvement</li>
+          <li>Bots already understand reaction commands</li>
+        </ul>
+      </div>
+      <div class="cons-col">
+        <div class="pros-cons-title">Cons</div>
+        <ul>
+          <li>Need to define exact payload format with gateway</li>
+          <li>May need haptic feedback on tap (bundle with #14)</li>
+        </ul>
+      </div>
+    </div>
+    <div class="recommendation do">
+      <span class="rec-icon">&#x2705;</span>
+      <span class="rec-text"><strong>DO — This session.</strong> GUARDRAILS violation. Feature is 90% built but doesn't work. Wire it up, ship it, mark F01 compliant.</span>
+    </div>
+    <div class="guardrail">
+      <span>&#x1F6E1;</span>
+      <span><strong>GUARDRAILS F01</strong> — "Reactions (&#x1F44D; &#x2753; &#x1F44E; &#x1F504;) are not decorative — they send commands to bots." Currently violated.</span>
+    </div>
+  </div>
+
+  <!-- Idea 10 -->
+  <div class="idea-card glass">
+    <div class="idea-header">
+      <div class="idea-title-row">
+        <span class="idea-number">#10</span>
+        <span class="idea-title">Enhanced Error Recovery UX</span>
+      </div>
+      <div class="idea-badges">
+        <span class="badge effort">~4 hours</span>
+        <span class="roadmap-tag v091">v0.9.1</span>
+        <span class="score-badge high">HIGH</span>
+      </div>
+    </div>
+    <div class="idea-description">
+      Network errors show toast messages but offer no retry action. Failed message sends just turn red. Add: "Retry" button on failed messages, "Reconnect Now" on connection toasts, "Run Again" on failed cron jobs, backoff indicator ("retrying in 5s...").
+    </div>
+    <div class="pros-cons">
+      <div class="pros-col">
+        <div class="pros-cons-title">Pros</div>
+        <ul>
+          <li>Reduces user frustration during network issues</li>
+          <li>Gives users agency instead of passive waiting</li>
+          <li>Failed states become actionable, not just informational</li>
+          <li>Critical for mobile (network drops are frequent)</li>
+        </ul>
+      </div>
+      <div class="cons-col">
+        <div class="pros-cons-title">Cons</div>
+        <ul>
+          <li>Need to handle retry-during-reconnect edge cases</li>
+          <li>May increase WebSocket traffic if users spam retry</li>
+          <li>Must debounce retry to prevent flood</li>
+        </ul>
+      </div>
+    </div>
+    <div class="recommendation do">
+      <span class="rec-icon">&#x2705;</span>
+      <span class="rec-text"><strong>DO — v0.9.1.</strong> Mobile networks are unreliable. Every failed action should have a visible, one-tap recovery path. Essential polish.</span>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- TIER 3: Polish & Enhancement -->
+<div class="section animated delay-5">
+  <div class="section-header">
+    <div class="section-icon green">&#x2728;</div>
+    <div>
+      <div class="section-title">Tier 3: Polish, Security & UX Enhancement</div>
+      <div class="section-subtitle">Meaningful improvements that elevate the app from functional to premium</div>
+    </div>
+  </div>
+
+  <!-- Idea 11 -->
+  <div class="idea-card glass">
+    <div class="idea-header">
+      <div class="idea-title-row">
+        <span class="idea-number">#11</span>
+        <span class="idea-title">Message Encryption at Rest</span>
+      </div>
+      <div class="idea-badges">
+        <span class="badge effort">~4 hours</span>
+        <span class="roadmap-tag v10">v1.0</span>
+        <span class="score-badge high">HIGH</span>
+      </div>
+    </div>
+    <div class="idea-description">
+      Messages are stored as plain JSON in MessageStore. Anyone with device access can read them. Fix: AES-256-GCM via CryptoKit (allowed per GUARDRAILS — Foundation framework). Encryption key stored in Keychain alongside pairing tokens.
+    </div>
+    <div class="pros-cons">
+      <div class="pros-col">
+        <div class="pros-cons-title">Pros</div>
+        <ul>
+          <li>CryptoKit is zero-dependency (Foundation)</li>
+          <li>Protects sensitive bot conversations at rest</li>
+          <li>Aligns with CP02 (User Privacy First) guardrail</li>
+          <li>Builds user trust for App Store launch</li>
+        </ul>
+      </div>
+      <div class="cons-col">
+        <div class="pros-cons-title">Cons</div>
+        <ul>
+          <li>Adds read/write latency (~1-2ms per message, negligible)</li>
+          <li>Key rotation strategy needed for multi-device</li>
+          <li>Encrypted data can't be searched without decrypting</li>
+          <li>Migration: must encrypt existing unencrypted messages</li>
+        </ul>
+      </div>
+    </div>
+    <div class="recommendation do">
+      <span class="rec-icon">&#x2705;</span>
+      <span class="rec-text"><strong>DO — v1.0.</strong> Simple implementation with CryptoKit. Encrypt on write, decrypt on read. Search can operate on decrypted data in memory. Essential for privacy-conscious users.</span>
+    </div>
+  </div>
+
+  <!-- Idea 12 -->
+  <div class="idea-card glass">
+    <div class="idea-header">
+      <div class="idea-title-row">
+        <span class="idea-number">#12</span>
+        <span class="idea-title">Siri Shortcuts (App Intents)</span>
+      </div>
+      <div class="idea-badges">
+        <span class="badge effort">~8 hours</span>
+        <span class="roadmap-tag blocks-v1">Blocks v1.0</span>
+        <span class="score-badge critical">CRITICAL</span>
+      </div>
+    </div>
+    <div class="idea-description">
+      Roadmap lists Siri as v1.0 must-have. Three initial intents: <strong>AskBotIntent</strong> ("Hey Siri, ask Opta Max..."), <strong>CheckStatusIntent</strong> ("What's the status of my bots?"), <strong>RunCronIntent</strong> ("Run my morning cron job"). Use AppIntents framework (allowed per GUARDRAILS).
+    </div>
+    <div class="pros-cons">
+      <div class="pros-col">
+        <div class="pros-cons-title">Pros</div>
+        <ul>
+          <li>Hands-free bot interaction — driving, cooking, etc.</li>
+          <li>AppIntents is modern, well-documented framework</li>
+          <li>Shows up in Shortcuts app for automation chains</li>
+          <li>Spotlight integration comes free with AppIntents</li>
+          <li>Differentiator vs Telegram (no Siri integration)</li>
+        </ul>
+      </div>
+      <div class="cons-col">
+        <div class="pros-cons-title">Cons</div>
+        <ul>
+          <li>8 hours for 3 intents — moderate effort</li>
+          <li>Siri response format is limited (text only, no rich markdown)</li>
+          <li>Need to handle offline gracefully (can't reach bot)</li>
+          <li>Testing Siri intents requires real device</li>
+        </ul>
+      </div>
+    </div>
+    <div class="recommendation do">
+      <span class="rec-icon">&#x2705;</span>
+      <span class="rec-text"><strong>DO — v1.0.</strong> Start with CheckStatusIntent (simplest, no bot communication needed). Then AskBotIntent. RunCronIntent last (requires session management). Per GUARDRAILS performance target: Siri response &lt; 2s.</span>
+    </div>
+  </div>
+
+  <!-- Idea 13 -->
+  <div class="idea-card glass">
+    <div class="idea-header">
+      <div class="idea-title-row">
+        <span class="idea-number">#13</span>
+        <span class="idea-title">Dashboard Tab (macOS Feature Parity)</span>
+      </div>
+      <div class="idea-badges">
+        <span class="badge effort">~6 hours</span>
+        <span class="roadmap-tag v11">v1.1</span>
+        <span class="score-badge medium">MEDIUM</span>
+      </div>
+    </div>
+    <div class="idea-description">
+      macOS shows all bots at once in a grid dashboard. iOS only has the constellation map (artistic but less informational). Add a mode toggle to Map tab — switch between "Constellation" (current) and "Dashboard" (compact bot cards in a LazyVGrid with status, health, response time, last message).
+    </div>
+    <div class="pros-cons">
+      <div class="pros-col">
+        <div class="pros-cons-title">Pros</div>
+        <ul>
+          <li>See all bot statuses without swiping</li>
+          <li>Information-dense — health score, response time, uptime</li>
+          <li>Reuse DashboardView.swift layout from macOS</li>
+          <li>Good for 5+ bot setups</li>
+        </ul>
+      </div>
+      <div class="cons-col">
+        <div class="pros-cons-title">Cons</div>
+        <ul>
+          <li>iPhone screen is small — grid may be cramped with 7+ bots</li>
+          <li>Constellation view is the unique brand identity of the app</li>
+          <li>Adding mode toggle increases complexity of Map tab</li>
+          <li>Not on critical path</li>
+        </ul>
+      </div>
+    </div>
+    <div class="recommendation defer">
+      <span class="rec-icon">&#x23F3;</span>
+      <span class="rec-text"><strong>DEFER to v1.1.</strong> Constellation is the brand. Dashboard is useful for power users with many bots. Implement as toggle, not replacement. iPad version benefits most (larger screen).</span>
+    </div>
+  </div>
+
+  <!-- Idea 14 -->
+  <div class="idea-card glass">
+    <div class="idea-header">
+      <div class="idea-title-row">
+        <span class="idea-number">#14</span>
+        <span class="idea-title">Haptic Feedback Strategy</span>
+      </div>
+      <div class="idea-badges">
+        <span class="badge effort">~2 hours</span>
+        <span class="badge quick-win">Quick Win</span>
+        <span class="roadmap-tag v091">v0.9.1</span>
+        <span class="score-badge medium">MEDIUM</span>
+      </div>
+    </div>
+    <div class="idea-description">
+      <code>OptaHaptics.shared</code> exists but is barely used. Add haptics to: message sent (.impact light), bot connected (.notification success), disconnected (.warning), reaction tapped (.impact medium), cron toggled (.selection), pull-to-refresh (.rigid), tab switch (.selection).
+    </div>
+    <div class="pros-cons">
+      <div class="pros-col">
+        <div class="pros-cons-title">Pros</div>
+        <ul>
+          <li>2 hours for premium, tactile feel</li>
+          <li>Infrastructure already exists (OptaHaptics.shared)</li>
+          <li>Users expect haptics in modern iOS apps</li>
+          <li>Zero API cost — purely client-side</li>
+        </ul>
+      </div>
+      <div class="cons-col">
+        <div class="pros-cons-title">Cons</div>
+        <ul>
+          <li>Over-use can be annoying — need restraint</li>
+          <li>Must respect system "Haptics Off" setting</li>
+          <li>No haptic motor on iPad (silent fallback needed)</li>
+        </ul>
+      </div>
+    </div>
+    <div class="recommendation do">
+      <span class="rec-icon">&#x2705;</span>
+      <span class="rec-text"><strong>DO — This session.</strong> 2 hours for a disproportionate polish boost. Use .selection for navigation, .impact for actions, .notification for state changes. Check system setting.</span>
+    </div>
+  </div>
+
+  <!-- Idea 15 -->
+  <div class="idea-card glass">
+    <div class="idea-header">
+      <div class="idea-title-row">
+        <span class="idea-number">#15</span>
+        <span class="idea-title">Gesture Shortcuts</span>
+      </div>
+      <div class="idea-badges">
+        <span class="badge effort">~4 hours</span>
+        <span class="roadmap-tag v11">v1.1</span>
+        <span class="score-badge low">LOW</span>
+      </div>
+    </div>
+    <div class="idea-description">
+      Add gesture-based shortcuts: swipe left on message = reply, swipe right = pin/bookmark, two-finger tap = copy, long press + drag on constellation bot = reorder, pinch on constellation = zoom, 3D Touch app icon = Quick Actions (new chat, scan QR, status check).
+    </div>
+    <div class="pros-cons">
+      <div class="pros-col">
+        <div class="pros-cons-title">Pros</div>
+        <ul>
+          <li>Power user efficiency — fewer taps for common actions</li>
+          <li>Swipe-to-reply is expected in chat apps (Telegram, iMessage)</li>
+          <li>3D Touch Quick Actions improve app icon engagement</li>
+        </ul>
+      </div>
+      <div class="cons-col">
+        <div class="pros-cons-title">Cons</div>
+        <ul>
+          <li>Gestures are invisible — users won't discover them</li>
+          <li>Must not conflict with system gestures (swipe back)</li>
+          <li>Accessibility concern — gestures must have button alternatives</li>
+          <li>Not critical path</li>
+        </ul>
+      </div>
+    </div>
+    <div class="recommendation defer">
+      <span class="rec-icon">&#x23F3;</span>
+      <span class="rec-text"><strong>DEFER to v1.1.</strong> Start with just swipe-to-reply (most expected gesture in chat apps) and Quick Actions (zero effort via Info.plist). Rest can wait.</span>
+    </div>
+  </div>
+
+  <!-- Idea 16 -->
+  <div class="idea-card glass">
+    <div class="idea-header">
+      <div class="idea-title-row">
+        <span class="idea-number">#16</span>
+        <span class="idea-title">Offline Mode Improvements</span>
+      </div>
+      <div class="idea-badges">
+        <span class="badge effort">~3 hours</span>
+        <span class="roadmap-tag v10">v1.0</span>
+        <span class="score-badge medium">MEDIUM</span>
+      </div>
+    </div>
+    <div class="idea-description">
+      Current offline UX is minimal — messages queue but user sees little feedback. Add: offline indicator banner, queued message count badge, "Draft" label on pending messages, automatic retry with progress indicator, offline-accessible chat history.
+    </div>
+    <div class="pros-cons">
+      <div class="pros-col">
+        <div class="pros-cons-title">Pros</div>
+        <ul>
+          <li>Graceful degradation — app stays useful without network</li>
+          <li>Queue infrastructure already exists (OfflineQueue.swift)</li>
+          <li>Users know their messages will be delivered</li>
+          <li>v1.0 release criteria require "offline-first" per ROADMAP</li>
+        </ul>
+      </div>
+      <div class="cons-col">
+        <div class="pros-cons-title">Cons</div>
+        <ul>
+          <li>Banner takes screen space on small iPhones</li>
+          <li>Auto-retry logic must handle dedup carefully</li>
+        </ul>
+      </div>
+    </div>
+    <div class="recommendation do">
+      <span class="rec-icon">&#x2705;</span>
+      <span class="rec-text"><strong>DO — v1.0.</strong> ROADMAP release criteria: "Offline-first: works without network." Current UX doesn't communicate offline state clearly enough. Quick to add with existing OfflineQueue infrastructure.</span>
+    </div>
+  </div>
+
+  <!-- Idea 17 -->
+  <div class="idea-card glass">
+    <div class="idea-header">
+      <div class="idea-title-row">
+        <span class="idea-number">#17</span>
+        <span class="idea-title">Performance Benchmarks + Monitoring</span>
+      </div>
+      <div class="idea-badges">
+        <span class="badge effort">~4 hours</span>
+        <span class="roadmap-tag v091">v0.9.1</span>
+        <span class="score-badge medium">MEDIUM</span>
+      </div>
+    </div>
+    <div class="idea-description">
+      No performance tests exist. GUARDRAILS defines targets: memory &lt; 250MB, startup &lt; 2s, scroll 60fps, bot switch &lt; 300ms, iCloud sync &lt; 30s. Add XCTestMetric benchmarks, Instruments traces, and startup timing to catch regressions before release.
+    </div>
+    <div class="pros-cons">
+      <div class="pros-col">
+        <div class="pros-cons-title">Pros</div>
+        <ul>
+          <li>Catch performance regressions before release</li>
+          <li>Validates GUARDRAILS targets objectively</li>
+          <li>XCTestMetric integrates with Xcode Test Reports</li>
+          <li>Essential for the v1.0 QA process</li>
+        </ul>
+      </div>
+      <div class="cons-col">
+        <div class="pros-cons-title">Cons</div>
+        <ul>
+          <li>Performance tests are flaky on CI (hardware-dependent)</li>
+          <li>4 hours for infrastructure that shows value slowly</li>
+          <li>Requires real device for meaningful measurements</li>
+        </ul>
+      </div>
+    </div>
+    <div class="recommendation do">
+      <span class="rec-icon">&#x2705;</span>
+      <span class="rec-text"><strong>DO — v0.9.1.</strong> Start with startup time and memory baseline. Add scroll performance when ChatView gets more complex. Run on real device, not simulator.</span>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- TIER 4: Future Vision -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-icon cyan">&#x1F680;</div>
+    <div>
+      <div class="section-title">Tier 4: Future Vision (v2.0+)</div>
+      <div class="section-subtitle">Innovation ideas — defer until core product is solid</div>
+    </div>
+  </div>
+
+  <!-- Idea 18 -->
+  <div class="idea-card glass">
+    <div class="idea-header">
+      <div class="idea-title-row">
+        <span class="idea-number">#18</span>
+        <span class="idea-title">Multi-Bot Orchestration UI</span>
+      </div>
+      <div class="idea-badges">
+        <span class="badge effort">~20 hours</span>
+        <span class="roadmap-tag v20">v2.0</span>
+        <span class="score-badge low">LOW</span>
+      </div>
+    </div>
+    <div class="idea-description">
+      Visual workflow builder: chain bot commands so Bot A processes data → sends result to Bot B → Bot B summarizes → notification. Node-based editor on iPad, simplified list editor on iPhone. Builds on existing @mention cross-bot handoff.
+    </div>
+    <div class="pros-cons">
+      <div class="pros-col">
+        <div class="pros-cons-title">Pros</div>
+        <ul>
+          <li>Unique feature — no chat app has bot orchestration</li>
+          <li>Builds on existing @mention infrastructure</li>
+          <li>Enables automation chains without cron complexity</li>
+          <li>Killer feature for power users with many bots</li>
+        </ul>
+      </div>
+      <div class="cons-col">
+        <div class="pros-cons-title">Cons</div>
+        <ul>
+          <li>20 hours — substantial engineering effort</li>
+          <li>Node editor in SwiftUI is complex (drag-and-drop, connections)</li>
+          <li>Error handling for multi-step chains is hard</li>
+          <li>Only valuable for users with 3+ bots</li>
+          <li>Premature — focus on single-bot experience first</li>
+        </ul>
+      </div>
+    </div>
+    <div class="recommendation defer">
+      <span class="rec-icon">&#x23F3;</span>
+      <span class="rec-text"><strong>DEFER to v2.0.</strong> Visionary feature but premature. Get single-bot experience perfect first. Current @mention handoff is sufficient for v1.0. Revisit when user base grows beyond Matthew.</span>
+    </div>
+  </div>
+
+  <!-- Idea 19 -->
+  <div class="idea-card glass">
+    <div class="idea-header">
+      <div class="idea-title-row">
+        <span class="idea-number">#19</span>
+        <span class="idea-title">watchOS Companion App</span>
+      </div>
+      <div class="idea-badges">
+        <span class="badge effort">~15 hours</span>
+        <span class="roadmap-tag v20">v2.0</span>
+        <span class="score-badge low">LOW</span>
+      </div>
+    </div>
+    <div class="idea-description">
+      Minimal watchOS app: bot status dots, last message preview, quick reply via Digital Crown selection, complication for home screen. Notifications on wrist for bot responses.
+    </div>
+    <div class="pros-cons">
+      <div class="pros-col">
+        <div class="pros-cons-title">Pros</div>
+        <ul>
+          <li>Glanceable bot status — quickest possible check</li>
+          <li>Notification triage on wrist saves pulling out phone</li>
+          <li>Relatively simple UI (WatchKit + SwiftUI)</li>
+        </ul>
+      </div>
+      <div class="cons-col">
+        <div class="pros-cons-title">Cons</div>
+        <ul>
+          <li>15 hours for a platform with very limited interaction</li>
+          <li>Screen too small for meaningful chat</li>
+          <li>Connectivity depends on iPhone being nearby</li>
+          <li>Maintenance burden — another target to keep building</li>
+        </ul>
+      </div>
+    </div>
+    <div class="recommendation defer">
+      <span class="rec-icon">&#x23F3;</span>
+      <span class="rec-text"><strong>DEFER to v2.0.</strong> Cool but not essential. Push notifications to Watch (from iOS) already provide 90% of the value without a dedicated app.</span>
+    </div>
+  </div>
+
+  <!-- Idea 20 -->
+  <div class="idea-card glass">
+    <div class="idea-header">
+      <div class="idea-title-row">
+        <span class="idea-number">#20</span>
+        <span class="idea-title">visionOS (Spatial Computing)</span>
+      </div>
+      <div class="idea-badges">
+        <span class="badge effort">~30 hours</span>
+        <span class="roadmap-tag v20">v2.0+</span>
+        <span class="score-badge low">LOW</span>
+      </div>
+    </div>
+    <div class="idea-description">
+      Constellation view as a true 3D space — bots floating around the user in mixed reality. Tap to chat, glance at status. The radial constellation layout maps naturally to spatial computing. RealityKit for 3D rendering.
+    </div>
+    <div class="pros-cons">
+      <div class="pros-col">
+        <div class="pros-cons-title">Pros</div>
+        <ul>
+          <li>Constellation design was made for spatial computing</li>
+          <li>First-mover advantage — no bot chat app on Vision Pro</li>
+          <li>SwiftUI knowledge transfers to visionOS</li>
+        </ul>
+      </div>
+      <div class="cons-col">
+        <div class="pros-cons-title">Cons</div>
+        <ul>
+          <li>30+ hours of platform-specific development</li>
+          <li>Vision Pro user base is tiny (&lt;1M devices)</li>
+          <li>RealityKit learning curve is steep</li>
+          <li>No ROI case until Vision Pro adoption grows</li>
+          <li>Way too early — iOS v1.0 isn't even shipped</li>
+        </ul>
+      </div>
+    </div>
+    <div class="recommendation skip">
+      <span class="rec-icon">&#x274C;</span>
+      <span class="rec-text"><strong>SKIP for now.</strong> Exciting concept but zero business case. Revisit in 2027 when Vision Pro adoption matures. Focus all energy on iOS v1.0 → App Store.</span>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- Priority Matrix -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-icon amber">&#x1F4CA;</div>
+    <div>
+      <div class="section-title">Priority Matrix</div>
+      <div class="section-subtitle">Impact vs Effort — where to invest time optimally</div>
+    </div>
+  </div>
+
+  <div class="glass matrix">
+    <div class="matrix-quadrant q1">
+      <div class="matrix-label">&#x2B50; High Impact, Low Effort (Do Now)</div>
+      <div class="matrix-item"><span class="num">#04</span> Fix ParseCache data race (1h)</div>
+      <div class="matrix-item"><span class="num">#09</span> Wire ReactionBar to gateway (2h)</div>
+      <div class="matrix-item"><span class="num">#14</span> Haptic feedback strategy (2h)</div>
+      <div class="matrix-item"><span class="num">#03</span> Kill dead code + unify BotNode (3h)</div>
+      <div class="matrix-item"><span class="num">#16</span> Offline mode improvements (3h)</div>
+    </div>
+    <div class="matrix-quadrant q2">
+      <div class="matrix-label">&#x1F680; High Impact, Higher Effort (Plan & Execute)</div>
+      <div class="matrix-item"><span class="num">#01</span> Decompose Big Four files (4h)</div>
+      <div class="matrix-item"><span class="num">#10</span> Enhanced error recovery UX (4h)</div>
+      <div class="matrix-item"><span class="num">#11</span> Message encryption at rest (4h)</div>
+      <div class="matrix-item"><span class="num">#02</span> VoiceOver accessibility (6h)</div>
+      <div class="matrix-item"><span class="num">#08</span> Push notifications (6-15h)</div>
+      <div class="matrix-item"><span class="num">#12</span> Siri Shortcuts (8h)</div>
+      <div class="matrix-item"><span class="num">#06</span> WidgetKit integration (12h)</div>
+    </div>
+    <div class="matrix-quadrant q3">
+      <div class="matrix-label">&#x23F3; Medium Impact, Moderate Effort (Defer)</div>
+      <div class="matrix-item"><span class="num">#17</span> Performance benchmarks (4h)</div>
+      <div class="matrix-item"><span class="num">#15</span> Gesture shortcuts (4h)</div>
+      <div class="matrix-item"><span class="num">#13</span> Dashboard tab (6h)</div>
+      <div class="matrix-item"><span class="num">#07</span> Live Activities (8h)</div>
+      <div class="matrix-item"><span class="num">#05</span> Command Palette (8h)</div>
+    </div>
+    <div class="matrix-quadrant q4">
+      <div class="matrix-label">&#x1F4AD; Low Impact or Speculative (Park)</div>
+      <div class="matrix-item"><span class="num">#19</span> watchOS companion (15h)</div>
+      <div class="matrix-item"><span class="num">#18</span> Multi-bot orchestration (20h)</div>
+      <div class="matrix-item"><span class="num">#20</span> visionOS spatial (30h)</div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- Summary Comparison Table -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-icon pink">&#x1F4DD;</div>
+    <div>
+      <div class="section-title">Complete Summary</div>
+      <div class="section-subtitle">All 20 ideas at a glance with verdicts</div>
+    </div>
+  </div>
+
+  <div class="glass" style="padding: 4px; overflow-x: auto;">
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Idea</th>
+          <th>Effort</th>
+          <th>Version</th>
+          <th>Priority</th>
+          <th>Verdict</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="color: var(--primary); font-weight: 600; font-family: 'JetBrains Mono';">01</td>
+          <td>Decompose Big Four Files</td>
+          <td>4h</td>
+          <td><span class="roadmap-tag v091">v0.9.1</span></td>
+          <td><span class="score-badge high">HIGH</span></td>
+          <td style="color: var(--neon-green);">DO</td>
+        </tr>
+        <tr>
+          <td style="color: var(--primary); font-weight: 600; font-family: 'JetBrains Mono';">02</td>
+          <td>VoiceOver Accessibility</td>
+          <td>6h</td>
+          <td><span class="roadmap-tag blocks-v1">Blocks v1.0</span></td>
+          <td><span class="score-badge critical">CRITICAL</span></td>
+          <td style="color: var(--neon-green);">DO</td>
+        </tr>
+        <tr>
+          <td style="color: var(--primary); font-weight: 600; font-family: 'JetBrains Mono';">03</td>
+          <td>Kill Dead Code + Unify BotNode</td>
+          <td>3h</td>
+          <td><span class="roadmap-tag v091">v0.9.1</span></td>
+          <td><span class="score-badge high">HIGH</span></td>
+          <td style="color: var(--neon-green);">DO</td>
+        </tr>
+        <tr>
+          <td style="color: var(--primary); font-weight: 600; font-family: 'JetBrains Mono';">04</td>
+          <td>Fix ParseCache Data Race</td>
+          <td>1h</td>
+          <td><span class="roadmap-tag v091">NOW</span></td>
+          <td><span class="score-badge critical">CRITICAL</span></td>
+          <td style="color: var(--neon-green);">DO</td>
+        </tr>
+        <tr>
+          <td style="color: var(--primary); font-weight: 600; font-family: 'JetBrains Mono';">05</td>
+          <td>iPad Command Palette</td>
+          <td>8h</td>
+          <td><span class="roadmap-tag v11">v1.1</span></td>
+          <td><span class="score-badge medium">MEDIUM</span></td>
+          <td style="color: var(--neon-amber);">DEFER</td>
+        </tr>
+        <tr>
+          <td style="color: var(--primary); font-weight: 600; font-family: 'JetBrains Mono';">06</td>
+          <td>WidgetKit Integration</td>
+          <td>12h</td>
+          <td><span class="roadmap-tag blocks-v1">Blocks v1.0</span></td>
+          <td><span class="score-badge critical">CRITICAL</span></td>
+          <td style="color: var(--neon-green);">DO</td>
+        </tr>
+        <tr>
+          <td style="color: var(--primary); font-weight: 600; font-family: 'JetBrains Mono';">07</td>
+          <td>Live Activities</td>
+          <td>8h</td>
+          <td><span class="roadmap-tag v10">v1.0</span></td>
+          <td><span class="score-badge medium">MEDIUM</span></td>
+          <td style="color: var(--neon-amber);">DEFER</td>
+        </tr>
+        <tr>
+          <td style="color: var(--primary); font-weight: 600; font-family: 'JetBrains Mono';">08</td>
+          <td>Push Notifications</td>
+          <td>6-15h</td>
+          <td><span class="roadmap-tag blocks-v1">Blocks v1.0</span></td>
+          <td><span class="score-badge critical">CRITICAL</span></td>
+          <td style="color: var(--neon-green);">DO</td>
+        </tr>
+        <tr>
+          <td style="color: var(--primary); font-weight: 600; font-family: 'JetBrains Mono';">09</td>
+          <td>Wire ReactionBar to Gateway</td>
+          <td>2h</td>
+          <td><span class="roadmap-tag v091">NOW</span></td>
+          <td><span class="score-badge high">HIGH</span></td>
+          <td style="color: var(--neon-green);">DO</td>
+        </tr>
+        <tr>
+          <td style="color: var(--primary); font-weight: 600; font-family: 'JetBrains Mono';">10</td>
+          <td>Error Recovery UX</td>
+          <td>4h</td>
+          <td><span class="roadmap-tag v091">v0.9.1</span></td>
+          <td><span class="score-badge high">HIGH</span></td>
+          <td style="color: var(--neon-green);">DO</td>
+        </tr>
+        <tr>
+          <td style="color: var(--primary); font-weight: 600; font-family: 'JetBrains Mono';">11</td>
+          <td>Message Encryption at Rest</td>
+          <td>4h</td>
+          <td><span class="roadmap-tag v10">v1.0</span></td>
+          <td><span class="score-badge high">HIGH</span></td>
+          <td style="color: var(--neon-green);">DO</td>
+        </tr>
+        <tr>
+          <td style="color: var(--primary); font-weight: 600; font-family: 'JetBrains Mono';">12</td>
+          <td>Siri Shortcuts</td>
+          <td>8h</td>
+          <td><span class="roadmap-tag blocks-v1">Blocks v1.0</span></td>
+          <td><span class="score-badge critical">CRITICAL</span></td>
+          <td style="color: var(--neon-green);">DO</td>
+        </tr>
+        <tr>
+          <td style="color: var(--primary); font-weight: 600; font-family: 'JetBrains Mono';">13</td>
+          <td>Dashboard Tab</td>
+          <td>6h</td>
+          <td><span class="roadmap-tag v11">v1.1</span></td>
+          <td><span class="score-badge medium">MEDIUM</span></td>
+          <td style="color: var(--neon-amber);">DEFER</td>
+        </tr>
+        <tr>
+          <td style="color: var(--primary); font-weight: 600; font-family: 'JetBrains Mono';">14</td>
+          <td>Haptic Feedback</td>
+          <td>2h</td>
+          <td><span class="roadmap-tag v091">NOW</span></td>
+          <td><span class="score-badge medium">MEDIUM</span></td>
+          <td style="color: var(--neon-green);">DO</td>
+        </tr>
+        <tr>
+          <td style="color: var(--primary); font-weight: 600; font-family: 'JetBrains Mono';">15</td>
+          <td>Gesture Shortcuts</td>
+          <td>4h</td>
+          <td><span class="roadmap-tag v11">v1.1</span></td>
+          <td><span class="score-badge low">LOW</span></td>
+          <td style="color: var(--neon-amber);">DEFER</td>
+        </tr>
+        <tr>
+          <td style="color: var(--primary); font-weight: 600; font-family: 'JetBrains Mono';">16</td>
+          <td>Offline Mode Improvements</td>
+          <td>3h</td>
+          <td><span class="roadmap-tag v10">v1.0</span></td>
+          <td><span class="score-badge medium">MEDIUM</span></td>
+          <td style="color: var(--neon-green);">DO</td>
+        </tr>
+        <tr>
+          <td style="color: var(--primary); font-weight: 600; font-family: 'JetBrains Mono';">17</td>
+          <td>Performance Benchmarks</td>
+          <td>4h</td>
+          <td><span class="roadmap-tag v091">v0.9.1</span></td>
+          <td><span class="score-badge medium">MEDIUM</span></td>
+          <td style="color: var(--neon-green);">DO</td>
+        </tr>
+        <tr>
+          <td style="color: var(--primary); font-weight: 600; font-family: 'JetBrains Mono';">18</td>
+          <td>Multi-Bot Orchestration</td>
+          <td>20h</td>
+          <td><span class="roadmap-tag v20">v2.0</span></td>
+          <td><span class="score-badge low">LOW</span></td>
+          <td style="color: var(--neon-amber);">DEFER</td>
+        </tr>
+        <tr>
+          <td style="color: var(--primary); font-weight: 600; font-family: 'JetBrains Mono';">19</td>
+          <td>watchOS Companion</td>
+          <td>15h</td>
+          <td><span class="roadmap-tag v20">v2.0</span></td>
+          <td><span class="score-badge low">LOW</span></td>
+          <td style="color: var(--neon-amber);">DEFER</td>
+        </tr>
+        <tr>
+          <td style="color: var(--primary); font-weight: 600; font-family: 'JetBrains Mono';">20</td>
+          <td>visionOS Spatial</td>
+          <td>30h</td>
+          <td><span class="roadmap-tag v20">v2.0+</span></td>
+          <td><span class="score-badge low">LOW</span></td>
+          <td style="color: var(--neon-red);">SKIP</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Verdict Summary Bar -->
+  <div style="padding: 24px;">
+    <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 12px; color: var(--text-muted);">
+      <span>DO NOW (13)</span>
+      <span>DEFER (6)</span>
+      <span>SKIP (1)</span>
+    </div>
+    <div class="verdict-bar">
+      <div class="verdict-segment green" style="width: 65%;"></div>
+      <div class="verdict-segment amber" style="width: 30%;"></div>
+      <div class="verdict-segment red" style="width: 5%;"></div>
+    </div>
+    <div style="margin-top: 16px; font-size: 13px; color: var(--text-secondary); text-align: center;">
+      <strong style="color: var(--neon-green);">13 ideas recommended for implementation</strong> totaling ~67 hours across v0.9.1 → v1.0<br>
+      <span style="color: var(--text-muted);">6 deferred to v1.1+, 1 skipped (visionOS)</span>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- Next Steps -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-icon green">&#x27A1;</div>
+    <div>
+      <div class="section-title">Recommended Next Steps</div>
+      <div class="section-subtitle">Actionable plan — what to do right now</div>
+    </div>
+  </div>
+
+  <div class="glass" style="padding: 28px;">
+    <div style="display: grid; gap: 20px;">
+      <div style="display: flex; gap: 16px; align-items: flex-start;">
+        <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.3); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: var(--neon-green); flex-shrink: 0;">1</div>
+        <div>
+          <div style="font-weight: 600; margin-bottom: 4px;">This Session: Quick Wins (~8 hours)</div>
+          <div style="font-size: 13px; color: var(--text-secondary);">Fix ParseCache race (#4, 1h) → Kill dead code (#3, 3h) → Wire ReactionBar (#9, 2h) → Add haptics (#14, 2h). These are safe, high-impact, and immediately shippable.</div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 16px; align-items: flex-start;">
+        <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.3); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: var(--primary); flex-shrink: 0;">2</div>
+        <div>
+          <div style="font-weight: 600; margin-bottom: 4px;">This Week: Code Health (~14 hours)</div>
+          <div style="font-size: 13px; color: var(--text-secondary);">Decompose Big Four files (#1, 4h) → VoiceOver accessibility (#2, 6h) → Error recovery UX (#10, 4h). Prepares codebase for v1.0 feature development.</div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 16px; align-items: flex-start;">
+        <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.3); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: var(--neon-blue); flex-shrink: 0;">3</div>
+        <div>
+          <div style="font-weight: 600; margin-bottom: 4px;">v1.0 Sprint: Platform Features (~45 hours)</div>
+          <div style="font-size: 13px; color: var(--text-secondary);">Push notifications (#8) → Siri Shortcuts (#12) → WidgetKit (#6) → Encryption (#11) → Offline UX (#16). This is the v1.0 critical path per ROADMAP.md.</div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 16px; align-items: flex-start;">
+        <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(63,63,70,0.5); border: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: var(--text-muted); flex-shrink: 0;">4</div>
+        <div>
+          <div style="font-weight: 600; margin-bottom: 4px;">Pick what to start now</div>
+          <div style="font-size: 13px; color: var(--text-secondary);">Tell me which ideas to implement and I'll create detailed plans and start building. I can tackle the quick wins right now in this session.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Footer -->
+<div class="footer">
+  <p>Generated by <span style="color: var(--primary);">Opta + Atpo</span> — Deep Code Analysis Engine</p>
+  <p style="margin-top: 8px;">OptaPlus iOS v0.9.0 &middot; 86 Swift files &middot; 23,750 lines &middot; 2026-02-17</p>
+  <p style="margin-top: 4px; font-size: 11px;">Analysis based on: 3 exploration agents, ROADMAP.md, GUARDRAILS.md, DECISIONS.md, full codebase read</p>
+</div>
+
+</div>
+</body>
+</html>

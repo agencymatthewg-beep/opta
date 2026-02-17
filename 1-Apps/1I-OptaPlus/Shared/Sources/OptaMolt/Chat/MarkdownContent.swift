@@ -6,6 +6,7 @@
 //  Designed for streaming resilience - handles incomplete markdown gracefully.
 //
 
+import os
 import SwiftUI
 
 // MARK: - Parse Cache
@@ -13,6 +14,11 @@ import SwiftUI
 /// Thread-safe cache for parsed markdown blocks.
 /// Avoids redundant parsing during streaming where onChange fires
 /// on every keystroke but the content may not have meaningfully changed.
+///
+/// Uses `OSAllocatedUnfairLock` to protect mutable state so that concurrent
+/// streaming updates from multiple bots cannot corrupt the dictionary.
+/// This is preferred over `actor` because the cache is accessed synchronously
+/// during view rendering (onAppear / onChange).
 private final class MarkdownParseCache: @unchecked Sendable {
     /// Cache entry: the input string's identity (count + hash) and the parsed result
     private struct Entry {
@@ -21,21 +27,25 @@ private final class MarkdownParseCache: @unchecked Sendable {
         let blocks: [ContentBlock]
     }
 
-    private var entry: Entry?
+    private let lock = OSAllocatedUnfairLock<Entry?>(initialState: nil)
 
     /// Returns cached blocks if the content matches, otherwise nil.
     func lookup(_ content: String) -> [ContentBlock]? {
-        guard let e = entry,
-              e.count == content.count,
-              e.hash == content.hashValue else {
-            return nil
+        lock.withLock { entry in
+            guard let e = entry,
+                  e.count == content.count,
+                  e.hash == content.hashValue else {
+                return nil
+            }
+            return e.blocks
         }
-        return e.blocks
     }
 
     /// Stores a parsed result for the given content.
     func store(_ content: String, blocks: [ContentBlock]) {
-        entry = Entry(count: content.count, hash: content.hashValue, blocks: blocks)
+        lock.withLock { entry in
+            entry = Entry(count: content.count, hash: content.hashValue, blocks: blocks)
+        }
     }
 }
 

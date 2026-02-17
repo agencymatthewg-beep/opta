@@ -1109,7 +1109,10 @@ struct ChatContainerView: View {
                 botId: viewModel.botConfig.id,
                 botName: viewModel.botConfig.name,
                 onReply: { msg in viewModel.replyingTo = msg },
-                onScrollTo: { id in scrollToMessageId = id }
+                onScrollTo: { id in scrollToMessageId = id },
+                onReact: { action, messageId in
+                    Task { await viewModel.sendReaction(action, for: messageId) }
+                }
             )
                 .searchMatchGlow(isMatch: isSearchMatch, isCurrent: isCurrentMatch)
                 .transition(.asymmetric(
@@ -1426,12 +1429,13 @@ struct MessageRow: View {
     var botName: String = ""
     var onReply: ((ChatMessage) -> Void)? = nil
     var onScrollTo: ((String) -> Void)? = nil
-    
+    var onReact: ((ReactionAction, String) -> Void)? = nil
+
     @State private var appeared = false
     @State private var floatY: CGFloat = 0
-    
+
     private var isRecent: Bool { total - index <= 3 }
-    
+
     var body: some View {
         VStack(spacing: 4) {
             if showTimestamp {
@@ -1444,7 +1448,8 @@ struct MessageRow: View {
                 botId: botId,
                 botName: botName,
                 onReply: onReply,
-                onScrollTo: onScrollTo
+                onScrollTo: onScrollTo,
+                onReact: onReact
             )
             .id(message.id)
         }

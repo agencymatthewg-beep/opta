@@ -139,7 +139,7 @@ struct PortProbeView: View {
                 probeState = reachable ? .reachable : .unreachable
             }
             if reachable {
-                UINotificationFeedbackGenerator().notificationOccurred(.success)
+                HapticManager.shared.notification(.success)
             } else {
                 UINotificationFeedbackGenerator().notificationOccurred(.error)
             }

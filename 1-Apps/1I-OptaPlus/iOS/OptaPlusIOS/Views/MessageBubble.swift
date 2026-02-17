@@ -14,6 +14,7 @@ struct MessageBubble: View {
     var allMessages: [ChatMessage] = []
     var onReply: ((ChatMessage) -> Void)? = nil
     var onScrollTo: ((String) -> Void)? = nil
+    var onReact: ((ReactionAction, String) -> Void)? = nil
     @StateObject private var pinManager = PinManager.shared
     @StateObject private var bookmarkManager = BookmarkManager.shared
 
@@ -44,49 +45,56 @@ struct MessageBubble: View {
     }
 
     var body: some View {
-        HStack {
-            if isUser { Spacer(minLength: 60) }
+        ReactiveMessageWrapper(
+            messageId: message.id,
+            onReact: { action in
+                onReact?(action, message.id)
+            }
+        ) {
+            HStack {
+                if isUser { Spacer(minLength: 60) }
 
-            VStack(alignment: isUser ? .trailing : .leading, spacing: 4) {
-                // Reply quote
-                if let replied = repliedMessage {
-                    ReplyQuoteView(originalMessage: replied) {
-                        onScrollTo?(replied.id)
-                    }
-                }
-
-                if isEmojiOnly {
-                    Text(message.content)
-                        .font(.system(size: 48))
-                        .contextMenu { messageContextMenu }
-                } else {
-                    VStack(alignment: isUser ? .trailing : .leading, spacing: 4) {
-                        Text(message.content)
-                            .font(.body)
-                            .foregroundColor(.optaTextPrimary)
-                            .textSelection(.enabled)
-                    }
-                    .padding(12)
-                    .background(bubbleBackground)
-                    .overlay(alignment: .topLeading) {
-                        if isPinned {
-                            Image(systemName: "pin.fill")
-                                .font(.system(size: 8))
-                                .foregroundColor(.yellow)
-                                .padding(4)
+                VStack(alignment: isUser ? .trailing : .leading, spacing: 4) {
+                    // Reply quote
+                    if let replied = repliedMessage {
+                        ReplyQuoteView(originalMessage: replied) {
+                            onScrollTo?(replied.id)
                         }
                     }
-                    .overlay(
-                        isPinned
-                            ? AnyView(RoundedRectangle(cornerRadius: 16)
-                                .stroke(Color.yellow.opacity(0.4), lineWidth: 1.5))
-                            : AnyView(EmptyView())
-                    )
-                    .contextMenu { messageContextMenu }
-                }
-            }
 
-            if !isUser { Spacer(minLength: 60) }
+                    if isEmojiOnly {
+                        Text(message.content)
+                            .font(.system(size: 48))
+                            .contextMenu { messageContextMenu }
+                    } else {
+                        VStack(alignment: isUser ? .trailing : .leading, spacing: 4) {
+                            Text(message.content)
+                                .font(.body)
+                                .foregroundColor(.optaTextPrimary)
+                                .textSelection(.enabled)
+                        }
+                        .padding(12)
+                        .background(bubbleBackground)
+                        .overlay(alignment: .topLeading) {
+                            if isPinned {
+                                Image(systemName: "pin.fill")
+                                    .font(.system(size: 8))
+                                    .foregroundColor(.yellow)
+                                    .padding(4)
+                            }
+                        }
+                        .overlay(
+                            isPinned
+                                ? AnyView(RoundedRectangle(cornerRadius: 16)
+                                    .stroke(Color.yellow.opacity(0.4), lineWidth: 1.5))
+                                : AnyView(EmptyView())
+                        )
+                        .contextMenu { messageContextMenu }
+                    }
+                }
+
+                if !isUser { Spacer(minLength: 60) }
+            }
         }
     }
 

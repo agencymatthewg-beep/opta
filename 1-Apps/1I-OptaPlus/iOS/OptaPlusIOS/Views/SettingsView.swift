@@ -510,14 +510,14 @@ struct BotEditSheet: View {
                 let (_, response) = try await URLSession.shared.data(from: url)
                 if let http = response as? HTTPURLResponse, http.statusCode == 200 {
                     testResult = .success
-                    UINotificationFeedbackGenerator().notificationOccurred(.success)
+                    HapticManager.shared.notification(.success)
                 } else {
                     testResult = .failure("Unexpected response")
-                    UINotificationFeedbackGenerator().notificationOccurred(.error)
+                    HapticManager.shared.notification(.error)
                 }
             } catch {
                 testResult = .failure(error.localizedDescription)
-                UINotificationFeedbackGenerator().notificationOccurred(.error)
+                HapticManager.shared.notification(.error)
             }
         }
     }

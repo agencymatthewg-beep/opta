@@ -47,7 +47,7 @@ struct BotPagerView<Content: View>: View {
         .onChange(of: currentBotId) { _, newId in
             guard let newId, newId != appState.selectedBotId else { return }
             if let bot = appState.bots.first(where: { $0.id == newId }) {
-                UISelectionFeedbackGenerator().selectionChanged()
+                HapticManager.shared.selection()
                 appState.selectBot(bot)
             }
         }
@@ -70,7 +70,7 @@ struct BotPagerView<Content: View>: View {
                         BotIndicatorCapsule(bot: bot, isActive: isActive)
                             .id("indicator-\(bot.id)")
                             .onTapGesture {
-                                UISelectionFeedbackGenerator().selectionChanged()
+                                HapticManager.shared.selection()
                                 withAnimation(.optaSpring) {
                                     currentBotId = bot.id
                                 }

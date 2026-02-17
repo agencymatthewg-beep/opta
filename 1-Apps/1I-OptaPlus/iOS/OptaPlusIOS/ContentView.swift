@@ -51,6 +51,9 @@ struct ContentView: View {
                     .tag(Tab.settings)
             }
             .tint(.optaPrimary)
+            .onChange(of: selectedTab) { _, _ in
+                HapticManager.shared.selection()
+            }
         }
     }
 }

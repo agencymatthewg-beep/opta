@@ -702,8 +702,9 @@ public final class ChatViewModel: ObservableObject {
     }
 
     /// Send a reaction command to the bot.
+    /// Note: Visual toggle of ReactionStore is handled at the UI layer (ReactionBar / ReactiveMessageWrapper).
+    /// This method only sends the command text to the gateway.
     public func sendReaction(_ action: ReactionAction, for messageId: String) async {
-        ReactionStore.shared.toggleReaction(action.rawValue, for: messageId)
         await send(action.commandText)
     }
 

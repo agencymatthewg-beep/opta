@@ -103,7 +103,7 @@ struct ChatHistoryView: View {
                 Section {
                     ForEach(Array(groupItems.enumerated()), id: \.element.id) { index, item in
                         Button {
-                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            HapticManager.shared.impact(.light)
                             resumeSession(item)
                         } label: {
                             HistoryRow(item: item, isPinned: pinnedIds.contains(item.id))
@@ -111,7 +111,7 @@ struct ChatHistoryView: View {
                         .staggeredIgnition(index: index, isVisible: listVisible)
                         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                             Button(role: .destructive) {
-                                UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+                                HapticManager.shared.impact(.heavy)
                                 deleteSession(item)
                             } label: {
                                 Label("Delete", systemImage: "trash")
@@ -119,7 +119,7 @@ struct ChatHistoryView: View {
                         }
                         .swipeActions(edge: .leading, allowsFullSwipe: true) {
                             Button {
-                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                HapticManager.shared.impact(.light)
                                 togglePin(item)
                             } label: {
                                 Label(

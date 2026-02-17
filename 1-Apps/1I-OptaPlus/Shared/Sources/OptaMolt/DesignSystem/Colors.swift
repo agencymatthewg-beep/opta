@@ -57,11 +57,6 @@ public extension Color {
     /// Hex: rgba(139,92,246,0.1)
     static let optaPrimaryDim = Color(.sRGB, red: 0x8B / 255.0, green: 0x5C / 255.0, blue: 0xF6 / 255.0, opacity: 0.1)
     
-    /// Deprecated: Use optaPrimary instead
-    /// (Old "Obsidian" purple - keeping for backwards compatibility)
-    @available(*, deprecated, renamed: "optaPrimary", message: "Use optaPrimary (#8B5CF6) to match Cinematic Void design")
-    static let optaPurple = Color(red: 0xA8 / 255.0, green: 0x55 / 255.0, blue: 0xF7 / 255.0)
-
     // MARK: Neon Accents
     
     /// Success green — delivered status, positive indicators

@@ -57,6 +57,7 @@ struct OnboardingView: View {
         .sheet(isPresented: $showQRScanner) {
             QRScannerSheet(
                 onPairingDetected: { info in
+                    HapticManager.shared.notification(.success)
                     pairingCoordinator.pendingPairingInfo = info
                     reloadBotNodes()
                 },
@@ -593,6 +594,7 @@ struct OnboardingView: View {
         let bot = BotConfig(name: botName, host: botHost, port: port, token: botToken, emoji: "🤖")
         appState.addBot(bot)
         appState.selectBot(bot)
+        HapticManager.shared.notification(.success)
         // Reset manual fields
         botName = ""
         botHost = ""

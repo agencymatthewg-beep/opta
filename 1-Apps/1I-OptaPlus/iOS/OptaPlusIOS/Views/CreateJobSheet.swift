@@ -239,12 +239,12 @@ struct CreateJobSheet: View {
                         "enabled": true
                     ] as [String: Any])
                 }
-                UINotificationFeedbackGenerator().notificationOccurred(.success)
+                HapticManager.shared.notification(.success)
                 onSaved()
                 dismiss()
             } catch {
                 errorMessage = error.localizedDescription
-                UINotificationFeedbackGenerator().notificationOccurred(.error)
+                HapticManager.shared.notification(.error)
                 isSaving = false
             }
         }

@@ -317,7 +317,7 @@ struct DebugView: View {
 
     private func deleteSession(key: String) {
         guard let vm = selectedVM else { return }
-        UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+        HapticManager.shared.impact(.heavy)
         Task {
             do {
                 _ = try await vm.call("sessions.delete", params: ["sessionKey": key])
