@@ -196,12 +196,12 @@ mcpCmd
 
 program
   .command('init')
-  .description('Initialize Opta in a project (V2)')
-  .option('--mode <mode>', 'initialization mode')
-  .option('--force', 'overwrite existing config')
-  .action(async () => {
+  .description('Initialize OPIS project intelligence docs')
+  .option('-y, --yes', 'skip prompts, use defaults (CI mode)')
+  .option('--force', 'overwrite existing APP.md')
+  .action(async (opts) => {
     const { init } = await import('./commands/init.js');
-    await init();
+    await init(opts);
   });
 
 program
