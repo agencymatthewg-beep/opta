@@ -20,6 +20,7 @@ from opta_lmx.inference.schema import (
     Usage,
 )
 from opta_lmx.inference.context import fit_to_context
+from opta_lmx.inference.predictor import UsagePredictor
 from opta_lmx.inference.tool_parser import TOOL_CALL_OPEN, MiniMaxToolParser
 from opta_lmx.inference.types import LoadedModel, ModelInfo
 from opta_lmx.manager.memory import MemoryMonitor
@@ -130,10 +131,12 @@ class InferenceEngine:
         self._prefix_cache_enabled = prefix_cache_enabled
         self._load_lock = asyncio.Lock()
         self._loading_models: set[str] = set()  # Models currently being loaded
+        self._max_concurrent = max_concurrent_requests
         self._inference_semaphore = asyncio.Semaphore(max_concurrent_requests)
         self._inference_timeout = inference_timeout_sec
         self._warmup_on_load = warmup_on_load
         self._in_flight = 0  # Active inference requests (for graceful shutdown)
+        self._predictor = UsagePredictor()
 
     async def load_model(
         self,
@@ -309,6 +312,9 @@ class InferenceEngine:
         if self._warmup_on_load:
             await self._warmup_model(model_id)
 
+        # Adjust concurrency based on new memory state
+        self.adapt_concurrency()
+
         return ModelInfo(
             model_id=model_id,
             loaded=True,
@@ -420,12 +426,63 @@ class InferenceEngine:
                 data={"model_id": model_id, "memory_freed_gb": round(freed, 2)},
             ))
 
+        # Adjust concurrency after freeing memory
+        self.adapt_concurrency()
+
         return freed
 
     @property
     def in_flight_count(self) -> int:
         """Number of currently active inference requests."""
         return self._in_flight
+
+    @property
+    def max_concurrent_requests(self) -> int:
+        """Current maximum concurrent inference requests."""
+        return self._max_concurrent
+
+    @property
+    def predictor(self) -> UsagePredictor:
+        """Access the usage predictor for stats and manual preloading."""
+        return self._predictor
+
+    def predict_next_model(self) -> str | None:
+        """Predict which model to preload based on access patterns."""
+        loaded = set(self._models.keys())
+        return self._predictor.predict_next(loaded, exclude=self._loading_models)
+
+    def adapt_concurrency(self) -> int:
+        """Dynamically adjust inference concurrency based on memory pressure.
+
+        When memory usage is high (>80% of threshold), reduce concurrency
+        to prevent OOM. When memory is plentiful, allow up to the configured max.
+
+        Returns:
+            New concurrency level.
+        """
+        usage_pct = self._memory.usage_percent()
+        threshold = self._memory.threshold_percent
+
+        # Scale concurrency: full at <70% of threshold, minimum 1 at >95%
+        ratio = usage_pct / threshold if threshold > 0 else 0
+        if ratio < 0.7:
+            target = self._max_concurrent
+        elif ratio < 0.85:
+            target = max(2, self._max_concurrent * 3 // 4)
+        elif ratio < 0.95:
+            target = max(1, self._max_concurrent // 2)
+        else:
+            target = 1
+
+        if target != self._inference_semaphore._value + self._in_flight:
+            self._inference_semaphore = asyncio.Semaphore(target)
+            logger.info("concurrency_adapted", extra={
+                "new_limit": target,
+                "memory_usage_pct": round(usage_pct, 1),
+                "in_flight": self._in_flight,
+            })
+
+        return target
 
     async def _warmup_model(self, model_id: str) -> None:
         """Run a minimal inference to prime JIT compilation and KV cache.
@@ -488,6 +545,7 @@ class InferenceEngine:
         loaded = self.get_model(model_id)
         loaded.request_count += 1
         loaded.last_used_at = time.time()
+        self._predictor.record_access(model_id)
 
         # Trim context to fit model's window (if known)
         if loaded.context_length:
@@ -646,6 +704,7 @@ class InferenceEngine:
         loaded = self.get_model(model_id)
         loaded.request_count += 1
         loaded.last_used_at = time.time()
+        self._predictor.record_access(model_id)
 
         # Trim context to fit model's window (if known)
         if loaded.context_length:

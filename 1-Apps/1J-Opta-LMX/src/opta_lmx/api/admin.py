@@ -848,3 +848,155 @@ async def stack_status(
         "loaded_models": sorted(loaded_ids),
         "default_model": config.routing.default_model,
     }
+
+
+# ── Quantization endpoints ──────────────────────────────────────────────
+
+
+@router.post("/admin/quantize", response_model=None)
+async def start_quantize(
+    request: Request,
+    _auth: AdminAuth,
+) -> Response:
+    """Start a model quantization job.
+
+    Converts a HuggingFace model to quantized MLX format in the background.
+    Returns a job ID for polling progress via GET /admin/quantize/{job_id}.
+    """
+    body = await request.json()
+    source_model = body.get("source_model")
+    if not source_model:
+        return JSONResponse(
+            status_code=400,
+            content={"error": {"message": "source_model is required", "type": "invalid_request_error"}},
+        )
+
+    from opta_lmx.manager.quantize import start_quantize as _start_quantize
+
+    job = await _start_quantize(
+        source_model=source_model,
+        output_path=body.get("output_path"),
+        bits=body.get("bits", 4),
+        group_size=body.get("group_size", 64),
+        mode=body.get("mode", "affine"),
+    )
+
+    return JSONResponse(content={
+        "job_id": job.job_id,
+        "source_model": job.source_model,
+        "output_path": job.output_path,
+        "bits": job.bits,
+        "mode": job.mode,
+        "status": job.status,
+    })
+
+
+@router.get("/admin/quantize/{job_id}")
+async def get_quantize_job(
+    job_id: str,
+    _auth: AdminAuth,
+) -> dict[str, Any]:
+    """Get status of a quantization job."""
+    from opta_lmx.manager.quantize import get_job
+
+    job = get_job(job_id)
+    if job is None:
+        return {"error": "Job not found", "job_id": job_id}
+
+    result: dict[str, Any] = {
+        "job_id": job.job_id,
+        "source_model": job.source_model,
+        "output_path": job.output_path,
+        "bits": job.bits,
+        "group_size": job.group_size,
+        "mode": job.mode,
+        "status": job.status,
+        "started_at": job.started_at,
+    }
+    if job.completed_at:
+        result["completed_at"] = job.completed_at
+        result["duration_sec"] = round(job.completed_at - job.started_at, 1)
+    if job.output_size_bytes:
+        result["output_size_bytes"] = job.output_size_bytes
+        result["output_size_gb"] = round(job.output_size_bytes / (1024**3), 2)
+    if job.error:
+        result["error"] = job.error
+    return result
+
+
+@router.get("/admin/quantize")
+async def list_quantize_jobs(
+    _auth: AdminAuth,
+) -> dict[str, Any]:
+    """List all quantization jobs."""
+    from opta_lmx.manager.quantize import list_jobs
+
+    jobs = list_jobs()
+    return {
+        "jobs": [
+            {
+                "job_id": j.job_id,
+                "source_model": j.source_model,
+                "bits": j.bits,
+                "status": j.status,
+                "started_at": j.started_at,
+            }
+            for j in jobs
+        ],
+        "count": len(jobs),
+    }
+
+
+# ── Predictor stats endpoint ───────────────────────────────────────────
+
+
+@router.get("/admin/predictor")
+async def predictor_stats(
+    engine: Engine,
+    _auth: AdminAuth,
+) -> dict[str, Any]:
+    """Get model usage prediction statistics."""
+    stats = engine.predictor.get_stats()
+    predicted = engine.predict_next_model()
+    return {
+        **stats,
+        "predicted_next": predicted,
+    }
+
+
+# ── Remote helper health dashboard ──────────────────────────────────────
+
+
+@router.get("/admin/helpers")
+async def helpers_health(
+    remote_embedding: RemoteEmbedding,
+    remote_reranking: RemoteReranking,
+    _auth: AdminAuth,
+) -> dict[str, Any]:
+    """Health dashboard for remote helper endpoints.
+
+    Returns detailed metrics for each configured remote helper:
+    latency stats, success rates, request counts, and health status.
+    """
+    helpers: dict[str, dict[str, Any]] = {}
+
+    if remote_embedding is not None:
+        helpers["embedding"] = remote_embedding.get_health_stats()
+    if remote_reranking is not None:
+        helpers["reranking"] = remote_reranking.get_health_stats()
+
+    # Run live health checks
+    check_results: dict[str, bool] = {}
+    if remote_embedding is not None:
+        check_results["embedding"] = await remote_embedding.health_check()
+    if remote_reranking is not None:
+        check_results["reranking"] = await remote_reranking.health_check()
+
+    return {
+        "helpers": helpers,
+        "live_checks": check_results,
+        "configured_count": len(helpers),
+        "all_healthy": all(
+            h.get("healthy", False) for h in helpers.values()
+        ) if helpers else True,
+    }
