@@ -241,6 +241,7 @@ async function handleSlashCommand(
         cmdLine('/undo [n]', 'Reverse last checkpoint'),
         cmdLine('/compact', 'Force context compaction'),
         cmdLine('/image <path>', 'Analyze an image'),
+        cmdLine('/editor', 'Open $EDITOR for input'),
         cmdLine('/init', 'Generate project context'),
         '',
         chalk.dim('Info'),
@@ -385,14 +386,28 @@ async function handleSlashCommand(
     case '/diff': {
       try {
         const { execFileSync } = await import('node:child_process');
-        const diff = execFileSync('git', ['diff', '--stat'], { encoding: 'utf-8', cwd: process.cwd() });
-        if (!diff.trim()) {
+        const { formatUnifiedDiff } = await import('../ui/diff.js');
+
+        const stat = execFileSync('git', ['diff', '--stat'], { encoding: 'utf-8', cwd: process.cwd() });
+        if (!stat.trim()) {
           console.log(chalk.dim('  No uncommitted changes'));
+          return 'handled';
+        }
+
+        // Show stat summary in a box
+        const statLines = stat.trim().split('\n');
+        const summary = statLines[statLines.length - 1] ?? '';
+        const fileLines = statLines.slice(0, -1).map(l => ' ' + l.trim());
+        console.log('\n' + box('Changes', [...fileLines, '', chalk.dim(summary.trim())]));
+
+        // If user passed a file, show full diff for that file
+        if (arg) {
+          const fullDiff = execFileSync('git', ['diff', '--', arg], { encoding: 'utf-8', cwd: process.cwd() });
+          if (fullDiff.trim()) {
+            console.log('\n' + formatUnifiedDiff(fullDiff));
+          }
         } else {
-          const diffLines = diff.trim().split('\n');
-          const summary = diffLines[diffLines.length - 1] ?? '';
-          const fileLines = diffLines.slice(0, -1).map(l => ' ' + l.trim());
-          console.log('\n' + box('Changes', [...fileLines, '', chalk.dim(summary.trim())]));
+          console.log(chalk.dim('  Tip: /diff <file> for inline diff'));
         }
       } catch {
         console.log(chalk.dim('  Not a git repository'));
