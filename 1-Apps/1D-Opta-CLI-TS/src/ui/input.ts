@@ -105,8 +105,18 @@ export class InputEditor {
     return this.buffer;
   }
 
+  setMode(mode: InputEditorOptions['mode']): void {
+    this.options.mode = mode ?? 'normal';
+  }
+
+  getEffectiveMode(): string {
+    if (this.isShellMode()) return 'shell';
+    return this.options.mode;
+  }
+
   getPromptDisplay(): string {
-    switch (this.options.mode) {
+    const mode = this.getEffectiveMode();
+    switch (mode) {
       case 'shell': return chalk.yellow('!') + chalk.dim(' >');
       case 'plan': return chalk.magenta('plan') + chalk.dim(' >');
       case 'auto': return chalk.yellow('auto') + chalk.dim(' >');

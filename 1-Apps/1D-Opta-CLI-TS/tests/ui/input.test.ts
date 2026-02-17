@@ -124,3 +124,42 @@ describe('paste detection', () => {
     expect(result.fullContent).toBe('a\nb\nc\nd\ne');
   });
 });
+
+describe('mode indicators', () => {
+  it('should show shell mode indicator', () => {
+    const editor = new InputEditor({ prompt: '>', mode: 'shell' });
+    const display = editor.getPromptDisplay();
+    expect(display).toContain('!');
+  });
+
+  it('should show plan mode indicator', () => {
+    const editor = new InputEditor({ prompt: '>', mode: 'plan' });
+    const display = editor.getPromptDisplay();
+    expect(display).toContain('plan');
+  });
+
+  it('should update mode dynamically', () => {
+    const editor = new InputEditor({ prompt: '>' });
+    editor.setMode('shell');
+    expect(editor.getPromptDisplay()).toContain('!');
+    editor.setMode('normal');
+    expect(editor.getPromptDisplay()).not.toContain('!');
+  });
+
+  it('should auto-detect shell mode from buffer', () => {
+    const editor = new InputEditor({ prompt: '>' });
+    editor.insertText('!ls');
+    expect(editor.getEffectiveMode()).toBe('shell');
+  });
+
+  it('should return configured mode when no buffer override', () => {
+    const editor = new InputEditor({ prompt: '>', mode: 'plan' });
+    editor.insertText('hello');
+    expect(editor.getEffectiveMode()).toBe('plan');
+  });
+
+  it('should default to normal mode', () => {
+    const editor = new InputEditor({ prompt: '>' });
+    expect(editor.getEffectiveMode()).toBe('normal');
+  });
+});
