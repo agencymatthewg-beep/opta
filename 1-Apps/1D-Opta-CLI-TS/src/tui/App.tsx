@@ -1,9 +1,10 @@
 import React, { useState, useCallback } from 'react';
-import { Box, useApp, useStdout } from 'ink';
+import { Box, useApp } from 'ink';
 import { Header } from './Header.js';
 import { MessageList } from './MessageList.js';
 import { InputBox } from './InputBox.js';
 import { InkStatusBar } from './StatusBar.js';
+import { useTerminalSize } from './hooks/useTerminalSize.js';
 
 interface AppProps {
   model: string;
@@ -14,8 +15,7 @@ interface AppProps {
 
 export function App({ model, sessionId, connectionStatus = true, onMessage }: AppProps) {
   const { exit } = useApp();
-  const { stdout } = useStdout();
-  const height = stdout?.rows ?? 24;
+  const { height } = useTerminalSize();
 
   const [messages, setMessages] = useState<Array<{ role: string; content: string }>>([]);
   const [isLoading, setIsLoading] = useState(false);
