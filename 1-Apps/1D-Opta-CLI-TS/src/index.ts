@@ -63,6 +63,8 @@ program
   .description('Execute a coding task using the agent loop')
   .option('-m, --model <name>', 'use specific model for this task')
   .option('-f, --format <type>', 'output format: text (default) or json')
+  .option('-q, --quiet', 'suppress output (exit code only, errors to stderr)')
+  .option('-o, --output <path>', 'write result to file')
   .option('--no-commit', 'disable auto-commit at task end')
   .option('--no-checkpoints', 'disable checkpoint creation')
   .option('-a, --auto', 'auto-accept file edits without prompting')
