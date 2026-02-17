@@ -11,6 +11,7 @@ import { useKeyboard } from './hooks/useKeyboard.js';
 import { StreamingIndicator } from './StreamingIndicator.js';
 import { FocusProvider, useFocusPanel } from './FocusContext.js';
 import { PermissionPrompt } from './PermissionPrompt.js';
+import { HelpOverlay } from './HelpOverlay.js';
 import { estimateTokens } from '../utils/tokens.js';
 import type { TuiEmitter, TurnStats, PermissionRequest } from './adapter.js';
 import type { PermissionDecision } from './PermissionPrompt.js';
@@ -60,6 +61,8 @@ interface AppProps {
   onSubmit?: (text: string) => void;
   /** Called when user types a slash command. Dispatches through the slash registry. */
   onSlashCommand?: (input: string) => Promise<SlashCommandResult>;
+  /** Initial session title (for resumed sessions). New session titles arrive via emitter 'title' event. */
+  title?: string;
 }
 
 function AppInner({
@@ -70,6 +73,7 @@ function AppInner({
   emitter,
   onSubmit,
   onSlashCommand,
+  title: initialTitle,
 }: AppProps) {
   const { exit } = useApp();
   const { width, height } = useTerminalSize();
@@ -88,6 +92,9 @@ function AppInner({
   const [speed, setSpeed] = useState(0);
   const [streamingLabel, setStreamingLabel] = useState('thinking');
   const [thinkingExpanded, setThinkingExpanded] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
+  const [sessionTitle, setSessionTitle] = useState(initialTitle);
+  const [cost, setCost] = useState('$0.00');
 
   // Permission prompt state
   const [permissionPending, setPermissionPending] = useState<(PermissionRequest & { resolve: (decision: PermissionDecision) => void }) | null>(null);
@@ -105,10 +112,12 @@ function AppInner({
   const handleClear = useCallback(() => setMessages([]), []);
   const handleToggleSidebar = useCallback(() => setSidebarVisible(prev => !prev), []);
   const handleExpandThinking = useCallback(() => setThinkingExpanded(prev => !prev), []);
+  const handleHelp = useCallback(() => setShowHelp(prev => !prev), []);
 
   useKeyboard({
     onExit: exit,
     onClear: handleClear,
+    onHelp: handleHelp,
     onNextPanel: nextPanel,
     onPreviousPanel: previousPanel,
     onToggleSidebar: handleToggleSidebar,
@@ -222,6 +231,10 @@ function AppInner({
       setMessages(prev => [...prev, { role: 'error', content: msg }]);
     };
 
+    const onTitle = (title: string) => {
+      setSessionTitle(title);
+    };
+
     const onPermissionRequest = (request: PermissionRequest) => {
       // Create a Promise-based bridge: the resolve function is stored in state
       // so the PermissionPrompt component can call it when the user decides.
@@ -256,6 +269,7 @@ function AppInner({
     emitter.on('turn:end', onTurnEnd);
     emitter.on('error', onError);
     emitter.on('permission:request', onPermissionRequest);
+    emitter.on('title', onTitle);
 
     return () => {
       emitter.off('token', onToken);
@@ -266,6 +280,7 @@ function AppInner({
       emitter.off('turn:end', onTurnEnd);
       emitter.off('error', onError);
       emitter.off('permission:request', onPermissionRequest);
+      emitter.off('title', onTitle);
     };
   }, [emitter]);
 
@@ -302,9 +317,31 @@ function AppInner({
       }
     }
 
-    // Handle shell mode
+    // Shell command execution: !command runs directly and shows output.
+    // Uses execSync intentionally (not execFile) because user-typed shell commands
+    // need shell features like pipes, redirects, and glob expansion — same as REPL path.
     if (text.startsWith('!')) {
-      setMode('shell');
+      const cmd = text.slice(1).trim();
+      if (!cmd) return;
+
+      setMessages(prev => [...prev, { role: 'user', content: text }]);
+
+      try {
+        const { execSync } = await import('node:child_process');
+        const output = execSync(cmd, { encoding: 'utf-8', cwd: process.cwd(), timeout: 30000 });
+        const result = output.trim()
+          ? `$ ${cmd}\n${output.trim()}\n\u2714 exit 0`
+          : `$ ${cmd}\n\u2714 exit 0`;
+        setMessages(prev => [...prev, { role: 'system', content: result }]);
+      } catch (err: unknown) {
+        const e = err as { status?: number; stderr?: string; stdout?: string };
+        const parts: string[] = [`$ ${cmd}`];
+        if (e.stdout) parts.push(e.stdout.trim());
+        if (e.stderr) parts.push(e.stderr.trim());
+        parts.push(`\u2718 exit ${e.status ?? 1}`);
+        setMessages(prev => [...prev, { role: 'error', content: parts.join('\n') }]);
+      }
+      return;
     }
 
     setMessages(prev => [...prev, { role: 'user', content: text }]);
@@ -325,6 +362,13 @@ function AppInner({
     setMode('normal');
   }, [onMessage, onSubmit, onSlashCommand, isStreamingMode, exit]);
 
+  // Responsive layout: derive narrow modes from terminal width
+  const narrowMode = width < 80;
+  const compactMode = width < 60;
+
+  // Auto-hide sidebar when terminal is narrow
+  const effectiveSidebarVisible = narrowMode ? false : sidebarVisible;
+
   const messageAreaHeight = Math.max(height - CHROME_HEIGHT, MIN_MESSAGE_AREA_HEIGHT);
 
   const mainContent = (
@@ -336,8 +380,14 @@ function AppInner({
         borderStyle={activePanel === 'messages' ? 'single' : undefined}
         borderColor={activePanel === 'messages' ? 'cyan' : 'gray'}
       >
-        <MessageList messages={messages} height={activePanel === 'messages' ? messageAreaHeight - 2 : messageAreaHeight} focusable={activePanel === 'messages'} streamingIdx={streamingMsgIdx.current} terminalWidth={width} thinkingExpanded={thinkingExpanded} />
-        {isLoading && <StreamingIndicator label={streamingLabel} />}
+        {showHelp ? (
+          <HelpOverlay onClose={() => setShowHelp(false)} />
+        ) : (
+          <>
+            <MessageList messages={messages} height={activePanel === 'messages' ? messageAreaHeight - 2 : messageAreaHeight} focusable={activePanel === 'messages'} streamingIdx={streamingMsgIdx.current} terminalWidth={width} thinkingExpanded={thinkingExpanded} />
+            {isLoading && <StreamingIndicator label={streamingLabel} />}
+          </>
+        )}
       </Box>
 
       {/* Permission prompt replaces the input area when active */}
@@ -371,10 +421,11 @@ function AppInner({
       sessionId={sessionId}
       tokens={{ prompt: promptTokens, completion: completionTokens, total: tokens }}
       tools={toolCallCount}
-      cost="$0.00"
+      cost={cost}
       mode={mode}
       elapsed={elapsed}
       speed={speed}
+      title={sessionTitle}
     />
   );
 
@@ -384,22 +435,25 @@ function AppInner({
         model={currentModel}
         sessionId={sessionId}
         connectionStatus={connectionStatus}
+        title={sessionTitle}
+        compact={compactMode}
       />
 
       <SplitPane
         main={mainContent}
         sidebar={sidebarContent}
         sidebarWidth={28}
-        sidebarVisible={sidebarVisible}
+        sidebarVisible={effectiveSidebarVisible}
       />
 
       <InkStatusBar
         model={currentModel}
         tokens={tokens}
-        cost="$0.00"
+        cost={cost}
         tools={toolCallCount}
         speed={speed}
         mode={mode}
+        compact={compactMode}
       />
     </Box>
   );

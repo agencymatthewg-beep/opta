@@ -131,17 +131,27 @@ export async function startChat(opts: ChatOptions): Promise<void> {
       model: config.model.default,
       sessionId: session.id,
       emitter,
+      title: session.title,
       onSubmit: (text: string) => {
         // Fire-and-forget: the emitter events drive the TUI updates
-        runAgentWithEvents(emitter, text, config, session)
-          .then(async (result) => {
-            session.messages = result.messages;
-            session.toolCallCount += result.toolCallCount;
-            await saveSession(session);
-          })
-          .catch(() => {
-            // Error already emitted via emitter 'error' event
-          });
+        (async () => {
+          // Resolve @file references before sending to agent
+          const { refs } = await resolveFileRefs(text);
+          const enrichedInput = buildContextWithRefs(text, refs);
+
+          // Generate session title from first user message
+          if (!session.title) {
+            session.title = generateTitle(text);
+            emitter.emit('title', session.title);
+          }
+
+          const result = await runAgentWithEvents(emitter, enrichedInput, config, session);
+          session.messages = result.messages;
+          session.toolCallCount += result.toolCallCount;
+          await saveSession(session);
+        })().catch(() => {
+          // Error already emitted via emitter 'error' event
+        });
       },
       onSlashCommand: async (input: string) => {
         // Bare `/` opens interactive browser in REPL mode, but in TUI mode

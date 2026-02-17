@@ -18,6 +18,8 @@ interface StreamingRenderOptions {
   emitter: TuiEmitter;
   onSubmit: (text: string) => void;
   onSlashCommand?: (input: string) => Promise<SlashCommandResult>;
+  /** Initial session title (for resumed sessions). */
+  title?: string;
 }
 
 type RenderOptions = LegacyRenderOptions | StreamingRenderOptions;
@@ -38,7 +40,7 @@ export async function renderTUI(options: RenderOptions): Promise<void> {
 
   const { model, sessionId } = options;
   const appProps = isStreamingOptions(options)
-    ? { model, sessionId, emitter: options.emitter, onSubmit: options.onSubmit, onSlashCommand: options.onSlashCommand }
+    ? { model, sessionId, emitter: options.emitter, onSubmit: options.onSubmit, onSlashCommand: options.onSlashCommand, title: options.title }
     : { model, sessionId, onMessage: options.onMessage };
 
   const { waitUntilExit } = render(

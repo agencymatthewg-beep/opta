@@ -45,6 +45,7 @@ export interface TuiEventMap {
   'error': [msg: string];
   'permission:request': [request: PermissionRequest];
   'permission:response': [id: string, decision: PermissionDecision];
+  'title': [title: string];
 }
 
 export class TuiEmitter extends EventEmitter {
