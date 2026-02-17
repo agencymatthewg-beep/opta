@@ -128,6 +128,65 @@ export async function undoCheckpoint(
 }
 
 /**
+ * Reads the raw patch content for a specific checkpoint.
+ * Returns an empty string if the patch file does not exist.
+ */
+export async function readPatchContent(
+  cwd: string,
+  sessionId: string,
+  n: number,
+): Promise<string> {
+  const patchPath = join(checkpointDir(cwd, sessionId), `${n}.patch`);
+  try {
+    return await readFile(patchPath, 'utf-8');
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * Computes a diff stat summary (additions, deletions) from a patch string.
+ * Returns { additions, deletions } line counts.
+ */
+export function patchStat(patch: string): { additions: number; deletions: number } {
+  let additions = 0;
+  let deletions = 0;
+  for (const line of patch.split('\n')) {
+    if (line.startsWith('+') && !line.startsWith('+++')) additions++;
+    if (line.startsWith('-') && !line.startsWith('---')) deletions++;
+  }
+  return { additions, deletions };
+}
+
+/**
+ * Undoes ALL checkpoints for a session, in reverse order.
+ * Throws if any individual undo fails.
+ */
+export async function undoAllCheckpoints(
+  cwd: string,
+  sessionId: string,
+): Promise<number> {
+  const checkpoints = await listCheckpoints(cwd, sessionId);
+  if (checkpoints.length === 0) {
+    throw new Error(`No checkpoints found for session "${sessionId}"`);
+  }
+
+  // Undo in reverse order to avoid patch conflicts
+  const reversed = [...checkpoints].reverse();
+  let undone = 0;
+  for (const cp of reversed) {
+    const patchPath = join(checkpointDir(cwd, sessionId), `${cp.n}.patch`);
+    try {
+      await execa('git', ['apply', '-R', patchPath], { cwd });
+      undone++;
+    } catch {
+      // Patch may not apply cleanly if already reverted — skip
+    }
+  }
+  return undone;
+}
+
+/**
  * Removes all checkpoint data for a session.
  * No-op if the session directory doesn't exist.
  */

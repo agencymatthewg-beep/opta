@@ -60,32 +60,114 @@ const undoHandler = async (args: string, ctx: SlashContext): Promise<SlashResult
       return 'handled';
     }
 
+    const { listCheckpoints, readPatchContent, patchStat, undoCheckpoint, undoAllCheckpoints } = await import('../../git/checkpoints.js');
+    const { formatTruncatedDiff, formatPatchStat } = await import('../../ui/diff.js');
+
+    // --- /undo list (or /checkpoint alias) ---
     if (args === 'list') {
-      const { listCheckpoints } = await import('../../git/checkpoints.js');
       const checkpoints = await listCheckpoints(process.cwd(), ctx.session.id);
       if (checkpoints.length === 0) {
         console.log(chalk.dim('  No checkpoints in this session'));
       } else {
-        console.log('\n' + chalk.bold('Checkpoints:'));
+        const lines: string[] = [];
         for (const cp of checkpoints) {
-          console.log(`  #${cp.n}  ${cp.tool}  ${cp.path}  ${chalk.dim(cp.timestamp)}`);
+          const patch = await readPatchContent(process.cwd(), ctx.session.id, cp.n);
+          const stat = patchStat(patch);
+          const ts = new Date(cp.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          lines.push(
+            `  ${chalk.bold(`#${cp.n}`)}  ${chalk.cyan(cp.tool.padEnd(12))} ${cp.path}  ${formatPatchStat(stat.additions, stat.deletions)}  ${chalk.dim(ts)}`
+          );
         }
-        console.log();
+        console.log('\n' + box('Checkpoints', lines));
+        console.log(chalk.dim('  Tip: /undo N to revert a specific checkpoint\n'));
       }
       return 'handled';
     }
 
-    const { undoCheckpoint } = await import('../../git/checkpoints.js');
-    const n = args ? parseInt(args, 10) : undefined;
-    await undoCheckpoint(process.cwd(), ctx.session.id, n);
+    // --- /undo all ---
+    if (args === 'all') {
+      const checkpoints = await listCheckpoints(process.cwd(), ctx.session.id);
+      if (checkpoints.length === 0) {
+        console.log(chalk.dim('  No checkpoints in this session'));
+        return 'handled';
+      }
 
-    const label = n !== undefined ? `Checkpoint #${n}` : 'Last checkpoint';
-    console.log(chalk.green('\u2713') + ` Undone: ${label}`);
+      const { confirm } = await import('@inquirer/prompts');
+      const ok = await confirm({
+        message: `Revert all ${checkpoints.length} checkpoint${checkpoints.length === 1 ? '' : 's'}?`,
+        default: false,
+      });
+      if (!ok) {
+        console.log(chalk.dim('  Cancelled'));
+        return 'handled';
+      }
+
+      const undone = await undoAllCheckpoints(process.cwd(), ctx.session.id);
+      console.log(chalk.green('\u2713') + ` Undone: ${undone} checkpoint${undone === 1 ? '' : 's'}`);
+      ctx.session.messages.push({
+        role: 'user',
+        content: `[System: User reversed all ${undone} checkpoints \u2014 all changes have been reverted. Adjust your approach accordingly.]`,
+      });
+      return 'handled';
+    }
+
+    // --- /undo N (specific checkpoint, no confirmation) ---
+    if (args && !isNaN(parseInt(args, 10))) {
+      const n = parseInt(args, 10);
+      await undoCheckpoint(process.cwd(), ctx.session.id, n);
+
+      console.log(chalk.green('\u2713') + ` Undone: Checkpoint #${n}`);
+      ctx.session.messages.push({
+        role: 'user',
+        content: `[System: User reversed Checkpoint #${n} \u2014 changes have been reverted. Adjust your approach accordingly.]`,
+      });
+      return 'handled';
+    }
+
+    // --- /undo (no args): preview last checkpoint, then confirm ---
+    const checkpoints = await listCheckpoints(process.cwd(), ctx.session.id);
+    if (checkpoints.length === 0) {
+      console.log(chalk.dim('  No checkpoints in this session'));
+      return 'handled';
+    }
+
+    const last = checkpoints[checkpoints.length - 1]!;
+    const patch = await readPatchContent(process.cwd(), ctx.session.id, last.n);
+    const stat = patchStat(patch);
+
+    console.log();
+    console.log(
+      chalk.bold(`  Checkpoint #${last.n}`) +
+      chalk.dim(` \u2014 ${last.tool} \u2014 `) +
+      formatPatchStat(stat.additions, stat.deletions)
+    );
+    console.log();
+    if (patch) {
+      console.log(formatTruncatedDiff(patch, last.path, 20));
+      console.log();
+    }
+
+    const { confirm } = await import('@inquirer/prompts');
+    const ok = await confirm({
+      message: 'Revert this checkpoint?',
+      default: true,
+    });
+    if (!ok) {
+      console.log(chalk.dim('  Cancelled'));
+      return 'handled';
+    }
+
+    await undoCheckpoint(process.cwd(), ctx.session.id);
+    console.log(chalk.green('\u2713') + ' Undone: Last checkpoint');
     ctx.session.messages.push({
       role: 'user',
-      content: `[System: User reversed ${label} \u2014 changes have been reverted. Adjust your approach accordingly.]`,
+      content: `[System: User reversed Checkpoint #${last.n} \u2014 changes have been reverted. Adjust your approach accordingly.]`,
     });
   } catch (err) {
+    if (err instanceof Error && err.message.includes('ExitPromptError')) {
+      console.log(chalk.dim('  Cancelled'));
+      return 'handled';
+    }
     console.error(chalk.red('\u2717') + ` Undo failed: ${err instanceof Error ? err.message : err}`);
   }
   return 'handled';
@@ -119,11 +201,27 @@ const statusHandler = async (_args: string, ctx: SlashContext): Promise<SlashRes
     lines.push(kv('Tokens', `~${fmtTokens(tokens)}`));
     if (uptimeSec !== undefined) lines.push(kv('Uptime', `${Math.floor(uptimeSec / 60)}m`));
 
+    // Checkpoint count
+    try {
+      const { listCheckpoints } = await import('../../git/checkpoints.js');
+      const checkpoints = await listCheckpoints(process.cwd(), ctx.session.id);
+      if (checkpoints.length > 0) {
+        lines.push(kv('Checkpoints', `${checkpoints.length} (session ${ctx.session.id.slice(0, 8)})`));
+      }
+    } catch {
+      // Ignore — checkpoints are optional
+    }
+
     console.log('\n' + box('Status', lines));
   } catch {
     console.log(chalk.red('\n  \u25cf LMX unreachable') + chalk.dim(` \u2014 ${ctx.config.connection.host}:${ctx.config.connection.port}`));
   }
   return 'handled';
+};
+
+/** Handler for /checkpoint — alias for /undo list */
+const checkpointHandler = async (_args: string, ctx: SlashContext): Promise<SlashResult> => {
+  return undoHandler('list', ctx);
 };
 
 export const workflowCommands: SlashCommandDef[] = [
@@ -141,8 +239,15 @@ export const workflowCommands: SlashCommandDef[] = [
   },
   {
     command: 'undo',
-    description: 'Reverse last checkpoint',
+    description: 'Undo checkpoint (list|all|N)',
     handler: undoHandler,
+    category: 'tools',
+  },
+  {
+    command: 'checkpoint',
+    aliases: ['cp'],
+    description: 'List checkpoints',
+    handler: checkpointHandler,
     category: 'tools',
   },
   {

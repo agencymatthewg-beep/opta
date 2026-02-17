@@ -8,6 +8,9 @@ import {
   listCheckpoints,
   undoCheckpoint,
   cleanupCheckpoints,
+  readPatchContent,
+  patchStat,
+  undoAllCheckpoints,
 } from '../../src/git/checkpoints.js';
 
 let testDir: string;
@@ -156,5 +159,82 @@ describe('cleanupCheckpoints', () => {
     await expect(
       cleanupCheckpoints(testDir, 'nonexistent-session'),
     ).resolves.toBeUndefined();
+  });
+});
+
+describe('readPatchContent', () => {
+  it('returns patch content for an existing checkpoint', async () => {
+    await writeFile(join(testDir, 'code.ts'), 'const x = 2;\n');
+    await createCheckpoint(testDir, SESSION_ID, 1, 'edit_file', 'code.ts');
+
+    const content = await readPatchContent(testDir, SESSION_ID, 1);
+    expect(content).toContain('-const x = 1;');
+    expect(content).toContain('+const x = 2;');
+  });
+
+  it('returns empty string for non-existent checkpoint', async () => {
+    const content = await readPatchContent(testDir, SESSION_ID, 999);
+    expect(content).toBe('');
+  });
+
+  it('returns empty string for non-existent session', async () => {
+    const content = await readPatchContent(testDir, 'no-such-session', 1);
+    expect(content).toBe('');
+  });
+});
+
+describe('patchStat', () => {
+  it('counts additions and deletions', () => {
+    const patch = [
+      'diff --git a/code.ts b/code.ts',
+      '--- a/code.ts',
+      '+++ b/code.ts',
+      '@@ -1 +1 @@',
+      '-const x = 1;',
+      '+const x = 2;',
+      '+const y = 3;',
+    ].join('\n');
+
+    const stat = patchStat(patch);
+    expect(stat.additions).toBe(2);
+    expect(stat.deletions).toBe(1);
+  });
+
+  it('does not count --- and +++ as changes', () => {
+    const patch = [
+      '--- a/code.ts',
+      '+++ b/code.ts',
+      '@@ -1 +1 @@',
+      ' unchanged line',
+    ].join('\n');
+
+    const stat = patchStat(patch);
+    expect(stat.additions).toBe(0);
+    expect(stat.deletions).toBe(0);
+  });
+
+  it('returns zeros for empty patch', () => {
+    const stat = patchStat('');
+    expect(stat.additions).toBe(0);
+    expect(stat.deletions).toBe(0);
+  });
+});
+
+describe('undoAllCheckpoints', () => {
+  it('reverts a single checkpoint', async () => {
+    await writeFile(join(testDir, 'code.ts'), 'const x = 2;\n');
+    await createCheckpoint(testDir, SESSION_ID, 1, 'edit_file', 'code.ts');
+
+    const undone = await undoAllCheckpoints(testDir, SESSION_ID);
+    expect(undone).toBe(1);
+
+    const content = await readFile(join(testDir, 'code.ts'), 'utf-8');
+    expect(content).toBe('const x = 1;\n');
+  });
+
+  it('throws for empty session', async () => {
+    await expect(
+      undoAllCheckpoints(testDir, 'nonexistent-session'),
+    ).rejects.toThrow('No checkpoints found');
   });
 });
