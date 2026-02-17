@@ -869,7 +869,12 @@ async def start_quantize(
     if not source_model:
         return JSONResponse(
             status_code=400,
-            content={"error": {"message": "source_model is required", "type": "invalid_request_error"}},
+            content={
+                "error": {
+                    "message": "source_model is required",
+                    "type": "invalid_request_error",
+                }
+            },
         )
 
     from opta_lmx.manager.quantize import start_quantize as _start_quantize

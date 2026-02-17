@@ -466,7 +466,7 @@ async function scanModels(
           autoStr,
         ].filter(Boolean);
         console.log(
-          `  ${chalk.magenta('\u2666')} ${chalk.bold(p.name.padEnd(20))} ${chalk.dim(parts.join('  '))}`
+          `  ${dot} ${chalk.bold(p.name.padEnd(20))} ${chalk.dim(parts.join('  '))}`
         );
       }
     }

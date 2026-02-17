@@ -213,6 +213,106 @@ export const DEFAULT_CONFIG: OptaConfig = OptaConfigSchema.parse({});
 /** Canonical permission defaults derived from the Zod schema. Single source of truth. */
 export const DEFAULT_PERMISSIONS: Record<string, string> = DEFAULT_CONFIG.permissions;
 
+// ---------------------------------------------------------------------------
+// Part D: Zod error formatting
+// ---------------------------------------------------------------------------
+
+/**
+ * Convert Zod validation issues into human-readable one-liners with fix suggestions.
+ *
+ * Maps common Zod error codes to plain-language descriptions and appends a
+ * `Try: opta config set <path> <example>` hint where possible.
+ */
+export function formatZodErrors(error: z.ZodError): string[] {
+  return error.issues.map((issue) => {
+    const path = issue.path.join('.');
+    let description: string;
+
+    switch (issue.code) {
+      case 'invalid_type':
+        description = `Expected ${issue.expected} but got ${issue.received}`;
+        break;
+      case 'too_small': {
+        const minIssue = issue as z.ZodTooSmallIssue;
+        description = `Must be at least ${minIssue.minimum}`;
+        break;
+      }
+      case 'too_big': {
+        const maxIssue = issue as z.ZodTooBigIssue;
+        description = `Must be at most ${maxIssue.maximum}`;
+        break;
+      }
+      case 'invalid_enum_value': {
+        const enumIssue = issue as z.ZodInvalidEnumValueIssue;
+        description = `Must be one of: ${enumIssue.options.join(', ')}`;
+        break;
+      }
+      default:
+        description = issue.message;
+    }
+
+    // Build a helpful suggestion with the config path
+    const suggestion = path
+      ? `Try: opta config set ${path} <valid-value>`
+      : 'Check your config file for syntax errors';
+
+    return `Config warning: ${path || '(root)'} ${description}. ${suggestion}`;
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Internal: strip broken keys from a raw config object
+// ---------------------------------------------------------------------------
+
+/**
+ * Given a raw config object and a list of Zod issues, delete the top-level
+ * keys that contain broken values so the schema can fill them with defaults.
+ * Returns a shallow clone — the original object is not mutated.
+ */
+function stripBrokenKeys(
+  raw: Record<string, unknown>,
+  issues: z.ZodIssue[],
+): Record<string, unknown> {
+  const clone = { ...raw };
+  for (const issue of issues) {
+    const topKey = issue.path[0];
+    if (topKey !== undefined && typeof topKey === 'string') {
+      // For nested paths (e.g. connection.port), we delete the deepest
+      // leaf we can reach so the rest of the sub-tree is preserved.
+      deleteNestedKey(clone, issue.path as string[]);
+    } else {
+      // Root-level issue — nothing we can strip
+    }
+  }
+  return clone;
+}
+
+/**
+ * Delete a deeply-nested key described by `path` from `obj`.
+ * If intermediate containers become empty objects after deletion they are
+ * left in place (Zod will fill defaults).
+ */
+function deleteNestedKey(obj: Record<string, unknown>, path: (string | number)[]): void {
+  if (path.length === 0) return;
+  if (path.length === 1) {
+    delete obj[path[0] as string];
+    return;
+  }
+
+  const [head, ...rest] = path;
+  const child = obj[head as string];
+  if (child !== null && child !== undefined && typeof child === 'object' && !Array.isArray(child)) {
+    deleteNestedKey(child as Record<string, unknown>, rest);
+  } else {
+    // Cannot traverse further — delete the whole branch
+    delete obj[head as string];
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Part A: loadConfig with safeParse + self-healing
+// ---------------------------------------------------------------------------
+
 export async function loadConfig(
   overrides?: Record<string, unknown>
 ): Promise<OptaConfig> {
@@ -270,7 +370,129 @@ export async function loadConfig(
     Object.assign(raw, overrides);
   }
 
-  return OptaConfigSchema.parse(raw);
+  // 5. Validate with safeParse — self-heal on failure
+  const result = OptaConfigSchema.safeParse(raw);
+
+  if (result.success) {
+    return result.data;
+  }
+
+  // Validation failed — show human-readable warnings
+  const hints = formatZodErrors(result.error);
+  for (const hint of hints) {
+    console.error(hint);
+  }
+
+  // Attempt self-healing: strip broken keys and re-parse with defaults
+  const healed = stripBrokenKeys(raw, result.error.issues);
+  const retryResult = OptaConfigSchema.safeParse(healed);
+
+  if (retryResult.success) {
+    const issueCount = result.error.issues.length;
+    console.error(
+      `Auto-healed ${issueCount} config issue${issueCount === 1 ? '' : 's'}. Run /quickfix for details.`,
+    );
+    return retryResult.data;
+  }
+
+  // Still broken after stripping — fatal error
+  throw new Error(
+    'Config is unparseable even after removing broken fields. ' +
+    'Run "opta config reset" to restore defaults.\n' +
+    formatZodErrors(retryResult.error).join('\n'),
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Part B: healConfig — self-healing for malformed JSON
+// ---------------------------------------------------------------------------
+
+export interface ConfigIssue {
+  path: string;
+  message: string;
+  suggestion: string;
+  autoFixed: boolean;
+}
+
+/**
+ * Inspect the persisted user config, validate it against the schema, and
+ * auto-fix any fields that can be reset to their defaults.
+ *
+ * Returns a list of every issue found, each annotated with whether it was
+ * automatically repaired.
+ */
+export async function healConfig(): Promise<ConfigIssue[]> {
+  const { default: Conf } = await import('conf');
+  const store = new Conf({ projectName: 'opta' });
+  const raw = { ...store.store } as Record<string, unknown>;
+
+  const result = OptaConfigSchema.safeParse(raw);
+
+  if (result.success) {
+    return []; // Config is healthy
+  }
+
+  const issues: ConfigIssue[] = [];
+
+  for (const zodIssue of result.error.issues) {
+    const path = zodIssue.path.join('.');
+    let message: string;
+
+    switch (zodIssue.code) {
+      case 'invalid_type':
+        message = `Expected ${zodIssue.expected} but got ${zodIssue.received}`;
+        break;
+      case 'too_small': {
+        const minIssue = zodIssue as z.ZodTooSmallIssue;
+        message = `Must be at least ${minIssue.minimum}`;
+        break;
+      }
+      case 'too_big': {
+        const maxIssue = zodIssue as z.ZodTooBigIssue;
+        message = `Must be at most ${maxIssue.maximum}`;
+        break;
+      }
+      case 'invalid_enum_value': {
+        const enumIssue = zodIssue as z.ZodInvalidEnumValueIssue;
+        message = `Must be one of: ${enumIssue.options.join(', ')}`;
+        break;
+      }
+      default:
+        message = zodIssue.message;
+    }
+
+    const suggestion = path
+      ? `opta config set ${path} <valid-value>`
+      : 'Run "opta config reset" to restore all defaults';
+
+    // Attempt auto-fix: delete the broken key and see if the schema passes
+    const testRaw = { ...raw };
+    deleteNestedKey(testRaw, zodIssue.path as string[]);
+    const testResult = OptaConfigSchema.safeParse(testRaw);
+
+    const canAutoFix = testResult.success ||
+      !testResult.error.issues.some(i => i.path.join('.') === path);
+
+    if (canAutoFix) {
+      // Apply the fix to the persisted store
+      const topKey = zodIssue.path[0];
+      if (topKey !== undefined && typeof topKey === 'string') {
+        // Delete the broken key from the conf store
+        store.delete(topKey as string);
+      }
+      // Mutate raw for subsequent iterations
+      deleteNestedKey(raw, zodIssue.path as string[]);
+    }
+
+    issues.push({
+      path: path || '(root)',
+      message,
+      suggestion,
+      autoFixed: canAutoFix,
+    });
+  }
+
+  return issues;
 }
 
 export async function saveConfig(

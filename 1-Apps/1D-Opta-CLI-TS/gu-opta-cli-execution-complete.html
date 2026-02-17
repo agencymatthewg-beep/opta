@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Opta CLI — Full Execution Complete</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap');
+
+  :root {
+    --void: #09090b;
+    --surface: #18181b;
+    --elevated: #27272a;
+    --border: #3f3f46;
+    --text-primary: #fafafa;
+    --text-secondary: #a1a1aa;
+    --text-muted: #52525b;
+    --primary: #8b5cf6;
+    --primary-glow: #a855f7;
+    --neon-blue: #3b82f6;
+    --neon-green: #22c55e;
+    --neon-amber: #f59e0b;
+    --neon-red: #ef4444;
+    --neon-cyan: #06b6d4;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--void);
+    color: var(--text-primary);
+    font-family: 'Sora', -apple-system, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .noise {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .container { max-width: 1200px; margin: 0 auto; padding: 40px 24px; position: relative; z-index: 1; }
+
+  /* Hero */
+  .hero {
+    text-align: center;
+    padding: 60px 0 40px;
+  }
+  .hero-badge {
+    display: inline-block;
+    background: rgba(139,92,246,0.15);
+    border: 1px solid rgba(139,92,246,0.3);
+    border-radius: 20px;
+    padding: 6px 18px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--primary);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 20px;
+  }
+  .hero h1 {
+    font-size: 48px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #fafafa 0%, #a78bfa 50%, #6366f1 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    line-height: 1.2;
+    margin-bottom: 16px;
+  }
+  .hero .subtitle {
+    font-size: 18px;
+    color: var(--text-secondary);
+    font-weight: 300;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  .hero .version-tag {
+    display: inline-block;
+    margin-top: 20px;
+    background: rgba(34,197,94,0.1);
+    border: 1px solid rgba(34,197,94,0.3);
+    border-radius: 8px;
+    padding: 8px 20px;
+    font-size: 14px;
+    color: var(--neon-green);
+    font-weight: 600;
+  }
+
+  /* Stat Cards */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin: 40px 0;
+  }
+  .stat-card {
+    background: rgba(255,255,255,0.03);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 24px;
+    text-align: center;
+    transition: all 0.3s ease;
+  }
+  .stat-card:hover {
+    border-color: rgba(139,92,246,0.3);
+    box-shadow: 0 0 30px rgba(139,92,246,0.08);
+  }
+  .stat-value {
+    font-size: 36px;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--primary), var(--neon-blue));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    line-height: 1;
+  }
+  .stat-value.green {
+    background: linear-gradient(135deg, var(--neon-green), var(--neon-cyan));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .stat-value.amber {
+    background: linear-gradient(135deg, var(--neon-amber), #fbbf24);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .stat-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 8px;
+  }
+
+  /* Neon Section Divider */
+  .neon-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--primary), transparent);
+    margin: 48px 0;
+    box-shadow: 0 0 8px rgba(139,92,246,0.3);
+  }
+
+  /* Glass Panel */
+  .glass-panel {
+    background: rgba(255,255,255,0.03);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 32px;
+    margin-bottom: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .glass-panel::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+  }
+  .glass-panel h2 {
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    color: var(--text-primary);
+  }
+  .glass-panel h2 .accent {
+    color: var(--primary);
+  }
+
+  /* Wave Cards */
+  .wave-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .wave-number {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--primary), var(--neon-blue));
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  .wave-title {
+    font-size: 18px;
+    font-weight: 600;
+  }
+  .wave-status {
+    margin-left: auto;
+    font-size: 12px;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-weight: 600;
+    background: rgba(34,197,94,0.15);
+    color: var(--neon-green);
+    border: 1px solid rgba(34,197,94,0.3);
+  }
+
+  /* Feature List */
+  .feature-list {
+    list-style: none;
+    display: grid;
+    gap: 10px;
+  }
+  .feature-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 16px;
+    background: rgba(255,255,255,0.02);
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.04);
+    font-size: 14px;
+    color: var(--text-secondary);
+    transition: all 0.2s;
+  }
+  .feature-item:hover {
+    background: rgba(255,255,255,0.04);
+    border-color: rgba(255,255,255,0.08);
+  }
+  .feature-check {
+    color: var(--neon-green);
+    font-size: 16px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .feature-name {
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+
+  /* Before/After Comparison */
+  .comparison {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+  .comparison-col {
+    background: rgba(255,255,255,0.02);
+    border-radius: 12px;
+    padding: 24px;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .comparison-col.before { border-color: rgba(239,68,68,0.2); }
+  .comparison-col.after { border-color: rgba(34,197,94,0.2); }
+  .comparison-col h3 {
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 16px;
+  }
+  .comparison-col.before h3 { color: var(--neon-red); }
+  .comparison-col.after h3 { color: var(--neon-green); }
+  .comparison-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    color: var(--primary);
+    padding-top: 40px;
+  }
+  .metric-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    font-size: 14px;
+  }
+  .metric-row:last-child { border: none; }
+  .metric-label { color: var(--text-secondary); }
+  .metric-value { font-weight: 600; font-family: 'SF Mono', 'Fira Code', monospace; }
+
+  /* Commit Timeline */
+  .commit-timeline {
+    position: relative;
+    padding-left: 28px;
+  }
+  .commit-timeline::before {
+    content: '';
+    position: absolute;
+    left: 8px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: linear-gradient(180deg, var(--primary), var(--neon-blue), var(--neon-green));
+    border-radius: 1px;
+  }
+  .commit-entry {
+    position: relative;
+    padding: 8px 0;
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+  .commit-entry::before {
+    content: '';
+    position: absolute;
+    left: -24px;
+    top: 14px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--primary);
+    border: 2px solid var(--void);
+  }
+  .commit-hash {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    color: var(--neon-amber);
+    font-size: 12px;
+  }
+  .commit-msg {
+    color: var(--text-primary);
+    font-weight: 400;
+  }
+
+  /* Agent Grid */
+  .agent-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+  }
+  .agent-card {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+    padding: 20px;
+    transition: all 0.3s;
+  }
+  .agent-card:hover {
+    border-color: rgba(139,92,246,0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  }
+  .agent-name {
+    font-weight: 600;
+    font-size: 15px;
+    margin-bottom: 4px;
+  }
+  .agent-desc {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+  }
+  .agent-stat {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    padding: 3px 0;
+    color: var(--text-secondary);
+  }
+  .agent-stat span:last-child {
+    font-family: 'SF Mono', monospace;
+    color: var(--text-primary);
+  }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding: 48px 0 24px;
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+  .footer .logo-text {
+    font-size: 16px;
+    font-weight: 600;
+    background: linear-gradient(135deg, var(--primary), var(--neon-blue));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+  }
+
+  @media (max-width: 768px) {
+    .hero h1 { font-size: 32px; }
+    .comparison { grid-template-columns: 1fr; }
+    .comparison-arrow { transform: rotate(90deg); padding: 0; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+<div class="noise"></div>
+<div class="container">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-badge">Execution Complete</div>
+    <h1>Opta CLI v0.4.0</h1>
+    <p class="subtitle">11 parallel agents. 4 execution waves. 106 commits. Every plan executed.</p>
+    <div class="version-tag">595 Tests Passing &bull; 63 Test Files &bull; All Green</div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-value">106</div>
+      <div class="stat-label">Commits</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value green">595</div>
+      <div class="stat-label">Tests Passing</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">63</div>
+      <div class="stat-label">Test Files</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value amber">62</div>
+      <div class="stat-label">Source Files</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">60K+</div>
+      <div class="stat-label">Lines of Code</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value green">11</div>
+      <div class="stat-label">Agents Deployed</div>
+    </div>
+  </div>
+
+  <div class="neon-divider"></div>
+
+  <!-- Before / After -->
+  <div class="glass-panel">
+    <h2><span class="accent">Before</span> vs <span class="accent">After</span></h2>
+    <div class="comparison">
+      <div class="comparison-col before">
+        <h3>v0.3.0-alpha.1</h3>
+        <div class="metric-row"><span class="metric-label">Built-in Tools</span><span class="metric-value">14</span></div>
+        <div class="metric-row"><span class="metric-label">Tests</span><span class="metric-value">195</span></div>
+        <div class="metric-row"><span class="metric-label">Test Files</span><span class="metric-value">25</span></div>
+        <div class="metric-row"><span class="metric-label">Source Files</span><span class="metric-value">33</span></div>
+        <div class="metric-row"><span class="metric-label">TUI</span><span class="metric-value">Basic REPL</span></div>
+        <div class="metric-row"><span class="metric-label">MCP</span><span class="metric-value">None</span></div>
+        <div class="metric-row"><span class="metric-label">Git Integration</span><span class="metric-value">None</span></div>
+        <div class="metric-row"><span class="metric-label">LSP</span><span class="metric-value">None</span></div>
+        <div class="metric-row"><span class="metric-label">Sub-Agents</span><span class="metric-value">None</span></div>
+        <div class="metric-row"><span class="metric-label">Hooks</span><span class="metric-value">None</span></div>
+      </div>
+      <div class="comparison-arrow">&rarr;</div>
+      <div class="comparison-col after">
+        <h3>v0.4.0-alpha.1</h3>
+        <div class="metric-row"><span class="metric-label">Built-in Tools</span><span class="metric-value">26+</span></div>
+        <div class="metric-row"><span class="metric-label">Tests</span><span class="metric-value">595</span></div>
+        <div class="metric-row"><span class="metric-label">Test Files</span><span class="metric-value">63</span></div>
+        <div class="metric-row"><span class="metric-label">Source Files</span><span class="metric-value">62</span></div>
+        <div class="metric-row"><span class="metric-label">TUI</span><span class="metric-value">Full-screen Ink</span></div>
+        <div class="metric-row"><span class="metric-label">MCP</span><span class="metric-value">Full Client</span></div>
+        <div class="metric-row"><span class="metric-label">Git Integration</span><span class="metric-value">6 tools</span></div>
+        <div class="metric-row"><span class="metric-label">LSP</span><span class="metric-value">6 tools</span></div>
+        <div class="metric-row"><span class="metric-label">Sub-Agents</span><span class="metric-value">spawn + delegate</span></div>
+        <div class="metric-row"><span class="metric-label">Hooks</span><span class="metric-value">6 lifecycle events</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="neon-divider"></div>
+
+  <!-- Wave Execution -->
+  <div class="glass-panel">
+    <h2>Execution <span class="accent">Waves</span></h2>
+
+    <!-- Wave 1 -->
+    <div style="margin-bottom: 32px;">
+      <div class="wave-header">
+        <div class="wave-number">1</div>
+        <div class="wave-title">Auto-Improvements</div>
+        <div class="wave-status">COMPLETE</div>
+      </div>
+      <div class="agent-grid">
+        <div class="agent-card">
+          <div class="agent-name">Auto-01: JSON Output</div>
+          <div class="agent-desc">Structured --json output for all commands</div>
+          <div class="agent-stat"><span>Status</span><span style="color:var(--neon-green)">Done</span></div>
+          <div class="agent-stat"><span>Key</span><span>formatChatJsonLine</span></div>
+        </div>
+        <div class="agent-card">
+          <div class="agent-name">Auto-02: Web Fetch</div>
+          <div class="agent-desc">web_fetch tool for HTTP content retrieval</div>
+          <div class="agent-stat"><span>Status</span><span style="color:var(--neon-green)">Done</span></div>
+          <div class="agent-stat"><span>Key</span><span>src/tools/web.ts</span></div>
+        </div>
+        <div class="agent-card">
+          <div class="agent-name">Auto-04: Multi-Edit</div>
+          <div class="agent-desc">Multi-file edit tool upgrade</div>
+          <div class="agent-stat"><span>Status</span><span style="color:var(--neon-green)">Done</span></div>
+          <div class="agent-stat"><span>Key</span><span>multi_edit upgrade</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Wave 2 -->
+    <div style="margin-bottom: 32px;">
+      <div class="wave-header">
+        <div class="wave-number">2</div>
+        <div class="wave-title">V2 Features</div>
+        <div class="wave-status">COMPLETE</div>
+      </div>
+      <div class="agent-grid">
+        <div class="agent-card">
+          <div class="agent-name">V2-OPIS: Exports</div>
+          <div class="agent-desc">Session export system (JSON, MD, HTML)</div>
+          <div class="agent-stat"><span>Status</span><span style="color:var(--neon-green)">Done</span></div>
+          <div class="agent-stat"><span>Key</span><span>src/commands/share.ts</span></div>
+        </div>
+        <div class="agent-card">
+          <div class="agent-name">V2-Git: Integration</div>
+          <div class="agent-desc">6 git tools (status, diff, log, commit, branch, stash)</div>
+          <div class="agent-stat"><span>Status</span><span style="color:var(--neon-green)">Done</span></div>
+          <div class="agent-stat"><span>Key</span><span>src/tools/git.ts</span></div>
+        </div>
+        <div class="agent-card">
+          <div class="agent-name">V2-MCP: Client</div>
+          <div class="agent-desc">Full MCP client with stdio + SSE transport</div>
+          <div class="agent-stat"><span>Status</span><span style="color:var(--neon-green)">Done</span></div>
+          <div class="agent-stat"><span>Key</span><span>src/mcp/</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Wave 3 -->
+    <div style="margin-bottom: 32px;">
+      <div class="wave-header">
+        <div class="wave-number">3</div>
+        <div class="wave-title">V2 Extended + V3 Core</div>
+        <div class="wave-status">COMPLETE</div>
+      </div>
+      <div class="agent-grid">
+        <div class="agent-card">
+          <div class="agent-name">V2-Features</div>
+          <div class="agent-desc">Theme system, syntax highlighting, agent profiles</div>
+          <div class="agent-stat"><span>Status</span><span style="color:var(--neon-green)">Done</span></div>
+          <div class="agent-stat"><span>Key</span><span>src/ui/themes.ts</span></div>
+        </div>
+        <div class="agent-card">
+          <div class="agent-name">Auto-07: Custom Tools</div>
+          <div class="agent-desc">JSON tool definitions in .opta/tools/*.json</div>
+          <div class="agent-stat"><span>Status</span><span style="color:var(--neon-green)">Done</span></div>
+          <div class="agent-stat"><span>Key</span><span>src/tools/custom.ts</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Wave 4 -->
+    <div style="margin-bottom: 0;">
+      <div class="wave-header">
+        <div class="wave-number">4</div>
+        <div class="wave-title">V3 Agent Depth</div>
+        <div class="wave-status">COMPLETE</div>
+      </div>
+      <div class="agent-grid">
+        <div class="agent-card">
+          <div class="agent-name">V3: Background Shell</div>
+          <div class="agent-desc">bg_start, bg_status, bg_output, bg_kill tools</div>
+          <div class="agent-stat"><span>Status</span><span style="color:var(--neon-green)">Done</span></div>
+          <div class="agent-stat"><span>Files</span><span>src/core/background.ts</span></div>
+          <div class="agent-stat"><span>Tests</span><span>31 passing</span></div>
+        </div>
+        <div class="agent-card">
+          <div class="agent-name">V3: Hook System</div>
+          <div class="agent-desc">6 lifecycle events with regex matchers</div>
+          <div class="agent-stat"><span>Status</span><span style="color:var(--neon-green)">Done</span></div>
+          <div class="agent-stat"><span>Files</span><span>src/hooks/manager.ts</span></div>
+          <div class="agent-stat"><span>Events</span><span>session, tool, compact, error</span></div>
+        </div>
+        <div class="agent-card">
+          <div class="agent-name">V3: LSP Integration</div>
+          <div class="agent-desc">6 code intelligence tools (definition, refs, hover...)</div>
+          <div class="agent-stat"><span>Status</span><span style="color:var(--neon-green)">Done</span></div>
+          <div class="agent-stat"><span>Files</span><span>src/lsp/</span></div>
+          <div class="agent-stat"><span>Tools</span><span>lsp_definition, lsp_references, +4</span></div>
+        </div>
+        <div class="agent-card">
+          <div class="agent-name">V3: Sub-Agents</div>
+          <div class="agent-desc">spawn_agent + delegate_task with depth tracking</div>
+          <div class="agent-stat"><span>Status</span><span style="color:var(--neon-green)">Done</span></div>
+          <div class="agent-stat"><span>Files</span><span>src/core/subagent.ts</span></div>
+          <div class="agent-stat"><span>Tests</span><span>56 passing</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="neon-divider"></div>
+
+  <!-- UX Improvements -->
+  <div class="glass-panel">
+    <h2>UX <span class="accent">Improvements</span> (OpenCode-Inspired)</h2>
+    <ul class="feature-list">
+      <li class="feature-item"><span class="feature-check">&#10003;</span><span><span class="feature-name">Full-screen Ink TUI</span> — React 18 + Ink 5 with alternate buffer, header, messages, input, statusbar</span></li>
+      <li class="feature-item"><span class="feature-check">&#10003;</span><span><span class="feature-name">SplitPane Layout</span> — Resizable panels with sidebar for session info and token stats</span></li>
+      <li class="feature-item"><span class="feature-check">&#10003;</span><span><span class="feature-name">ScrollView</span> — Keyboard-scrollable message history with auto-scroll and scrollbar indicator</span></li>
+      <li class="feature-item"><span class="feature-check">&#10003;</span><span><span class="feature-name">Focus System</span> — Tab navigation between panels with visual focus indicators</span></li>
+      <li class="feature-item"><span class="feature-check">&#10003;</span><span><span class="feature-name">Configurable Keybindings</span> — Full keybinding system with /keybindings command</span></li>
+      <li class="feature-item"><span class="feature-check">&#10003;</span><span><span class="feature-name">InputEditor</span> — Multiline editing, shell mode (!), paste detection, mode indicators</span></li>
+      <li class="feature-item"><span class="feature-check">&#10003;</span><span><span class="feature-name">Input History</span> — Arrow-key navigation with deduplication</span></li>
+      <li class="feature-item"><span class="feature-check">&#10003;</span><span><span class="feature-name">Fuzzy Autocomplete</span> — @ trigger for file completion with ranking</span></li>
+      <li class="feature-item"><span class="feature-check">&#10003;</span><span><span class="feature-name">Agent Profiles</span> — /agent command to switch specialized tool sets</span></li>
+      <li class="feature-item"><span class="feature-check">&#10003;</span><span><span class="feature-name">Theme System</span> — Multiple themes with /theme command</span></li>
+      <li class="feature-item"><span class="feature-check">&#10003;</span><span><span class="feature-name">Thinking Display</span> — Collapsible thinking blocks with /expand and /collapse</span></li>
+      <li class="feature-item"><span class="feature-check">&#10003;</span><span><span class="feature-name">Tool Cards</span> — Styled tool call rendering in the message stream</span></li>
+      <li class="feature-item"><span class="feature-check">&#10003;</span><span><span class="feature-name">Server Mode</span> — HTTP API endpoint for programmatic access</span></li>
+      <li class="feature-item"><span class="feature-check">&#10003;</span><span><span class="feature-name">Non-Interactive Mode</span> — Output format flags for CI/scripting</span></li>
+      <li class="feature-item"><span class="feature-check">&#10003;</span><span><span class="feature-name">Syntax Highlighting</span> — Code blocks with language-aware rendering</span></li>
+      <li class="feature-item"><span class="feature-check">&#10003;</span><span><span class="feature-name">Session Export</span> — /share with interactive format picker (JSON, MD, HTML)</span></li>
+    </ul>
+  </div>
+
+  <div class="neon-divider"></div>
+
+  <!-- Architecture Summary -->
+  <div class="glass-panel">
+    <h2>New <span class="accent">Architecture</span> Modules</h2>
+    <div class="agent-grid">
+      <div class="agent-card">
+        <div class="agent-name">src/core/</div>
+        <div class="agent-desc">Core engine</div>
+        <div class="agent-stat"><span>agent.ts</span><span>Main loop + stream</span></div>
+        <div class="agent-stat"><span>subagent.ts</span><span>425 LOC, spawn/delegate</span></div>
+        <div class="agent-stat"><span>orchestrator.ts</span><span>83 LOC, task delegation</span></div>
+        <div class="agent-stat"><span>background.ts</span><span>CircularBuffer + ProcessManager</span></div>
+        <div class="agent-stat"><span>agent-profiles.ts</span><span>Specialized tool presets</span></div>
+      </div>
+      <div class="agent-card">
+        <div class="agent-name">src/mcp/</div>
+        <div class="agent-desc">MCP integration</div>
+        <div class="agent-stat"><span>client.ts</span><span>Stdio + SSE transport</span></div>
+        <div class="agent-stat"><span>registry.ts</span><span>Unified tool routing</span></div>
+        <div class="agent-stat"><span>schema.ts</span><span>Protocol types</span></div>
+      </div>
+      <div class="agent-card">
+        <div class="agent-name">src/lsp/</div>
+        <div class="agent-desc">Language Server Protocol</div>
+        <div class="agent-stat"><span>client.ts</span><span>JSON-RPC over stdio</span></div>
+        <div class="agent-stat"><span>manager.ts</span><span>Server pool + detection</span></div>
+        <div class="agent-stat"><span>protocol.ts</span><span>URI + position helpers</span></div>
+      </div>
+      <div class="agent-card">
+        <div class="agent-name">src/hooks/</div>
+        <div class="agent-desc">Lifecycle events</div>
+        <div class="agent-stat"><span>manager.ts</span><span>HookManager + NoOp path</span></div>
+        <div class="agent-stat"><span>Events</span><span>6 lifecycle points</span></div>
+        <div class="agent-stat"><span>Features</span><span>Matchers, timeout, background</span></div>
+      </div>
+      <div class="agent-card">
+        <div class="agent-name">src/tools/</div>
+        <div class="agent-desc">Extended tooling</div>
+        <div class="agent-stat"><span>git.ts</span><span>6 git integration tools</span></div>
+        <div class="agent-stat"><span>web.ts</span><span>HTTP fetch tool</span></div>
+        <div class="agent-stat"><span>custom.ts</span><span>JSON-defined tools</span></div>
+      </div>
+      <div class="agent-card">
+        <div class="agent-name">src/ui/</div>
+        <div class="agent-desc">UI layer (Ink + helpers)</div>
+        <div class="agent-stat"><span>ink/</span><span>Full-screen React TUI</span></div>
+        <div class="agent-stat"><span>themes.ts</span><span>Theme system</span></div>
+        <div class="agent-stat"><span>toolcards.ts</span><span>Styled tool rendering</span></div>
+        <div class="agent-stat"><span>autocomplete.ts</span><span>Fuzzy file matching</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="neon-divider"></div>
+
+  <!-- Key Commits -->
+  <div class="glass-panel">
+    <h2>Latest <span class="accent">Commits</span></h2>
+    <div class="commit-timeline">
+      <div class="commit-entry"><span class="commit-hash">d6b0268</span> <span class="commit-msg">feat(cli): integrate custom tools with registry and permission system</span></div>
+      <div class="commit-entry"><span class="commit-hash">393fffc</span> <span class="commit-msg">feat(cli): add built-in hook scripts with tests (V3 hook system task 9)</span></div>
+      <div class="commit-entry"><span class="commit-hash">4e2ab3d</span> <span class="commit-msg">feat(cli): add custom tool loader with validation and execution</span></div>
+      <div class="commit-entry"><span class="commit-hash">681e4ff</span> <span class="commit-msg">feat(cli): add JSON output tests and extract formatChatJsonLine</span></div>
+      <div class="commit-entry"><span class="commit-hash">75c918d</span> <span class="commit-msg">feat(cli): add /sidebar command hint</span></div>
+      <div class="commit-entry"><span class="commit-hash">db2af63</span> <span class="commit-msg">feat(cli): enable keyboard scroll in messages panel (G08)</span></div>
+      <div class="commit-entry"><span class="commit-hash">d3b1763</span> <span class="commit-msg">feat(cli): add visual focus indicators to panels (G07)</span></div>
+      <div class="commit-entry"><span class="commit-hash">2c41844</span> <span class="commit-msg">feat(cli): wire SplitPane and Sidebar into App layout (G03, G05)</span></div>
+      <div class="commit-entry"><span class="commit-hash">47feb35</span> <span class="commit-msg">feat(cli): create base Ink App component (G01)</span></div>
+      <div class="commit-entry"><span class="commit-hash">1476135</span> <span class="commit-msg">feat(cli): add Ink 5, React 18, and ink-testing-library deps (G01)</span></div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <div class="logo-text">OPTA CLI</div>
+    <p>v0.4.0-alpha.1 &bull; 595 tests &bull; 62 source files &bull; 60K+ LOC</p>
+    <p style="margin-top: 8px;">Generated 2026-02-17 &bull; All plans executed successfully</p>
+  </div>
+
+</div>
+</body>
+</html>

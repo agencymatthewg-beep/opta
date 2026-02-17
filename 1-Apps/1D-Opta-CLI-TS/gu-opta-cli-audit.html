@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Opta CLI — Optimization Audit</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&display=swap');
+
+  :root {
+    --void: #09090b;
+    --surface: #18181b;
+    --elevated: #27272a;
+    --border: #3f3f46;
+    --text-primary: #fafafa;
+    --text-secondary: #a1a1aa;
+    --text-muted: #52525b;
+    --primary: #8b5cf6;
+    --primary-glow: #a855f7;
+    --neon-blue: #3b82f6;
+    --neon-green: #22c55e;
+    --neon-amber: #f59e0b;
+    --neon-red: #ef4444;
+    --neon-cyan: #06b6d4;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--void);
+    color: var(--text-primary);
+    font-family: 'Sora', -apple-system, BlinkMacSystemFont, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    line-height: 1.6;
+  }
+
+  .noise {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.025;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .container { max-width: 1280px; margin: 0 auto; padding: 40px 28px; position: relative; z-index: 1; }
+
+  /* Hero */
+  .hero { text-align: center; padding: 56px 0 32px; }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(239,68,68,0.12);
+    border: 1px solid rgba(239,68,68,0.25);
+    border-radius: 20px;
+    padding: 6px 18px;
+    font-size: 11px; font-weight: 600;
+    color: var(--neon-red);
+    text-transform: uppercase; letter-spacing: 1.5px;
+    margin-bottom: 20px;
+  }
+  .hero-badge::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--neon-red); animation: pulse-dot 2s ease infinite; }
+  @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+  .hero h1 {
+    font-size: 44px; font-weight: 800;
+    background: linear-gradient(135deg, #fafafa 0%, #a78bfa 40%, #ef4444 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    line-height: 1.15; margin-bottom: 14px;
+  }
+  .hero .subtitle { font-size: 16px; color: var(--text-secondary); font-weight: 300; max-width: 640px; margin: 0 auto; }
+
+  /* Scorecard Grid */
+  .scorecard-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px; margin: 36px 0;
+  }
+  .score-card {
+    background: rgba(255,255,255,0.025);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 14px;
+    padding: 18px 16px;
+    text-align: center;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .score-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+  }
+  .score-card:hover { border-color: rgba(139,92,246,0.25); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+  .score-grade { font-size: 28px; font-weight: 800; line-height: 1; }
+  .score-grade.a { color: var(--neon-green); }
+  .score-grade.b { color: var(--neon-amber); }
+  .score-grade.c { color: var(--neon-red); }
+  .score-grade.num { font-size: 22px; }
+  .score-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; margin-top: 6px; }
+
+  /* Neon Divider */
+  .neon-divider { height: 1px; background: linear-gradient(90deg, transparent, var(--primary), transparent); margin: 44px 0; box-shadow: 0 0 10px rgba(139,92,246,0.25); }
+  .neon-divider.red { background: linear-gradient(90deg, transparent, var(--neon-red), transparent); box-shadow: 0 0 10px rgba(239,68,68,0.25); }
+  .neon-divider.amber { background: linear-gradient(90deg, transparent, var(--neon-amber), transparent); box-shadow: 0 0 10px rgba(245,158,11,0.25); }
+
+  /* Glass Panel */
+  .glass-panel {
+    background: rgba(255,255,255,0.025);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 16px;
+    padding: 28px 32px;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .glass-panel::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+  }
+  .glass-panel h2 {
+    font-size: 22px; font-weight: 700; margin-bottom: 18px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .glass-panel h2 .icon { font-size: 20px; }
+  .glass-panel h2 .accent { color: var(--primary); }
+  .glass-panel h2 .red { color: var(--neon-red); }
+  .glass-panel h2 .amber { color: var(--neon-amber); }
+  .glass-panel h2 .green { color: var(--neon-green); }
+  .glass-panel h2 .blue { color: var(--neon-blue); }
+
+  /* Priority Sections */
+  .priority-tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 3px 10px; border-radius: 6px;
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+  .priority-tag.critical { background: rgba(239,68,68,0.15); color: var(--neon-red); border: 1px solid rgba(239,68,68,0.25); }
+  .priority-tag.high { background: rgba(245,158,11,0.12); color: var(--neon-amber); border: 1px solid rgba(245,158,11,0.2); }
+  .priority-tag.medium { background: rgba(59,130,246,0.12); color: var(--neon-blue); border: 1px solid rgba(59,130,246,0.2); }
+  .priority-tag.low { background: rgba(82,82,91,0.2); color: var(--text-secondary); border: 1px solid rgba(255,255,255,0.08); }
+
+  /* Issue Cards */
+  .issue-grid { display: grid; gap: 12px; }
+  .issue-card {
+    background: rgba(255,255,255,0.018);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 12px;
+    padding: 18px 20px;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 14px;
+    align-items: start;
+    transition: all 0.25s ease;
+  }
+  .issue-card:hover { border-color: rgba(255,255,255,0.1); background: rgba(255,255,255,0.03); }
+  .issue-card.border-red { border-left: 3px solid var(--neon-red); }
+  .issue-card.border-amber { border-left: 3px solid var(--neon-amber); }
+  .issue-card.border-blue { border-left: 3px solid var(--neon-blue); }
+  .issue-card.border-green { border-left: 3px solid var(--neon-green); }
+  .issue-id {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 12px; font-weight: 700;
+    color: var(--text-muted);
+    min-width: 32px;
+  }
+  .issue-body h4 { font-size: 14px; font-weight: 600; margin-bottom: 4px; color: var(--text-primary); }
+  .issue-body .file {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 11px; color: var(--primary); opacity: 0.8;
+    margin-bottom: 4px;
+  }
+  .issue-body p { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+  .issue-fix {
+    font-size: 11px; color: var(--neon-green); font-weight: 500;
+    background: rgba(34,197,94,0.08);
+    border: 1px solid rgba(34,197,94,0.15);
+    border-radius: 6px;
+    padding: 4px 10px;
+    white-space: nowrap;
+    align-self: center;
+  }
+
+  /* Stats Summary */
+  .stats-row {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px; margin: 24px 0;
+  }
+  .stat-pill {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+    padding: 14px 16px;
+    text-align: center;
+  }
+  .stat-pill .val { font-size: 26px; font-weight: 800; }
+  .stat-pill .val.red { color: var(--neon-red); }
+  .stat-pill .val.amber { color: var(--neon-amber); }
+  .stat-pill .val.blue { color: var(--neon-blue); }
+  .stat-pill .val.green { color: var(--neon-green); }
+  .stat-pill .lbl { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; margin-top: 4px; }
+
+  /* Pattern Cards */
+  .pattern-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+  .pattern-card {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+    padding: 20px;
+    transition: all 0.25s;
+  }
+  .pattern-card:hover { border-color: rgba(139,92,246,0.25); transform: translateY(-2px); }
+  .pattern-card .num { font-size: 32px; font-weight: 800; color: var(--primary); opacity: 0.4; line-height: 1; }
+  .pattern-card h4 { font-size: 14px; font-weight: 600; margin: 6px 0 4px; }
+  .pattern-card p { font-size: 12px; color: var(--text-muted); }
+
+  /* Execution Table */
+  .exec-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .exec-table th {
+    text-align: left; padding: 10px 14px;
+    font-size: 10px; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--text-muted); border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .exec-table td { padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,0.03); color: var(--text-secondary); }
+  .exec-table tr:hover td { background: rgba(255,255,255,0.015); }
+  .exec-table .phase-name { color: var(--text-primary); font-weight: 600; }
+
+  /* Footer */
+  .footer {
+    text-align: center; padding: 44px 0 24px;
+    color: var(--text-muted); font-size: 11px;
+  }
+  .footer .logo {
+    font-size: 15px; font-weight: 700;
+    background: linear-gradient(135deg, var(--primary), var(--neon-blue));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    margin-bottom: 6px;
+  }
+
+  @media (max-width: 768px) {
+    .hero h1 { font-size: 30px; }
+    .scorecard-grid { grid-template-columns: repeat(3, 1fr); }
+    .issue-card { grid-template-columns: 1fr; }
+    .issue-fix { justify-self: start; }
+  }
+</style>
+</head>
+<body>
+<div class="noise"></div>
+<div class="container">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-badge">4-Agent Audit Complete</div>
+    <h1>Optimization Audit</h1>
+    <p class="subtitle">Deep code review, CLI best practices, inefficiency analysis, and TypeScript audit — consolidated across 62 source files</p>
+  </div>
+
+  <!-- Finding Stats -->
+  <div class="stats-row">
+    <div class="stat-pill"><div class="val red">4</div><div class="lbl">Security</div></div>
+    <div class="stat-pill"><div class="val amber">7</div><div class="lbl">Critical Bugs</div></div>
+    <div class="stat-pill"><div class="val blue">6</div><div class="lbl">Type Safety</div></div>
+    <div class="stat-pill"><div class="val blue">6</div><div class="lbl">Deduplication</div></div>
+    <div class="stat-pill"><div class="val green">6</div><div class="lbl">Architecture</div></div>
+    <div class="stat-pill"><div class="val green">4</div><div class="lbl">CLI Polish</div></div>
+    <div class="stat-pill"><div class="val">7</div><div class="lbl">Dead Code</div></div>
+  </div>
+
+  <!-- Scorecard -->
+  <div class="glass-panel">
+    <h2><span class="icon">&#9733;</span> <span class="accent">Scorecard</span></h2>
+    <div class="scorecard-grid">
+      <div class="score-card"><div class="score-grade a">A</div><div class="score-label">Startup Perf</div></div>
+      <div class="score-card"><div class="score-grade b">B+</div><div class="score-label">Command UX</div></div>
+      <div class="score-card"><div class="score-grade c">C+</div><div class="score-label">Completions</div></div>
+      <div class="score-card"><div class="score-grade a">A-</div><div class="score-label">Interactive</div></div>
+      <div class="score-card"><div class="score-grade a">A</div><div class="score-label">Config</div></div>
+      <div class="score-card"><div class="score-grade b">B+</div><div class="score-label">Output</div></div>
+      <div class="score-card"><div class="score-grade num b">72</div><div class="score-label">Type Safety</div></div>
+      <div class="score-card"><div class="score-grade num b">78</div><div class="score-label">ESM</div></div>
+      <div class="score-card"><div class="score-grade num b">75</div><div class="score-label">Modern TS</div></div>
+      <div class="score-card"><div class="score-grade num a">82</div><div class="score-label">Error Types</div></div>
+      <div class="score-card"><div class="score-grade num b">80</div><div class="score-label">Build</div></div>
+    </div>
+  </div>
+
+  <div class="neon-divider red"></div>
+
+  <!-- Priority 1: Security -->
+  <div class="glass-panel">
+    <h2><span class="icon">&#128274;</span> Priority 1: <span class="red">Security</span></h2>
+    <div class="issue-grid">
+      <div class="issue-card border-red">
+        <div class="issue-id">S1</div>
+        <div class="issue-body">
+          <h4>Path Traversal — No Sandbox in File Tools</h4>
+          <div class="file">src/core/tools.ts :619, 634, 646, 667, 887</div>
+          <p><code>resolve(args['path'])</code> with no bounds check. Model can read/write <strong>any file on disk</strong> including ~/.ssh/, /etc/passwd, API keys.</p>
+        </div>
+        <div class="issue-fix">assertWithinCwd()</div>
+      </div>
+      <div class="issue-card border-red">
+        <div class="issue-id">S2</div>
+        <div class="issue-body">
+          <h4>Hook Commands Leak Full process.env</h4>
+          <div class="file">src/hooks/manager.ts :152</div>
+          <p>Spreads <code>...process.env</code> to hook shell scripts — exposes ANTHROPIC_API_KEY, OPENAI_API_KEY, database URLs. A malicious .opta/config.json in any repo can exfiltrate all secrets.</p>
+        </div>
+        <div class="issue-fix">Env allowlist</div>
+      </div>
+      <div class="issue-card border-red">
+        <div class="issue-id">S3</div>
+        <div class="issue-body">
+          <h4>Custom Tool Commands Also Leak process.env</h4>
+          <div class="file">src/tools/custom.ts :95</div>
+          <p>Same <code>...process.env</code> spread pattern. Custom tools from <code>.opta/tools/*.json</code> inherit all env vars. Repo-checked tool definitions can steal credentials.</p>
+        </div>
+        <div class="issue-fix">Env allowlist</div>
+      </div>
+      <div class="issue-card border-red">
+        <div class="issue-id">S4</div>
+        <div class="issue-body">
+          <h4>process.env Cast Drops Undefined Values</h4>
+          <div class="file">src/hooks/manager.ts :153</div>
+          <p><code>process.env as Record&lt;string, string&gt;</code> silently converts undefined vars to string "undefined" in child processes.</p>
+        </div>
+        <div class="issue-fix">Filter undefineds</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="neon-divider amber"></div>
+
+  <!-- Priority 2: Critical Bugs -->
+  <div class="glass-panel">
+    <h2><span class="icon">&#9888;</span> Priority 2: <span class="amber">Critical Bugs</span></h2>
+    <div class="issue-grid">
+      <div class="issue-card border-amber">
+        <div class="issue-id">B1</div>
+        <div class="issue-body">
+          <h4>SIGINT Bypasses All Cleanup</h4>
+          <div class="file">src/index.ts :11-21 + src/core/agent.ts :622 + src/commands/server.ts :187</div>
+          <p>SIGINT calls <code>process.exit(130)</code> before registry.close(), fireSessionEnd(), shutdownProcessManager(). Leaves MCP servers and bg processes as zombies. Server.ts adds a conflicting second handler.</p>
+        </div>
+        <div class="issue-fix">Shared cleanup registry</div>
+      </div>
+      <div class="issue-card border-amber">
+        <div class="issue-id">B2</div>
+        <div class="issue-body">
+          <h4>Sub-Agent Timeout Doesn't Cancel LLM Request</h4>
+          <div class="file">src/core/subagent.ts :353-387</div>
+          <p>Promise.race timeout settles outer promise but inner runLoop() keeps executing — consuming GPU time, potentially mutating filesystem after parent receives "timed out."</p>
+        </div>
+        <div class="issue-fix">AbortController signal</div>
+      </div>
+      <div class="issue-card border-amber">
+        <div class="issue-id">B3</div>
+        <div class="issue-body">
+          <h4>ProcessManager Singleton Replaced by Sub-Agents</h4>
+          <div class="file">src/core/tools.ts :377-378</div>
+          <p>initProcessManager() called unconditionally — sub-agent replaces parent's manager. Parent's bg processes become unreachable (can't check or kill).</p>
+        </div>
+        <div class="issue-fix">Skip for sub-agents</div>
+      </div>
+      <div class="issue-card border-amber">
+        <div class="issue-id">B4</div>
+        <div class="issue-body">
+          <h4>CI Mode Hangs at Circuit Breaker Confirm</h4>
+          <div class="file">src/core/agent.ts :588 + src/commands/do.ts :102</div>
+          <p>confirm() prompt runs when !silent, but silent isn't derived from isCI. In CI without --format json, the loop hangs forever waiting for TTY input.</p>
+        </div>
+        <div class="issue-fix">silent = isCI</div>
+      </div>
+      <div class="issue-card border-amber">
+        <div class="issue-id">B5</div>
+        <div class="issue-body">
+          <h4>Dual Permission Defaults Already Drifting</h4>
+          <div class="file">src/core/config.ts :42-66 vs src/core/tools.ts :493-520</div>
+          <p>Two independent default permission maps. tools.ts includes spawn_agent, delegate_task, read_project_docs — config.ts does not. Permission resolution depends on them matching.</p>
+        </div>
+        <div class="issue-fix">Single source of truth</div>
+      </div>
+      <div class="issue-card border-amber">
+        <div class="issue-id">B6</div>
+        <div class="issue-body">
+          <h4>config set Bypasses Zod Validation</h4>
+          <div class="file">src/commands/config.ts :92</div>
+          <p>Writes directly to store without OptaConfigSchema.parse(). Setting port to "abc" corrupts config — next loadConfig() crashes with opaque Zod error.</p>
+        </div>
+        <div class="issue-fix">Validate before save</div>
+      </div>
+      <div class="issue-card border-amber">
+        <div class="issue-id">B7</div>
+        <div class="issue-body">
+          <h4>LSP Client Buffer Growth Unbounded</h4>
+          <div class="file">src/lsp/client.ts :307-338</div>
+          <p>Malformed Content-Length header causes infinite buffer growth. No max size guard — can consume all available memory in long sessions.</p>
+        </div>
+        <div class="issue-fix">MAX_BUFFER_SIZE 64MB</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="neon-divider"></div>
+
+  <!-- Priority 3: Type Safety -->
+  <div class="glass-panel">
+    <h2><span class="icon">&#128736;</span> Priority 3: <span class="blue">Type Safety & ESM</span></h2>
+    <div class="issue-grid">
+      <div class="issue-card border-blue">
+        <div class="issue-id">T1</div>
+        <div class="issue-body">
+          <h4>createRequire() in ESM — CLAUDE.md Violation</h4>
+          <div class="file">src/core/version.ts :2</div>
+          <p>Uses <code>createRequire(import.meta.url)</code> to load package.json. CLAUDE.md explicitly states "No require() or module.exports."</p>
+        </div>
+        <div class="issue-fix">readFileSync + JSON.parse</div>
+      </div>
+      <div class="issue-card border-blue">
+        <div class="issue-id">T2</div>
+        <div class="issue-body">
+          <h4>Unsafe `as` Casts on JSON.parse Boundaries</h4>
+          <div class="file">src/memory/store.ts :65, 89 + src/lmx/client.ts :144</div>
+          <p><code>JSON.parse(data) as Session</code> — corrupt session files pass type system but crash at runtime. Zod infrastructure exists but isn't used here.</p>
+        </div>
+        <div class="issue-fix">Zod schema validation</div>
+      </div>
+      <div class="issue-card border-blue">
+        <div class="issue-id">T3</div>
+        <div class="issue-body">
+          <h4>DEFAULT_TOOL_PERMISSIONS Too Loosely Typed</h4>
+          <div class="file">src/core/tools.ts :493</div>
+          <p><code>Record&lt;string, string&gt;</code> instead of <code>Record&lt;string, 'allow' | 'ask' | 'deny'&gt;</code>. Forces unsafe <code>as</code> cast downstream.</p>
+        </div>
+        <div class="issue-fix">Literal union type</div>
+      </div>
+      <div class="issue-card border-blue">
+        <div class="issue-id">T4</div>
+        <div class="issue-body">
+          <h4>marked.parse() as string — Potential Promise</h4>
+          <div class="file">src/ui/markdown.ts :58</div>
+          <p>marked.parse() can return Promise&lt;string&gt; with async extensions. Cast suppresses the type error — stdout.write would receive a Promise object.</p>
+        </div>
+        <div class="issue-fix">{ async: false } option</div>
+      </div>
+      <div class="issue-card border-blue">
+        <div class="issue-id">T5</div>
+        <div class="issue-body">
+          <h4>ESLint Missing strict-type-checked Rules</h4>
+          <div class="file">eslint.config.js</div>
+          <p>Only extends recommended. Doesn't catch no-explicit-any, no-unsafe-assignment. Many type issues above would be caught automatically.</p>
+        </div>
+        <div class="issue-fix">Upgrade ESLint rules</div>
+      </div>
+      <div class="issue-card border-blue">
+        <div class="issue-id">T6</div>
+        <div class="issue-body">
+          <h4>process.exit() Inside Agent Loop</h4>
+          <div class="file">src/core/agent.ts :323-331</div>
+          <p>Hard exit when no model configured — bypasses all cleanup (registry, bg processes, session hooks). Callers already handle OptaError.</p>
+        </div>
+        <div class="issue-fix">Throw OptaError instead</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="neon-divider"></div>
+
+  <!-- Parallel Agent Seams -->
+  <div class="glass-panel">
+    <h2><span class="icon">&#128279;</span> Parallel Agent <span class="accent">Seams</span> — Deduplication Needed</h2>
+    <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 18px;">The dominant quality issue: 11 parallel agents built in isolation, creating 6 categories of duplicate implementations.</p>
+    <div class="pattern-grid">
+      <div class="pattern-card">
+        <div class="num">8x</div>
+        <h4>Token Estimation</h4>
+        <p>chars/4 heuristic in agent.ts (2x), subagent.ts, registry.ts, thinking.ts (3x), chat.ts. One version accounts for JSON; others don't.</p>
+      </div>
+      <div class="pattern-card">
+        <div class="num">4x</div>
+        <h4>Token Formatting</h4>
+        <p>n >= 1000 ? (n/1000).toFixed(1)+'K' : String(n) in box.ts, statusbar.ts, Sidebar.tsx, StatusBar.tsx.</p>
+      </div>
+      <div class="pattern-card">
+        <div class="num">2x</div>
+        <h4>Model Metadata</h4>
+        <p>MODEL_PROFILES (regex) vs CONTEXT_LIMIT_TABLE (substring). Different matching = different results for same model.</p>
+      </div>
+      <div class="pattern-card">
+        <div class="num">2x</div>
+        <h4>Config Overrides</h4>
+        <p>Nearly identical buildOverrides code in chat.ts and do.ts. Same git autoCommit pattern repeated verbatim.</p>
+      </div>
+      <div class="pattern-card">
+        <div class="num">4x</div>
+        <h4>"No Model" Error</h4>
+        <p>Four locations with slightly different text and different remediation advice for the same error.</p>
+      </div>
+      <div class="pattern-card">
+        <div class="num">6x</div>
+        <h4>JSON Arg Parsing</h4>
+        <p>JSON.parse of tool arguments in 6 places with slightly different error messages.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="neon-divider"></div>
+
+  <!-- Architecture -->
+  <div class="glass-panel">
+    <h2><span class="icon">&#127959;</span> Architecture <span class="green">Cleanup</span></h2>
+    <div class="issue-grid">
+      <div class="issue-card border-green">
+        <div class="issue-id">A1</div>
+        <div class="issue-body">
+          <h4>handleSlashCommand — 661 Lines</h4>
+          <div class="file">src/commands/chat.ts :296-957</div>
+          <p>Monolithic switch handling 30+ slash commands. Each case has own imports, formatting, error handling. God function pattern.</p>
+        </div>
+        <div class="issue-fix">Extract to modules</div>
+      </div>
+      <div class="issue-card border-green">
+        <div class="issue-id">A2</div>
+        <div class="issue-body">
+          <h4>tools.ts — 1088 Lines, 4 Concerns</h4>
+          <div class="file">src/core/tools.ts</div>
+          <p>Mixes schemas, permissions, executors, and background process management. Should be split into focused modules.</p>
+        </div>
+        <div class="issue-fix">Split into 4 files</div>
+      </div>
+      <div class="issue-card border-green">
+        <div class="issue-id">A3</div>
+        <div class="issue-body">
+          <h4>Agent Profiles — Non-Functional Dead Code</h4>
+          <div class="file">src/core/agent-profiles.ts + src/commands/chat.ts :880</div>
+          <p>/agent command lets users switch profiles but the value is never read by agent loop or registry. Users see confirmation but nothing changes.</p>
+        </div>
+        <div class="issue-fix">Wire or remove</div>
+      </div>
+      <div class="issue-card border-green">
+        <div class="issue-id">A4</div>
+        <div class="issue-body">
+          <h4>fireError — Hook Event Never Fires</h4>
+          <div class="file">src/core/agent.ts :20</div>
+          <p>Imported but never called. Users configuring error hooks get silent no-ops.</p>
+        </div>
+        <div class="issue-fix">Wire into catch blocks</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="neon-divider"></div>
+
+  <!-- CLI Polish -->
+  <div class="glass-panel">
+    <h2><span class="icon">&#10024;</span> CLI <span class="accent">Polish</span></h2>
+    <div class="issue-grid">
+      <div class="issue-card border-blue">
+        <div class="issue-id">P1</div>
+        <div class="issue-body">
+          <h4>Shell Completions — Missing Commands & Flags</h4>
+          <div class="file">src/commands/completions.ts</div>
+          <p>Missing: init, diff, server commands. Missing: --format, --no-commit, --tui, --dangerous, --yolo flags. mcp add/remove/test subcommands absent from all 3 shells.</p>
+        </div>
+        <div class="issue-fix">Regenerate all 3</div>
+      </div>
+      <div class="issue-card border-blue">
+        <div class="issue-id">P2</div>
+        <div class="issue-body">
+          <h4>No --help Examples on Any Command</h4>
+          <div class="file">src/index.ts</div>
+          <p>No .addHelpText('after', ...) anywhere. Users see flag descriptions but no usage examples like <code>opta do "fix the auth bug"</code>.</p>
+        </div>
+        <div class="issue-fix">Add examples</div>
+      </div>
+      <div class="issue-card border-blue">
+        <div class="issue-id">P3</div>
+        <div class="issue-body">
+          <h4>config list Missing --json Flag</h4>
+          <div class="file">src/index.ts :99-108</div>
+          <p>status, models, sessions all support --json. config list does not. Breaks scripting consistency.</p>
+        </div>
+        <div class="issue-fix">Add --json option</div>
+      </div>
+      <div class="issue-card border-blue">
+        <div class="issue-id">P4</div>
+        <div class="issue-body">
+          <h4>FORCE_COLOR Not Handled</h4>
+          <div class="file">src/ui/output.ts :4</div>
+          <p>FORCE_COLOR=1 should re-enable colors when piping to less -R. Chalk handles it internally but isCI still affects spinners and markdown rendering.</p>
+        </div>
+        <div class="issue-fix">Check FORCE_COLOR env</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="neon-divider"></div>
+
+  <!-- Execution Plan -->
+  <div class="glass-panel">
+    <h2><span class="icon">&#9654;</span> Execution <span class="accent">Plan</span></h2>
+    <table class="exec-table">
+      <thead>
+        <tr><th>Phase</th><th>Items</th><th>Est.</th><th>Risk</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="phase-name">1. Security</span></td>
+          <td>S1-S4 (path traversal, env leaks)</td>
+          <td>1h</td>
+          <td><span class="priority-tag critical">Exploitable</span></td>
+        </tr>
+        <tr>
+          <td><span class="phase-name">2. Critical Bugs</span></td>
+          <td>B1-B7 (SIGINT, timeout, CI hang, validation)</td>
+          <td>3h</td>
+          <td><span class="priority-tag high">Data loss / hangs</span></td>
+        </tr>
+        <tr>
+          <td><span class="phase-name">3. Type Safety</span></td>
+          <td>T1-T6 (ESM, casts, ESLint strict)</td>
+          <td>2h</td>
+          <td><span class="priority-tag medium">Future bugs</span></td>
+        </tr>
+        <tr>
+          <td><span class="phase-name">4. Deduplication</span></td>
+          <td>D1-D6 (tokens, models, config, errors, JSON)</td>
+          <td>2h</td>
+          <td><span class="priority-tag medium">Maintenance debt</span></td>
+        </tr>
+        <tr>
+          <td><span class="phase-name">5. Architecture</span></td>
+          <td>A1-A4 (slash commands, tools split, profiles)</td>
+          <td>4h</td>
+          <td><span class="priority-tag low">Readability</span></td>
+        </tr>
+        <tr>
+          <td><span class="phase-name">6. CLI Polish</span></td>
+          <td>P1-P4 (completions, help, json, colors)</td>
+          <td>1.5h</td>
+          <td><span class="priority-tag low">UX improvement</span></td>
+        </tr>
+        <tr>
+          <td><span class="phase-name">7. Dead Code</span></td>
+          <td>7 items (die(), stubs, unused imports)</td>
+          <td>30m</td>
+          <td><span class="priority-tag low">Cleanup</span></td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="text-align: center; margin-top: 20px; color: var(--text-muted); font-size: 12px;">
+      Total: ~14 hours across 7 phases &bull; 40 actionable items &bull; 62 files scanned
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <div class="logo">OPTA CLI AUDIT</div>
+    <p>v0.4.0-alpha.1 &bull; 4 review agents &bull; 62 source files &bull; 595 tests</p>
+    <p style="margin-top: 6px;">Generated 2026-02-17 &bull; Skills: cli-developer, feature-dev:code-reviewer, atpo-code-analyzer, typescript-pro</p>
+  </div>
+
+</div>
+</body>
+</html>

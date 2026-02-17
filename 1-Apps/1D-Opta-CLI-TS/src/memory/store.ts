@@ -18,6 +18,7 @@ export interface Session {
   model: string;
   cwd: string;
   title: string;
+  tags: string[];
   messages: AgentMessage[];
   toolCallCount: number;
   compacted: boolean;
@@ -52,6 +53,7 @@ const SessionSchema = z.object({
   model: z.string(),
   cwd: z.string(),
   title: z.string(),
+  tags: z.array(z.string()).default([]),
   messages: z.array(AgentMessageSchema),
   toolCallCount: z.number(),
   compacted: z.boolean(),
@@ -71,6 +73,7 @@ function parseSession(data: string): Session | null {
 export interface SessionSummary {
   id: string;
   title: string;
+  tags: string[];
   model: string;
   created: string;
   messageCount: number;
@@ -98,6 +101,7 @@ export async function createSession(model: string): Promise<Session> {
     model,
     cwd: process.cwd(),
     title: '',
+    tags: [],
     messages: [],
     toolCallCount: 0,
     compacted: false,
@@ -141,6 +145,7 @@ export async function listSessions(): Promise<SessionSummary[]> {
       summaries.push({
         id: session.id,
         title: session.title || '(untitled)',
+        tags: session.tags ?? [],
         model: session.model,
         created: session.created,
         messageCount: session.messages.filter((m) => m.role !== 'system').length,
@@ -194,6 +199,10 @@ export async function searchSessions(query: string): Promise<SessionSummary[]> {
       score += 40;
     }
 
+    // Tag match
+    const tagMatch = session.tags?.some(t => t.toLowerCase().includes(q));
+    if (tagMatch) score += 60;
+
     // Model match
     if (session.model.toLowerCase().includes(q)) {
       score += 20;
@@ -201,7 +210,8 @@ export async function searchSessions(query: string): Promise<SessionSummary[]> {
 
     // Word-level fuzzy: check if all query words appear somewhere
     const queryWords = q.split(/\s+/);
-    const haystack = `${session.id} ${session.title} ${session.model}`.toLowerCase();
+    const tagStr = (session.tags ?? []).join(' ');
+    const haystack = `${session.id} ${session.title} ${session.model} ${tagStr}`.toLowerCase();
     const allWordsMatch = queryWords.every(w => haystack.includes(w));
     if (allWordsMatch && queryWords.length > 1) {
       score += 30;
@@ -214,6 +224,26 @@ export async function searchSessions(query: string): Promise<SessionSummary[]> {
     .filter(s => s.score > 0)
     .sort((a, b) => b.score - a.score)
     .map(s => s.session);
+}
+
+// --- Tag & Rename ---
+
+export async function tagSession(id: string, tags: string[]): Promise<void> {
+  const session = await loadSession(id);
+  session.tags = [...new Set([...session.tags, ...tags])];
+  await saveSession(session);
+}
+
+export async function untagSession(id: string, tags: string[]): Promise<void> {
+  const session = await loadSession(id);
+  session.tags = session.tags.filter(t => !tags.includes(t));
+  await saveSession(session);
+}
+
+export async function renameSession(id: string, title: string): Promise<void> {
+  const session = await loadSession(id);
+  session.title = title;
+  await saveSession(session);
 }
 
 // --- Helpers ---

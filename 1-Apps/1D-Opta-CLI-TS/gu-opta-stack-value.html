@@ -1,0 +1,1287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Opta CLI + LMX — Own the Stack</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@200;300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600&display=swap');
+
+  :root {
+    --void: #09090b;
+    --surface: #131316;
+    --elevated: #1c1c21;
+    --border: rgba(255,255,255,0.07);
+    --text-primary: #e8e8ed;
+    --text-secondary: #8b8b96;
+    --text-muted: #4a4a55;
+    --violet: #8b5cf6;
+    --violet-glow: #a78bfa;
+    --cyan: #22d3ee;
+    --cyan-dim: #0891b2;
+    --emerald: #34d399;
+    --emerald-dim: #059669;
+    --amber: #fbbf24;
+    --rose: #fb7185;
+    --serif: 'Instrument Serif', Georgia, serif;
+    --sans: 'Outfit', -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', 'SF Mono', monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--void);
+    color: var(--text-primary);
+    font-family: var(--sans);
+    line-height: 1.6;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* === NOISE + SCANLINE OVERLAY === */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.008) 2px, rgba(255,255,255,0.008) 4px),
+      url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 10000;
+  }
+
+  /* === AMBIENT GRADIENT MESH === */
+  .gradient-mesh {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: -1;
+    overflow: hidden;
+  }
+  .gradient-mesh .orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(120px);
+    opacity: 0.08;
+    animation: drift 30s ease-in-out infinite alternate;
+  }
+  .gradient-mesh .orb:nth-child(1) {
+    width: 600px; height: 600px;
+    background: var(--violet);
+    top: -10%; left: -5%;
+    animation-delay: 0s;
+  }
+  .gradient-mesh .orb:nth-child(2) {
+    width: 500px; height: 500px;
+    background: var(--cyan);
+    top: 30%; right: -10%;
+    animation-delay: -10s;
+    animation-duration: 25s;
+  }
+  .gradient-mesh .orb:nth-child(3) {
+    width: 400px; height: 400px;
+    background: var(--emerald);
+    bottom: 10%; left: 20%;
+    animation-delay: -20s;
+    animation-duration: 35s;
+  }
+  @keyframes drift {
+    0% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(50px, -30px) scale(1.1); }
+    66% { transform: translate(-30px, 50px) scale(0.95); }
+    100% { transform: translate(20px, 20px) scale(1.05); }
+  }
+
+  /* === SCROLL REVEAL === */
+  .reveal {
+    opacity: 0;
+    transform: translateY(32px);
+    transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .reveal-delay-1 { transition-delay: 0.1s; }
+  .reveal-delay-2 { transition-delay: 0.2s; }
+  .reveal-delay-3 { transition-delay: 0.3s; }
+  .reveal-delay-4 { transition-delay: 0.4s; }
+
+  /* === LAYOUT === */
+  .page { max-width: 1280px; margin: 0 auto; padding: 0 32px; }
+  .wide { max-width: 1440px; margin: 0 auto; padding: 0 32px; }
+
+  /* === HERO === */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+    padding: 80px 0;
+  }
+  .hero-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--violet-glow);
+    margin-bottom: 24px;
+    opacity: 0;
+    animation: fadeSlideUp 0.8s 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  .hero h1 {
+    font-family: var(--serif);
+    font-size: clamp(48px, 8vw, 112px);
+    font-weight: 400;
+    line-height: 0.95;
+    color: var(--text-primary);
+    margin-bottom: 32px;
+    opacity: 0;
+    animation: fadeSlideUp 0.8s 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  .hero h1 em {
+    font-style: italic;
+    background: linear-gradient(135deg, var(--violet-glow), var(--cyan));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .hero-sub {
+    font-size: 18px;
+    font-weight: 300;
+    color: var(--text-secondary);
+    max-width: 560px;
+    line-height: 1.7;
+    opacity: 0;
+    animation: fadeSlideUp 0.8s 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  .hero-rule {
+    width: 80px;
+    height: 1px;
+    background: linear-gradient(90deg, var(--violet), transparent);
+    margin: 40px 0;
+    opacity: 0;
+    animation: fadeSlideUp 0.8s 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  .hero-stats {
+    display: flex;
+    gap: 48px;
+    flex-wrap: wrap;
+    opacity: 0;
+    animation: fadeSlideUp 0.8s 1.1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  .hero-stat-num {
+    font-family: var(--mono);
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--text-primary);
+    display: block;
+  }
+  .hero-stat-num.green { color: var(--emerald); }
+  .hero-stat-num.violet { color: var(--violet-glow); }
+  .hero-stat-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+    margin-top: 2px;
+  }
+
+  @keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* === SECTION DIVIDERS === */
+  .section-break {
+    padding: 120px 0 80px;
+    position: relative;
+  }
+  .section-break::before {
+    content: '';
+    position: absolute;
+    top: 60px;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border), transparent);
+  }
+  .section-num {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 2px;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+    display: block;
+  }
+  .section-title {
+    font-family: var(--serif);
+    font-size: clamp(32px, 4vw, 56px);
+    font-weight: 400;
+    line-height: 1.1;
+    color: var(--text-primary);
+    max-width: 700px;
+  }
+  .section-title em {
+    font-style: italic;
+    color: var(--violet-glow);
+  }
+
+  /* === EDITORIAL PULL QUOTE === */
+  .pull-quote {
+    font-family: var(--serif);
+    font-size: clamp(24px, 3vw, 40px);
+    font-style: italic;
+    line-height: 1.4;
+    color: var(--text-secondary);
+    max-width: 800px;
+    padding: 40px 0;
+    border-left: 2px solid var(--violet);
+    padding-left: 32px;
+    margin: 48px 0;
+  }
+  .pull-quote strong {
+    color: var(--text-primary);
+    font-weight: 400;
+  }
+
+  /* === ASYMMETRIC TWO-COL === */
+  .split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 64px;
+    align-items: start;
+  }
+  .split-wide {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 64px;
+    align-items: start;
+  }
+  .split-reverse {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 64px;
+    align-items: start;
+  }
+  @media (max-width: 900px) {
+    .split, .split-wide, .split-reverse {
+      grid-template-columns: 1fr;
+      gap: 32px;
+    }
+  }
+
+  /* === COST COMPARISON (Editorial) === */
+  .cost-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .cost-row {
+    display: grid;
+    grid-template-columns: 200px 1fr 120px;
+    align-items: center;
+    padding: 16px 20px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid transparent;
+    transition: all 0.3s ease;
+  }
+  .cost-row:hover {
+    background: rgba(255,255,255,0.04);
+    border-color: var(--border);
+  }
+  .cost-row:first-child { border-radius: 12px 12px 0 0; }
+  .cost-row:last-child { border-radius: 0 0 12px 12px; }
+  .cost-row.highlight {
+    background: rgba(52,211,153,0.04);
+    border-color: rgba(52,211,153,0.15);
+  }
+  .cost-name {
+    font-weight: 500;
+    font-size: 14px;
+    color: var(--text-primary);
+  }
+  .cost-bar-track {
+    height: 4px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .cost-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 1.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .cost-bar-fill.red { background: linear-gradient(90deg, var(--rose), #f43f5e); }
+  .cost-bar-fill.green { background: linear-gradient(90deg, var(--emerald), #10b981); }
+  .cost-price {
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 500;
+    text-align: right;
+  }
+  .cost-price.free { color: var(--emerald); }
+  .cost-price.paid { color: var(--rose); }
+
+  /* === TELEMETRY DASHBOARD (LMX Improvements) === */
+  .telemetry {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    position: relative;
+  }
+  .telemetry::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+  }
+  .telemetry-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  .telemetry-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .telemetry-live {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--emerald);
+  }
+  .telemetry-live::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--emerald);
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; box-shadow: 0 0 4px var(--emerald); }
+    50% { opacity: 0.4; box-shadow: 0 0 8px var(--emerald); }
+  }
+  .telemetry-body { padding: 24px; }
+  .telemetry-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+  }
+  .telem-card {
+    padding: 16px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    transition: all 0.3s ease;
+  }
+  .telem-card:hover {
+    border-color: rgba(139,92,246,0.3);
+    background: rgba(139,92,246,0.03);
+  }
+  .telem-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+  .telem-value {
+    font-family: var(--mono);
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+  .telem-value.green { color: var(--emerald); }
+  .telem-value.violet { color: var(--violet-glow); }
+  .telem-value.cyan { color: var(--cyan); }
+  .telem-delta {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--emerald);
+    margin-top: 4px;
+  }
+
+  /* === IMPROVEMENT STRIP === */
+  .improvement-strip {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    background: var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .imp-row {
+    display: grid;
+    grid-template-columns: 40px 1fr 120px 100px;
+    align-items: center;
+    padding: 14px 20px;
+    background: var(--surface);
+    gap: 16px;
+    transition: all 0.2s ease;
+  }
+  .imp-row:hover { background: var(--elevated); }
+  .imp-num {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 400;
+  }
+  .imp-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+  .imp-name span {
+    color: var(--text-muted);
+    font-weight: 300;
+    margin-left: 8px;
+    font-size: 12px;
+  }
+  .imp-impact {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 500;
+    text-align: right;
+  }
+  .imp-impact.green { color: var(--emerald); }
+  .imp-impact.cyan { color: var(--cyan); }
+  .imp-impact.amber { color: var(--amber); }
+  .imp-badge {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 4px;
+    text-align: center;
+    white-space: nowrap;
+  }
+  .imp-badge.done { background: rgba(52,211,153,0.1); color: var(--emerald); }
+  .imp-badge.planned { background: rgba(34,211,238,0.1); color: var(--cyan); }
+
+  /* === FEATURE MOSAIC === */
+  .mosaic {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+    background: var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  @media (max-width: 900px) { .mosaic { grid-template-columns: 1fr; } }
+  .mosaic-cell {
+    padding: 32px 28px;
+    background: var(--surface);
+    transition: all 0.3s ease;
+    position: relative;
+  }
+  .mosaic-cell:hover { background: var(--elevated); }
+  .mosaic-cell.span-2 { grid-column: span 2; }
+  @media (max-width: 900px) { .mosaic-cell.span-2 { grid-column: span 1; } }
+  .mosaic-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+  }
+  .mosaic-tag.unique { color: var(--violet-glow); background: rgba(139,92,246,0.1); }
+  .mosaic-tag.lead { color: var(--emerald); background: rgba(52,211,153,0.1); }
+  .mosaic-tag.new { color: var(--cyan); background: rgba(34,211,238,0.1); }
+  .mosaic-cell h3 {
+    font-family: var(--serif);
+    font-size: 20px;
+    font-weight: 400;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    line-height: 1.3;
+  }
+  .mosaic-cell p {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  /* === GAP ASSESSMENT === */
+  .gap-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .gap-item {
+    display: grid;
+    grid-template-columns: 24px 1fr auto;
+    gap: 12px;
+    align-items: start;
+    padding: 16px;
+    border: 1px solid rgba(251,113,133,0.1);
+    border-radius: 10px;
+    background: rgba(251,113,133,0.02);
+    transition: all 0.3s ease;
+  }
+  .gap-item:hover { border-color: rgba(251,113,133,0.2); }
+  .gap-x {
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--rose);
+    font-weight: 600;
+    line-height: 1.4;
+  }
+  .gap-text {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+  .gap-text strong { color: var(--text-primary); font-weight: 500; }
+  .gap-leader {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    padding-top: 2px;
+  }
+
+  /* === SCENARIO VERDICT === */
+  .verdict-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 16px;
+  }
+  .verdict-card {
+    padding: 24px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .verdict-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+  }
+  .verdict-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 2px;
+  }
+  .verdict-card.opta::after { background: linear-gradient(90deg, var(--emerald), var(--cyan)); }
+  .verdict-card.comp::after { background: linear-gradient(90deg, var(--amber), var(--rose)); }
+  .verdict-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .verdict-tag.opta { color: var(--emerald); }
+  .verdict-tag.comp { color: var(--amber); }
+  .verdict-card h4 {
+    font-family: var(--serif);
+    font-size: 18px;
+    font-weight: 400;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+  }
+  .verdict-card p {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  /* === LARGE METRIC CALLOUT === */
+  .mega-metric {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    padding: 40px 0;
+  }
+  .mega-num {
+    font-family: var(--mono);
+    font-size: clamp(48px, 6vw, 80px);
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -2px;
+  }
+  .mega-num.green { color: var(--emerald); text-shadow: 0 0 60px rgba(52,211,153,0.2); }
+  .mega-num.violet { color: var(--violet-glow); text-shadow: 0 0 60px rgba(139,92,246,0.2); }
+  .mega-label {
+    font-size: 16px;
+    font-weight: 300;
+    color: var(--text-secondary);
+    max-width: 300px;
+    line-height: 1.4;
+  }
+
+  /* === REVENUE COLUMNS === */
+  .revenue-cols {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+    background: var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  @media (max-width: 900px) { .revenue-cols { grid-template-columns: 1fr; } }
+  .revenue-col {
+    background: var(--surface);
+    padding: 32px 28px;
+    position: relative;
+  }
+  .revenue-col::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 28px; right: 28px;
+    height: 2px;
+    border-radius: 0 0 2px 2px;
+  }
+  .revenue-col:nth-child(1)::before { background: var(--emerald); }
+  .revenue-col:nth-child(2)::before { background: var(--violet); }
+  .revenue-col:nth-child(3)::before { background: var(--cyan); }
+  .revenue-letter {
+    font-family: var(--serif);
+    font-size: 36px;
+    font-style: italic;
+    margin-bottom: 8px;
+  }
+  .revenue-col:nth-child(1) .revenue-letter { color: var(--emerald); }
+  .revenue-col:nth-child(2) .revenue-letter { color: var(--violet-glow); }
+  .revenue-col:nth-child(3) .revenue-letter { color: var(--cyan); }
+  .revenue-col h3 {
+    font-family: var(--serif);
+    font-size: 18px;
+    font-weight: 400;
+    color: var(--text-primary);
+    margin-bottom: 16px;
+  }
+  .revenue-col ul {
+    list-style: none;
+  }
+  .revenue-col li {
+    font-size: 13px;
+    color: var(--text-secondary);
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+  }
+  .revenue-col li::before {
+    content: '\2192';
+    color: var(--text-muted);
+    font-size: 11px;
+    flex-shrink: 0;
+  }
+
+  /* === BOTTOM LINE === */
+  .bottom-line {
+    padding: 80px 0 120px;
+    text-align: center;
+  }
+  .bottom-line h2 {
+    font-family: var(--serif);
+    font-size: clamp(28px, 3.5vw, 48px);
+    font-weight: 400;
+    line-height: 1.3;
+    color: var(--text-primary);
+    max-width: 800px;
+    margin: 0 auto 40px;
+  }
+  .bottom-line h2 em {
+    font-style: italic;
+    background: linear-gradient(135deg, var(--emerald), var(--cyan));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .bottom-stats {
+    display: flex;
+    justify-content: center;
+    gap: 48px;
+    flex-wrap: wrap;
+  }
+  .bottom-stat {
+    text-align: center;
+  }
+  .bottom-stat .num {
+    font-family: var(--mono);
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--text-primary);
+    display: block;
+  }
+  .bottom-stat .num.green { color: var(--emerald); }
+  .bottom-stat .num.violet { color: var(--violet-glow); }
+  .bottom-stat .lbl {
+    font-size: 12px;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+    margin-top: 4px;
+  }
+
+  /* === FOOTER === */
+  .footer {
+    padding: 40px 0 60px;
+    text-align: center;
+    border-top: 1px solid var(--border);
+  }
+  .footer-brand {
+    font-family: var(--serif);
+    font-size: 18px;
+    font-style: italic;
+    color: var(--violet-glow);
+    margin-bottom: 6px;
+  }
+  .footer-sub {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+  }
+
+  /* === RESPONSIVE === */
+  @media (max-width: 768px) {
+    .page { padding: 0 20px; }
+    .hero { min-height: auto; padding: 60px 0; }
+    .hero-stats { gap: 24px; }
+    .section-break { padding: 80px 0 60px; }
+    .cost-row { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .cost-bar-track { display: none; }
+    .imp-row { grid-template-columns: 30px 1fr auto; }
+    .imp-impact { display: none; }
+    .mega-metric { flex-direction: column; gap: 4px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="gradient-mesh">
+  <div class="orb"></div>
+  <div class="orb"></div>
+  <div class="orb"></div>
+</div>
+
+<!-- ============================================================ -->
+<!-- HERO -->
+<!-- ============================================================ -->
+<div class="page">
+  <section class="hero">
+    <div class="hero-eyebrow">Opta Operations &mdash; Strategic Value Analysis</div>
+    <h1>Own the<br><em>entire stack.</em></h1>
+    <p class="hero-sub">Opta CLI and Opta LMX give you a vertically integrated AI infrastructure that no subscription can match. Every inference is free. Every byte stays on your LAN. Every bot runs autonomously.</p>
+    <div class="hero-rule"></div>
+    <div class="hero-stats">
+      <div>
+        <span class="hero-stat-num green">$0/mo</span>
+        <div class="hero-stat-label">Inference cost</div>
+      </div>
+      <div>
+        <span class="hero-stat-num">512 GB</span>
+        <div class="hero-stat-label">Unified memory</div>
+      </div>
+      <div>
+        <span class="hero-stat-num violet">15</span>
+        <div class="hero-stat-label">Optimisations shipped</div>
+      </div>
+      <div>
+        <span class="hero-stat-num">348</span>
+        <div class="hero-stat-label">Tests passing (LMX)</div>
+      </div>
+      <div>
+        <span class="hero-stat-num">28</span>
+        <div class="hero-stat-label">API endpoints</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- 01 — THE COST ARGUMENT -->
+  <!-- ============================================================ -->
+  <section class="section-break reveal">
+    <span class="section-num">01 &mdash; The cost argument</span>
+    <h2 class="section-title">Every competitor charges rent.<br>You own the <em>building.</em></h2>
+  </section>
+
+  <div class="split reveal">
+    <div>
+      <p class="pull-quote" style="margin-top:0;">
+        Six bots running 9,000 requests a month. On cloud APIs, that's <strong>$432 AUD/month.</strong> On your LMX, it's <strong>nothing.</strong>
+      </p>
+      <div class="mega-metric">
+        <span class="mega-num green">$5,184+</span>
+        <span class="mega-label">AUD saved per year vs. equivalent cloud API usage</span>
+      </div>
+    </div>
+    <div>
+      <div class="cost-stack">
+        <div class="cost-row highlight">
+          <div class="cost-name" style="color:var(--emerald)">Opta CLI + LMX</div>
+          <div class="cost-bar-track"><div class="cost-bar-fill green" style="width:2%"></div></div>
+          <div class="cost-price free">$0/mo</div>
+        </div>
+        <div class="cost-row">
+          <div class="cost-name">Claude Code Pro</div>
+          <div class="cost-bar-track"><div class="cost-bar-fill red" style="width:20%"></div></div>
+          <div class="cost-price paid">$32/mo</div>
+        </div>
+        <div class="cost-row">
+          <div class="cost-name">Cursor + Copilot</div>
+          <div class="cost-bar-track"><div class="cost-bar-fill red" style="width:40%"></div></div>
+          <div class="cost-price paid">$100/mo</div>
+        </div>
+        <div class="cost-row">
+          <div class="cost-name">Claude Code Max</div>
+          <div class="cost-bar-track"><div class="cost-bar-fill red" style="width:55%"></div></div>
+          <div class="cost-price paid">$160/mo</div>
+        </div>
+        <div class="cost-row">
+          <div class="cost-name">OpenAI API (6 bots)</div>
+          <div class="cost-bar-track"><div class="cost-bar-fill red" style="width:85%"></div></div>
+          <div class="cost-price paid">$432+/mo</div>
+        </div>
+        <div class="cost-row">
+          <div class="cost-name">Aider + Claude API</div>
+          <div class="cost-bar-track"><div class="cost-bar-fill red" style="width:100%"></div></div>
+          <div class="cost-price paid">$480+/mo</div>
+        </div>
+      </div>
+      <p style="font-size:12px;color:var(--text-muted);margin-top:12px;font-family:var(--mono);">All prices AUD. Cloud costs estimated at ~$0.03/request average.</p>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- 02 — WHAT MAKES IT UNIQUE -->
+  <!-- ============================================================ -->
+  <section class="section-break reveal">
+    <span class="section-num">02 &mdash; What makes it unique</span>
+    <h2 class="section-title">Six capabilities no<br>competitor <em>offers.</em></h2>
+  </section>
+
+  <div class="mosaic reveal">
+    <div class="mosaic-cell span-2">
+      <div class="mosaic-tag unique">Unique to Opta</div>
+      <h3>Autonomous Bot Model Management</h3>
+      <p>Six OpenClaw bots load, unload, and swap models via the Admin API without human intervention. The smart router auto-picks the best model per task: code tasks route to Qwen-Coder, reasoning to DeepSeek-R1, chat to Llama. Every competitor shows "not available" for features #29, #30, and #32 in the competitive matrix.</p>
+    </div>
+    <div class="mosaic-cell">
+      <div class="mosaic-tag lead">Opta Leads</div>
+      <h3>Total Data Privacy</h3>
+      <p>Code never leaves 192.168.188.0/24. No cloud logging. No third-party training. For NDA work, this is non-negotiable.</p>
+    </div>
+    <div class="mosaic-cell">
+      <div class="mosaic-tag unique">Unique to Opta</div>
+      <h3>Model Hot-Swap via API</h3>
+      <p>POST /admin/models/load. New SOTA model drops on HuggingFace? Running it in minutes, not waiting for a provider.</p>
+    </div>
+    <div class="mosaic-cell">
+      <div class="mosaic-tag new">New &mdash; v0.4.0</div>
+      <h3>Three API Formats</h3>
+      <p>OpenAI + Anthropic + WebSocket. Only LocalAI matches two of three. No competitor supports all three.</p>
+    </div>
+    <div class="mosaic-cell">
+      <div class="mosaic-tag lead">Opta Leads</div>
+      <h3>OPIS Project Intelligence</h3>
+      <p>8-18 structured project files teach the model your codebase. Competitors use one CLAUDE.md. OPIS gives deeper, structured awareness.</p>
+    </div>
+    <div class="mosaic-cell span-2">
+      <div class="mosaic-tag unique">Unique to Opta</div>
+      <h3>Compound Ecosystem Value</h3>
+      <p>CLI + LMX + OpenClaw + OptaPlus + Marketing App = vertically integrated AI business stack. One inference engine powers coding, automation, content generation, and market intelligence. Zero per-query cost across all applications. The more bots and apps you add, the wider the cost gap.</p>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- 03 — LMX PERFORMANCE ENGINEERING -->
+  <!-- ============================================================ -->
+  <section class="section-break reveal">
+    <span class="section-num">03 &mdash; Performance engineering</span>
+    <h2 class="section-title">15 optimisations shipped<br>in <em>four days.</em></h2>
+  </section>
+
+  <div class="reveal">
+    <div class="telemetry">
+      <div class="telemetry-header">
+        <span class="telemetry-title">LMX Telemetry &mdash; Opta-LMX v0.4.0</span>
+        <span class="telemetry-live">Operational</span>
+      </div>
+      <div class="telemetry-body">
+        <div class="telemetry-grid">
+          <div class="telem-card">
+            <div class="telem-label">OOM Risk</div>
+            <div class="telem-value green">&darr; 95%</div>
+            <div class="telem-delta">Semaphore + memory monitoring</div>
+          </div>
+          <div class="telem-card">
+            <div class="telem-label">First Token Latency</div>
+            <div class="telem-value cyan">~400ms</div>
+            <div class="telem-delta">&darr; 65% from 1200ms (warmup)</div>
+          </div>
+          <div class="telem-card">
+            <div class="telem-label">Token Throughput</div>
+            <div class="telem-value violet">+40&ndash;80%</div>
+            <div class="telem-delta">Speculative decoding</div>
+          </div>
+          <div class="telem-card">
+            <div class="telem-label">KV Memory Usage</div>
+            <div class="telem-value green">&darr; 75%</div>
+            <div class="telem-delta">4-bit quantization (8GB &rarr; 2GB)</div>
+          </div>
+          <div class="telem-card">
+            <div class="telem-label">Deadlock Risk</div>
+            <div class="telem-value green">&darr; 100%</div>
+            <div class="telem-delta">Inference timeout (300s)</div>
+          </div>
+          <div class="telem-card">
+            <div class="telem-label">Prometheus Gauges</div>
+            <div class="telem-value">14+</div>
+            <div class="telem-delta">Live counters, histograms, gauges</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="height:32px"></div>
+
+  <div class="reveal">
+    <div class="improvement-strip">
+      <div class="imp-row" style="background:var(--elevated);">
+        <div class="imp-num" style="color:var(--text-muted);">#</div>
+        <div class="imp-name" style="font-size:11px;font-family:var(--mono);color:var(--text-muted);font-weight:400;letter-spacing:1px;text-transform:uppercase;">Improvement</div>
+        <div class="imp-impact" style="font-size:11px;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;">Impact</div>
+        <div class="imp-badge" style="font-size:11px;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;background:none;padding:0;">Status</div>
+      </div>
+      <div class="imp-row">
+        <div class="imp-num">01</div>
+        <div class="imp-name">Concurrent Request Semaphore <span>max 4 parallel</span></div>
+        <div class="imp-impact green">OOM &darr;95%</div>
+        <div class="imp-badge done">Done</div>
+      </div>
+      <div class="imp-row">
+        <div class="imp-num">02</div>
+        <div class="imp-name">Inference Timeout <span>300s configurable</span></div>
+        <div class="imp-impact green">Deadlock &darr;100%</div>
+        <div class="imp-badge done">Done</div>
+      </div>
+      <div class="imp-row">
+        <div class="imp-num">03</div>
+        <div class="imp-name">Model Warmup on Load <span>Metal shader JIT</span></div>
+        <div class="imp-impact green">TTFT &darr;65%</div>
+        <div class="imp-badge done">Done</div>
+      </div>
+      <div class="imp-row">
+        <div class="imp-num">04</div>
+        <div class="imp-name">Graceful Shutdown Drain <span>30s in-flight wait</span></div>
+        <div class="imp-impact green">Aborts &darr;100%</div>
+        <div class="imp-badge done">Done</div>
+      </div>
+      <div class="imp-row">
+        <div class="imp-num">05</div>
+        <div class="imp-name">DI Consistency <span>28 endpoints unified</span></div>
+        <div class="imp-impact green">100% DI</div>
+        <div class="imp-badge done">Done</div>
+      </div>
+      <div class="imp-row">
+        <div class="imp-num">06</div>
+        <div class="imp-name">Embedding Model in /v1/models <span>SDK compat fix</span></div>
+        <div class="imp-impact green">Fixed</div>
+        <div class="imp-badge done">Done</div>
+      </div>
+      <div class="imp-row">
+        <div class="imp-num">07</div>
+        <div class="imp-name">Prometheus Live System Gauges <span>6 live + 7 counters</span></div>
+        <div class="imp-impact green">Monitor +200%</div>
+        <div class="imp-badge done">Done</div>
+      </div>
+      <div class="imp-row">
+        <div class="imp-num">08</div>
+        <div class="imp-name">TTL Auto-Unload <span>idle models after 1h</span></div>
+        <div class="imp-impact green">Auto recovery</div>
+        <div class="imp-badge done">Done</div>
+      </div>
+      <div class="imp-row">
+        <div class="imp-num">09</div>
+        <div class="imp-name">Speculative Decoding <span>draft model + verify</span></div>
+        <div class="imp-impact green">TPS +40&ndash;80%</div>
+        <div class="imp-badge done">Done</div>
+      </div>
+      <div class="imp-row">
+        <div class="imp-num">10</div>
+        <div class="imp-name">KV Cache Quantization <span>4-bit / 8-bit / FP16</span></div>
+        <div class="imp-impact green">KV mem &darr;75%</div>
+        <div class="imp-badge done">Done</div>
+      </div>
+      <div class="imp-row">
+        <div class="imp-num">11</div>
+        <div class="imp-name">Anthropic /v1/messages API <span>full SSE streaming</span></div>
+        <div class="imp-impact green">3 API formats</div>
+        <div class="imp-badge done">Done</div>
+      </div>
+      <div class="imp-row">
+        <div class="imp-num">12</div>
+        <div class="imp-name">MiniMax M2.5 XML Tool Parser <span>35 test cases</span></div>
+        <div class="imp-impact green">Tool calling</div>
+        <div class="imp-badge done">Done</div>
+      </div>
+      <div class="imp-row">
+        <div class="imp-num">13</div>
+        <div class="imp-name">Per-Model Performance Profiles <span>5 override fields</span></div>
+        <div class="imp-impact green">Per-model tuning</div>
+        <div class="imp-badge done">Done</div>
+      </div>
+      <div class="imp-row">
+        <div class="imp-num">14</div>
+        <div class="imp-name">Real-Time SSE Events Feed <span>7+ event types</span></div>
+        <div class="imp-impact green">Live monitoring</div>
+        <div class="imp-badge done">Done</div>
+      </div>
+      <div class="imp-row">
+        <div class="imp-num">15</div>
+        <div class="imp-name">Benchmark API Endpoint <span>TTFT + TPS + multi-run</span></div>
+        <div class="imp-impact green">No competitor</div>
+        <div class="imp-badge done">Done</div>
+      </div>
+      <div class="imp-row" style="opacity:0.6;">
+        <div class="imp-num">16</div>
+        <div class="imp-name">Admin Dashboard Web UI <span>React SPA on /dashboard</span></div>
+        <div class="imp-impact cyan">UX +85%</div>
+        <div class="imp-badge planned">Planned</div>
+      </div>
+      <div class="imp-row" style="opacity:0.6;">
+        <div class="imp-num">17</div>
+        <div class="imp-name">CLI Admin API Coverage <span>18% &rarr; 71%</span></div>
+        <div class="imp-impact cyan">CLI +53pp</div>
+        <div class="imp-badge planned">Planned</div>
+      </div>
+      <div class="imp-row" style="opacity:0.6;">
+        <div class="imp-num">18</div>
+        <div class="imp-name">Paged KV Cache <span>vLLM-style PagedAttention</span></div>
+        <div class="imp-impact cyan">Contexts +50%</div>
+        <div class="imp-badge planned">Planned</div>
+      </div>
+      <div class="imp-row" style="opacity:0.6;">
+        <div class="imp-num">19</div>
+        <div class="imp-name">Text-to-Speech API <span>OpenAI /v1/audio/speech</span></div>
+        <div class="imp-impact cyan">Voice output</div>
+        <div class="imp-badge planned">Planned</div>
+      </div>
+      <div class="imp-row" style="opacity:0.6;">
+        <div class="imp-num">20</div>
+        <div class="imp-name">Distributed Inference <span>multi-device tensor parallelism</span></div>
+        <div class="imp-impact cyan">Size +200%</div>
+        <div class="imp-badge planned">Planned</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- 04 — HONEST GAPS -->
+  <!-- ============================================================ -->
+  <section class="section-break reveal">
+    <span class="section-num">04 &mdash; Honest assessment</span>
+    <h2 class="section-title">Where competitors<br>still <em>lead.</em></h2>
+  </section>
+
+  <div class="split-wide reveal">
+    <div class="gap-list">
+      <div class="gap-item">
+        <div class="gap-x">&times;</div>
+        <div class="gap-text"><strong>Sub-agent parallelism.</strong> Claude Code spawns parallel agent teams for multi-file investigation. Opta CLI processes sequentially. For complex debugging across 15+ files, this is a real speed gap.</div>
+        <div class="gap-leader">Claude Code</div>
+      </div>
+      <div class="gap-item">
+        <div class="gap-x">&times;</div>
+        <div class="gap-text"><strong>Frontier model quality.</strong> Claude Opus 4.6 produces more accurate surgical edits on first try than open-source 70B models. For critical production code, accuracy reduces debugging cycles.</div>
+        <div class="gap-leader">Claude Code</div>
+      </div>
+      <div class="gap-item">
+        <div class="gap-x">&times;</div>
+        <div class="gap-text"><strong>MCP ecosystem breadth.</strong> Claude Code has native MCP with hundreds of community servers. Opta CLI's MCP is config-based but still basic. Fewer integrations out of the box.</div>
+        <div class="gap-leader">Claude Code</div>
+      </div>
+      <div class="gap-item">
+        <div class="gap-x">&times;</div>
+        <div class="gap-text"><strong>Vision / image input.</strong> Can't drag-drop screenshots for visual debugging. Claude Code and Kimi Code support image input natively.</div>
+        <div class="gap-leader">Kimi Code</div>
+      </div>
+      <div class="gap-item">
+        <div class="gap-x">&times;</div>
+        <div class="gap-text"><strong>IDE integration.</strong> Terminal-only workflow. Cursor, Copilot, and OpenCode all have VS Code extensions for inline editing.</div>
+        <div class="gap-leader">Cursor</div>
+      </div>
+      <div class="gap-item">
+        <div class="gap-x">&times;</div>
+        <div class="gap-text"><strong>Cloud availability.</strong> If Mac Studio goes down, you're stuck. Cloud tools are always available. No fallback in V1.</div>
+        <div class="gap-leader">All cloud</div>
+      </div>
+    </div>
+    <div>
+      <p class="pull-quote" style="margin-top:0;font-size:22px;">
+        The feature gap is <strong>52% vs 79%</strong> today. Both gaps close as you build V2/V3 and open-source models improve.
+      </p>
+      <p style="font-size:14px;color:var(--text-secondary);line-height:1.7;">These gaps are real, not marketing. For complex multi-file debugging or one-off critical edits, a Claude Code session may produce better results faster. The value equation tips toward your stack when running high-volume, autonomous, privacy-sensitive workloads over time.</p>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- 05 — REVENUE STREAMS -->
+  <!-- ============================================================ -->
+  <section class="section-break reveal">
+    <span class="section-num">05 &mdash; Revenue streams</span>
+    <h2 class="section-title">Three ways the stack<br><em>earns money.</em></h2>
+  </section>
+
+  <div class="revenue-cols reveal">
+    <div class="revenue-col">
+      <div class="revenue-letter">A</div>
+      <h3>Reduced Development Costs</h3>
+      <ul>
+        <li>$5,000+ AUD/yr saved on API costs</li>
+        <li>6 bots working 24/7 autonomously</li>
+        <li>Faster shipping = more products launched</li>
+        <li>No per-query cost across any application</li>
+      </ul>
+    </div>
+    <div class="revenue-col">
+      <div class="revenue-letter">B</div>
+      <h3>Marketing Automation</h3>
+      <ul>
+        <li>Free AI content generation at scale</li>
+        <li>AdsPower multi-account posting</li>
+        <li>Content calendar running 24/7 on Mac Studio</li>
+        <li>Every product gets automated social presence</li>
+      </ul>
+    </div>
+    <div class="revenue-col">
+      <div class="revenue-letter">C</div>
+      <h3>Infrastructure as a Service</h3>
+      <ul>
+        <li>LMX serves multiple users on LAN</li>
+        <li>OpenAI-compatible API = any client connects</li>
+        <li>Freemium / SaaS / Lifetime business models</li>
+        <li>Sell access to your inference stack</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- 06 — WHEN TO USE WHAT -->
+  <!-- ============================================================ -->
+  <section class="section-break reveal">
+    <span class="section-num">06 &mdash; Decision framework</span>
+    <h2 class="section-title">Right tool for<br>each <em>scenario.</em></h2>
+  </section>
+
+  <div class="verdict-grid reveal">
+    <div class="verdict-card opta">
+      <div class="verdict-tag opta">Opta wins</div>
+      <h4>Daily coding on own projects</h4>
+      <p>Free, private, fast. No rate limits. Any open-source model. Bot support 24/7.</p>
+    </div>
+    <div class="verdict-card opta">
+      <div class="verdict-tag opta">Opta wins</div>
+      <h4>NDA / client work</h4>
+      <p>Data residency guaranteed. Nothing leaves LAN. No third-party logging or training.</p>
+    </div>
+    <div class="verdict-card opta">
+      <div class="verdict-tag opta">Opta wins</div>
+      <h4>Multi-bot automation</h4>
+      <p>6 bots running simultaneously. Autonomous model management. Zero marginal cost per bot.</p>
+    </div>
+    <div class="verdict-card opta">
+      <div class="verdict-tag opta">Opta wins</div>
+      <h4>Content marketing pipeline</h4>
+      <p>LMX generates content. Bots schedule and post via AdsPower. Runs on Mac Studio 24/7.</p>
+    </div>
+    <div class="verdict-card comp">
+      <div class="verdict-tag comp">Competitor wins</div>
+      <h4>Complex multi-file debugging</h4>
+      <p>Claude Code spawns parallel agent teams. Traces types across 15 files simultaneously.</p>
+    </div>
+    <div class="verdict-card comp">
+      <div class="verdict-tag comp">Competitor wins</div>
+      <h4>Quick prototype / hackathon</h4>
+      <p>Cursor's inline IDE integration and frontier model quality. Faster iteration when time > cost.</p>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- BOTTOM LINE -->
+  <!-- ============================================================ -->
+  <div class="section-break"></div>
+  <section class="bottom-line reveal">
+    <h2>The more you automate, the wider the gap.<br>Your stack's ROI compounds <em>every day it runs.</em></h2>
+    <div class="bottom-stats">
+      <div class="bottom-stat">
+        <span class="num green">$0/mo</span>
+        <div class="lbl">Inference cost</div>
+      </div>
+      <div class="bottom-stat">
+        <span class="num green">$5,184+</span>
+        <div class="lbl">AUD saved/year</div>
+      </div>
+      <div class="bottom-stat">
+        <span class="num violet">15</span>
+        <div class="lbl">Optimisations shipped</div>
+      </div>
+      <div class="bottom-stat">
+        <span class="num">4</span>
+        <div class="lbl">Unique features</div>
+      </div>
+      <div class="bottom-stat">
+        <span class="num green">100%</span>
+        <div class="lbl">Data stays local</div>
+      </div>
+      <div class="bottom-stat">
+        <span class="num">348</span>
+        <div class="lbl">LMX tests passing</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-brand">Opta Operations</div>
+    <div class="footer-sub">Strategic Value Analysis &mdash; Feb 2026 &mdash; Opta CLI + Opta LMX v0.4.0</div>
+  </footer>
+</div>
+
+<!-- === SCROLL REVEAL SCRIPT === -->
+<script>
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>

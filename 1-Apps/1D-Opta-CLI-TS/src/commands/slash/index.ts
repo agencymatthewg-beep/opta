@@ -10,7 +10,7 @@
  */
 
 import chalk from 'chalk';
-import type { SlashCommandDef, SlashContext, SlashResult, SlashHandler } from './types.js';
+import type { SlashCommandDef, SlashContext, SlashResult } from './types.js';
 
 // Re-export types for convenience
 export type { SlashCommandDef, SlashContext, SlashResult, SlashHandler } from './types.js';
@@ -94,11 +94,81 @@ export async function dispatchSlashCommand(
 
   const def = commandMap.get(cmd);
   if (!def) {
+    // Fuzzy match: find closest command names by Levenshtein distance
+    let bestMatch: { name: string; distance: number } | null = null;
+    for (const key of commandMap.keys()) {
+      const dist = levenshtein(cmd, key);
+      if (!bestMatch || dist < bestMatch.distance) {
+        bestMatch = { name: key, distance: dist };
+      }
+    }
+
+    if (bestMatch && bestMatch.distance <= 2) {
+      // Close enough — auto-execute with a hint
+      const matched = commandMap.get(bestMatch.name)!;
+      console.log(chalk.dim(`  Auto-corrected: /${bestMatch.name}`));
+      return matched.handler(args, ctx);
+    }
+
+    if (bestMatch && bestMatch.distance === 3) {
+      console.log(
+        chalk.yellow(`  Unknown command: ${rawCmd}`) +
+        chalk.dim(` — did you mean /${bestMatch.name}? (try /help)`)
+      );
+      return 'handled';
+    }
+
     console.log(chalk.yellow(`  Unknown command: ${rawCmd}`) + chalk.dim(' (try /help)'));
     return 'handled';
   }
 
+  // Per-command help: /cmd --help or /cmd -h
+  if (args === '--help' || args === '-h') {
+    console.log();
+    console.log(`  ${chalk.cyan(`/${def.command}`)} ${chalk.dim('\u2014')} ${def.description}`);
+    if (def.usage) {
+      console.log(`  ${chalk.dim('Usage:')} ${def.usage}`);
+    }
+    if (def.examples && def.examples.length > 0) {
+      console.log(`  ${chalk.dim('Examples:')}`);
+      for (const ex of def.examples) {
+        console.log(`    ${chalk.cyan(ex)}`);
+      }
+    }
+    if (def.aliases && def.aliases.length > 0) {
+      console.log(`  ${chalk.dim('Aliases:')} ${def.aliases.map(a => `/${a}`).join(', ')}`);
+    }
+    console.log();
+    return 'handled';
+  }
+
   return def.handler(args, ctx);
+}
+
+/**
+ * Compute the Levenshtein distance between two strings.
+ * Used for fuzzy matching of slash commands.
+ */
+function levenshtein(a: string, b: string): number {
+  const m = a.length;
+  const n = b.length;
+  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0) as number[]);
+
+  for (let i = 0; i <= m; i++) dp[i]![0] = i;
+  for (let j = 0; j <= n; j++) dp[0]![j] = j;
+
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      dp[i]![j] = Math.min(
+        dp[i - 1]![j]! + 1,      // deletion
+        dp[i]![j - 1]! + 1,      // insertion
+        dp[i - 1]![j - 1]! + cost // substitution
+      );
+    }
+  }
+
+  return dp[m]![n]!;
 }
 
 /**

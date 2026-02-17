@@ -12,13 +12,13 @@ from typing import Annotated
 
 from fastapi import Depends, Header, HTTPException, Request
 
+from opta_lmx.inference.embedding_engine import EmbeddingEngine
 from opta_lmx.inference.engine import InferenceEngine
 from opta_lmx.manager.memory import MemoryMonitor
 from opta_lmx.manager.model import ModelManager
 from opta_lmx.monitoring.events import EventBus
 from opta_lmx.monitoring.metrics import MetricsCollector
 from opta_lmx.presets.manager import PresetManager
-from opta_lmx.inference.embedding_engine import EmbeddingEngine
 from opta_lmx.remote.client import RemoteHelperClient
 from opta_lmx.router.strategy import TaskRouter
 

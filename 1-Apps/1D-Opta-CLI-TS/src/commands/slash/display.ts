@@ -4,7 +4,7 @@
 
 import chalk from 'chalk';
 import { box, kv } from '../../ui/box.js';
-import type { SlashCommandDef, SlashContext, SlashResult, SlashHandler } from './types.js';
+import type { SlashCommandDef, SlashContext, SlashResult } from './types.js';
 
 /**
  * Build the /help output dynamically. This is called by the help handler

@@ -13,8 +13,9 @@ import {
 } from '../memory/store.js';
 import { resolveFileRefs, buildContextWithRefs, resolveImageRefs } from '../core/fileref.js';
 import { box, kv, statusDot } from '../ui/box.js';
-import { InputEditor } from '../ui/input.js';
+import { InputEditor, startConnectionMonitor } from '../ui/input.js';
 import { InputHistory } from '../ui/history.js';
+import { runConnectionDiagnostics, formatDiagnostics } from '../core/diagnostics.js';
 import { dispatchSlashCommand } from './slash/index.js';
 import type { Session } from '../memory/store.js';
 
@@ -61,6 +62,16 @@ export async function startChat(opts: ChatOptions): Promise<void> {
 
   const jsonMode = opts.format === 'json';
   let config = await loadConfig(overrides);
+
+  // First-run onboarding
+  if (!jsonMode) {
+    const { isFirstRun, runOnboarding } = await import('./onboard.js');
+    if (await isFirstRun()) {
+      await runOnboarding();
+      // Reload config in case onboarding changed connection settings
+      config = await loadConfig(overrides);
+    }
+  }
 
   if (!config.model.default) {
     console.error(
@@ -128,6 +139,21 @@ export async function startChat(opts: ChatOptions): Promise<void> {
 
   if (!jsonMode) {
     console.log(chalk.dim('  Type /help for commands, / to browse, /exit to quit\n'));
+  }
+
+  // Non-blocking startup connection check (fire-and-forget)
+  if (!jsonMode) {
+    const { host, port } = config.connection;
+    runConnectionDiagnostics(host, port).then(results => {
+      const hasError = results.some(r => r.status === 'error');
+      const hasWarning = results.some(r => r.status === 'warning');
+      if (hasError || hasWarning) {
+        console.log(formatDiagnostics(results));
+        console.log('');
+      }
+    }).catch(() => {
+      // Silently ignore diagnostic failures — don't disrupt the REPL
+    });
   }
 
   // Mode state (shared by both TUI and REPL modes)
@@ -225,6 +251,14 @@ export async function startChat(opts: ChatOptions): Promise<void> {
     return editor.getPromptDisplay();
   }
 
+  // Start periodic connection monitor for REPL prompt indicator
+  const stopConnectionMonitor = startConnectionMonitor(config.connection.host, config.connection.port);
+
+  // Initialize slash command TAB completion cache (non-blocking)
+  import('../ui/autocomplete.js').then(({ initSlashCompletionCache }) => {
+    initSlashCompletionCache().catch(() => {});
+  }).catch(() => {});
+
   // REPL loop
   const { input } = await import('@inquirer/prompts');
 
@@ -234,6 +268,7 @@ export async function startChat(opts: ChatOptions): Promise<void> {
       userInput = await input({ message: getPromptMessage() });
     } catch {
       // Ctrl+C or EOF
+      stopConnectionMonitor();
       await saveSession(session);
       if (!jsonMode) {
         const msgCount = session.messages.filter(m => m.role !== 'system').length;
@@ -253,6 +288,7 @@ export async function startChat(opts: ChatOptions): Promise<void> {
     if (userInput.startsWith('/')) {
       const handled = await dispatchSlashCommand(userInput, { session, config, chatState });
       if (handled === 'exit') {
+        stopConnectionMonitor();
         await saveSession(session);
         if (!jsonMode) {
           const msgCount = session.messages.filter(m => m.role !== 'system').length;

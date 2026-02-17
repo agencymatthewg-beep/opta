@@ -83,7 +83,7 @@ export class InsightEngine {
 
   // --- Streaming Progress ---
 
-  progress(tokens: number, speed: number, elapsed: number): void {
+  progress(tokens: number, speed: number, _elapsed: number): void {
     if (!this.turn) return;
     this.turn.tokens = tokens;
     if (speed > this.turn.peakSpeed) this.turn.peakSpeed = speed;

@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Opta CLI — Optimal Usage & Next Steps</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --void: #09090b;
+    --surface: #18181b;
+    --elevated: #27272a;
+    --border: #3f3f46;
+    --text-primary: #fafafa;
+    --text-secondary: #a1a1aa;
+    --text-muted: #52525b;
+    --primary: #8b5cf6;
+    --primary-glow: #a855f7;
+    --neon-blue: #3b82f6;
+    --neon-green: #22c55e;
+    --neon-amber: #f59e0b;
+    --neon-red: #ef4444;
+    --neon-cyan: #06b6d4;
+    --neon-pink: #ec4899;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--void);
+    color: var(--text-primary);
+    font-family: 'Sora', -apple-system, BlinkMacSystemFont, sans-serif;
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* Noise overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* Floating particles */
+  .particle {
+    position: fixed;
+    border-radius: 50%;
+    pointer-events: none;
+    opacity: 0.15;
+    animation: float 20s ease-in-out infinite;
+  }
+  .particle:nth-child(1) { width: 300px; height: 300px; background: radial-gradient(circle, var(--primary) 0%, transparent 70%); top: -5%; left: -5%; animation-delay: 0s; }
+  .particle:nth-child(2) { width: 200px; height: 200px; background: radial-gradient(circle, var(--neon-blue) 0%, transparent 70%); bottom: 10%; right: -3%; animation-delay: -7s; }
+  .particle:nth-child(3) { width: 250px; height: 250px; background: radial-gradient(circle, var(--neon-cyan) 0%, transparent 70%); top: 40%; left: 60%; animation-delay: -14s; opacity: 0.08; }
+
+  @keyframes float {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    25% { transform: translate(30px, -20px) scale(1.05); }
+    50% { transform: translate(-20px, 30px) scale(0.95); }
+    75% { transform: translate(15px, 15px) scale(1.02); }
+  }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; position: relative; }
+
+  /* Hero */
+  .hero {
+    text-align: center;
+    padding: 60px 0 50px;
+  }
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(139, 92, 246, 0.12);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    color: var(--primary-glow);
+    font-weight: 500;
+    margin-bottom: 24px;
+    letter-spacing: 0.5px;
+  }
+  .hero h1 {
+    font-size: 48px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #ffffff 0%, #c4b5fd 50%, #8b5cf6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -1px;
+    line-height: 1.15;
+  }
+  .hero-sub {
+    font-size: 18px;
+    color: var(--text-secondary);
+    margin-top: 16px;
+    max-width: 650px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* Stats bar */
+  .stats-bar {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    margin-top: 32px;
+    flex-wrap: wrap;
+  }
+  .stat {
+    text-align: center;
+  }
+  .stat-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--primary-glow);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .stat-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 2px;
+  }
+
+  /* Section divider */
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, var(--primary) 50%, transparent 100%);
+    margin: 48px 0;
+    box-shadow: 0 0 12px rgba(139, 92, 246, 0.3);
+  }
+
+  /* Section headers */
+  .section-header {
+    margin-bottom: 28px;
+  }
+  .section-number {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--primary);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+  .section-title {
+    font-size: 32px;
+    font-weight: 600;
+    background: linear-gradient(135deg, #ffffff 0%, #d4d4d8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .section-desc {
+    color: var(--text-secondary);
+    font-size: 15px;
+    margin-top: 8px;
+    max-width: 700px;
+  }
+
+  /* Glass cards */
+  .glass {
+    background: rgba(24, 24, 27, 0.6);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .glass::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+  }
+  .glass:hover {
+    border-color: rgba(139, 92, 246, 0.25);
+    box-shadow: 0 8px 40px rgba(139, 92, 246, 0.08);
+  }
+
+  .glass-subtle {
+    background: rgba(24, 24, 27, 0.35);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 20px;
+  }
+
+  .glass-overlay {
+    background: rgba(39, 39, 42, 0.8);
+    backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 16px;
+    padding: 28px;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
+  }
+
+  /* Grid */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  @media (max-width: 768px) {
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  }
+
+  /* Command cards */
+  .cmd-card {
+    background: rgba(24, 24, 27, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    padding: 20px;
+    transition: all 0.25s ease;
+  }
+  .cmd-card:hover {
+    border-color: rgba(139, 92, 246, 0.2);
+    transform: translateY(-2px);
+  }
+  .cmd-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 15px;
+    color: var(--neon-green);
+    font-weight: 500;
+  }
+  .cmd-desc {
+    color: var(--text-secondary);
+    font-size: 13px;
+    margin-top: 6px;
+    line-height: 1.5;
+  }
+  .cmd-badge {
+    display: inline-block;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 8px;
+    margin-top: 8px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .badge-essential { background: rgba(139, 92, 246, 0.2); color: var(--primary-glow); border: 1px solid rgba(139, 92, 246, 0.3); }
+  .badge-power { background: rgba(59, 130, 246, 0.15); color: var(--neon-blue); border: 1px solid rgba(59, 130, 246, 0.2); }
+  .badge-advanced { background: rgba(6, 182, 212, 0.15); color: var(--neon-cyan); border: 1px solid rgba(6, 182, 212, 0.2); }
+  .badge-new { background: rgba(34, 197, 94, 0.15); color: var(--neon-green); border: 1px solid rgba(34, 197, 94, 0.2); }
+
+  /* Code blocks */
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    background: rgba(39, 39, 42, 0.6);
+    padding: 2px 8px;
+    border-radius: 6px;
+    color: var(--neon-green);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+  pre {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    background: rgba(9, 9, 11, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    padding: 20px;
+    overflow-x: auto;
+    line-height: 1.6;
+    color: var(--text-secondary);
+  }
+  pre .comment { color: var(--text-muted); }
+  pre .cmd { color: var(--neon-green); }
+  pre .flag { color: var(--neon-cyan); }
+  pre .value { color: var(--neon-amber); }
+
+  /* Insight demo */
+  .insight-demo {
+    background: rgba(9, 9, 11, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    padding: 16px 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 2;
+  }
+  .insight-line {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .i-icon { width: 16px; text-align: center; }
+  .i-perf { color: var(--neon-cyan); }
+  .i-context { color: var(--neon-amber); }
+  .i-tool { color: var(--neon-pink); }
+  .i-conn { color: var(--neon-red); }
+  .i-summary { color: var(--neon-green); }
+  .i-text { color: var(--text-secondary); }
+
+  /* Workflow steps */
+  .workflow-step {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    padding: 20px;
+    background: rgba(24, 24, 27, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    margin-bottom: 12px;
+    transition: all 0.25s ease;
+  }
+  .workflow-step:hover {
+    border-color: rgba(139, 92, 246, 0.2);
+  }
+  .step-num {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(139, 92, 246, 0.15);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 50%;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--primary-glow);
+  }
+  .step-content h4 {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+  }
+  .step-content p {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  /* Roadmap */
+  .roadmap-item {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    padding: 16px 20px;
+    background: rgba(24, 24, 27, 0.35);
+    border-left: 3px solid var(--border);
+    border-radius: 0 12px 12px 0;
+    margin-bottom: 8px;
+    transition: all 0.2s ease;
+  }
+  .roadmap-item:hover { border-left-color: var(--primary); }
+  .roadmap-item.priority-high { border-left-color: var(--neon-green); }
+  .roadmap-item.priority-medium { border-left-color: var(--neon-amber); }
+  .roadmap-item.priority-low { border-left-color: var(--neon-blue); }
+  .roadmap-item.done { border-left-color: var(--text-muted); opacity: 0.6; }
+
+  .ri-status { flex-shrink: 0; font-size: 16px; margin-top: 2px; }
+  .ri-content h4 { font-size: 14px; font-weight: 500; color: var(--text-primary); }
+  .ri-content p { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+  /* Tag system */
+  .tag {
+    display: inline-block;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-weight: 500;
+    margin-right: 6px;
+    margin-top: 4px;
+  }
+  .tag-green { background: rgba(34, 197, 94, 0.12); color: var(--neon-green); }
+  .tag-blue { background: rgba(59, 130, 246, 0.12); color: var(--neon-blue); }
+  .tag-amber { background: rgba(245, 158, 11, 0.12); color: var(--neon-amber); }
+  .tag-red { background: rgba(239, 68, 68, 0.12); color: var(--neon-red); }
+  .tag-purple { background: rgba(139, 92, 246, 0.12); color: var(--primary-glow); }
+
+  /* Mode table */
+  .mode-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 4px;
+  }
+  .mode-table th {
+    text-align: left;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    padding: 8px 16px;
+  }
+  .mode-table td {
+    background: rgba(24, 24, 27, 0.4);
+    padding: 12px 16px;
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+  .mode-table tr td:first-child {
+    border-radius: 8px 0 0 8px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--neon-green);
+    font-weight: 500;
+    font-size: 13px;
+  }
+  .mode-table tr td:last-child { border-radius: 0 8px 8px 0; }
+
+  /* Tip boxes */
+  .tip {
+    background: rgba(139, 92, 246, 0.06);
+    border: 1px solid rgba(139, 92, 246, 0.15);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-top: 16px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .tip-icon { font-size: 16px; flex-shrink: 0; margin-top: 2px; }
+  .tip-text { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+  .tip-text strong { color: var(--text-primary); }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding: 40px 0 0;
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+  .footer a { color: var(--primary); text-decoration: none; }
+
+  /* Breathing glow animation */
+  @keyframes breathe {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+  }
+  .glow { animation: breathe 4s ease-in-out infinite; }
+
+  /* Config preview */
+  .config-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  @media (max-width: 768px) { .config-grid { grid-template-columns: 1fr; } }
+  .config-item {
+    background: rgba(9, 9, 11, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .config-key {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--neon-cyan);
+  }
+  .config-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+  .config-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 6px;
+  }
+</style>
+</head>
+<body>
+
+<div class="particle"></div>
+<div class="particle"></div>
+<div class="particle"></div>
+
+<div class="container">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-badge">v0.5.0-alpha.1 &middot; 107 source files &middot; 866 tests</div>
+    <h1>Opta CLI<br>Optimal Usage Guide</h1>
+    <p class="hero-sub">The complete playbook for getting the most out of your privacy-first, local-model-powered AI coding assistant — plus what's coming next.</p>
+
+    <div class="stats-bar">
+      <div class="stat"><div class="stat-value">17,434</div><div class="stat-label">Lines of Code</div></div>
+      <div class="stat"><div class="stat-value">866</div><div class="stat-label">Tests Passing</div></div>
+      <div class="stat"><div class="stat-value">77</div><div class="stat-label">Test Files</div></div>
+      <div class="stat"><div class="stat-value">20+</div><div class="stat-label">Slash Commands</div></div>
+      <div class="stat"><div class="stat-value">5</div><div class="stat-label">Modes</div></div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- SECTION 1: GETTING STARTED FAST -->
+  <div class="section-header">
+    <div class="section-number">01 &middot; Foundation</div>
+    <div class="section-title">Getting Started Optimally</div>
+    <p class="section-desc">The essential commands and setup that unlock 80% of Opta's value in the first session.</p>
+  </div>
+
+  <div class="workflow-step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <h4>Build & Link Globally</h4>
+      <p><code>npm run build && npm link</code> — Makes <code>opta</code> available system-wide. Hot reload: <code>npm run dev</code>.</p>
+    </div>
+  </div>
+
+  <div class="workflow-step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <h4>Check Your Connection</h4>
+      <p><code>opta status</code> — Verifies LMX server is reachable. Shows loaded models, memory, and inference speed.</p>
+    </div>
+  </div>
+
+  <div class="workflow-step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <h4>Initialize Project Intelligence</h4>
+      <p><code>opta init</code> — Generates APP.md, AGENTS.md, TASKS.md. The model reads these for every session, giving it deep project context. <strong>Do this once per repo.</strong></p>
+    </div>
+  </div>
+
+  <div class="workflow-step">
+    <div class="step-num">4</div>
+    <div class="step-content">
+      <h4>Enable Shell Completions</h4>
+      <p>Add to your <code>~/.zshrc</code>: <code>eval "$(opta completions zsh)"</code> — Tab completion for commands, flags, and models.</p>
+    </div>
+  </div>
+
+  <div class="workflow-step">
+    <div class="step-num">5</div>
+    <div class="step-content">
+      <h4>Run Health Check</h4>
+      <p><code>opta doctor</code> — Diagnoses connection, config, tool access, and environment. Catches issues before they bite.</p>
+    </div>
+  </div>
+
+  <div class="tip">
+    <span class="tip-icon">&#9733;</span>
+    <span class="tip-text"><strong>Power move:</strong> Run <code>opta chat --tui</code> for the full-screen experience. Split panes, real-time token stats, model picker (Ctrl+M), and the new Local Model Insights showing live inference observability.</span>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- SECTION 2: MODES -->
+  <div class="section-header">
+    <div class="section-number">02 &middot; Modes</div>
+    <div class="section-title">Choose the Right Mode</div>
+    <p class="section-desc">Each mode constrains the model's behaviour for the task at hand. Picking the right mode is the single biggest productivity lever.</p>
+  </div>
+
+  <table class="mode-table">
+    <thead>
+      <tr><th>Mode</th><th>Tools Available</th><th>Best For</th><th>Safety</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>--plan</td>
+        <td>Read, list, search only</td>
+        <td>Architecture planning, design reviews, understanding codebases</td>
+        <td style="color: var(--neon-green);">&#9679; Maximum</td>
+      </tr>
+      <tr>
+        <td>--review</td>
+        <td>Read, search, structured output</td>
+        <td>Code review, security audit, style checking</td>
+        <td style="color: var(--neon-green);">&#9679; Maximum</td>
+      </tr>
+      <tr>
+        <td>--research</td>
+        <td>Read, search, web fetch</td>
+        <td>Exploring unfamiliar code, researching APIs, learning</td>
+        <td style="color: var(--neon-green);">&#9679; Maximum</td>
+      </tr>
+      <tr>
+        <td>(default)</td>
+        <td>All tools, ask before edits</td>
+        <td>General development — the sweet spot for most work</td>
+        <td style="color: var(--neon-amber);">&#9679; Balanced</td>
+      </tr>
+      <tr>
+        <td>--auto</td>
+        <td>All tools, auto-approve edits</td>
+        <td>Trusted tasks: refactoring, formatting, bulk changes</td>
+        <td style="color: var(--neon-amber);">&#9679; Reduced</td>
+      </tr>
+      <tr>
+        <td>--dangerous</td>
+        <td>All tools, no prompts</td>
+        <td>CI/CD pipelines, automated testing, one-shot tasks</td>
+        <td style="color: var(--neon-red);">&#9679; Minimal</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="tip">
+    <span class="tip-icon">&#9733;</span>
+    <span class="tip-text"><strong>Optimal pattern:</strong> Start in <code>--plan</code> mode to understand the problem, then switch to default mode for implementation, then <code>--review</code> to verify. You can switch modes in-session via <code>/plan</code>, <code>/review</code>, <code>/research</code>.</span>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- SECTION 3: LOCAL MODEL INSIGHTS -->
+  <div class="section-header">
+    <div class="section-number">03 &middot; Insights</div>
+    <div class="section-title">Local Model Insights</div>
+    <p class="section-desc">Real-time observability into what your local model is doing. Zero overhead — pure event observation with no extra model calls.</p>
+  </div>
+
+  <div class="glass-overlay" style="margin-bottom: 24px;">
+    <div class="insight-demo">
+      <div class="insight-line"><span class="i-icon i-perf">&#9889;</span> <span class="i-text">First token in 142ms &mdash; instant</span></div>
+      <div class="insight-line"><span class="i-icon i-tool">&#9654;</span> <span class="i-text">read_file &rarr; .../core/agent.ts</span></div>
+      <div class="insight-line"><span class="i-icon i-tool">&#9654;</span> <span class="i-text">search_files &rarr; "InsightEngine"</span></div>
+      <div class="insight-line"><span class="i-icon i-tool">&#9654;</span> <span class="i-text">read_file returned 2.1k tokens of context</span></div>
+      <div class="insight-line"><span class="i-icon i-perf">&#9889;</span> <span class="i-text">45.0 tok/s on qwen2.5-coder-32b &mdash; strong generation</span></div>
+      <div class="insight-line"><span class="i-icon i-context">&#9675;</span> <span class="i-text">Context: 62% used (20.3k/32.8k)</span></div>
+      <div class="insight-line"><span class="i-icon i-conn">&#9670;</span> <span class="i-text">Reconnecting to LMX (attempt 1)</span></div>
+      <div class="insight-line"><span class="i-icon i-conn">&#9670;</span> <span class="i-text">Reconnected after 1 attempt</span></div>
+      <div class="insight-line"><span class="i-icon i-summary">&#9733;</span> <span class="i-text">500 tokens &middot; 3 tools &middot; 4.2s &middot; 119 tok/s</span></div>
+    </div>
+    <div style="margin-top: 12px; font-size: 12px; color: var(--text-muted); text-align: center;">Live insight output — appears inline during model inference in both TUI and REPL</div>
+  </div>
+
+  <div class="grid-3">
+    <div class="glass-subtle">
+      <div style="font-size: 20px; margin-bottom: 8px;">&#9889;</div>
+      <h4 style="font-size: 14px; font-weight: 500; margin-bottom: 4px;">Performance</h4>
+      <p style="font-size: 12px; color: var(--text-secondary);">First-token latency (instant/fast/warm-up/cold start) and generation speed (blazing/strong/steady/deliberate)</p>
+    </div>
+    <div class="glass-subtle">
+      <div style="font-size: 20px; margin-bottom: 8px;">&#9675;</div>
+      <h4 style="font-size: 14px; font-weight: 500; margin-bottom: 4px;">Context Pressure</h4>
+      <p style="font-size: 12px; color: var(--text-secondary);">Warns at 60% usage, alerts at 80%+ when compaction is imminent. Shows recovered tokens after compaction.</p>
+    </div>
+    <div class="glass-subtle">
+      <div style="font-size: 20px; margin-bottom: 8px;">&#9654;</div>
+      <h4 style="font-size: 14px; font-weight: 500; margin-bottom: 4px;">Tool Selection</h4>
+      <p style="font-size: 12px; color: var(--text-secondary);">Shows which tool the model chose and a brief preview: file paths, command snippets, search patterns.</p>
+    </div>
+  </div>
+
+  <div class="config-grid" style="margin-top: 16px;">
+    <div class="config-item">
+      <div class="config-key">opta config set insights.enabled true</div>
+      <div class="config-desc">Enable/disable insight generation (default: on)</div>
+    </div>
+    <div class="config-item">
+      <div class="config-key">Works in both TUI &amp; REPL modes</div>
+      <div class="config-desc">TUI: React/Ink InsightBlock. REPL: chalk-formatted console output.</div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- SECTION 4: ESSENTIAL WORKFLOWS -->
+  <div class="section-header">
+    <div class="section-number">04 &middot; Workflows</div>
+    <div class="section-title">Essential Workflows</div>
+    <p class="section-desc">The patterns that experienced users rely on for maximum productivity.</p>
+  </div>
+
+  <div class="grid-2">
+    <div class="glass" style="padding: 0;">
+      <div style="padding: 20px 24px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+        <h4 style="font-size: 15px; color: var(--neon-green);">Exploring a Codebase</h4>
+      </div>
+      <pre style="margin: 0; border: none; border-radius: 0 0 16px 16px;">
+<span class="cmd">opta chat --research</span>
+
+<span class="comment"># In session:</span>
+<span class="value">"How does auth work in this project?"</span>
+<span class="value">"Show me all API endpoints"</span>
+<span class="value">"What patterns does this codebase use?"</span>
+
+<span class="comment"># Save findings:</span>
+<span class="cmd">/export research-notes.md</span></pre>
+    </div>
+
+    <div class="glass" style="padding: 0;">
+      <div style="padding: 20px 24px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+        <h4 style="font-size: 15px; color: var(--neon-green);">One-Shot Task</h4>
+      </div>
+      <pre style="margin: 0; border: none; border-radius: 0 0 16px 16px;">
+<span class="cmd">opta do</span> <span class="value">"fix the null check in auth.ts"</span>
+
+<span class="comment"># Or with flags:</span>
+<span class="cmd">opta do</span> <span class="flag">--auto</span> <span class="value">"format all .ts files"</span>
+<span class="cmd">opta do</span> <span class="flag">--model</span> <span class="value">qwen2.5-coder</span> <span class="value">"add tests"</span>
+
+<span class="comment"># Undo if needed:</span>
+<span class="cmd">opta chat</span> <span class="comment">→</span> <span class="cmd">/undo</span></pre>
+    </div>
+
+    <div class="glass" style="padding: 0;">
+      <div style="padding: 20px 24px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+        <h4 style="font-size: 15px; color: var(--neon-green);">Plan-Then-Execute</h4>
+      </div>
+      <pre style="margin: 0; border: none; border-radius: 0 0 16px 16px;">
+<span class="cmd">opta chat --plan</span>
+<span class="value">"Design a caching layer for the API"</span>
+<span class="comment"># Model reads code, writes plan, can't edit</span>
+
+<span class="comment"># Switch to implement:</span>
+<span class="cmd">/plan off</span>
+<span class="value">"Now implement what we planned"</span>
+<span class="comment"># Model edits files with your approval</span>
+
+<span class="cmd">/commit</span> <span class="comment"># Auto-commit changes</span></pre>
+    </div>
+
+    <div class="glass" style="padding: 0;">
+      <div style="padding: 20px 24px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+        <h4 style="font-size: 15px; color: var(--neon-green);">Code Review Session</h4>
+      </div>
+      <pre style="margin: 0; border: none; border-radius: 0 0 16px 16px;">
+<span class="cmd">opta chat --review</span>
+<span class="value">"Review src/core/agent.ts for bugs"</span>
+<span class="value">"Check auth flow for security issues"</span>
+<span class="value">"Are there any race conditions here?"</span>
+
+<span class="comment"># Structured review output with findings,</span>
+<span class="comment"># severity levels, and suggested fixes</span></pre>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- SECTION 5: SLASH COMMANDS -->
+  <div class="section-header">
+    <div class="section-number">05 &middot; Commands</div>
+    <div class="section-title">Slash Command Reference</div>
+    <p class="section-desc">In-session commands for controlling the model without leaving your chat. Type <code>/</code> alone for the interactive browser.</p>
+  </div>
+
+  <div class="grid-3">
+    <div class="cmd-card">
+      <div class="cmd-name">/model</div>
+      <div class="cmd-desc">Switch active model. Shows loaded models, pick one.</div>
+      <span class="cmd-badge badge-essential">Essential</span>
+    </div>
+    <div class="cmd-card">
+      <div class="cmd-name">/plan</div>
+      <div class="cmd-desc">Toggle plan mode (read-only). Use for architecture work.</div>
+      <span class="cmd-badge badge-essential">Essential</span>
+    </div>
+    <div class="cmd-card">
+      <div class="cmd-name">/review</div>
+      <div class="cmd-desc">Switch to code review mode with structured output.</div>
+      <span class="cmd-badge badge-new">New</span>
+    </div>
+    <div class="cmd-card">
+      <div class="cmd-name">/research</div>
+      <div class="cmd-desc">Research mode — explore without edits.</div>
+      <span class="cmd-badge badge-new">New</span>
+    </div>
+    <div class="cmd-card">
+      <div class="cmd-name">/commit</div>
+      <div class="cmd-desc">Auto-generate conventional commit from staged changes.</div>
+      <span class="cmd-badge badge-essential">Essential</span>
+    </div>
+    <div class="cmd-card">
+      <div class="cmd-name">/undo</div>
+      <div class="cmd-desc">Interactive checkpoint picker — roll back file changes.</div>
+      <span class="cmd-badge badge-power">Power</span>
+    </div>
+    <div class="cmd-card">
+      <div class="cmd-name">/checkpoint</div>
+      <div class="cmd-desc">Create a named checkpoint for the current state.</div>
+      <span class="cmd-badge badge-power">Power</span>
+    </div>
+    <div class="cmd-card">
+      <div class="cmd-name">/context</div>
+      <div class="cmd-desc">Show context usage — tokens used vs limit.</div>
+      <span class="cmd-badge badge-advanced">Advanced</span>
+    </div>
+    <div class="cmd-card">
+      <div class="cmd-name">/export</div>
+      <div class="cmd-desc">Export session as markdown file.</div>
+      <span class="cmd-badge badge-power">Power</span>
+    </div>
+    <div class="cmd-card">
+      <div class="cmd-name">/status</div>
+      <div class="cmd-desc">Show model, mode, session, and connection info.</div>
+      <span class="cmd-badge badge-essential">Essential</span>
+    </div>
+    <div class="cmd-card">
+      <div class="cmd-name">/tokens</div>
+      <div class="cmd-desc">Detailed token breakdown for current conversation.</div>
+      <span class="cmd-badge badge-advanced">Advanced</span>
+    </div>
+    <div class="cmd-card">
+      <div class="cmd-name">/debug &amp; /profile</div>
+      <div class="cmd-desc">Toggle debug logging, show performance profiling data.</div>
+      <span class="cmd-badge badge-advanced">Advanced</span>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- SECTION 6: TUI KEYBOARD SHORTCUTS -->
+  <div class="section-header">
+    <div class="section-number">06 &middot; TUI</div>
+    <div class="section-title">TUI Keyboard Shortcuts</div>
+    <p class="section-desc">Full-screen terminal UI shortcuts. Press <code>?</code> in the TUI for the overlay.</p>
+  </div>
+
+  <div class="glass-overlay">
+    <table style="width: 100%; font-size: 14px;">
+      <tr><td style="padding: 6px 0; width: 180px;"><code style="font-size: 13px;">Ctrl+M</code></td><td style="color: var(--text-secondary); padding: 6px 0;">Switch model — opens model picker overlay</td></tr>
+      <tr><td style="padding: 6px 0;"><code style="font-size: 13px;">Ctrl+L</code></td><td style="color: var(--text-secondary); padding: 6px 0;">Clear screen — reset the message display</td></tr>
+      <tr><td style="padding: 6px 0;"><code style="font-size: 13px;">Ctrl+C</code></td><td style="color: var(--text-secondary); padding: 6px 0;">Cancel current request / Exit if idle</td></tr>
+      <tr><td style="padding: 6px 0;"><code style="font-size: 13px;">Tab</code></td><td style="color: var(--text-secondary); padding: 6px 0;">Cycle focus between panes (sidebar, messages, input)</td></tr>
+      <tr><td style="padding: 6px 0;"><code style="font-size: 13px;">?</code></td><td style="color: var(--text-secondary); padding: 6px 0;">Show help overlay with all shortcuts</td></tr>
+      <tr><td style="padding: 6px 0;"><code style="font-size: 13px;">&#8593;/&#8595;</code></td><td style="color: var(--text-secondary); padding: 6px 0;">Scroll through message history</td></tr>
+    </table>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- SECTION 7: OPTIMAL CONFIG -->
+  <div class="section-header">
+    <div class="section-number">07 &middot; Configuration</div>
+    <div class="section-title">Recommended Config Tuning</div>
+    <p class="section-desc">Key settings to tune for your workflow. All set via <code>opta config set &lt;key&gt; &lt;value&gt;</code>.</p>
+  </div>
+
+  <div class="config-grid">
+    <div class="config-item">
+      <div class="config-key">model.default</div>
+      <div class="config-val">qwen2.5-coder-32b</div>
+      <div class="config-desc">Set your preferred default model. Avoids picking each session.</div>
+    </div>
+    <div class="config-item">
+      <div class="config-key">permissions.edit_file</div>
+      <div class="config-val">allow</div>
+      <div class="config-desc">Skip edit confirmations in trusted repos. Keep <code>ask</code> for unfamiliar code.</div>
+    </div>
+    <div class="config-item">
+      <div class="config-key">permissions.run_command</div>
+      <div class="config-val">ask (default)</div>
+      <div class="config-desc">Always confirm shell commands. Change to <code>allow</code> only for trusted scripts.</div>
+    </div>
+    <div class="config-item">
+      <div class="config-key">connection.retry.maxRetries</div>
+      <div class="config-val">3 (default)</div>
+      <div class="config-desc">Auto-reconnect attempts when LMX connection drops mid-stream.</div>
+    </div>
+    <div class="config-item">
+      <div class="config-key">safety.circuitBreaker.pauseAt</div>
+      <div class="config-val">40 (default)</div>
+      <div class="config-desc">Pause agent after N tool calls per turn. Prevents runaway loops.</div>
+    </div>
+    <div class="config-item">
+      <div class="config-key">tui.default</div>
+      <div class="config-val">true</div>
+      <div class="config-desc">Always launch in TUI mode. Set <code>false</code> to default to REPL.</div>
+    </div>
+    <div class="config-item">
+      <div class="config-key">insights.enabled</div>
+      <div class="config-val">true (default)</div>
+      <div class="config-desc">Real-time inference insights. Disable for cleaner output.</div>
+    </div>
+    <div class="config-item">
+      <div class="config-key">provider.active</div>
+      <div class="config-val">lmx | anthropic</div>
+      <div class="config-desc">Switch between local LMX and Anthropic Claude API backends.</div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- SECTION 8: NEXT STEPS ROADMAP -->
+  <div class="section-header">
+    <div class="section-number">08 &middot; Roadmap</div>
+    <div class="section-title">What's Next</div>
+    <p class="section-desc">Prioritised improvements and features coming to Opta CLI. Green = high impact, amber = medium, blue = exploratory.</p>
+  </div>
+
+  <h3 style="font-size: 16px; color: var(--text-primary); margin-bottom: 12px; font-weight: 500;">High Priority — Next Sprint</h3>
+
+  <div class="roadmap-item priority-high">
+    <span class="ri-status">&#9679;</span>
+    <div class="ri-content">
+      <h4>Anthropic Provider Streaming</h4>
+      <p>Complete streaming support for Claude API via the providers/ directory. Enables cloud fallback with full tool use.</p>
+      <span class="tag tag-green">high impact</span><span class="tag tag-purple">provider</span>
+    </div>
+  </div>
+
+  <div class="roadmap-item priority-high">
+    <span class="ri-status">&#9679;</span>
+    <div class="ri-content">
+      <h4>Interactive Undo UX Enhancement</h4>
+      <p>Richer checkpoint diff preview, multi-file rollback, and visual timeline in TUI mode.</p>
+      <span class="tag tag-green">high impact</span><span class="tag tag-blue">tui</span>
+    </div>
+  </div>
+
+  <div class="roadmap-item priority-high">
+    <span class="ri-status">&#9679;</span>
+    <div class="ri-content">
+      <h4>Session Search & Resume</h4>
+      <p>Full-text search across past sessions. <code>opta sessions search "auth refactor"</code> and instant resume.</p>
+      <span class="tag tag-green">high impact</span><span class="tag tag-amber">ux</span>
+    </div>
+  </div>
+
+  <div class="roadmap-item priority-high">
+    <span class="ri-status">&#9679;</span>
+    <div class="ri-content">
+      <h4>Diff Viewer in TUI</h4>
+      <p>Side-by-side diff display for file edits before approval. Shows exactly what changes before you accept.</p>
+      <span class="tag tag-green">high impact</span><span class="tag tag-blue">tui</span>
+    </div>
+  </div>
+
+  <h3 style="font-size: 16px; color: var(--text-primary); margin-top: 28px; margin-bottom: 12px; font-weight: 500;">Medium Priority — Following Sprint</h3>
+
+  <div class="roadmap-item priority-medium">
+    <span class="ri-status">&#9675;</span>
+    <div class="ri-content">
+      <h4>MCP Tool Discovery UI</h4>
+      <p>Visual tool browser showing all registered MCP tools, their schemas, and test invocation directly from TUI.</p>
+      <span class="tag tag-amber">medium impact</span><span class="tag tag-purple">mcp</span>
+    </div>
+  </div>
+
+  <div class="roadmap-item priority-medium">
+    <span class="ri-status">&#9675;</span>
+    <div class="ri-content">
+      <h4>Smart Context Management</h4>
+      <p>Automatic file prioritisation in context window. Keep most-relevant files, evict stale reads before compaction.</p>
+      <span class="tag tag-amber">medium impact</span><span class="tag tag-purple">core</span>
+    </div>
+  </div>
+
+  <div class="roadmap-item priority-medium">
+    <span class="ri-status">&#9675;</span>
+    <div class="ri-content">
+      <h4>Sub-Agent Task Parallelism</h4>
+      <p>Visual sub-agent progress in TUI. Show concurrent tasks, their status, and aggregate results.</p>
+      <span class="tag tag-amber">medium impact</span><span class="tag tag-blue">tui</span>
+    </div>
+  </div>
+
+  <div class="roadmap-item priority-medium">
+    <span class="ri-status">&#9675;</span>
+    <div class="ri-content">
+      <h4>Persistent Memory System</h4>
+      <p>Cross-session memory — learns your preferences, common patterns, and project conventions over time.</p>
+      <span class="tag tag-amber">medium impact</span><span class="tag tag-purple">core</span>
+    </div>
+  </div>
+
+  <h3 style="font-size: 16px; color: var(--text-primary); margin-top: 28px; margin-bottom: 12px; font-weight: 500;">Exploratory — Future</h3>
+
+  <div class="roadmap-item priority-low">
+    <span class="ri-status">&#9671;</span>
+    <div class="ri-content">
+      <h4>Multi-File Editor View</h4>
+      <p>TUI split-pane editor showing multiple files side-by-side during complex refactors.</p>
+      <span class="tag tag-blue">exploratory</span><span class="tag tag-blue">tui</span>
+    </div>
+  </div>
+
+  <div class="roadmap-item priority-low">
+    <span class="ri-status">&#9671;</span>
+    <div class="ri-content">
+      <h4>Plugin / Extension System</h4>
+      <p>Custom tool definitions, slash command extensions, and third-party integrations via a plugin API.</p>
+      <span class="tag tag-blue">exploratory</span><span class="tag tag-purple">core</span>
+    </div>
+  </div>
+
+  <div class="roadmap-item priority-low">
+    <span class="ri-status">&#9671;</span>
+    <div class="ri-content">
+      <h4>Collaborative Sessions</h4>
+      <p>Share a live session between terminals. One person drives, others observe and inject prompts.</p>
+      <span class="tag tag-blue">exploratory</span><span class="tag tag-amber">ux</span>
+    </div>
+  </div>
+
+  <div class="roadmap-item priority-low">
+    <span class="ri-status">&#9671;</span>
+    <div class="ri-content">
+      <h4>Voice Input Mode</h4>
+      <p>Whisper-powered voice-to-text for hands-free coding sessions. Integrate with local Whisper on Mac Studio.</p>
+      <span class="tag tag-blue">exploratory</span><span class="tag tag-amber">ux</span>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- SECTION 9: RECENTLY SHIPPED -->
+  <div class="section-header">
+    <div class="section-number">09 &middot; Recently Shipped</div>
+    <div class="section-title">Latest Features</div>
+    <p class="section-desc">What landed in the last two commits. All tested and pushed to main.</p>
+  </div>
+
+  <div class="grid-2">
+    <div class="glass">
+      <div style="font-size: 11px; color: var(--primary-glow); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; font-weight: 500;">092c8b7</div>
+      <h4 style="font-size: 16px; margin-bottom: 8px;">Local Model Insights</h4>
+      <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.5;">Real-time inference observability — first-token latency, generation speed, context pressure, tool selection, connection recovery, turn summaries. Works in TUI and REPL. 23 dedicated tests.</p>
+      <div style="margin-top: 12px;">
+        <span class="tag tag-green">perf</span>
+        <span class="tag tag-purple">context</span>
+        <span class="tag tag-amber">tool</span>
+        <span class="tag tag-red">connection</span>
+        <span class="tag tag-green">summary</span>
+      </div>
+    </div>
+    <div class="glass">
+      <div style="font-size: 11px; color: var(--primary-glow); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; font-weight: 500;">52f1501</div>
+      <h4 style="font-size: 16px; margin-bottom: 8px;">TUI Enhancements + Modes</h4>
+      <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.5;">Config-driven model switching (Ctrl+M), streaming reconnection with exponential backoff, <code>--review</code> and <code>--research</code> CLI modes, updated shell completions, README rewrite.</p>
+      <div style="margin-top: 12px;">
+        <span class="tag tag-blue">tui</span>
+        <span class="tag tag-green">reconnect</span>
+        <span class="tag tag-purple">modes</span>
+        <span class="tag tag-amber">completions</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- SECTION 10: QUICK REFERENCE -->
+  <div class="section-header">
+    <div class="section-number">10 &middot; Quick Reference</div>
+    <div class="section-title">Cheat Sheet</div>
+    <p class="section-desc">Copy-paste commands for the most common operations.</p>
+  </div>
+
+  <pre style="font-size: 13px; line-height: 2.0;">
+<span class="comment"># ── Getting Started ──────────────────────────</span>
+<span class="cmd">opta status</span>                           <span class="comment"># check LMX connection</span>
+<span class="cmd">opta doctor</span>                           <span class="comment"># full environment health check</span>
+<span class="cmd">opta init</span>                             <span class="comment"># generate project intelligence docs</span>
+
+<span class="comment"># ── Sessions ─────────────────────────────────</span>
+<span class="cmd">opta chat</span>                             <span class="comment"># REPL mode</span>
+<span class="cmd">opta chat</span> <span class="flag">--tui</span>                       <span class="comment"># full-screen TUI</span>
+<span class="cmd">opta chat</span> <span class="flag">--plan</span>                      <span class="comment"># read-only architecture mode</span>
+<span class="cmd">opta chat</span> <span class="flag">--review</span>                    <span class="comment"># structured code review</span>
+<span class="cmd">opta chat</span> <span class="flag">--research</span>                  <span class="comment"># exploration without edits</span>
+<span class="cmd">opta do</span> <span class="value">"task description"</span>              <span class="comment"># one-shot execution</span>
+
+<span class="comment"># ── Models ───────────────────────────────────</span>
+<span class="cmd">opta models</span>                           <span class="comment"># list loaded models</span>
+<span class="cmd">opta models use</span> <span class="value">qwen2.5-coder</span>        <span class="comment"># switch model</span>
+<span class="cmd">opta models info</span> <span class="value">qwen2.5-coder</span>       <span class="comment"># model details + context limit</span>
+
+<span class="comment"># ── Config ───────────────────────────────────</span>
+<span class="cmd">opta config list</span>                      <span class="comment"># show all settings</span>
+<span class="cmd">opta config set</span> <span class="flag">model.default</span> <span class="value">qwen2.5</span> <span class="comment"># set default model</span>
+<span class="cmd">opta config set</span> <span class="flag">tui.default</span> <span class="value">true</span>     <span class="comment"># always launch TUI</span>
+<span class="cmd">opta config set</span> <span class="flag">provider.active</span> <span class="value">anthropic</span> <span class="comment"># switch to cloud</span>
+
+<span class="comment"># ── In-Session Slash Commands ────────────────</span>
+<span class="cmd">/</span>                                     <span class="comment"># interactive command browser</span>
+<span class="cmd">/model</span>                                <span class="comment"># switch model mid-session</span>
+<span class="cmd">/plan</span>                                 <span class="comment"># toggle plan mode</span>
+<span class="cmd">/commit</span>                               <span class="comment"># auto-commit staged changes</span>
+<span class="cmd">/undo</span>                                 <span class="comment"># interactive checkpoint rollback</span>
+<span class="cmd">/export</span> <span class="value">notes.md</span>                     <span class="comment"># export session as markdown</span>
+<span class="cmd">/status</span>                               <span class="comment"># show session info</span>
+<span class="cmd">/help</span>                                 <span class="comment"># all commands with descriptions</span>
+</pre>
+
+  <div class="divider"></div>
+
+  <div class="footer">
+    <p>Opta CLI v0.5.0-alpha.1 &middot; Built by <a href="https://optamize.biz">Opta Operations</a> &middot; Generated Feb 18, 2026</p>
+    <p style="margin-top: 4px;">107 source files &middot; 17,434 lines &middot; 866 tests &middot; 77 test files &middot; Privacy-first local inference</p>
+  </div>
+
+</div>
+
+</body>
+</html>

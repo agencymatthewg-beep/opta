@@ -10,6 +10,8 @@ import time
 from collections.abc import AsyncIterator
 from typing import Any
 
+from opta_lmx.inference.context import fit_to_context
+from opta_lmx.inference.predictor import UsagePredictor
 from opta_lmx.inference.schema import (
     ChatCompletionResponse,
     ChatMessage,
@@ -19,8 +21,6 @@ from opta_lmx.inference.schema import (
     ToolCall,
     Usage,
 )
-from opta_lmx.inference.context import fit_to_context
-from opta_lmx.inference.predictor import UsagePredictor
 from opta_lmx.inference.tool_parser import TOOL_CALL_OPEN, MiniMaxToolParser
 from opta_lmx.inference.types import LoadedModel, ModelInfo
 from opta_lmx.manager.memory import MemoryMonitor
@@ -44,7 +44,7 @@ def _resolve_context_length(model_id: str) -> int | None:
         from huggingface_hub import try_to_load_from_cache
 
         config_path = try_to_load_from_cache(model_id, "config.json")
-        if config_path is None or isinstance(config_path, str) and not Path(config_path).exists():
+        if config_path is None or (isinstance(config_path, str) and not Path(config_path).exists()):
             return None
 
         with open(config_path) as f:
@@ -268,10 +268,7 @@ class InferenceEngine:
 
         # Resolve context length from model config or GGUF setting
         ctx_len: int | None = None
-        if fmt == "gguf":
-            ctx_len = self._gguf_context_length
-        else:
-            ctx_len = _resolve_context_length(model_id)
+        ctx_len = self._gguf_context_length if fmt == "gguf" else _resolve_context_length(model_id)
 
         loaded = LoadedModel(
             model_id=model_id,
@@ -561,10 +558,13 @@ class InferenceEngine:
             self._in_flight += 1
             try:
                 content, prompt_tokens, completion_tokens = await asyncio.wait_for(
-                    self._do_generate(loaded, msg_dicts, messages, temperature, max_tokens, top_p, stop, tools, response_format),
+                    self._do_generate(
+                        loaded, msg_dicts, messages, temperature, 
+                        max_tokens, top_p, stop, tools, response_format
+                    ),
                     timeout=self._inference_timeout,
                 )
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 logger.error("inference_timeout", extra={
                     "model_id": model_id, "timeout_sec": self._inference_timeout,
                 })

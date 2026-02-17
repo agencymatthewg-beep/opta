@@ -4,6 +4,7 @@ export { TOOL_SCHEMAS, SUB_AGENT_TOOL_SCHEMAS, getToolNames } from './schemas.js
 export { MODE_PERMISSIONS, resolvePermission } from './permissions.js';
 export {
   executeTool,
+  enrichError,
   assertWithinCwd,
   initProcessManager,
   shutdownProcessManager,

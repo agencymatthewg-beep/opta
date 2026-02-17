@@ -1,16 +1,9 @@
 // Google Sign-In Configuration
-//
-// INSTRUCTIONS:
-// 1. Go to https://console.cloud.google.com/apis/credentials
-// 2. Create a new project or select existing one
-// 3. Click "Create Credentials" → "OAuth client ID"
-// 4. Select "iOS" as application type
-// 5. Enter Bundle ID: com.opta.lm.ios
-// 6. Copy the Client ID and paste below
-// 7. The reversed client ID is the client ID with dots replaced by dashes, reversed
-//    Example: 123456789-abcdef.apps.googleusercontent.com
-//    Reversed: com.googleusercontent.apps.123456789-abcdef
+// Configured: 2026-02-17 by Opta512
+// Project: Opta Ecosystem (Supabase)
 
-// Replace these with your actual Google OAuth credentials:
-GOOGLE_CLIENT_ID = YOUR_CLIENT_ID_HERE.apps.googleusercontent.com
-GOOGLE_REVERSED_CLIENT_ID = com.googleusercontent.apps.YOUR_CLIENT_ID_HERE
+// Google OAuth Client ID (created 2026-02-14)
+GOOGLE_CLIENT_ID = 88000480710-u0oftrjncotchck28pc8pjp9ok1gkp47.apps.googleusercontent.com
+
+// Reversed Client ID for URL Scheme
+GOOGLE_REVERSED_CLIENT_ID = com.googleusercontent.apps.88000480710-u0oftrjncotchck28pc8pjp9ok1gkp47

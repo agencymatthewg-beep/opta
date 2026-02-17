@@ -199,6 +199,8 @@ export const modelCommands: SlashCommandDef[] = [
     description: 'Switch model (picker)',
     handler: modelHandler,
     category: 'session',
+    usage: '/model [name]',
+    examples: ['/model llama3', '/model claude-sonnet-4-20250514', '/model'],
   },
   {
     command: 'agent',
@@ -206,5 +208,7 @@ export const modelCommands: SlashCommandDef[] = [
     description: 'Switch agent profile',
     handler: agentHandler,
     category: 'session',
+    usage: '/agent [profile-name]',
+    examples: ['/agent coder', '/agent researcher', '/agent'],
   },
 ];

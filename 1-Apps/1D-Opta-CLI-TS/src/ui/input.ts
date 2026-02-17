@@ -1,5 +1,59 @@
 import chalk from 'chalk';
 
+// --- Connection Status Indicator ---
+
+let connectionStatus: 'connected' | 'degraded' | 'disconnected' = 'disconnected';
+let connectionCheckInterval: ReturnType<typeof setInterval> | null = null;
+
+export function getConnectionStatus(): 'connected' | 'degraded' | 'disconnected' {
+  return connectionStatus;
+}
+
+export function getConnectionDot(): string {
+  switch (connectionStatus) {
+    case 'connected': return chalk.green('\u25cf');
+    case 'degraded': return chalk.yellow('\u25cf');
+    case 'disconnected': return chalk.red('\u25cf');
+  }
+}
+
+export async function checkConnection(host: string, port: number): Promise<void> {
+  try {
+    const res = await fetch(`http://${host}:${port}/v1/models`, { signal: AbortSignal.timeout(2000) });
+    if (res.ok) {
+      const data = await res.json() as { data?: Array<{ id: string }> };
+      connectionStatus = data.data?.length ? 'connected' : 'degraded';
+    } else {
+      connectionStatus = 'degraded';
+    }
+  } catch {
+    connectionStatus = 'disconnected';
+  }
+}
+
+/**
+ * Start periodic connection checks (every 60s).
+ * Returns a cleanup function to stop the interval.
+ */
+export function startConnectionMonitor(host: string, port: number): () => void {
+  // Run initial check immediately
+  checkConnection(host, port).catch(() => {});
+
+  // Set up periodic checks
+  connectionCheckInterval = setInterval(() => {
+    checkConnection(host, port).catch(() => {});
+  }, 60_000);
+
+  return () => {
+    if (connectionCheckInterval) {
+      clearInterval(connectionCheckInterval);
+      connectionCheckInterval = null;
+    }
+  };
+}
+
+// --- Input Editor ---
+
 export interface InputEditorOptions {
   prompt: string;
   multiline?: boolean;
@@ -158,12 +212,13 @@ export class InputEditor {
   }
 
   getPromptDisplay(): string {
+    const dot = getConnectionDot();
     const mode = this.getEffectiveMode();
     switch (mode) {
-      case 'shell': return chalk.yellow('!') + chalk.dim(' >');
-      case 'plan': return chalk.magenta('plan') + chalk.dim(' >');
-      case 'auto': return chalk.yellow('auto') + chalk.dim(' >');
-      default: return chalk.cyan('>');
+      case 'shell': return `${dot} ${chalk.yellow('!')}${chalk.dim(' >')}`;
+      case 'plan': return `${dot} ${chalk.magenta('plan')}${chalk.dim(' >')}`;
+      case 'auto': return `${dot} ${chalk.yellow('auto')}${chalk.dim(' >')}`;
+      default: return `${dot} ${chalk.cyan('>')}`;
     }
   }
 }

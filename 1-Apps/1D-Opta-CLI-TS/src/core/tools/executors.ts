@@ -5,6 +5,70 @@ import { debug } from '../debug.js';
 import type { OptaConfig } from '../config.js';
 import { ProcessManager, type ProcessStatus } from '../background.js';
 
+// --- Error Recovery Hints ---
+
+/**
+ * Map common error codes/messages to actionable recovery hints.
+ * Returns a user-friendly message with a concrete next step.
+ */
+export function enrichError(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error);
+  const code = (error as NodeJS.ErrnoException)?.code;
+
+  // Network: connection refused
+  if (code === 'ECONNREFUSED' || message.includes('ECONNREFUSED') || message.includes('fetch failed')) {
+    return `${message}\n  Hint: LMX unreachable \u2014 check connection with /status or run opta doctor`;
+  }
+
+  // Network: timeout
+  if (code === 'ETIMEDOUT' || message.includes('ETIMEDOUT') || message.includes('AbortError') || message.includes('timed out')) {
+    return `${message}\n  Hint: Request timed out \u2014 LMX may be overloaded. Try: opta status`;
+  }
+
+  // Network: DNS resolution failure
+  if (code === 'ENOTFOUND' || message.includes('ENOTFOUND')) {
+    return `${message}\n  Hint: Host not found \u2014 check connection.host in config: opta config list`;
+  }
+
+  // File: permission denied
+  if (code === 'EACCES' || message.includes('EACCES') || message.includes('permission denied')) {
+    return `${message}\n  Hint: Permission denied \u2014 check file permissions or run with appropriate access`;
+  }
+
+  // File: not found
+  if (code === 'ENOENT' || message.includes('ENOENT') || message.includes('no such file')) {
+    // Try to extract the path from the error message
+    const pathMatch = message.match(/'([^']+)'/);
+    const parentDir = pathMatch?.[1]?.split('/').slice(0, -1).join('/');
+    const hint = parentDir
+      ? `Hint: File not found \u2014 verify the path exists: ls ${parentDir}`
+      : 'Hint: File not found \u2014 verify the path exists';
+    return `${message}\n  ${hint}`;
+  }
+
+  // File: directory not empty
+  if (code === 'ENOTEMPTY' || message.includes('ENOTEMPTY')) {
+    return `${message}\n  Hint: Directory not empty \u2014 remove contents first or use recursive delete`;
+  }
+
+  // File: path is a directory
+  if (code === 'EISDIR' || message.includes('EISDIR')) {
+    return `${message}\n  Hint: Path is a directory, not a file \u2014 check the target path`;
+  }
+
+  // Process: command not found
+  if (message.includes('command not found') || message.includes('not found') && message.includes('sh:')) {
+    return `${message}\n  Hint: Command not found \u2014 check spelling or install the missing tool`;
+  }
+
+  // Path traversal
+  if (message.includes('Path traversal blocked')) {
+    return `${message}\n  Hint: Tool can only access files within the working directory`;
+  }
+
+  return message;
+}
+
 // --- Tool Executors ---
 
 export async function executeTool(
@@ -62,8 +126,7 @@ export async function executeTool(
         return `Error: Unknown tool "${name}"`;
     }
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    return `Error: ${message}`;
+    return `Error: ${enrichError(err)}`;
   }
 }
 

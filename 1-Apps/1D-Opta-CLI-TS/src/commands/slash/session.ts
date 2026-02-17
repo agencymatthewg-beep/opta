@@ -3,7 +3,6 @@
  */
 
 import chalk from 'chalk';
-import { box, kv } from '../../ui/box.js';
 import { agentLoop } from '../../core/agent.js';
 import { generateTitle, saveSession } from '../../memory/store.js';
 import type { SlashCommandDef, SlashContext, SlashResult } from './types.js';
@@ -205,6 +204,66 @@ const imageHandler = async (args: string, ctx: SlashContext): Promise<SlashResul
   return 'handled';
 };
 
+const tagHandler = async (args: string, ctx: SlashContext): Promise<SlashResult> => {
+  const { tagSession, untagSession } = await import('../../memory/store.js');
+  const parts = args.trim().split(/\s+/);
+  const subcommand = parts[0]?.toLowerCase();
+
+  // /tag (no args) or /tag list — show current tags
+  if (!subcommand || subcommand === 'list') {
+    const tags = ctx.session.tags ?? [];
+    if (tags.length === 0) {
+      console.log(chalk.dim('  No tags on this session. Use /tag add <tag> to add one.'));
+    } else {
+      console.log(chalk.dim('  Tags: ') + tags.map(t => chalk.cyan(t)).join(', '));
+    }
+    return 'handled';
+  }
+
+  if (subcommand === 'add') {
+    const tagsToAdd = parts.slice(1).filter(Boolean);
+    if (tagsToAdd.length === 0) {
+      console.log(chalk.dim('  Usage: /tag add <tag1> [tag2] ...'));
+      return 'handled';
+    }
+    await tagSession(ctx.session.id, tagsToAdd);
+    ctx.session.tags = [...new Set([...(ctx.session.tags ?? []), ...tagsToAdd])];
+    console.log(chalk.green('\u2713') + ` Added tags: ${tagsToAdd.map(t => chalk.cyan(t)).join(', ')}`);
+    return 'handled';
+  }
+
+  if (subcommand === 'remove' || subcommand === 'rm') {
+    const tagsToRemove = parts.slice(1).filter(Boolean);
+    if (tagsToRemove.length === 0) {
+      console.log(chalk.dim('  Usage: /tag remove <tag1> [tag2] ...'));
+      return 'handled';
+    }
+    await untagSession(ctx.session.id, tagsToRemove);
+    ctx.session.tags = (ctx.session.tags ?? []).filter(t => !tagsToRemove.includes(t));
+    console.log(chalk.green('\u2713') + ` Removed tags: ${tagsToRemove.map(t => chalk.cyan(t)).join(', ')}`);
+    return 'handled';
+  }
+
+  // If the subcommand isn't recognized, treat the entire args as tags to add
+  const tagsToAdd = parts.filter(Boolean);
+  await tagSession(ctx.session.id, tagsToAdd);
+  ctx.session.tags = [...new Set([...(ctx.session.tags ?? []), ...tagsToAdd])];
+  console.log(chalk.green('\u2713') + ` Added tags: ${tagsToAdd.map(t => chalk.cyan(t)).join(', ')}`);
+  return 'handled';
+};
+
+const renameHandler = async (args: string, ctx: SlashContext): Promise<SlashResult> => {
+  if (!args.trim()) {
+    console.log(chalk.dim('  Usage: /rename <new title>'));
+    return 'handled';
+  }
+  const { renameSession } = await import('../../memory/store.js');
+  await renameSession(ctx.session.id, args.trim());
+  ctx.session.title = args.trim();
+  console.log(chalk.green('\u2713') + ` Session renamed: ${args.trim()}`);
+  return 'handled';
+};
+
 export const sessionCommands: SlashCommandDef[] = [
   {
     command: 'exit',
@@ -212,30 +271,40 @@ export const sessionCommands: SlashCommandDef[] = [
     description: 'Save and exit',
     handler: exitHandler,
     category: 'session',
+    usage: '/exit',
+    examples: ['/exit', '/quit', '/q'],
   },
   {
     command: 'clear',
     description: 'Clear screen',
     handler: clearHandler,
     category: 'session',
+    usage: '/clear',
+    examples: ['/clear'],
   },
   {
     command: 'share',
     description: 'Export conversation',
     handler: shareHandler,
     category: 'session',
+    usage: '/share',
+    examples: ['/share'],
   },
   {
     command: 'sessions',
     description: 'List recent sessions',
     handler: sessionsHandler,
     category: 'session',
+    usage: '/sessions',
+    examples: ['/sessions'],
   },
   {
     command: 'init',
     description: 'Generate project context',
     handler: initHandler,
     category: 'session',
+    usage: '/init',
+    examples: ['/init'],
   },
   {
     command: 'editor',
@@ -243,11 +312,33 @@ export const sessionCommands: SlashCommandDef[] = [
     description: 'Open $EDITOR for input',
     handler: editorHandler,
     category: 'session',
+    usage: '/editor [initial-text]',
+    examples: ['/editor', '/editor Fix the login bug'],
   },
   {
     command: 'image',
     description: 'Analyze an image',
     handler: imageHandler,
     category: 'session',
+    usage: '/image <path> [question]',
+    examples: ['/image screenshot.png What is this?', '/image ./designs/mockup.png Review this UI'],
+  },
+  {
+    command: 'tag',
+    aliases: ['t'],
+    description: 'Manage session tags',
+    handler: tagHandler,
+    category: 'session',
+    usage: '/tag [add|remove|list] [tags...]',
+    examples: ['/tag', '/tag add bugfix urgent', '/tag remove urgent', '/tag list'],
+  },
+  {
+    command: 'rename',
+    aliases: ['title'],
+    description: 'Rename current session',
+    handler: renameHandler,
+    category: 'session',
+    usage: '/rename <new title>',
+    examples: ['/rename Auth refactor session', '/title Fix login bug'],
   },
 ];

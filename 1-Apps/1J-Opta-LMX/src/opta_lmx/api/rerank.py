@@ -10,7 +10,6 @@ Compatible with Cohere/Jina reranking API format.
 from __future__ import annotations
 
 import logging
-from typing import Any
 
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
@@ -136,7 +135,10 @@ async def rerank_documents(body: RerankRequest, remote_client: RemoteReranking) 
     # No local reranking engine available yet
     return openai_error(
         status_code=503,
-        message="Reranking engine not available. Configure remote_helpers.reranking in config.yaml.",
+        message=(
+            "Reranking engine not available. "
+            "Configure remote_helpers.reranking in config.yaml."
+        ),
         error_type="server_error",
         code="reranking_unavailable",
     )

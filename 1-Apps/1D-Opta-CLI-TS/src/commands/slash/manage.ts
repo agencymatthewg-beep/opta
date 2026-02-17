@@ -1,5 +1,5 @@
 /**
- * Management slash commands: /config, /doctor, /mcp
+ * Management slash commands: /config, /doctor, /mcp, /quickfix
  */
 
 import chalk from 'chalk';
@@ -90,7 +90,7 @@ const configHandler = async (args: string, ctx: SlashContext): Promise<SlashResu
   return 'handled';
 };
 
-const doctorHandler = async (_args: string, ctx: SlashContext): Promise<SlashResult> => {
+const doctorHandler = async (_args: string, _ctx: SlashContext): Promise<SlashResult> => {
   try {
     const { runDoctor } = await import('../doctor.js');
     await runDoctor({});
@@ -124,6 +124,50 @@ const mcpHandler = async (_args: string, ctx: SlashContext): Promise<SlashResult
 
   console.log('\n' + box(`MCP Servers (${entries.length})`, lines));
   console.log(chalk.dim('  Manage: opta mcp add|remove|test <name>\n'));
+  return 'handled';
+};
+
+const quickfixHandler = async (_args: string, _ctx: SlashContext): Promise<SlashResult> => {
+  try {
+    const { healConfig } = await import('../../core/config.js');
+    const issues = await healConfig();
+
+    if (issues.length === 0) {
+      console.log(chalk.green('\u2713') + ' Config is healthy — no issues found');
+      return 'handled';
+    }
+
+    const fixed = issues.filter(i => i.autoFixed);
+    const manual = issues.filter(i => !i.autoFixed);
+
+    const lines: string[] = [];
+    for (const issue of issues) {
+      const icon = issue.autoFixed
+        ? chalk.green('\u2713')
+        : chalk.yellow('\u26a0');
+      const status = issue.autoFixed
+        ? chalk.dim('(auto-fixed)')
+        : chalk.yellow('(manual fix needed)');
+      lines.push(`${icon} ${chalk.bold(issue.path)} ${status}`);
+      lines.push(`  ${issue.message}`);
+      if (!issue.autoFixed) {
+        lines.push(`  ${chalk.dim(issue.suggestion)}`);
+      }
+    }
+
+    console.log('\n' + box('Config Health', lines));
+    console.log(
+      `  Fixed ${chalk.green(String(fixed.length))} issue${fixed.length === 1 ? '' : 's'}` +
+      (manual.length > 0
+        ? `, ${chalk.yellow(String(manual.length))} require${manual.length === 1 ? 's' : ''} manual attention`
+        : '') +
+      '\n',
+    );
+  } catch (err) {
+    console.error(
+      chalk.red('\u2717') + ` Quickfix failed: ${err instanceof Error ? err.message : err}`,
+    );
+  }
   return 'handled';
 };
 
@@ -166,17 +210,32 @@ export const manageCommands: SlashCommandDef[] = [
     description: 'View/change settings',
     handler: configHandler,
     category: 'tools',
+    usage: '/config [list|get|set|reset] [key] [value]',
+    examples: ['/config', '/config get connection.host', '/config set connection.port 1234', '/config reset'],
   },
   {
     command: 'doctor',
     description: 'Environment health check',
     handler: doctorHandler,
     category: 'info',
+    usage: '/doctor',
+    examples: ['/doctor'],
   },
   {
     command: 'mcp',
     description: 'List MCP servers',
     handler: mcpHandler,
     category: 'tools',
+    usage: '/mcp',
+    examples: ['/mcp'],
+  },
+  {
+    command: 'quickfix',
+    aliases: ['fix', 'repair'],
+    description: 'Auto-repair config issues',
+    handler: quickfixHandler,
+    category: 'tools',
+    usage: '/quickfix',
+    examples: ['/quickfix', '/fix'],
   },
 ];

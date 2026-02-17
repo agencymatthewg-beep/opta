@@ -1,0 +1,1308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Opta CLI — Competitive Assessment & Architecture Review</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --void: #09090b;
+    --surface: #18181b;
+    --elevated: #27272a;
+    --border: #3f3f46;
+    --text-primary: #fafafa;
+    --text-secondary: #a1a1aa;
+    --text-muted: #52525b;
+    --primary: #8b5cf6;
+    --primary-glow: #a855f7;
+    --neon-blue: #3b82f6;
+    --neon-green: #22c55e;
+    --neon-amber: #f59e0b;
+    --neon-red: #ef4444;
+    --neon-cyan: #06b6d4;
+    --neon-pink: #ec4899;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--void);
+    color: var(--text-primary);
+    font-family: 'Sora', -apple-system, BlinkMacSystemFont, sans-serif;
+    line-height: 1.6;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Noise overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  .container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 40px 32px;
+  }
+
+  /* Hero */
+  .hero {
+    text-align: center;
+    padding: 80px 20px 60px;
+    position: relative;
+  }
+
+  .hero h1 {
+    font-size: 3.2rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #ffffff 0%, #c4b5fd 40%, #8b5cf6 70%, #6366f1 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 16px;
+    letter-spacing: -0.02em;
+  }
+
+  .hero .subtitle {
+    font-size: 1.15rem;
+    color: var(--text-secondary);
+    max-width: 700px;
+    margin: 0 auto 32px;
+    font-weight: 300;
+  }
+
+  .hero .meta {
+    display: flex;
+    gap: 32px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .hero .meta-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .hero .meta-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--primary);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .hero .meta-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  /* Sections */
+  .section {
+    margin-bottom: 48px;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid;
+    border-image: linear-gradient(90deg, var(--primary), transparent) 1;
+  }
+
+  .section-number {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--primary);
+    background: rgba(139, 92, 246, 0.1);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    padding: 4px 12px;
+    border-radius: 6px;
+    letter-spacing: 0.05em;
+  }
+
+  .section-title {
+    font-size: 1.6rem;
+    font-weight: 600;
+    background: linear-gradient(135deg, #ffffff 0%, #c4b5fd 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* Glass cards */
+  .glass {
+    background: rgba(24, 24, 27, 0.6);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .glass:hover {
+    border-color: rgba(139, 92, 246, 0.2);
+    box-shadow: 0 8px 32px rgba(139, 92, 246, 0.08);
+  }
+
+  .glass-subtle {
+    background: rgba(24, 24, 27, 0.3);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 20px;
+  }
+
+  .glass-strong {
+    background: rgba(39, 39, 42, 0.8);
+    backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 16px;
+    padding: 32px;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
+  }
+
+  /* Card title */
+  .card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .card-title .icon {
+    font-size: 1.2rem;
+  }
+
+  /* Grid layouts */
+  .grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+
+  .grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+
+  .grid-4 {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+  }
+
+  @media (max-width: 1024px) {
+    .grid-3, .grid-4 { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  @media (max-width: 768px) {
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    .hero h1 { font-size: 2.2rem; }
+  }
+
+  /* Tables */
+  .table-wrap {
+    overflow-x: auto;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+  }
+
+  thead th {
+    background: rgba(139, 92, 246, 0.12);
+    color: var(--primary);
+    font-weight: 600;
+    text-align: left;
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(139, 92, 246, 0.25);
+    white-space: nowrap;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  tbody td {
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    color: var(--text-secondary);
+    vertical-align: top;
+  }
+
+  tbody tr:hover {
+    background: rgba(139, 92, 246, 0.04);
+  }
+
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  /* Status indicators */
+  .status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 6px;
+  }
+
+  .status-full {
+    color: var(--neon-green);
+    background: rgba(34, 197, 94, 0.1);
+    border: 1px solid rgba(34, 197, 94, 0.2);
+  }
+
+  .status-partial {
+    color: var(--neon-amber);
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+  }
+
+  .status-none {
+    color: var(--text-muted);
+    background: rgba(82, 82, 91, 0.2);
+    border: 1px solid rgba(82, 82, 91, 0.3);
+  }
+
+  .status-ahead {
+    color: var(--neon-cyan);
+    background: rgba(6, 182, 212, 0.1);
+    border: 1px solid rgba(6, 182, 212, 0.2);
+  }
+
+  .dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+  .dot-green { background: var(--neon-green); box-shadow: 0 0 6px var(--neon-green); }
+  .dot-amber { background: var(--neon-amber); box-shadow: 0 0 6px var(--neon-amber); }
+  .dot-red { background: var(--neon-red); box-shadow: 0 0 6px var(--neon-red); }
+  .dot-blue { background: var(--neon-blue); box-shadow: 0 0 6px var(--neon-blue); }
+  .dot-purple { background: var(--primary); box-shadow: 0 0 6px var(--primary); }
+
+  /* Tags */
+  .tag {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .tag-opta { background: rgba(139, 92, 246, 0.15); color: var(--primary); border: 1px solid rgba(139, 92, 246, 0.3); }
+  .tag-opencode { background: rgba(59, 130, 246, 0.15); color: var(--neon-blue); border: 1px solid rgba(59, 130, 246, 0.3); }
+  .tag-claude { background: rgba(236, 72, 153, 0.15); color: var(--neon-pink); border: 1px solid rgba(236, 72, 153, 0.3); }
+  .tag-kimi { background: rgba(6, 182, 212, 0.15); color: var(--neon-cyan); border: 1px solid rgba(6, 182, 212, 0.3); }
+
+  /* Progress bars */
+  .progress-bar {
+    height: 8px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 8px 0;
+  }
+
+  .progress-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.6s ease;
+  }
+
+  .progress-green { background: linear-gradient(90deg, var(--neon-green), #4ade80); }
+  .progress-amber { background: linear-gradient(90deg, var(--neon-amber), #fbbf24); }
+  .progress-blue { background: linear-gradient(90deg, var(--neon-blue), #60a5fa); }
+  .progress-purple { background: linear-gradient(90deg, var(--primary), var(--primary-glow)); }
+
+  /* Scorecard */
+  .score-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  }
+
+  .score-row:last-child { border-bottom: none; }
+
+  .score-label {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    flex: 1;
+  }
+
+  .score-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.95rem;
+    font-weight: 600;
+    min-width: 60px;
+    text-align: center;
+  }
+
+  /* Recommendation cards */
+  .rec-card {
+    background: rgba(24, 24, 27, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    padding: 20px;
+    border-left: 3px solid;
+    transition: transform 0.2s ease, border-color 0.3s ease;
+  }
+
+  .rec-card:hover {
+    transform: translateY(-2px);
+  }
+
+  .rec-critical { border-left-color: var(--neon-red); }
+  .rec-high { border-left-color: var(--neon-amber); }
+  .rec-medium { border-left-color: var(--neon-blue); }
+  .rec-polish { border-left-color: var(--neon-green); }
+
+  .rec-priority {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 8px;
+  }
+
+  .rec-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+  }
+
+  .rec-desc {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  /* Comparison matrix */
+  .matrix-cell {
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+  }
+
+  .matrix-header {
+    font-family: 'Sora', sans-serif;
+    font-weight: 600;
+  }
+
+  /* Lists */
+  .feature-list {
+    list-style: none;
+    padding: 0;
+  }
+
+  .feature-list li {
+    padding: 8px 0;
+    padding-left: 20px;
+    position: relative;
+    color: var(--text-secondary);
+    font-size: 0.88rem;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+
+  .feature-list li:last-child { border-bottom: none; }
+
+  .feature-list li::before {
+    content: '›';
+    position: absolute;
+    left: 0;
+    color: var(--primary);
+    font-weight: 700;
+  }
+
+  /* Highlight text */
+  .hl { color: var(--primary); font-weight: 500; }
+  .hl-green { color: var(--neon-green); }
+  .hl-amber { color: var(--neon-amber); }
+  .hl-blue { color: var(--neon-blue); }
+  .hl-red { color: var(--neon-red); }
+  .hl-cyan { color: var(--neon-cyan); }
+
+  /* Code */
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+    background: rgba(139, 92, 246, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--primary-glow);
+  }
+
+  /* Verdict banner */
+  .verdict-banner {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.12) 0%, rgba(99, 102, 241, 0.08) 100%);
+    border: 1px solid rgba(139, 92, 246, 0.25);
+    border-radius: 16px;
+    padding: 32px;
+    text-align: center;
+    margin: 40px 0;
+  }
+
+  .verdict-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-bottom: 12px;
+    background: linear-gradient(135deg, #ffffff, #c4b5fd);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .verdict-text {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    max-width: 800px;
+    margin: 0 auto;
+    line-height: 1.7;
+  }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    margin-top: 60px;
+  }
+
+  /* Animated glow line */
+  .glow-line {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--primary), transparent);
+    margin: 40px 0;
+    opacity: 0.5;
+  }
+
+  /* Pros/Cons columns */
+  .pros-cons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  .pros-title, .cons-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .pros-title { color: var(--neon-green); }
+  .cons-title { color: var(--neon-red); }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- HERO -->
+  <div class="hero">
+    <h1>Opta CLI — Competitive Assessment</h1>
+    <p class="subtitle">
+      Objective analysis of Opta CLI's TUI, capabilities, and competitive position
+      versus OpenCode, Claude Code, and Kimi Code after the Phase 1–3 UX overhaul.
+    </p>
+    <div class="meta">
+      <div class="meta-item">
+        <span class="meta-value">68</span>
+        <span class="meta-label">Tasks Completed</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-value">33</span>
+        <span class="meta-label">UX Gaps Closed</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-value">518</span>
+        <span class="meta-label">Tests Passing</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-value">10.4K</span>
+        <span class="meta-label">Lines of Code</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="glow-line"></div>
+
+  <!-- SECTION 1: TUI COMPARISON -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-number">01</span>
+      <h2 class="section-title">TUI Architecture — Opta CLI vs OpenCode</h2>
+    </div>
+
+    <!-- Architecture cards -->
+    <div class="grid-2">
+      <div class="glass">
+        <div class="card-title"><span class="tag tag-opta">OPTA CLI</span> Architecture</div>
+        <ul class="feature-list">
+          <li><span class="hl">Ink 5 + React 18</span> — React component tree rendering to terminal</li>
+          <li>TypeScript / Node.js runtime (ESM-only)</li>
+          <li>Commander.js for CLI routing + Ink for full-screen TUI</li>
+          <li><code>--tui</code> flag opts into alternate buffer mode</li>
+          <li>Dual-mode: inline REPL (default) + full-screen TUI</li>
+          <li>10 TSX components, 2 custom hooks</li>
+          <li>718 lines of TUI code across 14 files</li>
+        </ul>
+      </div>
+      <div class="glass">
+        <div class="card-title"><span class="tag tag-opencode">OPENCODE</span> Architecture</div>
+        <ul class="feature-list">
+          <li><span class="hl-blue">SolidJS + custom @opentui renderer</span> — reactive UI with Zig/Yoga layout</li>
+          <li>Bun runtime (not Node.js)</li>
+          <li>Client-server architecture (TUI ↔ HTTP/SSE ↔ headless server)</li>
+          <li>Always full-screen — no inline REPL mode</li>
+          <li>60 FPS render target with Kitty keyboard protocol</li>
+          <li>16 nested SolidJS context providers</li>
+          <li>~15,000+ lines of TUI code</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Detailed TUI feature matrix -->
+    <div class="glass-strong" style="margin-top: 20px;">
+      <div class="card-title">Detailed TUI Feature Matrix</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:28%">Feature</th>
+              <th style="width:36%">Opta CLI</th>
+              <th style="width:36%">OpenCode</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Framework</strong></td>
+              <td>Ink 5 (React for terminals)</td>
+              <td>SolidJS + @opentui (custom Yoga/Zig renderer)</td>
+            </tr>
+            <tr>
+              <td><strong>Layout Engine</strong></td>
+              <td>Ink's Yoga-based flexbox</td>
+              <td>Custom Yoga/Zig with native bindings</td>
+            </tr>
+            <tr>
+              <td><strong>Split Pane</strong></td>
+              <td><span class="status status-full"><span class="dot dot-green"></span> Yes</span> — SplitPane component, Ctrl+B toggle</td>
+              <td><span class="status status-full"><span class="dot dot-green"></span> Yes</span> — 42-col sidebar, leader+B toggle</td>
+            </tr>
+            <tr>
+              <td><strong>Sidebar</strong></td>
+              <td><span class="status status-full"><span class="dot dot-green"></span> Yes</span> — Model, session, tokens, tool stats</td>
+              <td><span class="status status-full"><span class="dot dot-green"></span> Yes</span> — Context %, MCP status, LSP diagnostics, files, todos, permissions</td>
+            </tr>
+            <tr>
+              <td><strong>Header</strong></td>
+              <td><span class="status status-full"><span class="dot dot-green"></span> Yes</span> — Model, connection status, session ID</td>
+              <td><span class="status status-full"><span class="dot dot-green"></span> Yes</span> — Title, context cost, child session navigation</td>
+            </tr>
+            <tr>
+              <td><strong>Status Bar</strong></td>
+              <td><span class="status status-full"><span class="dot dot-green"></span> Yes</span> — Persistent Ink component with tokens/tools/cost/speed</td>
+              <td><span class="status status-full"><span class="dot dot-green"></span> Yes</span> — Footer with cwd, permissions, LSP, MCP counts</td>
+            </tr>
+            <tr>
+              <td><strong>Scrollable Messages</strong></td>
+              <td><span class="status status-full"><span class="dot dot-green"></span> Yes</span> — ScrollView with auto-scroll + scrollbar indicator</td>
+              <td><span class="status status-full"><span class="dot dot-green"></span> Yes</span> — Momentum scrolling with acceleration config</td>
+            </tr>
+            <tr>
+              <td><strong>Focus Management</strong></td>
+              <td><span class="status status-full"><span class="dot dot-green"></span> Yes</span> — FocusContext, Tab/Shift+Tab, visual borders</td>
+              <td><span class="status status-partial"><span class="dot dot-amber"></span> Implicit</span> — Input focus managed by state, no panel cycling</td>
+            </tr>
+            <tr>
+              <td><strong>Dialog/Modal System</strong></td>
+              <td><span class="status status-none"><span class="dot dot-red"></span> None</span></td>
+              <td><span class="status status-full"><span class="dot dot-green"></span> Yes</span> — 8 dialog types with backdrop, fuzzy search, stacking</td>
+            </tr>
+            <tr>
+              <td><strong>Themes</strong></td>
+              <td><span class="status status-full"><span class="dot dot-green"></span> 5 themes</span> — opta, minimal, solarized, dracula, catppuccin</td>
+              <td><span class="status status-full"><span class="dot dot-green"></span> 11+ themes</span> — Custom JSON with 62 color properties, dark/light detection</td>
+            </tr>
+            <tr>
+              <td><strong>Syntax Highlighting</strong></td>
+              <td><span class="status status-partial"><span class="dot dot-amber"></span> Basic</span> — marked-terminal with Opta color palette</td>
+              <td><span class="status status-full"><span class="dot dot-green"></span> Advanced</span> — Shiki (VS Code's highlighter), line numbers, copy button</td>
+            </tr>
+            <tr>
+              <td><strong>Command Palette</strong></td>
+              <td><span class="status status-partial"><span class="dot dot-amber"></span> /menu</span> — Slash command picker via @inquirer/prompts</td>
+              <td><span class="status status-full"><span class="dot dot-green"></span> Full</span> — Ctrl+P fuzzy command palette with category grouping</td>
+            </tr>
+            <tr>
+              <td><strong>Toast Notifications</strong></td>
+              <td><span class="status status-none"><span class="dot dot-red"></span> None</span></td>
+              <td><span class="status status-full"><span class="dot dot-green"></span> Yes</span> — Severity-colored, auto-dismiss</td>
+            </tr>
+            <tr>
+              <td><strong>Keyboard Protocol</strong></td>
+              <td>Standard Node.js readline</td>
+              <td>Kitty keyboard protocol (enhanced key discrimination)</td>
+            </tr>
+            <tr>
+              <td><strong>Client-Server Split</strong></td>
+              <td>Monolithic process</td>
+              <td>Separate processes via HTTP/SSE</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TUI Verdict -->
+    <div class="verdict-banner">
+      <div class="verdict-title">TUI Verdict</div>
+      <p class="verdict-text">
+        Opta CLI now has <span class="hl">all the structural components</span> of a full-screen TUI — split panes, sidebar,
+        scrollable messages, persistent status bar, focus management, and themes. However, OpenCode's TUI is
+        <span class="hl-blue">significantly more mature</span> with its custom Zig renderer, dialog system, command palette,
+        Shiki syntax highlighting, momentum scrolling, and 62-property theme engine. The architectural gap is
+        <span class="hl-amber">medium</span> — Opta has the skeleton, OpenCode has the polish.
+      </p>
+    </div>
+  </div>
+
+  <div class="glow-line"></div>
+
+  <!-- SECTION 2: CAPABILITY COMPARISON -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-number">02</span>
+      <h2 class="section-title">Competency, Capability & Features</h2>
+    </div>
+
+    <p style="color: var(--text-secondary); margin-bottom: 24px; font-size: 0.9rem;">
+      Comparing Opta CLI against Claude Code (Anthropic) and Kimi Code (Moonshot AI) across all major capability dimensions.
+      Model examples: <span class="hl">Opus 4.6</span>, <span class="hl-cyan">Kimi K2.5</span>,
+      <span class="hl-amber">MiniMax M2.5</span>, <span class="hl-green">GLM-5</span>.
+    </p>
+
+    <!-- Capability matrix -->
+    <div class="glass-strong">
+      <div class="card-title">Full Capability Matrix</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:22%">Capability</th>
+              <th style="width:26%" class="matrix-header"><span class="tag tag-opta">Opta CLI</span></th>
+              <th style="width:26%" class="matrix-header"><span class="tag tag-claude">Claude Code</span></th>
+              <th style="width:26%" class="matrix-header"><span class="tag tag-kimi">Kimi Code</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Primary Models</strong></td>
+              <td>Any OpenAI-compatible (via Opta-LMX)<br><span class="hl-amber">MiniMax M2.5</span>, <span class="hl-green">GLM-5</span>, Qwen, etc.</td>
+              <td><span class="hl">Opus 4.6</span>, Sonnet 4.5, Haiku 4.5</td>
+              <td><span class="hl-cyan">Kimi K2.5</span> (1T MoE, 32B active)</td>
+            </tr>
+            <tr>
+              <td><strong>Context Window</strong></td>
+              <td>Model-dependent (typically 32K–128K)</td>
+              <td>Up to 1M tokens (Opus 4.6)</td>
+              <td>256K tokens (K2.5)</td>
+            </tr>
+            <tr>
+              <td><strong>Tools Count</strong></td>
+              <td>8 core + LSP tools</td>
+              <td>11 built-in + unlimited MCP tools</td>
+              <td>7 core + MCP tools</td>
+            </tr>
+            <tr>
+              <td><strong>SWE-Bench Verified</strong></td>
+              <td>Depends on model — <span class="hl-amber">M2.5: 80.2%</span>, <span class="hl-green">GLM-5: 77.8%</span></td>
+              <td><span class="hl">Opus 4.6: 80.9%</span></td>
+              <td><span class="hl-cyan">K2.5: 76.8%</span></td>
+            </tr>
+            <tr>
+              <td><strong>Permission System</strong></td>
+              <td>Per-tool allow/ask/deny, CI mode auto-deny</td>
+              <td>6 modes, per-tool rules with wildcards, hooks can modify</td>
+              <td>Shell command approval gating</td>
+            </tr>
+            <tr>
+              <td><strong>Hooks / Lifecycle</strong></td>
+              <td>None</td>
+              <td><span class="hl">14 events</span>, 3 handler types (cmd/prompt/agent), async</td>
+              <td>Not documented</td>
+            </tr>
+            <tr>
+              <td><strong>Subagents</strong></td>
+              <td>Single depth (V2 expanded to multi-depth)</td>
+              <td>Multi-depth, agent teams, delegate mode, task lists</td>
+              <td>Swarm mode — up to 100 parallel agents</td>
+            </tr>
+            <tr>
+              <td><strong>MCP Integration</strong></td>
+              <td>Stub (V2 planned)</td>
+              <td>Full — add/remove/OAuth, tools as first-class, prompts as commands</td>
+              <td>Full — add/remove/auth via CLI</td>
+            </tr>
+            <tr>
+              <td><strong>Session Management</strong></td>
+              <td>JSON persistence, resume, export (JSON/text/MD), analytics</td>
+              <td>JSONL persistence, resume, fork, rewind, web sync, PR linking</td>
+              <td>Basic persistence</td>
+            </tr>
+            <tr>
+              <td><strong>Git Integration</strong></td>
+              <td>Basic (/diff, /status)</td>
+              <td>Deep — PR status in footer, --from-pr, GitHub app, auto-commit</td>
+              <td>Not documented</td>
+            </tr>
+            <tr>
+              <td><strong>Undo/Redo</strong></td>
+              <td>None</td>
+              <td><span class="hl">/rewind</span> — git-level checkpoint restoration</td>
+              <td>Internal checkpoint (less exposed)</td>
+            </tr>
+            <tr>
+              <td><strong>Non-Interactive Mode</strong></td>
+              <td><code>opta do</code> with --quiet, --output, --format</td>
+              <td><code>claude -p</code> with stream-json, JSON schema, max-turns, budget</td>
+              <td>Basic CLI execution</td>
+            </tr>
+            <tr>
+              <td><strong>Server Mode</strong></td>
+              <td><span class="hl">opta server</span> — HTTP API with /health + /v1/chat</td>
+              <td>None (but web sessions via --remote)</td>
+              <td>ACP server mode (JSON-RPC 2.0)</td>
+            </tr>
+            <tr>
+              <td><strong>Web Search</strong></td>
+              <td>None</td>
+              <td>Built-in WebSearch + WebFetch tools</td>
+              <td>Built-in web search</td>
+            </tr>
+            <tr>
+              <td><strong>Image Input</strong></td>
+              <td>/image command (placeholder)</td>
+              <td>Ctrl+V paste, file attachment</td>
+              <td>Native multimodal (images + video)</td>
+            </tr>
+            <tr>
+              <td><strong>Skills / Extensions</strong></td>
+              <td>SKILL.md loader (stub)</td>
+              <td>Full skills system — frontmatter, fork context, dynamic injection</td>
+              <td>Not documented</td>
+            </tr>
+            <tr>
+              <td><strong>IDE Integration</strong></td>
+              <td>None</td>
+              <td>VS Code, JetBrains extensions</td>
+              <td>VS Code + ACP protocol (any IDE)</td>
+            </tr>
+            <tr>
+              <td><strong>Cost Tracking</strong></td>
+              <td>/cost, /stats, cumulative display in status bar</td>
+              <td>/cost, /stats, /usage, budget caps, context visualization</td>
+              <td>Not documented</td>
+            </tr>
+            <tr>
+              <td><strong>Thinking Display</strong></td>
+              <td>/expand toggle, collapsed summary, expanded view</td>
+              <td>Extended thinking with effort slider (Opus 4.6)</td>
+              <td>Interleaved thinking (K2.5)</td>
+            </tr>
+            <tr>
+              <td><strong>Open Source</strong></td>
+              <td><span class="hl">Proprietary</span></td>
+              <td>Closed source, paid subscription</td>
+              <td><span class="hl-green">Apache 2.0</span></td>
+            </tr>
+            <tr>
+              <td><strong>Model Flexibility</strong></td>
+              <td class="matrix-cell"><span class="status status-ahead"><span class="dot dot-blue"></span> Any model</span></td>
+              <td class="matrix-cell"><span class="status status-partial"><span class="dot dot-amber"></span> Claude only</span></td>
+              <td class="matrix-cell"><span class="status status-partial"><span class="dot dot-amber"></span> Kimi only</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Model comparison cards -->
+    <div class="grid-4" style="margin-top: 20px;">
+      <div class="glass-subtle" style="text-align: center;">
+        <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px;">Opus 4.6</div>
+        <div style="font-size: 1.8rem; font-weight: 700; color: var(--neon-pink); font-family: 'JetBrains Mono';">80.9%</div>
+        <div style="font-size: 0.75rem; color: var(--text-muted);">SWE-Bench</div>
+        <div class="progress-bar"><div class="progress-fill progress-purple" style="width: 80.9%"></div></div>
+        <div style="font-size: 0.72rem; color: var(--text-muted);">1M context · Claude Code exclusive</div>
+      </div>
+      <div class="glass-subtle" style="text-align: center;">
+        <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px;">MiniMax M2.5</div>
+        <div style="font-size: 1.8rem; font-weight: 700; color: var(--neon-amber); font-family: 'JetBrains Mono';">80.2%</div>
+        <div style="font-size: 0.75rem; color: var(--text-muted);">SWE-Bench</div>
+        <div class="progress-bar"><div class="progress-fill progress-amber" style="width: 80.2%"></div></div>
+        <div style="font-size: 0.72rem; color: var(--text-muted);">230B MoE · 1/10th Opus cost</div>
+      </div>
+      <div class="glass-subtle" style="text-align: center;">
+        <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px;">GLM-5</div>
+        <div style="font-size: 1.8rem; font-weight: 700; color: var(--neon-green); font-family: 'JetBrains Mono';">77.8%</div>
+        <div style="font-size: 0.75rem; color: var(--text-muted);">SWE-Bench</div>
+        <div class="progress-bar"><div class="progress-fill progress-green" style="width: 77.8%"></div></div>
+        <div style="font-size: 0.72rem; color: var(--text-muted);">744B MoE · MIT open weights</div>
+      </div>
+      <div class="glass-subtle" style="text-align: center;">
+        <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px;">Kimi K2.5</div>
+        <div style="font-size: 1.8rem; font-weight: 700; color: var(--neon-cyan); font-family: 'JetBrains Mono';">76.8%</div>
+        <div style="font-size: 0.75rem; color: var(--text-muted);">SWE-Bench</div>
+        <div class="progress-bar"><div class="progress-fill progress-blue" style="width: 76.8%"></div></div>
+        <div style="font-size: 0.72rem; color: var(--text-muted);">1T MoE · 256K context · open weights</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="glow-line"></div>
+
+  <!-- SECTION 3: UNIQUE FEATURES & PROS/CONS -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-number">03</span>
+      <h2 class="section-title">Unique Advantages, Pros & Cons</h2>
+    </div>
+
+    <!-- Unique advantages -->
+    <div class="glass-strong" style="margin-bottom: 24px;">
+      <div class="card-title">Opta CLI's Unique Competitive Advantages</div>
+      <div class="grid-3">
+        <div class="glass-subtle">
+          <div style="font-size: 1.5rem; margin-bottom: 8px;">🔓</div>
+          <div style="font-weight: 600; margin-bottom: 6px; color: var(--text-primary);">Model Agnostic</div>
+          <div style="font-size: 0.82rem; color: var(--text-secondary);">
+            The only CLI agent that routes through <span class="hl">any OpenAI-compatible endpoint</span>. Run MiniMax M2.5
+            (80.2% SWE-Bench at 1/10th cost), GLM-5 (MIT open weights), or any local model via Opta-LMX.
+            Claude Code and Kimi Code are locked to their own models.
+          </div>
+        </div>
+        <div class="glass-subtle">
+          <div style="font-size: 1.5rem; margin-bottom: 8px;">🏠</div>
+          <div style="font-weight: 600; margin-bottom: 6px; color: var(--text-primary);">Local-First Inference</div>
+          <div style="font-size: 0.82rem; color: var(--text-secondary);">
+            Purpose-built for <span class="hl">Opta-LMX</span> on Mac Studio (192.168.188.11). Zero cloud dependency,
+            zero API costs, zero data leaving your network. No competitor offers a first-party local inference
+            server tightly integrated with the CLI agent.
+          </div>
+        </div>
+        <div class="glass-subtle">
+          <div style="font-size: 1.5rem; margin-bottom: 8px;">🌐</div>
+          <div style="font-weight: 600; margin-bottom: 6px; color: var(--text-primary);">HTTP Server Mode</div>
+          <div style="font-size: 0.82rem; color: var(--text-secondary);">
+            <code>opta server</code> exposes the full agent loop as a REST API. Neither Claude Code nor Kimi Code
+            offer a built-in server mode. This enables remote integration, webhook-driven automation,
+            and building custom frontends on top of the agent.
+          </div>
+        </div>
+        <div class="glass-subtle">
+          <div style="font-size: 1.5rem; margin-bottom: 8px;">🎯</div>
+          <div style="font-weight: 600; margin-bottom: 6px; color: var(--text-primary);">Agent Profiles</div>
+          <div style="font-size: 0.82rem; color: var(--text-secondary);">
+            4 built-in profiles (default, reader, coder, researcher) that constrain the tool set and system
+            prompt per task type. Switch instantly via <code>/agent</code>. More focused than OpenCode's
+            agent system and simpler than Claude Code's custom agent YAML.
+          </div>
+        </div>
+        <div class="glass-subtle">
+          <div style="font-size: 1.5rem; margin-bottom: 8px;">📊</div>
+          <div style="font-weight: 600; margin-bottom: 6px; color: var(--text-primary);">Session Analytics</div>
+          <div style="font-size: 0.82rem; color: var(--text-secondary);">
+            Cross-session statistics dashboard via <code>/stats</code> — total messages, tool calls, model
+            usage breakdown, daily activity patterns, session averages. Goes beyond simple cost tracking
+            to provide workflow intelligence.
+          </div>
+        </div>
+        <div class="glass-subtle">
+          <div style="font-size: 1.5rem; margin-bottom: 8px;">⚡</div>
+          <div style="font-weight: 600; margin-bottom: 6px; color: var(--text-primary);">Dual-Mode UI</div>
+          <div style="font-size: 0.82rem; color: var(--text-secondary);">
+            Inline REPL mode (fast, lightweight) <em>and</em> full-screen TUI mode (rich, immersive).
+            OpenCode is TUI-only. Claude Code is inline-only. Opta CLI offers both, letting users
+            choose based on task complexity.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pros and Cons -->
+    <div class="glass">
+      <div class="card-title">Current Pros & Cons</div>
+      <div class="pros-cons">
+        <div>
+          <div class="pros-title"><span class="dot dot-green"></span> Strengths</div>
+          <ul class="feature-list">
+            <li>Model-agnostic — use any LLM provider, including local models at zero cost</li>
+            <li>Dual-mode UI — inline REPL for quick tasks, full TUI for complex sessions</li>
+            <li>Comprehensive slash commands (20+ commands covering all workflows)</li>
+            <li>Rich input system — multiline, shell mode, @file refs with line ranges, fuzzy autocomplete</li>
+            <li>5-theme system with per-component color wiring</li>
+            <li>Full-screen TUI with split pane, sidebar, scrollable messages, focus management</li>
+            <li>Session analytics with cross-session intelligence</li>
+            <li>HTTP server mode for programmatic integration</li>
+            <li>Agent profiles for task-specific tool constraints</li>
+            <li>518 tests across 58 files — strong test coverage</li>
+            <li>ESM-only with lazy loading — <50ms startup for <code>opta --help</code></li>
+            <li>Configurable keybindings via <code>.opta/keybindings.json</code></li>
+          </ul>
+        </div>
+        <div>
+          <div class="cons-title"><span class="dot dot-red"></span> Current Gaps</div>
+          <ul class="feature-list">
+            <li>No dialog/modal system — pickers use @inquirer/prompts (breaks TUI flow)</li>
+            <li>No command palette (Ctrl+P fuzzy search) — relies on / menu</li>
+            <li>No Shiki syntax highlighting — marked-terminal provides basic coloring only</li>
+            <li>No git-level undo/redo (/rewind equivalent)</li>
+            <li>No hooks/lifecycle system — cannot intercept or gate tool executions</li>
+            <li>No MCP integration (stub only) — cannot connect to external tool servers</li>
+            <li>No web search or web fetch tools</li>
+            <li>No image input support (placeholder only)</li>
+            <li>No skills/extension system (loader stub only)</li>
+            <li>No IDE integration (VS Code, JetBrains)</li>
+            <li>No toast notification system for async feedback</li>
+            <li>No momentum/acceleration scrolling</li>
+            <li>No clipboard integration (OSC 52)</li>
+            <li>TUI components are functional but visually basic compared to OpenCode's polish</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="glow-line"></div>
+
+  <!-- SECTION 4: COMPETITIVE SCORECARD -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-number">04</span>
+      <h2 class="section-title">Competitive Scorecard (0–10)</h2>
+    </div>
+
+    <div class="glass-strong">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:25%">Dimension</th>
+              <th style="width:19%"><span class="tag tag-opta">Opta CLI</span></th>
+              <th style="width:19%"><span class="tag tag-opencode">OpenCode</span></th>
+              <th style="width:19%"><span class="tag tag-claude">Claude Code</span></th>
+              <th style="width:19%"><span class="tag tag-kimi">Kimi Code</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>TUI Polish</strong></td>
+              <td class="matrix-cell"><span class="hl">5.5</span></td>
+              <td class="matrix-cell"><span class="hl-blue">9.5</span></td>
+              <td class="matrix-cell">3.0</td>
+              <td class="matrix-cell">2.0</td>
+            </tr>
+            <tr>
+              <td><strong>Agent Capabilities</strong></td>
+              <td class="matrix-cell"><span class="hl">5.0</span></td>
+              <td class="matrix-cell"><span class="hl-blue">7.5</span></td>
+              <td class="matrix-cell"><span class="hl-pink" style="color:var(--neon-pink)">9.5</span></td>
+              <td class="matrix-cell"><span class="hl-cyan">7.0</span></td>
+            </tr>
+            <tr>
+              <td><strong>Model Flexibility</strong></td>
+              <td class="matrix-cell"><span class="hl" style="color:var(--neon-green)">10.0</span></td>
+              <td class="matrix-cell"><span class="hl-blue">9.0</span></td>
+              <td class="matrix-cell">2.0</td>
+              <td class="matrix-cell">2.0</td>
+            </tr>
+            <tr>
+              <td><strong>Tool Ecosystem</strong></td>
+              <td class="matrix-cell"><span class="hl">4.0</span></td>
+              <td class="matrix-cell"><span class="hl-blue">8.0</span></td>
+              <td class="matrix-cell"><span class="hl-pink" style="color:var(--neon-pink)">9.5</span></td>
+              <td class="matrix-cell"><span class="hl-cyan">6.0</span></td>
+            </tr>
+            <tr>
+              <td><strong>Session Management</strong></td>
+              <td class="matrix-cell"><span class="hl">7.0</span></td>
+              <td class="matrix-cell"><span class="hl-blue">8.0</span></td>
+              <td class="matrix-cell"><span class="hl-pink" style="color:var(--neon-pink)">9.0</span></td>
+              <td class="matrix-cell"><span class="hl-cyan">4.0</span></td>
+            </tr>
+            <tr>
+              <td><strong>Input & Editing</strong></td>
+              <td class="matrix-cell"><span class="hl">7.5</span></td>
+              <td class="matrix-cell"><span class="hl-blue">8.5</span></td>
+              <td class="matrix-cell">6.0</td>
+              <td class="matrix-cell"><span class="hl-cyan">5.0</span></td>
+            </tr>
+            <tr>
+              <td><strong>Extensibility</strong></td>
+              <td class="matrix-cell"><span class="hl">2.0</span></td>
+              <td class="matrix-cell"><span class="hl-blue">6.0</span></td>
+              <td class="matrix-cell"><span class="hl-pink" style="color:var(--neon-pink)">9.5</span></td>
+              <td class="matrix-cell"><span class="hl-cyan">5.0</span></td>
+            </tr>
+            <tr>
+              <td><strong>Local/Privacy</strong></td>
+              <td class="matrix-cell"><span class="hl" style="color:var(--neon-green)">10.0</span></td>
+              <td class="matrix-cell"><span class="hl-blue">5.0</span></td>
+              <td class="matrix-cell">1.0</td>
+              <td class="matrix-cell"><span class="hl-cyan">3.0</span></td>
+            </tr>
+            <tr>
+              <td><strong>Documentation</strong></td>
+              <td class="matrix-cell"><span class="hl">6.0</span></td>
+              <td class="matrix-cell"><span class="hl-blue">8.0</span></td>
+              <td class="matrix-cell"><span class="hl-pink" style="color:var(--neon-pink)">9.0</span></td>
+              <td class="matrix-cell"><span class="hl-cyan">5.0</span></td>
+            </tr>
+            <tr style="background: rgba(139,92,246,0.06);">
+              <td><strong style="color: var(--text-primary);">OVERALL</strong></td>
+              <td class="matrix-cell"><strong style="color: var(--primary); font-size: 1.1rem;">6.3</strong></td>
+              <td class="matrix-cell"><strong style="color: var(--neon-blue); font-size: 1.1rem;">7.7</strong></td>
+              <td class="matrix-cell"><strong style="color: var(--neon-pink); font-size: 1.1rem;">6.5</strong></td>
+              <td class="matrix-cell"><strong style="color: var(--neon-cyan); font-size: 1.1rem;">4.3</strong></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top: 16px; font-size: 0.78rem; color: var(--text-muted); text-align: center;">
+        Scores reflect the CLI tool itself, not the underlying model quality. Claude Code scores lower on TUI because it has no TUI.
+        Opta CLI's model flexibility and local-first privacy are its strongest differentiators.
+      </div>
+    </div>
+  </div>
+
+  <div class="glow-line"></div>
+
+  <!-- SECTION 5: RECOMMENDATIONS -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-number">05</span>
+      <h2 class="section-title">Recommended Areas for Improvement</h2>
+    </div>
+
+    <p style="color: var(--text-secondary); margin-bottom: 24px; font-size: 0.9rem;">
+      Prioritized by impact on competitive positioning. <span class="hl-red">Critical</span> items block market viability.
+      <span class="hl-amber">High</span> items represent significant competitive gaps.
+      <span class="hl-blue">Medium</span> items are differentiators.
+      <span class="hl-green">Polish</span> items are nice-to-have refinements.
+    </p>
+
+    <!-- Critical -->
+    <div style="margin-bottom: 32px;">
+      <div style="color: var(--neon-red); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px;">
+        <span class="dot dot-red"></span> &nbsp;Critical — Blocks Market Viability
+      </div>
+      <div class="grid-2">
+        <div class="rec-card rec-critical">
+          <div class="rec-priority" style="color: var(--neon-red);">C1 — MCP Integration</div>
+          <div class="rec-title">Implement Full MCP Client</div>
+          <div class="rec-desc">
+            MCP is becoming the standard protocol for AI tool integration. Without it, Opta CLI cannot
+            connect to GitHub, databases, Slack, or any of the 100+ MCP servers in the ecosystem.
+            Both Claude Code and Kimi Code have full MCP. This is the single biggest capability gap.
+          </div>
+        </div>
+        <div class="rec-card rec-critical">
+          <div class="rec-priority" style="color: var(--neon-red);">C2 — Web Search & Fetch</div>
+          <div class="rec-title">Add Web Research Tools</div>
+          <div class="rec-desc">
+            An agent without web access is severely limited for research, documentation lookup, and
+            staying current. Both competitors have built-in web tools. Add <code>web_search</code> and
+            <code>web_fetch</code> tools to the core tool set, or prioritize MCP (C1) which enables this via servers.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- High -->
+    <div style="margin-bottom: 32px;">
+      <div style="color: var(--neon-amber); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px;">
+        <span class="dot dot-amber"></span> &nbsp;High — Significant Competitive Gaps
+      </div>
+      <div class="grid-2">
+        <div class="rec-card rec-high">
+          <div class="rec-priority" style="color: var(--neon-amber);">H1 — Dialog/Modal System</div>
+          <div class="rec-title">Build TUI-Native Dialogs</div>
+          <div class="rec-desc">
+            Currently, pickers (model, session, theme) drop out of the TUI into @inquirer/prompts,
+            breaking immersion. Build an Ink-based dialog component with fuzzy search, backdrop overlay,
+            and keyboard navigation. This is what makes OpenCode feel like a real application.
+          </div>
+        </div>
+        <div class="rec-card rec-high">
+          <div class="rec-priority" style="color: var(--neon-amber);">H2 — Git Undo/Redo</div>
+          <div class="rec-title">Implement Checkpoint & Rewind</div>
+          <div class="rec-desc">
+            Auto-commit agent file changes, track checkpoints, and allow <code>/rewind</code> to restore
+            both conversation and code state. This is Claude Code's most-loved safety feature and
+            essential for trust in autonomous agents.
+          </div>
+        </div>
+        <div class="rec-card rec-high">
+          <div class="rec-priority" style="color: var(--neon-amber);">H3 — Hooks System</div>
+          <div class="rec-title">Add Lifecycle Event Hooks</div>
+          <div class="rec-desc">
+            Pre/post tool execution hooks enable security gates, logging, custom validation, and
+            workflow automation. Start with 4 core events: <code>PreToolUse</code>, <code>PostToolUse</code>,
+            <code>SessionStart</code>, <code>Stop</code>. This unlocks enterprise-grade customization.
+          </div>
+        </div>
+        <div class="rec-card rec-high">
+          <div class="rec-priority" style="color: var(--neon-amber);">H4 — Shiki Syntax Highlighting</div>
+          <div class="rec-title">Replace marked-terminal with Shiki</div>
+          <div class="rec-desc">
+            OpenCode uses Shiki (VS Code's highlighter) for code blocks. The visual difference is
+            dramatic — proper language-aware syntax coloring vs. basic ANSI. This single change would
+            make Opta CLI's output look professional-grade. Add line numbers and copy-to-clipboard.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Medium -->
+    <div style="margin-bottom: 32px;">
+      <div style="color: var(--neon-blue); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px;">
+        <span class="dot dot-blue"></span> &nbsp;Medium — Differentiators
+      </div>
+      <div class="grid-2">
+        <div class="rec-card rec-medium">
+          <div class="rec-priority" style="color: var(--neon-blue);">M1 — Command Palette</div>
+          <div class="rec-title">Add Ctrl+P Fuzzy Command Search</div>
+          <div class="rec-desc">
+            An Ink overlay component that fuzzy-searches all available commands, recently used items,
+            and file references. This is the single most impactful UX improvement for discoverability.
+          </div>
+        </div>
+        <div class="rec-card rec-medium">
+          <div class="rec-priority" style="color: var(--neon-blue);">M2 — Skills System</div>
+          <div class="rec-title">Implement SKILL.md Loading</div>
+          <div class="rec-desc">
+            Load markdown skill files from <code>.opta/skills/</code> and expose them as slash commands.
+            Support frontmatter for tool restrictions and system prompt injection. This enables the
+            community to extend Opta CLI without code changes.
+          </div>
+        </div>
+        <div class="rec-card rec-medium">
+          <div class="rec-priority" style="color: var(--neon-blue);">M3 — Image Input</div>
+          <div class="rec-title">Complete Multimodal Support</div>
+          <div class="rec-desc">
+            Wire the existing <code>/image</code> command to actually encode and send images to the model.
+            Support clipboard paste (Ctrl+V) and file path arguments. Many models Opta routes to
+            (GPT-4o, Claude, Gemini) already support vision.
+          </div>
+        </div>
+        <div class="rec-card rec-medium">
+          <div class="rec-priority" style="color: var(--neon-blue);">M4 — Anthropic Provider</div>
+          <div class="rec-title">Add Direct Anthropic API Support</div>
+          <div class="rec-desc">
+            The AnthropicClient stub exists. Implementing it would let Opta CLI use Opus 4.6 directly —
+            the strongest coding model available (80.9% SWE-Bench). Combined with model agnosticism,
+            this makes Opta the only CLI that can use <em>any</em> model including the best ones.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Polish -->
+    <div>
+      <div style="color: var(--neon-green); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px;">
+        <span class="dot dot-green"></span> &nbsp;Polish — Refinements
+      </div>
+      <div class="grid-3">
+        <div class="rec-card rec-polish">
+          <div class="rec-priority" style="color: var(--neon-green);">P1</div>
+          <div class="rec-title">Toast Notifications</div>
+          <div class="rec-desc">Auto-dismiss overlays for async events (tool complete, error, info).</div>
+        </div>
+        <div class="rec-card rec-polish">
+          <div class="rec-priority" style="color: var(--neon-green);">P2</div>
+          <div class="rec-title">Momentum Scrolling</div>
+          <div class="rec-desc">macOS-style acceleration in ScrollView for natural feel.</div>
+        </div>
+        <div class="rec-card rec-polish">
+          <div class="rec-priority" style="color: var(--neon-green);">P3</div>
+          <div class="rec-title">OSC 52 Clipboard</div>
+          <div class="rec-desc">Escape-sequence clipboard integration for remote SSH sessions.</div>
+        </div>
+        <div class="rec-card rec-polish">
+          <div class="rec-priority" style="color: var(--neon-green);">P4</div>
+          <div class="rec-title">Theme Depth (62 props)</div>
+          <div class="rec-desc">Expand from 6-color themes to OpenCode's 62-property system with dark/light variants.</div>
+        </div>
+        <div class="rec-card rec-polish">
+          <div class="rec-priority" style="color: var(--neon-green);">P5</div>
+          <div class="rec-title">Prompt Stash</div>
+          <div class="rec-desc">Push/pop prompt drafts for context switching without losing work.</div>
+        </div>
+        <div class="rec-card rec-polish">
+          <div class="rec-priority" style="color: var(--neon-green);">P6</div>
+          <div class="rec-title">Leader Key Pattern</div>
+          <div class="rec-desc">Ctrl+X leader key with 2-second window for chained shortcuts, like OpenCode.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="glow-line"></div>
+
+  <!-- FINAL VERDICT -->
+  <div class="verdict-banner" style="margin-bottom: 0;">
+    <div class="verdict-title">Strategic Position</div>
+    <p class="verdict-text">
+      After the 68-task UX overhaul, Opta CLI has transformed from a basic readline REPL into a
+      <span class="hl">legitimate full-screen TUI application</span> with split panes, sidebar, themes,
+      scrollable messages, and rich input handling. Its competitive position is strongest in
+      <span class="hl-green">model flexibility</span> (the only agent that truly works with any LLM) and
+      <span class="hl-green">local-first privacy</span> (zero cloud dependency via Opta-LMX).
+      The next phase should focus on <span class="hl-red">MCP integration</span> and
+      <span class="hl-amber">TUI polish</span> (dialogs, Shiki, command palette) to close the
+      remaining gap with OpenCode's visual maturity while maintaining the model-agnostic advantage
+      that neither Claude Code nor Kimi Code can match.
+    </p>
+  </div>
+
+  <div class="footer">
+    <div style="margin-bottom: 8px; color: var(--primary);">Opta CLI — Competitive Assessment</div>
+    <div>Generated February 17, 2026 &bull; Opta Operations &bull; v0.4.0-alpha</div>
+    <div style="margin-top: 4px;">68 tasks &bull; 518 tests &bull; 33 gaps closed &bull; 10,367 lines of TypeScript</div>
+  </div>
+
+</div>
+
+</body>
+</html>

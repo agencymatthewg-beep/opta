@@ -150,9 +150,13 @@ program
 program
   .command('sessions')
   .description('Manage chat sessions')
-  .argument('[action]', 'resume | delete | export')
-  .argument('[id]', 'session id')
+  .argument('[action]', 'resume | delete | export | search')
+  .argument('[id]', 'session id or search query')
   .option('--json', 'machine-readable output')
+  .option('--model <name>', 'filter by model name')
+  .option('--since <date>', 'filter sessions after date (ISO or relative: 7d, 2w, 1m)')
+  .option('--tag <tag>', 'filter by tag')
+  .option('--limit <n>', 'limit results (default 20)')
   .action(async (action, id, opts) => {
     const { sessions } = await import('./commands/sessions.js');
     await sessions(action, id, opts);

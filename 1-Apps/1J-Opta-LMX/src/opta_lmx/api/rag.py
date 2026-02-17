@@ -32,7 +32,7 @@ _store: VectorStore | None = None
 
 def init_rag_store(store: VectorStore) -> None:
     """Set the module-level vector store (called during app startup)."""
-    global _store  # noqa: PLW0603
+    global _store
     _store = store
 
 
@@ -50,12 +50,18 @@ class IngestRequest(BaseModel):
     """Ingest documents into a RAG collection."""
 
     collection: str = Field(..., min_length=1, max_length=64, description="Collection name")
-    documents: list[str] = Field(..., min_length=1, max_length=100, description="Text documents to ingest")
+    documents: list[str] = Field(
+        ..., min_length=1, max_length=100, description="Text documents to ingest"
+    )
     metadata: list[dict[str, Any]] | None = Field(None, description="Per-document metadata")
     chunk_size: int = Field(512, ge=64, le=2048, description="Target tokens per chunk")
     chunk_overlap: int = Field(64, ge=0, le=512, description="Token overlap between chunks")
-    chunking: str = Field("auto", pattern="^(auto|text|code|none)$", description="Chunking strategy")
-    model: str | None = Field(None, description="Embedding model (uses configured default if omitted)")
+    chunking: str = Field(
+        "auto", pattern="^(auto|text|code|none)$", description="Chunking strategy"
+    )
+    model: str | None = Field(
+        None, description="Embedding model (uses configured default if omitted)"
+    )
 
 
 class IngestResponse(BaseModel):
@@ -75,7 +81,9 @@ class QueryRequest(BaseModel):
     query: str = Field(..., min_length=1, description="Search query text")
     top_k: int = Field(5, ge=1, le=50, description="Maximum results")
     min_score: float = Field(0.0, ge=0.0, le=1.0, description="Minimum similarity threshold")
-    model: str | None = Field(None, description="Embedding model (uses configured default if omitted)")
+    model: str | None = Field(
+        None, description="Embedding model (uses configured default if omitted)"
+    )
     include_embeddings: bool = Field(False, description="Include embedding vectors in response")
     search_mode: str = Field(
         "vector",
@@ -161,7 +169,8 @@ async def _embed_texts(
     # Local engine
     if embedding_engine is None:
         raise RuntimeError(
-            "No embedding engine available. Configure models.embedding_model or remote_helpers.embedding."
+            "No embedding engine available. Configure models.embedding_model "
+            "or remote_helpers.embedding."
         )
 
     return await embedding_engine.embed(texts, model_id=model)

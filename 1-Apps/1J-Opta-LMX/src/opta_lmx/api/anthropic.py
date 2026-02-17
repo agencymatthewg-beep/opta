@@ -140,7 +140,9 @@ def _make_anthropic_response(
     )
 
 
-def _anthropic_error(status_code: int, message: str, error_type: str = "invalid_request_error") -> JSONResponse:
+def _anthropic_error(
+    status_code: int, message: str, error_type: str = "invalid_request_error"
+) -> JSONResponse:
     """Return an Anthropic-format error response."""
     return JSONResponse(
         status_code=status_code,
@@ -186,7 +188,11 @@ async def _anthropic_sse_stream(
     yield f"event: message_start\ndata: {json.dumps(msg_start)}\n\n"
 
     # content_block_start
-    block_start = {"type": "content_block_start", "index": 0, "content_block": {"type": "text", "text": ""}}
+    block_start = {
+        "type": "content_block_start",
+        "index": 0,
+        "content_block": {"type": "text", "text": ""},
+    }
     yield f"event: content_block_start\ndata: {json.dumps(block_start)}\n\n"
 
     output_tokens = 0
@@ -194,7 +200,11 @@ async def _anthropic_sse_stream(
     try:
         async for token in token_stream:
             output_tokens += 1
-            delta = {"type": "content_block_delta", "index": 0, "delta": {"type": "text_delta", "text": token}}
+            delta = {
+                "type": "content_block_delta",
+                "index": 0,
+                "delta": {"type": "text_delta", "text": token},
+            }
             yield f"event: content_block_delta\ndata: {json.dumps(delta)}\n\n"
     except Exception:
         error_occurred = True
@@ -210,7 +220,8 @@ async def _anthropic_sse_stream(
         ))
 
     # content_block_stop
-    yield f"event: content_block_stop\ndata: {json.dumps({'type': 'content_block_stop', 'index': 0})}\n\n"
+    stop_event = {"type": "content_block_stop", "index": 0}
+    yield f"event: content_block_stop\ndata: {json.dumps(stop_event)}\n\n"
 
     # message_delta
     msg_delta = {
@@ -309,7 +320,8 @@ async def anthropic_messages(
             ))
 
             content = response.choices[0].message.content or ""
-            stop_reason = "end_turn" if response.choices[0].finish_reason == "stop" else response.choices[0].finish_reason
+            finish = response.choices[0].finish_reason
+            stop_reason = "end_turn" if finish == "stop" else finish
 
             result = _make_anthropic_response(
                 request_id=f"msg_{secrets.token_urlsafe(16)}",

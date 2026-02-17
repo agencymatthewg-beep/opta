@@ -11,7 +11,6 @@
 import type { Session } from '../../memory/store.js';
 import type { OptaConfig } from '../../core/config.js';
 import type { ChatState } from '../chat.js';
-import type { AgentMessage } from '../../core/agent.js';
 
 export type SlashResult = 'handled' | 'exit' | 'model-switched';
 
@@ -34,4 +33,8 @@ export interface SlashCommandDef {
   handler: SlashHandler;
   /** Category for grouping in the interactive browser */
   category: 'session' | 'tools' | 'info' | 'server';
+  /** Usage string shown in per-command help, e.g. '/model <name>' */
+  usage?: string;
+  /** Example commands, e.g. ['/model llama3', '/model'] */
+  examples?: string[];
 }

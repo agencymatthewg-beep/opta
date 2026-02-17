@@ -9,7 +9,6 @@ on the configured fallback strategy.
 from __future__ import annotations
 
 import logging
-from typing import Any
 
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
@@ -115,7 +114,10 @@ async def create_embeddings(
     if embedding_engine is None:
         return openai_error(
             status_code=503,
-            message="Embedding engine not available. Configure remote_helpers.embedding or install mlx-embeddings.",
+            message=(
+                "Embedding engine not available. Configure remote_helpers.embedding "
+                "or install mlx-embeddings."
+            ),
             error_type="server_error",
             code="embedding_unavailable",
         )

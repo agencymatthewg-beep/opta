@@ -105,7 +105,7 @@ def _search_faiss(
     faiss.normalize_L2(q)
     scores, indices = index.search(q, min(top_k, index.ntotal))
     results: list[tuple[int, float]] = []
-    for idx, score in zip(indices[0], scores[0]):
+    for idx, score in zip(indices[0], scores[0], strict=False):
         if idx == -1:
             break
         results.append((int(idx), float(score)))
@@ -213,7 +213,7 @@ class VectorStore:
         metas = metadata_list or [{} for _ in texts]
         doc_ids: list[str] = []
 
-        for text, emb, meta in zip(texts, embeddings, metas):
+        for text, emb, meta in zip(texts, embeddings, metas, strict=False):
             doc_id = str(uuid.uuid4())[:12]
             doc = Document(
                 id=doc_id,
@@ -400,10 +400,7 @@ class VectorStore:
         """Return store statistics."""
         collections: dict[str, dict[str, Any]] = {}
         for name, docs in self._collections.items():
-            if docs:
-                dim = len(docs[0].embedding)
-            else:
-                dim = 0
+            dim = len(docs[0].embedding) if docs else 0
             collections[name] = {
                 "document_count": len(docs),
                 "embedding_dimensions": dim,

@@ -1,0 +1,1442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Opta CLI & LMX — Complete Operations Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+  :root {
+    --void: #09090b;
+    --surface: #18181b;
+    --elevated: #27272a;
+    --border: #3f3f46;
+    --text-primary: #fafafa;
+    --text-secondary: #a1a1aa;
+    --text-muted: #52525b;
+    --primary: #8b5cf6;
+    --primary-glow: #a855f7;
+    --primary-dim: #6d28d9;
+    --neon-blue: #3b82f6;
+    --neon-green: #22c55e;
+    --neon-amber: #f59e0b;
+    --neon-red: #ef4444;
+    --neon-cyan: #06b6d4;
+    --neon-pink: #ec4899;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--void);
+    color: var(--text-primary);
+    font-family: 'Sora', -apple-system, BlinkMacSystemFont, sans-serif;
+    line-height: 1.7;
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
+
+  /* Noise overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    opacity: 0.015;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* Ambient particles */
+  .particle {
+    position: fixed;
+    width: 2px;
+    height: 2px;
+    background: var(--primary);
+    border-radius: 50%;
+    pointer-events: none;
+    opacity: 0;
+    animation: drift 20s infinite linear;
+  }
+  .particle:nth-child(1) { left: 10%; top: 20%; animation-delay: 0s; animation-duration: 25s; }
+  .particle:nth-child(2) { left: 30%; top: 60%; animation-delay: 3s; animation-duration: 18s; }
+  .particle:nth-child(3) { left: 70%; top: 30%; animation-delay: 7s; animation-duration: 22s; }
+  .particle:nth-child(4) { left: 85%; top: 70%; animation-delay: 11s; animation-duration: 19s; }
+  .particle:nth-child(5) { left: 50%; top: 80%; animation-delay: 5s; animation-duration: 23s; }
+  .particle:nth-child(6) { left: 15%; top: 90%; animation-delay: 9s; animation-duration: 21s; }
+
+  @keyframes drift {
+    0% { transform: translateY(0) translateX(0); opacity: 0; }
+    10% { opacity: 0.6; }
+    50% { opacity: 0.3; }
+    90% { opacity: 0.5; }
+    100% { transform: translateY(-100vh) translateX(30px); opacity: 0; }
+  }
+
+  /* Glass panels */
+  .glass {
+    background: rgba(24, 24, 27, 0.6);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    position: relative;
+  }
+  .glass::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.04) 0%, transparent 50%);
+    pointer-events: none;
+  }
+
+  .glass-subtle {
+    background: rgba(24, 24, 27, 0.3);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+  }
+
+  .glass-strong {
+    background: rgba(24, 24, 27, 0.85);
+    backdrop-filter: blur(30px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  }
+
+  /* Layout */
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* Hero */
+  .hero {
+    padding: 80px 0 60px;
+    text-align: center;
+    position: relative;
+  }
+  .hero::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--primary), transparent);
+    box-shadow: 0 0 20px var(--primary-glow);
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 16px;
+    border-radius: 100px;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--primary);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    background: rgba(139, 92, 246, 0.08);
+    margin-bottom: 24px;
+  }
+  .hero-badge .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--neon-green);
+    animation: pulse-dot 2s infinite;
+  }
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; box-shadow: 0 0 4px var(--neon-green); }
+    50% { opacity: 0.5; box-shadow: 0 0 8px var(--neon-green); }
+  }
+
+  h1 {
+    font-size: 48px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #fafafa 0%, #a78bfa 50%, #818cf8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 16px;
+    letter-spacing: -1px;
+  }
+
+  .hero-sub {
+    font-size: 18px;
+    color: var(--text-secondary);
+    font-weight: 300;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  /* Version chip */
+  .version-chip {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--neon-green);
+    background: rgba(34, 197, 94, 0.1);
+    border: 1px solid rgba(34, 197, 94, 0.2);
+    margin-top: 16px;
+  }
+
+  /* Section headers */
+  .section {
+    padding: 60px 0;
+    position: relative;
+  }
+
+  .section-number {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--primary);
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-number::before {
+    content: '';
+    width: 24px;
+    height: 1px;
+    background: var(--primary);
+    box-shadow: 0 0 6px var(--primary-glow);
+  }
+
+  h2 {
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, #fafafa 0%, #d4d4d8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .section-desc {
+    color: var(--text-secondary);
+    font-size: 15px;
+    margin-bottom: 32px;
+    max-width: 700px;
+  }
+
+  h3 {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 32px 0 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  h3 .icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+
+  h4 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 24px 0 12px;
+  }
+
+  /* Neon divider */
+  .neon-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--primary), transparent);
+    box-shadow: 0 0 12px rgba(139, 92, 246, 0.3);
+    margin: 48px 0;
+  }
+
+  /* Code blocks */
+  pre {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    padding: 18px 22px;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    color: #d4d4d8;
+    margin: 12px 0 20px;
+    position: relative;
+  }
+  pre::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.3), transparent);
+  }
+
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+  }
+
+  .inline-code {
+    background: rgba(139, 92, 246, 0.12);
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    border-radius: 5px;
+    padding: 2px 7px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    color: #c4b5fd;
+  }
+
+  /* Comment in code */
+  .c { color: #6b7280; }
+  /* String */
+  .s { color: #86efac; }
+  /* Keyword */
+  .k { color: #c084fc; }
+  /* Flag */
+  .f { color: #60a5fa; }
+  /* Command */
+  .cmd { color: #fbbf24; }
+  /* URL */
+  .u { color: #67e8f9; }
+  /* Number */
+  .n { color: #f9a8d4; }
+
+  /* Tables */
+  .table-wrapper {
+    overflow-x: auto;
+    margin: 12px 0 24px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+  thead {
+    background: rgba(139, 92, 246, 0.08);
+  }
+  th {
+    text-align: left;
+    padding: 12px 16px;
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    white-space: nowrap;
+  }
+  td {
+    padding: 10px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    color: var(--text-secondary);
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(139, 92, 246, 0.03); }
+  td:first-child { color: var(--text-primary); font-family: 'JetBrains Mono', monospace; font-size: 13px; }
+
+  /* Status badges */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    font-family: 'JetBrains Mono', monospace;
+    white-space: nowrap;
+  }
+  .badge-green { background: rgba(34,197,94,0.12); color: #86efac; border: 1px solid rgba(34,197,94,0.2); }
+  .badge-amber { background: rgba(245,158,11,0.12); color: #fcd34d; border: 1px solid rgba(245,158,11,0.2); }
+  .badge-blue { background: rgba(59,130,246,0.12); color: #93c5fd; border: 1px solid rgba(59,130,246,0.2); }
+  .badge-purple { background: rgba(139,92,246,0.12); color: #c4b5fd; border: 1px solid rgba(139,92,246,0.2); }
+  .badge-red { background: rgba(239,68,68,0.12); color: #fca5a5; border: 1px solid rgba(239,68,68,0.2); }
+  .badge-muted { background: rgba(113,113,122,0.12); color: #a1a1aa; border: 1px solid rgba(113,113,122,0.2); }
+
+  /* Perm badges */
+  .perm-allow { color: #86efac; }
+  .perm-ask { color: #fcd34d; }
+  .perm-deny { color: #fca5a5; }
+
+  /* Cards grid */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 16px;
+    margin: 16px 0 24px;
+  }
+  .card {
+    padding: 20px;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(139, 92, 246, 0.2);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3), 0 0 20px rgba(139, 92, 246, 0.05);
+  }
+  .card-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  /* Architecture flow */
+  .flow-diagram {
+    padding: 32px;
+    margin: 20px 0 28px;
+    text-align: center;
+  }
+  .flow-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    flex-wrap: wrap;
+    margin: 8px 0;
+  }
+  .flow-box {
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    border: 1px solid;
+  }
+  .flow-box.app { background: rgba(59,130,246,0.12); border-color: rgba(59,130,246,0.3); color: #93c5fd; }
+  .flow-box.gateway { background: rgba(139,92,246,0.12); border-color: rgba(139,92,246,0.3); color: #c4b5fd; }
+  .flow-box.bot { background: rgba(236,72,153,0.12); border-color: rgba(236,72,153,0.3); color: #f9a8d4; }
+  .flow-box.lmx { background: rgba(34,197,94,0.12); border-color: rgba(34,197,94,0.3); color: #86efac; }
+  .flow-box.cli { background: rgba(245,158,11,0.12); border-color: rgba(245,158,11,0.3); color: #fcd34d; }
+  .flow-arrow {
+    padding: 0 12px;
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 16px;
+  }
+
+  /* Progress bar */
+  .progress-container {
+    margin: 20px 0;
+  }
+  .progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    margin-bottom: 8px;
+  }
+  .progress-label span:first-child { color: var(--text-secondary); }
+  .progress-label span:last-child { color: var(--primary); font-weight: 600; font-family: 'JetBrains Mono', monospace; }
+  .progress-bar {
+    height: 6px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: linear-gradient(90deg, var(--primary-dim), var(--primary), var(--primary-glow));
+    box-shadow: 0 0 12px rgba(139, 92, 246, 0.4);
+    transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  /* Endpoint list */
+  .endpoint-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 12px 0 24px;
+  }
+  .endpoint-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    border-radius: 10px;
+    background: rgba(0,0,0,0.2);
+    border: 1px solid rgba(255,255,255,0.04);
+  }
+  .endpoint-method {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 4px;
+    min-width: 48px;
+    text-align: center;
+  }
+  .method-get { background: rgba(34,197,94,0.15); color: #86efac; }
+  .method-post { background: rgba(59,130,246,0.15); color: #93c5fd; }
+  .method-ws { background: rgba(139,92,246,0.15); color: #c4b5fd; }
+  .endpoint-path {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--text-primary);
+    flex: 1;
+  }
+  .endpoint-desc {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  /* TOC */
+  .toc {
+    padding: 24px;
+    margin: 40px 0;
+  }
+  .toc-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 16px;
+  }
+  .toc-list {
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 8px;
+  }
+  .toc-list li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .toc-list a {
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 14px;
+    transition: color 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .toc-list a:hover { color: var(--primary); }
+  .toc-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--primary);
+    min-width: 24px;
+  }
+
+  /* Slash command grid */
+  .slash-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 8px;
+    margin: 12px 0 24px;
+  }
+  .slash-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: rgba(0,0,0,0.2);
+    border: 1px solid rgba(255,255,255,0.04);
+    font-size: 13px;
+  }
+  .slash-cmd {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--primary);
+    font-weight: 500;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .slash-desc {
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding: 48px 0;
+    color: var(--text-muted);
+    font-size: 13px;
+    position: relative;
+  }
+  .footer::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(139,92,246,0.2), transparent);
+  }
+  .footer-logo {
+    font-family: 'Sora', sans-serif;
+    font-weight: 700;
+    font-size: 18px;
+    background: linear-gradient(135deg, #fafafa, #a78bfa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    h1 { font-size: 32px; }
+    h2 { font-size: 24px; }
+    .card-grid { grid-template-columns: 1fr; }
+    .toc-list { grid-template-columns: 1fr; }
+    .flow-row { flex-direction: column; gap: 8px; }
+    .flow-arrow { transform: rotate(90deg); padding: 4px 0; }
+    .container { padding: 0 16px; }
+    .section { padding: 40px 0; }
+    pre { font-size: 12px; padding: 14px 16px; }
+  }
+
+  /* Scroll animations */
+  .fade-in {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .fade-in.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Config block */
+  .config-block {
+    padding: 20px 24px;
+    margin: 12px 0 24px;
+  }
+  .config-block .config-title {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+    font-weight: 600;
+  }
+
+  /* Step list */
+  .step-list {
+    counter-reset: steps;
+    list-style: none;
+    margin: 16px 0 24px;
+  }
+  .step-list li {
+    counter-increment: steps;
+    display: flex;
+    gap: 16px;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    align-items: flex-start;
+  }
+  .step-list li:last-child { border-bottom: none; }
+  .step-list li::before {
+    content: counter(steps);
+    min-width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: rgba(139,92,246,0.12);
+    border: 1px solid rgba(139,92,246,0.2);
+    color: var(--primary);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  .step-list li .step-content {
+    flex: 1;
+  }
+  .step-list li .step-title {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+  }
+  .step-list li .step-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  /* Inline tip */
+  .tip {
+    display: flex;
+    gap: 12px;
+    padding: 14px 18px;
+    border-radius: 10px;
+    background: rgba(59,130,246,0.06);
+    border: 1px solid rgba(59,130,246,0.15);
+    margin: 16px 0;
+    font-size: 13px;
+    color: var(--text-secondary);
+    align-items: flex-start;
+  }
+  .tip-icon {
+    color: var(--neon-blue);
+    font-size: 16px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .warn {
+    background: rgba(245,158,11,0.06);
+    border-color: rgba(245,158,11,0.15);
+  }
+  .warn .tip-icon { color: var(--neon-amber); }
+</style>
+</head>
+<body>
+
+<!-- Ambient particles -->
+<div class="particle"></div>
+<div class="particle"></div>
+<div class="particle"></div>
+<div class="particle"></div>
+<div class="particle"></div>
+<div class="particle"></div>
+
+<div class="container">
+
+  <!-- ═══════════════ HERO ═══════════════ -->
+  <header class="hero fade-in">
+    <div class="hero-badge"><span class="dot"></span> Operations Guide</div>
+    <h1>Opta CLI & Opta-LMX</h1>
+    <p class="hero-sub">Self-hosted agentic AI coding — from local inference to terminal UI. Everything you need to run, connect, and control your AI stack.</p>
+    <div class="version-chip">v0.5.0-alpha.1 &nbsp;→&nbsp; v0.6.0 in progress</div>
+  </header>
+
+  <!-- ═══════════════ TABLE OF CONTENTS ═══════════════ -->
+  <nav class="toc glass fade-in">
+    <div class="toc-title">Guide Contents</div>
+    <ul class="toc-list">
+      <li><a href="#state"><span class="toc-num">01</span> Current State & Capabilities</a></li>
+      <li><a href="#tools"><span class="toc-num">02</span> The 22 Agent Tools</a></li>
+      <li><a href="#slash"><span class="toc-num">03</span> Slash Commands</a></li>
+      <li><a href="#progress"><span class="toc-num">04</span> Recent Progress & Roadmap</a></li>
+      <li><a href="#lmx"><span class="toc-num">05</span> Start & Use Opta-LMX</a></li>
+      <li><a href="#cli"><span class="toc-num">06</span> Start & Use Opta CLI</a></li>
+      <li><a href="#openclaw"><span class="toc-num">07</span> Connect OpenClaw to LMX</a></li>
+      <li><a href="#manage"><span class="toc-num">08</span> Manage Models Remotely</a></li>
+    </ul>
+  </nav>
+
+  <!-- ═══════════════ SECTION 1: CURRENT STATE ═══════════════ -->
+  <section id="state" class="section fade-in">
+    <div class="section-number">Section 01</div>
+    <h2>Current State & Capabilities</h2>
+    <p class="section-desc">Opta CLI is a self-hosted agentic AI coding assistant. It connects to Mono512 (Mac Studio M3 Ultra, 512GB) via Opta-LMX. No cloud dependency. 22 tools, 14 commands, full-screen TUI, sub-agent system.</p>
+
+    <h3><span class="icon" style="background:rgba(59,130,246,0.15); color:#60a5fa;">&#9654;</span> All Commands</h3>
+
+    <div class="card-grid">
+      <div class="card glass-subtle">
+        <div class="card-title">&#128172; <code class="inline-code">opta chat</code></div>
+        <div class="card-desc">Interactive AI chat session. Supports <code class="inline-code">--tui</code> for full-screen mode, <code class="inline-code">--resume &lt;id&gt;</code> to continue a session, <code class="inline-code">--model</code> to pick a model, <code class="inline-code">--auto</code> / <code class="inline-code">--dangerous</code> for permission modes.</div>
+      </div>
+      <div class="card glass-subtle">
+        <div class="card-title">&#9889; <code class="inline-code">opta do &lt;task&gt;</code></div>
+        <div class="card-desc">One-shot task execution. Runs the agent loop, auto-creates & closes a session. Supports <code class="inline-code">--quiet</code> for CI, <code class="inline-code">--output</code> to write results to a file.</div>
+      </div>
+      <div class="card glass-subtle">
+        <div class="card-title">&#128994; <code class="inline-code">opta status</code></div>
+        <div class="card-desc">Check Opta-LMX server health, loaded models, uptime, and memory usage. Use <code class="inline-code">--json</code> for machine-readable output.</div>
+      </div>
+      <div class="card glass-subtle">
+        <div class="card-title">&#129302; <code class="inline-code">opta models</code></div>
+        <div class="card-desc">List, load, unload, switch, and inspect models on Mono512. Actions: <code class="inline-code">use</code>, <code class="inline-code">info</code>, <code class="inline-code">load</code>, <code class="inline-code">unload</code>.</div>
+      </div>
+      <div class="card glass-subtle">
+        <div class="card-title">&#9881; <code class="inline-code">opta config</code></div>
+        <div class="card-desc">Manage configuration. <code class="inline-code">get</code>, <code class="inline-code">set</code>, <code class="inline-code">list</code>, <code class="inline-code">reset</code>. Priority: CLI flags &gt; env vars &gt; project config &gt; user config &gt; defaults.</div>
+      </div>
+      <div class="card glass-subtle">
+        <div class="card-title">&#128190; <code class="inline-code">opta sessions</code></div>
+        <div class="card-desc">Manage past sessions — <code class="inline-code">resume</code>, <code class="inline-code">delete</code>, <code class="inline-code">export</code>. Sessions stored as JSON at <code class="inline-code">~/.config/opta/sessions/</code>.</div>
+      </div>
+      <div class="card glass-subtle">
+        <div class="card-title">&#128268; <code class="inline-code">opta mcp</code></div>
+        <div class="card-desc">Model Context Protocol server management. <code class="inline-code">list</code>, <code class="inline-code">add</code>, <code class="inline-code">remove</code>, <code class="inline-code">test</code>. Add tools from external MCP servers.</div>
+      </div>
+      <div class="card glass-subtle">
+        <div class="card-title">&#128736; <code class="inline-code">opta init</code></div>
+        <div class="card-desc">Generate OPIS project intelligence docs (APP.md, AGENTS.md, TASKS.md). Auto-detects stack. <code class="inline-code">--yes</code> for CI, <code class="inline-code">--force</code> to overwrite.</div>
+      </div>
+      <div class="card glass-subtle">
+        <div class="card-title">&#129657; <code class="inline-code">opta doctor</code></div>
+        <div class="card-desc">Diagnose environment issues — connection, config, tool availability. Actionable output.</div>
+      </div>
+      <div class="card glass-subtle">
+        <div class="card-title">&#127959; <code class="inline-code">opta serve</code></div>
+        <div class="card-desc">Manage the remote LMX daemon — <code class="inline-code">start</code>, <code class="inline-code">stop</code>, <code class="inline-code">restart</code>, <code class="inline-code">logs</code>. Remote control from MacBook.</div>
+      </div>
+      <div class="card glass-subtle">
+        <div class="card-title">&#127760; <code class="inline-code">opta server</code></div>
+        <div class="card-desc">Start an HTTP API server for non-interactive use. Default port 3456. Use with CI pipelines or other tools.</div>
+      </div>
+      <div class="card glass-subtle">
+        <div class="card-title">&#128196; <code class="inline-code">opta diff</code></div>
+        <div class="card-desc">Show changes made during a session. V2 stub — full implementation coming.</div>
+      </div>
+    </div>
+
+    <h4>Practical Examples</h4>
+    <pre><span class="c"># Start a new interactive session</span>
+<span class="cmd">opta</span> <span class="k">chat</span>
+
+<span class="c"># Full-screen TUI with specific model</span>
+<span class="cmd">opta</span> <span class="k">chat</span> <span class="f">--tui</span> <span class="f">--model</span> <span class="s">qwen2.5-coder-32b</span>
+
+<span class="c"># Resume a previous session</span>
+<span class="cmd">opta</span> <span class="k">chat</span> <span class="f">--resume</span> <span class="s">abc123</span>
+
+<span class="c"># One-shot task (no interactive session)</span>
+<span class="cmd">opta</span> <span class="k">do</span> <span class="s">"fix the null check in utils.ts"</span>
+
+<span class="c"># CI-friendly quiet mode</span>
+<span class="cmd">opta</span> <span class="k">do</span> <span class="s">"run all tests"</span> <span class="f">--quiet</span> <span class="f">--format</span> <span class="s">json</span>
+
+<span class="c"># YOLO mode — bypass all permission prompts</span>
+<span class="cmd">opta</span> <span class="k">chat</span> <span class="f">--dangerous</span>
+
+<span class="c"># Check LMX server health</span>
+<span class="cmd">opta</span> <span class="k">status</span> <span class="f">--json</span>
+
+<span class="c"># Load a model onto Mono512</span>
+<span class="cmd">opta</span> <span class="k">models</span> <span class="s">load</span> <span class="s">mlx-community/Qwen2.5-Coder-32B-Instruct-4bit</span>
+
+<span class="c"># Add an MCP server</span>
+<span class="cmd">opta</span> <span class="k">mcp</span> <span class="s">add</span> <span class="s">my-server</span> <span class="s">"npx -y @my/mcp-server"</span>
+
+<span class="c"># Generate shell completions</span>
+<span class="cmd">opta</span> <span class="k">completions</span> <span class="s">zsh</span> >> ~/.zshrc</pre>
+  </section>
+
+  <div class="neon-divider"></div>
+
+  <!-- ═══════════════ SECTION 2: TOOLS ═══════════════ -->
+  <section id="tools" class="section fade-in">
+    <div class="section-number">Section 02</div>
+    <h2>The 22 Agent Tools</h2>
+    <p class="section-desc">Every tool the agent can invoke during a session. Permission level determines if the tool runs automatically or prompts the user first.</p>
+
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr><th>Tool</th><th>Permission</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>read_file</td><td><span class="perm-allow">allow</span></td><td>Read file contents with line numbers</td></tr>
+          <tr><td>write_file</td><td><span class="perm-ask">ask</span></td><td>Create or overwrite a file</td></tr>
+          <tr><td>edit_file</td><td><span class="perm-ask">ask</span></td><td>Find-and-replace exact string in file</td></tr>
+          <tr><td>multi_edit</td><td><span class="perm-ask">ask</span></td><td>Batch edits across files (max 20)</td></tr>
+          <tr><td>delete_file</td><td><span class="perm-ask">ask</span></td><td>Remove a file from filesystem</td></tr>
+          <tr><td>list_dir</td><td><span class="perm-allow">allow</span></td><td>List directory contents</td></tr>
+          <tr><td>search_files</td><td><span class="perm-allow">allow</span></td><td>Regex search via ripgrep</td></tr>
+          <tr><td>find_files</td><td><span class="perm-allow">allow</span></td><td>Glob pattern file finding</td></tr>
+          <tr><td>run_command</td><td><span class="perm-ask">ask</span></td><td>Execute a shell command</td></tr>
+          <tr><td>ask_user</td><td><span class="perm-allow">allow</span></td><td>Ask the user a question</td></tr>
+          <tr><td>read_project_docs</td><td><span class="perm-allow">allow</span></td><td>Read OPIS docs (APP.md, etc.)</td></tr>
+          <tr><td>web_search</td><td><span class="perm-allow">allow</span></td><td>Search the web (SearXNG)</td></tr>
+          <tr><td>web_fetch</td><td><span class="perm-allow">allow</span></td><td>Fetch & extract web content</td></tr>
+          <tr><td>save_memory</td><td><span class="perm-allow">allow</span></td><td>Persist knowledge to .opta/memory.md</td></tr>
+          <tr><td>bg_start</td><td><span class="perm-ask">ask</span></td><td>Start a background process</td></tr>
+          <tr><td>bg_status</td><td><span class="perm-allow">allow</span></td><td>Check background process status</td></tr>
+          <tr><td>bg_output</td><td><span class="perm-allow">allow</span></td><td>Read background process output</td></tr>
+          <tr><td>bg_kill</td><td><span class="perm-ask">ask</span></td><td>Kill a background process</td></tr>
+          <tr><td>lsp_definition</td><td><span class="perm-allow">allow</span></td><td>Go-to-definition via LSP</td></tr>
+          <tr><td>lsp_references</td><td><span class="perm-allow">allow</span></td><td>Find all references via LSP</td></tr>
+          <tr><td>lsp_hover</td><td><span class="perm-allow">allow</span></td><td>Type info & docs via LSP</td></tr>
+          <tr><td>lsp_symbols</td><td><span class="perm-allow">allow</span></td><td>Workspace symbol search</td></tr>
+          <tr><td>lsp_rename</td><td><span class="perm-ask">ask</span></td><td>Rename symbol across workspace</td></tr>
+          <tr><td>spawn_agent</td><td><span class="perm-ask">ask</span></td><td>Spawn a focused sub-agent</td></tr>
+          <tr><td>delegate_task</td><td><span class="perm-ask">ask</span></td><td>Multi-step sub-agent orchestration</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="tip">
+      <span class="tip-icon">&#9432;</span>
+      <span>In CI mode, all <code class="inline-code">ask</code> permissions become <code class="inline-code">deny</code>. Use <code class="inline-code">opta config set permissions.edit_file allow</code> to auto-approve specific tools.</span>
+    </div>
+  </section>
+
+  <div class="neon-divider"></div>
+
+  <!-- ═══════════════ SECTION 3: SLASH COMMANDS ═══════════════ -->
+  <section id="slash" class="section fade-in">
+    <div class="section-number">Section 03</div>
+    <h2>Slash Commands (In-Chat)</h2>
+    <p class="section-desc">Available inside a chat session. Type the command at the prompt.</p>
+
+    <div class="slash-grid">
+      <div class="slash-item"><span class="slash-cmd">/help</span><span class="slash-desc">Show commands</span></div>
+      <div class="slash-item"><span class="slash-cmd">/exit</span><span class="slash-desc">End session</span></div>
+      <div class="slash-item"><span class="slash-cmd">/model</span><span class="slash-desc">Switch model</span></div>
+      <div class="slash-item"><span class="slash-cmd">/context</span><span class="slash-desc">Context usage</span></div>
+      <div class="slash-item"><span class="slash-cmd">/temperature</span><span class="slash-desc">Set temp</span></div>
+      <div class="slash-item"><span class="slash-cmd">/save</span><span class="slash-desc">Save session</span></div>
+      <div class="slash-item"><span class="slash-cmd">/export</span><span class="slash-desc">Export JSON</span></div>
+      <div class="slash-item"><span class="slash-cmd">/clear</span><span class="slash-desc">Clear history</span></div>
+      <div class="slash-item"><span class="slash-cmd">/undo</span><span class="slash-desc">Undo last change</span></div>
+      <div class="slash-item"><span class="slash-cmd">/commit</span><span class="slash-desc">Auto-commit</span></div>
+      <div class="slash-item"><span class="slash-cmd">/plan</span><span class="slash-desc">Toggle plan mode</span></div>
+      <div class="slash-item"><span class="slash-cmd">/checkpoint</span><span class="slash-desc">Git checkpoint</span></div>
+      <div class="slash-item"><span class="slash-cmd">/debug</span><span class="slash-desc">Toggle debug</span></div>
+      <div class="slash-item"><span class="slash-cmd">/verbose</span><span class="slash-desc">Toggle verbose</span></div>
+      <div class="slash-item"><span class="slash-cmd">/profile</span><span class="slash-desc">Perf stats</span></div>
+    </div>
+  </section>
+
+  <div class="neon-divider"></div>
+
+  <!-- ═══════════════ SECTION 4: PROGRESS ═══════════════ -->
+  <section id="progress" class="section fade-in">
+    <div class="section-number">Section 04</div>
+    <h2>Progress & Roadmap</h2>
+    <p class="section-desc">v0.1–v0.5 built the complete foundation. Current milestone: v0.6.0 "Premium TUI" — making the full-screen terminal UI production-quality.</p>
+
+    <div class="progress-container">
+      <div class="progress-label">
+        <span>v0.6.0 Premium TUI Milestone</span>
+        <span>5 / 10 phases (50%)</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" style="width: 50%"></div>
+      </div>
+    </div>
+
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr><th>#</th><th>Phase</th><th>Status</th><th>What It Adds</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>tui-markdown</td><td><span class="badge badge-green">Done</span></td><td>Syntax-highlighted markdown rendering in TUI</td></tr>
+          <tr><td>2</td><td>tui-input</td><td><span class="badge badge-green">Done</span></td><td>Multiline input, history, @file autocomplete</td></tr>
+          <tr><td>3</td><td>tui-slash-commands</td><td><span class="badge badge-green">Done</span></td><td>Full slash command support in TUI mode</td></tr>
+          <tr><td>4</td><td>tui-tool-display</td><td><span class="badge badge-green">Done</span></td><td>Rich tool call cards with collapse/expand</td></tr>
+          <tr><td>5</td><td>tui-thinking</td><td><span class="badge badge-green">Done</span></td><td>Thinking blocks with Ctrl+T toggle</td></tr>
+          <tr><td>6</td><td>tui-permissions</td><td><span class="badge badge-amber">Next</span></td><td>Interactive Y/n/always prompts in TUI</td></tr>
+          <tr><td>7</td><td>tui-scrollback</td><td><span class="badge badge-muted">Planned</span></td><td>Line-accurate viewport scrolling</td></tr>
+          <tr><td>8</td><td>tui-integration</td><td><span class="badge badge-muted">Planned</span></td><td>@file resolution, shell, cost display</td></tr>
+          <tr><td>9</td><td>tui-keybindings</td><td><span class="badge badge-muted">Planned</span></td><td>Help overlay, context-sensitive shortcuts</td></tr>
+          <tr><td>10</td><td>tui-polish</td><td><span class="badge badge-muted">Planned</span></td><td>Responsive layout, edge cases, performance</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="tip">
+      <span class="tip-icon">&#9889;</span>
+      <span>Phases 3, 4, and 5 were all built in parallel on Feb 17. Average phase duration: ~10 minutes.</span>
+    </div>
+  </section>
+
+  <div class="neon-divider"></div>
+
+  <!-- ═══════════════ SECTION 5: OPTA-LMX ═══════════════ -->
+  <section id="lmx" class="section fade-in">
+    <div class="section-number">Section 05</div>
+    <h2>Start & Use Opta-LMX</h2>
+    <p class="section-desc">The inference server running on Mono512 (Mac Studio M3 Ultra, 512GB). Serves an OpenAI-compatible API on port 1234 using MLX (Apple Silicon native).</p>
+
+    <h3><span class="icon" style="background:rgba(34,197,94,0.15); color:#22c55e;">1</span> First-Time Setup (on Mac Studio)</h3>
+    <pre><span class="c"># SSH to Mac Studio</span>
+<span class="cmd">ssh</span> <span class="u">192.168.188.11</span>
+
+<span class="c"># Navigate to project</span>
+<span class="cmd">cd</span> /Users/Shared/312/Opta/1-Apps/1J-Opta-LMX
+
+<span class="c"># Create venv & install</span>
+<span class="cmd">python3.12</span> <span class="f">-m</span> venv .venv
+<span class="cmd">source</span> .venv/bin/activate
+<span class="cmd">pip</span> install <span class="f">-e</span> <span class="s">".[dev]"</span></pre>
+
+    <h3><span class="icon" style="background:rgba(34,197,94,0.15); color:#22c55e;">2</span> Start the Server</h3>
+
+    <h4>Option A: Direct CLI</h4>
+    <pre><span class="c"># Localhost only (development)</span>
+<span class="cmd">opta-lmx</span>
+
+<span class="c"># LAN-accessible (production)</span>
+<span class="cmd">opta-lmx</span> <span class="f">--host</span> <span class="s">0.0.0.0</span> <span class="f">--port</span> <span class="n">1234</span>
+
+<span class="c"># With custom config</span>
+<span class="cmd">opta-lmx</span> <span class="f">--config</span> ~/.opta-lmx/config.yaml
+
+<span class="c"># Debug logging</span>
+<span class="cmd">opta-lmx</span> <span class="f">--log-level</span> <span class="s">DEBUG</span></pre>
+
+    <h4>Option B: launchd Daemon (auto-start on boot)</h4>
+    <pre><span class="c"># Install the daemon (one-time)</span>
+<span class="cmd">sudo</span> cp docs/launchd/com.opta.lmx.plist /Library/LaunchDaemons/
+<span class="cmd">sudo</span> launchctl load /Library/LaunchDaemons/com.opta.lmx.plist
+
+<span class="c"># Manage</span>
+<span class="cmd">sudo</span> launchctl list | grep opta          <span class="c"># Status</span>
+<span class="cmd">sudo</span> launchctl unload /Library/...        <span class="c"># Stop</span>
+<span class="cmd">tail</span> <span class="f">-f</span> /var/log/opta-lmx/opta-lmx.stdout.log  <span class="c"># Logs</span></pre>
+
+    <h3><span class="icon" style="background:rgba(34,197,94,0.15); color:#22c55e;">3</span> Configuration (YAML)</h3>
+
+    <div class="config-block glass-subtle">
+      <div class="config-title">~/.opta-lmx/config.yaml (Production)</div>
+      <pre style="margin:0; border:none; background:transparent;"><span class="k">server</span>:
+  <span class="k">host</span>: <span class="s">"0.0.0.0"</span>         <span class="c"># LAN-accessible</span>
+  <span class="k">port</span>: <span class="n">1234</span>               <span class="c"># Drop-in LM Studio replacement</span>
+  <span class="k">timeout_sec</span>: <span class="n">600</span>         <span class="c"># 10 min for large models</span>
+
+<span class="k">models</span>:
+  <span class="k">models_directory</span>: <span class="s">"/Users/Shared/Opta-LMX/models"</span>
+  <span class="k">auto_load</span>:               <span class="c"># Models loaded on startup</span>
+    - <span class="s">"mlx-community/Qwen2.5-Coder-32B-Instruct-4bit"</span>
+
+<span class="k">memory</span>:
+  <span class="k">max_memory_percent</span>: <span class="n">85</span>   <span class="c"># Conservative for 512GB</span>
+  <span class="k">auto_evict_lru</span>: <span class="s">true</span>     <span class="c"># Auto-unload least-used</span>
+
+<span class="k">logging</span>:
+  <span class="k">level</span>: <span class="s">"INFO"</span>
+  <span class="k">file</span>: <span class="s">"/var/log/opta-lmx/opta-lmx.log"</span>
+
+<span class="k">security</span>:
+  <span class="k">admin_key</span>: <span class="s">null</span>           <span class="c"># Set string for X-Admin-Key auth</span></pre>
+    </div>
+
+    <div class="tip">
+      <span class="tip-icon">&#9432;</span>
+      <span>Env vars override YAML: prefix <code class="inline-code">LMX_</code>, nested with <code class="inline-code">__</code> — e.g. <code class="inline-code">LMX_SERVER__PORT=8080</code></span>
+    </div>
+
+    <h3><span class="icon" style="background:rgba(34,197,94,0.15); color:#22c55e;">4</span> Verify & Test</h3>
+    <pre><span class="c"># Health check</span>
+<span class="cmd">curl</span> <span class="u">http://192.168.188.11:1234/admin/health</span>
+
+<span class="c"># Server status (models, memory)</span>
+<span class="cmd">curl</span> <span class="u">http://192.168.188.11:1234/admin/status</span> | jq
+
+<span class="c"># Quick inference test</span>
+<span class="cmd">curl</span> <span class="f">-X POST</span> <span class="u">http://192.168.188.11:1234/v1/chat/completions</span> \
+  <span class="f">-H</span> <span class="s">"Content-Type: application/json"</span> \
+  <span class="f">-d</span> <span class="s">'{
+    "model": "qwen2.5-coder-32b",
+    "messages": [{"role": "user", "content": "Hello"}],
+    "stream": false
+  }'</span></pre>
+
+    <h3><span class="icon" style="background:rgba(34,197,94,0.15); color:#22c55e;">5</span> API Endpoints</h3>
+    <div class="endpoint-list">
+      <div class="endpoint-item">
+        <span class="endpoint-method method-post">POST</span>
+        <span class="endpoint-path">/v1/chat/completions</span>
+        <span class="endpoint-desc">OpenAI-compatible chat (streaming or not)</span>
+      </div>
+      <div class="endpoint-item">
+        <span class="endpoint-method method-get">GET</span>
+        <span class="endpoint-path">/v1/models</span>
+        <span class="endpoint-desc">List available models</span>
+      </div>
+      <div class="endpoint-item">
+        <span class="endpoint-method method-post">POST</span>
+        <span class="endpoint-path">/v1/embeddings</span>
+        <span class="endpoint-desc">Text embeddings</span>
+      </div>
+      <div class="endpoint-item">
+        <span class="endpoint-method method-post">POST</span>
+        <span class="endpoint-path">/v1/messages</span>
+        <span class="endpoint-desc">Anthropic API compatibility layer</span>
+      </div>
+      <div class="endpoint-item">
+        <span class="endpoint-method method-get">GET</span>
+        <span class="endpoint-path">/admin/health</span>
+        <span class="endpoint-desc">Health check</span>
+      </div>
+      <div class="endpoint-item">
+        <span class="endpoint-method method-get">GET</span>
+        <span class="endpoint-path">/admin/status</span>
+        <span class="endpoint-desc">Status + memory + models</span>
+      </div>
+      <div class="endpoint-item">
+        <span class="endpoint-method method-get">GET</span>
+        <span class="endpoint-path">/admin/models</span>
+        <span class="endpoint-desc">Detailed model info</span>
+      </div>
+      <div class="endpoint-item">
+        <span class="endpoint-method method-post">POST</span>
+        <span class="endpoint-path">/admin/models/load</span>
+        <span class="endpoint-desc">Load a model into memory</span>
+      </div>
+      <div class="endpoint-item">
+        <span class="endpoint-method method-post">POST</span>
+        <span class="endpoint-path">/admin/models/unload</span>
+        <span class="endpoint-desc">Unload a model (free RAM)</span>
+      </div>
+      <div class="endpoint-item">
+        <span class="endpoint-method method-ws">WS</span>
+        <span class="endpoint-path">/ws/completions</span>
+        <span class="endpoint-desc">WebSocket streaming</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="neon-divider"></div>
+
+  <!-- ═══════════════ SECTION 6: OPTA CLI ═══════════════ -->
+  <section id="cli" class="section fade-in">
+    <div class="section-number">Section 06</div>
+    <h2>Start & Use Opta CLI</h2>
+    <p class="section-desc">The TypeScript CLI agent that connects to Opta-LMX. Runs on your MacBook (or any machine on LAN).</p>
+
+    <h3><span class="icon" style="background:rgba(245,158,11,0.15); color:#f59e0b;">1</span> Setup</h3>
+    <pre><span class="c"># Navigate to CLI project</span>
+<span class="cmd">cd</span> ~/Synced/Opta/1-Apps/1D-Opta-CLI-TS
+
+<span class="c"># Install & build</span>
+<span class="cmd">npm</span> install
+<span class="cmd">npm</span> run build
+
+<span class="c"># Optional: create global 'opta' command</span>
+<span class="cmd">npm</span> link</pre>
+
+    <h3><span class="icon" style="background:rgba(245,158,11,0.15); color:#f59e0b;">2</span> Running</h3>
+    <pre><span class="c"># Development (hot reload)</span>
+<span class="cmd">npm</span> run dev
+
+<span class="c"># Production</span>
+<span class="cmd">npm</span> run build && <span class="cmd">npm</span> start
+
+<span class="c"># Or directly</span>
+<span class="cmd">node</span> dist/index.js</pre>
+
+    <h3><span class="icon" style="background:rgba(245,158,11,0.15); color:#f59e0b;">3</span> Configure LMX Connection</h3>
+    <pre><span class="c"># Check current config</span>
+<span class="cmd">opta</span> <span class="k">config</span> list
+
+<span class="c"># Default: 192.168.188.11:1234 (Mac Studio LAN)</span>
+<span class="c"># Change if needed:</span>
+<span class="cmd">opta</span> <span class="k">config</span> set connection.host <span class="s">192.168.188.11</span>
+<span class="cmd">opta</span> <span class="k">config</span> set connection.port <span class="n">1234</span>
+
+<span class="c"># Or via environment variables</span>
+<span class="s">OPTA_HOST</span>=192.168.188.11 <span class="s">OPTA_PORT</span>=1234 <span class="cmd">opta</span> <span class="k">chat</span></pre>
+
+    <h3><span class="icon" style="background:rgba(245,158,11,0.15); color:#f59e0b;">4</span> Typical Workflow</h3>
+    <ol class="step-list">
+      <li>
+        <div class="step-content">
+          <div class="step-title">Check connection</div>
+          <div class="step-desc"><code class="inline-code">opta status</code> — confirms LMX is reachable and shows loaded models</div>
+        </div>
+      </li>
+      <li>
+        <div class="step-content">
+          <div class="step-title">See available models</div>
+          <div class="step-desc"><code class="inline-code">opta models</code> — list what's loaded on Mono512</div>
+        </div>
+      </li>
+      <li>
+        <div class="step-content">
+          <div class="step-title">Start coding</div>
+          <div class="step-desc"><code class="inline-code">opta chat</code> or <code class="inline-code">opta chat --tui</code> for full-screen mode</div>
+        </div>
+      </li>
+      <li>
+        <div class="step-content">
+          <div class="step-title">The agent works autonomously</div>
+          <div class="step-desc">Reads files, edits code, runs commands, searches the web, spawns sub-agents — all with permission checks</div>
+        </div>
+      </li>
+      <li>
+        <div class="step-content">
+          <div class="step-title">Or do a one-shot task</div>
+          <div class="step-desc"><code class="inline-code">opta do "add error handling to API routes"</code> — no interactive session needed</div>
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <div class="neon-divider"></div>
+
+  <!-- ═══════════════ SECTION 7: OPENCLAW ═══════════════ -->
+  <section id="openclaw" class="section fade-in">
+    <div class="section-number">Section 07</div>
+    <h2>Connect OpenClaw to Opta-LMX</h2>
+    <p class="section-desc">OpenClaw is the WebSocket gateway protocol (v3) that connects AI bots to client apps. Bots call Opta-LMX for inference.</p>
+
+    <h3><span class="icon" style="background:rgba(236,72,153,0.15); color:#ec4899;">&#9741;</span> Architecture</h3>
+
+    <div class="flow-diagram glass">
+      <div class="flow-row">
+        <div class="flow-box app">OptaPlus (iOS/macOS)</div>
+        <div class="flow-arrow">&#8594; WS</div>
+        <div class="flow-box gateway">OpenClaw Gateway</div>
+        <div class="flow-arrow">&#8594;</div>
+        <div class="flow-box bot">Bot Agent</div>
+        <div class="flow-arrow">&#8594; HTTP</div>
+        <div class="flow-box lmx">Opta-LMX :1234</div>
+      </div>
+      <div style="margin-top: 20px; color: var(--text-muted); font-size: 13px;">
+        <div class="flow-row" style="gap: 24px; margin-top: 12px;">
+          <div class="flow-box cli">Opta CLI (MacBook)</div>
+          <div class="flow-arrow">&#8594; HTTP</div>
+          <div class="flow-box lmx">Opta-LMX :1234</div>
+        </div>
+      </div>
+    </div>
+
+    <h3><span class="icon" style="background:rgba(236,72,153,0.15); color:#ec4899;">&#128279;</span> Bot → LMX Connection</h3>
+    <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 16px;">The bot uses the standard OpenAI SDK, pointing at LMX's base URL:</p>
+
+    <h4>Python Bot</h4>
+    <pre><span class="k">from</span> openai <span class="k">import</span> OpenAI
+
+client = OpenAI(
+    base_url=<span class="s">"http://192.168.188.11:1234/v1"</span>,
+    api_key=<span class="s">"not-needed"</span>  <span class="c"># LMX doesn't require a key by default</span>
+)
+
+response = client.chat.completions.create(
+    model=<span class="s">"qwen2.5-coder-32b"</span>,
+    messages=[{<span class="s">"role"</span>: <span class="s">"user"</span>, <span class="s">"content"</span>: <span class="s">"Hello"</span>}],
+    stream=<span class="k">True</span>
+)</pre>
+
+    <h4>TypeScript / Node.js Bot</h4>
+    <pre><span class="k">import</span> OpenAI <span class="k">from</span> <span class="s">'openai'</span>;
+
+<span class="k">const</span> client = <span class="k">new</span> OpenAI({
+  baseURL: <span class="s">'http://192.168.188.11:1234/v1'</span>,
+  apiKey: <span class="s">'not-needed'</span>,
+});
+
+<span class="k">const</span> response = <span class="k">await</span> client.chat.completions.create({
+  model: <span class="s">'qwen2.5-coder-32b'</span>,
+  messages: [{ role: <span class="s">'user'</span>, content: <span class="s">'Hello'</span> }],
+  stream: <span class="k">true</span>,
+});</pre>
+
+    <h3><span class="icon" style="background:rgba(236,72,153,0.15); color:#ec4899;">&#128241;</span> OptaPlus Connection Flow</h3>
+    <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 16px;">OptaPlus connects to the OpenClaw Gateway via WebSocket Protocol v3:</p>
+
+    <ol class="step-list">
+      <li><div class="step-content">
+        <div class="step-title">Open WebSocket</div>
+        <div class="step-desc">Connect to <code class="inline-code">ws://host:18793</code> (or <code class="inline-code">wss://</code> for TLS)</div>
+      </div></li>
+      <li><div class="step-content">
+        <div class="step-title">Receive <code class="inline-code">connect.challenge</code> event</div>
+        <div class="step-desc">Gateway sends challenge to verify client</div>
+      </div></li>
+      <li><div class="step-content">
+        <div class="step-title">Send <code class="inline-code">connect</code> request</div>
+        <div class="step-desc">Includes token, protocol version (v3), role (<code class="inline-code">operator</code>), scopes (<code class="inline-code">operator.admin</code>, <code class="inline-code">operator.pairing</code>)</div>
+      </div></li>
+      <li><div class="step-content">
+        <div class="step-title">Receive hello response</div>
+        <div class="step-desc">Connection established. Ping/pong health monitoring starts (30s interval, 5s deadline)</div>
+      </div></li>
+      <li><div class="step-content">
+        <div class="step-title">Send chat & management RPCs</div>
+        <div class="step-desc"><code class="inline-code">chat.send</code>, <code class="inline-code">chat.history</code>, <code class="inline-code">models.list</code>, <code class="inline-code">config.get</code>, <code class="inline-code">cron.add</code>, etc.</div>
+      </div></li>
+    </ol>
+
+    <h3><span class="icon" style="background:rgba(236,72,153,0.15); color:#ec4899;">&#128300;</span> Session Modes</h3>
+    <div class="card-grid">
+      <div class="card glass-subtle">
+        <div class="card-title">&#128279; Synced</div>
+        <div class="card-desc">Messages mirror to/from Telegram. <code class="inline-code">deliver: true</code>. Incoming channel messages appear in OptaPlus.</div>
+      </div>
+      <div class="card glass-subtle">
+        <div class="card-title">&#9889; Direct</div>
+        <div class="card-desc">Same context as main session but responses stay in OptaPlus only. No channel delivery.</div>
+      </div>
+      <div class="card glass-subtle">
+        <div class="card-title">&#128274; Isolated</div>
+        <div class="card-desc">Completely independent conversation. Own context. No shared history.</div>
+      </div>
+    </div>
+
+    <h3><span class="icon" style="background:rgba(236,72,153,0.15); color:#ec4899;">&#128225;</span> Supported Channels</h3>
+    <div class="card-grid">
+      <div class="card glass-subtle">
+        <div class="card-title" style="color: #60a5fa;">&#9992; Telegram</div>
+        <div class="card-desc">Full bidirectional sync. <code class="inline-code">deliver: true</code></div>
+      </div>
+      <div class="card glass-subtle">
+        <div class="card-title" style="color: #f87171;">&#9889; Direct</div>
+        <div class="card-desc">Gateway-only, no external channel. <code class="inline-code">deliver: false</code></div>
+      </div>
+      <div class="card glass-subtle">
+        <div class="card-title" style="color: #4ade80;">&#128222; WhatsApp</div>
+        <div class="card-desc">Bidirectional sync. <code class="inline-code">deliver: true</code></div>
+      </div>
+      <div class="card glass-subtle">
+        <div class="card-title" style="color: #a78bfa;">&#127918; Discord</div>
+        <div class="card-desc">Bidirectional sync. <code class="inline-code">deliver: true</code></div>
+      </div>
+    </div>
+
+    <h3><span class="icon" style="background:rgba(236,72,153,0.15); color:#ec4899;">&#128260;</span> Device Pairing</h3>
+    <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 8px;">Before chatting, OptaPlus must pair with bots on the gateway:</p>
+    <pre><span class="c">// 1. Discover available bots (no auth needed)</span>
+<span class="k">let</span> bots = <span class="k">await</span> client.gatewayDiscover()
+<span class="c">// Returns: gatewayFingerprint, gatewayName, bots[]</span>
+
+<span class="c">// 2. Pair with selected bots</span>
+<span class="k">let</span> result = <span class="k">await</span> client.devicePair(params: DevicePairParams(
+    deviceId: <span class="s">"my-iphone"</span>,
+    deviceName: <span class="s">"Matthew's iPhone"</span>,
+    platform: <span class="s">"iOS"</span>,
+    requestedBots: [<span class="s">"bot-alpha"</span>, <span class="s">"bot-beta"</span>]
+))
+<span class="c">// Returns: token per bot (store securely)</span>
+
+<span class="c">// 3. Connect with the token</span>
+<span class="k">let</span> client = OpenClawClient(host: <span class="s">"gateway.local"</span>, port: <span class="n">18793</span>, token: pairingToken)
+client.connect()</pre>
+  </section>
+
+  <div class="neon-divider"></div>
+
+  <!-- ═══════════════ SECTION 8: MANAGE MODELS ═══════════════ -->
+  <section id="manage" class="section fade-in">
+    <div class="section-number">Section 08</div>
+    <h2>Manage Models on Mono512 Remotely</h2>
+    <p class="section-desc">Multiple ways to manage models on Mono512 from your MacBook or any LAN device. Mono512 has 512GB unified memory — load multiple models simultaneously.</p>
+
+    <h3><span class="icon" style="background:rgba(6,182,212,0.15); color:#06b6d4;">&#9881;</span> Via Opta CLI (from MacBook)</h3>
+    <pre><span class="c"># List loaded models</span>
+<span class="cmd">opta</span> <span class="k">models</span>
+
+<span class="c"># Load a new model</span>
+<span class="cmd">opta</span> <span class="k">models</span> load <span class="s">mlx-community/DeepSeek-R1-Distill-Qwen-32B-4bit</span>
+
+<span class="c"># Unload to free memory</span>
+<span class="cmd">opta</span> <span class="k">models</span> unload <span class="s">llama-3.2-8b</span>
+
+<span class="c"># Switch active model</span>
+<span class="cmd">opta</span> <span class="k">models</span> use <span class="s">qwen2.5-coder-32b</span>
+
+<span class="c"># Detailed model info</span>
+<span class="cmd">opta</span> <span class="k">models</span> info <span class="s">qwen2.5-coder-32b</span> <span class="f">--json</span>
+
+<span class="c"># Check memory pressure</span>
+<span class="cmd">opta</span> <span class="k">status</span> <span class="f">--json</span></pre>
+
+    <h3><span class="icon" style="background:rgba(6,182,212,0.15); color:#06b6d4;">&#127760;</span> Via Direct HTTP API (any LAN device)</h3>
+    <pre><span class="c"># From any machine on 192.168.188.x:</span>
+
+<span class="c"># List loaded models</span>
+<span class="cmd">curl</span> <span class="u">http://192.168.188.11:1234/admin/models</span> | jq
+
+<span class="c"># Load a model</span>
+<span class="cmd">curl</span> <span class="f">-X POST</span> <span class="u">http://192.168.188.11:1234/admin/models/load</span> \
+  <span class="f">-H</span> <span class="s">"Content-Type: application/json"</span> \
+  <span class="f">-d</span> <span class="s">'{"model_id": "mlx-community/Qwen2.5-Coder-32B-Instruct-4bit"}'</span>
+
+<span class="c"># Unload a model</span>
+<span class="cmd">curl</span> <span class="f">-X POST</span> <span class="u">http://192.168.188.11:1234/admin/models/unload</span> \
+  <span class="f">-H</span> <span class="s">"Content-Type: application/json"</span> \
+  <span class="f">-d</span> <span class="s">'{"model_id": "llama-3.2-8b"}'</span>
+
+<span class="c"># Server status</span>
+<span class="cmd">curl</span> <span class="u">http://192.168.188.11:1234/admin/status</span> | jq</pre>
+
+    <h3><span class="icon" style="background:rgba(6,182,212,0.15); color:#06b6d4;">&#128268;</span> Via OpenAI SDK (any language, any tool)</h3>
+    <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 16px;">Since LMX is a drop-in LM Studio replacement, any tool supporting custom OpenAI base URLs works:</p>
+
+    <div class="card-grid">
+      <div class="card glass-subtle">
+        <div class="card-title">Aider</div>
+        <div class="card-desc"><code class="inline-code">OPENAI_API_BASE=http://192.168.188.11:1234/v1 aider</code></div>
+      </div>
+      <div class="card glass-subtle">
+        <div class="card-title">Continue.dev (VS Code)</div>
+        <div class="card-desc">Set <code class="inline-code">apiBase</code> to <code class="inline-code">http://192.168.188.11:1234/v1</code> in config</div>
+      </div>
+      <div class="card glass-subtle">
+        <div class="card-title">Python scripts</div>
+        <div class="card-desc"><code class="inline-code">OPENAI_BASE_URL=http://192.168.188.11:1234/v1 python script.py</code></div>
+      </div>
+      <div class="card glass-subtle">
+        <div class="card-title">Any OpenAI Client</div>
+        <div class="card-desc">Just set the base URL — LMX handles <code class="inline-code">/v1/chat/completions</code>, <code class="inline-code">/v1/models</code>, <code class="inline-code">/v1/embeddings</code></div>
+      </div>
+    </div>
+
+    <h3><span class="icon" style="background:rgba(6,182,212,0.15); color:#06b6d4;">&#128202;</span> Memory Management</h3>
+    <div class="tip">
+      <span class="tip-icon">&#9432;</span>
+      <span>512GB unified memory = multiple models loaded simultaneously. LMX config sets <code class="inline-code">max_memory_percent: 85</code> and <code class="inline-code">auto_evict_lru: true</code> — it auto-unloads the least-recently-used model when memory is tight. You can have a coding model + reasoning model + chat model all resident at once.</span>
+    </div>
+
+    <h3><span class="icon" style="background:rgba(6,182,212,0.15); color:#06b6d4;">&#127968;</span> Via <code class="inline-code">opta serve</code> (daemon management)</h3>
+    <pre><span class="cmd">opta</span> <span class="k">serve</span>              <span class="c"># Check LMX daemon status</span>
+<span class="cmd">opta</span> <span class="k">serve</span> start        <span class="c"># Start the daemon</span>
+<span class="cmd">opta</span> <span class="k">serve</span> stop         <span class="c"># Stop it</span>
+<span class="cmd">opta</span> <span class="k">serve</span> restart      <span class="c"># Restart</span>
+<span class="cmd">opta</span> <span class="k">serve</span> logs         <span class="c"># View logs</span></pre>
+  </section>
+
+  <!-- ═══════════════ FOOTER ═══════════════ -->
+  <footer class="footer fade-in">
+    <div class="footer-logo">Opta Operations</div>
+    <p>Self-hosted AI. No cloud dependency. Full control.</p>
+    <p style="margin-top: 8px; color: var(--text-muted);">Generated Feb 17, 2026 &mdash; Opta CLI v0.5.0-alpha.1</p>
+  </footer>
+
+</div>
+
+<script>
+  // Scroll-triggered fade-in
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+  document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>

@@ -595,6 +595,23 @@ export async function agentLoop(
       debug(`Sending ${messages.length} messages to ${model}`);
       spinner.start('Thinking...');
 
+      // Reconnection status handler: use TUI callback if available, otherwise log to console
+      const reconnectHandler = streamCallbacks?.onConnectionStatus ?? (
+        silent ? undefined : (status: 'checking' | 'connected' | 'disconnected' | 'reconnecting', attempt?: number) => {
+          if (status === 'reconnecting') {
+            spinner.stop();
+            console.log(chalk.dim(`  Connection interrupted, reconnecting... (attempt ${attempt ?? '?'}/${effectiveConfig.connection.retry.maxRetries})`));
+            spinner.start('Reconnecting...');
+          } else if (status === 'connected') {
+            spinner.stop();
+            console.log(chalk.green('  ✓') + chalk.dim(' Reconnected'));
+            spinner.start('Thinking...');
+          } else if (status === 'disconnected') {
+            spinner.stop();
+          }
+        }
+      );
+
       const stream = await createStreamWithRetry(
         client,
         {
@@ -604,7 +621,7 @@ export async function agentLoop(
           tool_choice: 'auto',
         },
         effectiveConfig.connection.retry,
-        streamCallbacks?.onConnectionStatus,
+        reconnectHandler,
       );
 
       spinner.stop();

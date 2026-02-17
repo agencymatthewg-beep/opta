@@ -1,0 +1,1347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Opta CLI + LMX Connection Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --void: #09090b;
+    --surface: #18181b;
+    --elevated: #27272a;
+    --border: #3f3f46;
+    --text-primary: #fafafa;
+    --text-secondary: #a1a1aa;
+    --text-muted: #52525b;
+    --primary: #8b5cf6;
+    --primary-glow: #a855f7;
+    --neon-blue: #3b82f6;
+    --neon-green: #22c55e;
+    --neon-amber: #f59e0b;
+    --neon-red: #ef4444;
+    --neon-cyan: #06b6d4;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--void);
+    color: var(--text-primary);
+    font-family: 'Sora', -apple-system, BlinkMacSystemFont, sans-serif;
+    line-height: 1.7;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Noise overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Ambient glow */
+  body::after {
+    content: '';
+    position: fixed;
+    top: -200px;
+    right: -200px;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(139,92,246,0.06) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 60px 32px 80px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    margin-bottom: 60px;
+  }
+
+  .header-badge {
+    display: inline-block;
+    padding: 6px 16px;
+    background: rgba(139,92,246,0.12);
+    border: 1px solid rgba(139,92,246,0.3);
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--primary);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+
+  h1 {
+    font-size: 2.8rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #fafafa 0%, #a78bfa 50%, #818cf8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 12px;
+    line-height: 1.2;
+  }
+
+  .header-sub {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    font-weight: 300;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+
+  /* Glass panels */
+  .glass {
+    background: rgba(24,24,27,0.6);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 32px;
+    margin-bottom: 28px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .glass::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+  }
+
+  .glass:hover {
+    border-color: rgba(139,92,246,0.2);
+    box-shadow: 0 0 40px rgba(139,92,246,0.05);
+  }
+
+  .glass-alert {
+    border-color: rgba(239,68,68,0.3);
+    background: rgba(239,68,68,0.04);
+  }
+
+  .glass-alert:hover {
+    border-color: rgba(239,68,68,0.5);
+    box-shadow: 0 0 40px rgba(239,68,68,0.08);
+  }
+
+  .glass-success {
+    border-color: rgba(34,197,94,0.2);
+    background: rgba(34,197,94,0.03);
+  }
+
+  .glass-success:hover {
+    border-color: rgba(34,197,94,0.4);
+    box-shadow: 0 0 40px rgba(34,197,94,0.05);
+  }
+
+  /* Section headers */
+  h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  h2 .num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: rgba(139,92,246,0.15);
+    border: 1px solid rgba(139,92,246,0.3);
+    color: var(--primary);
+    font-size: 0.85rem;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 20px 0 12px;
+    color: var(--text-primary);
+  }
+
+  p {
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+  }
+
+  /* Code blocks */
+  code {
+    font-family: 'JetBrains Mono', 'SF Mono', monospace;
+    font-size: 0.85em;
+    background: rgba(139,92,246,0.08);
+    border: 1px solid rgba(139,92,246,0.15);
+    padding: 2px 8px;
+    border-radius: 6px;
+    color: var(--primary-glow);
+  }
+
+  pre {
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+    padding: 20px 24px;
+    overflow-x: auto;
+    margin: 16px 0;
+    position: relative;
+  }
+
+  pre code {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    line-height: 1.8;
+  }
+
+  pre .comment { color: var(--text-muted); }
+  pre .cmd { color: var(--neon-green); }
+  pre .flag { color: var(--neon-cyan); }
+  pre .string { color: var(--neon-amber); }
+  pre .output { color: var(--text-secondary); }
+  pre .error { color: var(--neon-red); }
+  pre .highlight { color: var(--primary-glow); font-weight: 500; }
+
+  /* Architecture diagram */
+  .arch-diagram {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    padding: 40px 20px;
+    margin: 20px 0;
+    flex-wrap: nowrap;
+  }
+
+  .arch-node {
+    text-align: center;
+    padding: 24px 20px;
+    background: rgba(24,24,27,0.8);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px;
+    min-width: 200px;
+    position: relative;
+    transition: all 0.3s ease;
+  }
+
+  .arch-node:hover {
+    border-color: rgba(139,92,246,0.4);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+  }
+
+  .arch-node .icon {
+    font-size: 2rem;
+    margin-bottom: 8px;
+  }
+
+  .arch-node .label {
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-bottom: 4px;
+  }
+
+  .arch-node .sub {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+
+  .arch-node.you {
+    border-color: rgba(139,92,246,0.4);
+    box-shadow: 0 0 30px rgba(139,92,246,0.1);
+  }
+
+  .arch-node.server {
+    border-color: rgba(34,197,94,0.3);
+    box-shadow: 0 0 20px rgba(34,197,94,0.05);
+  }
+
+  .arch-arrow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 12px;
+    min-width: 120px;
+  }
+
+  .arch-arrow .line {
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, rgba(139,92,246,0.3), rgba(34,197,94,0.3));
+    position: relative;
+  }
+
+  .arch-arrow .line::after {
+    content: '▸';
+    position: absolute;
+    right: -6px;
+    top: -10px;
+    color: rgba(34,197,94,0.5);
+    font-size: 1.2rem;
+  }
+
+  .arch-arrow .protocol {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-top: 6px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* Fix card */
+  .fix-card {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    padding: 20px;
+    background: rgba(0,0,0,0.3);
+    border-radius: 12px;
+    margin: 12px 0;
+  }
+
+  .fix-card .fix-icon {
+    font-size: 1.4rem;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .fix-card .fix-body {
+    flex: 1;
+  }
+
+  .fix-card .fix-label {
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-bottom: 4px;
+  }
+
+  .fix-card .fix-desc {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+  }
+
+  /* Command grid */
+  .cmd-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 16px 0;
+  }
+
+  @media (max-width: 700px) {
+    .cmd-grid { grid-template-columns: 1fr; }
+    .arch-diagram { flex-direction: column; gap: 16px; }
+    .arch-arrow { transform: rotate(90deg); min-width: auto; }
+  }
+
+  .cmd-card {
+    padding: 16px 20px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 12px;
+    transition: all 0.2s ease;
+  }
+
+  .cmd-card:hover {
+    border-color: rgba(139,92,246,0.2);
+    background: rgba(139,92,246,0.03);
+  }
+
+  .cmd-card .cmd-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--neon-green);
+    margin-bottom: 6px;
+  }
+
+  .cmd-card .cmd-desc {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  /* Flow steps */
+  .flow {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin: 20px 0;
+  }
+
+  .flow-step {
+    display: flex;
+    gap: 16px;
+    padding: 16px 0;
+    position: relative;
+  }
+
+  .flow-step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 48px;
+    bottom: 0;
+    width: 1px;
+    background: rgba(139,92,246,0.2);
+  }
+
+  .flow-dot {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(139,92,246,0.15);
+    border: 1px solid rgba(139,92,246,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--primary);
+    flex-shrink: 0;
+  }
+
+  .flow-content { flex: 1; }
+  .flow-title { font-weight: 600; font-size: 0.9rem; margin-bottom: 4px; }
+  .flow-desc { font-size: 0.85rem; color: var(--text-secondary); }
+
+  /* Port table */
+  .port-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin: 16px 0;
+    font-size: 0.85rem;
+  }
+
+  .port-table th {
+    text-align: left;
+    padding: 12px 16px;
+    background: rgba(139,92,246,0.08);
+    border-bottom: 1px solid rgba(139,92,246,0.2);
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .port-table th:first-child { border-radius: 8px 0 0 0; }
+  .port-table th:last-child { border-radius: 0 8px 0 0; }
+
+  .port-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    color: var(--text-secondary);
+  }
+
+  .port-table tr:hover td {
+    background: rgba(139,92,246,0.03);
+  }
+
+  .port-table td:first-child {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--neon-cyan);
+    font-size: 0.8rem;
+  }
+
+  /* Status indicator */
+  .status-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 6px;
+  }
+
+  .status-dot.green {
+    background: var(--neon-green);
+    box-shadow: 0 0 8px rgba(34,197,94,0.5);
+  }
+
+  .status-dot.red {
+    background: var(--neon-red);
+    box-shadow: 0 0 8px rgba(239,68,68,0.5);
+  }
+
+  .status-dot.amber {
+    background: var(--neon-amber);
+    box-shadow: 0 0 8px rgba(245,158,11,0.5);
+  }
+
+  /* Neon divider */
+  .neon-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(139,92,246,0.3), transparent);
+    margin: 48px 0;
+    box-shadow: 0 0 10px rgba(139,92,246,0.1);
+  }
+
+  /* Tag badges */
+  .tag {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .tag-yes {
+    background: rgba(34,197,94,0.12);
+    color: var(--neon-green);
+    border: 1px solid rgba(34,197,94,0.3);
+  }
+
+  .tag-partial {
+    background: rgba(245,158,11,0.12);
+    color: var(--neon-amber);
+    border: 1px solid rgba(245,158,11,0.3);
+  }
+
+  .tag-port {
+    background: rgba(239,68,68,0.12);
+    color: var(--neon-red);
+    border: 1px solid rgba(239,68,68,0.3);
+  }
+
+  .tag-fix {
+    background: rgba(6,182,212,0.12);
+    color: var(--neon-cyan);
+    border: 1px solid rgba(6,182,212,0.3);
+  }
+
+  /* Capability matrix */
+  .cap-grid {
+    display: grid;
+    grid-template-columns: 1fr 120px;
+    gap: 0;
+    margin: 16px 0;
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .cap-row {
+    display: contents;
+  }
+
+  .cap-row > div {
+    padding: 14px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    display: flex;
+    align-items: center;
+  }
+
+  .cap-row:last-child > div {
+    border-bottom: none;
+  }
+
+  .cap-row > div:first-child {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+  }
+
+  .cap-row > div:last-child {
+    justify-content: center;
+  }
+
+  .cap-header > div {
+    background: rgba(139,92,246,0.06);
+    font-weight: 600;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  /* Breathing animation for active nodes */
+  @keyframes breathe {
+    0%, 100% { box-shadow: 0 0 20px rgba(139,92,246,0.1); }
+    50% { box-shadow: 0 0 30px rgba(139,92,246,0.2); }
+  }
+
+  .breathing {
+    animation: breathe 3s ease-in-out infinite;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding: 40px 0 20px;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+  }
+
+  .footer a {
+    color: var(--primary);
+    text-decoration: none;
+  }
+
+  /* Env var highlight */
+  .env-var {
+    display: inline-block;
+    padding: 2px 8px;
+    background: rgba(245,158,11,0.1);
+    border: 1px solid rgba(245,158,11,0.2);
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--neon-amber);
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-badge">Connection Guide</div>
+    <h1>Opta CLI + LMX</h1>
+    <p class="header-sub">
+      How to connect Opta CLI on your MacBook to Opta LMX on your Mac Studio,
+      and remotely manage models across your LAN
+    </p>
+  </div>
+
+  <!-- Section 0: Your Issue Right Now -->
+  <div class="glass glass-alert">
+    <h2>
+      <span class="num" style="background:rgba(239,68,68,0.15);border-color:rgba(239,68,68,0.3);color:var(--neon-red);">!</span>
+      Your Current Issue: Wrong Port
+    </h2>
+    <p>
+      Your <code>opta status</code> and <code>opta doctor</code> are failing because your config has
+      <code>port: 10001</code> but Opta LMX defaults to <strong>port 1234</strong>.
+    </p>
+
+    <div class="fix-card">
+      <div class="fix-icon">🔧</div>
+      <div class="fix-body">
+        <div class="fix-label">Saved Config <span class="tag tag-port">wrong port</span></div>
+        <div class="fix-desc">
+          <code>~/Library/Preferences/opta-nodejs/config.json</code> has <code>"port": 10001</code>
+        </div>
+      </div>
+    </div>
+
+    <h3>Quick Fix (one command)</h3>
+    <pre><code><span class="cmd">opta config set connection.port 1234</span>
+
+<span class="comment"># Then verify:</span>
+<span class="cmd">opta status</span>
+<span class="output">✓ Opta LMX is ok at 192.168.188.11:1234</span></code></pre>
+
+    <p style="color: var(--text-muted); font-size: 0.85rem;">
+      Port 1234 is LMX's default — chosen as a drop-in LM Studio replacement.
+      Your host <code>192.168.188.11</code> (Mac Studio LAN IP) is already correct.
+    </p>
+  </div>
+
+  <div class="neon-divider"></div>
+
+  <!-- Section 1: Architecture -->
+  <div class="glass">
+    <h2><span class="num">1</span> Architecture: How It All Connects</h2>
+    <p>
+      Opta CLI runs on your <strong>MacBook</strong> and connects to Opta LMX over your local
+      network. All inference happens on the <strong>Mac Studio's 512GB unified memory</strong> —
+      your MacBook just sends requests and renders responses.
+    </p>
+
+    <div class="arch-diagram">
+      <div class="arch-node you breathing">
+        <div class="icon">💻</div>
+        <div class="label">MacBook (Opta48)</div>
+        <div class="sub">Opta CLI TypeScript<br>Your terminal</div>
+      </div>
+
+      <div class="arch-arrow">
+        <div class="line"></div>
+        <div class="protocol">HTTP :1234 / LAN<br>192.168.188.x</div>
+      </div>
+
+      <div class="arch-node server">
+        <div class="icon">🖥️</div>
+        <div class="label">Mac Studio (Mono512)</div>
+        <div class="sub">Opta LMX Python<br>512GB · M3 Ultra</div>
+      </div>
+    </div>
+
+    <table class="port-table">
+      <thead>
+        <tr>
+          <th>Endpoint</th>
+          <th>Port</th>
+          <th>Purpose</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>/v1/chat/completions</td>
+          <td>1234</td>
+          <td>OpenAI-compatible inference (what <code>opta chat</code> uses)</td>
+        </tr>
+        <tr>
+          <td>/v1/models</td>
+          <td>1234</td>
+          <td>List loaded models (OpenAI format)</td>
+        </tr>
+        <tr>
+          <td>/admin/health</td>
+          <td>1234</td>
+          <td>Health check (what <code>opta status</code> hits)</td>
+        </tr>
+        <tr>
+          <td>/admin/models</td>
+          <td>1234</td>
+          <td>Detailed model info with memory, request counts</td>
+        </tr>
+        <tr>
+          <td>/admin/models/load</td>
+          <td>1234</td>
+          <td>Load a model into memory (POST)</td>
+        </tr>
+        <tr>
+          <td>/admin/models/unload</td>
+          <td>1234</td>
+          <td>Unload a model to free memory (POST)</td>
+        </tr>
+        <tr>
+          <td>/admin/models/available</td>
+          <td>1234</td>
+          <td>Scan HuggingFace cache for downloaded models</td>
+        </tr>
+        <tr>
+          <td>/admin/presets</td>
+          <td>1234</td>
+          <td>Model preset configurations</td>
+        </tr>
+        <tr>
+          <td>/admin/stack</td>
+          <td>1234</td>
+          <td>Role-based routing (code, chat, reasoning)</td>
+        </tr>
+        <tr>
+          <td>/admin/memory</td>
+          <td>1234</td>
+          <td>Per-model memory breakdown</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p style="color: var(--text-muted); font-size: 0.8rem;">
+      All endpoints share port 1234. The CLI routes through a single <code>LmxClient</code> class
+      that targets <code>http://{host}:{port}</code>.
+    </p>
+  </div>
+
+  <!-- Section 2: Connection Setup -->
+  <div class="glass">
+    <h2><span class="num">2</span> Setting Up the Connection</h2>
+    <p>
+      Opta CLI resolves connection settings in priority order.
+      The first value found wins:
+    </p>
+
+    <div class="flow">
+      <div class="flow-step">
+        <div class="flow-dot">1</div>
+        <div class="flow-content">
+          <div class="flow-title">CLI Flags (highest priority)</div>
+          <div class="flow-desc">
+            <code>opta chat --host 192.168.188.11 --model qwen2.5</code>
+          </div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-dot">2</div>
+        <div class="flow-content">
+          <div class="flow-title">Environment Variables</div>
+          <div class="flow-desc">
+            <span class="env-var">OPTA_HOST</span>
+            <span class="env-var">OPTA_PORT</span>
+            <span class="env-var">OPTA_MODEL</span>
+            <span class="env-var">OPTA_ADMIN_KEY</span>
+          </div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-dot">3</div>
+        <div class="flow-content">
+          <div class="flow-title">Project Config</div>
+          <div class="flow-desc">
+            <code>.opta/config.json</code> in current directory (found via cosmiconfig)
+          </div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-dot">4</div>
+        <div class="flow-content">
+          <div class="flow-title">User Config (your saved settings)</div>
+          <div class="flow-desc">
+            <code>~/Library/Preferences/opta-nodejs/config.json</code>
+          </div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-dot">5</div>
+        <div class="flow-content">
+          <div class="flow-title">Defaults (lowest priority)</div>
+          <div class="flow-desc">
+            host: <code>192.168.188.11</code> · port: <code>1234</code> · protocol: <code>http</code>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h3>Recommended Setup</h3>
+    <pre><code><span class="comment"># Fix the port and verify</span>
+<span class="cmd">opta config set connection.port 1234</span>
+<span class="cmd">opta config set connection.host 192.168.188.11</span>
+
+<span class="comment"># Verify the connection</span>
+<span class="cmd">opta status</span>
+<span class="output">✓ Opta LMX is ok at 192.168.188.11:1234
+  Version: 0.9.0
+  Uptime:  2h 15m
+  Memory:  48.2/512.0 GB (9%)
+  Models:  2 loaded</span>
+
+<span class="comment"># Or check everything at once</span>
+<span class="cmd">opta doctor</span></code></pre>
+
+    <h3>Alternative: Environment Variables (per-session)</h3>
+    <pre><code><span class="comment"># Add to ~/.zshrc for permanent override</span>
+<span class="cmd">export</span> <span class="string">OPTA_HOST=192.168.188.11</span>
+<span class="cmd">export</span> <span class="string">OPTA_PORT=1234</span>
+
+<span class="comment"># Or one-shot for testing</span>
+<span class="string">OPTA_PORT=1234</span> <span class="cmd">opta status</span></code></pre>
+  </div>
+
+  <div class="neon-divider"></div>
+
+  <!-- Section 3: Remote Server Management -->
+  <div class="glass glass-success">
+    <h2><span class="num">3</span> Yes! Remote LMX Management from MacBook</h2>
+    <p>
+      <strong>You can fully manage Opta LMX on your Mac Studio from your MacBook.</strong>
+      The <code>opta serve</code> command uses SSH to start/stop/restart the LMX process remotely,
+      and all <code>opta models</code> commands work over HTTP — no SSH needed for model operations.
+    </p>
+
+    <div class="cap-grid">
+      <div class="cap-row cap-header">
+        <div>Capability</div>
+        <div>Remote?</div>
+      </div>
+      <div class="cap-row">
+        <div>Start LMX server on Mac Studio</div>
+        <div><span class="tag tag-yes">✓ SSH</span></div>
+      </div>
+      <div class="cap-row">
+        <div>Stop LMX server</div>
+        <div><span class="tag tag-yes">✓ SSH</span></div>
+      </div>
+      <div class="cap-row">
+        <div>Restart LMX server</div>
+        <div><span class="tag tag-yes">✓ SSH</span></div>
+      </div>
+      <div class="cap-row">
+        <div>View LMX server logs</div>
+        <div><span class="tag tag-yes">✓ SSH</span></div>
+      </div>
+      <div class="cap-row">
+        <div>Check server health & status</div>
+        <div><span class="tag tag-yes">✓ HTTP</span></div>
+      </div>
+      <div class="cap-row">
+        <div>Load a model into memory</div>
+        <div><span class="tag tag-yes">✓ HTTP</span></div>
+      </div>
+      <div class="cap-row">
+        <div>Unload a model (free memory)</div>
+        <div><span class="tag tag-yes">✓ HTTP</span></div>
+      </div>
+      <div class="cap-row">
+        <div>Scan all available models</div>
+        <div><span class="tag tag-yes">✓ HTTP</span></div>
+      </div>
+      <div class="cap-row">
+        <div>Switch active/default model</div>
+        <div><span class="tag tag-yes">✓ HTTP</span></div>
+      </div>
+      <div class="cap-row">
+        <div>View memory usage per model</div>
+        <div><span class="tag tag-yes">✓ HTTP</span></div>
+      </div>
+      <div class="cap-row">
+        <div>View presets &amp; routing config</div>
+        <div><span class="tag tag-yes">✓ HTTP</span></div>
+      </div>
+      <div class="cap-row">
+        <div>Chat with loaded models</div>
+        <div><span class="tag tag-yes">✓ HTTP</span></div>
+      </div>
+      <div class="cap-row">
+        <div>Download new models from HuggingFace</div>
+        <div><span class="tag tag-partial">LMX API</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 4: Server Lifecycle -->
+  <div class="glass">
+    <h2><span class="num">4</span> Server Lifecycle: <code>opta serve</code></h2>
+    <p>
+      The <code>opta serve</code> command manages the LMX process on whatever host
+      is in your config. When the host isn't localhost, it <strong>SSHes into the Mac Studio</strong>
+      to start/stop the Python process.
+    </p>
+
+    <div class="cmd-grid">
+      <div class="cmd-card">
+        <div class="cmd-name">opta serve</div>
+        <div class="cmd-desc">Check if LMX is running (default action). Shows version, uptime, model count.</div>
+      </div>
+      <div class="cmd-card">
+        <div class="cmd-name">opta serve start</div>
+        <div class="cmd-desc">SSH into Mac Studio, activate venv, launch <code>python -m opta_lmx</code> with nohup. Polls health for up to 30s.</div>
+      </div>
+      <div class="cmd-card">
+        <div class="cmd-name">opta serve stop</div>
+        <div class="cmd-desc">SSH into Mac Studio, <code>pkill -f "python -m opta_lmx"</code>. Graceful shutdown.</div>
+      </div>
+      <div class="cmd-card">
+        <div class="cmd-name">opta serve restart</div>
+        <div class="cmd-desc">Stop then start. Full process replacement with health polling.</div>
+      </div>
+      <div class="cmd-card">
+        <div class="cmd-name">opta serve logs</div>
+        <div class="cmd-desc">SSH into Mac Studio, <code>tail -50 /tmp/opta-lmx.log</code>. View recent server output.</div>
+      </div>
+      <div class="cmd-card">
+        <div class="cmd-name">opta serve --json</div>
+        <div class="cmd-desc">Machine-readable JSON output. Useful for scripting and monitoring.</div>
+      </div>
+    </div>
+
+    <h3>SSH Prerequisite</h3>
+    <pre><code><span class="comment"># Make sure SSH key auth works (no password prompt)</span>
+<span class="cmd">ssh 192.168.188.11</span> <span class="string">"echo connected"</span>
+<span class="output">connected</span>
+
+<span class="comment"># If that doesn't work, set up SSH keys:</span>
+<span class="cmd">ssh-copy-id 192.168.188.11</span>
+
+<span class="comment"># The serve command runs this internally:</span>
+<span class="comment"># ssh 192.168.188.11 "cd /Users/Shared/312/Opta/1-Apps/1J-Opta-LMX && </span>
+<span class="comment">#   source .venv/bin/activate && </span>
+<span class="comment">#   nohup python -m opta_lmx --host 0.0.0.0 --port 1234 > /tmp/opta-lmx.log 2>&1 &"</span></code></pre>
+  </div>
+
+  <!-- Section 5: Model Management -->
+  <div class="glass">
+    <h2><span class="num">5</span> Model Management from Your MacBook</h2>
+    <p>
+      Every <code>opta models</code> command sends HTTP requests to LMX on the Mac Studio.
+      You're remotely controlling which models are loaded into the Studio's 512GB memory.
+    </p>
+
+    <h3>Discovery: See Everything Available</h3>
+    <pre><code><span class="comment"># Scan all sources: loaded + on-disk + presets + cloud</span>
+<span class="cmd">opta models scan</span>
+
+<span class="output">  <span class="highlight">Loaded</span> ── LMX 192.168.188.11:1234 ──────────────────
+  ● qwen/Qwen2.5-Coder-32B-Instruct  32K ctx · 18.2GB · role:code
+  ● THUDM/glm-4-9b-chat-mlx          200K ctx · 5.1GB · role:chat
+
+  <span class="highlight">On Disk</span> ── downloaded, not loaded ───────
+  ○ deepseek-ai/DeepSeek-R1-Distill-Qwen-32B  128K ctx · 17.8GB on disk
+  ○ mistralai/Mistral-7B-Instruct-v0.3        32K ctx · 4.2GB on disk
+
+  <span class="highlight">Presets</span> ──────────────────────────────────
+  ♦ code-assistant       → Qwen2.5-Coder-32B  alias:"code"  auto-load
+  ♦ reasoning            → DeepSeek-R1-32B     alias:"think"
+
+  <span class="highlight">Cloud</span> ── Anthropic ───────────────── api key ✓
+  ☁ claude-opus-4-6         Opus 4.6  200K ctx
+  ☁ claude-sonnet-4-5       Sonnet 4.5  200K ctx
+
+  <span class="highlight">Memory</span> ──────────────────────────────────
+  23.3 / 512.0 GB used (5%) · threshold 90%
+
+  2 loaded · 2 on disk · 2 presets · 2 cloud</span></code></pre>
+
+    <h3>Load &amp; Unload Models Remotely</h3>
+    <pre><code><span class="comment"># Load a model from disk into memory on Mac Studio</span>
+<span class="cmd">opta models load deepseek-ai/DeepSeek-R1-Distill-Qwen-32B</span>
+<span class="output">✓ Loaded deepseek-ai/DeepSeek-R1-Distill-Qwen-32B
+  Memory: 17.8 GB
+  Load time: 4.2s</span>
+
+<span class="comment"># Free up memory by unloading</span>
+<span class="cmd">opta models unload mistralai/Mistral-7B-Instruct-v0.3</span>
+<span class="output">✓ Unloaded mistralai/Mistral-7B-Instruct-v0.3
+  Freed: 4.2 GB</span>
+
+<span class="comment"># Switch your default model</span>
+<span class="cmd">opta models use qwen/Qwen2.5-Coder-32B-Instruct</span>
+<span class="output">✓ Default model set to qwen/Qwen2.5-Coder-32B-Instruct</span>
+
+<span class="comment"># Get detailed info on a model</span>
+<span class="cmd">opta models info qwen/Qwen2.5-Coder-32B-Instruct</span></code></pre>
+
+    <h3>Interactive Model Picker (in chat)</h3>
+    <pre><code><span class="comment"># During an opta chat session, type:</span>
+<span class="cmd">/model</span>
+
+<span class="output">  ── Loaded ────────────────
+  ● qwen/Qwen2.5-Coder-32B   32K ctx · 18.2GB · 47 reqs
+    THUDM/glm-4-9b-chat-mlx   200K ctx · 5.1GB · 12 reqs
+  ── On Disk ───────────────
+    deepseek-ai/DeepSeek-R1    128K ctx · 17.8GB · not loaded
+  ── Anthropic ─────────────
+  ☁ claude-sonnet-4-5          Sonnet 4.5 · 200K ctx</span>
+
+<span class="comment"># Select an on-disk model → it auto-loads, then switches</span>
+<span class="comment"># Select a cloud model → auto-switches provider to Anthropic</span></code></pre>
+  </div>
+
+  <div class="neon-divider"></div>
+
+  <!-- Section 6: Full Workflow -->
+  <div class="glass">
+    <h2><span class="num">6</span> Complete Workflow: Zero to Chatting</h2>
+    <p>From a cold start to an interactive coding session — all from your MacBook terminal.</p>
+
+    <div class="flow">
+      <div class="flow-step">
+        <div class="flow-dot">1</div>
+        <div class="flow-content">
+          <div class="flow-title">Fix port (one time only)</div>
+          <pre><code><span class="cmd">opta config set connection.port 1234</span></code></pre>
+        </div>
+      </div>
+
+      <div class="flow-step">
+        <div class="flow-dot">2</div>
+        <div class="flow-content">
+          <div class="flow-title">Start LMX on Mac Studio</div>
+          <pre><code><span class="cmd">opta serve start</span>
+<span class="output">✓ Opta LMX started at 192.168.188.11:1234</span></code></pre>
+        </div>
+      </div>
+
+      <div class="flow-step">
+        <div class="flow-dot">3</div>
+        <div class="flow-content">
+          <div class="flow-title">Check what's available</div>
+          <pre><code><span class="cmd">opta models scan</span></code></pre>
+        </div>
+      </div>
+
+      <div class="flow-step">
+        <div class="flow-dot">4</div>
+        <div class="flow-content">
+          <div class="flow-title">Load the model you want</div>
+          <pre><code><span class="cmd">opta models load qwen/Qwen2.5-Coder-32B-Instruct</span></code></pre>
+        </div>
+      </div>
+
+      <div class="flow-step">
+        <div class="flow-dot">5</div>
+        <div class="flow-content">
+          <div class="flow-title">Set it as default</div>
+          <pre><code><span class="cmd">opta models use qwen/Qwen2.5-Coder-32B-Instruct</span></code></pre>
+        </div>
+      </div>
+
+      <div class="flow-step">
+        <div class="flow-dot">6</div>
+        <div class="flow-content">
+          <div class="flow-title">Start chatting!</div>
+          <pre><code><span class="cmd">opta chat</span>        <span class="comment"># REPL mode</span>
+<span class="cmd">opta chat --tui</span>  <span class="comment"># Full-screen TUI</span></code></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 7: Config Reference -->
+  <div class="glass">
+    <h2><span class="num">7</span> Config Quick Reference</h2>
+
+    <pre><code><span class="comment"># View all current settings</span>
+<span class="cmd">opta config list</span>
+<span class="cmd">opta config list --json</span>   <span class="comment"># machine-readable</span>
+
+<span class="comment"># Get a specific value</span>
+<span class="cmd">opta config get connection.host</span>
+<span class="cmd">opta config get connection.port</span>
+<span class="cmd">opta config get model.default</span>
+
+<span class="comment"># Set values</span>
+<span class="cmd">opta config set connection.host 192.168.188.11</span>
+<span class="cmd">opta config set connection.port 1234</span>
+<span class="cmd">opta config set model.default qwen/Qwen2.5-Coder-32B-Instruct</span>
+
+<span class="comment"># Reset to defaults</span>
+<span class="cmd">opta config reset</span></code></pre>
+
+    <table class="port-table">
+      <thead>
+        <tr>
+          <th>Config Key</th>
+          <th>Default</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>connection.host</td>
+          <td>192.168.188.11</td>
+          <td>Mac Studio LAN IP</td>
+        </tr>
+        <tr>
+          <td>connection.port</td>
+          <td>1234</td>
+          <td>LMX server port</td>
+        </tr>
+        <tr>
+          <td>connection.adminKey</td>
+          <td>(none)</td>
+          <td>Admin API authentication key</td>
+        </tr>
+        <tr>
+          <td>model.default</td>
+          <td>(empty)</td>
+          <td>Default model for chat/do</td>
+        </tr>
+        <tr>
+          <td>model.contextLimit</td>
+          <td>32768</td>
+          <td>Context window size (tokens)</td>
+        </tr>
+        <tr>
+          <td>provider.active</td>
+          <td>lmx</td>
+          <td><code>lmx</code> (local) or <code>anthropic</code> (cloud)</td>
+        </tr>
+        <tr>
+          <td>provider.anthropic.apiKey</td>
+          <td>(empty)</td>
+          <td>Anthropic API key for cloud fallback</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Section 8: Troubleshooting -->
+  <div class="glass">
+    <h2><span class="num">8</span> Troubleshooting</h2>
+
+    <div class="fix-card">
+      <div class="fix-icon"><span class="status-dot red"></span></div>
+      <div class="fix-body">
+        <div class="fix-label">"Cannot reach Opta LMX"</div>
+        <div class="fix-desc">
+          Check: Is LMX running? → <code>opta serve</code><br>
+          Check: Right port? → <code>opta config get connection.port</code> (should be <code>1234</code>)<br>
+          Check: Network? → <code>ping 192.168.188.11</code><br>
+          Check: Port open? → <code>curl http://192.168.188.11:1234/admin/health</code>
+        </div>
+      </div>
+    </div>
+
+    <div class="fix-card">
+      <div class="fix-icon"><span class="status-dot amber"></span></div>
+      <div class="fix-body">
+        <div class="fix-label">"HTTP 404" from doctor</div>
+        <div class="fix-desc">
+          Wrong port or wrong endpoint. LMX health is at <code>/admin/health</code> on port <code>1234</code>.<br>
+          Port 10001 was likely from an older config. Fix with <code>opta config set connection.port 1234</code>.
+        </div>
+      </div>
+    </div>
+
+    <div class="fix-card">
+      <div class="fix-icon"><span class="status-dot amber"></span></div>
+      <div class="fix-body">
+        <div class="fix-label">"opta serve start" hangs or fails</div>
+        <div class="fix-desc">
+          SSH key auth must work without password prompt.<br>
+          Test: <code>ssh 192.168.188.11 "echo ok"</code><br>
+          The serve command SSHes to <code>/Users/Shared/312/Opta/1-Apps/1J-Opta-LMX</code> and activates <code>.venv</code>.
+        </div>
+      </div>
+    </div>
+
+    <div class="fix-card">
+      <div class="fix-icon"><span class="status-dot amber"></span></div>
+      <div class="fix-body">
+        <div class="fix-label">"No models loaded"</div>
+        <div class="fix-desc">
+          LMX is running but no model is in memory. Load one:<br>
+          <code>opta models scan</code> → find model ID → <code>opta models load &lt;id&gt;</code><br>
+          Or configure auto-load in LMX's <code>~/.opta-lmx/config.yaml</code> on the Mac Studio.
+        </div>
+      </div>
+    </div>
+
+    <div class="fix-card">
+      <div class="fix-icon"><span class="status-dot green"></span></div>
+      <div class="fix-body">
+        <div class="fix-label">Model "Working" as default</div>
+        <div class="fix-desc">
+          Your config has <code>"default": "Working"</code> which isn't a real model ID.<br>
+          Fix: <code>opta models scan</code> → pick real model → <code>opta models use &lt;real-id&gt;</code><br>
+          Or: <code>opta config set model.default ""</code> to clear it (LMX will use its own default).
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 9: LMX Config on Mac Studio -->
+  <div class="glass">
+    <h2><span class="num">9</span> LMX Server Config (Mac Studio Side)</h2>
+    <p>
+      Opta LMX reads its config from <code>~/.opta-lmx/config.yaml</code> on the Mac Studio.
+      Key settings that affect what the CLI sees:
+    </p>
+
+    <pre><code><span class="comment"># ~/.opta-lmx/config.yaml on Mac Studio</span>
+<span class="highlight">server:</span>
+  host: <span class="string">"0.0.0.0"</span>        <span class="comment"># Listen on all interfaces (required for LAN)</span>
+  port: <span class="string">1234</span>             <span class="comment"># Must match CLI's connection.port</span>
+
+<span class="highlight">models:</span>
+  default_model: <span class="string">"qwen/Qwen2.5-Coder-32B-Instruct"</span>
+  auto_load:                <span class="comment"># Load these on startup</span>
+    - <span class="string">"qwen/Qwen2.5-Coder-32B-Instruct"</span>
+  models_directory: <span class="string">"/Users/Shared/Opta-LMX/models"</span>
+
+<span class="highlight">memory:</span>
+  max_memory_percent: <span class="string">90</span>   <span class="comment"># Use up to 90% of 512GB</span>
+  auto_evict_lru: <span class="string">true</span>     <span class="comment"># Auto-unload least recently used</span>
+
+<span class="highlight">routing:</span>
+  aliases:
+    code: [<span class="string">"qwen/Qwen2.5-Coder-32B-Instruct"</span>]
+    reasoning: [<span class="string">"deepseek-ai/DeepSeek-R1-Distill-Qwen-32B"</span>]
+    chat: [<span class="string">"THUDM/glm-4-9b-chat-mlx"</span>]
+
+<span class="highlight">presets:</span>
+  directory: <span class="string">"~/.opta-lmx/presets"</span>
+  enabled: <span class="string">true</span>
+
+<span class="highlight">security:</span>
+  admin_key: <span class="string">null</span>          <span class="comment"># Set a key to protect admin endpoints</span></code></pre>
+
+    <p style="color: var(--text-muted); font-size: 0.85rem;">
+      LMX also supports env var overrides: <span class="env-var">LMX_SERVER__PORT=1234</span>,
+      <span class="env-var">LMX_MEMORY__MAX_MEMORY_PERCENT=85</span>
+    </p>
+  </div>
+
+  <div class="neon-divider"></div>
+
+  <!-- Section 10: Quick Cheat Sheet -->
+  <div class="glass" style="border-color: rgba(139,92,246,0.3);">
+    <h2><span class="num" style="background:rgba(139,92,246,0.25);">⚡</span> Quick Cheat Sheet</h2>
+
+    <div class="cmd-grid">
+      <div class="cmd-card">
+        <div class="cmd-name">opta config set connection.port 1234</div>
+        <div class="cmd-desc">Fix port to match LMX default</div>
+      </div>
+      <div class="cmd-card">
+        <div class="cmd-name">opta status</div>
+        <div class="cmd-desc">Health check + loaded models</div>
+      </div>
+      <div class="cmd-card">
+        <div class="cmd-name">opta serve start</div>
+        <div class="cmd-desc">Start LMX on Mac Studio (SSH)</div>
+      </div>
+      <div class="cmd-card">
+        <div class="cmd-name">opta serve stop</div>
+        <div class="cmd-desc">Stop LMX on Mac Studio (SSH)</div>
+      </div>
+      <div class="cmd-card">
+        <div class="cmd-name">opta serve logs</div>
+        <div class="cmd-desc">View recent LMX server logs</div>
+      </div>
+      <div class="cmd-card">
+        <div class="cmd-name">opta models scan</div>
+        <div class="cmd-desc">See ALL models (loaded, disk, cloud)</div>
+      </div>
+      <div class="cmd-card">
+        <div class="cmd-name">opta models load &lt;id&gt;</div>
+        <div class="cmd-desc">Load model into Mac Studio memory</div>
+      </div>
+      <div class="cmd-card">
+        <div class="cmd-name">opta models unload &lt;id&gt;</div>
+        <div class="cmd-desc">Free memory on Mac Studio</div>
+      </div>
+      <div class="cmd-card">
+        <div class="cmd-name">opta models use &lt;id&gt;</div>
+        <div class="cmd-desc">Set default model for chat</div>
+      </div>
+      <div class="cmd-card">
+        <div class="cmd-name">opta doctor</div>
+        <div class="cmd-desc">Full environment health check</div>
+      </div>
+      <div class="cmd-card">
+        <div class="cmd-name">opta chat</div>
+        <div class="cmd-desc">Start coding session (REPL)</div>
+      </div>
+      <div class="cmd-card">
+        <div class="cmd-name">/model</div>
+        <div class="cmd-desc">In-chat: interactive model picker</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <p>Opta CLI v0.5.0-alpha.1 · Generated Feb 18, 2026</p>
+    <p style="margin-top: 4px;">MacBook (CLI) → LAN 192.168.188.x → Mac Studio (LMX 512GB)</p>
+  </div>
+
+</div>
+
+</body>
+</html>

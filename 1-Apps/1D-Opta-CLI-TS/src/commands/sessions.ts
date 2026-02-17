@@ -9,6 +9,10 @@ import { EXIT } from '../core/errors.js';
 
 interface SessionsOptions {
   json?: boolean;
+  model?: string;
+  since?: string;
+  tag?: string;
+  limit?: string;
 }
 
 export async function sessions(
@@ -18,7 +22,7 @@ export async function sessions(
 ): Promise<void> {
   // Default: list sessions
   if (!action || action === 'list') {
-    await listSessionsFormatted(opts?.json);
+    await listSessionsFormatted(opts);
     return;
   }
 
@@ -77,15 +81,31 @@ export async function sessions(
   }
 }
 
-async function listSessionsFormatted(json?: boolean): Promise<void> {
-  const items = await listSessions();
+async function listSessionsFormatted(opts?: SessionsOptions): Promise<void> {
+  let items = await listSessions();
+
+  // Apply filters
+  if (opts?.model) {
+    const modelFilter = opts.model.toLowerCase();
+    items = items.filter(s => s.model.toLowerCase().includes(modelFilter));
+  }
+  if (opts?.tag) {
+    items = items.filter(s => s.tags?.includes(opts.tag!));
+  }
+  if (opts?.since) {
+    const sinceDate = parseSinceDate(opts.since);
+    items = items.filter(s => new Date(s.created) >= sinceDate);
+  }
+
+  const limit = opts?.limit ? parseInt(opts.limit, 10) : 20;
+  items = items.slice(0, limit);
 
   if (items.length === 0) {
     console.log(chalk.dim('No sessions found. Start one with ') + chalk.cyan('opta chat'));
     return;
   }
 
-  if (json) {
+  if (opts?.json) {
     console.log(JSON.stringify(items, null, 2));
     return;
   }
@@ -97,12 +117,13 @@ async function listSessionsFormatted(json?: boolean): Promise<void> {
 
   for (const s of items) {
     const shortId = s.id.slice(0, 8).padEnd(8);
-    const title = s.title.slice(0, 30).padEnd(30);
+    const titleStr = s.title.slice(0, 30).padEnd(30);
     const model = s.model.slice(0, 15).padEnd(15);
     const date = formatRelativeDate(s.created).padEnd(12);
     const count = String(s.messageCount).padStart(4);
+    const tags = s.tags?.length ? chalk.dim(` [${s.tags.join(', ')}]`) : '';
 
-    console.log(`  ${shortId}  ${title} ${model} ${date} ${count}`);
+    console.log(`  ${shortId}  ${titleStr} ${model} ${date} ${count}${tags}`);
   }
 }
 
@@ -138,6 +159,38 @@ async function searchSessionsFormatted(query: string, json?: boolean): Promise<v
   if (matches.length === 1) {
     console.log(chalk.dim(`\n  Resume with: opta sessions resume ${matches[0]!.id}`));
   }
+}
+
+/**
+ * Parse a date filter string. Supports:
+ * - ISO dates: "2025-01-15"
+ * - Relative: "7d" (7 days ago), "2w" (2 weeks ago), "1m" (1 month ago)
+ */
+function parseSinceDate(input: string): Date {
+  const relativeMatch = input.match(/^(\d+)([dwm])$/);
+  if (relativeMatch) {
+    const amount = parseInt(relativeMatch[1]!, 10);
+    const unit = relativeMatch[2]!;
+    const now = new Date();
+    switch (unit) {
+      case 'd':
+        now.setDate(now.getDate() - amount);
+        break;
+      case 'w':
+        now.setDate(now.getDate() - amount * 7);
+        break;
+      case 'm':
+        now.setMonth(now.getMonth() - amount);
+        break;
+    }
+    return now;
+  }
+  // Assume ISO date string
+  const parsed = new Date(input);
+  if (isNaN(parsed.getTime())) {
+    throw new Error(`Invalid date format: "${input}". Use ISO (2025-01-15) or relative (7d, 2w, 1m).`);
+  }
+  return parsed;
 }
 
 function formatRelativeDate(iso: string): string {

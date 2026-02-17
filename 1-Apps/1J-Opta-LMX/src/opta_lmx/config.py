@@ -31,7 +31,9 @@ class ServerConfig(BaseModel):
     timeout_sec: int = Field(300, ge=1)
     websocket_enabled: bool = Field(True, description="Enable WebSocket streaming endpoint")
     sse_events_enabled: bool = Field(True, description="Enable /admin/events SSE endpoint")
-    sse_heartbeat_interval_sec: int = Field(30, ge=1, description="SSE heartbeat interval in seconds")
+    sse_heartbeat_interval_sec: int = Field(
+        30, ge=1, description="SSE heartbeat interval in seconds"
+    )
 
 
 class ModelsConfig(BaseModel):
@@ -50,8 +52,12 @@ class ModelsConfig(BaseModel):
     warmup_on_load: bool = Field(
         True, description="Run a small inference after model load to prime JIT/KV cache",
     )
-    gguf_context_length: int = Field(4096, ge=512, description="Default context length for GGUF models")
-    gguf_gpu_layers: int = Field(-1, ge=-1, description="GPU layers for GGUF (-1 = full Metal offload)")
+    gguf_context_length: int = Field(
+        4096, ge=512, description="Default context length for GGUF models"
+    )
+    gguf_gpu_layers: int = Field(
+        -1, ge=-1, description="GPU layers for GGUF (-1 = full Metal offload)"
+    )
     kv_bits: int | None = Field(None, description="KV cache quantization bits (4 or 8, None=FP16)")
     kv_group_size: int = Field(64, ge=1, description="KV cache quantization group size")
     prefix_cache_enabled: bool = Field(True, description="Enable prefix caching for multi-turn")
@@ -146,8 +152,12 @@ class RAGConfig(BaseModel):
         description="Path for vector store JSON persistence",
     )
     default_chunk_size: int = Field(512, ge=64, le=2048, description="Default tokens per chunk")
-    default_chunk_overlap: int = Field(64, ge=0, le=512, description="Default overlap between chunks")
-    max_documents_per_ingest: int = Field(100, ge=1, le=1000, description="Max documents per ingest request")
+    default_chunk_overlap: int = Field(
+        64, ge=0, le=512, description="Default overlap between chunks"
+    )
+    max_documents_per_ingest: int = Field(
+        100, ge=1, le=1000, description="Max documents per ingest request"
+    )
     auto_persist: bool = Field(True, description="Auto-save store after mutations")
 
 

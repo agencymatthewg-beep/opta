@@ -10,6 +10,7 @@ import time
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
+
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -154,8 +155,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     # Initialize RAG vector store
     if config.rag.enabled:
-        from opta_lmx.rag.store import VectorStore
         from opta_lmx.api.rag import init_rag_store
+        from opta_lmx.rag.store import VectorStore
 
         rag_store = VectorStore(persist_path=config.rag.persist_path)
         loaded_docs = rag_store.load()
