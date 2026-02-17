@@ -148,7 +148,7 @@ export function MessageList({
   if (height !== undefined && height > 0) {
     return (
       <Box paddingX={1}>
-        <ScrollView height={height} autoScroll focusable={focusable}>
+        <ScrollView height={height} autoScroll focusable={focusable} contentWidth={terminalWidth - PADDING_CHARS}>
           {messageRows}
         </ScrollView>
       </Box>
