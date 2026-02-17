@@ -5,7 +5,7 @@
  * Imported by chat.ts and do.ts.
  */
 
-export function buildConfigOverrides(opts: {
+export interface ConfigOverrideFlags {
   model?: string;
   commit?: boolean;
   checkpoints?: boolean;
@@ -13,7 +13,9 @@ export function buildConfigOverrides(opts: {
   yolo?: boolean;
   auto?: boolean;
   plan?: boolean;
-}): Record<string, unknown> {
+}
+
+export function buildConfigOverrides(opts: ConfigOverrideFlags): Record<string, unknown> {
   const overrides: Record<string, unknown> = {};
 
   if (opts.model) {

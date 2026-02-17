@@ -52,22 +52,22 @@ describe('non-interactive mode (opta do)', () => {
   });
 
   it('should parse valid output options', () => {
-    const result = parseDoOutput({ format: 'json', quiet: false, output: undefined });
+    const result = parseDoOutput({ format: 'json', quiet: false, });
     expect(result).toBe('json');
   });
 
   it('should return quiet when quiet flag is set', () => {
-    const result = parseDoOutput({ format: undefined, quiet: true, output: undefined });
+    const result = parseDoOutput({ format: undefined, quiet: true, });
     expect(result).toBe('quiet');
   });
 
   it('should default to text format', () => {
-    const result = parseDoOutput({ format: undefined, quiet: false, output: undefined });
+    const result = parseDoOutput({ format: undefined, quiet: false, });
     expect(result).toBe('text');
   });
 
   it('should prioritize --quiet over --format', () => {
-    const result = parseDoOutput({ format: 'json', quiet: true, output: undefined });
+    const result = parseDoOutput({ format: 'json', quiet: true, });
     expect(result).toBe('quiet');
   });
 

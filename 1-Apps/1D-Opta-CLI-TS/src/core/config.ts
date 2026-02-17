@@ -189,7 +189,7 @@ export type OptaConfig = z.infer<typeof OptaConfigSchema>;
 export const DEFAULT_CONFIG: OptaConfig = OptaConfigSchema.parse({});
 
 export async function loadConfig(
-  overrides?: Partial<Record<string, unknown>>
+  overrides?: Record<string, unknown>
 ): Promise<OptaConfig> {
   const raw: Record<string, unknown> = {};
 
@@ -249,7 +249,7 @@ export async function loadConfig(
 }
 
 export async function saveConfig(
-  updates: Partial<Record<string, unknown>>
+  updates: Record<string, unknown>
 ): Promise<void> {
   const { default: Conf } = await import('conf');
   const store = new Conf({ projectName: 'opta' });

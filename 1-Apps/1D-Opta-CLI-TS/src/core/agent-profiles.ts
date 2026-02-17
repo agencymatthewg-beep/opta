@@ -2,10 +2,10 @@
  * Agent profiles define different tool sets and behaviors for the agent loop.
  * Users can switch profiles via /agent to specialize the assistant's capabilities.
  *
- * Integration status:
+ * Integration:
  * - chatState.agentProfile is set by the /agent slash command and passed to agentLoop().
- * - The `systemPromptSuffix` is appended in agentLoop() (agent.ts lines 390-396).
- * - The `tools` array is not yet used to filter schemas (V2: tool-level profile filtering).
+ * - The `systemPromptSuffix` is appended to the system prompt in agentLoop().
+ * - The `tools` array filters available tool schemas in agentLoop() when a profile is active.
  */
 
 export interface AgentProfile {
@@ -28,7 +28,6 @@ export const AGENT_PROFILES: AgentProfile[] = [
       'bg_start', 'bg_status', 'bg_output', 'bg_kill',
       'lsp_definition', 'lsp_references', 'lsp_hover', 'lsp_symbols', 'lsp_document_symbols', 'lsp_rename',
     ],
-    systemPromptSuffix: '',
   },
   {
     name: 'reader',

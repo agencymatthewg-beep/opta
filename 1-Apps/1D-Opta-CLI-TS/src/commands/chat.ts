@@ -146,10 +146,17 @@ export async function startChat(opts: ChatOptions): Promise<void> {
   };
   if (opts.dangerous || opts.yolo) chatState.currentMode = 'normal'; // dangerous handled by config mode
 
+  /** Map OptaMode to InputEditor mode string. */
+  function toEditorMode(mode: OptaMode): 'normal' | 'plan' | 'auto' {
+    if (mode === 'plan') return 'plan';
+    if (mode === 'auto-accept') return 'auto';
+    return 'normal';
+  }
+
   // InputEditor for buffer management and mode detection
   const editor = new InputEditor({
     prompt: '>',
-    mode: chatState.currentMode === 'plan' ? 'plan' : (chatState.currentMode === 'auto-accept' ? 'auto' : 'normal'),
+    mode: toEditorMode(chatState.currentMode),
   });
 
   // Input history with deduplication
@@ -157,9 +164,7 @@ export async function startChat(opts: ChatOptions): Promise<void> {
 
   function getPromptMessage(): string {
     // Sync editor mode with chat state
-    editor.setMode(
-      chatState.currentMode === 'plan' ? 'plan' : (chatState.currentMode === 'auto-accept' ? 'auto' : 'normal')
-    );
+    editor.setMode(toEditorMode(chatState.currentMode));
     return editor.getPromptDisplay();
   }
 

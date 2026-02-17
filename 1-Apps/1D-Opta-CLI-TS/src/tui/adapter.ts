@@ -8,8 +8,14 @@
 
 import { EventEmitter } from 'node:events';
 import type { OptaConfig } from '../core/config.js';
-import type { AgentMessage, AgentLoopOptions, AgentLoopResult } from '../core/agent.js';
+import type { AgentLoopOptions, AgentLoopResult } from '../core/agent.js';
 import type { Session } from '../memory/store.js';
+
+/** Average characters per token for rough estimation. */
+const CHARS_PER_TOKEN = 4;
+
+/** Minimum elapsed seconds before computing tokens/sec (avoids division spikes). */
+const MIN_ELAPSED_FOR_SPEED = 0.1;
 
 // --- Event Types ---
 
@@ -65,7 +71,7 @@ export async function runAgentWithEvents(
   config: OptaConfig,
   session: Session,
 ): Promise<AgentLoopResult> {
-  const startTime = Date.now();
+  const turnStartTime = Date.now();
   let completionTokens = 0;
   let toolCallCount = 0;
 
@@ -79,8 +85,7 @@ export async function runAgentWithEvents(
     silent: true, // We handle display in the TUI
     onStream: {
       onToken(text: string) {
-        // Estimate tokens from text length
-        completionTokens += Math.ceil(text.length / 4);
+        completionTokens += Math.ceil(text.length / CHARS_PER_TOKEN);
         emitter.emit('token', text);
       },
       onToolStart(name: string, id: string, args: string) {
@@ -99,8 +104,11 @@ export async function runAgentWithEvents(
   try {
     const result = await agentLoop(task, config, options);
 
-    const elapsed = (Date.now() - startTime) / 1000;
-    const speed = elapsed > 0.1 ? completionTokens / elapsed : 0;
+    const elapsedMs = Date.now() - turnStartTime;
+    const elapsed = elapsedMs / 1000;
+    const speed = elapsed > MIN_ELAPSED_FOR_SPEED
+      ? completionTokens / elapsed
+      : 0;
 
     emitter.emit('turn:end', {
       tokens: completionTokens,
@@ -113,15 +121,12 @@ export async function runAgentWithEvents(
 
     return result;
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    emitter.emit('error', msg);
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    emitter.emit('error', errorMessage);
     throw err;
   }
 }
 
-/**
- * Create a fresh TuiEmitter instance.
- */
 export function createTuiEmitter(): TuiEmitter {
   return new TuiEmitter();
 }

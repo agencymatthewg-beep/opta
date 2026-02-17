@@ -1,24 +1,18 @@
-import React from 'react';
+import React, { type ReactNode } from 'react';
 import { Box, Text } from 'ink';
 import { ScrollView } from './ScrollView.js';
+import type { TuiMessage } from './App.js';
 
-interface Message {
-  role: string;
-  content: string;
-  toolName?: string;
-  toolId?: string;
-  toolStatus?: 'running' | 'done';
-  toolCalls?: number;
-  thinkingTokens?: number;
-}
+/** Max characters shown inline for a completed tool result. */
+const TOOL_INLINE_PREVIEW_LENGTH = 80;
 
 interface MessageListProps {
-  messages: Message[];
+  messages: TuiMessage[];
   height?: number;
   focusable?: boolean;
 }
 
-function renderToolMessage(msg: Message, i: number) {
+function renderToolMessage(msg: TuiMessage, i: number): ReactNode {
   const isRunning = msg.toolStatus === 'running';
   const icon = isRunning ? '*' : '+';
   const color = isRunning ? 'yellow' : 'gray';
@@ -31,13 +25,13 @@ function renderToolMessage(msg: Message, i: number) {
       {isRunning ? (
         <Text dimColor> running...</Text>
       ) : (
-        <Text dimColor> {msg.content.slice(0, 80)}{msg.content.length > 80 ? '...' : ''}</Text>
+        <Text dimColor> {msg.content.slice(0, TOOL_INLINE_PREVIEW_LENGTH)}{msg.content.length > TOOL_INLINE_PREVIEW_LENGTH ? '...' : ''}</Text>
       )}
     </Box>
   );
 }
 
-function renderErrorMessage(msg: Message, i: number) {
+function renderErrorMessage(msg: TuiMessage, i: number): ReactNode {
   return (
     <Box key={`err-${i}`} flexDirection="column" marginBottom={1}>
       <Box>
@@ -50,7 +44,7 @@ function renderErrorMessage(msg: Message, i: number) {
   );
 }
 
-function renderChatMessage(msg: Message, i: number) {
+function renderChatMessage(msg: TuiMessage, i: number): ReactNode {
   return (
     <Box key={i} flexDirection="column" marginBottom={1}>
       <Box>
@@ -90,8 +84,7 @@ export function MessageList({ messages, height, focusable = false }: MessageList
     return renderChatMessage(msg, i);
   });
 
-  // If height is provided, wrap in ScrollView for scrollable history
-  if (height && height > 0) {
+  if (height !== undefined && height > 0) {
     return (
       <Box paddingX={1}>
         <ScrollView height={height} autoScroll focusable={focusable}>

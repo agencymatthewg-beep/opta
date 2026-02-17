@@ -1,11 +1,10 @@
 import chalk from 'chalk';
 import type { OptaConfig } from './config.js';
-import { OptaError, EXIT } from './errors.js';
+import { ensureModel } from './errors.js';
 import { resolvePermission } from './tools/index.js';
 import { debug } from './debug.js';
 import { maskOldObservations, COMPACTION_PROMPT } from './context.js';
-import { createSpinner } from '../ui/spinner.js';
-import { renderMarkdown } from '../ui/markdown.js';
+import { createSpinner, type Spinner } from '../ui/spinner.js';
 import { ThinkingRenderer, stripThinkTags } from '../ui/thinking.js';
 import { StatusBar } from '../ui/statusbar.js';
 import { formatToolCall, formatToolResult } from '../ui/toolcards.js';
@@ -259,7 +258,7 @@ async function compactHistory(
 
 async function collectStream(
   stream: AsyncIterable<import('openai').default.Chat.Completions.ChatCompletionChunk>,
-  onText: (text: string) => void,
+  onVisibleText: (chunk: string) => void,
   statusBar?: StatusBar | null,
   onStream?: OnStreamCallbacks
 ): Promise<{ text: string; toolCalls: ToolCallAccum[]; thinkingRenderer: ThinkingRenderer }> {
@@ -278,7 +277,7 @@ async function collectStream(
       // ThinkingRenderer handles <think> display and returns non-thinking content
       const visible = thinking.process(delta.content);
       if (visible) {
-        onText(visible);
+        onVisibleText(visible);
         // Emit token event for TUI streaming
         onStream?.onToken?.(visible);
       }
@@ -315,7 +314,7 @@ async function collectStream(
   // Flush any remaining buffered text from thinking renderer
   const remaining = thinking.flush();
   if (remaining) {
-    onText(remaining);
+    onVisibleText(remaining);
     onStream?.onToken?.(remaining);
   }
 
@@ -378,12 +377,7 @@ export async function agentLoop(
   const client = await getOrCreateClient(effectiveConfig);
 
   const model = effectiveConfig.model.default;
-  if (!model) {
-    throw new OptaError(
-      'No model configured. Run `opta connect` or `opta status` to check your connection.',
-      EXIT.NO_CONNECTION,
-    );
-  }
+  ensureModel(model);
 
   // Use existing messages (multi-turn) or start fresh (single-shot)
   const userMessage: AgentMessage = options?.imageBase64
@@ -426,7 +420,8 @@ export async function agentLoop(
   let toolCallCount = 0;
   // Sub-agents are always silent
   const silent = isSubAgent || (options?.silent ?? false);
-  const spinner = silent ? { start: () => {}, stop: () => {}, succeed: () => {} } : await createSpinner();
+  const noopSpinner: Spinner = { start: () => {}, stop: () => {}, succeed: () => {}, fail: () => {} };
+  const spinner = silent ? noopSpinner : await createSpinner();
   const sessionId = options?.sessionId ?? 'unknown';
 
   // Status bar for real-time stats
@@ -436,6 +431,7 @@ export async function agentLoop(
   });
   let checkpointCount = 0;
   let lastThinkingRenderer: ThinkingRenderer | undefined;
+  const streamCallbacks = options?.onStream;
 
   // Initialize background process manager (skip for sub-agents to avoid replacing parent's)
   const { initProcessManager, shutdownProcessManager } = await import('./tools/index.js');
@@ -508,7 +504,6 @@ export async function agentLoop(
       // 3. Stream tokens to terminal, collect tool calls
       statusBar?.newTurn();
       let firstText = true;
-      const streamCallbacks = options?.onStream;
       const { text, toolCalls, thinkingRenderer: lastThinking } = await collectStream(stream, (chunk) => {
         if (silent) return;
         if (firstText) {
@@ -668,8 +663,8 @@ export async function agentLoop(
 
       if (cb.pauseAt > 0 && toolCallCount >= cb.pauseAt && toolCallCount % cb.pauseAt === 0) {
         // In CI or non-TTY, prompting would hang forever — just stop
-        const isCIMode = !process.stdout.isTTY || process.env['CI'] === 'true';
-        if (silent || isCIMode) break;
+        const isNonInteractive = !process.stdout.isTTY || process.env['CI'] === 'true';
+        if (silent || isNonInteractive) break;
         console.log(chalk.yellow(`\n  Reached ${toolCallCount} tool calls. Pausing.`));
         const { confirm } = await import('@inquirer/prompts');
         const shouldContinue = await confirm({ message: 'Continue?' });

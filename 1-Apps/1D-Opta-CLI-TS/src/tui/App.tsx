@@ -12,6 +12,15 @@ import { StreamingIndicator } from './StreamingIndicator.js';
 import { FocusProvider, useFocusPanel } from './FocusContext.js';
 import type { TuiEmitter, TurnStats } from './adapter.js';
 
+/** Max characters of a tool result displayed in the message list. */
+const TOOL_RESULT_PREVIEW_LENGTH = 200;
+
+/** Minimum rows reserved for the message area even on tiny terminals. */
+const MIN_MESSAGE_AREA_HEIGHT = 10;
+
+/** Rows consumed by header, status bar, and input (not message area). */
+const CHROME_HEIGHT = 6;
+
 export interface TuiMessage {
   role: string;
   content: string;
@@ -52,7 +61,7 @@ function AppInner({
   const [tokens, setTokens] = useState(0);
   const [promptTokens, setPromptTokens] = useState(0);
   const [completionTokens, setCompletionTokens] = useState(0);
-  const [tools, setTools] = useState(0);
+  const [toolCallCount, setToolCallCount] = useState(0);
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [speed, setSpeed] = useState(0);
@@ -64,12 +73,15 @@ function AppInner({
   // Ref to track the current streaming assistant message index
   const streamingMsgIdx = useRef<number | null>(null);
 
+  const handleClear = useCallback(() => setMessages([]), []);
+  const handleToggleSidebar = useCallback(() => setSidebarVisible(prev => !prev), []);
+
   useKeyboard({
-    onExit: () => exit(),
-    onClear: () => setMessages([]),
+    onExit: exit,
+    onClear: handleClear,
     onNextPanel: nextPanel,
     onPreviousPanel: previousPanel,
-    onToggleSidebar: () => setSidebarVisible(prev => !prev),
+    onToggleSidebar: handleToggleSidebar,
   });
 
   // --- Event-driven streaming mode ---
@@ -97,7 +109,7 @@ function AppInner({
       setStreamingLabel(`running ${name}`);
       setMessages(prev => [
         ...prev,
-        { role: 'tool', content: `running...`, toolName: name, toolId: id, toolStatus: 'running' as const },
+        { role: 'tool', content: 'running...', toolName: name, toolId: id, toolStatus: 'running' },
       ]);
     };
 
@@ -110,16 +122,18 @@ function AppInner({
           m => m.role === 'tool' && m.toolId === id && m.toolStatus === 'running'
         );
         if (idx !== -1) {
-          const truncated = result.length > 200 ? result.slice(0, 200) + '...' : result;
+          const truncated = result.length > TOOL_RESULT_PREVIEW_LENGTH
+            ? result.slice(0, TOOL_RESULT_PREVIEW_LENGTH) + '...'
+            : result;
           updated[idx] = {
             ...updated[idx]!,
             content: truncated,
-            toolStatus: 'done' as const,
+            toolStatus: 'done',
           };
         }
         return updated;
       });
-      setTools(prev => prev + 1);
+      setToolCallCount(prev => prev + 1);
     };
 
     const onThinking = (_text: string) => {
@@ -198,8 +212,7 @@ function AppInner({
     setMode('normal');
   }, [onMessage, onSubmit, isStreamingMode, exit]);
 
-  // Calculate message area height (total - header - statusbar - input)
-  const messageAreaHeight = Math.max(height - 6, 10);
+  const messageAreaHeight = Math.max(height - CHROME_HEIGHT, MIN_MESSAGE_AREA_HEIGHT);
 
   const mainContent = (
     <Box flexDirection="column" flexGrow={1}>
@@ -228,7 +241,7 @@ function AppInner({
       model={model}
       sessionId={sessionId}
       tokens={{ prompt: promptTokens, completion: completionTokens, total: tokens }}
-      tools={tools}
+      tools={toolCallCount}
       cost="$0.00"
       mode={mode}
       elapsed={elapsed}
@@ -255,7 +268,7 @@ function AppInner({
         model={model}
         tokens={tokens}
         cost="$0.00"
-        tools={tools}
+        tools={toolCallCount}
         speed={speed}
         mode={mode}
       />

@@ -34,7 +34,7 @@ interface DoOptions {
  * Determine the output format from CLI flags.
  * Priority: --quiet > --format > default (text)
  */
-export function parseDoOutput(opts: { format?: string; quiet?: boolean; output?: string }): OutputFormat {
+export function parseDoOutput(opts: { format?: string; quiet?: boolean }): OutputFormat {
   if (opts.quiet) return 'quiet';
   if (opts.format === 'json') return 'json';
   return 'text';

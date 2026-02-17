@@ -1,6 +1,6 @@
 import { debug } from '../core/debug.js';
 import { getContextLimit } from '../core/models.js';
-import type { z } from 'zod';
+import type { ZodType } from 'zod';
 
 // --- Public Response Types (what commands consume) ---
 
@@ -117,7 +117,7 @@ export class LmxClient {
     }
   }
 
-  private async fetch<T>(path: string, init?: RequestInit, validator?: z.ZodType<T>): Promise<T> {
+  private async fetch<T>(path: string, init?: RequestInit, validator?: ZodType<T>): Promise<T> {
     const url = `${this.baseUrl}${path}`;
     debug(`LMX ${init?.method ?? 'GET'} ${url}`);
 

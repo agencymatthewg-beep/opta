@@ -20,28 +20,24 @@ interface StreamingRenderOptions {
 
 type RenderOptions = LegacyRenderOptions | StreamingRenderOptions;
 
+// ANSI escape sequences for alternate screen buffer management
+const ANSI_ENTER_ALT_BUFFER = '\x1b[?1049h';
+const ANSI_LEAVE_ALT_BUFFER = '\x1b[?1049l';
+const ANSI_HIDE_CURSOR = '\x1b[?25l';
+const ANSI_SHOW_CURSOR = '\x1b[?25h';
+
 function isStreamingOptions(opts: RenderOptions): opts is StreamingRenderOptions {
   return 'emitter' in opts;
 }
 
 export async function renderTUI(options: RenderOptions): Promise<void> {
-  // Enter alternate buffer (full-screen mode)
-  process.stdout.write('\x1b[?1049h');
-  // Hide cursor
-  process.stdout.write('\x1b[?25l');
+  process.stdout.write(ANSI_ENTER_ALT_BUFFER);
+  process.stdout.write(ANSI_HIDE_CURSOR);
 
+  const { model, sessionId } = options;
   const appProps = isStreamingOptions(options)
-    ? {
-        model: options.model,
-        sessionId: options.sessionId,
-        emitter: options.emitter,
-        onSubmit: options.onSubmit,
-      }
-    : {
-        model: options.model,
-        sessionId: options.sessionId,
-        onMessage: options.onMessage,
-      };
+    ? { model, sessionId, emitter: options.emitter, onSubmit: options.onSubmit }
+    : { model, sessionId, onMessage: options.onMessage };
 
   const { waitUntilExit } = render(
     <App {...appProps} />,
@@ -52,7 +48,6 @@ export async function renderTUI(options: RenderOptions): Promise<void> {
 
   await waitUntilExit();
 
-  // Restore normal buffer
-  process.stdout.write('\x1b[?25h'); // Show cursor
-  process.stdout.write('\x1b[?1049l'); // Leave alternate buffer
+  process.stdout.write(ANSI_SHOW_CURSOR);
+  process.stdout.write(ANSI_LEAVE_ALT_BUFFER);
 }

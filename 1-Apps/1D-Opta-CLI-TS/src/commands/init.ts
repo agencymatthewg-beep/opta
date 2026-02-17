@@ -47,14 +47,14 @@ type OpisDocName = (typeof OPIS_DOCS)[number];
 
 // --- Templates ---
 
-function appMdTemplate(name: string, type: string, description: string): string {
+function appMdTemplate(projectName: string, projectType: string, description: string): string {
   return `---
-title: ${name}
-type: ${type}
+title: ${projectName}
+type: ${projectType}
 status: active
 ---
 
-# ${name}
+# ${projectName}
 
 ${description}
 
@@ -235,9 +235,9 @@ status: draft
 
 // --- Helpers ---
 
-async function fileExists(path: string): Promise<boolean> {
+async function fileExists(filePath: string): Promise<boolean> {
   try {
-    await access(path);
+    await access(filePath);
     return true;
   } catch {
     return false;
@@ -248,15 +248,15 @@ async function fileExists(path: string): Promise<boolean> {
  * Detect project type by scanning for known marker files.
  */
 export async function detectProjectType(cwd: string): Promise<ProjectDetection | null> {
-  let entries: string[];
+  let directoryEntries: string[];
   try {
-    entries = await readdir(cwd);
+    directoryEntries = await readdir(cwd);
   } catch {
     return null;
   }
 
   for (const [marker, type] of Object.entries(PROJECT_MARKERS)) {
-    if (entries.includes(marker)) {
+    if (directoryEntries.includes(marker)) {
       return { type, marker };
     }
   }
@@ -268,14 +268,14 @@ export async function detectProjectType(cwd: string): Promise<ProjectDetection |
 
 export async function init(options: InitOptions = {}): Promise<void> {
   const cwd = process.cwd();
-  const isNonInteractive = options.yes === true;
+  const skipPrompts = options.yes === true;
 
   // Step 1: Check for existing APP.md
   const appMdPath = join(cwd, 'APP.md');
   const appMdExists = await fileExists(appMdPath);
 
   if (appMdExists && !options.force) {
-    if (isNonInteractive) {
+    if (skipPrompts) {
       console.log(chalk.yellow('!') + ' APP.md already exists. Use --force to overwrite.');
       return;
     }
@@ -293,15 +293,15 @@ export async function init(options: InitOptions = {}): Promise<void> {
   }
 
   // Step 2: Detect project type
-  const detection = await detectProjectType(cwd);
-  const detectedType = detection?.type ?? 'unknown';
+  const projectDetection = await detectProjectType(cwd);
+  const detectedType = projectDetection?.type ?? 'unknown';
 
   // Step 3: Gather project info
   let projectName: string;
   let description: string;
   let selectedDocs: OpisDocName[];
 
-  if (isNonInteractive) {
+  if (skipPrompts) {
     projectName = basename(cwd);
     description = `${projectName} project.`;
     selectedDocs = [...OPIS_DOCS];
@@ -328,19 +328,19 @@ export async function init(options: InitOptions = {}): Promise<void> {
     });
   }
 
-  if (detection) {
+  if (projectDetection) {
     console.log(
-      chalk.dim(`Detected project type: ${detection.type} (from ${detection.marker})`),
+      chalk.dim(`Detected project type: ${projectDetection.type} (from ${projectDetection.marker})`),
     );
   }
 
   // Step 4: Create files
-  const created: string[] = [];
+  const createdFiles: string[] = [];
 
   // Write APP.md
   const appContent = appMdTemplate(projectName, detectedType, description);
   await writeFile(appMdPath, appContent, 'utf-8');
-  created.push('APP.md');
+  createdFiles.push('APP.md');
 
   // Ensure docs/ directory exists
   if (selectedDocs.length > 0) {
@@ -352,21 +352,21 @@ export async function init(options: InitOptions = {}): Promise<void> {
       const template = DOC_TEMPLATES[doc];
       if (template) {
         await writeFile(docPath, template, 'utf-8');
-        created.push(`docs/${doc}`);
+        createdFiles.push(`docs/${doc}`);
       }
     }
   }
 
   // Step 5: Print summary
   console.log('');
-  const lines = created.map((f) => `  ${chalk.green('\u2713')} ${chalk.cyan(f)}`);
+  const summaryLines = createdFiles.map((f) => `  ${chalk.green('\u2713')} ${chalk.cyan(f)}`);
   console.log(
     box('OPIS Initialized', [
       kv('Project', projectName, 10),
       kv('Type', detectedType, 10),
-      kv('Files', String(created.length), 10),
+      kv('Files', String(createdFiles.length), 10),
       '',
-      ...lines,
+      ...summaryLines,
     ]),
   );
   console.log('');
