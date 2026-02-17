@@ -53,6 +53,7 @@ program
   .option('-a, --auto', 'auto-accept file edits without prompting')
   .option('--dangerous', 'bypass all permission prompts')
   .option('--yolo', 'alias for --dangerous')
+  .option('--tui', 'use full-screen terminal UI')
   .action(async (opts) => {
     const { startChat } = await import('./commands/chat.js');
     await startChat(opts);

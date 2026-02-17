@@ -25,6 +25,7 @@ interface ChatOptions {
   auto?: boolean;
   dangerous?: boolean;
   yolo?: boolean;
+  tui?: boolean;
 }
 
 export type OptaMode = 'normal' | 'plan' | 'auto-accept';
@@ -110,6 +111,27 @@ export async function startChat(opts: ChatOptions): Promise<void> {
 
   if (!jsonMode) {
     console.log(chalk.dim('  Type /help for commands, / to browse, /exit to quit\n'));
+  }
+
+  // TUI mode: full-screen Ink rendering
+  if (opts.tui) {
+    const { renderTUI } = await import('../tui/render.js');
+    await renderTUI({
+      model: config.model.default,
+      sessionId: session.id,
+      onMessage: async (text: string) => {
+        const result = await agentLoop(text, config, {
+          existingMessages: session.messages,
+          sessionId: session.id,
+          silent: true,
+        });
+        session.messages = result.messages;
+        await saveSession(session);
+        const last = result.messages.filter((m: AgentMessage) => m.role === 'assistant').pop();
+        return typeof last?.content === 'string' ? last.content : '';
+      },
+    });
+    return;
   }
 
   // Mode state
