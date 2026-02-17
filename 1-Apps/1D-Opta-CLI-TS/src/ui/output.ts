@@ -1,7 +1,8 @@
 import chalk from 'chalk';
 
 export const isTTY = process.stdout.isTTY === true;
-export const isCI = process.env['CI'] === 'true' || !isTTY;
+export const forceColor = !!process.env['FORCE_COLOR'];
+export const isCI = (process.env['CI'] === 'true' || !isTTY) && !forceColor;
 export const noColor = 'NO_COLOR' in process.env;
 
 if (noColor) {
