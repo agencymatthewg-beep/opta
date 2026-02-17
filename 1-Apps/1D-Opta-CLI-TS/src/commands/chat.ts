@@ -3,6 +3,7 @@ import { loadConfig } from '../core/config.js';
 import { agentLoop, buildSystemPrompt } from '../core/agent.js';
 import type { AgentMessage } from '../core/agent.js';
 import { formatError, OptaError, EXIT } from '../core/errors.js';
+import { buildConfigOverrides } from '../utils/config-helpers.js';
 import {
   createSession,
   loadSession,
@@ -53,24 +54,7 @@ export interface ChatState {
 }
 
 export async function startChat(opts: ChatOptions): Promise<void> {
-  const overrides: Record<string, unknown> = {};
-  if (opts.model) {
-    overrides['model'] = { default: opts.model };
-  }
-  if (opts.commit === false) {
-    overrides['git'] = { ...((overrides['git'] as Record<string, unknown>) ?? {}), autoCommit: false };
-  }
-  if (opts.checkpoints === false) {
-    overrides['git'] = { ...((overrides['git'] as Record<string, unknown>) ?? {}), checkpoints: false };
-  }
-
-  if (opts.dangerous || opts.yolo) {
-    overrides['defaultMode'] = 'dangerous';
-  } else if (opts.auto) {
-    overrides['defaultMode'] = 'auto';
-  } else if (opts.plan) {
-    overrides['defaultMode'] = 'plan';
-  }
+  const overrides = buildConfigOverrides(opts);
 
   const jsonMode = opts.format === 'json';
   let config = await loadConfig(overrides);
@@ -131,19 +115,25 @@ export async function startChat(opts: ChatOptions): Promise<void> {
   // TUI mode: full-screen Ink rendering (--tui flag or tui.default config)
   if (opts.tui || config.tui.default) {
     const { renderTUI } = await import('../tui/render.js');
+    const { createTuiEmitter, runAgentWithEvents } = await import('../tui/adapter.js');
+
+    const emitter = createTuiEmitter();
+
     await renderTUI({
       model: config.model.default,
       sessionId: session.id,
-      onMessage: async (text: string) => {
-        const result = await agentLoop(text, config, {
-          existingMessages: session.messages,
-          sessionId: session.id,
-          silent: true,
-        });
-        session.messages = result.messages;
-        await saveSession(session);
-        const last = result.messages.filter((m: AgentMessage) => m.role === 'assistant').pop();
-        return typeof last?.content === 'string' ? last.content : '';
+      emitter,
+      onSubmit: (text: string) => {
+        // Fire-and-forget: the emitter events drive the TUI updates
+        runAgentWithEvents(emitter, text, config, session)
+          .then(async (result) => {
+            session.messages = result.messages;
+            session.toolCallCount += result.toolCallCount;
+            await saveSession(session);
+          })
+          .catch(() => {
+            // Error already emitted via emitter 'error' event
+          });
       },
     });
     return;
@@ -266,6 +256,7 @@ export async function startChat(opts: ChatOptions): Promise<void> {
         sessionId: session.id,
         silent: jsonMode,
         mode: chatState.currentMode === 'plan' ? 'plan' : undefined,
+        profile: chatState.agentProfile !== 'default' ? chatState.agentProfile : undefined,
       });
 
       session.messages = result.messages;

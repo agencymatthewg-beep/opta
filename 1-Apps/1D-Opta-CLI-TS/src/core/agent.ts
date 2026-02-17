@@ -80,6 +80,13 @@ export interface AgentMessage {
   tool_call_id?: string;
 }
 
+export interface OnStreamCallbacks {
+  onToken?: (text: string) => void;
+  onToolStart?: (name: string, id: string, args: string) => void;
+  onToolEnd?: (name: string, id: string, result: string) => void;
+  onThinking?: (text: string) => void;
+}
+
 export interface AgentLoopOptions {
   existingMessages?: AgentMessage[];
   sessionId?: string;
@@ -87,6 +94,8 @@ export interface AgentLoopOptions {
   mode?: string;
   imageBase64?: string;
   subAgentContext?: SubAgentContext;
+  profile?: string;
+  onStream?: OnStreamCallbacks;
 }
 
 export interface AgentLoopResult {
@@ -128,16 +137,18 @@ Working directory: ${workingDir}`;
     // OPIS loading failed — continue without context
   }
 
-  // Load export map
-  try {
-    const { scanExports, formatExportMap } = await import('../context/exports.js');
-    const exportMap = await scanExports(workingDir);
+  // Load export map (gated by config.context.exportMap)
+  if (config.context.exportMap) {
+    try {
+      const { scanExports, formatExportMap } = await import('../context/exports.js');
+      const exportMap = await scanExports(workingDir);
 
-    if (exportMap.entries.length > 0) {
-      prompt += `\n\nCodebase exports:\n${formatExportMap(exportMap)}`;
+      if (exportMap.entries.length > 0) {
+        prompt += `\n\nCodebase exports:\n${formatExportMap(exportMap)}`;
+      }
+    } catch {
+      // Export scanning failed — continue without map
     }
-  } catch {
-    // Export scanning failed — continue without map
   }
 
   // Warn about dirty working tree
@@ -168,7 +179,6 @@ PLANNING PROCESS:
 When your plan is complete, say: "Plan complete. Ready to implement?"`;
   }
 
-  void config; // config used for future extensions
   return prompt;
 }
 
@@ -250,7 +260,8 @@ async function compactHistory(
 async function collectStream(
   stream: AsyncIterable<import('openai').default.Chat.Completions.ChatCompletionChunk>,
   onText: (text: string) => void,
-  statusBar?: StatusBar | null
+  statusBar?: StatusBar | null,
+  onStream?: OnStreamCallbacks
 ): Promise<{ text: string; toolCalls: ToolCallAccum[]; thinkingRenderer: ThinkingRenderer }> {
   let text = '';
   const toolCallMap = new Map<number, ToolCallAccum>();
@@ -266,7 +277,16 @@ async function collectStream(
 
       // ThinkingRenderer handles <think> display and returns non-thinking content
       const visible = thinking.process(delta.content);
-      if (visible) onText(visible);
+      if (visible) {
+        onText(visible);
+        // Emit token event for TUI streaming
+        onStream?.onToken?.(visible);
+      }
+
+      // Emit thinking content if we're still in thinking mode
+      if (!visible && thinking.isThinking) {
+        onStream?.onThinking?.(delta.content);
+      }
 
       // Update status bar with token estimate
       const tokenDelta = Math.ceil(delta.content.length / 4);
@@ -294,7 +314,10 @@ async function collectStream(
 
   // Flush any remaining buffered text from thinking renderer
   const remaining = thinking.flush();
-  if (remaining) onText(remaining);
+  if (remaining) {
+    onText(remaining);
+    onStream?.onToken?.(remaining);
+  }
 
   // Strip <think> tags from the full collected text (for message history)
   text = stripThinkTags(text);
@@ -384,6 +407,15 @@ export async function agentLoop(
     systemPrompt = await buildSystemPrompt(effectiveConfig, undefined, options?.mode);
   }
 
+  // If an agent profile is active, append its system prompt suffix
+  if (options?.profile) {
+    const { getAgentProfile } = await import('./agent-profiles.js');
+    const activeProfile = getAgentProfile(options.profile);
+    if (activeProfile?.systemPromptSuffix) {
+      systemPrompt += '\n\n' + activeProfile.systemPromptSuffix;
+    }
+  }
+
   const messages: AgentMessage[] = options?.existingMessages
     ? [...options.existingMessages, userMessage]
     : [
@@ -413,6 +445,20 @@ export async function agentLoop(
 
   const { buildToolRegistry } = await import('../mcp/registry.js');
   const registry = await buildToolRegistry(effectiveConfig, options?.mode);
+
+  // Filter tool schemas by agent profile (if active)
+  let activeSchemas = registry.schemas;
+  if (options?.profile) {
+    const { getAgentProfile } = await import('./agent-profiles.js');
+    const activeProfile = getAgentProfile(options.profile);
+    if (activeProfile?.tools && activeProfile.tools.length > 0) {
+      const allowedTools = new Set(activeProfile.tools);
+      activeSchemas = registry.schemas.filter(
+        (s: { function: { name: string } }) => allowedTools.has(s.function.name)
+      );
+      debug(`Profile "${options.profile}" filtered tools: ${activeSchemas.length}/${registry.schemas.length}`);
+    }
+  }
 
   // Initialize hook manager (no-op when no hooks configured)
   const hooks = createHookManager(effectiveConfig);
@@ -452,7 +498,7 @@ export async function agentLoop(
       const stream = await client.chat.completions.create({
         model,
         messages: messages as Parameters<typeof client.chat.completions.create>[0]['messages'],
-        tools: registry.schemas as Parameters<typeof client.chat.completions.create>[0]['tools'],
+        tools: activeSchemas as Parameters<typeof client.chat.completions.create>[0]['tools'],
         tool_choice: 'auto',
         stream: true,
       });
@@ -462,6 +508,7 @@ export async function agentLoop(
       // 3. Stream tokens to terminal, collect tool calls
       statusBar?.newTurn();
       let firstText = true;
+      const streamCallbacks = options?.onStream;
       const { text, toolCalls, thinkingRenderer: lastThinking } = await collectStream(stream, (chunk) => {
         if (silent) return;
         if (firstText) {
@@ -469,7 +516,7 @@ export async function agentLoop(
           firstText = false;
         }
         process.stdout.write(chunk);
-      }, statusBar);
+      }, statusBar, streamCallbacks);
 
       // Track last thinking renderer for expand/collapse toggle
       lastThinkingRenderer = lastThinking;
@@ -567,9 +614,11 @@ export async function agentLoop(
         }
 
         // Execute the tool
+        streamCallbacks?.onToolStart?.(call.name, call.id, call.args);
         spinner.start(`${call.name}...`);
         const result = await registry.execute(call.name, call.args);
         spinner.succeed(`${call.name}`);
+        streamCallbacks?.onToolEnd?.(call.name, call.id, result);
 
         // Fire post-tool hook
         await fireToolPost(hooks, call.name, call.args, result, sessionCtx);

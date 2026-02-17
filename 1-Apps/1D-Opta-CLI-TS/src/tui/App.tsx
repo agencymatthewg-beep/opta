@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Box, useApp } from 'ink';
 import { Header } from './Header.js';
 import { MessageList } from './MessageList.js';
@@ -10,20 +10,43 @@ import { useTerminalSize } from './hooks/useTerminalSize.js';
 import { useKeyboard } from './hooks/useKeyboard.js';
 import { StreamingIndicator } from './StreamingIndicator.js';
 import { FocusProvider, useFocusPanel } from './FocusContext.js';
+import type { TuiEmitter, TurnStats } from './adapter.js';
+
+export interface TuiMessage {
+  role: string;
+  content: string;
+  toolName?: string;
+  toolId?: string;
+  toolStatus?: 'running' | 'done';
+  toolCalls?: number;
+  thinkingTokens?: number;
+}
 
 interface AppProps {
   model: string;
   sessionId: string;
   connectionStatus?: boolean;
+  /** Legacy callback mode — waits for full response before display. */
   onMessage?: (text: string) => Promise<string>;
+  /** Event-driven streaming mode — real-time token/tool display. */
+  emitter?: TuiEmitter;
+  /** Called when user submits input in streaming mode. */
+  onSubmit?: (text: string) => void;
 }
 
-function AppInner({ model, sessionId, connectionStatus = true, onMessage }: AppProps) {
+function AppInner({
+  model,
+  sessionId,
+  connectionStatus = true,
+  onMessage,
+  emitter,
+  onSubmit,
+}: AppProps) {
   const { exit } = useApp();
   const { height } = useTerminalSize();
   const { activePanel, nextPanel, previousPanel } = useFocusPanel();
 
-  const [messages, setMessages] = useState<Array<{ role: string; content: string }>>([]);
+  const [messages, setMessages] = useState<TuiMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [mode, setMode] = useState<'normal' | 'plan' | 'shell' | 'auto'>('normal');
   const [tokens, setTokens] = useState(0);
@@ -32,6 +55,14 @@ function AppInner({ model, sessionId, connectionStatus = true, onMessage }: AppP
   const [tools, setTools] = useState(0);
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [elapsed, setElapsed] = useState(0);
+  const [speed, setSpeed] = useState(0);
+  const [streamingLabel, setStreamingLabel] = useState('thinking');
+
+  // Track whether we're in streaming mode (emitter-based)
+  const isStreamingMode = !!emitter;
+
+  // Ref to track the current streaming assistant message index
+  const streamingMsgIdx = useRef<number | null>(null);
 
   useKeyboard({
     onExit: () => exit(),
@@ -41,6 +72,102 @@ function AppInner({ model, sessionId, connectionStatus = true, onMessage }: AppP
     onToggleSidebar: () => setSidebarVisible(prev => !prev),
   });
 
+  // --- Event-driven streaming mode ---
+  useEffect(() => {
+    if (!emitter) return;
+
+    const onToken = (text: string) => {
+      setMessages(prev => {
+        const idx = streamingMsgIdx.current;
+        if (idx !== null && idx < prev.length) {
+          // Append to existing streaming assistant message
+          const updated = [...prev];
+          const msg = updated[idx]!;
+          updated[idx] = { ...msg, content: msg.content + text };
+          return updated;
+        }
+        // Create new assistant message and track its index
+        const newIdx = prev.length;
+        streamingMsgIdx.current = newIdx;
+        return [...prev, { role: 'assistant', content: text }];
+      });
+    };
+
+    const onToolStart = (name: string, id: string, _args: string) => {
+      setStreamingLabel(`running ${name}`);
+      setMessages(prev => [
+        ...prev,
+        { role: 'tool', content: `running...`, toolName: name, toolId: id, toolStatus: 'running' as const },
+      ]);
+    };
+
+    const onToolEnd = (name: string, id: string, result: string) => {
+      setStreamingLabel('thinking');
+      setMessages(prev => {
+        const updated = [...prev];
+        // Find the matching tool:start message and update it
+        const idx = updated.findIndex(
+          m => m.role === 'tool' && m.toolId === id && m.toolStatus === 'running'
+        );
+        if (idx !== -1) {
+          const truncated = result.length > 200 ? result.slice(0, 200) + '...' : result;
+          updated[idx] = {
+            ...updated[idx]!,
+            content: truncated,
+            toolStatus: 'done' as const,
+          };
+        }
+        return updated;
+      });
+      setTools(prev => prev + 1);
+    };
+
+    const onThinking = (_text: string) => {
+      setStreamingLabel('thinking deeply');
+    };
+
+    const onTurnStart = () => {
+      setIsLoading(true);
+      streamingMsgIdx.current = null;
+      setStreamingLabel('thinking');
+    };
+
+    const onTurnEnd = (stats: TurnStats) => {
+      setIsLoading(false);
+      streamingMsgIdx.current = null;
+      setTokens(prev => prev + stats.tokens);
+      setCompletionTokens(prev => prev + stats.completionTokens);
+      setPromptTokens(prev => prev + stats.promptTokens);
+      setElapsed(stats.elapsed);
+      setSpeed(stats.speed);
+    };
+
+    const onError = (msg: string) => {
+      setIsLoading(false);
+      streamingMsgIdx.current = null;
+      setMessages(prev => [...prev, { role: 'error', content: msg }]);
+    };
+
+    emitter.on('token', onToken);
+    emitter.on('tool:start', onToolStart);
+    emitter.on('tool:end', onToolEnd);
+    emitter.on('thinking', onThinking);
+    emitter.on('turn:start', onTurnStart);
+    emitter.on('turn:end', onTurnEnd);
+    emitter.on('error', onError);
+
+    return () => {
+      emitter.off('token', onToken);
+      emitter.off('tool:start', onToolStart);
+      emitter.off('tool:end', onToolEnd);
+      emitter.off('thinking', onThinking);
+      emitter.off('turn:start', onTurnStart);
+      emitter.off('turn:end', onTurnEnd);
+      emitter.off('error', onError);
+    };
+  }, [emitter]);
+
+  // --- Submit handler ---
   const handleSubmit = useCallback(async (text: string) => {
     // Handle slash commands
     if (text === '/exit' || text === '/quit') {
@@ -54,18 +181,22 @@ function AppInner({ model, sessionId, connectionStatus = true, onMessage }: AppP
     }
 
     setMessages(prev => [...prev, { role: 'user', content: text }]);
-    setIsLoading(true);
 
-    const startTime = Date.now();
-    if (onMessage) {
+    if (isStreamingMode && onSubmit) {
+      // Streaming mode: emitter events will update messages
+      onSubmit(text);
+    } else if (onMessage) {
+      // Legacy mode: wait for full response
+      setIsLoading(true);
+      const startTime = Date.now();
       const response = await onMessage(text);
       setMessages(prev => [...prev, { role: 'assistant', content: response }]);
       setElapsed((Date.now() - startTime) / 1000);
+      setIsLoading(false);
     }
 
-    setIsLoading(false);
     setMode('normal');
-  }, [onMessage, exit]);
+  }, [onMessage, onSubmit, isStreamingMode, exit]);
 
   // Calculate message area height (total - header - statusbar - input)
   const messageAreaHeight = Math.max(height - 6, 10);
@@ -80,7 +211,7 @@ function AppInner({ model, sessionId, connectionStatus = true, onMessage }: AppP
         borderColor={activePanel === 'messages' ? 'cyan' : 'gray'}
       >
         <MessageList messages={messages} height={activePanel === 'messages' ? messageAreaHeight - 2 : messageAreaHeight} focusable={activePanel === 'messages'} />
-        {isLoading && <StreamingIndicator />}
+        {isLoading && <StreamingIndicator label={streamingLabel} />}
       </Box>
 
       <Box
@@ -101,6 +232,7 @@ function AppInner({ model, sessionId, connectionStatus = true, onMessage }: AppP
       cost="$0.00"
       mode={mode}
       elapsed={elapsed}
+      speed={speed}
     />
   );
 
@@ -124,7 +256,7 @@ function AppInner({ model, sessionId, connectionStatus = true, onMessage }: AppP
         tokens={tokens}
         cost="$0.00"
         tools={tools}
-        speed={0}
+        speed={speed}
         mode={mode}
       />
     </Box>
