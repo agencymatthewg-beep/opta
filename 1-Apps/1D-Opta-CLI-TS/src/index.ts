@@ -176,6 +176,16 @@ program
   });
 
 program
+  .command('serve')
+  .description('Manage the remote Opta LMX inference server')
+  .argument('[action]', 'start | stop | restart | logs (default: status)')
+  .option('--json', 'machine-readable output')
+  .action(async (action, opts) => {
+    const { serve } = await import('./commands/serve.js');
+    await serve(action, opts);
+  });
+
+program
   .command('server')
   .description('Start an HTTP API server for non-interactive use')
   .option('-p, --port <port>', 'server port', '3456')

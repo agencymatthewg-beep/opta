@@ -11,8 +11,8 @@ You are completing the Opta CLI — a local-first agentic AI coding assistant. T
 - `src/core/agent.ts` (346 lines) — Full agent loop with streaming, tool calls, permissions, context compaction, circuit breaker
 - `src/core/tools.ts` (374 lines) — 8 tools (read, write, edit, list, search, find, run, ask) with permission gates
 - `src/core/config.ts` (111 lines) — Zod-validated config with loadConfig(), saveConfig(), getConfigStore()
-- `src/providers/lmstudio.ts` (97 lines) — OpenAI SDK adapter pointing to LM Studio
-- `src/commands/connect.ts` (70 lines) — Working LM Studio discovery
+- `src/lmx/client.ts` (215 lines) — Opta-LMX admin API client
+- `src/commands/status.ts` (99 lines) — Opta-LMX health check and status
 - `src/commands/models.ts` (183 lines) — Working model list/use/info
 - `src/commands/do.ts` (48 lines) — Working single-shot task execution via agentLoop()
 - 44/44 tests pass, typecheck clean
@@ -178,7 +178,7 @@ npm test             # All tests must pass
 - Lazy loading pattern — heavy deps via `await import()`
 - Error format: Context → Problem → Solution (see errors.ts)
 - Permission checks on tool execution (see tools.ts resolvePermission)
-- No cloud API calls — local LM Studio only
+- No cloud API calls — local Opta-LMX only
 - Sessions stored as JSON in `~/.config/opta/sessions/`
 - Config via `conf` library (already in deps)
 - Use `@inquirer/prompts` for interactive input (already in deps)

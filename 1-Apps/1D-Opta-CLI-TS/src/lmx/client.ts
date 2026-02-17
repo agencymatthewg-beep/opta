@@ -57,6 +57,7 @@ interface RawAdminModelDetail {
   use_batching: boolean;
   request_count: number;
   last_used_at: number;
+  context_length?: number | null;
 }
 
 interface RawAdminModelsResponse {
@@ -175,6 +176,7 @@ export class LmxClient {
         model_id: m.id,
         status: 'loaded' as const,
         memory_bytes: m.memory_gb ? m.memory_gb * GB_TO_BYTES : undefined,
+        context_length: m.context_length ?? lookupContextLimit(m.id),
         loaded_at: m.loaded_at ? new Date(m.loaded_at * 1000).toISOString() : undefined,
         request_count: m.request_count,
       })),
