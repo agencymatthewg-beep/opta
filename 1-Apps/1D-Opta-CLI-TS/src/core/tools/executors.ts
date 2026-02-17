@@ -380,6 +380,7 @@ async function execMultiEdit(args: Record<string, unknown>): Promise<string> {
   for (let i = 0; i < edits.length; i++) {
     const edit = edits[i]!;
     const filePath = resolve(String(edit.path ?? ''));
+    assertWithinCwd(filePath);
     const group = fileGroups.get(filePath) ?? [];
     group.push({ index: i, old_text: edit.old_text, new_text: edit.new_text });
     fileGroups.set(filePath, group);
