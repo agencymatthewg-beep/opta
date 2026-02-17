@@ -165,7 +165,7 @@ async function serveStop(_opts?: ServeOptions): Promise<void> {
 
     spinner.succeed('Opta LMX stopped');
 
-    if (opts?.json) {
+    if (_opts?.json) {
       console.log(JSON.stringify({ stopped: true, host }, null, 2));
     }
   } catch (err) {
