@@ -17,6 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from opta_lmx import __version__
 from opta_lmx.api.admin import router as admin_router
+from opta_lmx.api.anthropic import router as anthropic_router
 from opta_lmx.api.health import router as health_router
 from opta_lmx.api.inference import router as inference_router
 from opta_lmx.api.middleware import RequestIDMiddleware
@@ -165,6 +166,7 @@ def create_app(config: LMXConfig | None = None) -> FastAPI:
 
     # Mount route groups
     app.include_router(inference_router)
+    app.include_router(anthropic_router)
     app.include_router(admin_router)
     app.include_router(health_router)
     if config.server.websocket_enabled:
