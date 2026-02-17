@@ -3,6 +3,7 @@ import { Box, Text, useInput } from 'ink';
 import { InputEditor } from '../ui/input.js';
 import { InputHistory } from '../ui/history.js';
 import fg from 'fast-glob';
+import { isImagePath } from '../core/fileref.js';
 import { getAllCommands } from '../commands/slash/index.js';
 import type { SlashCommandDef } from '../commands/slash/index.js';
 
@@ -398,12 +399,12 @@ export function InputBox({ onSubmit, mode, isLoading, history: historyProp, load
         </Box>
       )}
 
-      {/* @file autocomplete suggestions */}
+      {/* @file autocomplete suggestions (images shown with indicator) */}
       {suggestions.length > 0 && slashSuggestions.length === 0 && (
         <Box flexDirection="column" paddingLeft={modeIndicator ? 4 : 2}>
           {suggestions.map((s, i) => (
             <Text key={s} dimColor>
-              {i === 0 ? 'Tab> ' : '     '}{s}
+              {i === 0 ? 'Tab> ' : '     '}{s}{isImagePath(s) ? ' [image]' : ''}
             </Text>
           ))}
         </Box>
