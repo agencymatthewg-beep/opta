@@ -12,13 +12,14 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from starlette.responses import Response
 
+from opta_lmx.api.deps import RemoteReranking
 from opta_lmx.api.errors import openai_error
-from opta_lmx.remote.client import RemoteHelperClient, RemoteHelperError
+from opta_lmx.remote.client import RemoteHelperError
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +64,7 @@ class RerankResponse(BaseModel):
 
 
 @router.post("/v1/rerank", response_model=None)
-async def rerank_documents(body: RerankRequest, request: Request) -> Response:
+async def rerank_documents(body: RerankRequest, remote_client: RemoteReranking) -> Response:
     """Rerank documents by relevance to a query.
 
     Compatible with Cohere/Jina reranking API format.
@@ -94,9 +95,6 @@ async def rerank_documents(body: RerankRequest, request: Request) -> Response:
         top_n = len(body.documents)
 
     # Try remote helper if configured
-    remote_client: RemoteHelperClient | None = getattr(
-        request.app.state, "remote_reranking", None,
-    )
     if remote_client is not None:
         try:
             results = await remote_client.rerank(

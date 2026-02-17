@@ -18,6 +18,7 @@ from opta_lmx.manager.model import ModelManager
 from opta_lmx.monitoring.events import EventBus
 from opta_lmx.monitoring.metrics import MetricsCollector
 from opta_lmx.presets.manager import PresetManager
+from opta_lmx.inference.embedding_engine import EmbeddingEngine
 from opta_lmx.remote.client import RemoteHelperClient
 from opta_lmx.router.strategy import TaskRouter
 
@@ -62,6 +63,11 @@ def get_event_bus(request: Request) -> EventBus:
     return request.app.state.event_bus  # type: ignore[no-any-return]
 
 
+def get_embedding_engine(request: Request) -> EmbeddingEngine | None:
+    """Get the embedding engine from app state, or None if not configured."""
+    return getattr(request.app.state, "embedding_engine", None)
+
+
 def get_remote_embedding(request: Request) -> RemoteHelperClient | None:
     """Get the remote embedding helper client, or None if not configured."""
     return getattr(request.app.state, "remote_embedding", None)
@@ -95,6 +101,7 @@ Router = Annotated[TaskRouter, Depends(get_router)]
 Manager = Annotated[ModelManager, Depends(get_model_manager)]
 Presets = Annotated[PresetManager, Depends(get_preset_manager)]
 Events = Annotated[EventBus, Depends(get_event_bus)]
+Embeddings = Annotated[EmbeddingEngine | None, Depends(get_embedding_engine)]
 RemoteEmbedding = Annotated[RemoteHelperClient | None, Depends(get_remote_embedding)]
 RemoteReranking = Annotated[RemoteHelperClient | None, Depends(get_remote_reranking)]
 AdminAuth = Annotated[None, Depends(verify_admin_key)]

@@ -11,13 +11,14 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from starlette.responses import Response
 
+from opta_lmx.api.deps import Embeddings, RemoteEmbedding
 from opta_lmx.api.errors import internal_error, openai_error
-from opta_lmx.remote.client import RemoteHelperClient, RemoteHelperError
+from opta_lmx.remote.client import RemoteHelperError
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +58,11 @@ class EmbeddingResponse(BaseModel):
 
 
 @router.post("/v1/embeddings", response_model=None)
-async def create_embeddings(body: EmbeddingRequest, request: Request) -> Response:
+async def create_embeddings(
+    body: EmbeddingRequest,
+    embedding_engine: Embeddings,
+    remote_client: RemoteEmbedding,
+) -> Response:
     """Generate embeddings for input text(s).
 
     OpenAI API compatible — works with the standard openai Python SDK.
@@ -78,9 +83,6 @@ async def create_embeddings(body: EmbeddingRequest, request: Request) -> Respons
         )
 
     # Try remote helper first if configured
-    remote_client: RemoteHelperClient | None = getattr(
-        request.app.state, "remote_embedding", None,
-    )
     if remote_client is not None:
         try:
             vectors = await remote_client.embed(texts)
@@ -110,7 +112,6 @@ async def create_embeddings(body: EmbeddingRequest, request: Request) -> Respons
             })
 
     # Local embedding engine
-    embedding_engine = getattr(request.app.state, "embedding_engine", None)
     if embedding_engine is None:
         return openai_error(
             status_code=503,

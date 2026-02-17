@@ -77,8 +77,19 @@ class MetricsCollector:
                     break
             # If latency exceeds all buckets, it only appears in +Inf
 
-    def prometheus(self) -> str:
-        """Render metrics in Prometheus text exposition format."""
+    def prometheus(
+        self,
+        loaded_model_count: int = 0,
+        memory_used_gb: float = 0.0,
+        memory_total_gb: float = 0.0,
+    ) -> str:
+        """Render metrics in Prometheus text exposition format.
+
+        Args:
+            loaded_model_count: Number of currently loaded models.
+            memory_used_gb: Current unified memory usage in GB.
+            memory_total_gb: Total unified memory in GB.
+        """
         with self._lock:
             lines: list[str] = []
 
@@ -147,6 +158,20 @@ class MetricsCollector:
             lines.append("# HELP lmx_uptime_seconds Server uptime.")
             lines.append("# TYPE lmx_uptime_seconds gauge")
             lines.append(f"lmx_uptime_seconds {time.time() - self._started_at:.1f}")
+
+            # --- Loaded models gauge ---
+            lines.append("# HELP lmx_loaded_models Number of currently loaded models.")
+            lines.append("# TYPE lmx_loaded_models gauge")
+            lines.append(f"lmx_loaded_models {loaded_model_count}")
+
+            # --- Memory gauges ---
+            lines.append("# HELP lmx_memory_used_gb Unified memory used in GB.")
+            lines.append("# TYPE lmx_memory_used_gb gauge")
+            lines.append(f"lmx_memory_used_gb {memory_used_gb:.2f}")
+
+            lines.append("# HELP lmx_memory_total_gb Total unified memory in GB.")
+            lines.append("# TYPE lmx_memory_total_gb gauge")
+            lines.append(f"lmx_memory_total_gb {memory_total_gb:.2f}")
 
             lines.append("")  # trailing newline
             return "\n".join(lines)

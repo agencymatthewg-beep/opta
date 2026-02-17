@@ -489,14 +489,19 @@ async def delete_model(
     responses={403: {"model": ErrorResponse}},
 )
 async def prometheus_metrics(
-    _auth: AdminAuth, metrics: Metrics,
+    _auth: AdminAuth, metrics: Metrics, engine: Engine, memory: Memory,
 ) -> PlainTextResponse:
     """Prometheus-compatible metrics endpoint.
 
     Returns metrics in Prometheus text exposition format for scraping.
+    Includes live gauges for loaded model count and memory usage.
     """
     return PlainTextResponse(
-        content=metrics.prometheus(),
+        content=metrics.prometheus(
+            loaded_model_count=len(engine.get_loaded_models()),
+            memory_used_gb=memory.used_memory_gb(),
+            memory_total_gb=memory.total_memory_gb(),
+        ),
         media_type="text/plain; version=0.0.4; charset=utf-8",
     )
 

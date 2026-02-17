@@ -10,6 +10,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from opta_lmx.config import LMXConfig, RoutingConfig
+from opta_lmx.inference.embedding_engine import EmbeddingEngine
 from opta_lmx.inference.engine import InferenceEngine
 from opta_lmx.main import create_app
 from opta_lmx.manager.memory import MemoryMonitor
@@ -85,6 +86,7 @@ async def _make_test_client(
         test_app.state.metrics = MetricsCollector()
         test_app.state.preset_manager = PresetManager(tmp_path / "presets")
         test_app.state.event_bus = EventBus()
+        test_app.state.embedding_engine = EmbeddingEngine()
         test_app.state.pending_downloads = {}
         test_app.state.start_time = 0.0
         test_app.state.admin_key = admin_key

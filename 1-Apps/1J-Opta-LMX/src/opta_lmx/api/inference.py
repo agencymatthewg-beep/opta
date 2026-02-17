@@ -11,7 +11,7 @@ from fastapi import APIRouter
 from fastapi.responses import JSONResponse, StreamingResponse
 from starlette.responses import Response
 
-from opta_lmx.api.deps import Engine, Metrics, Presets, Router
+from opta_lmx.api.deps import Embeddings, Engine, Metrics, Presets, Router
 from opta_lmx.api.errors import internal_error, model_not_found, openai_error
 from opta_lmx.inference.schema import (
     ChatCompletionRequest,
@@ -165,21 +165,32 @@ async def chat_completions(
             return internal_error(str(e))
 
 @router.get("/v1/models")
-async def list_models(engine: Engine) -> ModelsListResponse:
-    """List all loaded models in OpenAI format."""
-    models = engine.get_loaded_models()
-    return ModelsListResponse(
-        object="list",
-        data=[
-            ModelObject(
-                id=m.model_id,
-                object="model",
-                created=int(m.loaded_at),
-                owned_by="local",
-            )
-            for m in models
-        ],
-    )
+async def list_models(engine: Engine, embedding_engine: Embeddings) -> ModelsListResponse:
+    """List all loaded models in OpenAI format.
+
+    Includes both inference models and the embedding model (if loaded).
+    """
+    data: list[ModelObject] = [
+        ModelObject(
+            id=m.model_id,
+            object="model",
+            created=int(m.loaded_at),
+            owned_by="local",
+        )
+        for m in engine.get_loaded_models()
+    ]
+
+    # Include embedding model if loaded
+    if embedding_engine is not None and embedding_engine.is_loaded:
+        info = embedding_engine.get_info()
+        data.append(ModelObject(
+            id=info["model_id"],
+            object="model",
+            created=int(info.get("loaded_at") or 0),
+            owned_by="local-embedding",
+        ))
+
+    return ModelsListResponse(object="list", data=data)
 
 
 @router.post("/v1/completions", response_model=None)
