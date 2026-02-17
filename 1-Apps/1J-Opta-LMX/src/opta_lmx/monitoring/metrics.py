@@ -82,6 +82,8 @@ class MetricsCollector:
         loaded_model_count: int = 0,
         memory_used_gb: float = 0.0,
         memory_total_gb: float = 0.0,
+        in_flight_requests: int = 0,
+        max_concurrent_requests: int = 4,
     ) -> str:
         """Render metrics in Prometheus text exposition format.
 
@@ -172,6 +174,15 @@ class MetricsCollector:
             lines.append("# HELP lmx_memory_total_gb Total unified memory in GB.")
             lines.append("# TYPE lmx_memory_total_gb gauge")
             lines.append(f"lmx_memory_total_gb {memory_total_gb:.2f}")
+
+            # --- Concurrency gauges ---
+            lines.append("# HELP lmx_in_flight_requests Currently active inference requests.")
+            lines.append("# TYPE lmx_in_flight_requests gauge")
+            lines.append(f"lmx_in_flight_requests {in_flight_requests}")
+
+            lines.append("# HELP lmx_concurrent_limit Max concurrent inference requests allowed.")
+            lines.append("# TYPE lmx_concurrent_limit gauge")
+            lines.append(f"lmx_concurrent_limit {max_concurrent_requests}")
 
             lines.append("")  # trailing newline
             return "\n".join(lines)

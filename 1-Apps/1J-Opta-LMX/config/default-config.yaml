@@ -12,6 +12,9 @@ models:
   models_directory: "/Users/Shared/Opta-LMX/models"
   auto_load: []
   use_batching: true
+  max_concurrent_requests: 4   # Limits parallel inference to prevent OOM
+  inference_timeout_sec: 300   # Max seconds per inference request
+  warmup_on_load: true         # Prime JIT/Metal shaders after model load
 
 memory:
   max_memory_percent: 90

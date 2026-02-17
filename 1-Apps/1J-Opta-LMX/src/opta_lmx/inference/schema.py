@@ -216,6 +216,8 @@ class AdminStatusResponse(BaseModel):
     loaded_models: int
     models: list[str]
     memory: MemoryStatus
+    in_flight_requests: int = 0
+    max_concurrent_requests: int = 4
 
 
 class AdminMemoryResponse(BaseModel):

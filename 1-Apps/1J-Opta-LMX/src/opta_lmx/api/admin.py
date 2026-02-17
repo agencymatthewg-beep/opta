@@ -337,15 +337,19 @@ async def unload_model(
 @router.get("/admin/status", responses={403: {"model": ErrorResponse}})
 async def get_status(
     _auth: AdminAuth, engine: Engine, memory: Memory, start_time: StartTime,
+    request: Request,
 ) -> AdminStatusResponse:
     """Full system status: version, uptime, models, memory."""
     models = engine.get_loaded_models()
+    config = request.app.state.config
     return AdminStatusResponse(
         version=__version__,
         uptime_seconds=round(time.time() - start_time, 1),
         loaded_models=len(models),
         models=[m.model_id for m in models],
         memory=memory.get_status(),
+        in_flight_requests=engine.in_flight_count,
+        max_concurrent_requests=config.models.max_concurrent_requests,
     )
 
 
@@ -490,17 +494,21 @@ async def delete_model(
 )
 async def prometheus_metrics(
     _auth: AdminAuth, metrics: Metrics, engine: Engine, memory: Memory,
+    request: Request,
 ) -> PlainTextResponse:
     """Prometheus-compatible metrics endpoint.
 
     Returns metrics in Prometheus text exposition format for scraping.
-    Includes live gauges for loaded model count and memory usage.
+    Includes live gauges for loaded model count, memory, and concurrency.
     """
+    config = request.app.state.config
     return PlainTextResponse(
         content=metrics.prometheus(
             loaded_model_count=len(engine.get_loaded_models()),
             memory_used_gb=memory.used_memory_gb(),
             memory_total_gb=memory.total_memory_gb(),
+            in_flight_requests=engine.in_flight_count,
+            max_concurrent_requests=config.models.max_concurrent_requests,
         ),
         media_type="text/plain; version=0.0.4; charset=utf-8",
     )
