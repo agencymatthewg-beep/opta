@@ -101,3 +101,26 @@ describe('escape handling', () => {
     expect(editor.getBuffer()).toBe('');
   });
 });
+
+describe('paste detection', () => {
+  it('should detect multi-line paste', () => {
+    const editor = new InputEditor({ prompt: '>' });
+    const result = editor.handlePaste('line1\nline2\nline3');
+    expect(result.isPaste).toBe(true);
+    expect(result.lineCount).toBe(3);
+    expect(result.abbreviated).toBe('[Pasted ~3 lines]');
+  });
+
+  it('should NOT detect single-line as paste', () => {
+    const editor = new InputEditor({ prompt: '>' });
+    const result = editor.handlePaste('just text');
+    expect(result.isPaste).toBe(false);
+  });
+
+  it('should store full paste content while showing abbreviated', () => {
+    const editor = new InputEditor({ prompt: '>' });
+    const result = editor.handlePaste('a\nb\nc\nd\ne');
+    expect(result.isPaste).toBe(true);
+    expect(result.fullContent).toBe('a\nb\nc\nd\ne');
+  });
+});

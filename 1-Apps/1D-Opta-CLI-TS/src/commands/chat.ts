@@ -686,6 +686,28 @@ async function handleSlashCommand(
       }
     }
 
+    case '/theme': {
+      const { getTheme, setTheme, listThemes } = await import('../ui/theme.js');
+      if (!arg) {
+        const themes = listThemes();
+        const current = getTheme();
+        console.log('\n' + box('Themes', themes.map(t =>
+          (t.name === current.name ? chalk.green('● ') : chalk.dim('  ')) +
+          chalk.cyan(t.name.padEnd(14)) + chalk.dim(t.description)
+        )));
+        console.log(chalk.dim('  Usage: /theme <name>\n'));
+        return 'handled';
+      }
+      setTheme(arg);
+      const theme = getTheme();
+      if (theme.name === arg) {
+        console.log(chalk.green('✓') + ` Theme: ${theme.primary(theme.name)}`);
+      } else {
+        console.log(chalk.yellow(`  Unknown theme: ${arg}. Try /theme to see options.`));
+      }
+      return 'handled';
+    }
+
     default:
       console.log(chalk.yellow(`  Unknown command: ${cmd}`) + chalk.dim(' (try /help)'));
       return 'handled';

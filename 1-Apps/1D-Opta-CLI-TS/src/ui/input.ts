@@ -81,6 +81,30 @@ export class InputEditor {
     this.cancelled = false;
   }
 
+  private pastedContent: string | null = null;
+
+  handlePaste(text: string): { isPaste: boolean; lineCount: number; abbreviated: string; fullContent: string } {
+    const lines = text.split('\n');
+    const isPaste = lines.length > 1;
+
+    if (isPaste) {
+      this.pastedContent = text;
+      const abbreviated = `[Pasted ~${lines.length} lines]`;
+      this.insertText(abbreviated);
+      return { isPaste: true, lineCount: lines.length, abbreviated, fullContent: text };
+    }
+
+    this.insertText(text);
+    return { isPaste: false, lineCount: 1, abbreviated: text, fullContent: text };
+  }
+
+  getSubmitText(): string {
+    if (this.pastedContent) {
+      return this.buffer.replace(/\[Pasted ~\d+ lines\]/, this.pastedContent);
+    }
+    return this.buffer;
+  }
+
   getPromptDisplay(): string {
     switch (this.options.mode) {
       case 'shell': return chalk.yellow('!') + chalk.dim(' >');
