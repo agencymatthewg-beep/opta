@@ -2,6 +2,7 @@ import { mkdir, readFile, writeFile, readdir, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 import { nanoid } from 'nanoid';
+import { z } from 'zod';
 
 // --- Types ---
 
@@ -20,6 +21,51 @@ export interface Session {
   messages: AgentMessage[];
   toolCallCount: number;
   compacted: boolean;
+}
+
+// --- Zod Schema for Session Validation ---
+
+const ContentPartSchema = z.union([
+  z.object({ type: z.literal('text'), text: z.string() }),
+  z.object({ type: z.literal('image_url'), image_url: z.object({ url: z.string() }) }),
+]);
+
+const AgentMessageSchema = z.object({
+  role: z.enum(['system', 'user', 'assistant', 'tool']),
+  content: z.union([z.string(), z.array(ContentPartSchema), z.null()]),
+  tool_calls: z
+    .array(
+      z.object({
+        id: z.string(),
+        type: z.literal('function'),
+        function: z.object({ name: z.string(), arguments: z.string() }),
+      })
+    )
+    .optional(),
+  tool_call_id: z.string().optional(),
+});
+
+const SessionSchema = z.object({
+  id: z.string(),
+  created: z.string(),
+  updated: z.string(),
+  model: z.string(),
+  cwd: z.string(),
+  title: z.string(),
+  messages: z.array(AgentMessageSchema),
+  toolCallCount: z.number(),
+  compacted: z.boolean(),
+});
+
+function parseSession(data: string): Session | null {
+  try {
+    const parsed: unknown = JSON.parse(data);
+    const result = SessionSchema.safeParse(parsed);
+    if (!result.success) return null;
+    return result.data as Session;
+  } catch {
+    return null;
+  }
 }
 
 export interface SessionSummary {
@@ -62,7 +108,11 @@ export async function createSession(model: string): Promise<Session> {
 
 export async function loadSession(id: string): Promise<Session> {
   const data = await readFile(sessionPath(id), 'utf-8');
-  return JSON.parse(data) as Session;
+  const session = parseSession(data);
+  if (!session) {
+    throw new Error(`Corrupt or invalid session file: ${id}`);
+  }
+  return session;
 }
 
 export async function saveSession(session: Session): Promise<void> {
@@ -86,7 +136,8 @@ export async function listSessions(): Promise<SessionSummary[]> {
     if (!file.endsWith('.json')) continue;
     try {
       const data = await readFile(join(dir, file), 'utf-8');
-      const session = JSON.parse(data) as Session;
+      const session = parseSession(data);
+      if (!session) continue; // Skip corrupt/invalid session files
       summaries.push({
         id: session.id,
         title: session.title || '(untitled)',
@@ -96,7 +147,7 @@ export async function listSessions(): Promise<SessionSummary[]> {
         toolCallCount: session.toolCallCount ?? 0,
       });
     } catch {
-      // Skip corrupt session files
+      // Skip unreadable session files
     }
   }
 

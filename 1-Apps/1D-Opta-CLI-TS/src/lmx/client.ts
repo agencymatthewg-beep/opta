@@ -1,4 +1,5 @@
 import { debug } from '../core/debug.js';
+import type { z } from 'zod';
 
 // --- Public Response Types (what commands consume) ---
 
@@ -128,7 +129,7 @@ export class LmxClient {
     }
   }
 
-  private async fetch<T>(path: string, init?: RequestInit): Promise<T> {
+  private async fetch<T>(path: string, init?: RequestInit, validator?: z.ZodType<T>): Promise<T> {
     const url = `${this.baseUrl}${path}`;
     debug(`LMX ${init?.method ?? 'GET'} ${url}`);
 
@@ -142,7 +143,9 @@ export class LmxClient {
       throw new Error(`LMX ${response.status}: ${body || response.statusText}`);
     }
 
-    return response.json() as Promise<T>;
+    const data: unknown = await response.json();
+    if (validator) return validator.parse(data);
+    return data as T;
   }
 
   async health(): Promise<LmxHealthResponse> {

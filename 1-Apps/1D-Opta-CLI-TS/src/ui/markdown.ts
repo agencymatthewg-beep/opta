@@ -55,7 +55,10 @@ async function getRenderer(): Promise<(md: string) => string> {
     )
   );
 
-  renderer = (md: string) => marked.parse(md) as string;
+  renderer = (md: string) => {
+    const result = marked.parse(md, { async: false });
+    return typeof result === 'string' ? result : String(result);
+  };
   return renderer;
 }
 

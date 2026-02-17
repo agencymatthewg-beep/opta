@@ -1,16 +1,16 @@
-import { createRequire } from 'node:module';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { join, dirname } from 'node:path';
 
-const require = createRequire(import.meta.url);
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 function loadVersion(): string {
   try {
-    return require('../../package.json').version;
+    const pkgPath = join(__dirname, '../../package.json');
+    const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8')) as { version: string };
+    return pkg.version;
   } catch {
-    try {
-      return require('../package.json').version;
-    } catch {
-      return '0.0.0';
-    }
+    return '0.0.0';
   }
 }
 
