@@ -28,7 +28,7 @@ _opta_completions() {
   COMPREPLY=()
   cur="\${COMP_WORDS[COMP_CWORD]}"
   prev="\${COMP_WORDS[COMP_CWORD-1]}"
-  commands="chat do init status models config sessions mcp diff server serve completions"
+  commands="chat do init doctor status models config sessions mcp diff server serve completions"
 
   case "\${prev}" in
     opta)
@@ -64,7 +64,11 @@ _opta_completions() {
       return 0
       ;;
     init)
-      COMPREPLY=( $(compgen -W "--mode --force --help" -- "\${cur}") )
+      COMPREPLY=( $(compgen -W "--yes --force --help" -- "\${cur}") )
+      return 0
+      ;;
+    doctor)
+      COMPREPLY=( $(compgen -W "--json --help" -- "\${cur}") )
       return 0
       ;;
     diff)
@@ -100,7 +104,8 @@ _opta() {
   commands=(
     'chat:Start an interactive AI chat session'
     'do:Execute a coding task using the agent loop'
-    'init:Initialize Opta in a project'
+    'init:Initialize OPIS project intelligence docs'
+    'doctor:Check environment health and diagnose issues'
     'status:Check Opta LMX server health and loaded models'
     'models:List and manage loaded models'
     'config:Manage configuration'
@@ -169,8 +174,12 @@ _opta() {
           ;;
         init)
           _arguments \\
-            '--mode[initialization mode]:mode:' \\
-            '--force[overwrite existing config]'
+            '--yes[skip prompts, use defaults]' \\
+            '--force[overwrite existing APP.md]'
+          ;;
+        doctor)
+          _arguments \\
+            '--json[machine-readable output]'
           ;;
         diff)
           _arguments \\
@@ -206,7 +215,8 @@ complete -c opta -f
 # Commands
 complete -c opta -n '__fish_use_subcommand' -a chat -d 'Start an interactive AI chat session'
 complete -c opta -n '__fish_use_subcommand' -a do -d 'Execute a coding task'
-complete -c opta -n '__fish_use_subcommand' -a init -d 'Initialize Opta in a project'
+complete -c opta -n '__fish_use_subcommand' -a init -d 'Initialize OPIS project intelligence docs'
+complete -c opta -n '__fish_use_subcommand' -a doctor -d 'Check environment health and diagnose issues'
 complete -c opta -n '__fish_use_subcommand' -a status -d 'Check Opta LMX server health'
 complete -c opta -n '__fish_use_subcommand' -a models -d 'List and manage loaded models'
 complete -c opta -n '__fish_use_subcommand' -a config -d 'Manage configuration'
@@ -266,8 +276,11 @@ complete -c opta -n '__fish_seen_subcommand_from mcp' -a 'add remove test list' 
 complete -c opta -n '__fish_seen_subcommand_from mcp' -l json -d 'Machine-readable output'
 
 # init flags
-complete -c opta -n '__fish_seen_subcommand_from init' -l mode -d 'Initialization mode' -x
-complete -c opta -n '__fish_seen_subcommand_from init' -l force -d 'Overwrite existing config'
+complete -c opta -n '__fish_seen_subcommand_from init' -l yes -s y -d 'Skip prompts, use defaults'
+complete -c opta -n '__fish_seen_subcommand_from init' -l force -d 'Overwrite existing APP.md'
+
+# doctor flags
+complete -c opta -n '__fish_seen_subcommand_from doctor' -l json -d 'Machine-readable output'
 
 # diff flags
 complete -c opta -n '__fish_seen_subcommand_from diff' -l session -s s -d 'Session to diff' -x
