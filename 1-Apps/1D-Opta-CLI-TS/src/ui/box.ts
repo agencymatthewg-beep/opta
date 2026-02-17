@@ -1,4 +1,5 @@
 import chalk from 'chalk';
+import { getTheme } from './theme.js';
 
 // --- Box Drawing ---
 
@@ -20,10 +21,11 @@ export function box(title: string, lines: string[], { width: fixedWidth }: { wid
   const inner = width - 2;
 
   const out: string[] = [];
-  // Top border with title
+  // Top border with title (uses theme primary for title accent)
+  const theme = getTheme();
   const titlePart = title ? ` ${title} ` : '';
   const topFill = inner - stripAnsi(titlePart).length;
-  out.push(chalk.dim(BOX.tl + BOX.h) + chalk.bold(titlePart) + chalk.dim(BOX.h.repeat(Math.max(topFill, 0)) + BOX.tr));
+  out.push(chalk.dim(BOX.tl + BOX.h) + theme.primary.bold(titlePart) + chalk.dim(BOX.h.repeat(Math.max(topFill, 0)) + BOX.tr));
 
   // Content lines
   for (let i = 0; i < lines.length; i++) {
@@ -58,8 +60,9 @@ export function progressBar(ratio: number, width = 20): string {
   const empty = width - filled;
   const pct = Math.round(clamped * 100);
 
-  const bar = chalk.cyan('█'.repeat(filled)) + chalk.dim('░'.repeat(empty));
-  const color = pct > 85 ? chalk.red : pct > 70 ? chalk.yellow : chalk.dim;
+  const theme = getTheme();
+  const bar = theme.info('█'.repeat(filled)) + chalk.dim('░'.repeat(empty));
+  const color = pct > 85 ? theme.error : pct > 70 ? theme.warning : chalk.dim;
   return `${bar} ${color(`${pct}%`)}`;
 }
 
@@ -87,7 +90,8 @@ export function kv(key: string, value: string, keyWidth = 10): string {
  * Status dot indicator.
  */
 export function statusDot(ok: boolean): string {
-  return ok ? chalk.green('●') : chalk.red('●');
+  const theme = getTheme();
+  return ok ? theme.success('●') : theme.error('●');
 }
 
 // --- ANSI Stripping ---
