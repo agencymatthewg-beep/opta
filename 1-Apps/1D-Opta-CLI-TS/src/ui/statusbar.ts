@@ -70,6 +70,29 @@ export class StatusBar {
     this.cumulativeTokens += this.promptTokens + this.completionTokens;
   }
 
+  getCumulativeTokens(): number {
+    return this.cumulativeTokens;
+  }
+
+  getCumulativeTools(): number {
+    return this.cumulativeTools;
+  }
+
+  getSummaryString(): string {
+    const elapsed = this.startTime ? (Date.now() - this.startTime) / 1000 : 0;
+    const speed = elapsed > 0.1 ? this.completionTokens / elapsed : 0;
+    const total = this.promptTokens + this.completionTokens;
+
+    const parts: string[] = [];
+    parts.push(`~${this.formatTokens(total)} tokens`);
+    parts.push(`${this.toolCalls} tool${this.toolCalls !== 1 ? 's' : ''}`);
+    if (speed > 0) parts.push(`${speed.toFixed(0)} t/s`);
+    if (elapsed > 0) parts.push(`${elapsed.toFixed(1)}s`);
+    parts.push('$0.00');
+
+    return parts.join(' · ');
+  }
+
   /** No-op — no persistent bar to clear. */
   render(_force = false): void {}
   clear(): void {}
@@ -77,16 +100,11 @@ export class StatusBar {
   /** Print a summary line after the response completes. */
   printSummary(): void {
     if (!this.enabled) return;
-    const elapsed = this.startTime ? (Date.now() - this.startTime) / 1000 : 0;
-    const speed = elapsed > 0.1 ? this.completionTokens / elapsed : 0;
-    const total = this.promptTokens + this.completionTokens;
-
-    const parts: string[] = [];
-    parts.push(`~${this.formatTokens(total)} tokens`);
-    parts.push(`${this.toolCalls} tool call${this.toolCalls !== 1 ? 's' : ''}`);
-    if (speed > 0) parts.push(`${speed.toFixed(0)} t/s`);
-    if (elapsed > 0) parts.push(`${elapsed.toFixed(1)}s`);
-
-    console.log(chalk.dim(`  ${parts.join(' · ')}`));
+    const summary = this.getSummaryString();
+    const cumParts = [
+      `session: ~${this.formatTokens(this.cumulativeTokens)} total`,
+      `${this.cumulativeTools} tools`,
+    ];
+    console.log(chalk.dim(`  ${summary}  |  ${cumParts.join(' · ')}`));
   }
 }
