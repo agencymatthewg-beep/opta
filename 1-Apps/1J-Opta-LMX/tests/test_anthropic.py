@@ -183,3 +183,94 @@ class TestAnthropicStreaming:
                 assert data["message"]["id"].startswith("msg_")
                 assert data["message"]["role"] == "assistant"
                 break
+
+
+class TestAnthropicPresetAndRouting:
+    """Tests for preset resolution and task router in /v1/messages."""
+
+    @pytest.mark.asyncio
+    async def test_preset_resolves_model(
+        self, anthropic_client: AsyncClient, mock_engine,
+    ) -> None:
+        """preset:name model references are resolved to the preset's model."""
+        from opta_lmx.presets.manager import Preset
+
+        await mock_engine.load_model("resolved-model")
+
+        # Register a preset
+        preset = Preset(
+            name="my-preset",
+            model="resolved-model",
+            parameters={"temperature": 0.3},
+        )
+        anthropic_client._transport.app.state.preset_manager._presets["my-preset"] = preset
+
+        response = await anthropic_client.post("/v1/messages", json={
+            "model": "preset:my-preset",
+            "messages": [{"role": "user", "content": "Hello"}],
+            "max_tokens": 100,
+        })
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["model"] == "resolved-model"
+
+    @pytest.mark.asyncio
+    async def test_preset_not_found(
+        self, anthropic_client: AsyncClient,
+    ) -> None:
+        """Unknown preset returns 404."""
+        response = await anthropic_client.post("/v1/messages", json={
+            "model": "preset:nonexistent",
+            "messages": [{"role": "user", "content": "Hello"}],
+            "max_tokens": 100,
+        })
+
+        assert response.status_code == 404
+        data = response.json()
+        assert "nonexistent" in data["error"]["message"]
+
+    @pytest.mark.asyncio
+    async def test_alias_routing(
+        self, anthropic_client: AsyncClient, mock_engine,
+    ) -> None:
+        """Alias model names are resolved via TaskRouter."""
+        from opta_lmx.config import RoutingConfig
+
+        await mock_engine.load_model("preferred-model")
+
+        # Configure alias
+        routing_config = RoutingConfig(aliases={"chat": ["preferred-model"]})
+        anthropic_client._transport.app.state.router.update_config(routing_config)
+
+        response = await anthropic_client.post("/v1/messages", json={
+            "model": "chat",
+            "messages": [{"role": "user", "content": "Hello"}],
+            "max_tokens": 100,
+        })
+
+        assert response.status_code == 200
+
+    @pytest.mark.asyncio
+    async def test_preset_system_prompt(
+        self, anthropic_client: AsyncClient, mock_engine,
+    ) -> None:
+        """Preset system prompt is used when request has no system field."""
+        from opta_lmx.presets.manager import Preset
+
+        await mock_engine.load_model("sys-model")
+
+        preset = Preset(
+            name="sys-preset",
+            model="sys-model",
+            system_prompt="You are a coding assistant.",
+        )
+        anthropic_client._transport.app.state.preset_manager._presets["sys-preset"] = preset
+
+        response = await anthropic_client.post("/v1/messages", json={
+            "model": "preset:sys-preset",
+            "messages": [{"role": "user", "content": "Hello"}],
+            "max_tokens": 100,
+        })
+
+        assert response.status_code == 200

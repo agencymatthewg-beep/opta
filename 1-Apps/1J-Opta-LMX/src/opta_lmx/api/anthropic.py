@@ -19,9 +19,10 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
 from starlette.responses import Response
 
-from opta_lmx.api.deps import Engine, Metrics
+from opta_lmx.api.deps import Engine, Metrics, Presets, Router
 from opta_lmx.inference.schema import ChatMessage
 from opta_lmx.monitoring.metrics import MetricsCollector, RequestMetric
+from opta_lmx.presets.manager import PRESET_PREFIX
 
 logger = logging.getLogger(__name__)
 
@@ -231,14 +232,39 @@ async def anthropic_messages(
     body: AnthropicRequest,
     engine: Engine,
     metrics: Metrics,
+    preset_mgr: Presets,
+    task_router: Router,
 ) -> Response:
     """Anthropic Messages API endpoint.
 
     Accepts Anthropic-format requests, translates to OpenAI format internally,
     and returns Anthropic-format responses.
     """
+    model = body.model
+
+    # Resolve preset (e.g. "preset:code-assistant")
+    if model.startswith(PRESET_PREFIX):
+        preset_name = model[len(PRESET_PREFIX):]
+        preset = preset_mgr.get(preset_name)
+        if preset is None:
+            return _anthropic_error(404, f"Preset '{preset_name}' not found", "not_found_error")
+        model = preset.model
+        # Apply preset temperature/max_tokens as defaults
+        if preset.parameters:
+            if body.temperature == 1.0 and "temperature" in preset.parameters:
+                body.temperature = preset.parameters["temperature"]
+            if body.max_tokens == 4096 and "max_tokens" in preset.parameters:
+                body.max_tokens = preset.parameters["max_tokens"]
+        # Prepend system prompt from preset if not provided in request
+        if preset.system_prompt and body.system is None:
+            body.system = preset.system_prompt
+
+    # Resolve alias (e.g. "auto", "code") to a real loaded model ID
+    loaded_ids = [m.model_id for m in engine.get_loaded_models()]
+    model = task_router.resolve(model, loaded_ids)
+
     # Check model is loaded
-    if not engine.is_model_loaded(body.model):
+    if not engine.is_model_loaded(model):
         return _anthropic_error(404, f"Model '{body.model}' is not loaded", "not_found_error")
 
     messages, kwargs = _anthropic_to_openai(body)
@@ -251,31 +277,31 @@ async def anthropic_messages(
     if body.stream:
         try:
             token_stream = engine.stream_generate(
-                model_id=body.model,
+                model_id=model,
                 messages=messages,
                 **kwargs,
             )
             sse_stream = _anthropic_sse_stream(
                 token_stream,
                 request_id=f"msg_{secrets.token_urlsafe(16)}",
-                model=body.model,
+                model=model,
                 input_tokens=est_input_tokens,
                 metrics=metrics,
                 start_time=start_time,
             )
             return StreamingResponse(sse_stream, media_type="text/event-stream")
         except Exception as e:
-            logger.error("anthropic_stream_error", extra={"model": body.model, "error": str(e)})
+            logger.error("anthropic_stream_error", extra={"model": model, "error": str(e)})
             return _anthropic_error(500, str(e), "api_error")
     else:
         try:
             response = await engine.generate(
-                model_id=body.model,
+                model_id=model,
                 messages=messages,
                 **kwargs,
             )
             metrics.record(RequestMetric(
-                model_id=body.model,
+                model_id=model,
                 latency_sec=time.monotonic() - start_time,
                 prompt_tokens=response.usage.prompt_tokens,
                 completion_tokens=response.usage.completion_tokens,
@@ -287,7 +313,7 @@ async def anthropic_messages(
 
             result = _make_anthropic_response(
                 request_id=f"msg_{secrets.token_urlsafe(16)}",
-                model=body.model,
+                model=model,
                 content=content,
                 input_tokens=response.usage.prompt_tokens,
                 output_tokens=response.usage.completion_tokens,
@@ -295,9 +321,9 @@ async def anthropic_messages(
             )
             return JSONResponse(content=result.model_dump())
         except Exception as e:
-            logger.error("anthropic_completion_error", extra={"model": body.model, "error": str(e)})
+            logger.error("anthropic_completion_error", extra={"model": model, "error": str(e)})
             metrics.record(RequestMetric(
-                model_id=body.model,
+                model_id=model,
                 latency_sec=time.monotonic() - start_time,
                 prompt_tokens=0, completion_tokens=0,
                 stream=False, error=True,
