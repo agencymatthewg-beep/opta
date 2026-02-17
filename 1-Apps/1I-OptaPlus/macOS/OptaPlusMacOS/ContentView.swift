@@ -1229,19 +1229,35 @@ struct ChatContainerView: View {
         }
     }
 
+    // MARK: - Message Filtering
+
+    /// Messages suitable for display — hides empty, heartbeat protocol, and pure-whitespace messages.
+    private var displayMessages: [ChatMessage] {
+        viewModel.messages.filter { msg in
+            let trimmed = msg.content.trimmingCharacters(in: .whitespacesAndNewlines)
+            // Hide empty messages
+            if trimmed.isEmpty { return false }
+            // Hide heartbeat protocol responses (single digits, HEARTBEAT_OK, AT_OK)
+            if trimmed == "HEARTBEAT_OK" || trimmed == "AT_OK" { return false }
+            if trimmed.count <= 2, trimmed.allSatisfy(\.isNumber) { return false }
+            return true
+        }
+    }
+
     // MARK: - Extracted Views (type-checker relief)
 
     @ViewBuilder
     private var messageListContent: some View {
-        ForEach(Array(viewModel.messages.enumerated()), id: \.element.id) { index, message in
+        let filtered = displayMessages
+        ForEach(Array(filtered.enumerated()), id: \.element.id) { index, message in
             let isSearchMatch = showMessageSearch && searchEngine.results.contains(where: { $0.messageId == message.id })
             let isCurrentMatch = searchEngine.currentResult?.messageId == message.id
             MessageRow(
                 message: message,
                 index: index,
-                total: viewModel.messages.count,
-                showTimestamp: shouldShowTimestamp(messages: viewModel.messages, at: index),
-                allMessages: viewModel.messages,
+                total: filtered.count,
+                showTimestamp: shouldShowTimestamp(messages: filtered, at: index),
+                allMessages: filtered,
                 botId: viewModel.botConfig.id,
                 botName: viewModel.botConfig.name,
                 onReply: { msg in viewModel.replyingTo = msg },

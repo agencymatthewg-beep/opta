@@ -140,7 +140,7 @@ public struct BotConfig: Identifiable, Codable, Sendable, Hashable {
 @MainActor
 public final class ChatViewModel: ObservableObject {
 
-    private static let logger = Logger(subsystem: "biz.optamize.OptaPlus", category: "ChatVM")
+    static let logger = Logger(subsystem: "biz.optamize.OptaPlus", category: "ChatVM")
 
     // MARK: - Published State
     
@@ -233,31 +233,31 @@ public final class ChatViewModel: ObservableObject {
 
     // MARK: - Private
 
-    private var client: OpenClawClient?
+    var client: OpenClawClient?
     private var currentIdempotencyKey: String?
     private var cancellables = Set<AnyCancellable>()
 
     /// Task tracking the reconnect countdown timer.
     private var reconnectCountdownTask: Task<Void, Never>?
 
-    /// Per-session message cache (sessionId → messages)
-    private var sessionMessages: [String: [ChatMessage]] = [:]
+    /// Per-session message cache (sessionId -> messages)
+    var sessionMessages: [String: [ChatMessage]] = [:]
 
     /// Per-session streaming state
-    private var sessionStreamContent: [String: String] = [:]
+    var sessionStreamContent: [String: String] = [:]
 
     /// Message stats for this bot
-    private var messageStats: BotMessageStats
+    var messageStats: BotMessageStats
 
     /// Timestamp when user sent last message (for response time tracking)
-    private var lastSendTime: Date?
+    var lastSendTime: Date?
     
     /// Persistent offline message queue.
     public let offlineQueue: OfflineQueue
 
     /// UserDefaults key prefixes for session persistence
-    private var sessionListKey: String { "optaplus.sessions.\(botConfig.id)" }
-    private var activeSessionKey: String { "optaplus.activeSession.\(botConfig.id)" }
+    var sessionListKey: String { "optaplus.sessions.\(botConfig.id)" }
+    var activeSessionKey: String { "optaplus.activeSession.\(botConfig.id)" }
 
     // MARK: - Init
 
@@ -443,106 +443,6 @@ public final class ChatViewModel: ObservableObject {
         stopReconnectCountdown()
         disconnect()
         connect()
-    }
-    
-    // MARK: - Session Management
-    
-    /// Switch to a different session.
-    public func switchSession(_ session: ChatSession) {
-        // Save current session's messages
-        if let current = activeSession {
-            sessionMessages[current.id] = messages
-            sessionStreamContent[current.id] = streamingContent
-        }
-        
-        activeSession = session
-        UserDefaults.standard.set(session.id, forKey: activeSessionKey)
-        
-        // Restore cached messages or load fresh
-        if let cached = sessionMessages[session.id] {
-            messages = cached
-            streamingContent = sessionStreamContent[session.id] ?? ""
-        } else {
-            messages = []
-            streamingContent = ""
-            Task { await loadHistory() }
-        }
-        
-        // Reset bot state for new session view
-        if sessionStreamContent[session.id]?.isEmpty ?? true {
-            botState = .idle
-        }
-    }
-    
-    /// Maximum sessions per bot.
-    public static let maxSessionsPerBot = 5
-
-    /// Create a new session. Returns nil if the limit is reached.
-    public func createSession(name: String, mode: SessionMode, channelType: ChannelType? = nil) -> ChatSession? {
-        guard sessions.count < Self.maxSessionsPerBot else { return nil }
-
-        let sessionKey: String
-        switch mode {
-        case .synced:
-            sessionKey = "main"
-        case .direct:
-            sessionKey = "main"
-        case .isolated:
-            sessionKey = "optaplus-\(UUID().uuidString.prefix(8).lowercased())"
-        }
-
-        // Assign color from remaining palette
-        let usedColors = Set(sessions.compactMap(\.colorTag))
-        let nextColor = ChatSessionColor.allCases.first { !usedColors.contains($0.swiftUIColor) }
-
-        let session = ChatSession(
-            name: name,
-            sessionKey: sessionKey,
-            mode: mode,
-            channelType: channelType,
-            colorTag: channelType?.accentColor ?? nextColor?.swiftUIColor
-        )
-        sessions.append(session)
-        persistSessions()
-        return session
-    }
-    
-    /// Delete a session (cannot delete the last session).
-    public func deleteSession(_ session: ChatSession) {
-        guard sessions.count > 1 else { return }
-        sessions.removeAll { $0.id == session.id }
-        sessionMessages.removeValue(forKey: session.id)
-        sessionStreamContent.removeValue(forKey: session.id)
-        persistSessions()
-        
-        // If deleted the active session, switch to first
-        if activeSession?.id == session.id {
-            if let first = sessions.first {
-                switchSession(first)
-            }
-        }
-    }
-    
-    /// Rename a session.
-    public func renameSession(_ session: ChatSession, to name: String) {
-        if let idx = sessions.firstIndex(where: { $0.id == session.id }) {
-            sessions[idx].name = name
-            if activeSession?.id == session.id {
-                activeSession = sessions[idx]
-            }
-            persistSessions()
-        }
-    }
-    
-    /// Toggle pin state.
-    public func togglePin(_ session: ChatSession) {
-        if let idx = sessions.firstIndex(where: { $0.id == session.id }) {
-            sessions[idx].isPinned.toggle()
-            if activeSession?.id == session.id {
-                activeSession = sessions[idx]
-            }
-            persistSessions()
-        }
     }
     
     // MARK: - Chat Actions
@@ -734,201 +634,9 @@ public final class ChatViewModel: ObservableObject {
     /// Placeholder for incoming Telegram messages. Will be implemented when TDLibKit is integrated.
     /// For now, messages only flow through the OpenClaw gateway WebSocket.
 
-    // MARK: - Event Handling
-
-    private func handleEvent(_ event: EventFrame) {
-        Self.logger.debug("Event received: '\(event.event)' payload keys: \(event.payload?.dict?.keys.sorted().joined(separator: ",") ?? "nil")")
-        switch event.event {
-        case "chat":
-            handleChatEvent(event.payload)
-        case "agent":
-            handleAgentEvent(event.payload)
-        default:
-            break
-        }
-    }
-    
-    private func handleChatEvent(_ payload: AnyCodable?) {
-        guard let dict = payload?.dict else { Self.logger.debug("Chat event: no dict payload"); return }
-        
-        // Check if this event belongs to the active session
-        // Gateway uses qualified keys like "agent:main:main" while we store "main"
-        let eventSessionKey = dict["sessionKey"] as? String
-        Self.logger.debug("Chat event: sessionKey=\(eventSessionKey ?? "nil") state=\(dict["state"] as? String ?? "nil") activeSession=\(self.activeSession?.sessionKey ?? "nil")")
-        if let eventSessionKey = eventSessionKey,
-           let session = activeSession {
-            let matches = eventSessionKey == session.sessionKey
-                || eventSessionKey.hasSuffix(":\(session.sessionKey)")
-                || session.sessionKey.hasSuffix(":\(eventSessionKey)")
-            if !matches {
-                Self.logger.debug("Chat event for different session (\(eventSessionKey) vs \(session.sessionKey)), ignoring")
-                return
-            }
-        }
-        
-        let stateStr = dict["state"] as? String ?? ""
-        
-        switch stateStr {
-        case "delta":
-            // Track time to first streaming byte
-            if botState != .typing, let sendTime = lastSendTime {
-                messageStats.recordResponseTime(Date().timeIntervalSince(sendTime))
-                lastSendTime = nil
-                persistStats()
-            }
-            botState = .typing
-            
-            // Extract accumulated message text
-            // The "message" field is an object with {role, content, timestamp}
-            // Content can be a string or array of blocks [{type:"text", text:"..."}]
-            if let message = dict["message"] {
-                let text: String
-                if let msgDict = message as? [String: Any], let content = msgDict["content"] {
-                    text = extractMessageText(content)
-                } else {
-                    text = extractMessageText(message)
-                }
-                Self.logger.debug("Delta: \(text.count) chars (was \(self.streamingContent.count))")
-                if text.count >= streamingContent.count {
-                    streamingContent = text
-                }
-            } else {
-                Self.logger.debug("Delta: no 'message' key in payload. Keys: \(dict.keys.sorted())")
-            }
-            
-            // Track run ID
-            if let runId = dict["runId"] as? String {
-                activeRunId = runId
-            }
-            
-        case "final":
-            // Finalize the streaming message
-            let finalText: String
-            if let message = dict["message"] {
-                if let msgDict = message as? [String: Any], let content = msgDict["content"] {
-                    finalText = extractMessageText(content)
-                } else {
-                    finalText = extractMessageText(message)
-                }
-            } else {
-                finalText = streamingContent
-            }
-            
-            Self.logger.info("Final: \(finalText.count) chars, appending bot message")
-            
-            if !finalText.isEmpty {
-                let botMessage = ChatMessage(
-                    content: finalText,
-                    sender: .bot(name: botConfig.name),
-                    status: .delivered
-                )
-                messages.append(botMessage)
-                messageStats.recordReceived(at: botMessage.timestamp)
-                if let sendTime = lastSendTime {
-                    messageStats.recordResponseTime(Date().timeIntervalSince(sendTime))
-                    lastSendTime = nil
-                }
-                persistStats()
-                schedulePersist()
-                if let session = activeSession {
-                    sessionMessages[session.id] = messages
-                }
-            }
-            
-            resetStreamState()
-            
-        case "aborted":
-            if !streamingContent.isEmpty {
-                let partialMessage = ChatMessage(
-                    content: streamingContent + "\n\n_(aborted)_",
-                    sender: .bot(name: botConfig.name),
-                    status: .delivered
-                )
-                messages.append(partialMessage)
-                if let session = activeSession {
-                    sessionMessages[session.id] = messages
-                }
-            }
-            resetStreamState()
-            
-        case "error":
-            let errorMsg = dict["errorMessage"] as? String ?? "Chat error"
-            errorMessage = errorMsg
-            resetStreamState()
-            
-        default:
-            break
-        }
-    }
-    
-    private func handleAgentEvent(_ payload: AnyCodable?) {
-        guard let dict = payload?.dict else { return }
-        
-        // Old-style agent state events
-        if let state = dict["state"] as? String {
-            switch state {
-            case "thinking":
-                botState = .thinking
-            case "responding":
-                botState = .typing
-            case "idle":
-                if activeRunId == nil {
-                    botState = .idle
-                }
-            default:
-                break
-            }
-            return
-        }
-        
-        // New-style agent stream events
-        let stream = dict["stream"] as? String ?? "unknown"
-        let data = dict["data"] as? [String: Any] ?? [:]
-        
-        let event = AgentStreamEvent(
-            stream: stream,
-            phase: data["phase"] as? String,
-            text: data["text"] as? String,
-            delta: data["delta"] as? String,
-            toolName: data["name"] as? String ?? data["toolName"] as? String
-        )
-        
-        // Only keep last 20 events to prevent memory bloat
-        if agentEvents.count > 20 {
-            agentEvents.removeFirst(agentEvents.count - 15)
-        }
-        agentEvents.append(event)
-        
-        // Update bot state from lifecycle
-        if stream == "lifecycle" {
-            if let phase = data["phase"] as? String {
-                switch phase {
-                case "start":
-                    botState = .thinking
-                    activeRunId = dict["runId"] as? String
-                case "end":
-                    // Don't reset to idle here — wait for chat final event
-                    break
-                default:
-                    break
-                }
-            }
-        }
-        
-        // Update bot state from assistant stream (means it's typing)
-        if stream == "assistant" && data["delta"] != nil {
-            botState = .typing
-        }
-        
-        // Track tool calls
-        if stream == "tool_call" || stream == "tool" {
-            botState = .thinking
-        }
-    }
-    
     // MARK: - Helpers
-    
-    private func extractMessageText(_ value: Any) -> String {
+
+    func extractMessageText(_ value: Any) -> String {
         if let text = value as? String {
             return text
         }
@@ -942,82 +650,10 @@ public final class ChatViewModel: ObservableObject {
         }
         return ""
     }
-    
-    // MARK: - Message Queue (Offline Support)
 
-    private func enqueueMessage(text: String, attachments: [ChatAttachment], messageId: String) {
-        guard let session = activeSession else { return }
-
-        let queuedAttachments: [QueuedAttachment] = attachments.compactMap { att in
-            guard let data = att.data else { return nil }
-            return QueuedAttachment(
-                filename: att.filename,
-                mimeType: att.mimeType,
-                base64Data: data.base64EncodedString()
-            )
-        }
-
-        let queued = OfflineQueuedMessage(
-            text: text,
-            botId: botConfig.id,
-            sessionKey: session.sessionKey,
-            deliver: session.resolvedShouldDeliver,
-            chatMessageId: messageId,
-            attachments: queuedAttachments
-        )
-        offlineQueue.add(queued)
-        Self.logger.info("Message queued via OfflineQueue (\(self.offlineQueue.count) in queue)")
-    }
-
-    private func flushMessageQueue() {
-        guard let client = client else { return }
-
-        offlineQueue.flush(
-            sender: { message in
-                let wireAttachments: [ChatSendAttachment]? = message.attachments.isEmpty
-                    ? nil
-                    : message.attachments.map {
-                        ChatSendAttachment(filename: $0.filename, mimeType: $0.mimeType, base64Data: $0.base64Data)
-                    }
-                do {
-                    _ = try await client.chatSend(
-                        sessionKey: message.sessionKey,
-                        message: message.text,
-                        deliver: message.deliver,
-                        attachments: wireAttachments
-                    )
-                    return true
-                } catch {
-                    Self.logger.error("Queued message send failed: \(error.localizedDescription)")
-                    return false
-                }
-            },
-            onStatusUpdate: { [weak self] chatMessageId, status in
-                guard let self else { return }
-                if let idx = self.messages.lastIndex(where: { $0.id == chatMessageId }) {
-                    self.messages[idx].status = status
-                }
-                if let session = self.activeSession {
-                    self.sessionMessages[session.id] = self.messages
-                }
-            }
-        )
-    }
-    
-    // MARK: - Session Persistence
-    
-    private func persistSessions() {
-        if let data = try? JSONEncoder().encode(sessions) {
-            UserDefaults.standard.set(data, forKey: sessionListKey)
-        }
-        if let activeId = activeSession?.id {
-            UserDefaults.standard.set(activeId, forKey: activeSessionKey)
-        }
-    }
-    
     // MARK: - Error Recovery
     
-    private func handleError(_ error: Error, context: String) {
+    func handleError(_ error: Error, context: String) {
         if let ocError = error as? OpenClawError {
             errorMessage = ocError.errorDescription
             if !ocError.isTransient {
@@ -1043,13 +679,13 @@ public final class ChatViewModel: ObservableObject {
     
     // MARK: - Persistence Helpers
 
-    private func schedulePersist() {
+    func schedulePersist() {
         let msgs = messages
         let botId = botConfig.id
         Task { await MessageStore.shared.saveMessages(msgs, botId: botId) }
     }
 
-    private func persistStats() {
+    func persistStats() {
         MessageStatsManager.save(messageStats, botId: botConfig.id)
     }
 
@@ -1088,7 +724,7 @@ public final class ChatViewModel: ObservableObject {
         )
     }
 
-    private func resetStreamState() {
+    func resetStreamState() {
         botState = .idle
         streamingContent = ""
         activeRunId = nil

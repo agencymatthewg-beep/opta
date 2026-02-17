@@ -398,13 +398,27 @@ struct ChatView: View {
         }
     }
 
+    // MARK: - Message Filtering
+
+    /// Messages suitable for display — hides empty, heartbeat protocol, and pure-whitespace messages.
+    private var displayMessages: [ChatMessage] {
+        viewModel.messages.filter { msg in
+            let trimmed = msg.content.trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmed.isEmpty { return false }
+            if trimmed == "HEARTBEAT_OK" || trimmed == "AT_OK" { return false }
+            if trimmed.count <= 2, trimmed.allSatisfy(\.isNumber) { return false }
+            return true
+        }
+    }
+
     // MARK: - Message List
 
     private var messageList: some View {
         ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(spacing: 8) {
-                    if viewModel.messages.isEmpty {
+                    let filtered = displayMessages
+                    if filtered.isEmpty {
                         if viewModel.connectionState == .connected {
                             emptyChat
                         } else if viewModel.connectionState == .disconnected {
@@ -412,22 +426,22 @@ struct ChatView: View {
                         }
                     }
 
-                    ForEach(Array(viewModel.messages.enumerated()), id: \.element.id) { index, message in
+                    ForEach(Array(filtered.enumerated()), id: \.element.id) { index, message in
                         let isSearchMatch = !searchEngine.query.isEmpty && searchEngine.results.contains(where: { $0.messageId == message.id })
                         let isCurrentMatch = searchEngine.currentResult?.messageId == message.id
 
                         VStack(spacing: 4) {
-                            if shouldShowDateSeparator(messages: viewModel.messages, at: index) {
+                            if shouldShowDateSeparator(messages: filtered, at: index) {
                                 DateSeparatorPill(text: dateSeparatorText(message.timestamp))
                             }
-                            if shouldShowTimestamp(messages: viewModel.messages, at: index) {
+                            if shouldShowTimestamp(messages: filtered, at: index) {
                                 TimestampSeparator(date: message.timestamp)
                             }
                             MessageBubble(
                                 message: message,
                                 botName: botConfig.name,
                                 botId: botConfig.id,
-                                allMessages: viewModel.messages,
+                                allMessages: filtered,
                                 onReply: { msg in viewModel.replyingTo = msg },
                                 onScrollTo: { id in scrollToMessageId = id },
                                 onReact: { action, messageId in
