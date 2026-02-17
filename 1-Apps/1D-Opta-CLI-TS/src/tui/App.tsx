@@ -79,7 +79,7 @@ function AppInner({ model, sessionId, connectionStatus = true, onMessage }: AppP
         borderStyle={activePanel === 'messages' ? 'single' : undefined}
         borderColor={activePanel === 'messages' ? 'cyan' : 'gray'}
       >
-        <MessageList messages={messages} height={activePanel === 'messages' ? messageAreaHeight - 2 : messageAreaHeight} />
+        <MessageList messages={messages} height={activePanel === 'messages' ? messageAreaHeight - 2 : messageAreaHeight} focusable={activePanel === 'messages'} />
         {isLoading && <StreamingIndicator />}
       </Box>
 

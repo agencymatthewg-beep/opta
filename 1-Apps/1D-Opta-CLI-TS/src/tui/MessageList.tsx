@@ -12,9 +12,10 @@ interface Message {
 interface MessageListProps {
   messages: Message[];
   height?: number;
+  focusable?: boolean;
 }
 
-export function MessageList({ messages, height }: MessageListProps) {
+export function MessageList({ messages, height, focusable = false }: MessageListProps) {
   if (messages.length === 0) {
     return (
       <Box paddingX={1} paddingY={1}>
@@ -46,7 +47,7 @@ export function MessageList({ messages, height }: MessageListProps) {
   if (height && height > 0) {
     return (
       <Box paddingX={1}>
-        <ScrollView height={height} autoScroll>
+        <ScrollView height={height} autoScroll focusable={focusable}>
           {messageRows}
         </ScrollView>
       </Box>
