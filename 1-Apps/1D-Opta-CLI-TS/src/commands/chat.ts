@@ -122,10 +122,13 @@ export async function startChat(opts: ChatOptions): Promise<void> {
   // TUI mode: full-screen Ink rendering (--tui flag or tui.default config)
   if (opts.tui || config.tui.default) {
     const { renderTUI } = await import('../tui/render.js');
-    const { createTuiEmitter, runAgentWithEvents } = await import('../tui/adapter.js');
+    const { createTuiEmitter, runAgentWithEvents, checkConnection } = await import('../tui/adapter.js');
     const { captureConsoleOutput } = await import('../tui/capture.js');
 
     const emitter = createTuiEmitter();
+
+    // Check LMX connection and emit status events for the TUI
+    checkConnection(emitter, config).catch(() => {});
 
     await renderTUI({
       model: config.model.default,

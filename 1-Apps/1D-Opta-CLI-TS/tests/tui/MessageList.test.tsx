@@ -14,12 +14,12 @@ describe('MessageList', () => {
     expect(lastFrame()).toContain('Hi there!');
   });
 
-  it('should show empty state with keybinding hints', () => {
+  it('should show welcome screen when no messages exist', () => {
     const { lastFrame } = render(<MessageList messages={[]} />);
     const frame = lastFrame() ?? '';
-    expect(frame).toContain('Start typing');
+    expect(frame).toContain('Opta CLI');
     expect(frame).toContain('/help');
-    expect(frame).toContain('Ctrl+/');
+    expect(frame).toContain('Quick Start');
   });
 
   it('should render assistant markdown content', () => {

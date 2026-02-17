@@ -112,7 +112,7 @@ export const OptaConfigSchema = z.object({
     .default({}),
   search: z
     .object({
-      searxngUrl: z.string().default('http://192.168.188.10:8888'),
+      searxngUrl: z.string().default('http://192.168.188.11:8081'),
     })
     .default({}),
   background: z

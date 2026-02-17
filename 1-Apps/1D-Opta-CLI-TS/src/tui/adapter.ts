@@ -27,6 +27,7 @@ export interface TurnStats {
   toolCalls: number;
   elapsed: number;
   speed: number;
+  firstTokenLatencyMs: number | null;
 }
 
 export interface PermissionRequest {
@@ -42,6 +43,9 @@ export interface TuiEventMap {
   'thinking': [text: string];
   'turn:start': [];
   'turn:end': [stats: TurnStats];
+  'turn:first-token': [latencyMs: number];
+  'turn:progress': [stats: { elapsed: number; speed: number; completionTokens: number }];
+  'connection:status': [status: 'checking' | 'connected' | 'disconnected' | 'error'];
   'error': [msg: string];
   'permission:request': [request: PermissionRequest];
   'permission:response': [id: string, decision: PermissionDecision];
@@ -87,8 +91,18 @@ export async function runAgentWithEvents(
   const turnStartTime = Date.now();
   let completionTokens = 0;
   let toolCallCount = 0;
+  let firstTokenTime: number | null = null;
 
   emitter.emit('turn:start');
+
+  // Progress timer: emits turn:progress every 500ms with live stats
+  const progressInterval = setInterval(() => {
+    const elapsed = (Date.now() - turnStartTime) / 1000;
+    const speed = elapsed > MIN_ELAPSED_FOR_SPEED
+      ? completionTokens / elapsed
+      : 0;
+    emitter.emit('turn:progress', { elapsed, speed, completionTokens });
+  }, 500);
 
   const { agentLoop } = await import('../core/agent.js');
 
@@ -98,6 +112,13 @@ export async function runAgentWithEvents(
     silent: true, // We handle display in the TUI
     onStream: {
       onToken(text: string) {
+        // Track first token latency
+        if (firstTokenTime === null) {
+          firstTokenTime = Date.now();
+          const latencyMs = firstTokenTime - turnStartTime;
+          emitter.emit('turn:first-token', latencyMs);
+        }
+
         completionTokens += Math.ceil(text.length / CHARS_PER_TOKEN);
         emitter.emit('token', text);
       },
@@ -141,11 +162,16 @@ export async function runAgentWithEvents(
   try {
     const result = await agentLoop(task, config, options);
 
+    clearInterval(progressInterval);
+
     const elapsedMs = Date.now() - turnStartTime;
     const elapsed = elapsedMs / 1000;
     const speed = elapsed > MIN_ELAPSED_FOR_SPEED
       ? completionTokens / elapsed
       : 0;
+    const firstTokenLatencyMs = firstTokenTime !== null
+      ? firstTokenTime - turnStartTime
+      : null;
 
     emitter.emit('turn:end', {
       tokens: completionTokens,
@@ -154,10 +180,12 @@ export async function runAgentWithEvents(
       toolCalls: toolCallCount,
       elapsed,
       speed,
+      firstTokenLatencyMs,
     });
 
     return result;
   } catch (err) {
+    clearInterval(progressInterval);
     const errorMessage = err instanceof Error ? err.message : String(err);
     emitter.emit('error', errorMessage);
     throw err;
@@ -166,4 +194,25 @@ export async function runAgentWithEvents(
 
 export function createTuiEmitter(): TuiEmitter {
   return new TuiEmitter();
+}
+
+/**
+ * Check connectivity to the Opta-LMX server and emit connection status events.
+ *
+ * Emits 'connection:status' with 'checking', then 'connected' on success,
+ * 'error' on non-OK response, or 'disconnected' on network failure.
+ */
+export async function checkConnection(emitter: TuiEmitter, config: OptaConfig): Promise<void> {
+  emitter.emit('connection:status', 'checking');
+  try {
+    const url = `http://${config.connection.host}:${config.connection.port}/v1/models`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+    if (res.ok) {
+      emitter.emit('connection:status', 'connected');
+    } else {
+      emitter.emit('connection:status', 'error');
+    }
+  } catch {
+    emitter.emit('connection:status', 'disconnected');
+  }
 }

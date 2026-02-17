@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { Box, Text, useApp } from 'ink';
 import { Header } from './Header.js';
 import { MessageList } from './MessageList.js';
@@ -96,12 +96,26 @@ function AppInner({
   const [sessionTitle, setSessionTitle] = useState(initialTitle);
   const [cost, setCost] = useState('$0.00');
 
+  // New streaming progress state
+  const [turnPhase, setTurnPhase] = useState<'idle' | 'connecting' | 'waiting' | 'streaming' | 'tool-call' | 'done'>('idle');
+  const [connectionState, setConnectionState] = useState<'checking' | 'connected' | 'disconnected' | 'error'>('connected');
+  const [turnElapsed, setTurnElapsed] = useState(0);
+  const [firstTokenLatency, setFirstTokenLatency] = useState<number | null>(null);
+  const [turnSpeed, setTurnSpeed] = useState(0);
+  const [turnCompletionTokens, setTurnCompletionTokens] = useState(0);
+
   // Permission prompt state
   const [permissionPending, setPermissionPending] = useState<(PermissionRequest & { resolve: (decision: PermissionDecision) => void }) | null>(null);
   const [alwaysMessage, setAlwaysMessage] = useState<string | null>(null);
 
   // Track whether we're in streaming mode (emitter-based)
   const isStreamingMode = !!emitter;
+
+  // Derived context usage from token counts
+  const contextUsage = useMemo(() => ({
+    used: promptTokens + completionTokens,
+    total: 196608, // TODO: get from config/model metadata
+  }), [promptTokens, completionTokens]);
 
   // Ref to track the current streaming assistant message index
   const streamingMsgIdx = useRef<number | null>(null);
@@ -124,11 +138,43 @@ function AppInner({
     onExpandThinking: handleExpandThinking,
   });
 
+  // Elapsed timer -- ticks every 100ms while loading
+  useEffect(() => {
+    if (!isLoading) {
+      return;
+    }
+    const start = Date.now();
+    const timer = setInterval(() => {
+      setTurnElapsed((Date.now() - start) / 1000);
+    }, 100);
+    return () => clearInterval(timer);
+  }, [isLoading]);
+
+  // Connection check on mount
+  useEffect(() => {
+    if (!emitter) return;
+    import('../tui/adapter.js').then(({ checkConnection: check }) => {
+      // checkConnection needs config; for now emit connected since we're already in TUI mode
+      // The actual checkConnection call is made from chat.ts after setting up the emitter
+      void check;
+      setConnectionState('connected');
+    }).catch(() => {});
+  }, [emitter]);
+
   // --- Event-driven streaming mode ---
   useEffect(() => {
     if (!emitter) return;
 
+    // Track whether first token has been received this turn (for phase transition)
+    let firstTokenReceived = false;
+
     const onToken = (text: string) => {
+      // Transition to streaming phase on first token
+      if (!firstTokenReceived) {
+        firstTokenReceived = true;
+        setTurnPhase('streaming');
+      }
+
       setMessages(prev => {
         const idx = streamingMsgIdx.current;
         if (idx !== null && idx < prev.length) {
@@ -147,6 +193,7 @@ function AppInner({
 
     const onToolStart = (name: string, id: string, argsJson: string) => {
       setStreamingLabel(`running ${name}`);
+      setTurnPhase('tool-call');
       let parsedArgs: Record<string, unknown> | undefined;
       try {
         parsedArgs = JSON.parse(argsJson) as Record<string, unknown>;
@@ -161,6 +208,7 @@ function AppInner({
 
     const onToolEnd = (name: string, id: string, result: string) => {
       setStreamingLabel('thinking');
+      setTurnPhase('streaming');
       setMessages(prev => {
         const updated = [...prev];
         // Find the matching tool:start message and update it
@@ -192,10 +240,19 @@ function AppInner({
       streamingMsgIdx.current = null;
       thinkingTextRef.current = '';
       setStreamingLabel('thinking');
+      setTurnPhase('waiting');
+      setFirstTokenLatency(null);
+      setTurnElapsed(0);
+      setTurnCompletionTokens(0);
+      setTurnSpeed(0);
     };
 
     const onTurnEnd = (stats: TurnStats) => {
       setIsLoading(false);
+      setTurnPhase('done');
+
+      // Transition back to idle after 2 seconds
+      setTimeout(() => setTurnPhase('idle'), 2000);
 
       // Attach accumulated thinking to the assistant message
       if (thinkingTextRef.current && streamingMsgIdx.current !== null) {
@@ -222,6 +279,9 @@ function AppInner({
       setPromptTokens(prev => prev + stats.promptTokens);
       setElapsed(stats.elapsed);
       setSpeed(stats.speed);
+      if (stats.firstTokenLatencyMs !== null) {
+        setFirstTokenLatency(stats.firstTokenLatencyMs);
+      }
     };
 
     const onError = (msg: string) => {
@@ -233,6 +293,19 @@ function AppInner({
 
     const onTitle = (title: string) => {
       setSessionTitle(title);
+    };
+
+    const onConnectionStatus = (status: 'checking' | 'connected' | 'disconnected' | 'error') => {
+      setConnectionState(status);
+    };
+
+    const onFirstToken = (latencyMs: number) => {
+      setFirstTokenLatency(latencyMs);
+    };
+
+    const onTurnProgress = (stats: { elapsed: number; speed: number; completionTokens: number }) => {
+      setTurnSpeed(stats.speed);
+      setTurnCompletionTokens(stats.completionTokens);
     };
 
     const onPermissionRequest = (request: PermissionRequest) => {
@@ -267,6 +340,9 @@ function AppInner({
     emitter.on('thinking', onThinking);
     emitter.on('turn:start', onTurnStart);
     emitter.on('turn:end', onTurnEnd);
+    emitter.on('turn:first-token', onFirstToken);
+    emitter.on('turn:progress', onTurnProgress);
+    emitter.on('connection:status', onConnectionStatus);
     emitter.on('error', onError);
     emitter.on('permission:request', onPermissionRequest);
     emitter.on('title', onTitle);
@@ -278,6 +354,9 @@ function AppInner({
       emitter.off('thinking', onThinking);
       emitter.off('turn:start', onTurnStart);
       emitter.off('turn:end', onTurnEnd);
+      emitter.off('turn:first-token', onFirstToken);
+      emitter.off('turn:progress', onTurnProgress);
+      emitter.off('connection:status', onConnectionStatus);
       emitter.off('error', onError);
       emitter.off('permission:request', onPermissionRequest);
       emitter.off('title', onTitle);
@@ -384,8 +463,27 @@ function AppInner({
           <HelpOverlay onClose={() => setShowHelp(false)} />
         ) : (
           <>
-            <MessageList messages={messages} height={activePanel === 'messages' ? messageAreaHeight - 2 : messageAreaHeight} focusable={activePanel === 'messages'} streamingIdx={streamingMsgIdx.current} terminalWidth={width} thinkingExpanded={thinkingExpanded} />
-            {isLoading && <StreamingIndicator label={streamingLabel} />}
+            <MessageList
+              messages={messages}
+              height={activePanel === 'messages' ? messageAreaHeight - 2 : messageAreaHeight}
+              focusable={activePanel === 'messages'}
+              streamingIdx={streamingMsgIdx.current}
+              terminalWidth={width}
+              thinkingExpanded={thinkingExpanded}
+              connectionState={connectionState}
+              model={currentModel}
+              contextTotal={contextUsage.total}
+            />
+            {isLoading && (
+              <StreamingIndicator
+                label={streamingLabel}
+                phase={turnPhase}
+                elapsed={turnElapsed}
+                speed={turnSpeed}
+                completionTokens={turnCompletionTokens}
+                firstTokenLatency={firstTokenLatency}
+              />
+            )}
           </>
         )}
       </Box>
@@ -426,6 +524,8 @@ function AppInner({
       elapsed={elapsed}
       speed={speed}
       title={sessionTitle}
+      connectionState={connectionState}
+      contextUsage={contextUsage}
     />
   );
 
@@ -437,6 +537,7 @@ function AppInner({
         connectionStatus={connectionStatus}
         title={sessionTitle}
         compact={compactMode}
+        connectionState={connectionState}
       />
 
       <SplitPane
@@ -454,6 +555,13 @@ function AppInner({
         speed={speed}
         mode={mode}
         compact={compactMode}
+        connectionState={connectionState}
+        turnElapsed={turnElapsed}
+        turnPhase={turnPhase}
+        promptTokens={promptTokens}
+        completionTokens={completionTokens}
+        contextUsed={contextUsage.used}
+        contextTotal={contextUsage.total}
       />
     </Box>
   );

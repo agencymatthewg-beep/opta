@@ -4,6 +4,7 @@ import { ScrollView } from './ScrollView.js';
 import { MarkdownText } from './MarkdownText.js';
 import { ToolCard } from './ToolCard.js';
 import { ThinkingBlock } from './ThinkingBlock.js';
+import { WelcomeScreen } from './WelcomeScreen.js';
 import type { TuiMessage } from './App.js';
 
 /** Padding consumed by left/right paddingX on the message area. */
@@ -19,6 +20,30 @@ interface MessageListProps {
   terminalWidth?: number;
   /** Whether thinking blocks are expanded (global toggle via Ctrl+T). */
   thinkingExpanded?: boolean;
+  /** Connection state for the welcome screen. */
+  connectionState?: 'checking' | 'connected' | 'disconnected' | 'error';
+  /** Current model name for the welcome screen. */
+  model?: string;
+  /** Total context window size (tokens) for the welcome screen. */
+  contextTotal?: number;
+}
+
+/** Format a Date as a lowercase 12-hour time string (e.g. "2:35 pm"). */
+function formatTime(date: Date): string {
+  return date.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  }).toLowerCase();
+}
+
+/** Visual separator between conversation turns. */
+function TurnSeparator({ turnNumber }: { turnNumber: number }) {
+  return (
+    <Box paddingX={1} marginY={0}>
+      <Text dimColor>{'\u2500'.repeat(20)} turn {turnNumber} {'\u2500'.repeat(20)}</Text>
+    </Box>
+  );
 }
 
 function renderToolMessage(msg: TuiMessage, i: number): ReactNode {
@@ -71,19 +96,23 @@ interface ChatMessageProps {
 
 const ChatMessage = memo(function ChatMessage({ msg, index, isStreaming, markdownWidth, thinkingExpanded }: ChatMessageProps) {
   const isAssistant = msg.role === 'assistant';
+  const timestamp = formatTime(new Date());
 
   return (
     <Box key={index} flexDirection="column" marginBottom={1}>
-      <Box>
-        <Text color={msg.role === 'user' ? 'cyan' : 'green'} bold>
-          {msg.role === 'user' ? '> you' : '  opta'}
-        </Text>
-        {msg.toolCalls ? (
-          <Text dimColor> ({msg.toolCalls} tool calls)</Text>
-        ) : null}
-        {msg.thinkingTokens ? (
-          <Text dimColor> (thinking {msg.thinkingTokens})</Text>
-        ) : null}
+      <Box justifyContent="space-between" width="100%">
+        <Box>
+          <Text color={msg.role === 'user' ? 'cyan' : 'green'} bold>
+            {msg.role === 'user' ? '> you' : '\u25C6 opta'}
+          </Text>
+          {msg.toolCalls ? (
+            <Text dimColor> ({msg.toolCalls} tool calls)</Text>
+          ) : null}
+          {msg.thinkingTokens ? (
+            <Text dimColor> (thinking {msg.thinkingTokens})</Text>
+          ) : null}
+        </Box>
+        <Text dimColor>{timestamp}</Text>
       </Box>
       {isAssistant && msg.thinking && (
         <ThinkingBlock
@@ -110,12 +139,18 @@ export function MessageList({
   streamingIdx,
   terminalWidth = 100,
   thinkingExpanded = false,
+  connectionState,
+  model,
+  contextTotal,
 }: MessageListProps) {
   if (messages.length === 0) {
     return (
       <Box paddingX={1} paddingY={1} flexDirection="column">
-        <Text dimColor>Start typing to begin a conversation.</Text>
-        <Text dimColor>Type /help for commands, Ctrl+/ for keybindings.</Text>
+        <WelcomeScreen
+          connectionState={connectionState}
+          model={model}
+          contextTotal={contextTotal}
+        />
       </Box>
     );
   }
@@ -123,28 +158,42 @@ export function MessageList({
   // Account for padding when calculating markdown rendering width
   const markdownWidth = Math.max(terminalWidth - PADDING_CHARS, 40);
 
-  const messageRows = messages.map((msg, i) => {
+  // Build message rows with turn separators between conversation turns.
+  // A new "turn" starts at each user message. We insert a separator
+  // before every user message except the first one.
+  let turnCount = 0;
+  const messageRows: ReactNode[] = [];
+
+  for (let i = 0; i < messages.length; i++) {
+    const msg = messages[i]!;
+
+    if (msg.role === 'user') {
+      turnCount++;
+      if (turnCount > 1) {
+        messageRows.push(<TurnSeparator key={`sep-${turnCount}`} turnNumber={turnCount - 1} />);
+      }
+    }
+
     if (msg.role === 'tool') {
-      return renderToolMessage(msg, i);
+      messageRows.push(renderToolMessage(msg, i));
+    } else if (msg.role === 'error') {
+      messageRows.push(renderErrorMessage(msg, i));
+    } else if (msg.role === 'system') {
+      messageRows.push(renderSystemMessage(msg, i));
+    } else {
+      const isStreaming = msg.role === 'assistant' && i === streamingIdx;
+      messageRows.push(
+        <ChatMessage
+          key={i}
+          msg={msg}
+          index={i}
+          isStreaming={isStreaming}
+          markdownWidth={markdownWidth}
+          thinkingExpanded={thinkingExpanded}
+        />
+      );
     }
-    if (msg.role === 'error') {
-      return renderErrorMessage(msg, i);
-    }
-    if (msg.role === 'system') {
-      return renderSystemMessage(msg, i);
-    }
-    const isStreaming = msg.role === 'assistant' && i === streamingIdx;
-    return (
-      <ChatMessage
-        key={i}
-        msg={msg}
-        index={i}
-        isStreaming={isStreaming}
-        markdownWidth={markdownWidth}
-        thinkingExpanded={thinkingExpanded}
-      />
-    );
-  });
+  }
 
   if (height !== undefined && height > 0) {
     return (
