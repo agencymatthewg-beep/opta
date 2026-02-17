@@ -48,9 +48,18 @@ export async function executeDelegation(
 
     // Build the task description, injecting dependency results
     let description = subtask.task;
-    if (subtask.depends_on !== undefined && subtask.depends_on >= 0 && subtask.depends_on < results.length) {
-      const depResult = results[subtask.depends_on]!;
-      description = `${subtask.task}\n\nContext from previous subtask:\n${depResult.response}`;
+    if (subtask.depends_on !== undefined) {
+      if (subtask.depends_on < 0 || subtask.depends_on >= i) {
+        // Invalid dependency: negative index or forward reference
+        lines.push(`Warning: subtask ${i + 1} has invalid depends_on=${subtask.depends_on} (ignored).`);
+      } else if (subtask.depends_on < results.length) {
+        const depResult = results[subtask.depends_on]!;
+        if (depResult.status === 'budget_exceeded' || depResult.status === 'timeout') {
+          description = `${subtask.task}\n\nContext from previous subtask (${depResult.status} — results may be incomplete):\n${depResult.response}`;
+        } else {
+          description = `${subtask.task}\n\nContext from previous subtask:\n${depResult.response}`;
+        }
+      }
     }
 
     const agentTask: SubAgentTask = {

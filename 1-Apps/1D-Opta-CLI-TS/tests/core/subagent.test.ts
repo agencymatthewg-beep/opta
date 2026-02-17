@@ -570,3 +570,327 @@ describe('spawnSubAgent depth propagation', () => {
     expect(mockRegistry.parentContext).toBeUndefined();
   });
 });
+
+// ---- End-to-End Multi-Tool-Call Spawn ----
+
+describe('spawnSubAgent end-to-end', () => {
+  it('handles a multi-step tool call sequence (read -> search -> edit -> done)', async () => {
+    const mockClient = createMockOpenAIClient([
+      // Step 1: read a file
+      { text: '', toolCalls: [{ id: 'tc1', name: 'read_file', args: '{"path":"src/config.ts"}' }] },
+      // Step 2: search for a pattern
+      { text: '', toolCalls: [{ id: 'tc2', name: 'search_files', args: '{"pattern":"TODO"}' }] },
+      // Step 3: edit a file
+      { text: '', toolCalls: [{ id: 'tc3', name: 'edit_file', args: '{"path":"src/config.ts","old_text":"// TODO","new_text":"// DONE"}' }] },
+      // Step 4: done
+      { text: 'Fixed 1 TODO in config.ts. Changed "// TODO" to "// DONE".', toolCalls: [] },
+    ]);
+    const mockRegistry = createMockRegistry();
+
+    const result = await spawnSubAgent(
+      { id: 'e2e-1', description: 'Fix TODOs', budget: { maxToolCalls: 10 } },
+      { ...DEFAULT_CONFIG, defaultMode: 'auto' as const },
+      mockClient,
+      mockRegistry,
+    );
+
+    expect(result.status).toBe('completed');
+    expect(result.toolCallCount).toBe(3);
+    expect(result.filesRead).toContain('src/config.ts');
+    expect(result.filesModified).toContain('src/config.ts');
+    expect(result.response).toContain('Fixed 1 TODO');
+    expect(mockClient.chat.completions.create).toHaveBeenCalledTimes(4);
+  });
+
+  it('handles parallel tool calls in a single response', async () => {
+    const mockClient = createMockOpenAIClient([
+      // Model returns two tool calls in one response
+      {
+        text: '',
+        toolCalls: [
+          { id: 'tc1', name: 'read_file', args: '{"path":"src/a.ts"}' },
+          { id: 'tc2', name: 'read_file', args: '{"path":"src/b.ts"}' },
+        ],
+      },
+      { text: 'Both files analyzed.', toolCalls: [] },
+    ]);
+    const mockRegistry = createMockRegistry();
+
+    const result = await spawnSubAgent(
+      { id: 'parallel-1', description: 'Read both files' },
+      DEFAULT_CONFIG,
+      mockClient,
+      mockRegistry,
+    );
+
+    expect(result.status).toBe('completed');
+    expect(result.toolCallCount).toBe(2);
+    expect(result.filesRead).toContain('src/a.ts');
+    expect(result.filesRead).toContain('src/b.ts');
+    // registry.execute should have been called twice
+    expect(mockRegistry.execute).toHaveBeenCalledTimes(2);
+  });
+});
+
+// ---- Budget Exhaustion Mid-Batch ----
+
+describe('spawnSubAgent budget mid-batch', () => {
+  it('stops executing tool calls when budget exhausted mid-batch', async () => {
+    // Model returns 3 tool calls in one response, but budget is 2
+    const mockClient = createMockOpenAIClient([
+      {
+        text: '',
+        toolCalls: [
+          { id: 'tc1', name: 'read_file', args: '{"path":"a.ts"}' },
+          { id: 'tc2', name: 'read_file', args: '{"path":"b.ts"}' },
+          { id: 'tc3', name: 'read_file', args: '{"path":"c.ts"}' },
+        ],
+      },
+    ]);
+    const mockRegistry = createMockRegistry();
+
+    const result = await spawnSubAgent(
+      { id: 'mid-batch', description: 'Read 3 files', budget: { maxToolCalls: 2 } },
+      DEFAULT_CONFIG,
+      mockClient,
+      mockRegistry,
+    );
+
+    // Should stop at 2 tool calls, then next loop iteration detects budget exceeded
+    expect(result.status).toBe('budget_exceeded');
+    expect(result.toolCallCount).toBe(2);
+    // Third file should NOT have been read
+    expect(result.filesRead).toContain('a.ts');
+    expect(result.filesRead).toContain('b.ts');
+    expect(result.filesRead).not.toContain('c.ts');
+  });
+});
+
+// ---- Depth Limit Enforcement at 3 Levels ----
+
+describe('spawnSubAgent depth limit at 3 levels', () => {
+  it('allows depth 1 and 2 but rejects depth 3 with maxDepth=2', () => {
+    const config = {
+      ...DEFAULT_CONFIG,
+      subAgent: { ...DEFAULT_CONFIG.subAgent, maxDepth: 2 },
+    };
+
+    // Depth 1: OK
+    const ctx1 = createSubAgentContext('root', undefined, config);
+    expect(ctx1.depth).toBe(1);
+
+    // Depth 2: OK
+    const ctx2 = createSubAgentContext('child-1', ctx1, config);
+    expect(ctx2.depth).toBe(2);
+
+    // Depth 3: REJECTED
+    expect(() => createSubAgentContext('child-2', ctx2, config))
+      .toThrow('Maximum sub-agent depth (2) exceeded');
+  });
+
+  it('allows 3 levels when maxDepth=3', () => {
+    const config = {
+      ...DEFAULT_CONFIG,
+      subAgent: { ...DEFAULT_CONFIG.subAgent, maxDepth: 3 },
+    };
+
+    const ctx1 = createSubAgentContext('root', undefined, config);
+    const ctx2 = createSubAgentContext('child-1', ctx1, config);
+    const ctx3 = createSubAgentContext('child-2', ctx2, config);
+    expect(ctx3.depth).toBe(3);
+
+    // Depth 4: REJECTED
+    expect(() => createSubAgentContext('child-3', ctx3, config))
+      .toThrow('Maximum sub-agent depth (3) exceeded');
+  });
+});
+
+// ---- multi_edit File Tracking ----
+
+describe('spawnSubAgent multi_edit tracking', () => {
+  it('tracks all files from multi_edit edits array', async () => {
+    const multiEditArgs = JSON.stringify({
+      edits: [
+        { path: 'src/a.ts', old_text: 'foo', new_text: 'bar' },
+        { path: 'src/b.ts', old_text: 'baz', new_text: 'qux' },
+        { path: 'src/c.ts', old_text: 'x', new_text: 'y' },
+      ],
+    });
+
+    const mockClient = createMockOpenAIClient([
+      { text: '', toolCalls: [{ id: 'tc1', name: 'multi_edit', args: multiEditArgs }] },
+      { text: 'Applied 3 edits.', toolCalls: [] },
+    ]);
+
+    const mockRegistry: ToolRegistry = {
+      schemas: [
+        {
+          type: 'function',
+          function: {
+            name: 'multi_edit',
+            description: 'Multi edit',
+            parameters: { type: 'object', properties: {}, required: [] },
+          },
+        },
+      ],
+      execute: vi.fn().mockResolvedValue('3 edits applied.'),
+      close: vi.fn(),
+    };
+
+    const result = await spawnSubAgent(
+      { id: 'multi-edit-track', description: 'Apply multi edit', budget: { maxToolCalls: 5 } },
+      { ...DEFAULT_CONFIG, defaultMode: 'auto' as const },
+      mockClient,
+      mockRegistry,
+    );
+
+    expect(result.status).toBe('completed');
+    expect(result.filesModified).toContain('src/a.ts');
+    expect(result.filesModified).toContain('src/b.ts');
+    expect(result.filesModified).toContain('src/c.ts');
+    expect(result.filesModified).toHaveLength(3);
+  });
+
+  it('deduplicates multi_edit paths when same file edited twice', async () => {
+    const multiEditArgs = JSON.stringify({
+      edits: [
+        { path: 'src/a.ts', old_text: 'foo', new_text: 'bar' },
+        { path: 'src/a.ts', old_text: 'baz', new_text: 'qux' },
+      ],
+    });
+
+    const mockClient = createMockOpenAIClient([
+      { text: '', toolCalls: [{ id: 'tc1', name: 'multi_edit', args: multiEditArgs }] },
+      { text: 'Done.', toolCalls: [] },
+    ]);
+
+    const mockRegistry: ToolRegistry = {
+      schemas: [
+        {
+          type: 'function',
+          function: {
+            name: 'multi_edit',
+            description: 'Multi edit',
+            parameters: { type: 'object', properties: {}, required: [] },
+          },
+        },
+      ],
+      execute: vi.fn().mockResolvedValue('2 edits applied.'),
+      close: vi.fn(),
+    };
+
+    const result = await spawnSubAgent(
+      { id: 'multi-dedup', description: 'Dedup test', budget: { maxToolCalls: 5 } },
+      { ...DEFAULT_CONFIG, defaultMode: 'auto' as const },
+      mockClient,
+      mockRegistry,
+    );
+
+    // filesModified uses Set dedup, so should have just 1 entry
+    expect(result.filesModified).toHaveLength(1);
+    expect(result.filesModified).toContain('src/a.ts');
+  });
+});
+
+// ---- Prompt Verification ----
+
+describe('SubAgent Prompt file modification reporting', () => {
+  it('instructs sub-agent to report files modified', () => {
+    const prompt = buildSubAgentPrompt('Fix bugs', '/project', 10);
+    expect(prompt).toContain('Files modified');
+    expect(prompt).toContain('Files read');
+  });
+
+  it('instructs sub-agent not to spawn further sub-agents unless necessary', () => {
+    const prompt = buildSubAgentPrompt('Investigate', '/project', 15);
+    expect(prompt).toContain('Do NOT spawn further sub-agents');
+  });
+
+  it('instructs sub-agent to state when no files modified', () => {
+    const prompt = buildSubAgentPrompt('Read-only task', '/project', 5);
+    expect(prompt).toContain('No files modified');
+  });
+});
+
+// ---- No-Response Edge Case ----
+
+describe('spawnSubAgent edge cases', () => {
+  it('returns error when model returns empty choices array', async () => {
+    const mockClient = {
+      chat: {
+        completions: {
+          create: vi.fn().mockResolvedValue({ choices: [] }),
+        },
+      },
+    } as unknown as import('openai').default;
+    const mockRegistry = createMockRegistry();
+
+    const result = await spawnSubAgent(
+      { id: 'empty-choices', description: 'Edge case' },
+      DEFAULT_CONFIG,
+      mockClient,
+      mockRegistry,
+    );
+
+    expect(result.status).toBe('error');
+    expect(result.response).toContain('No response from model');
+  });
+
+  it('handles invalid tool argument JSON gracefully in file tracking', async () => {
+    const mockClient = createMockOpenAIClient([
+      { text: '', toolCalls: [{ id: 'tc1', name: 'read_file', args: 'not-json' }] },
+      { text: 'Done', toolCalls: [] },
+    ]);
+    const mockRegistry = createMockRegistry();
+
+    const result = await spawnSubAgent(
+      { id: 'bad-json-track', description: 'Bad JSON args' },
+      DEFAULT_CONFIG,
+      mockClient,
+      mockRegistry,
+    );
+
+    // Should not crash — file tracking ignores parse errors
+    expect(result.status).toBe('completed');
+    expect(result.filesRead).toHaveLength(0);
+  });
+
+  it('handles budget validation failure gracefully (returns error, does not throw)', async () => {
+    const mockClient = createMockOpenAIClient([]);
+    const mockRegistry = createMockRegistry();
+
+    const result = await spawnSubAgent(
+      { id: 'bad-budget', description: 'Test', budget: { maxToolCalls: 0 } },
+      DEFAULT_CONFIG,
+      mockClient,
+      mockRegistry,
+    );
+
+    expect(result.status).toBe('error');
+    expect(result.response).toContain('Budget validation failed');
+    expect(result.response).toContain('maxToolCalls must be positive');
+    // API should never have been called
+    expect(mockClient.chat.completions.create).not.toHaveBeenCalled();
+  });
+
+  it('uses task scope as cwd when provided', async () => {
+    const mockClient = createMockOpenAIClient([
+      { text: 'Done from scope', toolCalls: [] },
+    ]);
+    const mockRegistry = createMockRegistry();
+
+    const result = await spawnSubAgent(
+      { id: 'scope-test', description: 'Scoped task', scope: '/custom/scope' },
+      DEFAULT_CONFIG,
+      mockClient,
+      mockRegistry,
+    );
+
+    expect(result.status).toBe('completed');
+    // Verify the system prompt received the scope as cwd
+    const createCall = mockClient.chat.completions.create.mock.calls[0];
+    const messages = createCall?.[0]?.messages as Array<{ role: string; content: string }>;
+    const systemMsg = messages?.find(m => m.role === 'system');
+    expect(systemMsg?.content).toContain('/custom/scope');
+  });
+});

@@ -106,11 +106,15 @@ Working directory: ${cwd}
 Constraints:
 - You have a budget of ${maxToolCalls} tool calls. Use them efficiently.
 - Be concise in your responses. Your output will be consumed by a parent agent.
-- When done, provide a clear summary of your findings or actions taken.
 - Do not ask the user questions — you are running silently.
 - Focus only on the task described above.
+- Do NOT spawn further sub-agents unless absolutely necessary.
 
-After completing the task, respond with a concise summary of results. Include specific file paths, code patterns, or data points discovered.`;
+When finished, provide a structured summary:
+1. What you found or did (key findings, code patterns, data points).
+2. Files read — list every file path you examined.
+3. Files modified — list every file path you created, edited, or deleted, with a one-line description of the change.
+If no files were modified, state "No files modified."`;
 }
 
 // --- Task 4: Permission Derivation for Children ---
@@ -292,6 +296,11 @@ export async function spawnSubAgent(
 
       // Execute each tool call
       for (const tc of toolCalls) {
+        // Check if timeout has fired between tool calls
+        if (abortController.signal.aborted) {
+          throw new Error('TIMEOUT');
+        }
+
         const toolName = tc.function.name;
 
         // Check if tool is in whitelist (if whitelist exists)
@@ -331,13 +340,21 @@ export async function spawnSubAgent(
         // Track files
         try {
           const args = JSON.parse(tc.function.arguments);
-          const path = args.path ?? args.file;
-          if (path) {
-            if (['read_file', 'read_project_docs'].includes(toolName)) {
-              filesRead.push(String(path));
+          if (toolName === 'multi_edit' && Array.isArray(args.edits)) {
+            for (const edit of args.edits) {
+              if (edit && typeof edit.path === 'string') {
+                filesModified.push(edit.path);
+              }
             }
-            if (['edit_file', 'write_file', 'multi_edit', 'delete_file'].includes(toolName)) {
-              filesModified.push(String(path));
+          } else {
+            const path = args.path ?? args.file;
+            if (path) {
+              if (['read_file', 'read_project_docs'].includes(toolName)) {
+                filesRead.push(String(path));
+              }
+              if (['edit_file', 'write_file', 'delete_file'].includes(toolName)) {
+                filesModified.push(String(path));
+              }
             }
           }
         } catch {
