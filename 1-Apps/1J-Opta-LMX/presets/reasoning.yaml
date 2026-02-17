@@ -9,3 +9,7 @@ system_prompt: |
   Think step by step. Show your reasoning process.
 routing_alias: reasoning
 auto_load: false
+performance:
+  prefix_cache: true
+  max_concurrent: 1
+  memory_estimate_gb: 18
