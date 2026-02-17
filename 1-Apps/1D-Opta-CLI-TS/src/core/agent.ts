@@ -1,7 +1,7 @@
 import chalk from 'chalk';
 import type { OptaConfig } from './config.js';
 import { OptaError, EXIT } from './errors.js';
-import { resolvePermission } from './tools.js';
+import { resolvePermission } from './tools/index.js';
 import { debug } from './debug.js';
 import { maskOldObservations, COMPACTION_PROMPT } from './context.js';
 import { createSpinner } from '../ui/spinner.js';
@@ -20,6 +20,44 @@ import {
   fireError,
   type SessionContext,
 } from '../hooks/integration.js';
+
+// --- OpenAI Client Singleton ---
+// Cache the OpenAI client by baseURL+apiKey so we reuse the same HTTP client
+// across multiple agentLoop() calls within a session instead of creating one per call.
+
+let cachedClient: import('openai').default | null = null;
+let cachedClientKey = '';
+
+function clientCacheKey(baseURL: string, apiKey: string): string {
+  return `${baseURL}|${apiKey}`;
+}
+
+/**
+ * Returns a cached OpenAI client if the connection config hasn't changed,
+ * otherwise creates a new one. This avoids creating a new HTTP client
+ * on every agentLoop() invocation.
+ */
+async function getOrCreateClient(config: OptaConfig): Promise<import('openai').default> {
+  const baseURL = `http://${config.connection.host}:${config.connection.port}/v1`;
+  const apiKey = 'opta-lmx';
+  const key = clientCacheKey(baseURL, apiKey);
+
+  if (cachedClient && cachedClientKey === key) {
+    return cachedClient;
+  }
+
+  const { default: OpenAI } = await import('openai');
+  cachedClient = new OpenAI({ baseURL, apiKey });
+  cachedClientKey = key;
+  debug(`Created new OpenAI client for ${baseURL}`);
+  return cachedClient;
+}
+
+/** Reset the cached client (useful for testing). */
+export function resetClientCache(): void {
+  cachedClient = null;
+  cachedClientKey = '';
+}
 
 interface ToolCallAccum {
   id: string;
@@ -314,11 +352,7 @@ export async function agentLoop(
     effectiveConfig = config;
   }
 
-  const { default: OpenAI } = await import('openai');
-  const client = new OpenAI({
-    baseURL: `http://${effectiveConfig.connection.host}:${effectiveConfig.connection.port}/v1`,
-    apiKey: 'opta-lmx',
-  });
+  const client = await getOrCreateClient(effectiveConfig);
 
   const model = effectiveConfig.model.default;
   if (!model) {
@@ -372,7 +406,7 @@ export async function agentLoop(
   let lastThinkingRenderer: ThinkingRenderer | undefined;
 
   // Initialize background process manager (skip for sub-agents to avoid replacing parent's)
-  const { initProcessManager, shutdownProcessManager } = await import('./tools.js');
+  const { initProcessManager, shutdownProcessManager } = await import('./tools/index.js');
   if (!isSubAgent) {
     initProcessManager(effectiveConfig);
   }

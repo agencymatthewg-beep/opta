@@ -112,7 +112,7 @@ describe('agentLoop tool registry integration', () => {
   it('does not import TOOL_SCHEMAS or executeTool from tools.js', async () => {
     const source = await readFile(resolve(process.cwd(), 'src/core/agent.ts'), 'utf-8');
     // Should still import resolvePermission
-    expect(source).toContain("import { resolvePermission } from './tools.js'");
+    expect(source).toContain("import { resolvePermission } from './tools/index.js'");
     // Should NOT import TOOL_SCHEMAS or executeTool from tools.js
     expect(source).not.toMatch(/import\s*\{[^}]*TOOL_SCHEMAS[^}]*\}\s*from\s*['"]\.\/tools/);
     expect(source).not.toMatch(/import\s*\{[^}]*executeTool[^}]*\}\s*from\s*['"]\.\/tools/);
