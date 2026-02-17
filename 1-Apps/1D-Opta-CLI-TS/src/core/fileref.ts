@@ -9,6 +9,28 @@ export interface FileRef {
   lines: number;     // line count
 }
 
+export interface LineRange {
+  path: string;
+  startLine: number | null;
+  endLine: number | null;
+}
+
+export function parseLineRange(ref: string): LineRange {
+  const match = ref.match(/^(.+?):(\d+)(?:-(\d+))?$/);
+  if (!match) return { path: ref, startLine: null, endLine: null };
+  return {
+    path: match[1]!,
+    startLine: parseInt(match[2]!, 10),
+    endLine: match[3] ? parseInt(match[3], 10) : parseInt(match[2]!, 10),
+  };
+}
+
+export function extractFileRefParts(ref: string): { original: string; path: string; startLine: number | null; endLine: number | null } {
+  const withoutAt = ref.startsWith('@') ? ref.slice(1) : ref;
+  const range = parseLineRange(withoutAt);
+  return { original: ref, ...range };
+}
+
 export async function resolveFileRefs(message: string): Promise<{ cleanMessage: string; refs: FileRef[] }> {
   // Match @path patterns (not @mentions which start with uppercase or are emails)
   const pattern = /@((?:\.{1,2}\/|[a-z_])[^\s,;:!?'")\]}>]+)/g;
