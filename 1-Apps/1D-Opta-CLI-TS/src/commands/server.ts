@@ -183,12 +183,10 @@ export async function startServer(opts: ServerOptions): Promise<void> {
     console.log(chalk.dim('Press Ctrl+C to stop\n'));
   });
 
-  // Graceful shutdown
+  // Graceful shutdown is handled by the global SIGINT handler in index.ts.
+  // Register a 'close' callback so the server cleans up when the process exits.
   process.on('SIGINT', () => {
-    console.log(chalk.dim('\nShutting down...'));
-    server.close(() => {
-      process.exit(0);
-    });
+    server.close();
   });
 }
 

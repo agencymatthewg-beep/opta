@@ -1,5 +1,6 @@
 import chalk from 'chalk';
 import type { OptaConfig } from './config.js';
+import { OptaError, EXIT } from './errors.js';
 import { resolvePermission } from './tools.js';
 import { debug } from './debug.js';
 import { maskOldObservations, COMPACTION_PROMPT } from './context.js';
@@ -321,13 +322,10 @@ export async function agentLoop(
 
   const model = effectiveConfig.model.default;
   if (!model) {
-    console.error(
-      chalk.red('✗') +
-        ' No model configured. Run ' +
-        chalk.cyan('opta status') +
-        ' to check your LMX connection.'
+    throw new OptaError(
+      'No model configured. Run `opta connect` or `opta status` to check your connection.',
+      EXIT.NO_CONNECTION,
     );
-    process.exit(3);
   }
 
   // Use existing messages (multi-turn) or start fresh (single-shot)
@@ -373,9 +371,11 @@ export async function agentLoop(
   let checkpointCount = 0;
   let lastThinkingRenderer: ThinkingRenderer | undefined;
 
-  // Initialize background process manager
+  // Initialize background process manager (skip for sub-agents to avoid replacing parent's)
   const { initProcessManager, shutdownProcessManager } = await import('./tools.js');
-  initProcessManager(effectiveConfig);
+  if (!isSubAgent) {
+    initProcessManager(effectiveConfig);
+  }
 
   const { buildToolRegistry } = await import('../mcp/registry.js');
   const registry = await buildToolRegistry(effectiveConfig, options?.mode);
@@ -391,242 +391,255 @@ export async function agentLoop(
     await fireSessionStart(hooks, sessionCtx);
   }
 
-  while (true) {
-    // 0. Observation masking (free context savings)
-    const maskedMessages = maskOldObservations(messages, 4);
-    messages.length = 0;
-    messages.push(...maskedMessages);
-
-    // 1. Context compaction
-    const tokenEstimate = estimateTokens(messages);
-    const threshold = effectiveConfig.model.contextLimit * effectiveConfig.safety.compactAt;
-    if (tokenEstimate > threshold) {
-      debug(`Token estimate ${tokenEstimate} exceeds threshold ${threshold}`);
-      spinner.start('Compacting conversation history...');
-      const compacted = await compactHistory(messages, client, model, effectiveConfig.model.contextLimit);
+  try {
+    while (true) {
+      // 0. Observation masking (free context savings)
+      const maskedMessages = maskOldObservations(messages, 4);
       messages.length = 0;
-      messages.push(...compacted);
-      spinner.succeed('Context compacted');
-      await fireCompact(hooks, sessionCtx);
-    }
+      messages.push(...maskedMessages);
 
-    // 2. Call Opta LMX
-    debug(`Sending ${messages.length} messages to ${model}`);
-    spinner.start('Thinking...');
-
-    const stream = await client.chat.completions.create({
-      model,
-      messages: messages as Parameters<typeof client.chat.completions.create>[0]['messages'],
-      tools: registry.schemas as Parameters<typeof client.chat.completions.create>[0]['tools'],
-      tool_choice: 'auto',
-      stream: true,
-    });
-
-    spinner.stop();
-
-    // 3. Stream tokens to terminal, collect tool calls
-    statusBar?.newTurn();
-    let firstText = true;
-    const { text, toolCalls, thinkingRenderer: lastThinking } = await collectStream(stream, (chunk) => {
-      if (silent) return;
-      if (firstText) {
-        console.log(); // blank line before response
-        firstText = false;
-      }
-      process.stdout.write(chunk);
-    }, statusBar);
-
-    // Track last thinking renderer for expand/collapse toggle
-    lastThinkingRenderer = lastThinking;
-
-    if (!silent && text && !firstText) {
-      process.stdout.write('\n'); // newline after streamed text
-    }
-
-    // Print turn summary (tokens, speed, tool calls)
-    statusBar?.finalizeTurn();
-    if (!silent) statusBar?.printSummary();
-
-    // 4. No tool calls = task complete
-    if (toolCalls.length === 0) {
-      // Text was already streamed to terminal — no need to re-render
-      statusBar?.clear();
-      break;
-    }
-
-    // 5. Append assistant message with tool calls
-    messages.push({
-      role: 'assistant',
-      content: text || null,
-      tool_calls: toolCalls.map((tc) => ({
-        id: tc.id,
-        type: 'function' as const,
-        function: { name: tc.name, arguments: tc.args },
-      })),
-    });
-
-    // 6. Execute each tool call with permission checks
-    for (const call of toolCalls) {
-      const permission = resolvePermission(call.name, effectiveConfig);
-
-      if (permission === 'deny') {
-        messages.push({
-          role: 'tool',
-          content: 'Permission denied by configuration.',
-          tool_call_id: call.id,
-        });
-        if (!silent) console.log(chalk.dim(`  ✗ ${call.name} — denied`));
-        continue;
+      // 1. Context compaction
+      const tokenEstimate = estimateTokens(messages);
+      const threshold = effectiveConfig.model.contextLimit * effectiveConfig.safety.compactAt;
+      if (tokenEstimate > threshold) {
+        debug(`Token estimate ${tokenEstimate} exceeds threshold ${threshold}`);
+        spinner.start('Compacting conversation history...');
+        const compacted = await compactHistory(messages, client, model, effectiveConfig.model.contextLimit);
+        messages.length = 0;
+        messages.push(...compacted);
+        spinner.succeed('Context compacted');
+        await fireCompact(hooks, sessionCtx);
       }
 
-      if (permission === 'ask') {
-        // Sub-agents cannot prompt users — deny silently
-        if (isSubAgent) {
-          messages.push({
-            role: 'tool',
-            content: 'Permission denied (sub-agent cannot prompt user).',
-            tool_call_id: call.id,
-          });
-          continue;
-        }
+      // 2. Call Opta LMX
+      debug(`Sending ${messages.length} messages to ${model}`);
+      spinner.start('Thinking...');
 
-        let args: Record<string, unknown>;
-        try {
-          args = JSON.parse(call.args);
-        } catch {
-          args = { raw: call.args };
-        }
-
-        const approved = await promptToolApproval(call.name, args);
-        if (!approved) {
-          messages.push({
-            role: 'tool',
-            content: 'User declined this action.',
-            tool_call_id: call.id,
-          });
-          continue;
-        }
-      }
-
-      // Fire pre-tool hook (can cancel execution)
-      const preResult = await fireToolPre(hooks, call.name, call.args, sessionCtx);
-      if (preResult.cancelled) {
-        messages.push({
-          role: 'tool',
-          content: `Tool blocked by hook: ${preResult.reason ?? 'no reason given'}`,
-          tool_call_id: call.id,
-        });
-        if (!silent) console.log(chalk.dim(`  ✗ ${call.name} — blocked by hook`));
-        continue;
-      }
-
-      // Display tool call card
-      if (!silent) {
-        let parsedArgs: Record<string, unknown>;
-        try {
-          parsedArgs = JSON.parse(call.args);
-        } catch {
-          parsedArgs = { raw: call.args };
-        }
-        console.log(formatToolCall(call.name, parsedArgs));
-      }
-
-      // Execute the tool
-      spinner.start(`${call.name}...`);
-      const result = await registry.execute(call.name, call.args);
-      spinner.succeed(`${call.name}`);
-
-      // Fire post-tool hook
-      await fireToolPost(hooks, call.name, call.args, result, sessionCtx);
-
-      // Display tool result
-      if (!silent && result) {
-        console.log(formatToolResult(call.name, result));
-      }
-
-      messages.push({
-        role: 'tool',
-        content: result,
-        tool_call_id: call.id,
+      const stream = await client.chat.completions.create({
+        model,
+        messages: messages as Parameters<typeof client.chat.completions.create>[0]['messages'],
+        tools: registry.schemas as Parameters<typeof client.chat.completions.create>[0]['tools'],
+        tool_choice: 'auto',
+        stream: true,
       });
 
-      toolCallCount++;
-      debug(`Tool call #${toolCallCount}: ${call.name} → ${result.slice(0, 100)}`);
+      spinner.stop();
 
-      // Create checkpoint for file-modifying tools (skip for sub-agents)
-      if (!isSubAgent && effectiveConfig.git.checkpoints && (call.name === 'edit_file' || call.name === 'write_file')) {
-        try {
-          const { isGitRepo } = await import('../git/utils.js');
-          if (await isGitRepo(process.cwd())) {
-            const { createCheckpoint } = await import('../git/checkpoints.js');
-            let parsedArgs: Record<string, unknown>;
-            try {
-              parsedArgs = JSON.parse(call.args);
-            } catch {
-              parsedArgs = {};
+      // 3. Stream tokens to terminal, collect tool calls
+      statusBar?.newTurn();
+      let firstText = true;
+      const { text, toolCalls, thinkingRenderer: lastThinking } = await collectStream(stream, (chunk) => {
+        if (silent) return;
+        if (firstText) {
+          console.log(); // blank line before response
+          firstText = false;
+        }
+        process.stdout.write(chunk);
+      }, statusBar);
+
+      // Track last thinking renderer for expand/collapse toggle
+      lastThinkingRenderer = lastThinking;
+
+      if (!silent && text && !firstText) {
+        process.stdout.write('\n'); // newline after streamed text
+      }
+
+      // Print turn summary (tokens, speed, tool calls)
+      statusBar?.finalizeTurn();
+      if (!silent) statusBar?.printSummary();
+
+      // 4. No tool calls = task complete
+      if (toolCalls.length === 0) {
+        // Text was already streamed to terminal — no need to re-render
+        statusBar?.clear();
+        break;
+      }
+
+      // 5. Append assistant message with tool calls
+      messages.push({
+        role: 'assistant',
+        content: text || null,
+        tool_calls: toolCalls.map((tc) => ({
+          id: tc.id,
+          type: 'function' as const,
+          function: { name: tc.name, arguments: tc.args },
+        })),
+      });
+
+      // 6. Execute each tool call with permission checks
+      for (const call of toolCalls) {
+        const permission = resolvePermission(call.name, effectiveConfig);
+
+        if (permission === 'deny') {
+          messages.push({
+            role: 'tool',
+            content: 'Permission denied by configuration.',
+            tool_call_id: call.id,
+          });
+          if (!silent) console.log(chalk.dim(`  ✗ ${call.name} — denied`));
+          continue;
+        }
+
+        if (permission === 'ask') {
+          // Sub-agents cannot prompt users — deny silently
+          if (isSubAgent) {
+            messages.push({
+              role: 'tool',
+              content: 'Permission denied (sub-agent cannot prompt user).',
+              tool_call_id: call.id,
+            });
+            continue;
+          }
+
+          let args: Record<string, unknown>;
+          try {
+            args = JSON.parse(call.args);
+          } catch {
+            args = { raw: call.args };
+          }
+
+          const approved = await promptToolApproval(call.name, args);
+          if (!approved) {
+            messages.push({
+              role: 'tool',
+              content: 'User declined this action.',
+              tool_call_id: call.id,
+            });
+            continue;
+          }
+        }
+
+        // Fire pre-tool hook (can cancel execution)
+        const preResult = await fireToolPre(hooks, call.name, call.args, sessionCtx);
+        if (preResult.cancelled) {
+          messages.push({
+            role: 'tool',
+            content: `Tool blocked by hook: ${preResult.reason ?? 'no reason given'}`,
+            tool_call_id: call.id,
+          });
+          if (!silent) console.log(chalk.dim(`  ✗ ${call.name} — blocked by hook`));
+          continue;
+        }
+
+        // Display tool call card
+        if (!silent) {
+          let parsedArgs: Record<string, unknown>;
+          try {
+            parsedArgs = JSON.parse(call.args);
+          } catch {
+            parsedArgs = { raw: call.args };
+          }
+          console.log(formatToolCall(call.name, parsedArgs));
+        }
+
+        // Execute the tool
+        spinner.start(`${call.name}...`);
+        const result = await registry.execute(call.name, call.args);
+        spinner.succeed(`${call.name}`);
+
+        // Fire post-tool hook
+        await fireToolPost(hooks, call.name, call.args, result, sessionCtx);
+
+        // Display tool result
+        if (!silent && result) {
+          console.log(formatToolResult(call.name, result));
+        }
+
+        messages.push({
+          role: 'tool',
+          content: result,
+          tool_call_id: call.id,
+        });
+
+        toolCallCount++;
+        debug(`Tool call #${toolCallCount}: ${call.name} → ${result.slice(0, 100)}`);
+
+        // Create checkpoint for file-modifying tools (skip for sub-agents)
+        if (!isSubAgent && effectiveConfig.git.checkpoints && (call.name === 'edit_file' || call.name === 'write_file')) {
+          try {
+            const { isGitRepo } = await import('../git/utils.js');
+            if (await isGitRepo(process.cwd())) {
+              const { createCheckpoint } = await import('../git/checkpoints.js');
+              let parsedArgs: Record<string, unknown>;
+              try {
+                parsedArgs = JSON.parse(call.args);
+              } catch {
+                parsedArgs = {};
+              }
+              checkpointCount++;
+              await createCheckpoint(process.cwd(), sessionId, checkpointCount, call.name, String(parsedArgs['path'] ?? 'unknown'));
             }
-            checkpointCount++;
-            await createCheckpoint(process.cwd(), sessionId, checkpointCount, call.name, String(parsedArgs['path'] ?? 'unknown'));
+          } catch {
+            // Checkpoint creation failed — non-fatal
           }
-        } catch {
-          // Checkpoint creation failed — non-fatal
         }
+      }
+
+      // 7. Progressive circuit breaker
+      const cb = effectiveConfig.safety.circuitBreaker;
+
+      if (cb.hardStopAt > 0 && toolCallCount >= cb.hardStopAt) {
+        if (!silent) console.log(chalk.red(`\n  Hard stop: ${cb.hardStopAt} tool calls reached.`));
+        break;
+      }
+
+      if (cb.pauseAt > 0 && toolCallCount >= cb.pauseAt && toolCallCount % cb.pauseAt === 0) {
+        // In CI or non-TTY, prompting would hang forever — just stop
+        const isCIMode = !process.stdout.isTTY || process.env['CI'] === 'true';
+        if (silent || isCIMode) break;
+        console.log(chalk.yellow(`\n  Reached ${toolCallCount} tool calls. Pausing.`));
+        const { confirm } = await import('@inquirer/prompts');
+        const shouldContinue = await confirm({ message: 'Continue?' });
+        if (!shouldContinue) break;
+      }
+
+      if (cb.warnAt > 0 && toolCallCount === cb.warnAt && !silent) {
+        console.log(chalk.dim(`\n  Note: ${cb.warnAt} tool calls used (pauses at ${cb.pauseAt})`));
+      }
+    }
+  } catch (err) {
+    // Fire the error hook so lifecycle hooks can observe failures
+    const errMsg = err instanceof Error ? err.message : String(err);
+    await fireError(hooks, errMsg, sessionCtx).catch(() => {});
+    throw err; // Re-throw so callers (chat.ts, do.ts, server.ts) handle it
+  } finally {
+    // Cleanup runs whether the loop completes normally or throws
+
+    // Auto-commit if enabled and tools were used (skip for sub-agents)
+    if (!isSubAgent && effectiveConfig.git.autoCommit && toolCallCount > 0 && options?.sessionId) {
+      try {
+        const { isGitRepo, getModifiedFiles } = await import('../git/utils.js');
+        if (await isGitRepo(process.cwd())) {
+          const modifiedFiles = await getModifiedFiles(process.cwd());
+          if (modifiedFiles.length > 0) {
+            const { generateCommitMessage, commitSessionChanges } = await import('../git/commit.js');
+            const commitMsg = await generateCommitMessage(messages, client, model);
+            const committed = await commitSessionChanges(process.cwd(), modifiedFiles, commitMsg);
+            if (committed && !silent) {
+              console.log(chalk.green('✓') + chalk.dim(` Committed: ${commitMsg}`));
+            }
+            const { cleanupCheckpoints } = await import('../git/checkpoints.js');
+            await cleanupCheckpoints(process.cwd(), options.sessionId);
+          }
+        }
+      } catch {
+        // Auto-commit failed — non-fatal
       }
     }
 
-    // 7. Progressive circuit breaker
-    const cb = effectiveConfig.safety.circuitBreaker;
+    // Token usage shown by statusBar.printSummary() per turn
 
-    if (cb.hardStopAt > 0 && toolCallCount >= cb.hardStopAt) {
-      if (!silent) console.log(chalk.red(`\n  Hard stop: ${cb.hardStopAt} tool calls reached.`));
-      break;
+    await registry.close();
+
+    // Shutdown background processes (skip for sub-agents to avoid killing parent's)
+    if (!isSubAgent) {
+      await shutdownProcessManager();
     }
 
-    if (cb.pauseAt > 0 && toolCallCount >= cb.pauseAt && toolCallCount % cb.pauseAt === 0) {
-      if (silent) break;
-      console.log(chalk.yellow(`\n  Reached ${toolCallCount} tool calls. Pausing.`));
-      const { confirm } = await import('@inquirer/prompts');
-      const shouldContinue = await confirm({ message: 'Continue?' });
-      if (!shouldContinue) break;
+    // Fire session end hook
+    if (!isSubAgent) {
+      await fireSessionEnd(hooks, sessionCtx);
     }
-
-    if (cb.warnAt > 0 && toolCallCount === cb.warnAt && !silent) {
-      console.log(chalk.dim(`\n  Note: ${cb.warnAt} tool calls used (pauses at ${cb.pauseAt})`));
-    }
-  }
-
-  // Auto-commit if enabled and tools were used (skip for sub-agents)
-  if (!isSubAgent && effectiveConfig.git.autoCommit && toolCallCount > 0 && options?.sessionId) {
-    try {
-      const { isGitRepo, getModifiedFiles } = await import('../git/utils.js');
-      if (await isGitRepo(process.cwd())) {
-        const modifiedFiles = await getModifiedFiles(process.cwd());
-        if (modifiedFiles.length > 0) {
-          const { generateCommitMessage, commitSessionChanges } = await import('../git/commit.js');
-          const commitMsg = await generateCommitMessage(messages, client, model);
-          const committed = await commitSessionChanges(process.cwd(), modifiedFiles, commitMsg);
-          if (committed && !silent) {
-            console.log(chalk.green('✓') + chalk.dim(` Committed: ${commitMsg}`));
-          }
-          const { cleanupCheckpoints } = await import('../git/checkpoints.js');
-          await cleanupCheckpoints(process.cwd(), options.sessionId);
-        }
-      }
-    } catch {
-      // Auto-commit failed — non-fatal
-    }
-  }
-
-  // Token usage shown by statusBar.printSummary() per turn
-
-  await registry.close();
-
-  // Shutdown background processes
-  await shutdownProcessManager();
-
-  // Fire session end hook
-  if (!isSubAgent) {
-    await fireSessionEnd(hooks, sessionCtx);
   }
 
   return { messages, toolCallCount, lastThinkingRenderer };

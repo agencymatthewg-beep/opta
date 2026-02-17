@@ -37,9 +37,12 @@ export const OptaConfigSchema = z.object({
     })
     .default({}),
   defaultMode: z.enum(['safe', 'auto', 'plan', 'dangerous', 'ci']).default('safe'),
+  // CANONICAL source of truth for all tool permission defaults.
+  // tools.ts DEFAULT_TOOL_PERMISSIONS should be kept in sync (TODO: import from here).
   permissions: z
     .record(z.string(), ToolPermission)
     .default({
+      // File operations
       read_file: 'allow',
       list_dir: 'allow',
       search_files: 'allow',
@@ -48,21 +51,37 @@ export const OptaConfigSchema = z.object({
       write_file: 'ask',
       multi_edit: 'ask',
       delete_file: 'ask',
+      // Shell
       run_command: 'ask',
+      // User interaction
       ask_user: 'allow',
+      // Project docs
+      read_project_docs: 'allow',
+      // Web
       web_search: 'allow',
       web_fetch: 'allow',
+      // Memory
       save_memory: 'allow',
+      // Background processes
       bg_start: 'ask',
       bg_status: 'allow',
       bg_output: 'allow',
       bg_kill: 'ask',
+      // LSP
       lsp_definition: 'allow',
       lsp_references: 'allow',
       lsp_hover: 'allow',
       lsp_symbols: 'allow',
       lsp_document_symbols: 'allow',
       lsp_rename: 'ask',
+      // Sub-agents
+      spawn_agent: 'ask',
+      delegate_task: 'ask',
+      // Git
+      git_status: 'allow',
+      git_diff: 'allow',
+      git_log: 'allow',
+      git_commit: 'ask',
     }),
   safety: z
     .object({

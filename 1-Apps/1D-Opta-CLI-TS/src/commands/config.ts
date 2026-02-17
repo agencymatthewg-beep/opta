@@ -1,15 +1,20 @@
 import chalk from 'chalk';
-import { loadConfig, getConfigStore } from '../core/config.js';
-import { EXIT } from '../core/errors.js';
+import { loadConfig, getConfigStore, OptaConfigSchema } from '../core/config.js';
+import { EXIT, OptaError } from '../core/errors.js';
+
+interface ConfigOptions {
+  json?: boolean;
+}
 
 export async function config(
   action?: string,
   key?: string,
-  value?: string
+  value?: string,
+  opts?: ConfigOptions
 ): Promise<void> {
   // Default: list
   if (!action || action === 'list') {
-    await listConfig();
+    await listConfig(opts);
     return;
   }
 
@@ -35,8 +40,14 @@ export async function config(
 
 // --- List ---
 
-async function listConfig(): Promise<void> {
+async function listConfig(opts?: ConfigOptions): Promise<void> {
   const cfg = await loadConfig();
+
+  if (opts?.json) {
+    console.log(JSON.stringify(cfg, null, 2));
+    return;
+  }
+
   const flat = flattenObject(cfg);
 
   for (const [key, val] of Object.entries(flat)) {
@@ -90,6 +101,20 @@ async function setConfig(key?: string, value?: string): Promise<void> {
   else if (/^\d+\.\d+$/.test(value)) parsed = parseFloat(value);
 
   store.set(key, parsed);
+
+  // Validate the full merged config against the Zod schema
+  try {
+    const fullConfig = store.store;
+    OptaConfigSchema.parse(fullConfig);
+  } catch (e) {
+    // Revert the change — the value is invalid
+    store.delete(key);
+    throw new OptaError(
+      `Invalid value for "${key}": ${e instanceof Error ? e.message : String(e)}`,
+      EXIT.MISUSE,
+    );
+  }
+
   console.log(chalk.green('✓') + ` Set ${chalk.cyan(key)} = ${String(parsed)}`);
 }
 

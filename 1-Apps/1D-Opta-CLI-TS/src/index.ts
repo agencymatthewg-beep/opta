@@ -7,15 +7,31 @@ import { EXIT } from './core/errors.js';
 import { setVerbose, setDebug } from './core/debug.js';
 
 // --- SIGINT handler ---
-let isShuttingDown = false;
+export let isShuttingDown = false;
+
+async function cleanup(): Promise<void> {
+  try {
+    const { shutdownProcessManager, forceKillAllProcesses } = await import('./core/tools.js');
+    forceKillAllProcesses();
+    await shutdownProcessManager();
+  } catch {
+    // Best effort cleanup
+  }
+}
+
 process.on('SIGINT', () => {
-  if (isShuttingDown) process.exit(EXIT.SIGINT);
+  if (isShuttingDown) process.exit(EXIT.SIGINT); // Second SIGINT = force kill
   isShuttingDown = true;
   console.log('\n' + chalk.dim('Interrupted.'));
-  // Force-kill background processes, then exit
-  import('./core/tools.js').then(({ forceKillAllProcesses }) => {
-    forceKillAllProcesses();
-  }).catch(() => {}).finally(() => {
+
+  // Grace timeout: force exit after 3 seconds if cleanup hangs
+  const graceTimer = setTimeout(() => {
+    process.exit(EXIT.SIGINT);
+  }, 3000);
+  graceTimer.unref(); // Don't keep process alive just for this timer
+
+  cleanup().finally(() => {
+    clearTimeout(graceTimer);
     process.exit(EXIT.SIGINT);
   });
 });
@@ -39,6 +55,14 @@ program.action(() => {
   program.outputHelp();
 });
 
+program.addHelpText('after', `
+Examples:
+  $ opta chat                    Start interactive session
+  $ opta do "fix the auth bug"   One-shot task
+  $ opta status                  Check connection
+  $ opta models                  List available models
+`);
+
 // --- Commands (lazy loaded) ---
 
 program
@@ -54,6 +78,13 @@ program
   .option('--dangerous', 'bypass all permission prompts')
   .option('--yolo', 'alias for --dangerous')
   .option('--tui', 'use full-screen terminal UI')
+  .addHelpText('after', `
+Examples:
+  $ opta chat                    New session
+  $ opta chat --resume abc123    Resume session
+  $ opta chat --model qwen2.5    Use specific model
+  $ opta chat --tui              Full-screen mode
+`)
   .action(async (opts) => {
     const { startChat } = await import('./commands/chat.js');
     await startChat(opts);
@@ -71,6 +102,12 @@ program
   .option('-a, --auto', 'auto-accept file edits without prompting')
   .option('--dangerous', 'bypass all permission prompts')
   .option('--yolo', 'alias for --dangerous')
+  .addHelpText('after', `
+Examples:
+  $ opta do "refactor auth module"
+  $ opta do "fix bug in utils.ts" --model qwen2.5
+  $ opta do "run tests" --format json
+`)
   .action(async (task: string[], opts) => {
     const { executeTask } = await import('./commands/do.js');
     await executeTask(task, opts);
@@ -102,9 +139,10 @@ program
   .argument('[action]', 'get | set | list | reset')
   .argument('[key]', 'config key')
   .argument('[value]', 'config value')
-  .action(async (action, key, value) => {
+  .option('--json', 'output as JSON')
+  .action(async (action, key, value, opts) => {
     const { config } = await import('./commands/config.js');
-    await config(action, key, value);
+    await config(action, key, value, opts);
   });
 
 program

@@ -34,6 +34,7 @@ export class LspClient {
   private openDocs = new Set<string>();
   private docVersions = new Map<string, number>();
   private buffer = Buffer.alloc(0);
+  private readonly MAX_BUFFER_SIZE = 64 * 1024 * 1024; // 64MB
   private initialized = false;
 
   constructor(private opts: LspClientOptions) {}
@@ -306,6 +307,16 @@ export class LspClient {
 
   private handleData(data: Buffer): void {
     this.buffer = Buffer.concat([this.buffer, data]);
+
+    // Guard against unbounded buffer growth from a misbehaving LSP server
+    if (this.buffer.length > this.MAX_BUFFER_SIZE) {
+      this.buffer = Buffer.alloc(0);
+      for (const [, pending] of this.pending) {
+        pending.reject(new Error('LSP buffer overflow — server sent too much data'));
+      }
+      this.pending.clear();
+      return;
+    }
 
     while (true) {
       // Parse Content-Length header

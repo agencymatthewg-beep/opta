@@ -216,6 +216,9 @@ export async function spawnSubAgent(
   const previousContext = registry.parentContext;
   registry.parentContext = parentContext;
 
+  // AbortController for cancelling inflight LLM requests on timeout
+  const abortController = new AbortController();
+
   const runLoop = async (): Promise<SubAgentResult> => {
     while (true) {
       // Check budget before each LLM call
@@ -242,7 +245,7 @@ export async function spawnSubAgent(
           ? toolSchemas as Parameters<typeof client.chat.completions.create>[0]['tools']
           : undefined,
         tool_choice: toolSchemas.length > 0 ? 'auto' : undefined,
-      });
+      }, { signal: abortController.signal });
 
       const choice = response.choices[0];
       if (!choice) {
@@ -350,12 +353,16 @@ export async function spawnSubAgent(
   };
 
   // Wrap with timeout, always restore registry context
+  let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
   try {
     const result = await Promise.race([
       runLoop(),
-      new Promise<SubAgentResult>((_, reject) =>
-        setTimeout(() => reject(new Error('TIMEOUT')), budget.timeoutMs)
-      ),
+      new Promise<SubAgentResult>((_, reject) => {
+        timeoutHandle = setTimeout(() => {
+          abortController.abort(); // Cancel inflight LLM request
+          reject(new Error('TIMEOUT'));
+        }, budget.timeoutMs);
+      }),
     ]);
     return result;
   } catch (err) {
@@ -383,6 +390,7 @@ export async function spawnSubAgent(
       durationMs: Date.now() - startTime,
     };
   } finally {
+    if (timeoutHandle !== undefined) clearTimeout(timeoutHandle);
     registry.parentContext = previousContext;
   }
 }
