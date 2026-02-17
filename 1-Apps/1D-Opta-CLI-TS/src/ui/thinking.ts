@@ -1,0 +1,128 @@
+import chalk from 'chalk';
+import { isTTY } from './output.js';
+
+/**
+ * ThinkingRenderer — displays model thinking/reasoning in a distinct dim block.
+ *
+ * Handles two patterns:
+ * 1. `<think>...</think>` — explicit tags (non-streaming or some models)
+ * 2. No opening tag, but `</think>` appears — everything before it was thinking
+ *    (MiniMax M2.5 streaming behavior)
+ *
+ * Approach: Buffer ALL content until we see `</think>` or enough non-thinking
+ * content to know thinking is over. This avoids showing thinking as normal text
+ * then trying to retract it.
+ */
+export class ThinkingRenderer {
+  private buffer = '';
+  private thinkingDone = false;
+  private thinkText = '';
+  private headerPrinted = false;
+  private thinkingDisplayed = false;
+
+  /**
+   * Process a streaming chunk. Returns visible (non-thinking) content.
+   */
+  process(chunk: string): string {
+    // Once thinking is done, pass through everything
+    if (this.thinkingDone) {
+      return this.cleanOutput(chunk);
+    }
+
+    this.buffer += chunk;
+
+    // Check for </think> in the accumulated buffer
+    const endIdx = this.buffer.indexOf('</think>');
+    if (endIdx !== -1) {
+      // Everything before </think> is thinking
+      let thinkContent = this.buffer.slice(0, endIdx);
+      // Strip opening <think> tag if present
+      if (thinkContent.startsWith('<think>')) {
+        thinkContent = thinkContent.slice(7);
+      }
+      this.thinkText = thinkContent;
+      this.displayThinking(thinkContent);
+      this.thinkingDone = true;
+
+      // Everything after </think> is real content
+      const after = this.buffer.slice(endIdx + 8);
+      this.buffer = '';
+      return this.cleanOutput(after);
+    }
+
+    // Haven't seen </think> yet. If buffer is getting large (>2000 chars)
+    // and no </think>, this model probably doesn't use thinking tags.
+    // Release the buffer as normal content.
+    if (this.buffer.length > 2000) {
+      this.thinkingDone = true;
+      const content = this.buffer;
+      this.buffer = '';
+      return this.cleanOutput(content);
+    }
+
+    // Still buffering — show thinking indicator if we have content
+    if (this.buffer.length > 20 && !this.headerPrinted && isTTY) {
+      process.stdout.write(chalk.dim('\n  ⚙ thinking...\n'));
+      this.headerPrinted = true;
+    }
+    if (this.headerPrinted && isTTY) {
+      // Show latest thinking text dim
+      const newContent = chunk.replace(/\n/g, '\n' + chalk.dim('    '));
+      process.stdout.write(chalk.dim('    ' + newContent));
+      this.thinkingDisplayed = true;
+    }
+
+    return ''; // Buffer everything until we know
+  }
+
+  /** Flush at end of stream. */
+  flush(): string {
+    if (this.thinkingDone) {
+      return this.cleanOutput(this.buffer);
+    }
+    // Stream ended without </think> — this wasn't thinking, release as content
+    const content = this.buffer;
+    this.buffer = '';
+    this.thinkingDone = true;
+    return this.cleanOutput(content);
+  }
+
+  get isThinking(): boolean {
+    return !this.thinkingDone;
+  }
+
+  private displayThinking(text: string): void {
+    if (!isTTY) return;
+
+    const tokens = Math.ceil(text.length / 4);
+
+    if (this.thinkingDisplayed) {
+      // We already showed streaming thinking text — now collapse it
+      // Clear the thinking lines and replace with summary
+      const lines = (text.match(/\n/g) || []).length + 2; // header + content lines
+      for (let i = 0; i < lines; i++) {
+        process.stdout.write('\x1b[A\x1b[2K'); // move up, clear line
+      }
+    }
+    process.stdout.write(chalk.dim(`  ⚙ thinking (${tokens} tokens)\n\n`));
+  }
+
+  /** Clean output text of any residual tags. */
+  private cleanOutput(text: string): string {
+    return text
+      .replace(/<\/?think>/g, '')
+      .replace(/<minimax:tool_call>[\s\S]*?<\/minimax:tool_call>/g, '')
+      .replace(/<minimax:tool_call>[\s\S]*/g, ''); // unclosed tool_call at end
+  }
+}
+
+/**
+ * Strip thinking and tool call XML from text (for message history).
+ */
+export function stripThinkTags(text: string): string {
+  return text
+    .replace(/<think>[\s\S]*?<\/think>/g, '')
+    .replace(/<minimax:tool_call>[\s\S]*?<\/minimax:tool_call>/g, '')
+    .replace(/[\s\S]*<\/think>/g, '') // Handle no opening tag case
+    .trim();
+}

@@ -19,6 +19,13 @@ async function getRenderer(): Promise<(md: string) => string> {
 }
 
 export async function renderMarkdown(text: string): Promise<void> {
-  const render = await getRenderer();
-  process.stdout.write(render(text));
+  if (!text?.trim()) return;
+  try {
+    const render = await getRenderer();
+    const result = render(text);
+    if (result) process.stdout.write(result);
+  } catch {
+    // Fallback: just print the raw text if markdown rendering fails
+    process.stdout.write(text);
+  }
 }

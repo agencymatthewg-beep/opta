@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import { loadConfig } from '../core/config.js';
-import { agentLoop, buildSystemPrompt } from '../core/agent.js';
+import { agentLoop, buildSystemPrompt, estimateTokens } from '../core/agent.js';
 import type { AgentMessage } from '../core/agent.js';
 import { formatError, OptaError, EXIT } from '../core/errors.js';
 import {
@@ -9,6 +9,8 @@ import {
   saveSession,
   generateTitle,
 } from '../memory/store.js';
+import { resolveFileRefs, buildContextWithRefs } from '../core/fileref.js';
+import { box, kv, statusDot, fmtTokens, progressBar } from '../ui/box.js';
 import type { Session } from '../memory/store.js';
 
 interface ChatOptions {
@@ -69,15 +71,14 @@ export async function startChat(opts: ChatOptions): Promise<void> {
     try {
       session = await loadSession(opts.resume);
       if (!jsonMode) {
-        console.log(
-          chalk.dim(
-            `opta · ${session.model} · ${config.connection.host}:${config.connection.port}`
-          )
-        );
-        console.log(chalk.dim(`Session: ${session.id} (resumed)`));
-        if (session.title) {
-          console.log(chalk.dim(`  "${session.title}"`));
-        }
+        const msgCount = session.messages.filter(m => m.role !== 'system').length;
+        console.log('\n' + box('Opta', [
+          kv('LMX', `${config.connection.host}:${config.connection.port} ${statusDot(true)}`),
+          kv('Model', session.model),
+          kv('Session', `${session.id.slice(0, 8)} ${chalk.dim('(resumed)')}`),
+          ...(session.title ? [kv('Title', chalk.italic(session.title.slice(0, 40)))] : []),
+          kv('Messages', String(msgCount)),
+        ]));
       }
     } catch {
       console.error(
@@ -94,19 +95,16 @@ export async function startChat(opts: ChatOptions): Promise<void> {
     await saveSession(session);
 
     if (!jsonMode) {
-      console.log(
-        chalk.dim(
-          `opta · ${config.model.default} · ${config.connection.host}:${config.connection.port}`
-        )
-      );
-      console.log(chalk.dim(`Session: ${session.id} (new)`));
+      console.log('\n' + box('Opta', [
+        kv('LMX', `${config.connection.host}:${config.connection.port} ${statusDot(true)}`),
+        kv('Model', config.model.default),
+        kv('Session', `${session.id.slice(0, 8)} ${chalk.dim('(new)')}`),
+      ]));
     }
   }
 
   if (!jsonMode) {
-    console.log(
-      chalk.dim('Type /help for commands, /exit to quit\n')
-    );
+    console.log(chalk.dim('  Type /help for commands, / to browse, /exit to quit\n'));
   }
 
   // Mode state
@@ -117,9 +115,9 @@ export async function startChat(opts: ChatOptions): Promise<void> {
 
   function getPromptMessage(): string {
     switch (chatState.currentMode) {
-      case 'plan': return chalk.magenta('[PLAN]') + ' ' + chalk.cyan('you:');
-      case 'auto-accept': return chalk.yellow('[AUTO]') + ' ' + chalk.cyan('you:');
-      default: return chalk.cyan('you:');
+      case 'plan': return chalk.magenta('plan') + chalk.dim(' ›');
+      case 'auto-accept': return chalk.yellow('auto') + chalk.dim(' ›');
+      default: return chalk.cyan('›');
     }
   }
 
@@ -133,7 +131,12 @@ export async function startChat(opts: ChatOptions): Promise<void> {
     } catch {
       // Ctrl+C or EOF
       await saveSession(session);
-      if (!jsonMode) console.log(chalk.dim(`\nSession saved: ${session.id}`));
+      if (!jsonMode) {
+        const msgCount = session.messages.filter(m => m.role !== 'system').length;
+        console.log(
+          '\n' + chalk.green('✓') + chalk.dim(` Session saved: ${session.id.slice(0, 8)} · ${msgCount} msgs`)
+        );
+      }
       break;
     }
 
@@ -145,9 +148,11 @@ export async function startChat(opts: ChatOptions): Promise<void> {
       if (handled === 'exit') {
         await saveSession(session);
         if (!jsonMode) {
+          const msgCount = session.messages.filter(m => m.role !== 'system').length;
           console.log(
-            chalk.dim(`Session saved: ${session.id}`) +
-              (session.title ? chalk.dim(` "${session.title}"`) : '')
+            chalk.green('✓') + chalk.dim(` Session saved: ${session.id.slice(0, 8)}`) +
+            (session.title ? chalk.dim(` "${session.title}"`) : '') +
+            chalk.dim(` · ${msgCount} msgs`)
           );
         }
         break;
@@ -159,13 +164,17 @@ export async function startChat(opts: ChatOptions): Promise<void> {
       continue;
     }
 
+    // Resolve @file references
+    const { refs } = await resolveFileRefs(userInput);
+    const enrichedInput = buildContextWithRefs(userInput, refs);
+
     // Set title from first user message
     if (!session.title) {
       session.title = generateTitle(userInput);
     }
 
     try {
-      const result = await agentLoop(userInput, config, {
+      const result = await agentLoop(enrichedInput, config, {
         existingMessages: session.messages,
         sessionId: session.id,
         silent: jsonMode,
@@ -217,20 +226,33 @@ async function handleSlashCommand(
 
     case '/help':
     case '/h':
-    case '/?':
-      console.log('\n' + chalk.bold('Commands:'));
-      console.log('  /exit         Save and exit');
-      console.log('  /model <name> Switch model');
-      console.log('  /history      Show conversation summary');
-      console.log('  /compact      Force context compaction');
-      console.log('  /clear        Clear screen');
-      console.log('  /plan         Toggle plan mode (read-only)');
-      console.log('  /image <path>  Analyze an image file');
-      console.log('  /help         Show this help');
-      console.log('  /undo [n]     Reverse last checkpoint (or specific #n)');
-      console.log('  /undo list    Show all checkpoints');
-      console.log();
+    case '/?': {
+      const cmdLine = (cmd: string, desc: string) =>
+        chalk.cyan(cmd.padEnd(16)) + chalk.dim(desc);
+      console.log('\n' + box('Commands', [
+        chalk.dim('Session'),
+        cmdLine('/exit', 'Save and exit'),
+        cmdLine('/model <name>', 'Switch model'),
+        cmdLine('/plan', 'Toggle plan mode'),
+        cmdLine('/sessions', 'List recent sessions'),
+        cmdLine('/share', 'Export conversation'),
+        '',
+        chalk.dim('Tools'),
+        cmdLine('/undo [n]', 'Reverse last checkpoint'),
+        cmdLine('/compact', 'Force context compaction'),
+        cmdLine('/image <path>', 'Analyze an image'),
+        cmdLine('/init', 'Generate project context'),
+        '',
+        chalk.dim('Info'),
+        cmdLine('/history', 'Conversation summary'),
+        cmdLine('/status', 'System & LMX status'),
+        cmdLine('/diff', 'Uncommitted changes'),
+        cmdLine('/cost', 'Token usage breakdown'),
+        cmdLine('/clear', 'Clear screen'),
+      ]));
+      console.log(chalk.dim('  Tip: type / to browse commands interactively\n'));
       return 'handled';
+    }
 
     case '/model':
       if (!arg) {
@@ -332,6 +354,150 @@ async function handleSlashCommand(
       return 'handled';
     }
 
+    case '/status': {
+      try {
+        const res = await fetch(`http://${config.connection.host}:${config.connection.port}/admin/status`);
+        const data = await res.json() as Record<string, unknown>;
+        const model = (data.models as string[] | undefined)?.[0];
+        const memory = data.memory as { used_gb?: number; total_gb?: number; usage_percent?: number } | undefined;
+        const tokens = estimateTokens(session.messages);
+        const uptimeSec = data.uptime_seconds as number | undefined;
+
+        const lines: string[] = [
+          kv('LMX', `${config.connection.host}:${config.connection.port} ${statusDot(true)}`),
+        ];
+        if (model) lines.push(kv('Model', model));
+        if (memory) {
+          const memBar = progressBar((memory.usage_percent ?? 0) / 100, 16);
+          lines.push(kv('Memory', `${memory.used_gb?.toFixed(0)}/${memory.total_gb?.toFixed(0)} GB ${memBar}`));
+        }
+        lines.push(kv('Session', `${session.id.slice(0, 8)} (${session.messages.length} messages)`));
+        lines.push(kv('Tokens', `~${fmtTokens(tokens)}`));
+        if (uptimeSec !== undefined) lines.push(kv('Uptime', `${Math.floor(uptimeSec / 60)}m`));
+
+        console.log('\n' + box('Status', lines));
+      } catch {
+        console.log(chalk.red('\n  ● LMX unreachable') + chalk.dim(` — ${config.connection.host}:${config.connection.port}`));
+      }
+      return 'handled';
+    }
+
+    case '/diff': {
+      try {
+        const { execFileSync } = await import('node:child_process');
+        const diff = execFileSync('git', ['diff', '--stat'], { encoding: 'utf-8', cwd: process.cwd() });
+        if (!diff.trim()) {
+          console.log(chalk.dim('  No uncommitted changes'));
+        } else {
+          const diffLines = diff.trim().split('\n');
+          const summary = diffLines[diffLines.length - 1] ?? '';
+          const fileLines = diffLines.slice(0, -1).map(l => ' ' + l.trim());
+          console.log('\n' + box('Changes', [...fileLines, '', chalk.dim(summary.trim())]));
+        }
+      } catch {
+        console.log(chalk.dim('  Not a git repository'));
+      }
+      return 'handled';
+    }
+
+    case '/cost': {
+      const msgs = session.messages;
+      let promptTok = 0;
+      let completionTok = 0;
+      for (const m of msgs) {
+        const len = typeof m.content === 'string' ? m.content.length : 0;
+        const tok = Math.ceil(len / 4);
+        if (m.role === 'assistant') completionTok += tok;
+        else promptTok += tok;
+      }
+      const total = promptTok + completionTok;
+      const contextLimit = config.model.contextLimit ?? 128000;
+      const usageRatio = total / contextLimit;
+
+      console.log('\n' + box('Token Usage', [
+        kv('Prompt', `~${fmtTokens(promptTok)} tokens`),
+        kv('Completion', `~${fmtTokens(completionTok)} tokens`),
+        kv('Total', `~${fmtTokens(total)} tokens`),
+        kv('Context', `${progressBar(usageRatio, 16)} ${chalk.dim(`${fmtTokens(total)}/${fmtTokens(contextLimit)}`)}`),
+        '',
+        kv('Messages', String(msgs.length)),
+        kv('Tool calls', String(session.toolCallCount)),
+        kv('Cost', chalk.green('$0.00') + chalk.dim(' (local inference)')),
+      ]));
+      return 'handled';
+    }
+
+    case '/share': {
+      const { writeFile } = await import('node:fs/promises');
+      const { join } = await import('node:path');
+      const filename = `opta-session-${session.id.slice(0, 8)}-${Date.now()}.md`;
+      const filepath = join(process.cwd(), filename);
+
+      let md = `# Opta CLI Session\n\n`;
+      md += `- **Session:** ${session.id}\n`;
+      md += `- **Model:** ${session.model}\n`;
+      md += `- **Date:** ${new Date().toISOString()}\n\n---\n\n`;
+
+      for (const m of session.messages) {
+        if (m.role === 'system') continue;
+        const content = typeof m.content === 'string' ? m.content : '[multimodal]';
+        if (m.role === 'user') {
+          md += `## User\n\n${content}\n\n`;
+        } else if (m.role === 'assistant') {
+          md += `## Assistant\n\n${content}\n\n`;
+        }
+      }
+
+      await writeFile(filepath, md, 'utf-8');
+      console.log(chalk.green('✓') + ` Exported to ${chalk.cyan(filename)}`);
+      return 'handled';
+    }
+
+    case '/sessions': {
+      const { listSessions } = await import('../memory/store.js');
+      const allSessions = await listSessions();
+      if (allSessions.length === 0) {
+        console.log(chalk.dim('  No saved sessions'));
+        return 'handled';
+      }
+      const items = allSessions.slice(0, 10);
+      const lines: string[] = [];
+      for (let i = 0; i < items.length; i++) {
+        const s = items[i]!;
+        const isLast = i === items.length - 1;
+        const isCurrent = s.id === session.id;
+        const prefix = isLast ? '└─' : '├─';
+        const id = isCurrent ? chalk.green(s.id.slice(0, 8)) : chalk.cyan(s.id.slice(0, 8));
+        const title = (s.title || 'Untitled').slice(0, 35);
+        const meta = chalk.dim(`${s.messageCount} msgs · ${new Date(s.created).toLocaleDateString()}`);
+        const tag = isCurrent ? chalk.green(' ◀') : '';
+        lines.push(`${chalk.dim(prefix)} ${id}  ${title}  ${meta}${tag}`);
+      }
+      console.log('\n' + box('Recent Sessions', lines));
+      console.log(chalk.dim('  Resume: opta chat -r <id>\n'));
+      return 'handled';
+    }
+
+    case '/init': {
+      const { access } = await import('node:fs/promises');
+      const { join } = await import('node:path');
+      const contextFile = join(process.cwd(), 'OPTA.md');
+
+      try {
+        await access(contextFile);
+        console.log(chalk.yellow('  OPTA.md already exists. Delete it first to regenerate.'));
+        return 'handled';
+      } catch { /* doesn't exist, good */ }
+
+      console.log(chalk.dim('  Analyzing project...'));
+      session.messages.push({
+        role: 'user',
+        content: 'Analyze this project and generate an OPTA.md project context file. Include: project name, tech stack, architecture overview, key files, coding conventions, and any important notes for an AI assistant working on this codebase. Write it as a markdown file.',
+      });
+      console.log(chalk.dim('  Ask me to generate the OPTA.md file and I\'ll analyze the project.'));
+      return 'handled';
+    }
+
     case '/image': {
       if (!arg) {
         console.log(chalk.dim('  Usage: /image <path> [question]'));
@@ -371,6 +537,35 @@ async function handleSlashCommand(
         console.error(chalk.red('✗') + ` Failed to read image: ${err instanceof Error ? err.message : err}`);
       }
       return 'handled';
+    }
+
+    case '/': {
+      const { select, Separator } = await import('@inquirer/prompts');
+      const commands = [
+        { name: '/status       System & LMX status', value: '/status' },
+        { name: '/cost         Token usage breakdown', value: '/cost' },
+        { name: '/diff         Uncommitted changes', value: '/diff' },
+        { name: '/history      Conversation summary', value: '/history' },
+        new Separator(chalk.dim('──── Session ────')),
+        { name: '/model        Switch model', value: '/model' },
+        { name: '/sessions     List recent sessions', value: '/sessions' },
+        { name: '/share        Export conversation', value: '/share' },
+        { name: '/plan         Toggle plan mode', value: '/plan' },
+        new Separator(chalk.dim('──── Tools ────')),
+        { name: '/undo         Reverse last checkpoint', value: '/undo' },
+        { name: '/compact      Force compaction', value: '/compact' },
+        { name: '/image        Analyze an image', value: '/image' },
+        { name: '/init         Generate project context', value: '/init' },
+        new Separator(chalk.dim('────────────────')),
+        { name: '/clear        Clear screen', value: '/clear' },
+        { name: '/exit         Save and exit', value: '/exit' },
+      ];
+      try {
+        const selected = await select({ message: chalk.dim('›'), choices: commands });
+        return handleSlashCommand(selected, session, config, state);
+      } catch {
+        return 'handled';
+      }
     }
 
     default:

@@ -5,6 +5,8 @@ import { debug } from './debug.js';
 import { maskOldObservations, COMPACTION_PROMPT } from './context.js';
 import { createSpinner } from '../ui/spinner.js';
 import { renderMarkdown } from '../ui/markdown.js';
+import { ThinkingRenderer, stripThinkTags } from '../ui/thinking.js';
+import { StatusBar } from '../ui/statusbar.js';
 import type { SubAgentContext } from './subagent.js';
 import {
   createHookManager,
@@ -130,7 +132,7 @@ When your plan is complete, say: "Plan complete. Ready to implement?"`;
 
 // --- Token Estimation ---
 
-function estimateTokens(messages: AgentMessage[]): number {
+export function estimateTokens(messages: AgentMessage[]): number {
   return messages.reduce((sum, m) => {
     let contentLen = 0;
     if (typeof m.content === 'string') {
@@ -205,10 +207,12 @@ async function compactHistory(
 
 async function collectStream(
   stream: AsyncIterable<import('openai').default.Chat.Completions.ChatCompletionChunk>,
-  onText: (text: string) => void
+  onText: (text: string) => void,
+  statusBar?: StatusBar | null
 ): Promise<{ text: string; toolCalls: ToolCallAccum[] }> {
   let text = '';
   const toolCallMap = new Map<number, ToolCallAccum>();
+  const thinking = new ThinkingRenderer();
 
   for await (const chunk of stream) {
     const delta = chunk.choices[0]?.delta;
@@ -216,14 +220,23 @@ async function collectStream(
 
     if (delta.content) {
       text += delta.content;
-      onText(delta.content);
+      statusBar?.markStart();
+
+      // ThinkingRenderer handles <think> display and returns non-thinking content
+      const visible = thinking.process(delta.content);
+      if (visible) onText(visible);
+
+      // Update status bar with token estimate
+      const tokenDelta = Math.ceil(delta.content.length / 4);
+      statusBar?.update(tokenDelta);
     }
 
     if (delta.tool_calls) {
       for (const tc of delta.tool_calls) {
-        const existing = toolCallMap.get(tc.index);
+        const idx = tc.index ?? 0;
+        const existing = toolCallMap.get(idx);
         if (!existing) {
-          toolCallMap.set(tc.index, {
+          toolCallMap.set(idx, {
             id: tc.id ?? '',
             name: tc.function?.name ?? '',
             args: tc.function?.arguments ?? '',
@@ -236,6 +249,13 @@ async function collectStream(
       }
     }
   }
+
+  // Flush any remaining buffered text from thinking renderer
+  const remaining = thinking.flush();
+  if (remaining) onText(remaining);
+
+  // Strip <think> tags from the full collected text (for message history)
+  text = stripThinkTags(text);
 
   return {
     text,
@@ -340,6 +360,12 @@ export async function agentLoop(
   const silent = isSubAgent || (options?.silent ?? false);
   const spinner = silent ? { start: () => {}, stop: () => {}, succeed: () => {} } : await createSpinner();
   const sessionId = options?.sessionId ?? 'unknown';
+
+  // Status bar for real-time stats
+  const statusBar = silent ? null : new StatusBar({
+    model,
+    sessionId,
+  });
   let checkpointCount = 0;
 
   // Initialize background process manager
@@ -394,6 +420,7 @@ export async function agentLoop(
     spinner.stop();
 
     // 3. Stream tokens to terminal, collect tool calls
+    statusBar?.newTurn();
     let firstText = true;
     const { text, toolCalls } = await collectStream(stream, (chunk) => {
       if (silent) return;
@@ -402,17 +429,20 @@ export async function agentLoop(
         firstText = false;
       }
       process.stdout.write(chunk);
-    });
+    }, statusBar);
 
     if (!silent && text && !firstText) {
       process.stdout.write('\n'); // newline after streamed text
     }
 
+    // Print turn summary (tokens, speed, tool calls)
+    statusBar?.finalizeTurn();
+    if (!silent) statusBar?.printSummary();
+
     // 4. No tool calls = task complete
     if (toolCalls.length === 0) {
-      if (!silent && text) {
-        await renderMarkdown(text);
-      }
+      // Text was already streamed to terminal — no need to re-render
+      statusBar?.clear();
       break;
     }
 
@@ -563,13 +593,7 @@ export async function agentLoop(
     }
   }
 
-  // Show token usage
-  if (!silent) {
-    const finalTokens = estimateTokens(messages);
-    console.log(
-      chalk.dim(`\n  ~${(finalTokens / 1000).toFixed(1)}K tokens · ${toolCallCount} tool calls`)
-    );
-  }
+  // Token usage shown by statusBar.printSummary() per turn
 
   await registry.close();
 
