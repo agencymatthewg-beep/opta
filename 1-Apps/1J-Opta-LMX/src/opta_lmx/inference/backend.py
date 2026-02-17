@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import AsyncIterator
-from typing import Protocol
+from typing import Any, Protocol
 
 
 class InferenceBackend(Protocol):
@@ -16,12 +16,12 @@ class InferenceBackend(Protocol):
 
     async def generate(
         self,
-        messages: list[dict],
+        messages: list[dict[str, Any]],
         temperature: float,
         max_tokens: int,
         top_p: float,
         stop: list[str] | None,
-        tools: list[dict] | None,
+        tools: list[dict[str, Any]] | None,
     ) -> tuple[str, int, int]:
         """Non-streaming generation.
 
@@ -40,12 +40,12 @@ class InferenceBackend(Protocol):
 
     async def stream(
         self,
-        messages: list[dict],
+        messages: list[dict[str, Any]],
         temperature: float,
         max_tokens: int,
         top_p: float,
         stop: list[str] | None,
-        tools: list[dict] | None,
+        tools: list[dict[str, Any]] | None,
     ) -> AsyncIterator[str]:
         """Streaming generation — yields token strings.
 

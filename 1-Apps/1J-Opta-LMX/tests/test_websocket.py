@@ -5,7 +5,6 @@ from __future__ import annotations
 from unittest.mock import MagicMock
 
 import pytest
-from httpx import ASGITransport, AsyncClient
 
 from opta_lmx.config import LMXConfig, RoutingConfig
 from opta_lmx.inference.engine import InferenceEngine
@@ -53,7 +52,7 @@ async def test_ws_connect_and_disconnect(ws_app) -> None:
     from starlette.testclient import TestClient
 
     client = TestClient(ws_app)
-    with client.websocket_connect("/v1/chat/stream") as ws:
+    with client.websocket_connect("/v1/chat/stream") as _ws:
         pass  # Just connect and disconnect
 
 

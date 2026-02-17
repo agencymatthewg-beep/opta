@@ -58,3 +58,14 @@ select = ["E", "F", "I", "N", "W", "UP", "B", "SIM", "RUF", "ASYNC", "T20"]
 [tool.mypy]
 python_version = "3.12"
 strict = true
+
+[[tool.mypy.overrides]]
+module = [
+    "llama_cpp",
+    "llama_cpp.*",
+    "vllm_mlx",
+    "vllm_mlx.*",
+    "huggingface_hub",
+    "huggingface_hub.*",
+]
+ignore_missing_imports = true

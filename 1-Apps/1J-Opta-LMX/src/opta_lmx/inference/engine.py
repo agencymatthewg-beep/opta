@@ -5,8 +5,8 @@ from __future__ import annotations
 import asyncio
 import gc
 import logging
+import secrets
 import time
-import uuid
 from collections.abc import AsyncIterator
 from typing import Any
 
@@ -22,6 +22,8 @@ from opta_lmx.manager.memory import MemoryMonitor
 from opta_lmx.monitoring.events import EventBus, ServerEvent
 
 logger = logging.getLogger(__name__)
+
+_SENTINEL = object()  # Sentinel for sync-to-async iterator conversion
 
 
 def _detect_format(model_id: str) -> str:
@@ -56,7 +58,7 @@ class InferenceEngine:
         auto_evict_lru: bool = True,
         gguf_context_length: int = 4096,
         gguf_gpu_layers: int = -1,
-        event_bus: Any = None,
+        event_bus: EventBus | None = None,
     ) -> None:
         self._models: dict[str, LoadedModel] = {}
         self._memory = memory_monitor
@@ -66,6 +68,7 @@ class InferenceEngine:
         self._gguf_gpu_layers = gguf_gpu_layers
         self._event_bus = event_bus
         self._load_lock = asyncio.Lock()
+        self._loading_models: set[str] = set()  # Models currently being loaded
 
     async def load_model(self, model_id: str, use_batching: bool | None = None) -> ModelInfo:
         """Load an MLX model into memory via vllm-mlx.
@@ -96,6 +99,13 @@ class InferenceEngine:
                     loaded_at=existing.loaded_at,
                 )
 
+            # Already being loaded by another concurrent call?
+            if model_id in self._loading_models:
+                raise RuntimeError(
+                    f"Model '{model_id}' is already being loaded by another request"
+                )
+            self._loading_models.add(model_id)
+
             # NOTE: Memory check is best-effort due to TOCTOU — other processes may
             # consume memory between this check and the actual model load. The post-load
             # verification (below) catches this case and triggers eviction if needed.
@@ -114,12 +124,20 @@ class InferenceEngine:
                         current_usage = self._memory.usage_percent()
 
                 if current_usage >= self._memory.threshold_percent:
+                    self._loading_models.discard(model_id)
                     raise MemoryError(
                         f"Memory usage at {current_usage:.1f}% — "
                         f"already at or above {self._memory.threshold_percent}% threshold. "
                         f"Unload a model first."
                     )
 
+        try:
+            return await self._do_load(model_id, use_batching)
+        finally:
+            self._loading_models.discard(model_id)
+
+    async def _do_load(self, model_id: str, use_batching: bool | None = None) -> ModelInfo:
+        """Execute the actual model load (called after lock/guard checks)."""
         fmt = _detect_format(model_id)
         batching = use_batching if use_batching is not None else self._use_batching
         memory_before = self._memory.used_memory_gb()
@@ -215,13 +233,13 @@ class InferenceEngine:
         SimpleEngine for maximum single-request throughput.
         """
         if use_batching:
-            from vllm_mlx.engine_core import BatchedEngine
+            from vllm_mlx.engine.batched import BatchedEngine
 
             engine = BatchedEngine(model_name=model_id)
             await engine.start()
             return engine
         else:
-            from vllm_mlx.engine_core import SimpleEngine
+            from vllm_mlx.engine.simple import SimpleEngine
 
             return SimpleEngine(model_name=model_id)
 
@@ -285,7 +303,7 @@ class InferenceEngine:
         max_tokens: int | None = None,
         top_p: float = 1.0,
         stop: list[str] | None = None,
-        tools: list[dict] | None = None,
+        tools: list[dict[str, Any]] | None = None,
     ) -> ChatCompletionResponse:
         """Non-streaming chat completion.
 
@@ -301,7 +319,7 @@ class InferenceEngine:
         Returns:
             Complete ChatCompletionResponse.
         """
-        loaded = self._get_model(model_id)
+        loaded = self.get_model(model_id)
         loaded.request_count += 1
         loaded.last_used_at = time.time()
 
@@ -319,7 +337,7 @@ class InferenceEngine:
                     tools=tools,
                 )
             else:
-                # MLX backend (vllm-mlx)
+                # MLX backend (vllm-mlx) — run in thread to avoid blocking event loop
                 chat_kwargs: dict[str, Any] = {
                     "messages": msg_dicts,
                     "temperature": temperature,
@@ -328,19 +346,25 @@ class InferenceEngine:
                 }
                 if stop:
                     chat_kwargs["stop"] = stop
-                result = loaded.engine.chat(**chat_kwargs)
-                content = result if isinstance(result, str) else str(result)
-
-                # Estimate token counts — heuristic fallback (4 chars ≈ 1 token).
-                prompt_text = " ".join(m.content or "" for m in messages)
-                prompt_tokens = max(1, len(prompt_text) // 4)
-                completion_tokens = max(1, len(content) // 4)
+                if tools:
+                    chat_kwargs["tools"] = tools
+                result = await loaded.engine.chat(**chat_kwargs)
+                # vllm-mlx returns GenerationOutput with .new_text, .prompt_tokens, .completion_tokens
+                if hasattr(result, "text"):
+                    content = result.text
+                    prompt_tokens = getattr(result, "prompt_tokens", 0) or max(1, len(" ".join(m.content or "" for m in messages)) // 4)
+                    completion_tokens = getattr(result, "completion_tokens", 0) or max(1, len(content) // 4)
+                else:
+                    content = result if isinstance(result, str) else str(result)
+                    prompt_text = " ".join(m.content or "" for m in messages)
+                    prompt_tokens = max(1, len(prompt_text) // 4)
+                    completion_tokens = max(1, len(content) // 4)
         except Exception as e:
             logger.error("inference_failed", extra={"model_id": model_id, "error": str(e)})
             raise RuntimeError(f"Inference failed: {e}") from e
 
         return ChatCompletionResponse(
-            id=f"chatcmpl-{uuid.uuid4().hex[:12]}",
+            id=f"chatcmpl-{secrets.token_urlsafe(16)}",
             created=int(time.time()),
             model=model_id,
             choices=[
@@ -365,7 +389,7 @@ class InferenceEngine:
         max_tokens: int | None = None,
         top_p: float = 1.0,
         stop: list[str] | None = None,
-        tools: list[dict] | None = None,
+        tools: list[dict[str, Any]] | None = None,
     ) -> AsyncIterator[str]:
         """Streaming chat completion — yields token strings.
 
@@ -381,7 +405,7 @@ class InferenceEngine:
         Yields:
             Individual token strings.
         """
-        loaded = self._get_model(model_id)
+        loaded = self.get_model(model_id)
         loaded.request_count += 1
         loaded.last_used_at = time.time()
 
@@ -406,17 +430,18 @@ class InferenceEngine:
                     "temperature": temperature,
                     "max_tokens": max_tokens or 2048,
                     "top_p": top_p,
-                    "stream": True,
                 }
                 if stop:
                     chat_kwargs["stop"] = stop
-                stream = loaded.engine.chat(**chat_kwargs)
-                if hasattr(stream, "__aiter__"):
-                    async for token in stream:
-                        yield str(token)
-                else:
-                    for token in stream:
-                        yield str(token)
+                if tools:
+                    chat_kwargs["tools"] = tools
+                # vllm-mlx uses stream_chat (async generator) for streaming
+                stream = loaded.engine.stream_chat(**chat_kwargs)
+                async for chunk in stream:
+                    # chunk is GenerationOutput; new_text has the delta
+                    delta = chunk.new_text if hasattr(chunk, "new_text") else str(chunk)
+                    if delta:
+                        yield delta
         except Exception as e:
             logger.error("stream_failed", extra={"model_id": model_id, "error": str(e)})
             raise RuntimeError(f"Stream inference failed: {e}") from e
@@ -464,7 +489,7 @@ class InferenceEngine:
         await self.unload_model(model_id)
         return model_id
 
-    def _get_model(self, model_id: str) -> LoadedModel:
+    def get_model(self, model_id: str) -> LoadedModel:
         """Get a loaded model or raise KeyError."""
         if model_id not in self._models:
             raise KeyError(f"Model '{model_id}' is not loaded")

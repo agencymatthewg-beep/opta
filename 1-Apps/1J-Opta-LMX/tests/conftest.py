@@ -4,14 +4,13 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import MagicMock
 
 import pytest
 from httpx import ASGITransport, AsyncClient
 
 from opta_lmx.config import LMXConfig, RoutingConfig
 from opta_lmx.inference.engine import InferenceEngine
-from opta_lmx.inference.types import DownloadTask, ModelInfo
 from opta_lmx.main import create_app
 from opta_lmx.manager.memory import MemoryMonitor
 from opta_lmx.manager.model import ModelManager

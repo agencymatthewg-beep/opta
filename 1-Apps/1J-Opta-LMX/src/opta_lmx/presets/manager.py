@@ -63,7 +63,10 @@ class PresetManager:
                 preset = self._parse_file(path)
                 self._presets[preset.name] = preset
                 count += 1
-                logger.debug("preset_loaded", extra={"name": preset.name, "model": preset.model})
+                logger.debug(
+                    "preset_loaded",
+                    extra={"preset_name": preset.name, "model": preset.model},
+                )
             except Exception as e:
                 logger.warning("preset_parse_error", extra={"path": str(path), "error": str(e)})
 

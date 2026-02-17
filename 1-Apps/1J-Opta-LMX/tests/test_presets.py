@@ -7,9 +7,8 @@ from pathlib import Path
 import pytest
 import yaml
 
-from opta_lmx.inference.schema import ChatCompletionRequest, ChatMessage
+from opta_lmx.inference.schema import ChatCompletionRequest
 from opta_lmx.presets.manager import PresetManager
-
 
 # ─── PresetManager Unit Tests ────────────────────────────────────────────────
 

@@ -58,7 +58,9 @@ class LoggingConfig(BaseModel):
     level: str = "INFO"
     format: str = "structured"
     file: str | None = None
-    max_file_bytes: int = Field(50 * 1024 * 1024, description="Max log file size before rotation (default 50MB)")
+    max_file_bytes: int = Field(
+        50 * 1024 * 1024, description="Max log file size before rotation (default 50MB)",
+    )
     backup_count: int = Field(5, ge=0, le=20, description="Number of rotated backup files to keep")
 
 
@@ -67,9 +69,7 @@ class RoutingConfig(BaseModel):
 
     aliases: dict[str, list[str]] = Field(
         default_factory=lambda: {
-            "code": [],
-            "reasoning": [],
-            "chat": [],
+            "code": list[str](), "reasoning": list[str](), "chat": list[str](),
         },
         description="Map alias → ordered list of preferred model IDs. First loaded match wins.",
     )
@@ -92,7 +92,9 @@ class PresetsConfig(BaseModel):
 class SecurityConfig(BaseModel):
     """Authentication settings."""
 
-    admin_key: str | None = Field(None, description="Required key for /admin/* endpoints. None = no auth.")
+    admin_key: str | None = Field(
+        None, description="Required key for /admin/* endpoints. None = no auth.",
+    )
 
 
 class LMXConfig(BaseSettings):
@@ -110,13 +112,13 @@ class LMXConfig(BaseSettings):
         env_nested_delimiter="__",
     )
 
-    server: ServerConfig = Field(default_factory=ServerConfig)
-    models: ModelsConfig = Field(default_factory=ModelsConfig)
-    memory: MemoryConfig = Field(default_factory=MemoryConfig)
-    logging: LoggingConfig = Field(default_factory=LoggingConfig)
-    routing: RoutingConfig = Field(default_factory=RoutingConfig)
-    presets: PresetsConfig = Field(default_factory=PresetsConfig)
-    security: SecurityConfig = Field(default_factory=SecurityConfig)
+    server: ServerConfig = Field(default_factory=ServerConfig)  # type: ignore[arg-type]
+    models: ModelsConfig = Field(default_factory=ModelsConfig)  # type: ignore[arg-type]
+    memory: MemoryConfig = Field(default_factory=MemoryConfig)  # type: ignore[arg-type]
+    logging: LoggingConfig = Field(default_factory=LoggingConfig)  # type: ignore[arg-type]
+    routing: RoutingConfig = Field(default_factory=RoutingConfig)  # type: ignore[arg-type]
+    presets: PresetsConfig = Field(default_factory=PresetsConfig)  # type: ignore[arg-type]
+    security: SecurityConfig = Field(default_factory=SecurityConfig)  # type: ignore[arg-type]
 
 
 def load_config(path: Path | None = None) -> LMXConfig:

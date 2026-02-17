@@ -54,12 +54,12 @@ class GGUFBackend:
 
     async def generate(
         self,
-        messages: list[dict],
+        messages: list[dict[str, Any]],
         temperature: float,
         max_tokens: int,
         top_p: float,
         stop: list[str] | None,
-        tools: list[dict] | None,
+        tools: list[dict[str, Any]] | None,
     ) -> tuple[str, int, int]:
         """Non-streaming GGUF generation."""
         kwargs: dict[str, Any] = {
@@ -85,12 +85,12 @@ class GGUFBackend:
 
     async def stream(
         self,
-        messages: list[dict],
+        messages: list[dict[str, Any]],
         temperature: float,
         max_tokens: int,
         top_p: float,
         stop: list[str] | None,
-        tools: list[dict] | None,
+        tools: list[dict[str, Any]] | None,
     ) -> AsyncIterator[str]:
         """Streaming GGUF generation — yields token strings.
 

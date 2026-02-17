@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-import asyncio
 import json
 
 from httpx import AsyncClient
 
 from opta_lmx.monitoring.events import EventBus, ServerEvent
-
 
 # ─── Unit Tests: EventBus ──────────────────────────────────────────────────
 
@@ -52,7 +50,7 @@ async def test_unsubscribe() -> None:
 async def test_full_queue_drops_subscriber() -> None:
     """Subscriber with full queue gets dropped silently."""
     bus = EventBus(max_queue_size=2)
-    queue = bus.subscribe()
+    bus.subscribe()
 
     # Fill the queue
     await bus.publish(ServerEvent(event_type="e1", data={}))
@@ -115,7 +113,6 @@ async def test_sse_endpoint_returns_event_stream(client: AsyncClient) -> None:
     assert event.event_type == "model_loaded"
 
     # Verify SSE format would be correct
-    import json
     sse_line = f"event: {event.event_type}\ndata: {json.dumps(event.data)}\n\n"
     assert "event: model_loaded\n" in sse_line
     assert '"model_id": "test"' in sse_line

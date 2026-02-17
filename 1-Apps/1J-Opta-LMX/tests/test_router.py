@@ -87,7 +87,7 @@ def test_alias_empty_preference_list() -> None:
 
 def test_update_config_changes_routing() -> None:
     """update_config() live-reloads routing rules."""
-    config, router = _make_router(aliases={"code": ["old-model"]})
+    _, router = _make_router(aliases={"code": ["old-model"]})
 
     # Initially routes to old-model
     result = router.resolve("code", ["old-model", "new-model"])

@@ -10,7 +10,6 @@ from httpx import AsyncClient
 
 from opta_lmx.manager.model import ModelManager
 
-
 # ─── Unit Tests: is_model_available ──────────────────────────────────────────
 
 
@@ -33,8 +32,15 @@ async def test_is_model_available_missing_file(tmp_path: Path) -> None:
 async def test_is_model_available_hf_cache(tmp_path: Path) -> None:
     """is_model_available returns True when model is in HF cache."""
     manager = ModelManager(models_directory=tmp_path)
-    mock_available = [{"repo_id": "mlx-community/Qwen2.5-7B", "local_path": "/cache/q", "size_bytes": 100, "downloaded_at": 0.0}]
-    with patch.object(manager, "list_available", new_callable=AsyncMock, return_value=mock_available):
+    mock_available = [{
+        "repo_id": "mlx-community/Qwen2.5-7B",
+        "local_path": "/cache/q",
+        "size_bytes": 100,
+        "downloaded_at": 0.0,
+    }]
+    with patch.object(
+        manager, "list_available", new_callable=AsyncMock, return_value=mock_available,
+    ):
         assert await manager.is_model_available("mlx-community/Qwen2.5-7B") is True
         assert await manager.is_model_available("mlx-community/other-model") is False
 
@@ -85,7 +91,7 @@ async def test_load_unavailable_model_returns_202_with_token(client: AsyncClient
     async def mock_estimate(*args, **kwargs) -> int:
         return 40_000_000_000  # ~37.3 GB
 
-    app.state.model_manager._estimate_size = mock_estimate  # type: ignore[assignment]
+    app.state.model_manager.estimate_size = mock_estimate  # type: ignore[assignment]
 
     resp = await client.post(
         "/admin/models/load",
@@ -183,7 +189,7 @@ async def test_auto_download_skips_confirmation(client: AsyncClient) -> None:
     async def mock_estimate(*args, **kwargs) -> int:
         return 5_000_000_000
 
-    app.state.model_manager._estimate_size = mock_estimate  # type: ignore[assignment]
+    app.state.model_manager.estimate_size = mock_estimate  # type: ignore[assignment]
 
     from opta_lmx.inference.types import DownloadTask
 

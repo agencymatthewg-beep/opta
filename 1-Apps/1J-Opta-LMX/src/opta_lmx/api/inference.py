@@ -5,24 +5,53 @@ from __future__ import annotations
 import logging
 import secrets
 import time
+from collections.abc import AsyncIterator
 
 from fastapi import APIRouter
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
+from starlette.responses import Response
 
 from opta_lmx.api.deps import Engine, Metrics, Presets, Router
 from opta_lmx.api.errors import internal_error, model_not_found, openai_error
-from opta_lmx.presets.manager import PRESET_PREFIX
-from opta_lmx.monitoring.metrics import RequestMetric
 from opta_lmx.inference.schema import (
     ChatCompletionRequest,
-    ChatCompletionResponse,
     ErrorResponse,
     ModelObject,
     ModelsListResponse,
 )
 from opta_lmx.inference.streaming import format_sse_stream
+from opta_lmx.monitoring.metrics import MetricsCollector, RequestMetric
+from opta_lmx.presets.manager import PRESET_PREFIX
 
 logger = logging.getLogger(__name__)
+
+
+async def _counting_stream(
+    token_stream: AsyncIterator[str],
+    model_id: str,
+    start_time: float,
+    prompt_tokens: int,
+    metrics: MetricsCollector,
+) -> AsyncIterator[str]:
+    """Wrap a token stream to count tokens and record metrics when complete."""
+    completion_tokens = 0
+    error_occurred = False
+    try:
+        async for token in token_stream:
+            completion_tokens += 1
+            yield token
+    except Exception:
+        error_occurred = True
+        raise
+    finally:
+        metrics.record(RequestMetric(
+            model_id=model_id,
+            latency_sec=time.monotonic() - start_time,
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            stream=True,
+            error=error_occurred,
+        ))
 
 router = APIRouter()
 
@@ -38,7 +67,7 @@ async def chat_completions(
     task_router: Router,
     metrics: Metrics,
     preset_mgr: Presets,
-):
+) -> Response:
     """OpenAI-compatible chat completion.
 
     Supports both streaming (SSE) and non-streaming modes.
@@ -48,7 +77,7 @@ async def chat_completions(
         preset_name = body.model[len(PRESET_PREFIX):]
         preset = preset_mgr.get(preset_name)
         if preset is None:
-            return model_not_found(body.model)  # type: ignore[return-value]
+            return model_not_found(body.model)
         body = preset_mgr.apply(preset, body)
 
     # Resolve alias (e.g. "auto", "code") to a real loaded model ID
@@ -57,8 +86,7 @@ async def chat_completions(
 
     # Check model is loaded
     if not engine.is_model_loaded(resolved_model):
-        return model_not_found(body.model)  # type: ignore[return-value]
-
+        return model_not_found(body.model)
     start_time = time.monotonic()
 
     if body.stream:
@@ -73,15 +101,15 @@ async def chat_completions(
                 stop=[body.stop] if isinstance(body.stop, str) else body.stop,
                 tools=body.tools,
             )
-            sse_stream = format_sse_stream(token_stream, request_id, resolved_model)
-            # Record metric for stream start (latency measured to first token setup)
-            metrics.record(RequestMetric(
-                model_id=resolved_model,
-                latency_sec=time.monotonic() - start_time,
-                prompt_tokens=0,
-                completion_tokens=0,
-                stream=True,
-            ))
+            # Approximate prompt tokens for metrics (4 chars ≈ 1 token)
+            prompt_text = " ".join(m.content or "" for m in body.messages)
+            est_prompt_tokens = max(1, len(prompt_text) // 4)
+
+            # Wrap stream to count tokens and record final metrics
+            counted_stream = _counting_stream(
+                token_stream, resolved_model, start_time, est_prompt_tokens, metrics,
+            )
+            sse_stream = format_sse_stream(counted_stream, request_id, resolved_model)
             return StreamingResponse(sse_stream, media_type="text/event-stream")
         except Exception as e:
             logger.error("stream_error", extra={"model": resolved_model, "error": str(e)})
@@ -91,7 +119,7 @@ async def chat_completions(
                 prompt_tokens=0, completion_tokens=0,
                 stream=True, error=True,
             ))
-            return internal_error(str(e))  # type: ignore[return-value]
+            return internal_error(str(e))
     else:
         try:
             response = await engine.generate(
@@ -110,7 +138,7 @@ async def chat_completions(
                 completion_tokens=response.usage.completion_tokens,
                 stream=False,
             ))
-            return response
+            return JSONResponse(content=response.model_dump())
         except Exception as e:
             logger.error("completion_error", extra={"model": resolved_model, "error": str(e)})
             metrics.record(RequestMetric(
@@ -119,8 +147,7 @@ async def chat_completions(
                 prompt_tokens=0, completion_tokens=0,
                 stream=False, error=True,
             ))
-            return internal_error(str(e))  # type: ignore[return-value]
-
+            return internal_error(str(e))
 
 @router.get("/v1/models")
 async def list_models(engine: Engine) -> ModelsListResponse:
@@ -141,7 +168,7 @@ async def list_models(engine: Engine) -> ModelsListResponse:
 
 
 @router.post("/v1/completions", response_model=None)
-async def legacy_completions():
+async def legacy_completions() -> JSONResponse:
     """Legacy text completions endpoint — not supported.
 
     Opta-LMX only supports chat completions (/v1/chat/completions).

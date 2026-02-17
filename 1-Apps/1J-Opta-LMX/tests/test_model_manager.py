@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -23,19 +23,19 @@ def manager(tmp_path: Path) -> ModelManager:
 
 async def test_start_download_returns_download_id(manager: ModelManager) -> None:
     """start_download returns a DownloadTask with a unique ID."""
-    with patch.object(manager, "_estimate_size", return_value=1000), \
+    with patch.object(manager, "estimate_size", return_value=1000), \
          patch.object(manager, "_run_download", return_value=None):
         task = await manager.start_download("mlx-community/test-model")
 
     assert task.download_id
-    assert len(task.download_id) == 12
+    assert len(task.download_id) >= 16
     assert task.repo_id == "mlx-community/test-model"
     assert task.status == "downloading"
 
 
 async def test_start_download_estimates_size(manager: ModelManager) -> None:
     """start_download populates total_bytes from dry run estimate."""
-    with patch.object(manager, "_estimate_size", return_value=5_000_000_000), \
+    with patch.object(manager, "estimate_size", return_value=5_000_000_000), \
          patch.object(manager, "_run_download", return_value=None):
         task = await manager.start_download("mlx-community/big-model")
 
@@ -44,7 +44,7 @@ async def test_start_download_estimates_size(manager: ModelManager) -> None:
 
 async def test_download_progress_tracking(manager: ModelManager) -> None:
     """get_download_progress returns the task state."""
-    with patch.object(manager, "_estimate_size", return_value=100), \
+    with patch.object(manager, "estimate_size", return_value=100), \
          patch.object(manager, "_run_download", return_value=None):
         task = await manager.start_download("mlx-community/test-model")
 
@@ -61,10 +61,7 @@ async def test_download_progress_none_for_unknown(manager: ModelManager) -> None
 
 async def test_download_failure_sets_error(manager: ModelManager) -> None:
     """A failed download sets status='failed' and captures the error message."""
-    with patch.object(manager, "_estimate_size", return_value=0):
-        # Patch _run_download to simulate failure
-        original_run = manager._run_download
-
+    with patch.object(manager, "estimate_size", return_value=0):
         async def failing_download(*args, **kwargs):
             task = manager._downloads[args[0]]
             task.status = "failed"
@@ -126,9 +123,11 @@ async def test_delete_raises_for_missing_model(manager: ModelManager) -> None:
     mock_cache = MagicMock()
     mock_cache.repos = []
 
-    with patch("opta_lmx.manager.model.scan_cache_dir", return_value=mock_cache):
-        with pytest.raises(KeyError, match="not found"):
-            await manager.delete_model("nonexistent/model")
+    with (
+        patch("opta_lmx.manager.model.scan_cache_dir", return_value=mock_cache),
+        pytest.raises(KeyError, match="not found"),
+    ):
+        await manager.delete_model("nonexistent/model")
 
 
 async def test_delete_model_returns_freed_bytes(manager: ModelManager) -> None:

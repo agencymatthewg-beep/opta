@@ -1,6 +1,8 @@
-"""Health check routes — /admin/health endpoint."""
+"""Health check routes — unauthenticated /healthz and authenticated /admin/health."""
 
 from __future__ import annotations
+
+from typing import Any
 
 from fastapi import APIRouter
 
@@ -10,9 +12,20 @@ from opta_lmx.api.deps import AdminAuth, Memory
 router = APIRouter()
 
 
+@router.get("/healthz")
+async def healthz() -> dict[str, str]:
+    """Unauthenticated liveness probe for load balancers and monitoring.
+
+    Returns 200 with {"status": "ok"} if the server process is alive.
+    No auth required — safe for Kubernetes probes, Cloudflare health checks,
+    and uptime monitoring systems.
+    """
+    return {"status": "ok", "version": __version__}
+
+
 @router.get("/admin/health")
-async def health_check(_auth: AdminAuth, memory: Memory) -> dict:
-    """Simple health check for monitoring.
+async def health_check(_auth: AdminAuth, memory: Memory) -> dict[str, Any]:
+    """Detailed health check with memory status (requires admin auth).
 
     Returns 'ok' when server is running and responsive.
     Returns 'degraded' if memory pressure is high.

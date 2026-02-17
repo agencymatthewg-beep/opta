@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from tempfile import NamedTemporaryFile
 
 import pytest
 
@@ -57,10 +56,10 @@ def test_load_config_missing_file() -> None:
 
 def test_memory_percent_validation() -> None:
     """Memory percent must be between 50 and 99."""
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         LMXConfig(memory={"max_memory_percent": 101})  # type: ignore[arg-type]
 
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         LMXConfig(memory={"max_memory_percent": 10})  # type: ignore[arg-type]
 
 

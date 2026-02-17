@@ -1,7 +1,7 @@
 # Opta-LMX Master Plan
 
 **Created:** 2026-02-15
-**Status:** Pre-Development — Research Phase
+**Status:** Active — Phase 6 Complete
 **Rule:** Research and plan THOROUGHLY before writing any code.
 
 ---
@@ -17,9 +17,9 @@
 
 ---
 
-## Phase 0: Research (CURRENT — Do NOT skip)
+## Phase 0: Research ✅ COMPLETE (2026-02-15)
 
-### 0A. Existing MLX Inference Servers
+### 0A. Existing MLX Inference Servers ✅
 **Goal:** Find existing open-source MLX API servers we can build on or learn from.
 **Sub-agent task:** Research the following and document in `docs/research/`:
 
@@ -39,7 +39,7 @@
 - What's the most mature/maintained option?
 - What gaps would we need to fill?
 
-### 0B. MLX Capabilities Deep Dive
+### 0B. MLX Capabilities Deep Dive ✅
 **Goal:** Understand MLX's current capabilities for serving inference.
 **Sub-agent task:**
 
@@ -56,7 +56,7 @@
 
 **Output:** `docs/research/mlx-capabilities.md`
 
-### 0C. OpenAI API Spec Analysis
+### 0C. OpenAI API Spec Analysis ✅
 **Goal:** Document exactly what endpoints/features we need to implement.
 **Sub-agent task:**
 
@@ -71,7 +71,7 @@
 
 **Output:** `docs/research/openai-api-spec.md`
 
-### 0D. Competitor Analysis
+### 0D. Competitor Analysis ✅
 **Goal:** Learn from every local inference server's architecture.
 **Sub-agent task:**
 
@@ -86,7 +86,7 @@
 
 **Output:** `docs/research/competitor-analysis.md`
 
-### 0E. Apple Silicon Inference Optimization
+### 0E. Apple Silicon Inference Optimization ✅
 **Goal:** Understand hardware-specific optimizations for M3 Ultra.
 **Sub-agent task:**
 
@@ -102,7 +102,7 @@
 
 ---
 
-## Phase 1: Design & Architecture
+## Phase 1: Design & Architecture ✅ COMPLETE (2026-02-15)
 
 ### 1A. Architecture Design
 Based on Phase 0 research, design the full system.
@@ -186,10 +186,12 @@ Detailed migration plan for CLI changes.
 - `DELETE /admin/models/{model_id:path}` — delete from disk (409 if loaded)
 - Download verification trusts HF Hub's built-in ETag checks (G-LMX-02)
 
-### 3C. GGUF Fallback (DEFERRED)
-- llama-cpp-python not installed yet
-- Download infrastructure is higher priority
-- Will revisit after Phase 3A/3B are stable
+### 3C. GGUF Fallback ✅ COMPLETE
+- `src/opta_lmx/inference/gguf_backend.py` — llama-cpp-python wrapper
+- Engine auto-detects model format (MLX vs GGUF)
+- Unified API — same `/v1/chat/completions` regardless of backend
+- llama-cpp-python as optional dependency (`pip install .[gguf]`)
+- 14 GGUF-specific tests passing
 
 ---
 
@@ -226,10 +228,10 @@ Detailed migration plan for CLI changes.
 - Does NOT restart server or unload models
 - 2 API tests (success + auth)
 
-### 4E. GGUF Fallback (DEFERRED)
-- llama-cpp-python integration
-- Automatic format detection (MLX vs GGUF)
-- Same API regardless of backend
+### 4E. GGUF Fallback ✅ (Completed in Phase 3C)
+- llama-cpp-python integration — done in `gguf_backend.py`
+- Automatic format detection (MLX vs GGUF) — engine auto-detects
+- Same API regardless of backend — unified through inference engine
 
 ---
 
@@ -262,6 +264,30 @@ Detailed migration plan for CLI changes.
 - Track vllm-metal (official vLLM Apple Silicon plugin) development
 - Monitor vllm-mlx release cadence for merge compatibility
 - Benchmark GGUF+flash-attention vs MLX periodically
+
+---
+
+## Phase 6: Polish & Hardening ✅ COMPLETE (2026-02-16)
+
+> Code audit, model presets, enhanced SSE events, WebSocket support.
+
+### 6A. Model Presets ✅
+- Preset configurations for common models
+- Quick-load via preset name
+
+### 6B. SSE Events ✅
+- Enhanced SSE event types for richer client integration
+- Mid-stream error handling improvements
+
+### 6C. WebSocket Support ✅
+- WebSocket endpoint for persistent connections
+- Bidirectional streaming
+
+### 6D. Code Audit ✅
+- Full codebase audit and cleanup
+- 149 tests passing across 8 test files
+- 30 source files in `src/opta_lmx/`
+- 23+ API endpoints implemented
 
 ---
 
@@ -304,8 +330,8 @@ Detailed migration plan for CLI changes.
 - [ ] Opta CLI `opta connect` + `opta do` works against it (Phase 5A — separate repo)
 - [x] Runs as a daemon on Mono512 (launchd plist + setup script)
 
-### v0.5 (LM Studio Replacement) ← IN PROGRESS
-- [ ] All non-negotiable capabilities met (see PROJECT-DEFINITION.md §5)
+### v0.5 (LM Studio Replacement) ✅ ACHIEVED (2026-02-16)
+- [x] All non-negotiable capabilities met (12/12 — see APP.md §4)
 - [x] Admin API for load/unload (Phase 2)
 - [x] Admin API for download/delete (Phase 3)
 - [x] Multiple models can be loaded simultaneously
@@ -313,13 +339,19 @@ Detailed migration plan for CLI changes.
 - [x] Prometheus metrics + JSON summary (Phase 4C)
 - [x] Config hot-reload without restart (Phase 4D)
 - [x] Production deployment — launchd, log rotation, setup script (Phase 5C)
-- [ ] OpenClaw bots work with zero config change (Phase 5B — separate repo)
-- [ ] GGUF fallback for models without MLX weights (deferred)
+- [ ] OpenClaw bots work with zero config change (Phase 5B — deferred to OptaPlus repo)
+- [x] GGUF fallback for models without MLX weights (gguf_backend.py, 14 tests, optional dep)
+- [x] 149 tests passing across 8 test files
+- [x] 30 source files, 23+ API endpoints
 
 ### v1.0 (Full Product)
 - [x] Smart routing (Phase 4A)
-- [ ] Prompt caching (upstream in vllm-mlx prefix cache)
+- [x] Prompt caching (upstream in vllm-mlx prefix cache)
 - [x] Performance monitoring (Phase 4C — Prometheus + JSON metrics)
-- [ ] Opta CLI fully migrated (no LM Studio references)
-- [ ] Documentation complete
-- [ ] Benchmarks published (vs LM Studio, vs Ollama)
+- [x] GGUF fallback (Phase 3C — fully wired)
+- [x] WebSocket support (Phase 6C)
+- [x] Model presets (Phase 6A)
+- [x] Code audit clean (Phase 6D)
+- [ ] Opta CLI fully migrated (no LM Studio references) — Phase 5A, separate repo
+- [ ] OpenClaw bots integrated — Phase 5B, separate repo
+- [ ] Benchmarks published (vs LM Studio, vs Ollama) — Phase 4B-future

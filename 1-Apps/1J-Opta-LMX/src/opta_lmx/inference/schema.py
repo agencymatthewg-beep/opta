@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from typing import Any
 
+from pydantic import BaseModel, Field
 
 # ─── Request Models ───────────────────────────────────────────────────────────
 # Ordered to avoid forward references: FunctionCall → ToolCall → ChatMessage
@@ -44,9 +45,9 @@ class ChatCompletionRequest(BaseModel):
     max_tokens: int | None = None
     stream: bool = False
     stop: str | list[str] | None = None
-    tools: list[dict] | None = None  # pass through unchanged
-    tool_choice: str | dict | None = None
-    response_format: dict | None = None
+    tools: list[dict[str, Any]] | None = None  # pass through unchanged
+    tool_choice: str | dict[str, Any] | None = None
+    response_format: dict[str, Any] | None = None
     frequency_penalty: float = Field(0.0, ge=-2.0, le=2.0)
     presence_penalty: float = Field(0.0, ge=-2.0, le=2.0)
 
@@ -147,7 +148,10 @@ class AdminLoadRequest(BaseModel):
     max_context_length: int | None = None
     auto_download: bool = Field(
         False,
-        description="If True, skip download confirmation and download immediately when model is not on disk.",
+        description=(
+            "If True, skip download confirmation and download immediately"
+            " when model is not on disk."
+        ),
     )
 
 
@@ -201,7 +205,7 @@ class AdminMemoryResponse(BaseModel):
     used_gb: float
     available_gb: float
     threshold_percent: int
-    models: dict[str, dict]
+    models: dict[str, dict[str, Any]]
 
 
 # ─── Error Response ──────────────────────────────────────────────────────────
@@ -250,10 +254,18 @@ class AdminModelsResponse(BaseModel):
 class AdminDownloadRequest(BaseModel):
     """Request to download a model from HuggingFace."""
 
-    repo_id: str = Field(..., description="HuggingFace repo ID (e.g., 'mlx-community/Mistral-7B-Instruct-4bit')")
-    revision: str | None = Field(None, description="Git revision (branch, tag, or commit SHA)")
-    allow_patterns: list[str] | None = Field(None, description="Only download files matching these globs")
-    ignore_patterns: list[str] | None = Field(None, description="Skip files matching these globs")
+    repo_id: str = Field(
+        ..., description="HuggingFace repo ID (e.g., 'mlx-community/Mistral-7B-Instruct-4bit')",
+    )
+    revision: str | None = Field(
+        None, description="Git revision (branch, tag, or commit SHA)",
+    )
+    allow_patterns: list[str] | None = Field(
+        None, description="Only download files matching these globs",
+    )
+    ignore_patterns: list[str] | None = Field(
+        None, description="Skip files matching these globs",
+    )
 
 
 class AdminDownloadResponse(BaseModel):
@@ -296,9 +308,6 @@ class AvailableModel(BaseModel):
     downloaded_at: float = 0.0
 
 
-# ─── Preset Models ──────────────────────────────────────────────────────────
-
-
 # ─── Auto-Download Models ───────────────────────────────────────────────────
 
 
@@ -325,13 +334,50 @@ class AutoDownloadResponse(BaseModel):
 # ─── Preset Models ──────────────────────────────────────────────────────────
 
 
+class BenchmarkRequest(BaseModel):
+    """Request to benchmark a loaded model's inference speed."""
+
+    model_id: str = Field(..., description="Model to benchmark (must be loaded)")
+    prompt: str = Field(
+        "Explain the theory of relativity in simple terms.",
+        description="Prompt to use for benchmarking",
+    )
+    max_tokens: int = Field(128, ge=1, le=4096, description="Tokens to generate")
+    temperature: float = Field(0.7, ge=0, le=2.0)
+    runs: int = Field(1, ge=1, le=5, description="Number of benchmark runs (results averaged)")
+
+
+class BenchmarkResult(BaseModel):
+    """Result of a single benchmark run."""
+
+    run: int
+    tokens_generated: int
+    time_to_first_token_ms: float
+    total_time_ms: float
+    tokens_per_second: float
+
+
+class BenchmarkResponse(BaseModel):
+    """Aggregated benchmark results for a model."""
+
+    model_id: str
+    backend_type: str  # "mlx" or "gguf"
+    prompt: str
+    max_tokens: int
+    runs: int
+    results: list[BenchmarkResult]
+    avg_tokens_per_second: float
+    avg_time_to_first_token_ms: float
+    avg_total_time_ms: float
+
+
 class PresetResponse(BaseModel):
     """A single preset's full details."""
 
     name: str
     description: str = ""
     model: str = ""
-    parameters: dict = Field(default_factory=dict)
+    parameters: dict[str, Any] = Field(default_factory=dict)
     system_prompt: str | None = None
     routing_alias: str | None = None
     auto_load: bool = False

@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import threading
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+from typing import Any
 
 
 @dataclass
@@ -70,11 +71,9 @@ class MetricsCollector:
                 self._latency_sum[metric.model_id] = 0.0
 
             self._latency_sum[metric.model_id] += metric.latency_sec
-            placed = False
             for i, boundary in enumerate(self._latency_buckets):
                 if metric.latency_sec <= boundary:
                     self._latency_bucket_counts[metric.model_id][i] += 1
-                    placed = True
                     break
             # If latency exceeds all buckets, it only appears in +Inf
 
@@ -128,7 +127,8 @@ class MetricsCollector:
                 for i, boundary in enumerate(self._latency_buckets):
                     cumulative += self._latency_bucket_counts[model_id][i]
                     lines.append(
-                        f'lmx_request_duration_seconds_bucket{{model="{model_id}",le="{boundary}"}} {cumulative}'
+                        f'lmx_request_duration_seconds_bucket'
+                        f'{{model="{model_id}",le="{boundary}"}} {cumulative}'
                     )
                 lines.append(
                     f'lmx_request_duration_seconds_bucket{{model="{model_id}",le="+Inf"}} '
@@ -151,7 +151,7 @@ class MetricsCollector:
             lines.append("")  # trailing newline
             return "\n".join(lines)
 
-    def summary(self) -> dict:
+    def summary(self) -> dict[str, Any]:
         """Return a JSON-friendly summary for admin endpoints."""
         with self._lock:
             return {

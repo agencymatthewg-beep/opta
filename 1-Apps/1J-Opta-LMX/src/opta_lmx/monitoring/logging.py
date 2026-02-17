@@ -27,8 +27,8 @@ def _filter_sensitive_keys(
     event_dict: structlog.types.EventDict,
 ) -> structlog.types.EventDict:
     """Redact sensitive keys from log output."""
-    for key in list(event_dict.keys()):
-        if key in _SENSITIVE_KEYS:
+    for key in _SENSITIVE_KEYS:
+        if key in event_dict:
             event_dict[key] = "***REDACTED***"
     return event_dict
 

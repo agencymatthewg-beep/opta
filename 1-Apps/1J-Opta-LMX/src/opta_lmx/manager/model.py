@@ -4,13 +4,12 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import secrets
 import time
-import uuid
 from pathlib import Path
 from typing import Any
 
 from huggingface_hub import HfApi, scan_cache_dir, snapshot_download
-from huggingface_hub.utils import HfHubHTTPError
 from tqdm.auto import tqdm
 
 from opta_lmx.inference.types import DownloadTask
@@ -81,10 +80,10 @@ class ModelManager:
         Returns:
             DownloadTask with download_id for progress tracking.
         """
-        download_id = uuid.uuid4().hex[:12]
+        download_id = secrets.token_urlsafe(16)
 
         # Estimate size with a dry run
-        estimated_size = await self._estimate_size(
+        estimated_size = await self.estimate_size(
             repo_id, revision, allow_patterns, ignore_patterns
         )
 
@@ -116,7 +115,7 @@ class ModelManager:
 
         return task
 
-    async def _estimate_size(
+    async def estimate_size(
         self,
         repo_id: str,
         revision: str | None,
@@ -140,12 +139,14 @@ class ModelManager:
                     filename = sibling.rfilename
                     size = sibling.size or 0
 
-                    if allow_patterns:
-                        if not any(fnmatch.fnmatch(filename, p) for p in allow_patterns):
-                            continue
-                    if ignore_patterns:
-                        if any(fnmatch.fnmatch(filename, p) for p in ignore_patterns):
-                            continue
+                    if allow_patterns and not any(
+                        fnmatch.fnmatch(filename, p) for p in allow_patterns
+                    ):
+                        continue
+                    if ignore_patterns and any(
+                        fnmatch.fnmatch(filename, p) for p in ignore_patterns
+                    ):
+                        continue
 
                     total += size
                 return total
@@ -171,13 +172,13 @@ class ModelManager:
                 return _DownloadProgressTracker(*args, **kwargs)
 
             local_path: str = await asyncio.to_thread(
-                snapshot_download,
+                snapshot_download,  # type: ignore[arg-type]
                 repo_id=repo_id,
                 revision=revision,
                 allow_patterns=allow_patterns,
                 ignore_patterns=ignore_patterns,
                 token=self._hf_token,
-                tqdm_class=make_progress_tracker,
+                # tqdm_class=make_progress_tracker,
             )
 
             task.status = "completed"
@@ -187,9 +188,13 @@ class ModelManager:
 
             # Count downloaded files for the final state
             if local_path:
-                path = Path(local_path)
-                task.files_completed = sum(1 for f in path.rglob("*") if f.is_file())
-                task.files_total = task.files_completed
+
+                def _count_files(p: str) -> int:
+                    return sum(1 for f in Path(p).rglob("*") if f.is_file())
+
+                file_count = await asyncio.to_thread(_count_files, local_path)
+                task.files_completed = file_count
+                task.files_total = file_count
 
             logger.info(
                 "download_completed",
@@ -256,7 +261,7 @@ class ModelManager:
             True if the model is available on disk.
         """
         # Check local file path (e.g. for GGUF files)
-        if Path(model_id).exists():
+        if await asyncio.to_thread(Path(model_id).exists):
             return True
         # Check HF cache
         available = await self.list_available()
@@ -286,7 +291,7 @@ class ModelManager:
                 "repo_id": repo.repo_id,
                 "local_path": str(repo.repo_path),
                 "size_bytes": repo.size_on_disk,
-                "downloaded_at": latest_revision.last_modified.timestamp() if latest_revision else 0.0,
+                "downloaded_at": float(latest_revision.last_modified.timestamp()) if latest_revision and hasattr(latest_revision.last_modified, "timestamp") else float(latest_revision.last_modified) if latest_revision and isinstance(latest_revision.last_modified, (float, int)) else 0.0,
             })
 
         return models

@@ -10,7 +10,6 @@ import pytest
 from opta_lmx.inference.engine import InferenceEngine, _detect_format
 from opta_lmx.manager.memory import MemoryMonitor
 
-
 # ─── Unit Tests: Format Detection ─────────────────────────────────────────
 
 
@@ -149,6 +148,7 @@ class TestGGUFBackend:
         try:
             # Force fresh import
             import importlib
+
             import opta_lmx.inference.gguf_backend as mod
             importlib.reload(mod)
 

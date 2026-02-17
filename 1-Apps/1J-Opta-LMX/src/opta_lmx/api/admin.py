@@ -7,7 +7,8 @@ import json
 import logging
 import secrets
 import time
-from typing import TYPE_CHECKING
+from collections.abc import AsyncIterator
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from opta_lmx.inference.engine import InferenceEngine
@@ -15,6 +16,7 @@ if TYPE_CHECKING:
 
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse, PlainTextResponse, StreamingResponse
+from starlette.responses import Response
 
 from opta_lmx import __version__
 from opta_lmx.api.deps import (
@@ -28,7 +30,6 @@ from opta_lmx.api.deps import (
     Router,
     StartTime,
 )
-from opta_lmx.config import load_config
 from opta_lmx.api.errors import (
     download_not_found,
     insufficient_memory,
@@ -37,6 +38,7 @@ from opta_lmx.api.errors import (
     model_not_found,
     openai_error,
 )
+from opta_lmx.config import load_config
 from opta_lmx.inference.schema import (
     AdminDeleteResponse,
     AdminDownloadRequest,
@@ -51,6 +53,10 @@ from opta_lmx.inference.schema import (
     AdminUnloadResponse,
     AutoDownloadResponse,
     AvailableModel,
+    BenchmarkRequest,
+    BenchmarkResponse,
+    BenchmarkResult,
+    ChatMessage,
     ConfirmLoadRequest,
     DownloadProgressResponse,
     ErrorResponse,
@@ -65,6 +71,9 @@ _TOKEN_EXPIRY_SEC = 600  # 10 minutes
 
 # Lock for pending_downloads dict (single-threaded async concurrency)
 _pending_lock = asyncio.Lock()
+
+# Strong references to background tasks (prevents GC before completion)
+_background_tasks: set[asyncio.Task[None]] = set()
 
 
 def _human_size(size_bytes: int) -> str:
@@ -81,8 +90,8 @@ def _human_size(size_bytes: int) -> str:
 async def _load_after_download(
     download_id: str,
     model_id: str,
-    manager: "ModelManager",
-    engine: "InferenceEngine",
+    manager: ModelManager,
+    engine: InferenceEngine,
 ) -> None:
     """Wait for a download to complete, then auto-load the model."""
     while True:
@@ -146,7 +155,7 @@ async def list_admin_models(
 async def load_model(
     body: AdminLoadRequest, _auth: AdminAuth, engine: Engine, manager: Manager,
     request: Request,
-):
+) -> AdminLoadResponse | JSONResponse:
     """Load a model into memory.
 
     If the model is not on disk:
@@ -162,13 +171,13 @@ async def load_model(
 
     if not is_available:
         # Estimate download size
-        estimated = await manager._estimate_size(body.model_id, None, None, None)
+        estimated = await manager.estimate_size(body.model_id, None, None, None)
 
         if not body.auto_download:
             # Two-phase: return confirmation prompt
             token = f"dl-{secrets.token_urlsafe(16)}"
             async with _pending_lock:
-                pending: dict = getattr(request.app.state, "pending_downloads", {})
+                pending: dict[str, Any] = getattr(request.app.state, "pending_downloads", {})
 
                 # Clean up expired pending downloads
                 now = time.time()
@@ -199,7 +208,11 @@ async def load_model(
 
         # auto_download=True: skip confirmation, start download + auto-load
         task = await manager.start_download(repo_id=body.model_id)
-        asyncio.create_task(_load_after_download(task.download_id, body.model_id, manager, engine))
+        bg = asyncio.create_task(
+            _load_after_download(task.download_id, body.model_id, manager, engine),
+        )
+        _background_tasks.add(bg)
+        bg.add_done_callback(_background_tasks.discard)
 
         return JSONResponse(
             status_code=202,
@@ -245,14 +258,14 @@ async def load_model(
 async def confirm_and_load(
     body: ConfirmLoadRequest, _auth: AdminAuth, engine: Engine, manager: Manager,
     request: Request,
-):
+) -> JSONResponse:
     """Confirm a pending download and start download + auto-load.
 
     Uses the confirmation_token returned by the load endpoint when
     a model was not found locally.
     """
     async with _pending_lock:
-        pending: dict = getattr(request.app.state, "pending_downloads", {})
+        pending: dict[str, Any] = getattr(request.app.state, "pending_downloads", {})
         entry = pending.pop(body.confirmation_token, None)
 
     if entry is None:
@@ -275,7 +288,11 @@ async def confirm_and_load(
     model_id = entry["model_id"]
 
     task = await manager.start_download(repo_id=model_id)
-    asyncio.create_task(_load_after_download(task.download_id, model_id, manager, engine))
+    bg = asyncio.create_task(
+        _load_after_download(task.download_id, model_id, manager, engine),
+    )
+    _background_tasks.add(bg)
+    bg.add_done_callback(_background_tasks.discard)
 
     return JSONResponse(
         status_code=202,
@@ -296,7 +313,7 @@ async def confirm_and_load(
 )
 async def unload_model(
     body: AdminUnloadRequest, _auth: AdminAuth, engine: Engine,
-):
+) -> AdminUnloadResponse | JSONResponse:
     """Unload a model and free memory."""
     try:
         freed = await engine.unload_model(body.model_id)
@@ -375,7 +392,7 @@ async def list_available_models(
 )
 async def start_download(
     body: AdminDownloadRequest, _auth: AdminAuth, manager: Manager,
-):
+) -> AdminDownloadResponse | JSONResponse:
     """Start an async model download from HuggingFace Hub."""
     try:
         task = await manager.start_download(
@@ -402,7 +419,7 @@ async def start_download(
 )
 async def get_download_progress(
     download_id: str, _auth: AdminAuth, manager: Manager,
-):
+) -> DownloadProgressResponse | JSONResponse:
     """Get the progress of a model download."""
     task = manager.get_download_progress(download_id)
     if task is None:
@@ -432,7 +449,7 @@ async def get_download_progress(
 )
 async def delete_model(
     model_id: str, _auth: AdminAuth, engine: Engine, manager: Manager,
-):
+) -> AdminDeleteResponse | JSONResponse:
     """Delete a model from disk. Returns 409 if the model is currently loaded."""
     # Path traversal validation
     if ".." in model_id or model_id.startswith("/"):
@@ -480,7 +497,7 @@ async def prometheus_metrics(
 @router.get("/admin/metrics/json", responses={403: {"model": ErrorResponse}})
 async def metrics_json(
     _auth: AdminAuth, metrics: Metrics,
-) -> dict:
+) -> dict[str, Any]:
     """JSON metrics summary for admin dashboards."""
     return metrics.summary()
 
@@ -500,7 +517,7 @@ async def reload_config(
     event_bus: Events,
     preset_mgr: Presets,
     request: Request,
-) -> dict:
+) -> Response:
     """Hot-reload configuration from disk without restarting.
 
     Re-reads the YAML config file and updates runtime state:
@@ -556,10 +573,98 @@ async def reload_config(
     if new_config.presets.enabled:
         preset_mgr.reload()
 
-    return {
+    return JSONResponse(content={
         "success": True,
         "updated": ["routing", "memory", "security", "logging", "presets"],
-    }
+    })
+
+
+# ─── Benchmark ────────────────────────────────────────────────────────────
+
+
+@router.post(
+    "/admin/benchmark",
+    response_model=None,
+    responses={
+        403: {"model": ErrorResponse},
+        404: {"model": ErrorResponse},
+    },
+)
+async def benchmark_model(
+    body: BenchmarkRequest, _auth: AdminAuth, engine: Engine,
+) -> BenchmarkResponse | JSONResponse:
+    """Run an inference benchmark on a loaded model.
+
+    Measures time-to-first-token, total generation time, and tokens/second.
+    Runs the benchmark `runs` times and returns individual + averaged results.
+    """
+    if not engine.is_model_loaded(body.model_id):
+        return model_not_found(body.model_id)
+
+    results: list[BenchmarkResult] = []
+
+    for run_idx in range(body.runs):
+        messages = [ChatMessage(role="user", content=body.prompt)]
+
+        # Stream to measure TTFT and per-token timing
+        token_count = 0
+        ttft_ms: float | None = None
+        start = time.monotonic()
+
+        try:
+            async for _token in engine.stream_generate(
+                model_id=body.model_id,
+                messages=messages,
+                temperature=body.temperature,
+                max_tokens=body.max_tokens,
+            ):
+                token_count += 1
+                if ttft_ms is None:
+                    ttft_ms = (time.monotonic() - start) * 1000
+        except Exception as e:
+            logger.error("benchmark_failed", extra={
+                "model_id": body.model_id, "run": run_idx + 1, "error": str(e),
+            })
+            return internal_error(f"Benchmark failed on run {run_idx + 1}: {e}")
+
+        total_ms = (time.monotonic() - start) * 1000
+        # Avoid division by zero
+        generation_time_sec = max(total_ms / 1000, 0.001)
+        tok_per_sec = token_count / generation_time_sec
+
+        results.append(BenchmarkResult(
+            run=run_idx + 1,
+            tokens_generated=token_count,
+            time_to_first_token_ms=round(ttft_ms or 0, 2),
+            total_time_ms=round(total_ms, 2),
+            tokens_per_second=round(tok_per_sec, 2),
+        ))
+
+    # Compute averages
+    avg_tps = sum(r.tokens_per_second for r in results) / len(results)
+    avg_ttft = sum(r.time_to_first_token_ms for r in results) / len(results)
+    avg_total = sum(r.total_time_ms for r in results) / len(results)
+
+    loaded = engine.get_model(body.model_id)
+
+    logger.info("benchmark_complete", extra={
+        "model_id": body.model_id,
+        "runs": body.runs,
+        "avg_tok_per_sec": round(avg_tps, 2),
+        "avg_ttft_ms": round(avg_ttft, 2),
+    })
+
+    return BenchmarkResponse(
+        model_id=body.model_id,
+        backend_type=loaded.backend_type,
+        prompt=body.prompt,
+        max_tokens=body.max_tokens,
+        runs=body.runs,
+        results=results,
+        avg_tokens_per_second=round(avg_tps, 2),
+        avg_time_to_first_token_ms=round(avg_ttft, 2),
+        avg_total_time_ms=round(avg_total, 2),
+    )
 
 
 # ─── Phase 6: Presets ─────────────────────────────────────────────────────
@@ -595,7 +700,7 @@ async def list_presets(
 )
 async def get_preset(
     name: str, _auth: AdminAuth, preset_mgr: Presets,
-):
+) -> PresetResponse | JSONResponse:
     """Get full details for a single preset."""
     preset = preset_mgr.get(name)
     if preset is None:
@@ -618,7 +723,7 @@ async def get_preset(
 )
 async def reload_presets(
     _auth: AdminAuth, preset_mgr: Presets,
-) -> dict:
+) -> dict[str, Any]:
     """Re-read preset files from disk."""
     count = preset_mgr.reload()
     return {"success": True, "presets_loaded": count}
@@ -630,7 +735,7 @@ async def reload_presets(
 @router.get("/admin/events", responses={403: {"model": ErrorResponse}})
 async def admin_event_stream(
     _auth: AdminAuth, event_bus: Events, request: Request,
-):
+) -> StreamingResponse:
     """Server-Sent Events feed for real-time admin monitoring.
 
     Streams events for: model_loaded, model_unloaded, download_progress,
@@ -639,7 +744,7 @@ async def admin_event_stream(
     """
     heartbeat_sec = getattr(request.app.state.config.server, "sse_heartbeat_interval_sec", 30)
 
-    async def generate():
+    async def generate() -> AsyncIterator[str]:
         queue = event_bus.subscribe()
         try:
             while True:
@@ -649,7 +754,7 @@ async def admin_event_stream(
                         f"event: {event.event_type}\n"
                         f"data: {json.dumps(event.data)}\n\n"
                     )
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     yield f"event: heartbeat\ndata: {json.dumps({'timestamp': time.time()})}\n\n"
         except asyncio.CancelledError:
             pass

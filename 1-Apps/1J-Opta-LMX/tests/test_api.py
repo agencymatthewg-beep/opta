@@ -2,14 +2,21 @@
 
 from __future__ import annotations
 
-import json
-import logging
 from unittest.mock import AsyncMock, patch
 
 from httpx import AsyncClient
 
 from opta_lmx.inference.types import DownloadTask
 from opta_lmx.monitoring.logging import _filter_sensitive_keys
+
+
+async def test_healthz_unauthenticated(client: AsyncClient) -> None:
+    """GET /healthz returns ok without auth — liveness probe."""
+    response = await client.get("/healthz")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "ok"
+    assert data["version"] == "0.1.0"
 
 
 async def test_health_check(client: AsyncClient) -> None:
@@ -191,6 +198,13 @@ async def test_admin_no_auth_when_key_is_none(client: AsyncClient) -> None:
     """Admin endpoints work without auth header when admin_key is None."""
     response = await client.get("/admin/health")
     assert response.status_code == 200
+
+
+async def test_healthz_works_without_auth_key(client_with_auth: AsyncClient) -> None:
+    """/healthz is unauthenticated even when admin key is configured."""
+    response = await client_with_auth.get("/healthz")
+    assert response.status_code == 200
+    assert response.json()["status"] == "ok"
 
 
 async def test_admin_rejects_missing_key(client_with_auth: AsyncClient) -> None:
@@ -534,3 +548,92 @@ async def test_config_reload_requires_auth(client_with_auth: AsyncClient) -> Non
     """POST /admin/config/reload rejects without X-Admin-Key."""
     response = await client_with_auth.post("/admin/config/reload")
     assert response.status_code == 403
+
+
+# --- Benchmark endpoint tests ---
+
+
+async def test_benchmark_model_not_loaded(client: AsyncClient) -> None:
+    """POST /admin/benchmark returns 404 for model not loaded."""
+    response = await client.post(
+        "/admin/benchmark",
+        json={"model_id": "nonexistent-model"},
+    )
+    assert response.status_code == 404
+    assert response.json()["error"]["code"] == "model_not_found"
+
+
+async def test_benchmark_returns_results(client: AsyncClient) -> None:
+    """POST /admin/benchmark returns timing results for a loaded model."""
+    # Load model first
+    await client.post("/admin/models/load", json={"model_id": "test-model"})
+
+    # Mock stream_generate to yield predictable tokens
+    original_engine = client._transport.app.state.engine  # type: ignore[union-attr]
+
+    async def mock_stream(*args, **kwargs):
+        for token in ["Hello", " world", "!", " How", " are", " you", "?"]:
+            yield token
+
+    original_engine.stream_generate = mock_stream
+
+    response = await client.post(
+        "/admin/benchmark",
+        json={"model_id": "test-model", "max_tokens": 128, "runs": 1},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["model_id"] == "test-model"
+    assert data["runs"] == 1
+    assert len(data["results"]) == 1
+    result = data["results"][0]
+    assert result["run"] == 1
+    assert result["tokens_generated"] == 7
+    assert result["tokens_per_second"] > 0
+    assert result["time_to_first_token_ms"] >= 0
+    assert result["total_time_ms"] >= 0
+    assert data["avg_tokens_per_second"] > 0
+
+
+async def test_benchmark_multiple_runs(client: AsyncClient) -> None:
+    """POST /admin/benchmark with runs=2 returns averaged results."""
+    await client.post("/admin/models/load", json={"model_id": "test-model"})
+
+    original_engine = client._transport.app.state.engine  # type: ignore[union-attr]
+
+    async def mock_stream(*args, **kwargs):
+        for token in ["A", "B", "C"]:
+            yield token
+
+    original_engine.stream_generate = mock_stream
+
+    response = await client.post(
+        "/admin/benchmark",
+        json={"model_id": "test-model", "runs": 2},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["runs"] == 2
+    assert len(data["results"]) == 2
+    assert data["results"][0]["run"] == 1
+    assert data["results"][1]["run"] == 2
+    assert data["avg_tokens_per_second"] > 0
+    assert data["avg_time_to_first_token_ms"] >= 0
+
+
+async def test_benchmark_requires_auth(client_with_auth: AsyncClient) -> None:
+    """POST /admin/benchmark rejects without X-Admin-Key."""
+    response = await client_with_auth.post(
+        "/admin/benchmark",
+        json={"model_id": "test-model"},
+    )
+    assert response.status_code == 403
+
+
+async def test_benchmark_validation(client: AsyncClient) -> None:
+    """POST /admin/benchmark validates request parameters."""
+    response = await client.post(
+        "/admin/benchmark",
+        json={"model_id": "test-model", "runs": 10},  # max is 5
+    )
+    assert response.status_code == 422

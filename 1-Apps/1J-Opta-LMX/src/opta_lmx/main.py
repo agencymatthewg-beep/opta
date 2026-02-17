@@ -3,19 +3,22 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
 import logging
 import time
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import AsyncIterator
 
 import uvicorn
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from opta_lmx import __version__
 from opta_lmx.api.admin import router as admin_router
 from opta_lmx.api.health import router as health_router
 from opta_lmx.api.inference import router as inference_router
+from opta_lmx.api.middleware import RequestIDMiddleware
 from opta_lmx.api.websocket import router as websocket_router
 from opta_lmx.config import LMXConfig, load_config
 from opta_lmx.inference.engine import InferenceEngine
@@ -67,7 +70,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.metrics = metrics
     app.state.preset_manager = preset_manager
     app.state.event_bus = event_bus
-    app.state.pending_downloads: dict[str, dict] = {}
+    app.state.pending_downloads = {}  # dict[str, dict[str, Any]]
     app.state.start_time = time.time()
     app.state.admin_key = config.security.admin_key
 
@@ -95,11 +98,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     await model_manager.cancel_active_downloads()
 
     # Cleanup: unload all models
-    for model_id in list(engine._models.keys()):
-        try:
+    for model_id in [m.model_id for m in engine.get_loaded_models()]:
+        with contextlib.suppress(Exception):
             await engine.unload_model(model_id)
-        except Exception:
-            pass
 
     logger.info("server_shutdown")
 
@@ -125,6 +126,17 @@ def create_app(config: LMXConfig | None = None) -> FastAPI:
 
     # Store config in app state for route handlers
     app.state.config = config
+
+    # Request ID middleware — adds X-Request-ID to all responses and logs
+    app.add_middleware(RequestIDMiddleware)
+
+    # CORS — permissive for LAN-only use; tighten origins for public deployments
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
     # Mount route groups
     app.include_router(inference_router)
@@ -197,6 +209,7 @@ def cli() -> None:
         port=config.server.port,
         timeout_keep_alive=config.server.timeout_sec,
         log_level=log_level.lower(),
+        ws_max_size=1_048_576,  # 1MB WebSocket message size limit
     )
 
 

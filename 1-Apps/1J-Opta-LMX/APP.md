@@ -15,7 +15,7 @@
 | **Language** | Python 3.11+ |
 | **Frameworks** | MLX, FastAPI, Uvicorn, huggingface_hub |
 | **Location** | `~/Synced/Opta/1-Apps/1J-Opta-LMX/` |
-| **Status** | Planning — Research Phase |
+| **Status** | Active — v0.5 (LM Studio Replacement) |
 
 ---
 
@@ -189,20 +189,18 @@ Client ← SSE Stream ← API Server ← Token Stream ← Generation Loop
 ## 9. Roadmap Priorities
 
 ### Now (Current Phase)
-- Phase 0: Research — 5 parallel agents investigating MLX servers, capabilities, API spec, competitors, Apple Silicon optimization
-- Phase 1: Architecture design based on research findings
+- Phases 0-6 complete (149 tests, 30 source files, 23+ endpoints)
+- Benchmark endpoint and performance tuning
+- Ecosystem integration (Opta CLI provider in 5A, OpenClaw in 5B)
 
 ### Next
-- Phase 2: Core implementation — MLX inference + OpenAI API
-- Phase 3: Admin API + model manager
-- Drop-in test: replace LM Studio, verify everything works
+- Phase 5A: Opta CLI provider (in 1D-Opta-CLI-TS repo)
+- Phase 5B: OpenClaw bot integration (in 1I-OptaPlus repo)
+- Phase 4B-future: Speculative decoding, KV-cache tuning, published benchmarks
 
 ### Later
-- Smart routing
-- Speculative decoding
-- Prompt caching
-- Prometheus metrics
-- Opta CLI migration (Phase 5)
+- v1.0 release with full ecosystem integration
+- Published benchmarks (vs LM Studio, vs Ollama)
 
 ### Never (Anti-Features)
 - ❌ GUI / graphical interface
@@ -214,16 +212,16 @@ Client ← SSE Stream ← API Server ← Token Stream ← Generation Loop
 
 ---
 
-## 10. Open Questions
+## 10. Resolved Questions
 
-1. **Fork or build?** — Research may reveal an existing MLX server we can extend instead of building from scratch
-2. **Single port or dual port?** — Should Admin API be on same port (e.g., /admin/*) or separate port?
-3. **GGUF priority** — How much effort to invest in GGUF fallback vs focusing purely on MLX?
-4. **Model format preferences** — Should we auto-convert GGUF→MLX? Or just support both natively?
-5. **Config format** — YAML, TOML, or JSON for server config?
-6. **Authentication** — Should Admin API require auth? Token-based? Or trust LAN?
+1. **Fork or build?** — Built custom orchestration layer on top of vllm-mlx (v0.2.6) + FastAPI
+2. **Single port or dual port?** — Single port, Admin API at `/admin/*` on same server
+3. **GGUF priority** — Fully wired. `gguf_backend.py` exists, engine auto-detects format, llama-cpp-python as optional dep (`pip install .[gguf]`), 14 tests
+4. **Model format preferences** — Support both natively (MLX preferred, GGUF fallback)
+5. **Config format** — YAML (`~/.opta-lmx/config.yaml`), hot-reloadable via `POST /admin/config/reload`
+6. **Authentication** — X-Admin-Key header for admin endpoints, trust-LAN default
 
 ---
 
-*Last updated: 2026-02-15*
+*Last updated: 2026-02-16*
 *This file is the source of truth for what Opta-LMX is. Update it as the app evolves.*

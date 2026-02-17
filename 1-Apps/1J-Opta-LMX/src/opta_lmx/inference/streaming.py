@@ -64,7 +64,10 @@ async def format_sse_stream(
             )
             yield f"data: {chunk.model_dump_json()}\n\n"
     except Exception as e:
-        logger.error("stream_mid_generation_error", extra={"request_id": request_id, "error": str(e)})
+        logger.error(
+            "stream_mid_generation_error",
+            extra={"request_id": request_id, "error": str(e)},
+        )
         # Can't send an HTTP error at this point (headers already sent).
         # Send an error content chunk so the client sees something, then close cleanly.
         error_chunk = ChatCompletionChunk(

@@ -3,11 +3,9 @@
 from __future__ import annotations
 
 import asyncio
-import json
+import contextlib
 import logging
 import secrets
-import time
-import uuid
 from typing import Any
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
@@ -43,13 +41,8 @@ async def websocket_chat(websocket: WebSocket) -> None:
         while True:
             try:
                 data = await asyncio.wait_for(websocket.receive_json(), timeout=300.0)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 logger.info("ws_idle_timeout")
-                break
-
-            # Message size limit (1MB)
-            if len(json.dumps(data)) > 1_000_000:
-                await websocket.close(code=1009, reason="Message too large")
                 break
 
             msg_type = data.get("type")
@@ -62,7 +55,9 @@ async def websocket_chat(websocket: WebSocket) -> None:
                 active_tasks[request_id] = task
 
                 # Clean up completed tasks
-                task.add_done_callback(lambda t, rid=request_id: active_tasks.pop(rid, None))
+                def _cleanup(t: asyncio.Task[None], rid: str = request_id) -> None:
+                    active_tasks.pop(rid, None)
+                task.add_done_callback(_cleanup)
 
             elif msg_type == "chat.cancel":
                 request_id = data.get("request_id", "")
@@ -88,10 +83,8 @@ async def websocket_chat(websocket: WebSocket) -> None:
         for task in active_tasks.values():
             task.cancel()
         active_tasks.clear()
-        try:
+        with contextlib.suppress(Exception):
             await websocket.close()
-        except Exception:
-            pass
 
 
 async def _handle_chat_request(
@@ -182,25 +175,21 @@ async def _handle_chat_request(
 
     except asyncio.CancelledError:
         # Client cancelled — send acknowledgment if connection still open
-        try:
+        with contextlib.suppress(Exception):
             await websocket.send_json({
                 "type": "chat.done",
                 "request_id": request_id,
                 "finish_reason": "cancelled",
                 "usage": {"prompt_tokens": 0, "completion_tokens": 0},
             })
-        except Exception:
-            pass  # Connection may already be closed
     except Exception as e:
         logger.error("ws_chat_error", extra={
             "request_id": request_id,
             "error": str(e),
         })
-        try:
+        with contextlib.suppress(Exception):
             await websocket.send_json({
                 "type": "chat.error",
                 "request_id": request_id,
                 "error": str(e),
             })
-        except Exception:
-            pass
