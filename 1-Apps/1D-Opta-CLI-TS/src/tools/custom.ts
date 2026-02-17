@@ -1,7 +1,7 @@
 import { readFile, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { debug } from '../core/debug.js';
-import { getToolNames } from '../core/tools.js';
+import { getToolNames } from '../core/tools/index.js';
 import { ALLOWED_ENV_KEYS } from '../hooks/manager.js';
 
 // --- Custom Tool Definition ---

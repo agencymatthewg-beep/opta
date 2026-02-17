@@ -3,7 +3,7 @@ import { resolve, join } from 'node:path';
 import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { realpathSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { assertWithinCwd, executeTool } from '../../src/core/tools.js';
+import { assertWithinCwd, executeTool } from '../../src/core/tools/index.js';
 
 // Use realpathSync to resolve symlinks (macOS: /var -> /private/var)
 const RAW_TEST_DIR = join(tmpdir(), 'opta-path-safety-' + Date.now());

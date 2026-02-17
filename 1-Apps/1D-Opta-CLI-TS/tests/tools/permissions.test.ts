@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { writeFile, mkdir, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { resolvePermission } from '../../src/core/tools.js';
+import { resolvePermission } from '../../src/core/tools/index.js';
 import { DEFAULT_CONFIG, type OptaConfig } from '../../src/core/config.js';
 
 describe('Custom tool permissions', () => {

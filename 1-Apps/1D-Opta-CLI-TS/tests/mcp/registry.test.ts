@@ -21,7 +21,7 @@ vi.mock('../../src/mcp/client.js', () => ({
 }));
 
 import { buildToolRegistry } from '../../src/mcp/registry.js';
-import { TOOL_SCHEMAS, SUB_AGENT_TOOL_SCHEMAS } from '../../src/core/tools.js';
+import { TOOL_SCHEMAS, SUB_AGENT_TOOL_SCHEMAS } from '../../src/core/tools/index.js';
 
 const TOTAL_BUILTIN = TOOL_SCHEMAS.length + SUB_AGENT_TOOL_SCHEMAS.length;
 

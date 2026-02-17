@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { resolvePermission } from '../../src/core/tools.js';
+import { resolvePermission } from '../../src/core/tools/index.js';
 import { OptaConfigSchema } from '../../src/core/config.js';
 
 describe('permission modes', () => {

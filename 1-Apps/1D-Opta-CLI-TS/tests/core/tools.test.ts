@@ -3,7 +3,7 @@ import { writeFile, mkdir, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { realpathSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { executeTool, resolvePermission, TOOL_SCHEMAS, getToolNames } from '../../src/core/tools.js';
+import { executeTool, resolvePermission, TOOL_SCHEMAS, getToolNames } from '../../src/core/tools/index.js';
 import { DEFAULT_CONFIG } from '../../src/core/config.js';
 
 const RAW_TEST_DIR = join(tmpdir(), 'opta-test-' + Date.now());
@@ -455,7 +455,7 @@ describe('bg_status', () => {
 
   it('returns message when no processes', async () => {
     // Force shutdown to clear any lingering processes
-    const { shutdownProcessManager } = await import('../../src/core/tools.js');
+    const { shutdownProcessManager } = await import('../../src/core/tools/index.js');
     await shutdownProcessManager();
     const result = await executeTool('bg_status', JSON.stringify({}));
     expect(result).toContain('No background processes');
@@ -496,7 +496,7 @@ describe('bg_kill', () => {
 
 describe('forceKillAllProcesses', () => {
   it('kills running processes and nullifies manager', async () => {
-    const { forceKillAllProcesses } = await import('../../src/core/tools.js');
+    const { forceKillAllProcesses } = await import('../../src/core/tools/index.js');
     // Start a process to ensure the manager exists
     await executeTool('bg_start', JSON.stringify({ command: 'sleep 30' }));
     // Force kill should not throw

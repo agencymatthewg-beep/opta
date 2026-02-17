@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { TOOL_SCHEMAS, SUB_AGENT_TOOL_SCHEMAS } from '../../src/core/tools.js';
+import { TOOL_SCHEMAS, SUB_AGENT_TOOL_SCHEMAS } from '../../src/core/tools/index.js';
 
 describe('plan mode tool filtering', () => {
   const READ_ONLY_TOOLS = new Set([

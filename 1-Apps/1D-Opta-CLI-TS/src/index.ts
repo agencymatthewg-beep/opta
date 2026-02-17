@@ -11,7 +11,7 @@ export let isShuttingDown = false;
 
 async function cleanup(): Promise<void> {
   try {
-    const { shutdownProcessManager, forceKillAllProcesses } = await import('./core/tools.js');
+    const { shutdownProcessManager, forceKillAllProcesses } = await import('./core/tools/index.js');
     forceKillAllProcesses();
     await shutdownProcessManager();
   } catch {

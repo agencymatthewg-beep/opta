@@ -209,7 +209,7 @@ export async function spawnSubAgent(
     : registry.schemas;
 
   // Import resolvePermission once outside the loop
-  const { resolvePermission } = await import('./tools.js');
+  const { resolvePermission } = await import('./tools/index.js');
 
   // Set registry.parentContext so nested spawn_agent calls see correct depth.
   // Restored after the loop. Safe because sub-agents run sequentially.

@@ -1,4 +1,4 @@
-import { TOOL_SCHEMAS, SUB_AGENT_TOOL_SCHEMAS, executeTool } from '../core/tools.js';
+import { TOOL_SCHEMAS, SUB_AGENT_TOOL_SCHEMAS, executeTool } from '../core/tools/index.js';
 import { connectMcpServer, type McpConnection } from './client.js';
 import { debug } from '../core/debug.js';
 import type { OptaConfig } from '../core/config.js';

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { TOOL_SCHEMAS } from '../../src/core/tools.js';
+import { TOOL_SCHEMAS } from '../../src/core/tools/index.js';
 
 describe('web_fetch tool', () => {
   it('is registered in tool schemas', () => {
