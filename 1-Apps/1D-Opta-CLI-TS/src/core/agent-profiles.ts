@@ -1,6 +1,14 @@
 /**
  * Agent profiles define different tool sets and behaviors for the agent loop.
  * Users can switch profiles via /agent to specialize the assistant's capabilities.
+ *
+ * TODO: Wire profiles into the agent loop. Currently profiles are UI-only chrome:
+ * - chatState.agentProfile is set by the /agent slash command but never read by
+ *   agentLoop() in core/agent.ts.
+ * - The `tools` array should filter the tool schemas sent to the LLM.
+ * - The `systemPromptSuffix` should be appended to buildSystemPrompt() output.
+ * - Until this integration is done, switching profiles only changes the UI display
+ *   but does NOT restrict available tools or alter system prompt behavior.
  */
 
 export interface AgentProfile {
