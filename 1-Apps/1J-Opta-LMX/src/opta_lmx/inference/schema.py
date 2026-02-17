@@ -259,6 +259,7 @@ class AdminModelDetail(BaseModel):
     use_batching: bool = True
     request_count: int = 0
     last_used_at: float = 0.0
+    context_length: int | None = None
 
 
 class AdminModelsResponse(BaseModel):

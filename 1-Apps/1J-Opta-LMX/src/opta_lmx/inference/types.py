@@ -51,3 +51,4 @@ class LoadedModel:
     last_used_at: float = field(default=0.0)
     backend_type: str = "mlx"  # "mlx" or "gguf"
     backend: Any = None  # InferenceBackend instance (for GGUF); None = use engine directly
+    context_length: int | None = None  # Max context length from model config

@@ -29,6 +29,33 @@ logger = logging.getLogger(__name__)
 _SENTINEL = object()  # Sentinel for sync-to-async iterator conversion
 
 
+def _resolve_context_length(model_id: str) -> int | None:
+    """Try to read max context length from a model's config.json in the HF cache.
+
+    Checks: max_position_embeddings, max_sequence_length, n_positions, seq_length.
+    Returns None if the model config is not found or has no context field.
+    """
+    try:
+        import json
+        from pathlib import Path
+
+        from huggingface_hub import try_to_load_from_cache
+
+        config_path = try_to_load_from_cache(model_id, "config.json")
+        if config_path is None or isinstance(config_path, str) and not Path(config_path).exists():
+            return None
+
+        with open(config_path) as f:
+            config = json.load(f)
+
+        for key in ("max_position_embeddings", "max_sequence_length", "n_positions", "seq_length"):
+            if key in config and isinstance(config[key], int):
+                return config[key]
+    except Exception:
+        pass
+    return None
+
+
 def _detect_format(model_id: str) -> str:
     """Detect whether model_id is MLX or GGUF.
 
@@ -191,6 +218,13 @@ class InferenceEngine:
                 f"exceeds {self._memory.threshold_percent}% threshold. Model unloaded."
             )
 
+        # Resolve context length from model config or GGUF setting
+        ctx_len: int | None = None
+        if fmt == "gguf":
+            ctx_len = self._gguf_context_length
+        else:
+            ctx_len = _resolve_context_length(model_id)
+
         loaded = LoadedModel(
             model_id=model_id,
             engine=engine,
@@ -199,6 +233,7 @@ class InferenceEngine:
             estimated_memory_gb=round(model_memory_gb, 2),
             backend_type=fmt,
             backend=backend_instance,
+            context_length=ctx_len,
         )
         async with self._load_lock:
             self._models[model_id] = loaded

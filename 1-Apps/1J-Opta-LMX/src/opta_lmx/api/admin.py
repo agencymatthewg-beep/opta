@@ -135,6 +135,7 @@ async def list_admin_models(
                 use_batching=m.use_batching,
                 request_count=m.request_count,
                 last_used_at=m.last_used_at,
+                context_length=m.context_length,
             )
             for m in loaded
         ],
