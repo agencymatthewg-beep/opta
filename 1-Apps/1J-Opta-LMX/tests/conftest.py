@@ -89,6 +89,8 @@ async def _make_test_client(
         test_app.state.start_time = 0.0
         test_app.state.admin_key = admin_key
         test_app.state.config = LMXConfig()
+        test_app.state.remote_embedding = None
+        test_app.state.remote_reranking = None
         yield http_client
 
 

@@ -27,6 +27,8 @@ from opta_lmx.api.deps import (
     Memory,
     Metrics,
     Presets,
+    RemoteEmbedding,
+    RemoteReranking,
     Router,
     StartTime,
 )
@@ -779,3 +781,60 @@ async def admin_event_stream(
             event_bus.unsubscribe(queue)
 
     return StreamingResponse(generate(), media_type="text/event-stream")
+
+
+# ─── Model Stack Status ──────────────────────────────────────────────────
+
+
+@router.get("/admin/stack", responses={403: {"model": ErrorResponse}})
+async def stack_status(
+    _auth: AdminAuth,
+    engine: Engine,
+    task_router: Router,
+    remote_embedding: RemoteEmbedding,
+    remote_reranking: RemoteReranking,
+    request: Request,
+) -> dict[str, Any]:
+    """Model Stack overview — roles, loaded models, and remote helpers.
+
+    Returns the current state of each configured stack role:
+    which alias maps to which models, which are loaded, and
+    the health of remote helper endpoints.
+    """
+    config = request.app.state.config
+    loaded_ids = {m.model_id for m in engine.get_loaded_models()}
+
+    # Build role status from routing aliases
+    roles: dict[str, dict[str, Any]] = {}
+    for alias, preferences in config.routing.aliases.items():
+        resolved = task_router.resolve(alias, list(loaded_ids))
+        is_loaded = resolved in loaded_ids
+        roles[alias] = {
+            "preferences": preferences,
+            "resolved_model": resolved if is_loaded else None,
+            "loaded": is_loaded,
+        }
+
+    # Remote helpers
+    helpers: dict[str, dict[str, Any]] = {}
+    if remote_embedding is not None:
+        helpers["embedding"] = {
+            "url": remote_embedding.url,
+            "model": remote_embedding.model,
+            "healthy": remote_embedding.is_healthy,
+            "fallback": remote_embedding.fallback,
+        }
+    if remote_reranking is not None:
+        helpers["reranking"] = {
+            "url": remote_reranking.url,
+            "model": remote_reranking.model,
+            "healthy": remote_reranking.is_healthy,
+            "fallback": remote_reranking.fallback,
+        }
+
+    return {
+        "roles": roles,
+        "remote_helpers": helpers,
+        "loaded_models": sorted(loaded_ids),
+        "default_model": config.routing.default_model,
+    }

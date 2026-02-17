@@ -104,6 +104,30 @@ class PresetsConfig(BaseModel):
     enabled: bool = Field(True, description="Enable preset resolution in inference requests")
 
 
+class RemoteHelperEndpoint(BaseModel):
+    """Configuration for a single remote helper endpoint (embedding or reranking)."""
+
+    url: str = Field(..., description="Base URL of the remote helper (e.g. http://192.168.188.20:1234)")
+    model: str = Field(..., description="Model name to request from the remote endpoint")
+    timeout_sec: float = Field(10.0, ge=1.0, le=120.0, description="Request timeout in seconds")
+    fallback: str = Field(
+        "local",
+        pattern="^(local|skip)$",
+        description="On failure: 'local' = use local model, 'skip' = return error",
+    )
+
+
+class RemoteHelpersConfig(BaseModel):
+    """Remote helper endpoints for embedding and reranking on LAN devices."""
+
+    embedding: RemoteHelperEndpoint | None = Field(
+        None, description="Remote embedding endpoint (proxied by /v1/embeddings)",
+    )
+    reranking: RemoteHelperEndpoint | None = Field(
+        None, description="Remote reranking endpoint",
+    )
+
+
 class SecurityConfig(BaseModel):
     """Authentication settings."""
 
@@ -133,6 +157,7 @@ class LMXConfig(BaseSettings):
     logging: LoggingConfig = Field(default_factory=LoggingConfig)  # type: ignore[arg-type]
     routing: RoutingConfig = Field(default_factory=RoutingConfig)  # type: ignore[arg-type]
     presets: PresetsConfig = Field(default_factory=PresetsConfig)  # type: ignore[arg-type]
+    remote_helpers: RemoteHelpersConfig = Field(default_factory=RemoteHelpersConfig)  # type: ignore[arg-type]
     security: SecurityConfig = Field(default_factory=SecurityConfig)  # type: ignore[arg-type]
 
 

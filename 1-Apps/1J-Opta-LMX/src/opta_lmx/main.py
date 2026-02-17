@@ -103,6 +103,28 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.start_time = time.time()
     app.state.admin_key = config.security.admin_key
 
+    # Initialize remote helper clients (embedding/reranking on LAN devices)
+    from opta_lmx.remote.client import RemoteHelperClient
+
+    remote_embedding: RemoteHelperClient | None = None
+    remote_reranking: RemoteHelperClient | None = None
+
+    if config.remote_helpers.embedding:
+        remote_embedding = RemoteHelperClient(config.remote_helpers.embedding)
+        logger.info("remote_embedding_configured", extra={
+            "url": config.remote_helpers.embedding.url,
+            "model": config.remote_helpers.embedding.model,
+        })
+    if config.remote_helpers.reranking:
+        remote_reranking = RemoteHelperClient(config.remote_helpers.reranking)
+        logger.info("remote_reranking_configured", extra={
+            "url": config.remote_helpers.reranking.url,
+            "model": config.remote_helpers.reranking.model,
+        })
+
+    app.state.remote_embedding = remote_embedding
+    app.state.remote_reranking = remote_reranking
+
     logger.info(
         "server_starting",
         extra={
@@ -160,6 +182,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         ttl_task.cancel()
         with contextlib.suppress(asyncio.CancelledError):
             await ttl_task
+
+    # Cleanup: close remote helper clients
+    if remote_embedding:
+        await remote_embedding.close()
+    if remote_reranking:
+        await remote_reranking.close()
 
     # Cleanup: unload embedding model
     if embedding_engine.is_loaded:
