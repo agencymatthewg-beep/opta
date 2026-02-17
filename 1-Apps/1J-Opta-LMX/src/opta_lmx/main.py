@@ -21,6 +21,7 @@ from opta_lmx.api.embeddings import router as embeddings_router
 from opta_lmx.api.health import router as health_router
 from opta_lmx.api.inference import router as inference_router
 from opta_lmx.api.middleware import RequestIDMiddleware, RequestLoggingMiddleware
+from opta_lmx.api.rag import router as rag_router
 from opta_lmx.api.rerank import router as rerank_router
 from opta_lmx.api.websocket import router as websocket_router
 from opta_lmx.config import LMXConfig, load_config
@@ -151,6 +152,21 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         except Exception as e:
             logger.error("auto_load_failed", extra={"model_id": model_id, "error": str(e)})
 
+    # Initialize RAG vector store
+    if config.rag.enabled:
+        from opta_lmx.rag.store import VectorStore
+        from opta_lmx.api.rag import init_rag_store
+
+        rag_store = VectorStore(persist_path=config.rag.persist_path)
+        loaded_docs = rag_store.load()
+        init_rag_store(rag_store)
+        app.state.rag_store = rag_store
+        if loaded_docs > 0:
+            logger.info("rag_store_loaded", extra={
+                "documents": loaded_docs,
+                "path": str(config.rag.persist_path),
+            })
+
     # Pre-load embedding model if configured
     if config.models.embedding_model:
         try:
@@ -192,6 +208,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         await remote_embedding.close()
     if remote_reranking:
         await remote_reranking.close()
+
+    # Cleanup: persist RAG store
+    rag_store_ref = getattr(app.state, "rag_store", None)
+    if rag_store_ref is not None:
+        rag_store_ref.save()
+        logger.info("rag_store_persisted")
 
     # Cleanup: unload embedding model
     if embedding_engine.is_loaded:
@@ -251,6 +273,8 @@ def create_app(config: LMXConfig | None = None) -> FastAPI:
     app.include_router(inference_router)
     app.include_router(embeddings_router)
     app.include_router(rerank_router)
+    if config.rag.enabled:
+        app.include_router(rag_router)
     app.include_router(anthropic_router)
     app.include_router(admin_router)
     app.include_router(health_router)

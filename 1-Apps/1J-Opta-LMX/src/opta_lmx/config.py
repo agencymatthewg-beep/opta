@@ -137,6 +137,20 @@ class RemoteHelpersConfig(BaseModel):
     )
 
 
+class RAGConfig(BaseModel):
+    """RAG (Retrieval-Augmented Generation) pipeline settings."""
+
+    enabled: bool = Field(True, description="Enable RAG API endpoints")
+    persist_path: Path = Field(
+        default_factory=lambda: Path.home() / ".opta-lmx" / "rag-store.json",
+        description="Path for vector store JSON persistence",
+    )
+    default_chunk_size: int = Field(512, ge=64, le=2048, description="Default tokens per chunk")
+    default_chunk_overlap: int = Field(64, ge=0, le=512, description="Default overlap between chunks")
+    max_documents_per_ingest: int = Field(100, ge=1, le=1000, description="Max documents per ingest request")
+    auto_persist: bool = Field(True, description="Auto-save store after mutations")
+
+
 class SecurityConfig(BaseModel):
     """Authentication settings."""
 
@@ -167,6 +181,7 @@ class LMXConfig(BaseSettings):
     routing: RoutingConfig = Field(default_factory=RoutingConfig)  # type: ignore[arg-type]
     presets: PresetsConfig = Field(default_factory=PresetsConfig)  # type: ignore[arg-type]
     remote_helpers: RemoteHelpersConfig = Field(default_factory=RemoteHelpersConfig)  # type: ignore[arg-type]
+    rag: RAGConfig = Field(default_factory=RAGConfig)  # type: ignore[arg-type]
     security: SecurityConfig = Field(default_factory=SecurityConfig)  # type: ignore[arg-type]
 
 
