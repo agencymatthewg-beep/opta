@@ -330,6 +330,7 @@ async function handleSlashCommand(
         cmdLine('/diff', 'Uncommitted changes'),
         cmdLine('/cost', 'Token usage breakdown'),
         cmdLine('/expand', 'Toggle thinking display'),
+        cmdLine('/keys', 'Show keybindings'),
         cmdLine('/clear', 'Clear screen'),
       ]));
       console.log(chalk.dim('  Tip: type / to browse commands interactively\n'));
@@ -920,6 +921,18 @@ async function handleSlashCommand(
         console.log(chalk.green('✓') + ` Agent: ${chalk.bold(profile.name)} — ${chalk.dim(profile.description)}`);
         console.log(chalk.dim(`  Tools: ${profile.tools.length} enabled`));
       }
+      return 'handled';
+    }
+
+    case '/keys':
+    case '/keybindings': {
+      const { defaultKeybindings } = await import('../tui/keybindings.js');
+      const bindings = defaultKeybindings();
+      const lines = Object.entries(bindings).map(([action, binding]) =>
+        kv(binding.key.padEnd(14), `${binding.description} (${action})`, 14)
+      );
+      console.log('\n' + box('Keybindings', lines));
+      console.log(chalk.dim('  Customize: .opta/keybindings.json\n'));
       return 'handled';
     }
 
