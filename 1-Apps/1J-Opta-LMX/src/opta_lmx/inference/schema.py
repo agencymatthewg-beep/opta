@@ -25,11 +25,40 @@ class ToolCall(BaseModel):
     function: FunctionCall
 
 
+class TextContentPart(BaseModel):
+    """A text content part in a multimodal message."""
+
+    type: str = "text"
+    text: str
+
+
+class ImageUrlDetail(BaseModel):
+    """Image URL with optional detail level for vision models."""
+
+    url: str  # data:image/png;base64,... or https://...
+    detail: str = "auto"  # "low", "high", "auto"
+
+
+class ImageContentPart(BaseModel):
+    """An image content part in a multimodal message."""
+
+    type: str = "image_url"
+    image_url: ImageUrlDetail
+
+
+ContentPart = TextContentPart | ImageContentPart
+
+
 class ChatMessage(BaseModel):
-    """A single message in a conversation."""
+    """A single message in a conversation.
+
+    Content can be a plain string (text-only) or a list of content parts
+    (multimodal, e.g. text + images for vision models). This matches the
+    OpenAI API content format exactly.
+    """
 
     role: str  # system, user, assistant, tool, developer
-    content: str | None = None
+    content: str | list[ContentPart] | None = None
     tool_calls: list[ToolCall] | None = None
     tool_call_id: str | None = None
     name: str | None = None

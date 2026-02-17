@@ -637,3 +637,75 @@ async def test_benchmark_validation(client: AsyncClient) -> None:
         json={"model_id": "test-model", "runs": 10},  # max is 5
     )
     assert response.status_code == 422
+
+
+# --- Multimodal content tests ---
+
+
+async def test_chat_with_string_content(client: AsyncClient) -> None:
+    """POST /v1/chat/completions with plain string content works."""
+    await client.post("/admin/models/load", json={"model_id": "test-model"})
+    response = await client.post(
+        "/v1/chat/completions",
+        json={
+            "model": "test-model",
+            "messages": [{"role": "user", "content": "Hello"}],
+        },
+    )
+    assert response.status_code == 200
+    assert response.json()["choices"][0]["message"]["role"] == "assistant"
+
+
+async def test_chat_with_multimodal_content(client: AsyncClient) -> None:
+    """POST /v1/chat/completions with multimodal content array is accepted."""
+    await client.post("/admin/models/load", json={"model_id": "test-model"})
+    response = await client.post(
+        "/v1/chat/completions",
+        json={
+            "model": "test-model",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": "What is in this image?"},
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": "data:image/png;base64,iVBORw0KGgo=",
+                                "detail": "low",
+                            },
+                        },
+                    ],
+                }
+            ],
+        },
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["choices"][0]["message"]["role"] == "assistant"
+    assert len(data["choices"][0]["message"]["content"]) > 0
+
+
+async def test_chat_with_mixed_content_messages(client: AsyncClient) -> None:
+    """POST /v1/chat/completions with mix of string and array content."""
+    await client.post("/admin/models/load", json={"model_id": "test-model"})
+    response = await client.post(
+        "/v1/chat/completions",
+        json={
+            "model": "test-model",
+            "messages": [
+                {"role": "system", "content": "You are a helpful assistant."},
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": "Describe this image"},
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": "data:image/jpeg;base64,/9j/4AAQ"},
+                        },
+                    ],
+                },
+            ],
+        },
+    )
+    assert response.status_code == 200

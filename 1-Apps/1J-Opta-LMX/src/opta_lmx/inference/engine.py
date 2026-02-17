@@ -71,6 +71,23 @@ def _detect_format(model_id: str) -> str:
     return "mlx"
 
 
+def _resolve_messages(messages: list[ChatMessage]) -> list[dict[str, Any]]:
+    """Convert ChatMessage list to dicts, preserving multimodal content.
+
+    - String content → {"role": ..., "content": "..."}
+    - List content (multimodal) → {"role": ..., "content": [{...}, ...]}
+    - None content → {"role": ..., "content": ""}
+    """
+    result: list[dict[str, Any]] = []
+    for m in messages:
+        if isinstance(m.content, list):
+            # Multimodal: pass content array through for vision models
+            result.append({"role": m.role, "content": [p.model_dump() for p in m.content]})
+        else:
+            result.append({"role": m.role, "content": m.content or ""})
+    return result
+
+
 class InferenceEngine:
     """Manages MLX model lifecycle and inference via vllm-mlx.
 
@@ -471,7 +488,7 @@ class InferenceEngine:
         loaded.request_count += 1
         loaded.last_used_at = time.time()
 
-        msg_dicts = [{"role": m.role, "content": m.content or ""} for m in messages]
+        msg_dicts = _resolve_messages(messages)
 
         async with self._inference_semaphore:
             self._in_flight += 1
@@ -583,11 +600,11 @@ class InferenceEngine:
 
         if hasattr(result, "text"):
             content = result.text
-            prompt_tokens = getattr(result, "prompt_tokens", 0) or max(1, len(" ".join(m.content or "" for m in messages)) // 4)
+            prompt_tokens = getattr(result, "prompt_tokens", 0) or max(1, len(" ".join(m.content if isinstance(m.content, str) else "" for m in messages)) // 4)
             completion_tokens = getattr(result, "completion_tokens", 0) or max(1, len(content) // 4)
         else:
             content = result if isinstance(result, str) else str(result)
-            prompt_text = " ".join(m.content or "" for m in messages)
+            prompt_text = " ".join(m.content if isinstance(m.content, str) else "" for m in messages)
             prompt_tokens = max(1, len(prompt_text) // 4)
             completion_tokens = max(1, len(content) // 4)
         return content, prompt_tokens, completion_tokens
@@ -621,7 +638,7 @@ class InferenceEngine:
         loaded.request_count += 1
         loaded.last_used_at = time.time()
 
-        msg_dicts = [{"role": m.role, "content": m.content or ""} for m in messages]
+        msg_dicts = _resolve_messages(messages)
 
         async with self._inference_semaphore:
             self._in_flight += 1
