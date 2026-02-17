@@ -77,12 +77,12 @@ Now understand the actual implementation.
 
 7. **`docs/ECOSYSTEM.md`**
    - How Opta CLI relates to other Opta components
-   - Data flow: CLI → LM Studio → response
+   - Data flow: CLI → Opta-LMX → response
    - Who calls what
    - Dependency relationships
 
 8. **`docs/KNOWLEDGE.md`**
-   - External resources (LM Studio API, OpenAI function calling)
+   - External resources (Opta-LMX API, OpenAI function calling)
    - Research documents already in `docs/research/`
    - Where to find AIALL skills
    - When to search the landscape research

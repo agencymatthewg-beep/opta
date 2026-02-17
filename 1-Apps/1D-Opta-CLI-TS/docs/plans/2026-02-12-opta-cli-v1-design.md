@@ -8,13 +8,13 @@
 
 ## 1. Product Vision
 
-Opta CLI is a local-first, agentic AI coding assistant that connects to LM Studio on your Mac Studio (Mono512) via its OpenAI-compatible API. It provides a Claude Code-like tool-use experience — read files, edit code, run commands, search codebases — powered by your own hardware instead of cloud APIs.
+Opta CLI is a local-first, agentic AI coding assistant that connects to Opta-LMX on your Mac Studio (Mono512) via its OpenAI-compatible API. It provides a Claude Code-like tool-use experience — read files, edit code, run commands, search codebases — powered by your own hardware instead of cloud APIs.
 
 **What makes it different:** No mainstream AI CLI offers first-class "remote local LLM" management. Aider talks to APIs, Claude Code is Anthropic-only. Opta CLI makes your Mac Studio your private AI cloud and gives you a command center for it from any device on your LAN.
 
 ### V1 Scope (3 capabilities)
 
-1. **Connect & Manage** — Discover, connect to, and switch between models on LM Studio.
+1. **Connect & Manage** — Discover, connect to, and switch between models on Opta-LMX.
 2. **Agentic Chat** — Interactive sessions where the model uses tools (read, edit, bash, search) to complete coding tasks autonomously.
 3. **Configuration** — Connection profiles, model defaults, tool permissions. Works out of the box with sensible defaults.
 
@@ -29,10 +29,10 @@ Agent swarms, plugin/skill system, cloud LLM fallback, diff-based editing mode, 
 ### Core Loop
 
 ```
-User Input → LM Studio (Mono512) → Tool Call → Execute Locally → Result → LM Studio → ... → Done
+User Input → Opta-LMX (Mono512) → Tool Call → Execute Locally → Result → Opta-LMX → ... → Done
 ```
 
-The CLI runs entirely on the MacBook. It sends prompts + tool definitions to LM Studio's `/v1/chat/completions` at `192.168.188.11:1234`. When the model returns a tool call, the CLI executes it locally and feeds the result back. The loop continues until the model produces plain text with no tool calls.
+The CLI runs entirely on the MacBook. It sends prompts + tool definitions to Opta-LMX's `/v1/chat/completions` at `192.168.188.11:1234`. When the model returns a tool call, the CLI executes it locally and feeds the result back. The loop continues until the model produces plain text with no tool calls.
 
 ### Module Map
 
@@ -41,7 +41,7 @@ src/
 ├── index.ts                 # Entry point — Commander program, lazy command routing
 ├── commands/
 │   ├── chat.ts              # Interactive REPL chat session
-│   ├── connect.ts           # Discover and connect to LM Studio
+│   ├── connect.ts           # Discover and connect to Opta-LMX
 │   ├── do.ts                # Single-shot agentic task execution
 │   ├── config.ts            # Config subcommands (get/set/list/reset)
 │   ├── models.ts            # Model listing, switching, info
@@ -57,7 +57,7 @@ src/
 ├── providers/
 │   ├── base.ts              # Provider interface
 │   ├── manager.ts           # Provider selection and health checks
-│   ├── lmstudio.ts          # LM Studio adapter (OpenAI-compatible API)
+│   ├── lmx.ts          # Opta-LMX adapter (OpenAI-compatible API)
 │   └── anthropic.ts         # Anthropic adapter (V2 stub, empty)
 ├── memory/
 │   └── store.ts             # Session persistence + project memory (.opta/memory.md)
@@ -71,8 +71,8 @@ src/
 
 ### Key Design Decisions
 
-- **Direct API** — CLI connects straight to LM Studio. No daemon on the Mac Studio.
-- **OpenAI function-call format** — Tool definitions sent as JSON schemas. Works natively with LM Studio and local models (Qwen2.5-72B, GLM-4.7 handle function calling well).
+- **Direct API** — CLI connects straight to Opta-LMX. No daemon on the Mac Studio.
+- **OpenAI function-call format** — Tool definitions sent as JSON schemas. Works natively with Opta-LMX and local models (Qwen2.5-72B, GLM-4.7 handle function calling well).
 - **Lazy loading** — Heavy deps (openai, marked, ora, conf) loaded per-command via dynamic `import()`. Keeps `opta --help` under 50ms.
 - **Single-threaded agent loop** — One model call at a time. No swarms in V1.
 
@@ -94,7 +94,7 @@ opta chat --model <name>                # Override default model for this sessio
 opta do <task...>                       # Execute a coding task (single-shot agent)
 opta do --model <name> <task...>        # Use specific model for this task
 
-opta connect                            # Connect to LM Studio (saved host)
+opta connect                            # Connect to Opta-LMX (saved host)
 opta connect --host <ip>                # Connect to specific host
 opta connect --port <port>              # Connect to specific port (default: 1234)
 
@@ -128,8 +128,8 @@ opta completions <shell>                # Generate shell completions (bash/zsh/f
 
 | Variable | Purpose | Overrides |
 |----------|---------|-----------|
-| `OPTA_HOST` | LM Studio host | config.connection.host |
-| `OPTA_PORT` | LM Studio port | config.connection.port |
+| `OPTA_HOST` | Opta-LMX host | config.connection.host |
+| `OPTA_PORT` | Opta-LMX port | config.connection.port |
 | `OPTA_MODEL` | Default model | config.model.default |
 | `NO_COLOR` | Disable colors | chalk auto-detects |
 | `CI` | Non-interactive mode | disables prompts, auto-denies `ask` permissions |
@@ -202,7 +202,7 @@ async function agentLoop(task: string, config: OptaConfig): Promise<void> {
       messages = await compactHistory(messages, config);
     }
 
-    // 2. Call LM Studio
+    // 2. Call Opta-LMX
     const response = await openai.chat.completions.create({
       model: config.model.name,
       messages,
@@ -283,7 +283,7 @@ interface OptaConfig {
   };
   model: {
     default: string;       // auto-set by `opta connect`
-    contextLimit: number;  // auto-detected from LM Studio API
+    contextLimit: number;  // auto-detected from Opta-LMX API
   };
   permissions: Record<ToolName, 'allow' | 'ask' | 'deny'>;
   safety: {
@@ -321,16 +321,16 @@ Config stored via `conf` at `~/.config/opta/config.json`.
 If Mac Studio is unreachable, all commands that need the API print an actionable error:
 
 ```
-✗ Cannot reach LM Studio at 192.168.188.11:1234
+✗ Cannot reach Opta-LMX at 192.168.188.11:1234
 
 Possible causes:
   • Mac Studio (Mono512) is offline
-  • LM Studio is not running
+  • Opta-LMX is not running
   • Firewall blocking port 1234
 
 Try:
   • Check connectivity: ping 192.168.188.11
-  • Start LM Studio on the Mac Studio
+  • Start Opta-LMX on the Mac Studio
   • Use a different host: opta connect --host <ip>
 ```
 
@@ -468,7 +468,7 @@ export const EXIT = {
   SUCCESS: 0,
   ERROR: 1,
   MISUSE: 2,          // invalid arguments or bad command usage
-  NO_CONNECTION: 3,   // LM Studio unreachable
+  NO_CONNECTION: 3,   // Opta-LMX unreachable
   PERMISSION: 77,     // filesystem permission denied
   NOT_FOUND: 127,     // file or command not found
   SIGINT: 130,        // user pressed Ctrl+C
@@ -551,7 +551,7 @@ program.command('do <task...>').action(async (task, opts) => {
 |---------|---------|-----------|
 | `commander` | CLI framework | index.ts (always) |
 | `chalk` | Terminal colors | index.ts (always) |
-| `openai` | LM Studio API client | chat, do, connect, models |
+| `openai` | Opta-LMX API client | chat, do, connect, models |
 | `@inquirer/prompts` | Interactive prompts | chat, config |
 | `conf` | Config persistence | config, connect, models |
 | `cosmiconfig` | Project config discovery | agent loop (system prompt) |
@@ -581,7 +581,7 @@ typescript, tsup, tsx, vitest, eslint, @typescript-eslint/\*, prettier, @types/n
 │   ├── commands/
 │   │   ├── chat.ts           # ~150 lines — REPL loop + slash commands
 │   │   ├── do.ts             # ~50 lines — single-shot wrapper around agent loop
-│   │   ├── connect.ts        # ~80 lines — LM Studio discovery + validation
+│   │   ├── connect.ts        # ~80 lines — Opta-LMX discovery + validation
 │   │   ├── config.ts         # ~60 lines — get/set/list/reset subcommands
 │   │   ├── models.ts         # ~80 lines — list/use/info subcommands
 │   │   ├── sessions.ts       # ~70 lines — list/resume/delete/export
@@ -596,7 +596,7 @@ typescript, tsup, tsx, vitest, eslint, @typescript-eslint/\*, prettier, @types/n
 │   ├── providers/
 │   │   ├── base.ts           # ~30 lines — provider interface
 │   │   ├── manager.ts        # ~40 lines — provider selection + health check
-│   │   ├── lmstudio.ts       # ~60 lines — OpenAI SDK wrapper for LM Studio
+│   │   ├── lmx.ts       # ~60 lines — OpenAI SDK wrapper for Opta-LMX
 │   │   └── anthropic.ts      # ~10 lines — V2 stub
 │   ├── memory/
 │   │   └── store.ts          # ~80 lines — session CRUD + project memory
@@ -644,7 +644,7 @@ Build in this sequence — each step produces a testable artifact:
 5. Write `tests/cli.test.ts` — help, version, invalid command
 
 ### Phase 2: Connection (get `opta connect` + `opta models` working)
-6. Implement `providers/base.ts` + `providers/lmstudio.ts`
+6. Implement `providers/base.ts` + `providers/lmx.ts`
 7. Implement `providers/manager.ts` — health check + model listing
 8. Implement `commands/connect.ts`
 9. Implement `commands/models.ts` (list, use, info subcommands)
@@ -655,7 +655,7 @@ Build in this sequence — each step produces a testable artifact:
 12. Implement `core/agent.ts` — the main loop with streaming, permissions, compaction
 13. Implement `ui/spinner.ts` + `ui/markdown.ts`
 14. Implement `commands/do.ts` — single-shot wrapper
-15. Write agent loop tests (mock LM Studio responses)
+15. Write agent loop tests (mock Opta-LMX responses)
 
 ### Phase 4: Chat & Sessions (get `opta chat` working)
 16. Implement `memory/store.ts` — session CRUD + project memory

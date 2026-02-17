@@ -12,9 +12,9 @@ When you're working on Opta CLI and need to understand something external, check
 
 ---
 
-## LM Studio API Reference
+## Opta-LMX API Reference
 
-**Official docs:** https://lmstudio.ai/docs/api
+**Note:** Opta-LMX exposes an OpenAI-compatible API on port 1234. The endpoints below follow the OpenAI `/v1/` convention.
 
 ### Key Endpoints Used by Opta CLI
 
@@ -29,7 +29,7 @@ Response:
     {
       "id": "Qwen2.5-72B-Instruct-4bit",
       "object": "model",
-      "owned_by": "lmstudio",
+      "owned_by": "opta-lmx",
       "state": "loaded" | "available"
     }
   ]
@@ -168,9 +168,9 @@ Response:
 ```typescript
 import OpenAI from 'openai';
 
-// Create client pointing to LM Studio
+// Create client pointing to Opta-LMX
 const client = new OpenAI({
-  apiKey: 'any-value',  // LM Studio doesn't authenticate
+  apiKey: 'any-value',  // Opta-LMX doesn't authenticate
   baseURL: 'http://192.168.188.11:1234/v1',
 });
 
@@ -196,7 +196,7 @@ for await (const event of stream) {
 }
 ```
 
-**Opta CLI usage:** `src/providers/lmstudio.ts` — creates OpenAI client for LM Studio
+**Opta CLI usage:** `src/lmx/client.ts` — creates OpenAI client for Opta-LMX
 
 ---
 
@@ -506,7 +506,7 @@ const skills = await loadSkillsFromDirectory('~/.openclaw/skills/');
 **Resource:** Understanding token limits
 
 For Opta CLI, token counting matters because:
-1. LM Studio has finite context windows (8K, 16K, 32K, 128K depending on model)
+1. Opta-LMX serves models with finite context windows (8K, 16K, 32K, 128K depending on model)
 2. System prompt + conversation history must fit
 3. Context compaction triggers at 70% of limit
 
@@ -593,7 +593,7 @@ return { text: fullText, toolCalls };
 | Task | Search | Resource |
 |------|--------|----------|
 | Adding a new tool | Tool schemas | OpenAI Function Calling Spec |
-| Debugging streaming | Token parsing | LM Studio API Docs |
+| Debugging streaming | Token parsing | Opta-LMX API (OpenAI-compatible) |
 | Validation errors | Type checking | Zod Docs |
 | Config loading | Project discovery | Cosmiconfig Docs |
 | Performance issues | Token limits | This KNOWLEDGE.md (Token Counting) |
@@ -606,7 +606,7 @@ return { text: fullText, toolCalls };
 
 | Resource | URL | When to Use |
 |----------|-----|-----------|
-| LM Studio API | https://lmstudio.ai/docs/api | Implementing model features |
+| Opta-LMX API | OpenAI-compatible (port 1234) | Implementing model features |
 | OpenAI SDK | https://github.com/openai/node-sdk | Using OpenAI client |
 | OpenAI function-calling | https://platform.openai.com/docs/guides/function-calling | Defining tools |
 | Zod | https://zod.dev | Validating config/responses |

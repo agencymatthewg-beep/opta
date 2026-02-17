@@ -5,13 +5,13 @@
 The plan is solid for what it covers. Gaps identified:
 
 ### 1. Multi-Provider Support (Priority: Medium)
-Current plan only wires LM Studio. But `src/providers/` already has:
+Current plan only wires Opta-LMX. But `src/providers/` already has:
 - `base.ts` — abstract provider interface
-- `lmstudio.ts` — LM Studio adapter
+- `lmx.ts` — Opta-LMX adapter
 - `anthropic.ts` — exists (needs verification)
 - `manager.ts` — provider manager
 
-**Improvement:** The chat command should use `manager.ts` to support provider switching mid-session, not hardcode LM Studio. This is ~20 extra lines in chat.ts.
+**Improvement:** The chat command should use `manager.ts` to support provider switching mid-session, not hardcode Opta-LMX. This is ~20 extra lines in chat.ts.
 
 ### 2. Session Title Generation (Priority: Low)
 Plan says "first user message, truncated to 60 chars". Better: use the LLM to generate a 4-6 word title after the first exchange (like Claude Code does). Costs 1 extra API call but dramatically improves session list readability.

@@ -16,10 +16,12 @@ Each decision lists the question, options considered, the choice made, and the r
 ## Decision 1: Direct API Connection (No Daemon)
 
 ### Question
-Should Opta CLI connect directly to LM Studio, or through an Opta daemon service?
+Should Opta CLI connect directly to the inference server, or through an Opta daemon service?
+
+(Originally designed for LM Studio, now migrated to Opta-LMX.)
 
 ### Options Considered
-1. **Direct API** — CLI talks directly to LM Studio via HTTP
+1. **Direct API** — CLI talks directly to Opta-LMX via HTTP
 2. **Daemon** — Mac Studio runs a daemon; CLI connects to daemon
 
 ### Decision
@@ -30,14 +32,14 @@ Should Opta CLI connect directly to LM Studio, or through an Opta daemon service
 | Aspect | Direct API | Daemon |
 |--------|-----------|--------|
 | **Latency** | Low (direct HTTP) | Higher (2 hops) |
-| **Reliability** | If LM Studio down, obvious error | If daemon down, confusing error |
+| **Reliability** | If Opta-LMX down, obvious error | If daemon down, confusing error |
 | **Complexity** | Simple (one service to talk to) | Complex (daemon management) |
-| **Debugging** | Easy (curl to LM Studio API) | Harder (debug daemon logs) |
+| **Debugging** | Easy (curl to Opta-LMX API) | Harder (debug daemon logs) |
 | **Cost** | No additional service | Extra process on Mac Studio |
 | **Future** | Can add daemon layer later if needed | Can't remove it easily |
 
 ### Implication
-- All Opta CLI network calls go directly to LM Studio at `192.168.188.11:1234`
+- All Opta CLI network calls go directly to Opta-LMX at `192.168.188.11:1234`
 - Errors make it obvious if Mac Studio is offline
 - No daemon to start/stop/manage
 
@@ -63,7 +65,7 @@ What schema format should we use for tool definitions? OpenAI native, custom, or
 
 | Aspect | OpenAI | Custom | JSON-RPC |
 |--------|--------|--------|----------|
-| **LLM support** | Qwen, GLM, DeepSeek work natively | May not work with local models | Not common in LLMs |
+| **LLM support** | Qwen, GLM, DeepSeek work natively via Opta-LMX | May not work with local models | Not common in LLMs |
 | **Code examples** | Tons of examples online | Few examples | Few examples |
 | **SDK support** | OpenAI SDK native | Need custom adapter | Need custom adapter |
 | **Debugging** | Can inspect raw schema | Harder to debug | Less familiar |
@@ -184,11 +186,11 @@ V2+ could support parallel tool execution with appropriate orchestration.
 ## Decision 5: Provider Interface Pattern
 
 ### Question
-How should we abstract different LLM providers (LM Studio, Anthropic, OpenAI)?
+How should we abstract different LLM providers (Opta-LMX, Anthropic, OpenAI)?
 
 ### Options Considered
 1. **Provider interface** — Abstract `ProviderClient` base class
-2. **Conditional imports** — `if (provider === 'lmstudio') { import LMStudio; } ...`
+2. **Conditional imports** — `if (provider === 'lmx') { import LmxClient; } ...`
 3. **Provider factory** — Single factory function that returns client
 
 ### Decision
@@ -212,15 +214,15 @@ export abstract class ProviderClient {
   abstract health(): Promise<boolean>;
 }
 
-// In src/providers/lmstudio.ts
-export class LMStudioClient extends ProviderClient {
+// In src/lmx/client.ts
+export class LmxClient extends ProviderClient {
   // Implementation
 }
 
 // In src/providers/manager.ts
 function getProvider(config: OptaConfig): ProviderClient {
-  if (config.provider === 'lmstudio') {
-    return new LMStudioClient(config);
+  if (config.provider === 'lmx') {
+    return new LmxClient(config);
   }
   if (config.provider === 'anthropic') {
     return new AnthropicClient(config);
@@ -416,10 +418,10 @@ How should tool execution results be formatted when sent back to the model?
 ## Decision 10: Default Connection Host
 
 ### Question
-What should the default LM Studio host be?
+What should the default Opta-LMX host be?
 
 ### Options Considered
-1. **192.168.188.11** — Mac Studio's fixed IP (Matthew's setup)
+1. **192.168.188.11** — Mac Studio's fixed IP where Opta-LMX runs (Matthew's setup)
 2. **localhost:1234** — Local machine only
 3. **Discoverable** — Auto-discover via broadcast
 4. **User-provided** — Always ask on first run
@@ -437,10 +439,10 @@ What should the default LM Studio host be?
 | **Always ask** | ✅ Works for anyone | 🚫 Tedious | ✅ Secure |
 
 **Fixed IP wins because:**
-- Matthew's setup is stable (Mac Studio on LAN)
+- Matthew's setup is stable (Mac Studio running Opta-LMX on LAN)
 - Most users will have similar setup (MacBook + Mac Studio on same LAN)
 - First `opta connect` can auto-discover and save the IP
-- Error message is clear if it's wrong ("Cannot reach 192.168.188.11:1234. Try `opta connect --host <ip>`")
+- Error message is clear if it's wrong ("Cannot reach Opta-LMX at 192.168.188.11:1234. Try `opta connect --host <ip>`")
 
 ### Implication
 ```typescript

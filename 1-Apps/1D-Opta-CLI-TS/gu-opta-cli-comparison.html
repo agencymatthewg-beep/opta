@@ -1,0 +1,1721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Opta CLI vs OpenCode — UX Parity & Custom TUI Roadmap</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+  :root {
+    --void: #09090b;
+    --surface: #18181b;
+    --elevated: #27272a;
+    --border: #3f3f46;
+    --text-primary: #fafafa;
+    --text-secondary: #a1a1aa;
+    --text-muted: #52525b;
+    --primary: #8b5cf6;
+    --primary-glow: #a855f7;
+    --neon-blue: #3b82f6;
+    --neon-green: #22c55e;
+    --neon-amber: #f59e0b;
+    --neon-red: #ef4444;
+    --neon-cyan: #06b6d4;
+    --neon-pink: #ec4899;
+    --opencode-teal: #2dd4bf;
+    --opencode-glow: #5eead4;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--void);
+    color: var(--text-primary);
+    font-family: 'Sora', -apple-system, BlinkMacSystemFont, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    line-height: 1.6;
+  }
+
+  /* Noise overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* Ambient particles */
+  .particle {
+    position: fixed;
+    border-radius: 50%;
+    pointer-events: none;
+    animation: float 20s ease-in-out infinite;
+    opacity: 0.04;
+  }
+  .particle-1 { width: 400px; height: 400px; background: var(--primary); top: -100px; right: -100px; animation-delay: 0s; }
+  .particle-2 { width: 300px; height: 300px; background: var(--opencode-teal); bottom: -80px; left: -80px; animation-delay: -7s; }
+  .particle-3 { width: 250px; height: 250px; background: var(--neon-blue); top: 40%; left: 60%; animation-delay: -13s; }
+  .particle-4 { width: 350px; height: 350px; background: var(--neon-green); bottom: 20%; right: 10%; animation-delay: -5s; }
+
+  @keyframes float {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    25% { transform: translate(30px, -20px) scale(1.05); }
+    50% { transform: translate(-20px, 30px) scale(0.95); }
+    75% { transform: translate(15px, 15px) scale(1.02); }
+  }
+
+  @keyframes breathe {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 8px var(--primary-glow); }
+    50% { box-shadow: 0 0 20px var(--primary-glow); }
+  }
+
+  .container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 40px 24px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Glass panels */
+  .glass {
+    background: rgba(24, 24, 27, 0.6);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  .glass::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+  }
+
+  .glass-subtle {
+    background: rgba(24, 24, 27, 0.35);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+  }
+
+  .glass-strong {
+    background: rgba(39, 39, 42, 0.7);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 16px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  }
+
+  /* Header */
+  .hero {
+    text-align: center;
+    padding: 60px 20px 40px;
+    animation: slideUp 0.8s ease-out;
+  }
+
+  .hero-badge {
+    display: inline-block;
+    padding: 6px 16px;
+    border-radius: 100px;
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    background: rgba(139, 92, 246, 0.08);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--primary-glow);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+
+  h1 {
+    font-family: 'Sora', sans-serif;
+    font-size: 42px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #ffffff 0%, #c4b5fd 50%, #818cf8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 16px;
+    line-height: 1.2;
+  }
+
+  .hero-sub {
+    color: var(--text-secondary);
+    font-size: 16px;
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  /* Section dividers */
+  .section-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--primary), transparent);
+    margin: 48px 0;
+    box-shadow: 0 0 12px rgba(139, 92, 246, 0.3);
+  }
+
+  /* Section headers */
+  .section-header {
+    font-family: 'Sora', sans-serif;
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 24px;
+    background: linear-gradient(135deg, #ffffff, #c4b5fd);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    position: relative;
+    padding-left: 16px;
+  }
+  .section-header::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 4px;
+    bottom: 4px;
+    width: 3px;
+    background: var(--primary);
+    border-radius: 2px;
+    box-shadow: 0 0 8px var(--primary-glow);
+  }
+
+  .section-sub {
+    color: var(--text-muted);
+    font-size: 14px;
+    margin-top: -16px;
+    margin-bottom: 24px;
+    padding-left: 16px;
+  }
+
+  /* Score cards */
+  .score-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 40px;
+  }
+
+  .score-card {
+    padding: 32px;
+    text-align: center;
+    transition: transform 0.3s ease;
+  }
+  .score-card:hover { transform: translateY(-4px); }
+
+  .score-name {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .score-org {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+  }
+  .score-number {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 56px;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .score-pct {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+  }
+  .score-bar-track {
+    height: 6px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .score-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 1.5s ease-out;
+  }
+  .score-tagline {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-style: italic;
+  }
+
+  .opta-accent .score-name { color: var(--primary-glow); }
+  .opta-accent .score-number { color: var(--primary-glow); }
+  .opta-accent .score-bar-fill { background: linear-gradient(90deg, var(--primary), var(--primary-glow)); }
+
+  .oc-accent .score-name { color: var(--opencode-teal); }
+  .oc-accent .score-number { color: var(--opencode-teal); }
+  .oc-accent .score-bar-fill { background: linear-gradient(90deg, #0d9488, var(--opencode-teal)); }
+
+  /* Paradigm comparison */
+  .paradigm-grid {
+    display: grid;
+    grid-template-columns: 1fr 80px 1fr;
+    gap: 0;
+    margin-bottom: 40px;
+    align-items: stretch;
+  }
+
+  .paradigm-card {
+    padding: 28px;
+  }
+
+  .paradigm-vs {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    color: var(--text-muted);
+    font-weight: 600;
+  }
+
+  .paradigm-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 12px;
+  }
+
+  .paradigm-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+    line-height: 1.6;
+  }
+
+  .paradigm-tech {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    padding: 12px;
+    background: rgba(0,0,0,0.3);
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.05);
+    white-space: pre;
+    line-height: 1.5;
+  }
+
+  /* Comparison grids */
+  .comp-table-wrapper {
+    overflow-x: auto;
+    margin-bottom: 40px;
+    padding: 24px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 14px;
+  }
+
+  thead th {
+    padding: 14px 16px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    position: sticky;
+    top: 0;
+    background: rgba(24, 24, 27, 0.95);
+    backdrop-filter: blur(10px);
+  }
+  thead th:first-child { color: var(--text-muted); }
+  thead th:nth-child(2) { color: var(--opencode-teal); }
+  thead th:nth-child(3) { color: var(--primary-glow); }
+  thead th:nth-child(4) { color: var(--text-muted); font-weight: 400; }
+
+  tbody td {
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    vertical-align: top;
+    color: var(--text-secondary);
+  }
+  tbody tr:hover td {
+    background: rgba(139, 92, 246, 0.04);
+  }
+  tbody td:first-child {
+    font-weight: 500;
+    color: var(--text-primary);
+    white-space: nowrap;
+  }
+
+  .check { color: var(--neon-green); font-weight: 600; }
+  .cross { color: var(--text-muted); }
+  .partial { color: var(--neon-amber); }
+  .unique { color: var(--primary-glow); font-weight: 500; }
+  .oc-has { color: var(--opencode-teal); font-weight: 500; }
+
+  /* Feature cards */
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 20px;
+    margin-bottom: 40px;
+  }
+
+  .feature-card {
+    padding: 24px;
+    transition: transform 0.3s ease;
+  }
+  .feature-card:hover { transform: translateY(-2px); }
+
+  .feature-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .feature-list {
+    list-style: none;
+    padding: 0;
+  }
+  .feature-list li {
+    font-size: 13px;
+    color: var(--text-secondary);
+    padding: 5px 0;
+    padding-left: 20px;
+    position: relative;
+    line-height: 1.5;
+  }
+  .feature-list li::before {
+    content: '>';
+    position: absolute;
+    left: 0;
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+  }
+
+  /* Priority tag */
+  .priority {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    vertical-align: middle;
+    margin-left: 8px;
+  }
+  .p0 { background: rgba(239, 68, 68, 0.2); color: var(--neon-red); border: 1px solid rgba(239, 68, 68, 0.3); }
+  .p1 { background: rgba(245, 158, 11, 0.2); color: var(--neon-amber); border: 1px solid rgba(245, 158, 11, 0.3); }
+  .p2 { background: rgba(59, 130, 246, 0.2); color: var(--neon-blue); border: 1px solid rgba(59, 130, 246, 0.3); }
+  .p3 { background: rgba(139, 92, 246, 0.2); color: var(--primary-glow); border: 1px solid rgba(139, 92, 246, 0.3); }
+
+  /* Roadmap cards */
+  .roadmap-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    margin-bottom: 40px;
+  }
+
+  .roadmap-card {
+    padding: 20px;
+    border-left: 3px solid var(--border);
+    transition: border-color 0.3s ease, transform 0.3s ease;
+  }
+  .roadmap-card:hover { transform: translateX(4px); }
+  .roadmap-card.rp0 { border-left-color: var(--neon-red); }
+  .roadmap-card.rp1 { border-left-color: var(--neon-amber); }
+  .roadmap-card.rp2 { border-left-color: var(--neon-blue); }
+  .roadmap-card.rp3 { border-left-color: var(--primary-glow); }
+
+  .roadmap-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .roadmap-desc {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  .roadmap-tech {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 8px;
+    padding: 6px 10px;
+    background: rgba(0,0,0,0.2);
+    border-radius: 6px;
+    display: inline-block;
+  }
+
+  /* Terminal mockup */
+  .terminal {
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 40px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+
+  .terminal-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background: rgba(39, 39, 42, 0.8);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .terminal-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+  }
+  .dot-red { background: #ff5f57; }
+  .dot-yellow { background: #febc2e; }
+  .dot-green { background: #28c840; }
+
+  .terminal-title {
+    flex: 1;
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .terminal-body {
+    padding: 20px 24px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    line-height: 1.7;
+    white-space: pre;
+    overflow-x: auto;
+    color: var(--text-secondary);
+  }
+
+  .t-violet { color: var(--primary-glow); }
+  .t-green { color: var(--neon-green); }
+  .t-blue { color: var(--neon-blue); }
+  .t-amber { color: var(--neon-amber); }
+  .t-cyan { color: var(--neon-cyan); }
+  .t-dim { color: var(--text-muted); }
+  .t-white { color: var(--text-primary); }
+  .t-red { color: var(--neon-red); }
+  .t-pink { color: var(--neon-pink); }
+  .t-teal { color: var(--opencode-teal); }
+  .t-bold { font-weight: 600; }
+
+  /* Checklist */
+  .checklist {
+    list-style: none;
+    padding: 0;
+  }
+  .checklist li {
+    font-size: 14px;
+    padding: 10px 0 10px 32px;
+    position: relative;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    color: var(--text-secondary);
+  }
+  .checklist li::before {
+    position: absolute;
+    left: 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+  }
+  .checklist li.done::before { content: '[x]'; color: var(--neon-green); }
+  .checklist li.todo::before { content: '[ ]'; color: var(--text-muted); }
+  .checklist li.done { color: var(--text-muted); text-decoration: line-through; }
+
+  .checklist-label {
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+  .checklist li.done .checklist-label { color: var(--text-muted); }
+
+  /* Phase timeline */
+  .phase-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 40px;
+  }
+
+  .phase-card {
+    padding: 24px;
+    text-align: center;
+    position: relative;
+    transition: transform 0.3s ease;
+  }
+  .phase-card:hover { transform: translateY(-4px); }
+
+  .phase-number {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--primary-glow);
+    opacity: 0.3;
+    margin-bottom: 8px;
+  }
+
+  .phase-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  .phase-desc {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  .phase-tech-list {
+    list-style: none;
+    padding: 0;
+    margin-top: 12px;
+    text-align: left;
+  }
+  .phase-tech-list li {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    padding: 2px 0;
+  }
+
+  /* Bar chart */
+  .bar-group {
+    margin-bottom: 20px;
+  }
+
+  .bar-label {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .bar-track {
+    height: 8px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 4px;
+    overflow: hidden;
+    display: flex;
+    gap: 2px;
+  }
+
+  .bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 1s ease-out;
+  }
+  .bar-opta { background: linear-gradient(90deg, var(--primary), var(--primary-glow)); }
+  .bar-oc { background: linear-gradient(90deg, #0d9488, var(--opencode-teal)); }
+
+  /* Deps table */
+  .deps-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 40px;
+  }
+
+  .dep-card {
+    padding: 16px;
+    text-align: center;
+    transition: transform 0.2s ease;
+  }
+  .dep-card:hover { transform: scale(1.03); }
+
+  .dep-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+  }
+
+  .dep-purpose {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  /* Insight callout */
+  .insight {
+    padding: 20px 24px;
+    margin-bottom: 32px;
+    border-left: 3px solid var(--primary);
+    background: rgba(139, 92, 246, 0.05);
+  }
+
+  .insight-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--primary-glow);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .insight-text {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .score-grid, .paradigm-grid { grid-template-columns: 1fr; }
+    .paradigm-vs { padding: 16px 0; }
+    .feature-grid { grid-template-columns: 1fr; }
+    .phase-grid { grid-template-columns: repeat(2, 1fr); }
+    h1 { font-size: 28px; }
+  }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+  .legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+  }
+  .legend-opta { background: var(--primary-glow); }
+  .legend-oc { background: var(--opencode-teal); }
+</style>
+</head>
+<body>
+
+<div class="particle particle-1"></div>
+<div class="particle particle-2"></div>
+<div class="particle particle-3"></div>
+<div class="particle particle-4"></div>
+
+<div class="container">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-badge">UX Parity Analysis</div>
+    <h1>Opta CLI vs OpenCode</h1>
+    <p class="hero-sub">
+      A comprehensive UX, UI, and architecture comparison &mdash; identifying every OpenCode experience we can adopt to transform Opta CLI from an inline REPL into a polished, fully custom terminal window.
+    </p>
+  </div>
+
+  <!-- Legend -->
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot legend-opta"></div> Opta CLI (TypeScript)</div>
+    <div class="legend-item"><div class="legend-dot legend-oc"></div> OpenCode / Crush (Go)</div>
+  </div>
+
+  <!-- TL;DR Score Cards -->
+  <div class="section-header">UX Maturity Score</div>
+  <p class="section-sub">Scored across 42 UX features spanning TUI, editor, keyboard, sidebar, theming, sessions, and tooling</p>
+
+  <div class="score-grid">
+    <div class="glass score-card oc-accent" style="animation: slideUp 0.6s ease-out 0.1s backwards;">
+      <div class="score-name">OpenCode / Crush</div>
+      <div class="score-org">SST &middot; Charm &middot; Go + Bubble Tea</div>
+      <div class="score-number">35</div>
+      <div class="score-pct">35 / 42 features &mdash; 83%</div>
+      <div class="score-bar-track"><div class="score-bar-fill" style="width: 83%"></div></div>
+      <div class="score-tagline">"Full-screen TUI owning every pixel"</div>
+    </div>
+    <div class="glass score-card opta-accent" style="animation: slideUp 0.6s ease-out 0.2s backwards;">
+      <div class="score-name">Opta CLI</div>
+      <div class="score-org">Opta Operations &middot; TypeScript + Commander</div>
+      <div class="score-number">22</div>
+      <div class="score-pct">22 / 42 features &mdash; 52%</div>
+      <div class="score-bar-track"><div class="score-bar-fill" style="width: 52%"></div></div>
+      <div class="score-tagline">"Inline REPL with growing muscle"</div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- Paradigm Difference -->
+  <div class="section-header">The Fundamental Paradigm Gap</div>
+
+  <div class="paradigm-grid">
+    <div class="glass paradigm-card">
+      <div class="paradigm-title" style="color: var(--opencode-teal);">OpenCode: Full-Screen TUI</div>
+      <div class="paradigm-desc">
+        OpenCode owns the <strong>entire terminal window</strong>. It renders a custom application with panels, sidebars, status bars, and split views. The terminal becomes a bespoke IDE. Built on Bubble Tea (Elm Architecture for terminals) with Lip Gloss styling.
+      </div>
+      <div class="paradigm-tech"><span class="t-teal">Framework</span>: Bubble Tea (Go)
+<span class="t-teal">Styling</span>:  Lip Gloss (CSS-like)
+<span class="t-teal">Markdown</span>: Glamour (stylesheet)
+<span class="t-teal">Layout</span>:   Component tree
+<span class="t-teal">Render</span>:   60fps redraw loop
+<span class="t-teal">Input</span>:    Custom textarea widget
+<span class="t-teal">State</span>:    Elm Architecture (MVU)</div>
+    </div>
+    <div class="paradigm-vs">vs</div>
+    <div class="glass paradigm-card">
+      <div class="paradigm-title" style="color: var(--primary-glow);">Opta CLI: Inline REPL</div>
+      <div class="paradigm-desc">
+        Opta prints lines into the terminal's normal scrollback buffer. It uses readline for input and chalk for colors. The terminal retains its natural behavior &mdash; scroll up to see history, pipe output, combine with other tools.
+      </div>
+      <div class="paradigm-tech"><span class="t-violet">Framework</span>: Commander.js
+<span class="t-violet">Styling</span>:  Chalk (ANSI)
+<span class="t-violet">Markdown</span>: marked-terminal
+<span class="t-violet">Layout</span>:   Sequential print
+<span class="t-violet">Render</span>:   Write-once lines
+<span class="t-violet">Input</span>:    readline (single-line)
+<span class="t-violet">State</span>:    Imperative loop</div>
+    </div>
+  </div>
+
+  <div class="glass insight">
+    <div class="insight-title">Key Insight</div>
+    <div class="insight-text">
+      The gap isn't about missing features &mdash; it's about <strong>rendering architecture</strong>. OpenCode can update any pixel at any time (reactive TUI). Opta can only append lines (streaming REPL). To match OpenCode's UX, Opta needs to migrate from Commander.js to <strong>Ink</strong> (React for terminals) &mdash; the TypeScript equivalent of Bubble Tea. This is a Phase 2 migration, not a quick patch.
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- Detailed Comparison Tables -->
+  <div class="section-header">Detailed UX Comparison</div>
+
+  <!-- 1. TUI Framework -->
+  <div class="glass comp-table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>TUI Framework & Layout</th>
+          <th>OpenCode</th>
+          <th>Opta CLI</th>
+          <th>Gap</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Full-screen alternate buffer</td>
+          <td class="oc-has">Yes &mdash; owns terminal</td>
+          <td class="cross">No &mdash; inline scroll</td>
+          <td>Requires Ink migration</td>
+        </tr>
+        <tr>
+          <td>Split-pane layout</td>
+          <td class="oc-has">Main + sidebar panels</td>
+          <td class="cross">Single column</td>
+          <td>Ink &lt;Box flexDirection&gt;</td>
+        </tr>
+        <tr>
+          <td>Persistent status bar</td>
+          <td class="oc-has">Bottom bar (model, tokens, cost)</td>
+          <td class="partial">Post-response summary</td>
+          <td>Ink &lt;Static&gt; component</td>
+        </tr>
+        <tr>
+          <td>Sidebar panel</td>
+          <td class="oc-has">Sessions, files, diagnostics</td>
+          <td class="cross">No sidebar</td>
+          <td>Ink flex layout</td>
+        </tr>
+        <tr>
+          <td>Responsive resize</td>
+          <td class="oc-has">Auto-adapts to terminal size</td>
+          <td class="partial">Fixed-width boxes</td>
+          <td>process.stdout.columns</td>
+        </tr>
+        <tr>
+          <td>Focus management</td>
+          <td class="oc-has">Tab between panels</td>
+          <td class="cross">Single input only</td>
+          <td>Ink useFocus hook</td>
+        </tr>
+        <tr>
+          <td>Scrollable message list</td>
+          <td class="oc-has">Virtual scroll with keyboard</td>
+          <td class="partial">Terminal scrollback only</td>
+          <td>Ink &lt;ScrollView&gt;</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 2. Editor & Input -->
+  <div class="glass comp-table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Editor & Input</th>
+          <th>OpenCode</th>
+          <th>Opta CLI</th>
+          <th>Gap</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Multiline input</td>
+          <td class="oc-has">Custom textarea (Meta+Enter)</td>
+          <td class="cross">Single-line readline</td>
+          <td>@inquirer/prompts editor</td>
+        </tr>
+        <tr>
+          <td>Paste detection</td>
+          <td class="oc-has">Extmarks for pasted content</td>
+          <td class="cross">Raw paste only</td>
+          <td>Detect \n in paste events</td>
+        </tr>
+        <tr>
+          <td>@ file autocomplete</td>
+          <td class="oc-has">Fuzzy file search + agent refs</td>
+          <td class="partial">@ path resolution (no autocomplete)</td>
+          <td>Add fuzzy file picker</td>
+        </tr>
+        <tr>
+          <td>/ command palette</td>
+          <td class="oc-has">Inline autocomplete list</td>
+          <td class="check">Interactive select menu</td>
+          <td>Minimal &mdash; polish only</td>
+        </tr>
+        <tr>
+          <td>Input history</td>
+          <td class="oc-has">Up/Down with edge detection</td>
+          <td class="partial">readline history</td>
+          <td>Already functional</td>
+        </tr>
+        <tr>
+          <td>Shell mode (! prefix)</td>
+          <td class="oc-has">Visual border color change</td>
+          <td class="cross">No shell mode</td>
+          <td>Add ! prefix handler</td>
+        </tr>
+        <tr>
+          <td>Line range refs (file:10-20)</td>
+          <td class="oc-has">URL query param style</td>
+          <td class="cross">Whole file only</td>
+          <td>Extend fileref.ts parser</td>
+        </tr>
+        <tr>
+          <td>Image paste</td>
+          <td class="oc-has">Ctrl-V image attach</td>
+          <td class="cross">Text only</td>
+          <td>Requires multimodal model</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 3. Rendering & Display -->
+  <div class="glass comp-table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Rendering & Display</th>
+          <th>OpenCode</th>
+          <th>Opta CLI</th>
+          <th>Gap</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Markdown rendering</td>
+          <td class="oc-has">Glamour (stylesheet-based)</td>
+          <td class="check">marked-terminal</td>
+          <td>Comparable quality</td>
+        </tr>
+        <tr>
+          <td>Syntax highlighting</td>
+          <td class="oc-has">Built-in code highlighting</td>
+          <td class="check">marked-terminal highlighting</td>
+          <td>Comparable</td>
+        </tr>
+        <tr>
+          <td>Thinking/reasoning display</td>
+          <td class="oc-has">Togglable thinking blocks</td>
+          <td class="check">ThinkingRenderer with streaming</td>
+          <td>Close &mdash; add collapse toggle</td>
+        </tr>
+        <tr>
+          <td>Tool call cards</td>
+          <td class="oc-has">Per-tool-type formatting</td>
+          <td class="partial">Generic tool output</td>
+          <td>Add tool-specific renderers</td>
+        </tr>
+        <tr>
+          <td>Inline diff viewer</td>
+          <td class="oc-has">Side-by-side + unified diff</td>
+          <td class="partial">/diff uses git diff --stat</td>
+          <td>Add inline diff renderer</td>
+        </tr>
+        <tr>
+          <td>Progress indicators</td>
+          <td class="oc-has">Spinners + progress bars</td>
+          <td class="check">Ora spinner + box.ts progressBar</td>
+          <td>Good parity</td>
+        </tr>
+        <tr>
+          <td>Box drawing / cards</td>
+          <td class="oc-has">Lip Gloss styled containers</td>
+          <td class="check">box.ts Unicode drawing</td>
+          <td>Good parity (just added)</td>
+        </tr>
+        <tr>
+          <td>Theme system</td>
+          <td class="oc-has">10+ themes, custom JSON</td>
+          <td class="cross">Hardcoded chalk colors</td>
+          <td>Add theme config layer</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 4. Session & State -->
+  <div class="glass comp-table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Session & State Management</th>
+          <th>OpenCode</th>
+          <th>Opta CLI</th>
+          <th>Gap</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Session persistence</td>
+          <td class="oc-has">SQLite database</td>
+          <td class="check">JSON files</td>
+          <td>Both work, different tradeoffs</td>
+        </tr>
+        <tr>
+          <td>Session list / picker</td>
+          <td class="oc-has">Sidebar panel + keyboard nav</td>
+          <td class="check">/sessions command</td>
+          <td>Add interactive picker</td>
+        </tr>
+        <tr>
+          <td>Session export</td>
+          <td class="oc-has">JSON export/import + share URLs</td>
+          <td class="check">/share exports to markdown</td>
+          <td>Add JSON + share URL</td>
+        </tr>
+        <tr>
+          <td>Token/cost tracking</td>
+          <td class="oc-has">Persistent status bar + /stats</td>
+          <td class="check">/cost command + status bar</td>
+          <td>Add persistent display</td>
+        </tr>
+        <tr>
+          <td>Statistics dashboard</td>
+          <td class="oc-has">/stats with filters (days, models)</td>
+          <td class="cross">Per-session only</td>
+          <td>Add cross-session analytics</td>
+        </tr>
+        <tr>
+          <td>Context compaction</td>
+          <td class="oc-has">/compact command</td>
+          <td class="check">Auto at 70% threshold</td>
+          <td>Opta has auto, OpenCode manual</td>
+        </tr>
+        <tr>
+          <td>Undo/redo</td>
+          <td class="oc-has">/undo, /redo</td>
+          <td class="check">/undo with git checkpoints</td>
+          <td>Good parity (Opta has git-backed)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 5. Commands & Workflow -->
+  <div class="glass comp-table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Commands & Workflow</th>
+          <th>OpenCode</th>
+          <th>Opta CLI</th>
+          <th>Gap</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Non-interactive mode</td>
+          <td class="oc-has">opencode run [msg] + --format</td>
+          <td class="check">opta do &lt;task&gt; + --format json</td>
+          <td>Good parity</td>
+        </tr>
+        <tr>
+          <td>Server mode (headless)</td>
+          <td class="oc-has">opencode serve (HTTP API)</td>
+          <td class="cross">No server mode</td>
+          <td>Add HTTP API endpoint</td>
+        </tr>
+        <tr>
+          <td>Web interface</td>
+          <td class="oc-has">opencode web (browser UI)</td>
+          <td class="cross">Terminal only</td>
+          <td>Future consideration</td>
+        </tr>
+        <tr>
+          <td>Remote attach</td>
+          <td class="oc-has">opencode attach [url]</td>
+          <td class="cross">Local only</td>
+          <td>Future consideration</td>
+        </tr>
+        <tr>
+          <td>Model switching</td>
+          <td class="oc-has">/models with picker</td>
+          <td class="check">/model command</td>
+          <td>Add interactive picker</td>
+        </tr>
+        <tr>
+          <td>Agent selection</td>
+          <td class="oc-has">--agent + custom agents</td>
+          <td class="cross">Single agent only</td>
+          <td>V3 multi-agent</td>
+        </tr>
+        <tr>
+          <td>Plan mode</td>
+          <td class="oc-has">Experimental plan mode</td>
+          <td class="check">--plan flag with approval</td>
+          <td>Good parity</td>
+        </tr>
+        <tr>
+          <td>Shell completions</td>
+          <td class="oc-has">bash/zsh/fish</td>
+          <td class="check">bash/zsh/fish</td>
+          <td>Full parity</td>
+        </tr>
+        <tr>
+          <td>MCP integration</td>
+          <td class="oc-has">stdio + auth management</td>
+          <td class="check">stdio + HTTP transports</td>
+          <td>Good parity</td>
+        </tr>
+        <tr>
+          <td>External editor ($EDITOR)</td>
+          <td class="oc-has">/editor opens in $EDITOR</td>
+          <td class="cross">No editor integration</td>
+          <td>Add /editor command</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 6. Keyboard & Navigation -->
+  <div class="glass comp-table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Keyboard & Navigation</th>
+          <th>OpenCode</th>
+          <th>Opta CLI</th>
+          <th>Gap</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Customizable keybindings</td>
+          <td class="oc-has">Config file per action</td>
+          <td class="cross">Hardcoded</td>
+          <td>Add keybinding config</td>
+        </tr>
+        <tr>
+          <td>Emacs keybindings</td>
+          <td class="oc-has">C-a, C-e, C-f, C-b, etc.</td>
+          <td class="partial">readline defaults</td>
+          <td>Readline provides basics</td>
+        </tr>
+        <tr>
+          <td>Tab to switch panels</td>
+          <td class="oc-has">Focus cycling</td>
+          <td class="cross">Single panel only</td>
+          <td>Requires Ink migration</td>
+        </tr>
+        <tr>
+          <td>Ctrl+C behavior</td>
+          <td class="oc-has">Interrupt (double-tap abort)</td>
+          <td class="check">Graceful exit with stats</td>
+          <td>Good parity</td>
+        </tr>
+        <tr>
+          <td>Escape key handling</td>
+          <td class="oc-has">Exit shell mode</td>
+          <td class="cross">No special handling</td>
+          <td>Add escape handler</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- What Opta Already Does Better -->
+  <div class="section-header">Opta's Unique Advantages</div>
+  <p class="section-sub">Features where Opta CLI leads or offers something OpenCode doesn't</p>
+
+  <div class="feature-grid">
+    <div class="glass feature-card">
+      <div class="feature-title" style="color: var(--primary-glow);">Sovereign Local Inference</div>
+      <ul class="feature-list">
+        <li>100% on-premise via Opta LMX on Mac Studio M3 Ultra</li>
+        <li>$0.00 marginal cost per query (vs OpenCode cloud pricing)</li>
+        <li>Full offline / air-gapped operation capability</li>
+        <li>Data never leaves your LAN</li>
+        <li>Model hot-swapping via /model command</li>
+      </ul>
+    </div>
+    <div class="glass feature-card">
+      <div class="feature-title" style="color: var(--primary-glow);">Git-Backed Undo System</div>
+      <ul class="feature-list">
+        <li>/undo [n] with git checkpoint restoration</li>
+        <li>Auto-commit with model-generated messages</li>
+        <li>Dirty tree warnings before destructive operations</li>
+        <li>Checkpoint list viewing (/undo list)</li>
+        <li>OpenCode's /undo is conversation-level only</li>
+      </ul>
+    </div>
+    <div class="glass feature-card">
+      <div class="feature-title" style="color: var(--primary-glow);">OPIS Project Context</div>
+      <ul class="feature-list">
+        <li>OPIS document loading for deep project understanding</li>
+        <li>Export map scanning for codebase awareness</li>
+        <li>/init command to analyze and generate project context</li>
+        <li>Automatic system prompt injection</li>
+        <li>More structured than OpenCode's ad-hoc context</li>
+      </ul>
+    </div>
+    <div class="glass feature-card">
+      <div class="feature-title" style="color: var(--primary-glow);">Sub-50ms Cold Start</div>
+      <ul class="feature-list">
+        <li>Lazy-loading architecture (commander + chalk fast path)</li>
+        <li>Heavy deps loaded only when commands execute</li>
+        <li>opta --help completes in under 50ms</li>
+        <li>OpenCode startup: ~200-300ms (Go binary + SQLite)</li>
+      </ul>
+    </div>
+    <div class="glass feature-card">
+      <div class="feature-title" style="color: var(--primary-glow);">Unix Composability</div>
+      <ul class="feature-list">
+        <li>Pipes: echo "fix bug" | opta do --format json | jq</li>
+        <li>JSONL streaming output for scripting</li>
+        <li>Inline REPL preserves terminal scrollback</li>
+        <li>Plays nicely with tmux, screen, other tools</li>
+        <li>OpenCode's full-screen TUI breaks piping</li>
+      </ul>
+    </div>
+    <div class="glass feature-card">
+      <div class="feature-title" style="color: var(--primary-glow);">Session Export to Markdown</div>
+      <ul class="feature-list">
+        <li>/share exports human-readable markdown files</li>
+        <li>JSON export for machine consumption</li>
+        <li>Session resume with full context restoration</li>
+        <li>Tree-style session browser with current marker</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- The 14-Item Improvement Roadmap -->
+  <div class="section-header">Improvement Roadmap</div>
+  <p class="section-sub">14 OpenCode-inspired improvements, ordered by priority and feasibility</p>
+
+  <div class="roadmap-grid">
+    <div class="glass-subtle roadmap-card rp0">
+      <div class="roadmap-title">
+        Multiline Input
+        <span class="priority p0">P0</span>
+      </div>
+      <div class="roadmap-desc">Replace readline with a multiline textarea. Meta+Enter for newlines, Enter to submit. Critical for pasting code snippets.</div>
+      <div class="roadmap-tech">@inquirer/prompts editor mode</div>
+    </div>
+
+    <div class="glass-subtle roadmap-card rp0">
+      <div class="roadmap-title">
+        Tool Call Cards
+        <span class="priority p0">P0</span>
+      </div>
+      <div class="roadmap-desc">Render tool calls with type-specific formatting: file edits show diffs, commands show output, reads show file previews.</div>
+      <div class="roadmap-tech">src/ui/toolcard.ts</div>
+    </div>
+
+    <div class="glass-subtle roadmap-card rp0">
+      <div class="roadmap-title">
+        Inline Diff Viewer
+        <span class="priority p0">P0</span>
+      </div>
+      <div class="roadmap-desc">Show file edits as colored inline diffs with line numbers, not just git diff --stat summaries.</div>
+      <div class="roadmap-tech">diff library + chalk formatting</div>
+    </div>
+
+    <div class="glass-subtle roadmap-card rp1">
+      <div class="roadmap-title">
+        Theme System
+        <span class="priority p1">P1</span>
+      </div>
+      <div class="roadmap-desc">Replace hardcoded chalk colors with a theme layer. Support built-in themes + custom JSON theme files.</div>
+      <div class="roadmap-tech">src/ui/theme.ts + config.json</div>
+    </div>
+
+    <div class="glass-subtle roadmap-card rp1">
+      <div class="roadmap-title">
+        Shell Mode (! prefix)
+        <span class="priority p1">P1</span>
+      </div>
+      <div class="roadmap-desc">Type ! at prompt start to execute shell commands directly. Visual prompt change to indicate shell mode.</div>
+      <div class="roadmap-tech">chat.ts prompt handler</div>
+    </div>
+
+    <div class="glass-subtle roadmap-card rp1">
+      <div class="roadmap-title">
+        File Line Ranges
+        <span class="priority p1">P1</span>
+      </div>
+      <div class="roadmap-desc">Extend @file refs to support line ranges: @src/agent.ts:10-50 attaches only those lines.</div>
+      <div class="roadmap-tech">fileref.ts parser extension</div>
+    </div>
+
+    <div class="glass-subtle roadmap-card rp1">
+      <div class="roadmap-title">
+        @ File Autocomplete
+        <span class="priority p1">P1</span>
+      </div>
+      <div class="roadmap-desc">Fuzzy file search when typing @, showing matching files from the project.</div>
+      <div class="roadmap-tech">@inquirer/prompts + glob</div>
+    </div>
+
+    <div class="glass-subtle roadmap-card rp1">
+      <div class="roadmap-title">
+        /editor Command
+        <span class="priority p1">P1</span>
+      </div>
+      <div class="roadmap-desc">Open $EDITOR for composing long messages. Returns editor content as the message.</div>
+      <div class="roadmap-tech">child_process.spawnSync</div>
+    </div>
+
+    <div class="glass-subtle roadmap-card rp2">
+      <div class="roadmap-title">
+        Cross-Session Analytics
+        <span class="priority p2">P2</span>
+      </div>
+      <div class="roadmap-desc">Token usage stats across sessions: total tokens, by model, by day. Like OpenCode's /stats command.</div>
+      <div class="roadmap-tech">Aggregate from session JSONs</div>
+    </div>
+
+    <div class="glass-subtle roadmap-card rp2">
+      <div class="roadmap-title">
+        Connection Status Display
+        <span class="priority p2">P2</span>
+      </div>
+      <div class="roadmap-desc">Persistent connection indicator showing LMX health, model name, and latency.</div>
+      <div class="roadmap-tech">StatusBar enhancement</div>
+    </div>
+
+    <div class="glass-subtle roadmap-card rp2">
+      <div class="roadmap-title">
+        Interactive Model Picker
+        <span class="priority p2">P2</span>
+      </div>
+      <div class="roadmap-desc">Replace text-based /model with an interactive select showing model capabilities, context limits, and status.</div>
+      <div class="roadmap-tech">@inquirer/prompts select</div>
+    </div>
+
+    <div class="glass-subtle roadmap-card rp3">
+      <div class="roadmap-title">
+        Server Mode (HTTP API)
+        <span class="priority p3">P3</span>
+      </div>
+      <div class="roadmap-desc">Headless HTTP API for programmatic access. Enable CI/CD integration and remote execution.</div>
+      <div class="roadmap-tech">Fastify / Express server</div>
+    </div>
+
+    <div class="glass-subtle roadmap-card rp3">
+      <div class="roadmap-title">
+        Keybinding Config
+        <span class="priority p3">P3</span>
+      </div>
+      <div class="roadmap-desc">User-configurable keyboard shortcuts mapped to actions. Stored in config.json.</div>
+      <div class="roadmap-tech">config.ts keybindings section</div>
+    </div>
+
+    <div class="glass-subtle roadmap-card rp3">
+      <div class="roadmap-title">
+        Collapse/Expand Blocks
+        <span class="priority p3">P3</span>
+      </div>
+      <div class="roadmap-desc">Toggle visibility of thinking blocks, long tool outputs, and code blocks in the conversation.</div>
+      <div class="roadmap-tech">Requires Ink migration</div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- Custom Window Checklist -->
+  <div class="section-header">"Custom Window" Checklist</div>
+  <p class="section-sub">14 UX elements that transform a CLI from "terminal tool" to "custom application"</p>
+
+  <div class="glass" style="padding: 28px;">
+    <ul class="checklist">
+      <li class="done"><span class="checklist-label">Branded startup banner</span> &mdash; Box-drawn with status dot, model info, session ID</li>
+      <li class="done"><span class="checklist-label">Custom prompt symbol</span> &mdash; Minimalist &rsaquo; with mode badges (plan &rsaquo;, auto &rsaquo;)</li>
+      <li class="done"><span class="checklist-label">Interactive command menu</span> &mdash; Type / for categorized browsable command list</li>
+      <li class="done"><span class="checklist-label">Box-drawn command output</span> &mdash; /status, /diff, /cost, /sessions all use bordered panels</li>
+      <li class="done"><span class="checklist-label">Progress bars & visual meters</span> &mdash; Memory usage, context window, token counts</li>
+      <li class="done"><span class="checklist-label">Session summary on exit</span> &mdash; Checkmark + session ID + message count on graceful exit</li>
+      <li class="done"><span class="checklist-label">File reference system</span> &mdash; @path/to/file attaches file context to messages</li>
+      <li class="done"><span class="checklist-label">Thinking/reasoning display</span> &mdash; Streaming reasoning with tag detection and buffering</li>
+      <li class="todo"><span class="checklist-label">Multiline text input</span> &mdash; Meta+Enter for newlines, proper code pasting</li>
+      <li class="todo"><span class="checklist-label">Tool call visual cards</span> &mdash; Type-specific formatting (diff for edits, preview for reads)</li>
+      <li class="todo"><span class="checklist-label">Theme system</span> &mdash; Configurable color schemes with built-in presets</li>
+      <li class="todo"><span class="checklist-label">Persistent status bar</span> &mdash; Always-visible model/token/cost display (needs Ink)</li>
+      <li class="todo"><span class="checklist-label">Inline diff renderer</span> &mdash; Colored line-by-line diffs for file edits</li>
+      <li class="todo"><span class="checklist-label">Split-pane layout</span> &mdash; Main + sidebar for sessions/files (needs Ink)</li>
+    </ul>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- Terminal Mockup: Current State -->
+  <div class="section-header">Current Opta CLI Experience</div>
+  <p class="section-sub">After today's UX improvements</p>
+
+  <div class="terminal">
+    <div class="terminal-header">
+      <div class="terminal-dot dot-red"></div>
+      <div class="terminal-dot dot-yellow"></div>
+      <div class="terminal-dot dot-green"></div>
+      <div class="terminal-title">opta chat &mdash; Opta CLI v0.2.0-alpha.3</div>
+    </div>
+    <div class="terminal-body"><span class="t-dim">┌─</span> <span class="t-white t-bold">Opta</span> <span class="t-dim">─────────────────────────────────────┐</span>
+<span class="t-dim">│</span> <span class="t-green">&#x25CF;</span> LMX        192.168.188.11:1234              <span class="t-dim">│</span>
+<span class="t-dim">│</span>   Model      Qwen2.5-Coder-32B-Instruct       <span class="t-dim">│</span>
+<span class="t-dim">│</span>   Session    <span class="t-violet">a3f8</span> &middot; "Fix auth middleware"         <span class="t-dim">│</span>
+<span class="t-dim">└──────────────────────────────────────────┘</span>
+
+<span class="t-cyan">&#x203A;</span> Explain the agent loop in @src/core/agent.ts
+  <span class="t-dim">attached: src/core/agent.ts (120 lines)</span>
+
+<span class="t-dim">&#x25CF;</span> <span class="t-amber">Thinking...</span>
+
+The agent loop in `agent.ts` follows a standard
+tool-use pattern:
+
+1. Send messages to Opta LMX via OpenAI SDK
+2. If response has tool calls, execute each tool
+3. Feed results back and repeat until text-only
+
+<span class="t-dim">┌─ Status ──────────────────────────────────┐</span>
+<span class="t-dim">│</span> <span class="t-green">&#x25CF;</span> Model    Qwen2.5-Coder-32B-Instruct       <span class="t-dim">│</span>
+<span class="t-dim">│</span>   Memory   <span class="t-cyan">&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;</span><span class="t-dim">&#x2591;&#x2591;&#x2591;&#x2591;&#x2591;&#x2591;&#x2591;&#x2591;&#x2591;&#x2591;&#x2591;&#x2591;</span> <span class="t-dim">41%</span>     <span class="t-dim">│</span>
+<span class="t-dim">│</span>   Context  <span class="t-dim">2.1K / 32K tokens</span>               <span class="t-dim">│</span>
+<span class="t-dim">│</span>   Tools    <span class="t-dim">3 calls this session</span>             <span class="t-dim">│</span>
+<span class="t-dim">└──────────────────────────────────────────┘</span>
+
+<span class="t-cyan">&#x203A;</span> /cost
+
+<span class="t-dim">┌─ Cost ────────────────────────────────────┐</span>
+<span class="t-dim">│</span>   Prompt     <span class="t-dim">1.8K tokens</span>                  <span class="t-dim">│</span>
+<span class="t-dim">│</span>   Completion <span class="t-dim">342 tokens</span>                   <span class="t-dim">│</span>
+<span class="t-dim">│</span>   Total      <span class="t-dim">2.1K tokens</span>                  <span class="t-dim">│</span>
+<span class="t-dim">│</span>   Context    <span class="t-cyan">&#x2588;&#x2588;&#x2588;&#x2588;</span><span class="t-dim">&#x2591;&#x2591;&#x2591;&#x2591;&#x2591;&#x2591;&#x2591;&#x2591;&#x2591;&#x2591;&#x2591;&#x2591;&#x2591;&#x2591;&#x2591;&#x2591;</span> <span class="t-dim">7%</span>  <span class="t-dim">│</span>
+<span class="t-dim">│</span>   Cost       <span class="t-green">$0.00 (local inference)</span>       <span class="t-dim">│</span>
+<span class="t-dim">└──────────────────────────────────────────┘</span>
+
+<span class="t-cyan">&#x203A;</span> /exit
+<span class="t-green">&#x2713;</span> Session saved: <span class="t-violet">a3f8</span> "Fix auth middleware" &middot; 4 msgs</div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- Future Vision: Ink TUI Mockup -->
+  <div class="section-header">Future Vision: Ink-Based TUI</div>
+  <p class="section-sub">What Opta CLI looks like after Ink migration (Phase 2)</p>
+
+  <div class="terminal">
+    <div class="terminal-header">
+      <div class="terminal-dot dot-red"></div>
+      <div class="terminal-dot dot-yellow"></div>
+      <div class="terminal-dot dot-green"></div>
+      <div class="terminal-title">opta &mdash; Full-Screen TUI Mode</div>
+    </div>
+    <div class="terminal-body"><span class="t-dim">&#x250C;&#x2500; Messages &#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2510;</span> <span class="t-dim">&#x250C;&#x2500; Sessions &#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2510;</span>
+<span class="t-dim">&#x2502;</span> <span class="t-cyan t-bold">you</span>                                                           <span class="t-dim">&#x2502;</span> <span class="t-dim">&#x2502;</span> <span class="t-violet">&#x25B6;</span> Fix auth mid.. <span class="t-dim">&#x2502;</span>
+<span class="t-dim">&#x2502;</span> Explain the agent loop in @src/core/agent.ts                     <span class="t-dim">&#x2502;</span> <span class="t-dim">&#x2502;</span>   Add tests      <span class="t-dim">&#x2502;</span>
+<span class="t-dim">&#x2502;</span>                                                                  <span class="t-dim">&#x2502;</span> <span class="t-dim">&#x2502;</span>   Refactor UI    <span class="t-dim">&#x2502;</span>
+<span class="t-dim">&#x2502;</span> <span class="t-violet t-bold">opta</span>                                                          <span class="t-dim">&#x2502;</span> <span class="t-dim">&#x2502;</span>   Debug perf     <span class="t-dim">&#x2502;</span>
+<span class="t-dim">&#x2502;</span> The agent loop follows a standard tool-use pattern:              <span class="t-dim">&#x2502;</span> <span class="t-dim">&#x2502;</span>                  <span class="t-dim">&#x2502;</span>
+<span class="t-dim">&#x2502;</span>                                                                  <span class="t-dim">&#x2502;</span> <span class="t-dim">&#x251C;&#x2500; Files &#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2524;</span>
+<span class="t-dim">&#x2502;</span> 1. Send messages to LMX via OpenAI SDK                           <span class="t-dim">&#x2502;</span> <span class="t-dim">&#x2502;</span> <span class="t-dim">src/</span>             <span class="t-dim">&#x2502;</span>
+<span class="t-dim">&#x2502;</span> 2. Parse tool calls from response                                <span class="t-dim">&#x2502;</span> <span class="t-dim">&#x2502;</span>   core/          <span class="t-dim">&#x2502;</span>
+<span class="t-dim">&#x2502;</span> 3. Execute with permission checks                                <span class="t-dim">&#x2502;</span> <span class="t-dim">&#x2502;</span>   <span class="t-blue">agent.ts</span>     <span class="t-dim">&#x2502;</span>
+<span class="t-dim">&#x2502;</span> 4. Feed results back, repeat until text-only                     <span class="t-dim">&#x2502;</span> <span class="t-dim">&#x2502;</span>   <span class="t-dim">tools.ts</span>     <span class="t-dim">&#x2502;</span>
+<span class="t-dim">&#x2502;</span>                                                                  <span class="t-dim">&#x2502;</span> <span class="t-dim">&#x2502;</span>   <span class="t-dim">config.ts</span>    <span class="t-dim">&#x2502;</span>
+<span class="t-dim">&#x2502;</span> <span class="t-dim">&#x250C;&#x2500; read_file &#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2510;</span>          <span class="t-dim">&#x2502;</span> <span class="t-dim">&#x2502;</span>   ui/            <span class="t-dim">&#x2502;</span>
+<span class="t-dim">&#x2502;</span> <span class="t-dim">&#x2502;</span> <span class="t-blue">src/core/agent.ts</span> <span class="t-dim">(120 lines)</span>                   <span class="t-dim">&#x2502;</span>          <span class="t-dim">&#x2502;</span> <span class="t-dim">&#x2502;</span>                  <span class="t-dim">&#x2502;</span>
+<span class="t-dim">&#x2502;</span> <span class="t-dim">&#x2514;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2518;</span>          <span class="t-dim">&#x2502;</span> <span class="t-dim">&#x2514;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2518;</span>
+<span class="t-dim">&#x251C;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2524;</span>
+<span class="t-dim">&#x2502;</span> <span class="t-cyan">&#x203A;</span> <span class="t-white">Now refactor the loop to support streaming_</span>                    <span class="t-dim">&#x2502;</span>
+<span class="t-dim">&#x2514;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2518;</span>
+<span class="t-dim"> Qwen2.5-Coder-32B </span><span class="t-green">&#x25CF;</span><span class="t-dim"> connected  </span><span class="t-dim">2.1K/32K tokens  </span><span class="t-green">$0.00</span><span class="t-dim">  3 tool calls  a3f8</span></div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- Implementation Strategy -->
+  <div class="section-header">Implementation Strategy</div>
+  <p class="section-sub">4-phase migration from inline REPL to custom TUI</p>
+
+  <div class="phase-grid">
+    <div class="glass phase-card">
+      <div class="phase-number">01</div>
+      <div class="phase-title" style="color: var(--neon-green);">Polish Inline</div>
+      <div class="phase-desc">Maximize the current inline architecture. Add multiline input, tool cards, themes, shell mode, and inline diffs without changing the rendering model.</div>
+      <ul class="phase-tech-list">
+        <li>+ multiline input</li>
+        <li>+ tool call cards</li>
+        <li>+ inline diff renderer</li>
+        <li>+ theme system</li>
+        <li>+ shell mode (! prefix)</li>
+        <li>+ /editor command</li>
+      </ul>
+    </div>
+    <div class="glass phase-card">
+      <div class="phase-number">02</div>
+      <div class="phase-title" style="color: var(--neon-amber);">Ink Migration</div>
+      <div class="phase-desc">Migrate the chat command to Ink (React for terminals). This enables full-screen alternate buffer, reactive components, and persistent UI elements.</div>
+      <ul class="phase-tech-list">
+        <li>+ ink (React renderer)</li>
+        <li>+ ink-text-input</li>
+        <li>+ ink-spinner</li>
+        <li>+ ink-select-input</li>
+        <li>+ alternate screen buffer</li>
+        <li>+ component architecture</li>
+      </ul>
+    </div>
+    <div class="glass phase-card">
+      <div class="phase-number">03</div>
+      <div class="phase-title" style="color: var(--neon-blue);">Split Pane</div>
+      <div class="phase-desc">Add sidebar panels for sessions, files, and diagnostics. Implement focus management and keyboard navigation between panels.</div>
+      <ul class="phase-tech-list">
+        <li>+ &lt;Box flexDirection&gt;</li>
+        <li>+ useFocus() hook</li>
+        <li>+ session sidebar</li>
+        <li>+ file browser panel</li>
+        <li>+ Tab key navigation</li>
+        <li>+ responsive layout</li>
+      </ul>
+    </div>
+    <div class="glass phase-card">
+      <div class="phase-number">04</div>
+      <div class="phase-title" style="color: var(--primary-glow);">Parity+</div>
+      <div class="phase-desc">Achieve and exceed OpenCode parity. Server mode, remote attach, cross-session analytics, and Opta-exclusive features like sovereign inference dashboard.</div>
+      <ul class="phase-tech-list">
+        <li>+ server mode (HTTP API)</li>
+        <li>+ remote attach</li>
+        <li>+ analytics dashboard</li>
+        <li>+ LMX health panel</li>
+        <li>+ model benchmark view</li>
+        <li>+ inference stats overlay</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- Key Dependencies -->
+  <div class="section-header">Key Dependencies for TUI Migration</div>
+
+  <div class="deps-grid">
+    <div class="glass-subtle dep-card">
+      <div class="dep-name" style="color: var(--neon-green);">ink</div>
+      <div class="dep-purpose">React renderer for terminals (Bubble Tea equivalent)</div>
+    </div>
+    <div class="glass-subtle dep-card">
+      <div class="dep-name" style="color: var(--neon-cyan);">ink-text-input</div>
+      <div class="dep-purpose">Text input component with cursor</div>
+    </div>
+    <div class="glass-subtle dep-card">
+      <div class="dep-name" style="color: var(--neon-blue);">ink-spinner</div>
+      <div class="dep-purpose">Animated spinner component</div>
+    </div>
+    <div class="glass-subtle dep-card">
+      <div class="dep-name" style="color: var(--primary-glow);">ink-select-input</div>
+      <div class="dep-purpose">Interactive select list</div>
+    </div>
+    <div class="glass-subtle dep-card">
+      <div class="dep-name" style="color: var(--neon-amber);">ink-syntax-highlight</div>
+      <div class="dep-purpose">Code block highlighting</div>
+    </div>
+    <div class="glass-subtle dep-card">
+      <div class="dep-name" style="color: var(--neon-green);">ink-markdown</div>
+      <div class="dep-purpose">Markdown rendering component</div>
+    </div>
+    <div class="glass-subtle dep-card">
+      <div class="dep-name" style="color: var(--neon-cyan);">diff</div>
+      <div class="dep-purpose">Text diff computation library</div>
+    </div>
+    <div class="glass-subtle dep-card">
+      <div class="dep-name" style="color: var(--neon-blue);">yoga-layout</div>
+      <div class="dep-purpose">Flexbox layout engine (Ink internal)</div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- Relative Strength Bars -->
+  <div class="section-header">UX Dimension Comparison</div>
+
+  <div class="glass" style="padding: 28px;">
+    <div class="bar-group">
+      <div class="bar-label"><span>Visual Polish</span></div>
+      <div class="bar-track">
+        <div class="bar-fill bar-oc" style="width: 90%"></div>
+        <div class="bar-fill bar-opta" style="width: 55%"></div>
+      </div>
+    </div>
+    <div class="bar-group">
+      <div class="bar-label"><span>Input Sophistication</span></div>
+      <div class="bar-track">
+        <div class="bar-fill bar-oc" style="width: 85%"></div>
+        <div class="bar-fill bar-opta" style="width: 35%"></div>
+      </div>
+    </div>
+    <div class="bar-group">
+      <div class="bar-label"><span>Layout Flexibility</span></div>
+      <div class="bar-track">
+        <div class="bar-fill bar-oc" style="width: 95%"></div>
+        <div class="bar-fill bar-opta" style="width: 25%"></div>
+      </div>
+    </div>
+    <div class="bar-group">
+      <div class="bar-label"><span>Command System</span></div>
+      <div class="bar-track">
+        <div class="bar-fill bar-oc" style="width: 80%"></div>
+        <div class="bar-fill bar-opta" style="width: 75%"></div>
+      </div>
+    </div>
+    <div class="bar-group">
+      <div class="bar-label"><span>Session Management</span></div>
+      <div class="bar-track">
+        <div class="bar-fill bar-oc" style="width: 75%"></div>
+        <div class="bar-fill bar-opta" style="width: 80%"></div>
+      </div>
+    </div>
+    <div class="bar-group">
+      <div class="bar-label"><span>Theme & Customization</span></div>
+      <div class="bar-track">
+        <div class="bar-fill bar-oc" style="width: 90%"></div>
+        <div class="bar-fill bar-opta" style="width: 15%"></div>
+      </div>
+    </div>
+    <div class="bar-group">
+      <div class="bar-label"><span>Unix Composability</span></div>
+      <div class="bar-track">
+        <div class="bar-fill bar-oc" style="width: 30%"></div>
+        <div class="bar-fill bar-opta" style="width: 90%"></div>
+      </div>
+    </div>
+    <div class="bar-group">
+      <div class="bar-label"><span>Offline / Privacy</span></div>
+      <div class="bar-track">
+        <div class="bar-fill bar-oc" style="width: 0%"></div>
+        <div class="bar-fill bar-opta" style="width: 100%"></div>
+      </div>
+    </div>
+    <div class="bar-group">
+      <div class="bar-label"><span>Cost Efficiency</span></div>
+      <div class="bar-track">
+        <div class="bar-fill bar-oc" style="width: 40%"></div>
+        <div class="bar-fill bar-opta" style="width: 100%"></div>
+      </div>
+    </div>
+    <div class="bar-group">
+      <div class="bar-label"><span>Git Integration Depth</span></div>
+      <div class="bar-track">
+        <div class="bar-fill bar-oc" style="width: 60%"></div>
+        <div class="bar-fill bar-opta" style="width: 80%"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- Strategic Summary -->
+  <div class="section-header">Strategic Summary</div>
+
+  <div class="glass insight" style="margin-bottom: 24px;">
+    <div class="insight-title">The Path Forward</div>
+    <div class="insight-text">
+      OpenCode's UX advantage comes from one architectural decision: <strong>Bubble Tea full-screen rendering</strong>. Everything else &mdash; split panes, persistent status bars, focus management, sidebar panels &mdash; follows from that foundation. Opta's equivalent is <strong>Ink</strong> (React for terminals).
+      <br><br>
+      <strong>Phase 1</strong> (now): Polish the inline experience with the 6 improvements that don't require Ink &mdash; multiline input, tool cards, inline diffs, themes, shell mode, /editor. These make Opta feel premium <em>today</em>.
+      <br><br>
+      <strong>Phase 2</strong> (next): Migrate the chat command to Ink. This is the architectural inflection point where Opta stops being "a CLI tool" and becomes "a custom terminal application" &mdash; matching OpenCode's paradigm while keeping Opta's sovereign inference advantage.
+      <br><br>
+      Opta will never be a clone of OpenCode. It will be something better: <strong>a polished custom TUI with zero cloud dependency, zero cost, and full data sovereignty</strong>. That's a combination no other CLI agent offers.
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <p>Generated by Opta Operations &middot; February 17, 2026</p>
+    <p style="margin-top: 8px; color: var(--text-muted);">
+      Opta CLI v0.2.0-alpha.3 &middot; UX Score: 22/42 (52%) &middot; Target: 35/42 (83%)
+    </p>
+    <p style="margin-top: 4px; color: var(--text-muted);">
+      8 improvements done today &middot; 14 more planned &middot; Ink migration = parity
+    </p>
+  </div>
+
+</div>
+
+</body>
+</html>

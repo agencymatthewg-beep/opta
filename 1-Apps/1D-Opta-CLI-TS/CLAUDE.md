@@ -60,8 +60,8 @@ src/
 │   │                         # - Wrapper around agent loop
 │   │                         # - Auto-creates + closes session
 │   │
-│   ├── connect.ts           # LM Studio discovery & validation (~80 lines)
-│   │                         # - GET /v1/models from LM Studio
+│   ├── connect.ts           # Opta-LMX discovery & validation (~80 lines)
+│   │                         # - GET /v1/models from Opta-LMX
 │   │                         # - Validate with completions test call
 │   │                         # - Save connection profile to config
 │   │
@@ -87,7 +87,7 @@ src/
 │
 ├── core/
 │   ├── agent.ts             # The agent loop (~120 lines)
-│   │                         # - Send to LM Studio via OpenAI SDK
+│   │                         # - Send to Opta-LMX via OpenAI SDK
 │   │                         # - Parse tool calls from response
 │   │                         # - Execute tools with permission checks
 │   │                         # - Context compaction at 70% limit
@@ -122,10 +122,11 @@ src/
 │   │
 │   ├── manager.ts           # Provider selection (~40 lines)
 │   │                         # - Detect provider from config
-│   │                         # - Create appropriate client (LMStudio vs Anthropic)
+│   │                         # - Create appropriate client (LmxClient vs Anthropic)
 │   │                         # - Health check + fallback
 │   │
-│   ├── lmstudio.ts          # LM Studio adapter (~60 lines)
+│   ├── lmx/
+│   │   └── client.ts         # Opta-LMX adapter (~60 lines)
 │   │                         # - Wraps OpenAI SDK
 │   │                         # - Points to custom base URL (192.168.188.11:1234)
 │   │                         # - Handles streaming responses
@@ -202,7 +203,7 @@ export async function startChat(options: { resume?: string; model?: string }) {
 The heart of Opta. Implements the agent loop:
 
 ```
-Input → LM Studio API → Parse response
+Input → Opta-LMX API → Parse response
   ├─ text only? Render & done
   └─ tool calls? Execute each → feed back → loop
 ```
@@ -275,7 +276,7 @@ export abstract class ProviderClient {
 ```
 
 Implementations:
-- `LMStudioClient` — Points to LM Studio HTTP API
+- `LmxClient` — Points to Opta-LMX HTTP API
 - `AnthropicClient` — V2 stub, would use Anthropic SDK
 
 This allows easy swapping of providers later.
@@ -331,7 +332,7 @@ program.command('chat').action(async (opts) => {
 
 ```typescript
 while (true) {
-  const response = await lmstudio.complete(messages);
+  const response = await lmx.complete(messages);
   
   if (!response.toolCalls.length) {
     console.log(response.text);
@@ -391,7 +392,7 @@ export async function loadConfig(overrides?: Partial<OptaConfig>): Promise<OptaC
 
 ### No Cloud Fallback (V1)
 
-If LM Studio is unreachable, fail fast with actionable error. No fallback to OpenAI/Anthropic in V1.
+If Opta-LMX is unreachable, fail fast with actionable error. No fallback to OpenAI/Anthropic in V1.
 
 ### Single-Threaded Agent Loop
 
@@ -407,13 +408,13 @@ One model call at a time. No swarms, no parallel tool execution. Sequential tool
 
 ### Unit Tests: `src/__tests__/core/`
 
-- `agent.test.ts` — Agent loop with mocked LM Studio responses
+- `agent.test.ts` — Agent loop with mocked Opta-LMX responses
 - `config.test.ts` — Config loading and merging
 - `tools.test.ts` — Tool execution, permission checks
 
 ### Command Tests: `src/__tests__/commands/`
 
-- `connect.test.ts` — LM Studio discovery flow
+- `connect.test.ts` — Opta-LMX discovery flow
 - `models.test.ts` — Model listing and switching
 
 ### E2E Test: `src/__tests__/cli.test.ts`
@@ -439,7 +440,7 @@ npm test -- --ui                   # Browser UI
 
 ```bash
 npm run dev -- --verbose     # See config loading
-npm run dev -- --debug       # See API calls to LM Studio
+npm run dev -- --debug       # See API calls to Opta-LMX
 ```
 
 ### Debug Log Function
@@ -459,12 +460,12 @@ Logs only print if `--debug` flag is set or `DEBUG=1` env var.
 opta config list --json      # Pretty-printed JSON
 ```
 
-### Mock LM Studio Responses
+### Mock Opta-LMX Responses
 
 In tests, use mock responses:
 
 ```typescript
-vi.mocked(lmstudio.complete).mockResolvedValue({
+vi.mocked(lmx.complete).mockResolvedValue({
   text: 'I see the issue.',
   toolCalls: [],
 });
@@ -512,7 +513,7 @@ node --prof dist/index.js     # Generate profile
 - [ ] `npm test` passes (or skip non-blocking tests with `it.skip`)
 - [ ] New files follow file structure above
 - [ ] Tool-using code has permission checks
-- [ ] External API calls use correct provider (LM Studio only, no Anthropic fallback in V1)
+- [ ] External API calls use correct provider (Opta-LMX only, no Anthropic fallback in V1)
 - [ ] Error messages are actionable (Context → Problem → Solution)
 
 ---

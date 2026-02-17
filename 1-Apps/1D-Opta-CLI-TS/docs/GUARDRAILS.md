@@ -20,19 +20,19 @@ These rules trigger **immediate action rejection**. Never bypass them.
 **Rule:** Never send private data (API keys, tokens, personal information, file contents) to external services without explicit user approval.
 
 **Application to Opta CLI:**
-- ✅ Allowed: LM Studio API calls (local network only)
-- ✅ Allowed: LM Studio connection health checks
+- ✅ Allowed: Opta-LMX API calls (local network only)
+- ✅ Allowed: Opta-LMX connection health checks
 - 🚫 Forbidden: Sending file contents to OpenAI/Anthropic without explicit `--use-cloud` flag
 - 🚫 Forbidden: Logging API responses to external services
 - 🚫 Forbidden: Uploading sessions to cloud without user opt-in
 
 **Implementation:**
 ```typescript
-// Good: Local LM Studio API only
+// Good: Local Opta-LMX API only
 const response = await openai.chat.completions.create({
   model: config.model.name,
   messages: [...],
-  // baseURL set to local LM Studio
+  // baseURL set to local Opta-LMX
 });
 
 // Bad: Would exfiltrate
@@ -147,7 +147,7 @@ if (sessionError) {
 **Rule:** Cannot disable auth, share tokens publicly, or expose gateway credentials.
 
 **Application to Opta CLI:**
-- ✅ Allowed: Storing LM Studio API connection (it's on local network, no auth)
+- ✅ Allowed: Storing Opta-LMX API connection (it's on local network, no auth)
 - 🚫 Forbidden: Logging full API responses with tokens
 - 🚫 Forbidden: Storing Anthropic API keys in plaintext in config
 - 🚫 Forbidden: Exporting sessions with embedded tokens
@@ -158,7 +158,7 @@ if (sessionError) {
 debugLog('api', 'Sending request', { headers: request.headers });
 
 // Good: Redacts token
-debugLog('api', 'Sending request to LM Studio', {
+debugLog('api', 'Sending request to Opta-LMX', {
   model: request.model,
   toolCount: request.tools.length,
 });
@@ -256,7 +256,7 @@ for (const call of toolCalls) {
 ```typescript
 // Bad
 debugLog('api-call', {
-  url: 'http://lmstudio:1234/v1/chat/completions',
+  url: 'http://opta-lmx:1234/v1/chat/completions',
   headers: { authorization: `Bearer ${token}` },
   data: messages,
 });
@@ -272,7 +272,7 @@ debugLog('api-call', {
 try {
   const response = await fetch(url, { headers });
 } catch (e) {
-  console.error(`Failed to reach LM Studio at ${url}`);
+  console.error(`Failed to reach Opta-LMX at ${url}`);
   // Don't log raw error if it contains headers
 }
 ```
@@ -328,18 +328,18 @@ require('./commands/chat'); // Blocks startup
 
 ### S04: No Cloud API Calls Without Explicit Opt-In
 
-**Rule:** V1 does not fallback to cloud APIs (OpenAI, Anthropic). All calls go to LM Studio only.
+**Rule:** V1 does not fallback to cloud APIs (OpenAI, Anthropic). All calls go to Opta-LMX only.
 
 **Why:** V1 is local-first. Cloud fallback is a V2 feature that requires design decisions about keys, costs, privacy.
 
 **Implementation:**
 ```typescript
-// Good: LM Studio only
+// Good: Opta-LMX only
 const baseURL = config.connection.host;
 const client = new OpenAI({ apiKey: 'local', baseURL });
 
 // Bad: Would fallback to cloud
-if (!lmstudio.isReachable()) {
+if (!lmx.isReachable()) {
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   // This is V2 behavior, not V1
 }
@@ -347,18 +347,18 @@ if (!lmstudio.isReachable()) {
 
 **In Errors:**
 ```
-If LM Studio is unreachable:
+If Opta-LMX is unreachable:
 
-✗ Cannot reach LM Studio at 192.168.188.11:1234
+✗ Cannot reach Opta-LMX at 192.168.188.11:1234
 
 Possible causes:
   • Mac Studio (Mono512) is offline
-  • LM Studio is not running
+  • Opta-LMX is not running
   • Firewall blocking port 1234
 
 Try:
   • Check connectivity: ping 192.168.188.11
-  • Start LM Studio on the Mac Studio
+  • Start Opta-LMX on the Mac Studio
   • Use a different host: opta connect --host <ip>
 
 (V1 has NO cloud fallback. This is V2+)
@@ -401,7 +401,7 @@ let toolCallCount = 0;
 const MAX_TOOL_CALLS = 30;
 
 while (true) {
-  const response = await lmstudio.complete(messages);
+  const response = await lmx.complete(messages);
   
   if (!response.toolCalls.length) {
     // No tool calls = task complete
@@ -438,7 +438,7 @@ Not enforced strictly, but recommended.
 | Keep tool descriptions under 100 chars | Fit in token budget |
 | Log what you're doing, not raw API responses | Better debugging |
 | Cache session results, don't re-compute | Faster resume |
-| Test with real LM Studio, not just mocks | Catch integration bugs |
+| Test with real Opta-LMX, not just mocks | Catch integration bugs |
 
 ---
 
@@ -468,7 +468,7 @@ A: No. That's C04 (modifying safety rules without approval). Cloud fallback is V
 **Q: Can the agent auto-commit changes?**  
 A: V1 does not. Show diffs, ask for confirmation, let user decide about commits. V2 could have `--auto-commit` flag.
 
-**Q: What if LM Studio is offline?**  
+**Q: What if Opta-LMX is offline?**
 A: Fail fast with actionable error (see S04). Don't fallback to cloud in V1.
 
 **Q: Can tools run in parallel?**  

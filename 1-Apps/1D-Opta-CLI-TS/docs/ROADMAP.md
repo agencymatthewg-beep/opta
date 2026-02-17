@@ -16,7 +16,7 @@ reference: docs/plans/2026-02-12-opta-cli-v1-design.md
 ### What Works in V0
 - Basic CLI structure (Commander.js)
 - Config loading (conf + cosmiconfig)
-- Provider interface (base + LM Studio adapter)
+- Provider interface (base + Opta-LMX adapter)
 - Some command stubs (chat, do, models, etc.)
 
 ### What's Missing in V0
@@ -43,11 +43,11 @@ V0 → V1 is a rewrite, not a continuation. The architecture (agent loop, tool s
 
 #### 1️⃣ Connect & Manage (Week 1-2)
 
-What: Discover LM Studio, list models, switch default.
+What: Discover Opta-LMX, list models, switch default.
 
 **Commands:**
 ```bash
-opta connect                    # Auto-discover LM Studio
+opta connect                    # Auto-discover Opta-LMX
 opta connect --host 192.168.1.1  # Connect to custom host
 opta models                     # List all models
 opta models use <name>          # Switch default model
@@ -58,11 +58,11 @@ opta models info <name>         # Show model details (context limit, etc.)
 - `src/commands/connect.ts` (80 lines)
 - `src/commands/models.ts` (80 lines)
 - `src/providers/manager.ts` (40 lines)
-- `src/providers/lmstudio.ts` (60 lines)
+- `src/providers/lmx.ts` (60 lines)
 - Tests: `connect.test.ts`, `models.test.ts`
 
 **Success criteria:**
-- `opta connect` discovers LM Studio in <2 seconds
+- `opta connect` discovers Opta-LMX in <2 seconds
 - `opta models list` shows all loaded models
 - `opta models use qwen` switches default
 - Offline error message is actionable
@@ -150,7 +150,7 @@ opta config reset               # Reset to defaults
 ## V1 Release Checklist
 
 ### Before Release
-- [ ] All commands tested on macOS with real LM Studio
+- [ ] All commands tested on macOS with real Opta-LMX
 - [ ] Help text is clear and consistent
 - [ ] Error messages are actionable
 - [ ] 95%+ test coverage for agent loop and tools
@@ -166,7 +166,7 @@ opta config reset               # Reset to defaults
 Local-first agentic AI coding assistant.
 
 ## What's New
-- Connect to LM Studio (auto-discovery)
+- Connect to Opta-LMX (auto-discovery)
 - Interactive chat with tool-use (read, edit, bash, search)
 - Session persistence and resume
 - Smart permissions (allow/ask/deny per tool)
@@ -175,10 +175,10 @@ Local-first agentic AI coding assistant.
 ## System Requirements
 - macOS 12+ (for Mac Studio testing)
 - Node.js 20+
-- LM Studio running on same LAN
+- Opta-LMX running on same LAN
 
 ## Quick Start
-opta connect    # Discover LM Studio
+opta connect    # Discover Opta-LMX
 opta chat       # Start chatting
 ```
 
@@ -313,7 +313,7 @@ Each V3 feature is a separate pull request, not all landing at once:
 
 | Feature | V0 | V1 | V2 | V3 |
 |---------|----|----|----|----|
-| **LM Studio connection** | Stub | ✅ | ✅ | ✅ |
+| **Opta-LMX connection** | Stub | ✅ | ✅ | ✅ |
 | **Model listing** | Stub | ✅ | ✅ | ✅ |
 | **Interactive chat** | Stub | ✅ | ✅ | ✅ |
 | **Tool-use agent** | Stub | ✅ | ✅ | ✅ |
