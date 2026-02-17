@@ -193,3 +193,161 @@ def test_websocket_enabled_config() -> None:
 
     routes = [r.path for r in app.routes]
     assert "/v1/chat/stream" in routes
+
+
+# ─── Preset Resolution Tests ────────────────────────────────────────────
+
+
+async def test_ws_preset_resolution(ws_app, tmp_path) -> None:
+    """WebSocket resolves 'preset:name' to the preset's model."""
+    from starlette.testclient import TestClient
+    from opta_lmx.presets.manager import Preset
+
+    engine = ws_app.state.engine
+    await engine.load_model("resolved-model")
+
+    # Register a preset
+    preset = Preset(
+        name="test-preset",
+        model="resolved-model",
+        parameters={"temperature": 0.1, "max_tokens": 100},
+        system_prompt="You are a test bot.",
+    )
+    ws_app.state.preset_manager._presets["test-preset"] = preset
+
+    client = TestClient(ws_app)
+    with client.websocket_connect("/v1/chat/stream") as ws:
+        ws.send_json({
+            "type": "chat.request",
+            "model": "preset:test-preset",
+            "messages": [{"role": "user", "content": "Hello"}],
+            "stream": False,
+        })
+
+        response = ws.receive_json()
+        assert response["type"] == "chat.done"
+        assert response["content"] == "Hello from WebSocket test!"
+
+
+async def test_ws_preset_not_found(ws_app) -> None:
+    """Unknown preset returns chat.error."""
+    from starlette.testclient import TestClient
+
+    client = TestClient(ws_app)
+    with client.websocket_connect("/v1/chat/stream") as ws:
+        ws.send_json({
+            "type": "chat.request",
+            "model": "preset:nonexistent",
+            "messages": [{"role": "user", "content": "Hello"}],
+        })
+
+        response = ws.receive_json()
+        assert response["type"] == "chat.error"
+        assert "nonexistent" in response["error"]
+
+
+# ─── Metrics Recording Tests ────────────────────────────────────────────
+
+
+async def test_ws_records_metrics_non_streaming(ws_app) -> None:
+    """Non-streaming WebSocket request records a RequestMetric."""
+    from starlette.testclient import TestClient
+
+    engine = ws_app.state.engine
+    await engine.load_model("metrics-model")
+
+    metrics = ws_app.state.metrics
+    assert metrics._total_requests == 0
+
+    client = TestClient(ws_app)
+    with client.websocket_connect("/v1/chat/stream") as ws:
+        ws.send_json({
+            "type": "chat.request",
+            "model": "metrics-model",
+            "messages": [{"role": "user", "content": "Hello"}],
+            "stream": False,
+        })
+        ws.receive_json()  # chat.done
+
+    assert metrics._total_requests == 1
+    assert "metrics-model" in metrics._model_requests
+
+
+async def test_ws_records_metrics_streaming(ws_app) -> None:
+    """Streaming WebSocket request records a RequestMetric."""
+    from starlette.testclient import TestClient
+
+    engine = ws_app.state.engine
+
+    async def mock_create(model_id: str, use_batching: bool, **_kw: object) -> MagicMock:
+        mock = MagicMock()
+        mock.chat = AsyncMock(return_value="Hello")
+
+        async def mock_stream_chat(**kwargs):
+            yield "Hi"
+
+        mock.stream_chat = mock_stream_chat
+        return mock
+
+    engine._create_engine = mock_create  # type: ignore[assignment]
+    await engine.load_model("stream-metrics")
+
+    metrics = ws_app.state.metrics
+    before = metrics._total_stream_requests
+
+    client = TestClient(ws_app)
+    with client.websocket_connect("/v1/chat/stream") as ws:
+        ws.send_json({
+            "type": "chat.request",
+            "model": "stream-metrics",
+            "messages": [{"role": "user", "content": "Hello"}],
+            "stream": True,
+        })
+        msgs = []
+        while True:
+            msg = ws.receive_json()
+            msgs.append(msg)
+            if msg["type"] in ("chat.done", "chat.error"):
+                break
+
+    assert metrics._total_stream_requests == before + 1
+
+
+# ─── Tools Pass-through Tests ───────────────────────────────────────────
+
+
+async def test_ws_tools_passed_to_engine(ws_app) -> None:
+    """Tools parameter is extracted from WebSocket data and passed to engine."""
+    from starlette.testclient import TestClient
+
+    engine = ws_app.state.engine
+    captured_kwargs: dict = {}
+
+    async def mock_create(model_id: str, use_batching: bool, **_kw: object) -> MagicMock:
+        mock = MagicMock()
+
+        async def mock_chat(**kwargs):
+            captured_kwargs.update(kwargs)
+            return "Tool response"
+
+        mock.chat = mock_chat
+        return mock
+
+    engine._create_engine = mock_create  # type: ignore[assignment]
+    await engine.load_model("tools-model")
+
+    tools = [{"type": "function", "function": {"name": "get_time", "parameters": {}}}]
+
+    client = TestClient(ws_app)
+    with client.websocket_connect("/v1/chat/stream") as ws:
+        ws.send_json({
+            "type": "chat.request",
+            "model": "tools-model",
+            "messages": [{"role": "user", "content": "What time is it?"}],
+            "tools": tools,
+            "stream": False,
+        })
+
+        response = ws.receive_json()
+        assert response["type"] == "chat.done"
+        assert captured_kwargs.get("tools") == tools

@@ -6,12 +6,16 @@ import asyncio
 import contextlib
 import logging
 import secrets
+import time
 from typing import Any
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from opta_lmx.inference.engine import InferenceEngine
 from opta_lmx.inference.schema import ChatMessage
+from opta_lmx.inference.tool_parser import wrap_stream_with_tool_parsing
+from opta_lmx.monitoring.metrics import RequestMetric
+from opta_lmx.presets.manager import PRESET_PREFIX
 
 logger = logging.getLogger(__name__)
 
@@ -102,8 +106,32 @@ async def _handle_chat_request(
     stop = data.get("stop")
     stream = data.get("stream", True)
     response_format = data.get("response_format")
+    tools = data.get("tools")
 
     messages = [ChatMessage(**m) for m in raw_messages]
+
+    # Resolve preset (e.g. "preset:code-assistant") — apply defaults + swap model
+    if model.startswith(PRESET_PREFIX):
+        preset_name = model[len(PRESET_PREFIX):]
+        preset_mgr = websocket.app.state.preset_manager
+        preset = preset_mgr.get(preset_name)
+        if preset is None:
+            await websocket.send_json({
+                "type": "chat.error",
+                "request_id": request_id,
+                "error": f"Preset '{preset_name}' not found",
+            })
+            return
+        model = preset.model
+        if preset.parameters:
+            temperature = preset.parameters.get("temperature", temperature)
+            top_p = preset.parameters.get("top_p", top_p)
+            max_tokens = preset.parameters.get("max_tokens", max_tokens)
+            stop = preset.parameters.get("stop", stop)
+        if preset.system_prompt and not any(m.role == "system" for m in messages):
+            messages.insert(0, ChatMessage(role="system", content=preset.system_prompt))
+
+    start_time = time.monotonic()
 
     try:
         if not engine.is_model_loaded(model):
@@ -125,30 +153,64 @@ async def _handle_chat_request(
         if stream:
             completion_tokens = 0
             prompt_text = " ".join(m.content or "" for m in messages)
-            # Approximate token count (~4 chars/token). For accurate counts,
-            # use the model's tokenizer. This heuristic is sufficient for usage tracking.
             prompt_tokens = max(1, len(prompt_text) // 4)
+            saw_tool_calls = False
 
-            async for token in engine.stream_generate(
+            token_stream = engine.stream_generate(
                 model_id=model,
                 messages=messages,
                 temperature=temperature,
                 max_tokens=max_tokens,
                 top_p=top_p,
                 stop=[stop] if isinstance(stop, str) else stop,
+                tools=tools,
                 response_format=response_format,
-            ):
-                completion_tokens += 1
-                await websocket.send_json({
-                    "type": "chat.token",
-                    "request_id": request_id,
-                    "content": token,
-                })
+            )
+
+            if tools:
+                chunk_stream = wrap_stream_with_tool_parsing(token_stream, tools=tools)
+                async for chunk in chunk_stream:
+                    completion_tokens += 1
+                    if chunk.content is not None:
+                        await websocket.send_json({
+                            "type": "chat.token",
+                            "request_id": request_id,
+                            "content": chunk.content,
+                        })
+                    elif chunk.tool_call_delta is not None:
+                        saw_tool_calls = True
+                        tc = chunk.tool_call_delta
+                        await websocket.send_json({
+                            "type": "chat.tool_call",
+                            "request_id": request_id,
+                            "tool_call": {
+                                "index": tc.index,
+                                "id": tc.id,
+                                "name": tc.name,
+                                "arguments": tc.arguments_delta,
+                            },
+                        })
+            else:
+                async for token in token_stream:
+                    completion_tokens += 1
+                    await websocket.send_json({
+                        "type": "chat.token",
+                        "request_id": request_id,
+                        "content": token,
+                    })
+
+            websocket.app.state.metrics.record(RequestMetric(
+                model_id=model,
+                latency_sec=time.monotonic() - start_time,
+                prompt_tokens=prompt_tokens,
+                completion_tokens=completion_tokens,
+                stream=True,
+            ))
 
             await websocket.send_json({
                 "type": "chat.done",
                 "request_id": request_id,
-                "finish_reason": "stop",
+                "finish_reason": "tool_calls" if saw_tool_calls else "stop",
                 "usage": {
                     "prompt_tokens": prompt_tokens,
                     "completion_tokens": completion_tokens,
@@ -162,8 +224,17 @@ async def _handle_chat_request(
                 max_tokens=max_tokens,
                 top_p=top_p,
                 stop=[stop] if isinstance(stop, str) else stop,
+                tools=tools,
                 response_format=response_format,
             )
+
+            websocket.app.state.metrics.record(RequestMetric(
+                model_id=model,
+                latency_sec=time.monotonic() - start_time,
+                prompt_tokens=response.usage.prompt_tokens,
+                completion_tokens=response.usage.completion_tokens,
+                stream=False,
+            ))
 
             await websocket.send_json({
                 "type": "chat.done",
@@ -190,6 +261,15 @@ async def _handle_chat_request(
             "request_id": request_id,
             "error": str(e),
         })
+        with contextlib.suppress(Exception):
+            websocket.app.state.metrics.record(RequestMetric(
+                model_id=model,
+                latency_sec=time.monotonic() - start_time,
+                prompt_tokens=0,
+                completion_tokens=0,
+                stream=stream,
+                error=True,
+            ))
         with contextlib.suppress(Exception):
             await websocket.send_json({
                 "type": "chat.error",
