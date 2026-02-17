@@ -5,6 +5,7 @@ import type { OptaConfig } from '../core/config.js';
 import type { SubAgentContext } from '../core/subagent.js';
 import { LspManager } from '../lsp/manager.js';
 import { resolve } from 'node:path';
+import { loadCustomTools, toToolSchema, executeCustomTool, type CustomToolDef } from '../tools/custom.js';
 
 interface ToolSchema {
   type: 'function';
@@ -89,20 +90,31 @@ export async function buildToolRegistry(
     ? (TOOL_SCHEMAS as ToolSchema[])
     : (TOOL_SCHEMAS as ToolSchema[]).filter(s => !LSP_TOOL_NAMES.has(s.function.name));
 
-  const totalTools = baseSchemas.length + mcpSchemas.length + subAgentSchemas.length;
+  // Load custom tools from .opta/tools/*.json
+  const customToolDefs = await loadCustomTools(process.cwd());
+  const customSchemas = customToolDefs.map(toToolSchema) as ToolSchema[];
+  const customRoutes = new Map<string, CustomToolDef>();
+  for (const tool of customToolDefs) {
+    customRoutes.set(`custom__${tool.name}`, tool);
+  }
+  if (customToolDefs.length > 0) {
+    debug(`Custom tools: ${customToolDefs.length} loaded (${customToolDefs.map(t => t.name).join(', ')})`);
+  }
+
+  const totalTools = baseSchemas.length + mcpSchemas.length + subAgentSchemas.length + customSchemas.length;
   const contextLimit = config.model?.contextLimit ?? 32768;
   // ~256 tokens of context per tool is a reasonable budget; exceeding this
   // means tool schemas consume too much of the model's working memory.
   const toolThreshold = Math.floor(contextLimit / 256);
   if (totalTools > toolThreshold) {
-    const schemaJson = JSON.stringify(baseSchemas) + JSON.stringify(subAgentSchemas) + JSON.stringify(mcpSchemas);
+    const schemaJson = JSON.stringify(baseSchemas) + JSON.stringify(subAgentSchemas) + JSON.stringify(mcpSchemas) + JSON.stringify(customSchemas);
     const estimatedTokens = Math.ceil(schemaJson.length / 4);
     console.warn(
       `  ${totalTools} tools (~${estimatedTokens} tokens) may degrade inference on ${(contextLimit / 1024).toFixed(0)}K context. Consider: lsp.enabled=false or reducing MCP servers.`
     );
   }
 
-  const allSchemas = [...baseSchemas, ...subAgentSchemas, ...mcpSchemas];
+  const allSchemas = [...baseSchemas, ...subAgentSchemas, ...mcpSchemas, ...customSchemas];
 
   const WRITE_TOOL_NAMES = new Set([
     'edit_file', 'write_file', 'multi_edit', 'delete_file',
@@ -111,7 +123,7 @@ export async function buildToolRegistry(
   ]);
 
   const filteredSchemas = mode === 'plan'
-    ? allSchemas.filter(s => !WRITE_TOOL_NAMES.has(s.function.name))
+    ? allSchemas.filter(s => !WRITE_TOOL_NAMES.has(s.function.name) && !s.function.name.startsWith('custom__'))
     : allSchemas;
 
   // Build a self-reference for sub-agent tool execution
@@ -147,6 +159,18 @@ export async function buildToolRegistry(
           return 'Error: Invalid JSON arguments';
         }
         return lspManager.execute(name, args);
+      }
+
+      // Route custom tools
+      const customTool = customRoutes.get(name);
+      if (customTool) {
+        let args: Record<string, unknown>;
+        try {
+          args = JSON.parse(argsJson);
+        } catch {
+          return 'Error: Invalid JSON arguments for custom tool';
+        }
+        return executeCustomTool(customTool, args);
       }
 
       // Execute standard tools, then notify LSP of file changes

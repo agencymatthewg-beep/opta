@@ -537,6 +537,15 @@ export function resolvePermission(
   const modePerm = MODE_PERMISSIONS[mode]?.[toolName];
   if (modePerm) return modePerm;
 
+  // Custom tools (custom__*) execute shell commands, so they inherit
+  // run_command's mode-level permissions when no explicit override exists.
+  if (toolName.startsWith('custom__')) {
+    const customModePerm = MODE_PERMISSIONS[mode]?.['run_command'];
+    if (customModePerm) return customModePerm;
+    // Default: same as run_command ('ask')
+    return (configPerm ?? 'ask') as 'allow' | 'ask' | 'deny';
+  }
+
   // Fall back to config permission or default
   const permission = configPerm ?? defaultPerm ?? 'ask';
   return permission as 'allow' | 'ask' | 'deny';
