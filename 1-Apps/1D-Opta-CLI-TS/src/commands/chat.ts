@@ -430,25 +430,30 @@ async function handleSlashCommand(
     case '/share': {
       const { writeFile } = await import('node:fs/promises');
       const { join } = await import('node:path');
-      const filename = `opta-session-${session.id.slice(0, 8)}-${Date.now()}.md`;
-      const filepath = join(process.cwd(), filename);
+      const { select } = await import('@inquirer/prompts');
+      const { formatSessionExport } = await import('./share.js');
+      type ExportFormat = import('./share.js').ExportFormat;
 
-      let md = `# Opta CLI Session\n\n`;
-      md += `- **Session:** ${session.id}\n`;
-      md += `- **Model:** ${session.model}\n`;
-      md += `- **Date:** ${new Date().toISOString()}\n\n---\n\n`;
-
-      for (const m of session.messages) {
-        if (m.role === 'system') continue;
-        const content = typeof m.content === 'string' ? m.content : '[multimodal]';
-        if (m.role === 'user') {
-          md += `## User\n\n${content}\n\n`;
-        } else if (m.role === 'assistant') {
-          md += `## Assistant\n\n${content}\n\n`;
-        }
+      let format: ExportFormat = 'markdown';
+      try {
+        format = await select<ExportFormat>({
+          message: chalk.dim('Export format'),
+          choices: [
+            { name: 'Markdown (.md)', value: 'markdown' as ExportFormat },
+            { name: 'JSON (.json)', value: 'json' as ExportFormat },
+            { name: 'Plain text (.txt)', value: 'text' as ExportFormat },
+          ],
+        });
+      } catch {
+        return 'handled'; // Ctrl+C
       }
 
-      await writeFile(filepath, md, 'utf-8');
+      const ext = format === 'json' ? 'json' : format === 'text' ? 'txt' : 'md';
+      const filename = `opta-session-${session.id.slice(0, 8)}-${Date.now()}.${ext}`;
+      const filepath = join(process.cwd(), filename);
+
+      const content = formatSessionExport(session, format);
+      await writeFile(filepath, content, 'utf-8');
       console.log(chalk.green('✓') + ` Exported to ${chalk.cyan(filename)}`);
       return 'handled';
     }
