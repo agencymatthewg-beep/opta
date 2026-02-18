@@ -14,6 +14,8 @@ import type {
   ChatCompletionChunk,
   ModelLoadRequest,
   ModelsResponse,
+  SessionListResponse,
+  SessionFull,
 } from '@/types/lmx';
 import { LMXError } from '@/types/lmx';
 
@@ -99,6 +101,42 @@ export class LMXClient {
     } catch {
       return false;
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Session endpoints (CLI sessions served by LMX)
+  // ---------------------------------------------------------------------------
+
+  /** GET /admin/sessions -- List session summaries with pagination and filters */
+  async getSessions(options?: {
+    limit?: number;
+    offset?: number;
+    model?: string;
+    tag?: string;
+    since?: string;
+  }): Promise<SessionListResponse> {
+    const params = new URLSearchParams();
+    if (options?.limit != null) params.set('limit', String(options.limit));
+    if (options?.offset != null) params.set('offset', String(options.offset));
+    if (options?.model) params.set('model', options.model);
+    if (options?.tag) params.set('tag', options.tag);
+    if (options?.since) params.set('since', options.since);
+    const qs = params.toString();
+    return this.request<SessionListResponse>(
+      `/admin/sessions${qs ? `?${qs}` : ''}`,
+    );
+  }
+
+  /** GET /admin/sessions/:id -- Get full session with all messages */
+  async getSession(sessionId: string): Promise<SessionFull> {
+    return this.request<SessionFull>(`/admin/sessions/${sessionId}`);
+  }
+
+  /** DELETE /admin/sessions/:id -- Delete a session */
+  async deleteSession(sessionId: string): Promise<void> {
+    await this.request<unknown>(`/admin/sessions/${sessionId}`, {
+      method: 'DELETE',
+    });
   }
 
   // ---------------------------------------------------------------------------

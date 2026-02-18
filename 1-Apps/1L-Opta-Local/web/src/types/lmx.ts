@@ -95,7 +95,7 @@ export interface ChatCompletionChunk {
 }
 
 // ---------------------------------------------------------------------------
-// Sessions
+// Sessions (local browser sessions — simplified format)
 // ---------------------------------------------------------------------------
 
 export interface Session {
@@ -105,6 +105,61 @@ export interface Session {
   model: string;
   created_at: string;
   updated_at: string;
+}
+
+// ---------------------------------------------------------------------------
+// CLI Sessions (served by LMX /admin/sessions — matches Pydantic models)
+// ---------------------------------------------------------------------------
+
+/** Lightweight session metadata for list views (no messages). */
+export interface SessionSummary {
+  id: string;
+  title: string;
+  model: string;
+  tags: string[];
+  created: string; // ISO 8601
+  updated: string; // ISO 8601
+  message_count: number;
+}
+
+/** Content part in a multi-modal message (text or image). */
+export type ContentPart =
+  | { type: 'text'; text: string }
+  | { type: 'image_url'; image_url: { url: string } };
+
+/** Tool/function call within an assistant message. */
+export interface ToolCall {
+  id: string;
+  type: 'function';
+  function: { name: string; arguments: string };
+}
+
+/** A single message in a CLI session (OpenAI chat format). */
+export interface SessionMessage {
+  role: 'system' | 'user' | 'assistant' | 'tool';
+  content: string | ContentPart[] | null;
+  tool_calls?: ToolCall[];
+  tool_call_id?: string;
+}
+
+/** Complete session with all messages, returned by GET /admin/sessions/:id. */
+export interface SessionFull {
+  id: string;
+  title: string;
+  model: string;
+  tags: string[];
+  created: string; // ISO 8601
+  updated: string; // ISO 8601
+  cwd: string;
+  messages: SessionMessage[];
+  tool_call_count: number;
+  compacted: boolean;
+}
+
+/** Paginated session list response from GET /admin/sessions. */
+export interface SessionListResponse {
+  sessions: SessionSummary[];
+  total: number;
 }
 
 // ---------------------------------------------------------------------------
