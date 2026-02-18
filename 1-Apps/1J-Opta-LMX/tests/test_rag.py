@@ -620,6 +620,22 @@ async def test_ingest_code_chunking(rag_client: AsyncClient) -> None:
     assert data["chunks_created"] >= 2
 
 
+async def test_ingest_markdown_chunking(rag_client: AsyncClient) -> None:
+    """POST /v1/rag/ingest with markdown_headers chunking splits on H2."""
+    md = "## Section A\nContent A is here.\n\n## Section B\nContent B is here."
+    response = await rag_client.post(
+        "/v1/rag/ingest",
+        json={
+            "collection": "md_chunks",
+            "documents": [md],
+            "chunking": "markdown_headers",
+        },
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["chunks_created"] == 2
+
+
 # ── RAGConfig Phase 9 Tests ────────────────────────────────────────────
 
 
@@ -668,3 +684,67 @@ class TestRAGConfig:
         import pytest
         with pytest.raises(Exception):
             RAGConfig(chunking_strategy="banana")
+
+
+# ── Markdown Chunking Tests ────────────────────────────────────────────
+
+
+class TestChunkMarkdown:
+    """Tests for markdown header-aware chunking."""
+
+    def test_empty_markdown(self) -> None:
+        from opta_lmx.rag.chunker import chunk_markdown
+        assert chunk_markdown("") == []
+
+    def test_no_headers(self) -> None:
+        """Text without headers falls back to single chunk."""
+        from opta_lmx.rag.chunker import chunk_markdown
+        chunks = chunk_markdown("Just some plain text.\nAnother line.")
+        assert len(chunks) == 1
+        assert "Just some plain text." in chunks[0].text
+
+    def test_splits_on_h2(self) -> None:
+        from opta_lmx.rag.chunker import chunk_markdown
+        md = "## Section A\nContent A.\n\n## Section B\nContent B."
+        chunks = chunk_markdown(md)
+        assert len(chunks) == 2
+        assert "## Section A" in chunks[0].text
+        assert "Content A." in chunks[0].text
+        assert "## Section B" in chunks[1].text
+        assert "Content B." in chunks[1].text
+
+    def test_preserves_h1_context(self) -> None:
+        """H1 header is prepended to each H2 chunk as context."""
+        from opta_lmx.rag.chunker import chunk_markdown
+        md = "# Main Title\n\n## Section A\nContent A.\n\n## Section B\nContent B."
+        chunks = chunk_markdown(md)
+        assert len(chunks) == 2
+        # Each chunk should include the parent H1 as context
+        assert "# Main Title" in chunks[0].text
+        assert "# Main Title" in chunks[1].text
+
+    def test_large_section_re_split(self) -> None:
+        """Sections exceeding max_chunk_size are sub-chunked."""
+        from opta_lmx.rag.chunker import chunk_markdown
+        lines = [f"Line {i} with some filler content here." for i in range(200)]
+        md = "## Big Section\n" + "\n".join(lines)
+        chunks = chunk_markdown(md, max_chunk_size=512)
+        assert len(chunks) >= 2
+        # All sub-chunks still have the header
+        for chunk in chunks:
+            assert "## Big Section" in chunk.text
+
+    def test_h3_not_split_by_default(self) -> None:
+        """By default, only split on H1 and H2."""
+        from opta_lmx.rag.chunker import chunk_markdown
+        md = "## Section\nIntro.\n### Subsection\nSub-content."
+        chunks = chunk_markdown(md)
+        assert len(chunks) == 1
+        assert "### Subsection" in chunks[0].text
+
+    def test_sequential_indices(self) -> None:
+        from opta_lmx.rag.chunker import chunk_markdown
+        md = "## A\nText.\n\n## B\nText.\n\n## C\nText."
+        chunks = chunk_markdown(md)
+        for i, chunk in enumerate(chunks):
+            assert chunk.index == i

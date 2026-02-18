@@ -18,7 +18,7 @@ from starlette.responses import Response
 
 from opta_lmx.api.deps import AdminAuth, Embeddings, RagStore, RemoteEmbedding
 from opta_lmx.api.errors import internal_error, openai_error
-from opta_lmx.rag.chunker import chunk_code, chunk_text
+from opta_lmx.rag.chunker import chunk_code, chunk_markdown, chunk_text
 from opta_lmx.rag.store import VectorStore
 from opta_lmx.helpers.client import HelperNodeError
 
@@ -48,7 +48,8 @@ class IngestRequest(BaseModel):
     chunk_size: int = Field(512, ge=64, le=2048, description="Target tokens per chunk")
     chunk_overlap: int = Field(64, ge=0, le=512, description="Token overlap between chunks")
     chunking: str = Field(
-        "auto", pattern="^(auto|text|code|none)$", description="Chunking strategy"
+        "auto", pattern="^(auto|text|code|markdown_headers|none)$",
+        description="Chunking strategy"
     )
     model: str | None = Field(
         None, description="Embedding model (uses configured default if omitted)"
@@ -199,6 +200,17 @@ async def ingest_documents(
             all_metadata.append({**doc_meta, "doc_index": i})
         elif body.chunking == "code":
             chunks = chunk_code(doc, body.chunk_size, body.chunk_overlap)
+            for chunk in chunks:
+                all_chunks.append(chunk.text)
+                all_metadata.append({
+                    **doc_meta,
+                    "doc_index": i,
+                    "chunk_index": chunk.index,
+                    "start_char": chunk.start_char,
+                    "end_char": chunk.end_char,
+                })
+        elif body.chunking == "markdown_headers":
+            chunks = chunk_markdown(doc, body.chunk_size, body.chunk_overlap)
             for chunk in chunks:
                 all_chunks.append(chunk.text)
                 all_metadata.append({
