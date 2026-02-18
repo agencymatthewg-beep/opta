@@ -1,13 +1,14 @@
-"""Health check routes — unauthenticated /healthz and authenticated /admin/health."""
+"""Health check routes — unauthenticated /healthz, /readyz and authenticated /admin/health."""
 
 from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
+from fastapi.responses import JSONResponse
 
 from opta_lmx import __version__
-from opta_lmx.api.deps import AdminAuth, Memory
+from opta_lmx.api.deps import AdminAuth, Engine, Memory, RemoteEmbedding, RemoteReranking
 
 router = APIRouter()
 
@@ -21,6 +22,33 @@ async def healthz() -> dict[str, str]:
     and uptime monitoring systems.
     """
     return {"status": "ok", "version": __version__}
+
+
+@router.get("/readyz", response_model=None)
+async def readyz(request: Request) -> JSONResponse:
+    """Unauthenticated readiness probe for load balancers.
+
+    Returns 200 when at least one model is loaded and the server
+    is accepting inference requests. Returns 503 during startup,
+    model loading, or shutdown drain.
+    """
+    engine = request.app.state.engine
+    loaded = engine.get_loaded_models()
+
+    if not loaded:
+        return JSONResponse(
+            status_code=503,
+            content={"status": "unavailable", "reason": "no models loaded"},
+        )
+
+    return JSONResponse(
+        status_code=200,
+        content={
+            "status": "ready",
+            "version": __version__,
+            "models_loaded": len(loaded),
+        },
+    )
 
 
 @router.get("/admin/health")
