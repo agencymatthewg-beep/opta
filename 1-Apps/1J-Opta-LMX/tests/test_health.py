@@ -83,6 +83,32 @@ class TestAdminHealth:
         assert "96.0%" in data["reason"]
 
     @pytest.mark.asyncio
+    async def test_includes_metal_memory(self, client: AsyncClient) -> None:
+        """Health check includes Metal GPU memory info when available."""
+        response = await client.get("/admin/health")
+        assert response.status_code == 200
+        data = response.json()
+        # Metal memory fields present (may be null if MLX unavailable)
+        assert "metal" in data
+
+    @pytest.mark.asyncio
+    async def test_includes_helper_node_status(self, client: AsyncClient) -> None:
+        """Health check includes helper node health."""
+        response = await client.get("/admin/health")
+        assert response.status_code == 200
+        data = response.json()
+        assert "helpers" in data
+
+    @pytest.mark.asyncio
+    async def test_includes_engine_status(self, client: AsyncClient) -> None:
+        """Health check includes engine model count and in-flight requests."""
+        response = await client.get("/admin/health")
+        assert response.status_code == 200
+        data = response.json()
+        assert "models_loaded" in data
+        assert "in_flight_requests" in data
+
+    @pytest.mark.asyncio
     async def test_requires_auth(self, client_with_auth: AsyncClient) -> None:
         """Admin health requires admin key when configured."""
         response = await client_with_auth.get("/admin/health")
