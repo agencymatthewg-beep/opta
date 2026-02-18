@@ -32,7 +32,7 @@ None
 **Plans**: 2 plans
 
 Plans:
-- [ ] 01-01: Next.js 16 scaffold with Tailwind + @opta/ui + design tokens
+- [x] 01-01: Next.js 16 scaffold with Tailwind + @opta/ui + design tokens
 - [ ] 01-02: LMX client library and connection settings
 
 ### Phase 2: Web Foundation
@@ -117,7 +117,7 @@ Phases 1 → 2 → 3 (parallel with 4, 5) → 6 → 7 → 8
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Web Project Setup | 0/2 | Not started | - |
+| 1. Web Project Setup | 1/2 | In progress | - |
 | 2. Web Foundation | 0/2 | Not started | - |
 | 3. Web Dashboard | 0/3 | Not started | - |
 | 4. Web Anywhere | 0/2 | Not started | - |
