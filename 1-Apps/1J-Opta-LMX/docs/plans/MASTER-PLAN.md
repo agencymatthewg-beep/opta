@@ -208,11 +208,14 @@ Detailed migration plan for CLI changes.
 - `update_config()` for hot-reload without restart
 - 10 unit tests + 3 API integration tests
 
-### 4B. Performance Optimization (PARTIALLY DEFERRED)
+### 4B. Performance Optimization ✅
 - ~~Prompt caching~~ → vllm-mlx prefix cache already built-in
 - ~~Request batching~~ → vllm-mlx continuous batching already built-in
-- KV-cache configuration exposure → deferred (expose via admin when needed)
-- Prefix cache warm-up strategies → deferred (requires real workload profiling)
+- KV-cache configuration ✅ — `kv_bits`, `kv_group_size` in config + engine pass-through
+- Prefix cache control ✅ — `prefix_cache_enabled` in config, per-model override via presets
+- Speculative decoding profiles ✅ — `speculative_model`, `speculative_num_tokens` with preset override
+- Model performance profiles ✅ — 7 presets with `performance` section auto-applied on load
+- 8 dedicated performance profile tests (`test_performance_profiles.py`)
 
 ### 4C. Monitoring & Telemetry ✅
 - `MetricsCollector` with per-request tracking (latency, tokens, errors, models)
@@ -285,8 +288,8 @@ Detailed migration plan for CLI changes.
 
 ### 6D. Code Audit ✅
 - Full codebase audit and cleanup
-- 149 tests passing across 8 test files
-- 30 source files in `src/opta_lmx/`
+- 389 tests passing across 28 test files
+- 35+ source files in `src/opta_lmx/`
 - 23+ API endpoints implemented
 
 ---
@@ -341,8 +344,8 @@ Detailed migration plan for CLI changes.
 - [x] Production deployment — launchd, log rotation, setup script (Phase 5C)
 - [ ] OpenClaw bots work with zero config change (Phase 5B — deferred to OptaPlus repo)
 - [x] GGUF fallback for models without MLX weights (gguf_backend.py, 14 tests, optional dep)
-- [x] 149 tests passing across 8 test files
-- [x] 30 source files, 23+ API endpoints
+- [x] 389 tests passing across 28 test files
+- [x] 35+ source files, 23+ API endpoints
 
 ### v1.0 (Full Product)
 - [x] Smart routing (Phase 4A)
@@ -352,6 +355,16 @@ Detailed migration plan for CLI changes.
 - [x] WebSocket support (Phase 6C)
 - [x] Model presets (Phase 6A)
 - [x] Code audit clean (Phase 6D)
+- [x] KV cache + speculative decoding profiles (Phase 4B)
+- [x] Embedding endpoint with remote helper proxy
+- [x] Reranking endpoint with remote helper proxy
+- [x] RAG pipeline (vector store, BM25, hybrid search, chunking)
+- [x] Adaptive concurrency + usage prediction
+- [x] Model quantization pipeline
+- [x] Multimodal content support (vision models)
+- [x] Concurrent request limiting + inference timeout
+- [x] 389 tests across 28 test files
+- [x] 35+ source modules in `src/opta_lmx/`
 - [ ] Opta CLI fully migrated (no LM Studio references) — Phase 5A, separate repo
 - [ ] OpenClaw bots integrated — Phase 5B, separate repo
 - [ ] Benchmarks published (vs LM Studio, vs Ollama) — Phase 4B-future

@@ -363,16 +363,21 @@ class TestConfigReload:
 
     @pytest.mark.asyncio
     async def test_reload_updates_memory_threshold(self, client: AsyncClient) -> None:
-        """Config reload updates the memory threshold."""
+        """Config reload updates the memory threshold from loaded config."""
         app = client._transport.app  # type: ignore[union-attr]
-        original = app.state.memory_monitor.threshold_percent
 
-        # Reload (uses default config, so threshold stays at 90)
-        response = await client.post("/admin/config/reload")
-        assert response.status_code == 200
+        # Patch load_config to return a known config with threshold=85
+        from unittest.mock import patch
 
-        # Should still be valid (default config = 90%)
-        assert app.state.memory_monitor.threshold_percent == 90
+        from opta_lmx.config import LMXConfig, MemoryConfig
+
+        test_config = LMXConfig(memory=MemoryConfig(max_memory_percent=85))
+        with patch("opta_lmx.api.admin.load_config", return_value=test_config):
+            response = await client.post("/admin/config/reload")
+            assert response.status_code == 200
+
+        # Threshold should match the loaded config
+        assert app.state.memory_monitor.threshold_percent == 85
 
 
 # ─── Benchmark ───────────────────────────────────────────────────────────
