@@ -29,6 +29,35 @@ class TestHealthz:
         assert response.status_code == 200
 
 
+class TestReadyz:
+    """Tests for unauthenticated /readyz endpoint."""
+
+    @pytest.mark.asyncio
+    async def test_returns_503_when_no_models_loaded(self, client: AsyncClient) -> None:
+        """Readyz returns 503 when no models are loaded."""
+        response = await client.get("/readyz")
+        assert response.status_code == 503
+        data = response.json()
+        assert data["status"] == "unavailable"
+
+    @pytest.mark.asyncio
+    async def test_returns_200_when_model_loaded(self, client: AsyncClient) -> None:
+        """Readyz returns 200 when at least one model is loaded."""
+        app = client._transport.app  # type: ignore[union-attr]
+        await app.state.engine.load_model("test/model-ready")
+        response = await client.get("/readyz")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "ready"
+
+    @pytest.mark.asyncio
+    async def test_no_auth_required(self, client_with_auth: AsyncClient) -> None:
+        """Readyz does not require admin key."""
+        response = await client_with_auth.get("/readyz")
+        # 503 is fine -- just prove it's not 403
+        assert response.status_code != 403
+
+
 class TestAdminHealth:
     """Tests for authenticated /admin/health endpoint."""
 
