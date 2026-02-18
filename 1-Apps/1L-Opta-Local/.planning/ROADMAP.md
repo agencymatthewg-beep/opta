@@ -15,10 +15,10 @@ None
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
 - [x] **Phase 1: Web Project Setup** - Scaffold Next.js 16 with Opta design system and LMX client
-- [ ] **Phase 2: Web Foundation** - Streaming chat with manual server connection
-- [ ] **Phase 3: Web Dashboard** - Real-time server monitoring via SSE
-- [ ] **Phase 4: Web Anywhere** - Cloudflare Tunnel WAN access
-- [ ] **Phase 5: Web Sessions** - Resume CLI sessions in browser
+- [x] **Phase 2: Web Foundation** - Streaming chat with manual server connection
+- [x] **Phase 3: Web Dashboard** - Real-time server monitoring via SSE
+- [x] **Phase 4: Web Anywhere** - Cloudflare Tunnel WAN access
+- [x] **Phase 5: Web Sessions** - Resume CLI sessions in browser
 - [ ] **Phase 6: iOS Foundation** - Bonjour discovery and SwiftUI streaming chat
 - [ ] **Phase 7: iOS Dashboard + WAN** - Native monitoring and QR tunnel pairing
 - [ ] **Phase 8: iOS Sessions + Polish** - Session management, haptics, final testing
@@ -42,8 +42,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 02-01: Streaming chat engine and message UI
-- [ ] 02-02: Model picker and chat history persistence
+- [x] 02-01: Streaming chat engine and message UI
+- [x] 02-02: Model picker and chat history persistence
 
 ### Phase 3: Web Dashboard
 **Goal**: Real-time server monitoring — VRAM gauge, loaded models list, throughput chart, model load/unload
@@ -52,9 +52,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 03-01: SSE connection manager with auto-reconnect
-- [ ] 03-02: VRAM gauge and loaded models components
-- [ ] 03-03: Throughput chart and model load/unload flow
+- [x] 03-01: SSE connection manager with auto-reconnect
+- [x] 03-02: VRAM gauge and loaded models components
+- [x] 03-03: Throughput chart and model load/unload flow
 
 ### Phase 4: Web Anywhere
 **Goal**: Connect to LMX from outside LAN via Cloudflare Tunnel with connection type indicators
@@ -64,8 +64,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 04-01: Tunnel URL configuration and connection type detection
-- [ ] 04-02: Auto-failover (LAN → WAN) and connection status indicators
+- [x] 04-01: Tunnel URL configuration and connection type detection
+- [x] 04-02: Auto-failover (LAN → WAN) and connection status indicators
 
 ### Phase 5: Web Sessions
 **Goal**: Browse and resume CLI sessions in the browser — start on terminal, continue on web
@@ -74,9 +74,9 @@ Plans:
 **Plans**: 3 plans (expanded from 2 — LMX session API prerequisite added)
 
 Plans:
-- [ ] 05-01: LMX session API endpoints (Python — reads CLI session files from Mac Studio)
-- [ ] 05-02: Session list page with search and filtering
-- [ ] 05-03: Session resume — load history and continue chatting
+- [x] 05-01: LMX session API endpoints (Python — reads CLI session files from Mac Studio)
+- [x] 05-02: Session list page with search and filtering
+- [x] 05-03: Session resume — load history and continue chatting
 
 ### Phase 6: iOS Foundation
 **Goal**: Zero-config LAN connection via Bonjour and native SwiftUI streaming chat
@@ -118,10 +118,10 @@ Phases 1 → 2 → 3 (parallel with 4, 5) → 6 → 7 → 8
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Web Project Setup | 2/2 | Complete | 2026-02-18 |
-| 2. Web Foundation | 0/2 | Not started | - |
-| 3. Web Dashboard | 0/3 | Not started | - |
-| 4. Web Anywhere | 0/2 | Not started | - |
-| 5. Web Sessions | 0/2 | Not started | - |
+| 2. Web Foundation | 2/2 | Complete | 2026-02-18 |
+| 3. Web Dashboard | 3/3 | Complete | 2026-02-18 |
+| 4. Web Anywhere | 2/2 | Complete | 2026-02-18 |
+| 5. Web Sessions | 3/3 | Complete | 2026-02-18 |
 | 6. iOS Foundation | 0/3 | Not started | - |
 | 7. iOS Dashboard + WAN | 0/2 | Not started | - |
 | 8. iOS Sessions + Polish | 0/2 | Not started | - |
