@@ -166,6 +166,53 @@ class TestVectorStore:
         assert len(results) == 1
         assert results[0].document.text == "doc_a"
 
+    def test_rrf_k_parameter(self) -> None:
+        """reciprocal_rank_fusion respects the k parameter."""
+        from opta_lmx.rag.bm25 import reciprocal_rank_fusion
+
+        # Doc 0 is #1 in both lists, doc 1 is #2 in list A only, doc 2 is #2 in list B only
+        ranked = [[(0, 10.0), (1, 5.0)], [(0, 8.0), (2, 3.0)]]
+        result_k20 = reciprocal_rank_fusion(ranked, k=20)
+        result_k120 = reciprocal_rank_fusion(ranked, k=120)
+
+        # Both return same docs
+        assert len(result_k20) == 3
+        assert len(result_k120) == 3
+        # Lower k = more spread between top and bottom
+        spread_k20 = result_k20[0][1] - result_k20[-1][1]
+        spread_k120 = result_k120[0][1] - result_k120[-1][1]
+        assert spread_k20 > spread_k120
+
+    def test_weighted_rrf(self) -> None:
+        """Weighted RRF applies per-list weights."""
+        from opta_lmx.rag.bm25 import reciprocal_rank_fusion
+
+        # Doc 0 is #1 in list A, #2 in list B
+        # Doc 1 is #2 in list A, #1 in list B
+        ranked = [[(0, 10.0), (1, 5.0)], [(1, 8.0), (0, 3.0)]]
+
+        # Equal weights: symmetric, could go either way
+        equal = reciprocal_rank_fusion(ranked, k=60, weights=[1.0, 1.0])
+        # Heavy weight on list A: doc 0 should win (it's #1 in list A)
+        weighted_a = reciprocal_rank_fusion(ranked, k=60, weights=[5.0, 1.0])
+        assert weighted_a[0][0] == 0  # Doc 0 wins with high list-A weight
+
+    def test_hybrid_search_uses_rrf_config(self) -> None:
+        """Hybrid search accepts rrf_k and rrf_weights parameters."""
+        store = VectorStore()
+        store.add(
+            "col",
+            ["alpha beta gamma", "delta epsilon", "alpha delta"],
+            [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.5, 0.5, 0.0]],
+        )
+        # Should not raise with custom rrf params
+        results = store.search(
+            "col", [1.0, 0.0, 0.0], top_k=3,
+            mode="hybrid", query_text="alpha",
+            rrf_k=40, rrf_weights=[2.0, 1.0],
+        )
+        assert len(results) >= 1
+
 
 class TestDocument:
     """Tests for Document serialization."""

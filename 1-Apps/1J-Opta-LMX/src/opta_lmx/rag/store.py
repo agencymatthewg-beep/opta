@@ -245,6 +245,8 @@ class VectorStore:
         min_score: float = 0.0,
         mode: str = "vector",
         query_text: str | None = None,
+        rrf_k: int = 60,
+        rrf_weights: list[float] | None = None,
     ) -> list[SearchResult]:
         """Search for similar documents.
 
@@ -255,6 +257,8 @@ class VectorStore:
             min_score: Minimum similarity threshold (0-1).
             mode: Search mode — "vector", "keyword", or "hybrid".
             query_text: Raw query text (required for keyword/hybrid modes).
+            rrf_k: RRF fusion constant (hybrid mode only).
+            rrf_weights: Optional per-retriever weights for RRF fusion.
 
         Returns:
             Top matching documents sorted by descending relevance.
@@ -271,6 +275,7 @@ class VectorStore:
         if mode == "hybrid":
             return self._search_hybrid(
                 collection, query_vec, query_text or "", top_k, min_score, docs,
+                rrf_k=rrf_k, rrf_weights=rrf_weights,
             )
 
         # Default: vector search
@@ -325,6 +330,8 @@ class VectorStore:
         top_k: int,
         min_score: float,
         docs: list[Document],
+        rrf_k: int = 60,
+        rrf_weights: list[float] | None = None,
     ) -> list[SearchResult]:
         """Hybrid search: merge vector + BM25 results via RRF."""
         # Build ID→index map for O(1) lookup (avoids linear scan per result)
@@ -350,7 +357,7 @@ class VectorStore:
 
         # Merge via RRF
         ranked_lists = [r for r in [vector_ranked, keyword_ranked] if r]
-        merged = reciprocal_rank_fusion(ranked_lists)
+        merged = reciprocal_rank_fusion(ranked_lists, k=rrf_k, weights=rrf_weights)
 
         results: list[SearchResult] = []
         for idx, rrf_score in merged[:top_k]:

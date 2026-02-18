@@ -123,27 +123,30 @@ class BM25Index:
 def reciprocal_rank_fusion(
     ranked_lists: list[list[tuple[int, float]]],
     k: int = 60,
+    weights: list[float] | None = None,
 ) -> list[tuple[int, float]]:
     """Combine multiple ranked lists using Reciprocal Rank Fusion.
 
     RRF assigns each document a score of 1/(k + rank) from each retriever,
-    then sums across retrievers. This produces a balanced merge that doesn't
-    depend on score normalization.
+    then sums across retrievers. Optional per-list weights scale each
+    retriever's contribution.
 
     Args:
         ranked_lists: List of ranked results, each as [(doc_index, score), ...].
         k: RRF constant (default 60, higher = less emphasis on top ranks).
+        weights: Optional per-list weights (default: all 1.0).
 
     Returns:
         Merged results as [(doc_index, rrf_score), ...] sorted by descending score.
     """
     rrf_scores: dict[int, float] = {}
+    list_weights = weights or [1.0] * len(ranked_lists)
 
-    for ranked in ranked_lists:
+    for w, ranked in zip(list_weights, ranked_lists, strict=False):
         for rank, (doc_idx, _score) in enumerate(ranked):
             if doc_idx not in rrf_scores:
                 rrf_scores[doc_idx] = 0.0
-            rrf_scores[doc_idx] += 1.0 / (k + rank + 1)
+            rrf_scores[doc_idx] += w * (1.0 / (k + rank + 1))
 
     merged = sorted(rrf_scores.items(), key=lambda x: x[1], reverse=True)
     return merged
