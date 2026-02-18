@@ -70,13 +70,13 @@ Plans:
 ### Phase 5: Web Sessions
 **Goal**: Browse and resume CLI sessions in the browser — start on terminal, continue on web
 **Depends on**: Phase 2
-**Research**: Likely (LMX Session API may not be fully implemented yet)
-**Research topics**: Current state of LMX `/admin/sessions` endpoints, session JSON schema compatibility with Opta CLI format
-**Plans**: 2 plans
+**Research**: Complete (confirmed LMX has ZERO session endpoints — must add them)
+**Plans**: 3 plans (expanded from 2 — LMX session API prerequisite added)
 
 Plans:
-- [ ] 05-01: Session list page with search and filtering
-- [ ] 05-02: Session resume — load history and continue chatting
+- [ ] 05-01: LMX session API endpoints (Python — reads CLI session files from Mac Studio)
+- [ ] 05-02: Session list page with search and filtering
+- [ ] 05-03: Session resume — load history and continue chatting
 
 ### Phase 6: iOS Foundation
 **Goal**: Zero-config LAN connection via Bonjour and native SwiftUI streaming chat
