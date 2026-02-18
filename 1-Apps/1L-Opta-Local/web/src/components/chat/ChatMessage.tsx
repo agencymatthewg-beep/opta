@@ -5,6 +5,7 @@ import { Streamdown } from 'streamdown';
 import { createCodePlugin } from '@streamdown/code';
 import { cn } from '@opta/ui';
 import { Bot, User } from 'lucide-react';
+import { ForkButton } from './ForkButton';
 
 // Custom code plugin with github-dark-default for both light/dark (OLED-only design)
 const optaCode = createCodePlugin({
@@ -15,6 +16,10 @@ interface ChatMessageProps {
   content: string;
   role: 'user' | 'assistant';
   isStreaming?: boolean;
+  /** Message index — used by ForkButton to identify the fork point. */
+  messageIndex?: number;
+  /** Callback when the user clicks fork. Omit to hide fork button. */
+  onFork?: (atIndex: number) => void;
 }
 
 /**
@@ -28,10 +33,17 @@ export const ChatMessage = memo(function ChatMessage({
   content,
   role,
   isStreaming,
+  messageIndex,
+  onFork,
 }: ChatMessageProps) {
+  const showFork = onFork != null && messageIndex != null;
+
   if (role === 'user') {
     return (
-      <div className="flex justify-end gap-3">
+      <div className="group relative flex justify-end gap-3">
+        {showFork && (
+          <ForkButton messageIndex={messageIndex} onFork={onFork} />
+        )}
         <div className={cn('glass-subtle rounded-xl px-4 py-3 ml-12 max-w-[80%]')}>
           <p className="text-text-primary whitespace-pre-wrap text-sm leading-relaxed">
             {content}
@@ -45,7 +57,10 @@ export const ChatMessage = memo(function ChatMessage({
   }
 
   return (
-    <div className="flex gap-3">
+    <div className="group relative flex gap-3">
+      {showFork && (
+        <ForkButton messageIndex={messageIndex} onFork={onFork} />
+      )}
       <div className="flex-shrink-0 w-8 h-8 rounded-full glass flex items-center justify-center mt-1">
         <Bot className="w-4 h-4 text-primary" />
       </div>

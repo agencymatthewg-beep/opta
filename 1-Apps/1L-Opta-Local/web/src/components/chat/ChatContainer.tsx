@@ -1,17 +1,30 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, MessageSquare, Sparkles } from 'lucide-react';
+import { ChevronDown, GitBranch, MessageSquare, Sparkles } from 'lucide-react';
 import { cn } from '@opta/ui';
 import { useChatStream } from '@/hooks/useChatStream';
 import { useScrollAnchor } from '@/hooks/useScrollAnchor';
 import { useSessionPersist } from '@/hooks/useSessionPersist';
+import { useTokenCost } from '@/hooks/useTokenCost';
 import { createClient, getConnectionSettings } from '@/lib/connection';
+import {
+  forkSession,
+  getBranches,
+  getBranchTree,
+  getBranchableSession,
+  renameBranch,
+} from '@/lib/branch-store';
+import type { BranchableSession, BranchNode } from '@/lib/branch-store';
 import type { LMXClient } from '@/lib/lmx-client';
 import type { ChatMessage as ChatMessageType } from '@/types/lmx';
+import { BranchIndicator } from './BranchIndicator';
+import { BranchTree } from './BranchTree';
 import { ChatMessage } from './ChatMessage';
 import { ChatInput } from './ChatInput';
+import { TokenCostBar } from './TokenCostBar';
 import { ToolCallBlock } from './ToolCallBlock';
 
 interface ChatContainerProps {
@@ -39,6 +52,7 @@ const PROMPT_SUGGESTIONS = [
  * useSessionPersist, and handles auto-scroll via useScrollAnchor.
  */
 export function ChatContainer({ model, sessionId: initialSessionId, initialMessages }: ChatContainerProps) {
+  const router = useRouter();
   const [client, setClient] = useState<LMXClient | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string>(
@@ -47,9 +61,21 @@ export function ChatContainer({ model, sessionId: initialSessionId, initialMessa
   const sessionInitialized = useRef(false);
   const initialMessagesApplied = useRef(false);
 
+  // Branch state
+  const [branchMeta, setBranchMeta] = useState<BranchableSession | null>(null);
+  const [parentTitle, setParentTitle] = useState<string>('');
+  const [siblings, setSiblings] = useState<BranchableSession[]>([]);
+  const [branchTree, setBranchTree] = useState<BranchNode[]>([]);
+  const [showBranchTree, setShowBranchTree] = useState(false);
+  const [hasBranches, setHasBranches] = useState(false);
+
   const { messages, setMessages, isStreaming, sendMessage, stop } = useChatStream({
     onError: (err) => setError(err.message),
   });
+
+  // Token cost estimation
+  const { promptTokens, completionTokens, totalTokens, estimatedCosts } =
+    useTokenCost(messages);
 
   const {
     containerRef,
@@ -115,6 +141,88 @@ export function ChatContainer({ model, sessionId: initialSessionId, initialMessa
     autoScroll();
   }, [messages, autoScroll]);
 
+  // Load branch metadata when session ID is available
+  useEffect(() => {
+    if (!sessionId) return;
+
+    void (async () => {
+      // Check if current session is a branch (has parentId)
+      const session = await getBranchableSession(sessionId);
+      if (session?.parentId) {
+        setBranchMeta(session);
+
+        // Load parent title
+        const parent = await getBranchableSession(session.parentId);
+        setParentTitle(parent?.title ?? 'Unknown session');
+
+        // Load sibling branches (same parent, same branch point, excluding self)
+        const allBranches = await getBranches(session.parentId);
+        setSiblings(
+          allBranches.filter(
+            (b) =>
+              b.id !== sessionId &&
+              b.branchPoint === session.branchPoint,
+          ),
+        );
+      } else {
+        setBranchMeta(null);
+        setParentTitle('');
+        setSiblings([]);
+      }
+
+      // Check if this session has child branches
+      const children = await getBranches(sessionId);
+      setHasBranches(children.length > 0);
+
+      // Build the tree if needed
+      const tree = await getBranchTree(sessionId);
+      setBranchTree(tree);
+    })();
+  }, [sessionId]);
+
+  // Fork handler — creates a new branch and navigates to it
+  const handleFork = useCallback(
+    async (atMessageIndex: number) => {
+      if (!sessionId) return;
+
+      try {
+        const branch = await forkSession(sessionId, atMessageIndex);
+        router.push(`/chat/${branch.id}`);
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : 'Failed to fork conversation',
+        );
+      }
+    },
+    [sessionId, router],
+  );
+
+  // Navigate to a branch session
+  const handleBranchNavigate = useCallback(
+    (targetSessionId: string) => {
+      router.push(`/chat/${targetSessionId}`);
+    },
+    [router],
+  );
+
+  // Rename branch label
+  const handleBranchLabelChange = useCallback(
+    async (label: string) => {
+      if (!sessionId) return;
+      try {
+        await renameBranch(sessionId, label);
+        setBranchMeta((prev) =>
+          prev ? { ...prev, branchLabel: label } : prev,
+        );
+      } catch {
+        // Silently ignore rename failures
+      }
+    },
+    [sessionId],
+  );
+
   const handleSend = useCallback(
     (content: string) => {
       if (!client) {
@@ -149,6 +257,49 @@ export function ChatContainer({ model, sessionId: initialSessionId, initialMessa
         ref={containerRef}
         className="flex-1 overflow-y-auto"
       >
+        {/* Branch indicator — shown when viewing a forked session */}
+        {branchMeta?.parentId != null && branchMeta.branchPoint != null && (
+          <BranchIndicator
+            parentId={branchMeta.parentId}
+            parentTitle={parentTitle}
+            branchPoint={branchMeta.branchPoint}
+            siblings={siblings}
+            currentBranchLabel={branchMeta.branchLabel}
+            onLabelChange={(label) => void handleBranchLabelChange(label)}
+            onNavigate={handleBranchNavigate}
+          />
+        )}
+
+        {/* View branches toggle — shown when session has child branches */}
+        {hasBranches && (
+          <div className="px-4 mt-3 mb-1">
+            <button
+              type="button"
+              onClick={() => setShowBranchTree((prev) => !prev)}
+              className={cn(
+                'flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs',
+                'glass-subtle text-text-secondary hover:text-text-primary',
+                'hover:bg-primary/10 transition-colors',
+                showBranchTree && 'text-primary',
+              )}
+            >
+              <GitBranch className="w-3.5 h-3.5" />
+              {showBranchTree ? 'Hide branches' : 'View branches'}
+            </button>
+          </div>
+        )}
+
+        {/* Branch tree visualization */}
+        <AnimatePresence>
+          {showBranchTree && branchTree.length > 0 && (
+            <BranchTree
+              tree={branchTree}
+              currentSessionId={sessionId}
+              onNavigate={handleBranchNavigate}
+            />
+          )}
+        </AnimatePresence>
+
         {hasMessages ? (
           <div className="px-4 py-6 space-y-6 max-w-4xl mx-auto">
             {messages.map((msg, index) => {
@@ -188,6 +339,8 @@ export function ChatContainer({ model, sessionId: initialSessionId, initialMessa
                           isStreaming &&
                           index === messages.length - 1
                         }
+                        messageIndex={index}
+                        onFork={(i) => void handleFork(i)}
                       />
                     )}
                   </div>
@@ -205,6 +358,8 @@ export function ChatContainer({ model, sessionId: initialSessionId, initialMessa
                     index === messages.length - 1 &&
                     msg.role === 'assistant'
                   }
+                  messageIndex={index}
+                  onFork={(i) => void handleFork(i)}
                 />
               );
             })}
@@ -289,6 +444,15 @@ export function ChatContainer({ model, sessionId: initialSessionId, initialMessa
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Token cost estimator */}
+      <TokenCostBar
+        promptTokens={promptTokens}
+        completionTokens={completionTokens}
+        totalTokens={totalTokens}
+        estimatedCosts={estimatedCosts}
+        isStreaming={isStreaming}
+      />
 
       {/* Input */}
       <ChatInput

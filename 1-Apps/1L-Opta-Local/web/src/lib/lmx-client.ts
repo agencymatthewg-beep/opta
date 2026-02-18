@@ -18,6 +18,15 @@ import type {
   SessionFull,
 } from '@/types/lmx';
 import { LMXError } from '@/types/lmx';
+import type {
+  RagIngestRequest,
+  RagIngestResponse,
+  RagQueryRequest,
+  RagQueryResponse,
+  RagContextRequest,
+  RagContextResponse,
+  RagCollectionsResponse,
+} from '@/types/rag';
 
 export class LMXClient {
   private readonly baseUrl: string;
@@ -262,5 +271,46 @@ export class LMXClient {
     } finally {
       reader.releaseLock();
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // RAG endpoints
+  // ---------------------------------------------------------------------------
+
+  /** POST /v1/rag/ingest -- Ingest documents into a RAG collection */
+  async ragIngest(req: RagIngestRequest): Promise<RagIngestResponse> {
+    return this.request<RagIngestResponse>('/v1/rag/ingest', {
+      method: 'POST',
+      body: JSON.stringify(req),
+    });
+  }
+
+  /** POST /v1/rag/query -- Query a RAG collection for relevant context */
+  async ragQuery(req: RagQueryRequest): Promise<RagQueryResponse> {
+    return this.request<RagQueryResponse>('/v1/rag/query', {
+      method: 'POST',
+      body: JSON.stringify(req),
+    });
+  }
+
+  /** POST /v1/rag/context -- Assemble context from multiple collections */
+  async ragContext(req: RagContextRequest): Promise<RagContextResponse> {
+    return this.request<RagContextResponse>('/v1/rag/context', {
+      method: 'POST',
+      body: JSON.stringify(req),
+    });
+  }
+
+  /** GET /v1/rag/collections -- List all RAG collections and stats */
+  async ragListCollections(): Promise<RagCollectionsResponse> {
+    return this.request<RagCollectionsResponse>('/v1/rag/collections');
+  }
+
+  /** DELETE /v1/rag/collections/:name -- Delete a RAG collection */
+  async ragDeleteCollection(collection: string): Promise<void> {
+    await this.request<unknown>(
+      `/v1/rag/collections/${encodeURIComponent(collection)}`,
+      { method: 'DELETE' },
+    );
   }
 }

@@ -17,11 +17,12 @@
 
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { RefreshCw, Plus, AlertCircle, WifiOff } from 'lucide-react';
+import { RefreshCw, Plus, AlertCircle, WifiOff, AlertTriangle } from 'lucide-react';
 import { Button } from '@opta/ui';
 
 import { useSSE } from '@/hooks/useSSE';
 import { useBufferedState } from '@/hooks/useBufferedState';
+import { useHeartbeat } from '@/hooks/useHeartbeat';
 import { useConnectionContextSafe } from '@/components/shared/ConnectionProvider';
 import type { ServerStatus } from '@/types/lmx';
 import { CircularBuffer } from '@/lib/circular-buffer';
@@ -31,6 +32,7 @@ import { VRAMGauge } from '@/components/dashboard/VRAMGauge';
 import { ModelList } from '@/components/dashboard/ModelList';
 import { ThroughputChart } from '@/components/dashboard/ThroughputChart';
 import { ModelLoadDialog } from '@/components/dashboard/ModelLoadDialog';
+import { HeartbeatIndicator } from '@/components/dashboard/HeartbeatIndicator';
 
 // ---------------------------------------------------------------------------
 // SSE event shape
@@ -128,6 +130,13 @@ export default function DashboardPage() {
     enabled: isConnected && sseUrl !== '',
   });
 
+  // ---- Heartbeat health monitor ----
+  const { isHealthy, consecutiveFailures, lastPingMs } = useHeartbeat({
+    baseUrl,
+    adminKey,
+    enabled: isConnected,
+  });
+
   // ---- Synthesize throughput from status TPS ----
   // If the server sends status events with tokens_per_second but no
   // dedicated throughput events, create synthetic throughput points.
@@ -201,6 +210,14 @@ export default function DashboardPage() {
       <header className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold text-text-primary">Dashboard</h1>
+          {/* Heartbeat health indicator */}
+          {isConnected && (
+            <HeartbeatIndicator
+              isHealthy={isHealthy}
+              consecutiveFailures={consecutiveFailures}
+              lastPingMs={lastPingMs}
+            />
+          )}
           {/* SSE connection state indicator (subtle) */}
           {connectionType !== 'offline' && connectionState === 'error' && (
             <span className="text-xs text-neon-red">SSE disconnected</span>
@@ -248,6 +265,36 @@ export default function DashboardPage() {
           </Button>
         </div>
       )}
+
+      {/* Heartbeat reconnection banner */}
+      <AnimatePresence>
+        {!isHealthy && connectionType !== 'offline' && (
+          <motion.div
+            initial={{ opacity: 0, y: -8, height: 0 }}
+            animate={{ opacity: 1, y: 0, height: 'auto' }}
+            exit={{ opacity: 0, y: -8, height: 0 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            className="mb-4 flex items-center gap-2 rounded-lg glass-subtle border border-neon-amber/30 px-4 py-3"
+          >
+            <AlertTriangle className="h-4 w-4 shrink-0 text-neon-amber" />
+            <p className="flex-1 text-sm text-neon-amber">
+              Connection unstable — reconnecting...
+            </p>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                reconnect();
+                recheckConnection?.();
+              }}
+              className="text-xs text-neon-amber hover:text-neon-amber/80"
+            >
+              <RefreshCw className="mr-1 h-3 w-3" />
+              Retry
+            </Button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Action error banner */}
       <AnimatePresence>

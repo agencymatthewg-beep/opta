@@ -16,6 +16,9 @@ import {
   MessageSquare,
   History,
   Settings,
+  Swords,
+  Database,
+  Workflow,
 } from 'lucide-react';
 import { cn } from '@opta/ui';
 
@@ -32,6 +35,9 @@ import { ConnectionBadge } from '@/components/shared/ConnectionBadge';
 const navItems = [
   { label: 'Dashboard', href: '/', icon: LayoutDashboard },
   { label: 'Chat', href: '/chat', icon: MessageSquare },
+  { label: 'Arena', href: '/arena', icon: Swords },
+  { label: 'RAG', href: '/rag', icon: Database },
+  { label: 'Agents', href: '/agents', icon: Workflow },
   { label: 'Sessions', href: '/sessions', icon: History },
   { label: 'Settings', href: '/settings', icon: Settings },
 ] as const;

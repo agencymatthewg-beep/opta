@@ -1,8 +1,11 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { AnimatePresence } from 'framer-motion';
 import { cn } from '@opta/ui';
 import { SendHorizontal, Square } from 'lucide-react';
+import { useClipboardDetector } from '@/hooks/useClipboardDetector';
+import { ClipboardSuggestion } from './ClipboardSuggestion';
 
 interface ChatInputProps {
   onSend: (content: string) => void;
@@ -22,6 +25,24 @@ interface ChatInputProps {
 export function ChatInput({ onSend, onStop, isStreaming, disabled }: ChatInputProps) {
   const [value, setValue] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Clipboard content detection for smart suggestions
+  const { detectedType, pastedContent, suggestions, icon, label, dismiss } =
+    useClipboardDetector(textareaRef);
+
+  // Handle suggestion selection — fill input with formatted prompt + content
+  const handleSuggestionSelect = useCallback(
+    (prompt: string, content: string) => {
+      const formatted = `${prompt}:\n\n${content}`;
+      setValue(formatted);
+      dismiss();
+      // Refocus textarea so user can review/send
+      requestAnimationFrame(() => {
+        textareaRef.current?.focus();
+      });
+    },
+    [dismiss],
+  );
 
   // Auto-focus on mount
   useEffect(() => {
@@ -68,6 +89,21 @@ export function ChatInput({ onSend, onStop, isStreaming, disabled }: ChatInputPr
 
   return (
     <div className="border-t border-opta-border px-4 py-3">
+      {/* Clipboard suggestion panel — floats above input */}
+      <AnimatePresence>
+        {detectedType && pastedContent && icon && label && (
+          <ClipboardSuggestion
+            type={detectedType}
+            icon={icon}
+            label={label}
+            suggestions={suggestions}
+            pastedContent={pastedContent}
+            onSelect={handleSuggestionSelect}
+            onDismiss={dismiss}
+          />
+        )}
+      </AnimatePresence>
+
       <div className="glass-subtle rounded-xl flex items-end gap-2 px-4 py-2 max-w-4xl mx-auto">
         <textarea
           ref={textareaRef}
