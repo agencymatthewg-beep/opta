@@ -11,7 +11,7 @@ import logging
 from pathlib import Path
 
 import yaml
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 logger = logging.getLogger(__name__)
@@ -166,6 +166,15 @@ class RAGConfig(BaseModel):
         100, ge=1, le=1000, description="Max documents per ingest request"
     )
     auto_persist: bool = Field(True, description="Auto-save store after mutations")
+
+    @model_validator(mode="after")
+    def _validate_chunk_overlap(self) -> RAGConfig:
+        if self.default_chunk_overlap >= self.default_chunk_size:
+            raise ValueError(
+                f"default_chunk_overlap ({self.default_chunk_overlap}) must be less than "
+                f"default_chunk_size ({self.default_chunk_size})"
+            )
+        return self
 
 
 class SecurityConfig(BaseModel):

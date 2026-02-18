@@ -15,9 +15,9 @@ from pathlib import Path
 
 import structlog
 
-# Keys whose values must never appear in log output (C01/C02 guardrail).
-_SENSITIVE_KEYS: frozenset[str] = frozenset(
-    ("api_key", "token", "secret", "password", "credential")
+# Substrings whose presence in a key name triggers redaction (C01/C02 guardrail).
+_SENSITIVE_SUBSTRINGS: tuple[str, ...] = (
+    "key", "token", "secret", "password", "credential", "auth",
 )
 
 
@@ -26,10 +26,11 @@ def _filter_sensitive_keys(
     method_name: str,
     event_dict: structlog.types.EventDict,
 ) -> structlog.types.EventDict:
-    """Redact sensitive keys from log output."""
-    for key in _SENSITIVE_KEYS:
-        if key in event_dict:
-            event_dict[key] = "***REDACTED***"
+    """Redact sensitive keys from log output using substring matching."""
+    for event_key in list(event_dict):
+        lower = event_key.lower()
+        if any(s in lower for s in _SENSITIVE_SUBSTRINGS):
+            event_dict[event_key] = "***REDACTED***"
     return event_dict
 
 

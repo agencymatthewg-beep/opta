@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import secrets
+import shutil
 import time
 from pathlib import Path
 from typing import Any
@@ -86,6 +87,22 @@ class ModelManager:
         estimated_size = await self.estimate_size(
             repo_id, revision, allow_patterns, ignore_patterns
         )
+
+        # Check disk space (require 10% margin over estimated size)
+        if estimated_size > 0:
+            try:
+                cache_dir = Path.home() / ".cache" / "huggingface" / "hub"
+                disk = shutil.disk_usage(cache_dir if cache_dir.exists() else Path.home())
+                required = int(estimated_size * 1.1)
+                if disk.free < required:
+                    raise OSError(
+                        f"Insufficient disk space: {disk.free / (1024**3):.1f} GB free, "
+                        f"need ~{required / (1024**3):.1f} GB for {repo_id}"
+                    )
+            except OSError:
+                raise
+            except Exception as e:
+                logger.warning("disk_space_check_failed", extra={"error": str(e)})
 
         task = DownloadTask(
             download_id=download_id,
