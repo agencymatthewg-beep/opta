@@ -86,7 +86,28 @@ const configHandler = async (args: string, ctx: SlashContext): Promise<SlashResu
     return 'handled';
   }
 
-  console.log(chalk.dim('  Usage: /config [list|get|set|reset]'));
+  if (action === 'search') {
+    if (!key) {
+      console.log(chalk.dim('  Usage: /config search <pattern>'));
+      return 'handled';
+    }
+    const { loadConfig } = await import('../../core/config.js');
+    const config = await loadConfig();
+    const pattern = key.toLowerCase();
+    const matches = flattenConfig(config)
+      .filter(([k]) => k.toLowerCase().includes(pattern));
+
+    if (matches.length === 0) {
+      console.log(chalk.dim(`  No config keys matching "${key}"`));
+      return 'handled';
+    }
+
+    const lines = matches.map(([k, v]) => kv(k, String(v), 30));
+    console.log('\n' + box(`Config: "${key}" (${matches.length} matches)`, lines));
+    return 'handled';
+  }
+
+  console.log(chalk.dim('  Usage: /config [list|get|set|reset|search]'));
   return 'handled';
 };
 
@@ -171,6 +192,47 @@ const quickfixHandler = async (_args: string, _ctx: SlashContext): Promise<Slash
   return 'handled';
 };
 
+const permissionsHandler = async (args: string, ctx: SlashContext): Promise<SlashResult> => {
+  // Show current permissions or set one
+  const parts = args.trim().split(/\s+/);
+  const toolName = parts[0];
+  const newPerm = parts[1];
+
+  if (!toolName) {
+    // List all tool permissions
+    const perms = ctx.config.permissions || {};
+    const defaults: Record<string, string> = {
+      read_file: 'allow', write_file: 'ask', edit_file: 'ask',
+      run_command: 'ask', ask_user: 'allow', list_dir: 'allow',
+      search_files: 'allow', find_files: 'allow',
+    };
+    const lines: string[] = [];
+    for (const [tool, defaultVal] of Object.entries(defaults)) {
+      const current = (perms as Record<string, string>)[tool] || defaultVal;
+      const color = current === 'allow' ? chalk.green : current === 'deny' ? chalk.red : chalk.yellow;
+      lines.push(`  ${chalk.dim(tool.padEnd(16))} ${color(current)}`);
+    }
+    console.log('\n' + box('Tool Permissions', lines));
+    console.log(chalk.dim('  /permissions <tool> <allow|ask|deny>  \u2014  change\n'));
+    return 'handled';
+  }
+
+  if (!newPerm || !['allow', 'ask', 'deny'].includes(newPerm)) {
+    console.log(chalk.dim(`  Usage: /permissions ${toolName} <allow|ask|deny>`));
+    return 'handled';
+  }
+
+  try {
+    const { saveConfig } = await import('../../core/config.js');
+    await saveConfig({ permissions: { [toolName]: newPerm } });
+    const color = newPerm === 'allow' ? chalk.green : newPerm === 'deny' ? chalk.red : chalk.yellow;
+    console.log(chalk.green('\u2713') + ` ${toolName}: ${color(newPerm)}`);
+  } catch (err) {
+    console.error(chalk.red('\u2717') + ` Failed: ${err instanceof Error ? err.message : err}`);
+  }
+  return 'handled';
+};
+
 // --- Helpers ---
 
 function getNestedValue(obj: Record<string, unknown>, path: string): unknown {
@@ -204,14 +266,27 @@ function buildNestedObject(path: string, value: string): Record<string, unknown>
   return result;
 }
 
+function flattenConfig(obj: Record<string, unknown>, prefix = ''): [string, unknown][] {
+  const result: [string, unknown][] = [];
+  for (const [key, value] of Object.entries(obj)) {
+    const path = prefix ? `${prefix}.${key}` : key;
+    if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+      result.push(...flattenConfig(value as Record<string, unknown>, path));
+    } else {
+      result.push([path, value]);
+    }
+  }
+  return result;
+}
+
 export const manageCommands: SlashCommandDef[] = [
   {
     command: 'config',
     description: 'View/change settings',
     handler: configHandler,
     category: 'tools',
-    usage: '/config [list|get|set|reset] [key] [value]',
-    examples: ['/config', '/config get connection.host', '/config set connection.port 1234', '/config reset'],
+    usage: '/config [list|get|set|reset|search] [key] [value]',
+    examples: ['/config', '/config get connection.host', '/config set connection.port 1234', '/config reset', '/config search git'],
   },
   {
     command: 'doctor',
@@ -237,5 +312,14 @@ export const manageCommands: SlashCommandDef[] = [
     category: 'tools',
     usage: '/quickfix',
     examples: ['/quickfix', '/fix'],
+  },
+  {
+    command: 'permissions',
+    aliases: ['perms', 'perm'],
+    description: 'View/set tool permissions',
+    handler: permissionsHandler,
+    category: 'tools',
+    usage: '/permissions [tool] [allow|ask|deny]',
+    examples: ['/permissions', '/permissions edit_file allow', '/permissions run_command deny'],
   },
 ];

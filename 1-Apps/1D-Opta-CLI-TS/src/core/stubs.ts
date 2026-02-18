@@ -53,3 +53,10 @@ export async function benchmarkModel(_modelId: string): Promise<void> {
   // total latency, and output quality score across a test suite
   console.log(chalk.dim('  Model benchmarking coming in v0.6'));
 }
+
+// Idea 15: Unified REPL/TUI command execution layer
+export async function unifiedCommandDispatch(_input: string, _mode: 'repl' | 'tui'): Promise<void> {
+  // TODO: Abstract slash command execution so both REPL and TUI share
+  // the same dispatch path, eliminating feature drift between modes
+  console.log(chalk.dim('  Unified command layer coming in v0.7'));
+}

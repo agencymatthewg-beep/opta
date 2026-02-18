@@ -116,6 +116,27 @@ const keysHandler = async (_args: string, _ctx: SlashContext): Promise<SlashResu
   return 'handled';
 };
 
+const formatHandler = async (args: string, ctx: SlashContext): Promise<SlashResult> => {
+  const validFormats = ['text', 'json', 'markdown'];
+  const state = ctx.chatState as unknown as Record<string, unknown>;
+  const current = (state.outputFormat as string) || 'text';
+
+  if (!args) {
+    console.log(`  Output format: ${chalk.cyan(current)}`);
+    console.log(chalk.dim(`  Usage: /format <${validFormats.join('|')}>`));
+    return 'handled';
+  }
+
+  if (!validFormats.includes(args)) {
+    console.log(chalk.yellow(`  Unknown format: ${args}`) + chalk.dim(` (try: ${validFormats.join(', ')})`));
+    return 'handled';
+  }
+
+  state.outputFormat = args;
+  console.log(chalk.green('\u2713') + ` Output format: ${chalk.cyan(args)}`);
+  return 'handled';
+};
+
 export const displayCommands: SlashCommandDef[] = [
   {
     command: 'help',
@@ -149,5 +170,13 @@ export const displayCommands: SlashCommandDef[] = [
     description: 'Show keybindings',
     handler: keysHandler,
     category: 'info',
+  },
+  {
+    command: 'format',
+    description: 'Toggle output format',
+    handler: formatHandler,
+    category: 'session',
+    usage: '/format [text|json|markdown]',
+    examples: ['/format', '/format json', '/format text'],
   },
 ];

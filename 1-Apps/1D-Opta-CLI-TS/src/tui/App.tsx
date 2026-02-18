@@ -13,7 +13,9 @@ import { FocusProvider, useFocusPanel } from './FocusContext.js';
 import { PermissionPrompt } from './PermissionPrompt.js';
 import { HelpOverlay } from './HelpOverlay.js';
 import { ModelPicker } from './ModelPicker.js';
+import { CommandBrowser } from './CommandBrowser.js';
 import { InsightBlock, type InsightEntry } from './InsightBlock.js';
+import { getAllCommands } from '../commands/slash/index.js';
 import { estimateTokens } from '../utils/tokens.js';
 import type { TuiEmitter, TurnStats, PermissionRequest } from './adapter.js';
 import type { Insight } from '../core/insights.js';
@@ -100,6 +102,7 @@ function AppInner({
   const [thinkingExpanded, setThinkingExpanded] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [showModelPicker, setShowModelPicker] = useState(false);
+  const [showCommandBrowser, setShowCommandBrowser] = useState(false);
   const [sessionTitle, setSessionTitle] = useState(initialTitle);
   const [cost, setCost] = useState('$0.00');
 
@@ -418,6 +421,12 @@ function AppInner({
 
   // --- Submit handler ---
   const handleSubmit = useCallback(async (text: string) => {
+    // Bare `/` opens the TUI command browser overlay instead of the inquirer-based browser
+    if (text.trim() === '/') {
+      setShowCommandBrowser(true);
+      return;
+    }
+
     // Route slash commands through the registry
     if (text.startsWith('/')) {
       if (onSlashCommand) {
@@ -537,6 +546,16 @@ function AppInner({
               }).catch(() => {});
             }}
             onClose={() => setShowModelPicker(false)}
+          />
+        ) : showCommandBrowser ? (
+          <CommandBrowser
+            commands={getAllCommands()}
+            onSelect={async (cmd) => {
+              setShowCommandBrowser(false);
+              // Dispatch the selected slash command
+              await handleSubmit(cmd);
+            }}
+            onClose={() => setShowCommandBrowser(false)}
           />
         ) : (
           <>

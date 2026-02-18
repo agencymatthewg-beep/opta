@@ -404,10 +404,17 @@ async function collectStream(
 
 // --- Permission Prompt ---
 
+type PermissionResponse = 'once' | 'always' | 'deny';
+
 async function promptToolApproval(
   toolName: string,
   args: Record<string, unknown>
-): Promise<boolean> {
+): Promise<PermissionResponse> {
+  // Non-interactive environments (CI, piped stdin) default to deny
+  if (!process.stdin.isTTY || process.env['CI'] === 'true') {
+    return 'deny';
+  }
+
   console.log();
   console.log(chalk.yellow(`  Tool: ${toolName}`));
 
@@ -426,8 +433,18 @@ async function promptToolApproval(
     console.log(chalk.dim(`  ${JSON.stringify(args)}`));
   }
 
-  const { confirm } = await import('@inquirer/prompts');
-  return confirm({ message: 'Allow?', default: true });
+  const { select } = await import('@inquirer/prompts');
+  const choice = await select({
+    message: 'Allow?',
+    choices: [
+      { name: 'Yes, allow this once', value: 'once' as const },
+      { name: 'Always allow (persist)', value: 'always' as const },
+      { name: 'Deny', value: 'deny' as const },
+    ],
+    default: 'once',
+  });
+
+  return choice;
 }
 
 // --- Main Agent Loop ---
@@ -714,13 +731,32 @@ export async function agentLoop(
 
           if (streamCallbacks?.onPermissionRequest) {
             const decision = await streamCallbacks.onPermissionRequest(call.name, args);
-            if (decision === 'deny') {
+            if (decision === 'always') {
+              // Persist the permission so it won't be asked again
+              try {
+                const { saveConfig } = await import('./config.js');
+                await saveConfig({ permissions: { ...effectiveConfig.permissions, [call.name]: 'allow' } });
+                effectiveConfig.permissions[call.name] = 'allow';
+              } catch {
+                // Persist failed — still allow this time
+              }
+            } else if (decision === 'deny') {
               decisions.push({ call, approved: false, denialReason: 'User declined this action.' });
               continue;
             }
           } else {
-            const approved = await promptToolApproval(call.name, args);
-            if (!approved) {
+            const response = await promptToolApproval(call.name, args);
+            if (response === 'always') {
+              // Persist the permission so it won't be asked again
+              try {
+                const { saveConfig } = await import('./config.js');
+                await saveConfig({ permissions: { ...effectiveConfig.permissions, [call.name]: 'allow' } });
+                effectiveConfig.permissions[call.name] = 'allow';
+                if (!silent) console.log(chalk.dim(`  Permission for ${call.name} set to "allow" permanently.`));
+              } catch {
+                // Persist failed — still allow this time
+              }
+            } else if (response === 'deny') {
               decisions.push({ call, approved: false, denialReason: 'User declined this action.' });
               continue;
             }

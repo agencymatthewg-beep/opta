@@ -108,12 +108,13 @@ const modelHandler = async (args: string, ctx: SlashContext): Promise<SlashResul
 
     // If selected model is on disk but not loaded, offer to load it
     if (onDisk.some(a => a.repo_id === selectedModel)) {
-      console.log(chalk.dim(`  Loading ${selectedModel}...`));
+      const { default: ora } = await import('ora');
+      const spinner = ora({ text: `Loading ${selectedModel}...`, color: 'magenta' }).start();
       try {
         await lmx.loadModel(selectedModel);
-        console.log(chalk.green('\u2713') + ` Loaded ${selectedModel}`);
+        spinner.succeed(`Loaded ${selectedModel}`);
       } catch (err) {
-        console.error(chalk.red('\u2717') + ` Failed to load: ${err}`);
+        spinner.fail(`Failed to load: ${err}`);
         return 'handled';
       }
     }

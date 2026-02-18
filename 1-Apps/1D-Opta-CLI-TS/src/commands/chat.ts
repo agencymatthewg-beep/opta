@@ -57,6 +57,19 @@ export interface ChatState {
   thinkingExpanded?: boolean;
 }
 
+/**
+ * Truncate long stderr output to keep shell error display manageable.
+ * Shows first 20 lines + last 10 lines with an omission notice in between.
+ */
+function truncateStderr(stderr: string): string {
+  const lines = stderr.split('\n');
+  if (lines.length <= 50) return stderr;
+  const head = lines.slice(0, 20);
+  const tail = lines.slice(-10);
+  const omitted = lines.length - 30;
+  return [...head, chalk.dim(`  ... (${omitted} lines omitted)`), ...tail].join('\n');
+}
+
 export async function startChat(opts: ChatOptions): Promise<void> {
   const overrides = buildConfigOverrides(opts);
 
@@ -74,13 +87,14 @@ export async function startChat(opts: ChatOptions): Promise<void> {
   }
 
   if (!config.model.default) {
-    console.error(
-      chalk.red('✗') +
-        ' No model configured\n\n' +
-        chalk.dim('Run ') +
-        chalk.cyan('opta status') +
-        chalk.dim(' to check your LMX connection')
-    );
+    console.error(chalk.red('✗') + ' No model configured');
+    console.error('');
+    console.error(chalk.dim('  Fix options:'));
+    console.error(chalk.dim('    1. Set a default model:  ') + chalk.cyan('opta config set model.default <model-name>'));
+    console.error(chalk.dim('    2. Discover models:      ') + chalk.cyan('opta models'));
+    console.error(chalk.dim('    3. Check LMX status:     ') + chalk.cyan('opta status'));
+    console.error(chalk.dim('    4. Run diagnostics:      ') + chalk.cyan('opta doctor'));
+    console.error('');
     process.exit(EXIT.NO_CONNECTION);
   }
 
@@ -95,13 +109,20 @@ export async function startChat(opts: ChatOptions): Promise<void> {
       if (matches.length === 1) {
         session = await loadSession(matches[0]!.id);
       } else if (matches.length > 1) {
-        console.log(chalk.yellow(`  Multiple sessions match "${opts.resume}":\n`));
-        for (const m of matches.slice(0, 5)) {
-          console.log(`  ${chalk.cyan(m.id.slice(0, 8))}  ${m.title.slice(0, 40)}`);
+        try {
+          const { select } = await import('@inquirer/prompts');
+          const choice = await select({
+            message: chalk.dim(`Multiple sessions match "${opts.resume}"`),
+            choices: matches.slice(0, 10).map(m => ({
+              name: `${m.title || m.id.slice(0, 8)}  ${chalk.dim(m.model || '')}  ${chalk.dim(new Date(m.created).toLocaleDateString())}${m.tags?.length ? '  ' + chalk.cyan(m.tags.join(', ')) : ''}`,
+              value: m.id,
+            })),
+          });
+          session = await loadSession(choice);
+        } catch {
+          // Ctrl+C — exit gracefully
+          process.exit(0);
         }
-        console.log(chalk.dim('\n  Use the full session ID to resume.'));
-        process.exit(EXIT.NOT_FOUND);
-        return; // unreachable but satisfies TS
       } else {
         console.error(
           chalk.red('✗') + ` Session not found: ${opts.resume}\n\n` +
@@ -320,7 +341,14 @@ export async function startChat(opts: ChatOptions): Promise<void> {
       } catch (err: unknown) {
         const e = err as { status?: number; stderr?: string; stdout?: string };
         if (e.stdout) console.log(e.stdout);
-        if (e.stderr) console.error(chalk.red(e.stderr));
+        if (e.stderr) {
+          let stderr = e.stderr;
+          // Strip ANSI codes if output is not a TTY
+          if (!process.stdout.isTTY) {
+            stderr = stderr.replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '');
+          }
+          console.error(chalk.red(truncateStderr(stderr)));
+        }
         console.log(chalk.red('✗') + chalk.dim(` exit ${e.status ?? 1}`));
       }
       continue;

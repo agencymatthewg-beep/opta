@@ -37,6 +37,15 @@ export function formatSessionExport(session: ExportInput, format: ExportFormat):
         const content = typeof m.content === 'string' ? m.content : '[multimodal]';
         const label = m.role === 'user' ? 'User' : 'Assistant';
         lines.push(`${label}: ${content}`);
+        // Preserve image references in export
+        if (Array.isArray(m.content)) {
+          for (const part of m.content as Array<{ type: string; image_url?: { url?: string } }>) {
+            if (part.type === 'image_url') {
+              const url = part.image_url?.url;
+              lines.push(`[Image: ${url?.startsWith('data:') ? 'embedded base64' : url || 'unknown'}]`);
+            }
+          }
+        }
         lines.push('');
       }
       return lines.join('\n');
@@ -52,6 +61,15 @@ export function formatSessionExport(session: ExportInput, format: ExportFormat):
         if (m.role === 'system') continue;
         const content = typeof m.content === 'string' ? m.content : '[multimodal]';
         md += m.role === 'user' ? `## User\n\n${content}\n\n` : `## Assistant\n\n${content}\n\n`;
+        // Preserve image references in export
+        if (Array.isArray(m.content)) {
+          for (const part of m.content as Array<{ type: string; image_url?: { url?: string } }>) {
+            if (part.type === 'image_url') {
+              const url = part.image_url?.url;
+              md += `> [Image: ${url?.startsWith('data:') ? 'embedded base64' : url || 'unknown'}]\n\n`;
+            }
+          }
+        }
       }
       return md;
     }

@@ -310,6 +310,34 @@ const checkpointHandler = async (_args: string, ctx: SlashContext): Promise<Slas
   return undoHandler('list', ctx);
 };
 
+const autoHandler = async (args: string, ctx: SlashContext): Promise<SlashResult> => {
+  const state = ctx.chatState as unknown as Record<string, unknown>;
+  const current = (state.autoAccept as boolean) || false;
+
+  if (!args) {
+    const status = current ? chalk.green('ON') : chalk.dim('OFF');
+    console.log(`  Auto-accept: ${status}`);
+    console.log(chalk.dim('  Usage: /auto on|off'));
+    return 'handled';
+  }
+
+  if (args === 'on' || args === 'true') {
+    state.autoAccept = true;
+    console.log(chalk.green('\u2713') + ' Auto-accept: ' + chalk.green('ON'));
+    console.log(chalk.yellow('  \u26a0 All tool calls will be approved automatically'));
+    return 'handled';
+  }
+
+  if (args === 'off' || args === 'false') {
+    state.autoAccept = false;
+    console.log(chalk.green('\u2713') + ' Auto-accept: ' + chalk.dim('OFF'));
+    return 'handled';
+  }
+
+  console.log(chalk.dim('  Usage: /auto on|off'));
+  return 'handled';
+};
+
 export const workflowCommands: SlashCommandDef[] = [
   {
     command: 'plan',
@@ -359,5 +387,14 @@ export const workflowCommands: SlashCommandDef[] = [
     category: 'info',
     usage: '/status',
     examples: ['/status'],
+  },
+  {
+    command: 'auto',
+    aliases: ['autoaccept', 'dangerous'],
+    description: 'Toggle auto-accept mode',
+    handler: autoHandler,
+    category: 'tools',
+    usage: '/auto [on|off]',
+    examples: ['/auto', '/auto on', '/auto off'],
   },
 ];

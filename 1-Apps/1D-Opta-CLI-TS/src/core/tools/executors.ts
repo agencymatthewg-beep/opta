@@ -1,6 +1,7 @@
 import { readFile, writeFile, readdir } from 'node:fs/promises';
 import { resolve, relative } from 'node:path';
 import { realpathSync } from 'node:fs';
+import chalk from 'chalk';
 import { debug } from '../debug.js';
 import type { OptaConfig } from '../config.js';
 import { ProcessManager, type ProcessStatus } from '../background.js';
@@ -10,6 +11,7 @@ import { ProcessManager, type ProcessStatus } from '../background.js';
 /**
  * Map common error codes/messages to actionable recovery hints.
  * Returns a user-friendly message with a concrete next step.
+ * Includes dim slash command suggestions for in-REPL recovery.
  */
 export function enrichError(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error);
@@ -17,22 +19,26 @@ export function enrichError(error: unknown): string {
 
   // Network: connection refused
   if (code === 'ECONNREFUSED' || message.includes('ECONNREFUSED') || message.includes('fetch failed')) {
-    return `${message}\n  Hint: LMX unreachable \u2014 check connection with /status or run opta doctor`;
+    return `${message}\n  Hint: LMX unreachable \u2014 check connection with /status or run opta doctor`
+      + chalk.dim('\n  Try: /status or /serve status');
   }
 
   // Network: timeout
   if (code === 'ETIMEDOUT' || message.includes('ETIMEDOUT') || message.includes('AbortError') || message.includes('timed out')) {
-    return `${message}\n  Hint: Request timed out \u2014 LMX may be overloaded. Try: opta status`;
+    return `${message}\n  Hint: Request timed out \u2014 LMX may be overloaded. Try: opta status`
+      + chalk.dim('\n  Try: /status');
   }
 
   // Network: DNS resolution failure
   if (code === 'ENOTFOUND' || message.includes('ENOTFOUND')) {
-    return `${message}\n  Hint: Host not found \u2014 check connection.host in config: opta config list`;
+    return `${message}\n  Hint: Host not found \u2014 check connection.host in config: opta config list`
+      + chalk.dim('\n  Try: /config search connection');
   }
 
   // File: permission denied
   if (code === 'EACCES' || message.includes('EACCES') || message.includes('permission denied')) {
-    return `${message}\n  Hint: Permission denied \u2014 check file permissions or run with appropriate access`;
+    return `${message}\n  Hint: Permission denied \u2014 check file permissions or run with appropriate access`
+      + chalk.dim('\n  Try: /permissions to review tool access levels');
   }
 
   // File: not found
@@ -43,7 +49,8 @@ export function enrichError(error: unknown): string {
     const hint = parentDir
       ? `Hint: File not found \u2014 verify the path exists: ls ${parentDir}`
       : 'Hint: File not found \u2014 verify the path exists';
-    return `${message}\n  ${hint}`;
+    return `${message}\n  ${hint}`
+      + chalk.dim('\n  Try: /diff to see recent changes');
   }
 
   // File: directory not empty
@@ -58,7 +65,8 @@ export function enrichError(error: unknown): string {
 
   // Process: command not found
   if (message.includes('command not found') || message.includes('not found') && message.includes('sh:')) {
-    return `${message}\n  Hint: Command not found \u2014 check spelling or install the missing tool`;
+    return `${message}\n  Hint: Command not found \u2014 check spelling or install the missing tool`
+      + chalk.dim('\n  Try: /doctor for diagnostics');
   }
 
   // Path traversal
@@ -66,7 +74,8 @@ export function enrichError(error: unknown): string {
     return `${message}\n  Hint: Tool can only access files within the working directory`;
   }
 
-  return message;
+  // Unknown errors get a generic diagnostic suggestion
+  return message + chalk.dim('\n  Try: /doctor for diagnostics');
 }
 
 // --- Tool Executors ---

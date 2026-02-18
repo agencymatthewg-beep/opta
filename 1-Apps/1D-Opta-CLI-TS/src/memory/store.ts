@@ -90,6 +90,48 @@ function sessionPath(id: string): string {
   return join(sessionsDir(), `${id}.json`);
 }
 
+// --- Session Index (fast resume) ---
+
+const INDEX_FILE = 'index.json';
+
+interface SessionIndex {
+  entries: Record<string, { title: string; model: string; tags: string[]; created: string; messageCount: number }>;
+  updatedAt: string;
+}
+
+async function loadIndex(): Promise<SessionIndex> {
+  try {
+    const data = await readFile(join(sessionsDir(), INDEX_FILE), 'utf-8');
+    return JSON.parse(data) as SessionIndex;
+  } catch {
+    return { entries: {}, updatedAt: new Date().toISOString() };
+  }
+}
+
+async function saveIndex(index: SessionIndex): Promise<void> {
+  index.updatedAt = new Date().toISOString();
+  await mkdir(sessionsDir(), { recursive: true });
+  await writeFile(join(sessionsDir(), INDEX_FILE), JSON.stringify(index, null, 2));
+}
+
+export async function updateSessionIndex(id: string, session: Session): Promise<void> {
+  const index = await loadIndex();
+  index.entries[id] = {
+    title: session.title,
+    model: session.model,
+    tags: session.tags,
+    created: session.created,
+    messageCount: session.messages.length,
+  };
+  await saveIndex(index);
+}
+
+export async function removeFromIndex(id: string): Promise<void> {
+  const index = await loadIndex();
+  delete index.entries[id];
+  await saveIndex(index);
+}
+
 // --- CRUD ---
 
 export async function createSession(model: string): Promise<Session> {
@@ -124,6 +166,7 @@ export async function saveSession(session: Session): Promise<void> {
   const dir = sessionsDir();
   await mkdir(dir, { recursive: true });
   await writeFile(sessionPath(session.id), JSON.stringify(session, null, 2), 'utf-8');
+  await updateSessionIndex(session.id, session);
 }
 
 export async function listSessions(): Promise<SessionSummary[]> {
@@ -137,7 +180,7 @@ export async function listSessions(): Promise<SessionSummary[]> {
 
   const summaries: SessionSummary[] = [];
   for (const file of files) {
-    if (!file.endsWith('.json')) continue;
+    if (!file.endsWith('.json') || file === INDEX_FILE) continue;
     try {
       const data = await readFile(join(dir, file), 'utf-8');
       const session = parseSession(data);
@@ -161,6 +204,7 @@ export async function listSessions(): Promise<SessionSummary[]> {
 
 export async function deleteSession(id: string): Promise<void> {
   await rm(sessionPath(id), { force: true });
+  await removeFromIndex(id);
 }
 
 export async function exportSession(id: string): Promise<string> {
@@ -172,25 +216,48 @@ export async function exportSession(id: string): Promise<string> {
 
 /**
  * Fuzzy search sessions by query string.
- * Matches against session ID prefix, title, model, and first user message.
+ * Matches against session ID prefix, title, model, tags, and message content.
  * Returns results sorted by relevance score (highest first).
  */
 export async function searchSessions(query: string): Promise<SessionSummary[]> {
   const all = await listSessions();
   const q = query.toLowerCase();
 
-  const scored = all.map(session => {
+  // Load full session files in parallel for content search
+  const dir = sessionsDir();
+  let files: string[];
+  try {
+    files = await readdir(dir);
+  } catch {
+    files = [];
+  }
+
+  // Build a map of session ID -> full session (for content matching)
+  const sessionContentMap = new Map<string, Session>();
+  await Promise.all(
+    files.filter(f => f.endsWith('.json') && f !== INDEX_FILE).map(async (file) => {
+      try {
+        const data = await readFile(join(dir, file), 'utf-8');
+        const session = parseSession(data);
+        if (session) sessionContentMap.set(session.id, session);
+      } catch {
+        // Skip unreadable files
+      }
+    })
+  );
+
+  const scored = all.map(summary => {
     let score = 0;
 
     // Exact ID prefix match (highest priority)
-    if (session.id.toLowerCase().startsWith(q)) {
+    if (summary.id.toLowerCase().startsWith(q)) {
       score += 100;
-    } else if (session.id.toLowerCase().includes(q)) {
+    } else if (summary.id.toLowerCase().includes(q)) {
       score += 50;
     }
 
     // Title match
-    const title = session.title.toLowerCase();
+    const title = summary.title.toLowerCase();
     if (title === q) {
       score += 90;
     } else if (title.startsWith(q)) {
@@ -200,24 +267,37 @@ export async function searchSessions(query: string): Promise<SessionSummary[]> {
     }
 
     // Tag match
-    const tagMatch = session.tags?.some(t => t.toLowerCase().includes(q));
+    const tagMatch = summary.tags?.some(t => t.toLowerCase().includes(q));
     if (tagMatch) score += 60;
 
     // Model match
-    if (session.model.toLowerCase().includes(q)) {
+    if (summary.model.toLowerCase().includes(q)) {
       score += 20;
     }
 
     // Word-level fuzzy: check if all query words appear somewhere
     const queryWords = q.split(/\s+/);
-    const tagStr = (session.tags ?? []).join(' ');
-    const haystack = `${session.id} ${session.title} ${session.model} ${tagStr}`.toLowerCase();
+    const tagStr = (summary.tags ?? []).join(' ');
+    const haystack = `${summary.id} ${summary.title} ${summary.model} ${tagStr}`.toLowerCase();
     const allWordsMatch = queryWords.every(w => haystack.includes(w));
     if (allWordsMatch && queryWords.length > 1) {
       score += 30;
     }
 
-    return { session, score };
+    // Search message content (first 6 messages only for performance)
+    const fullSession = sessionContentMap.get(summary.id);
+    if (fullSession) {
+      const contentMessages = fullSession.messages.slice(0, 6);
+      for (const msg of contentMessages) {
+        const content = typeof msg.content === 'string' ? msg.content : '';
+        if (content.toLowerCase().includes(q)) {
+          score += 40; // content match
+          break; // one match is enough
+        }
+      }
+    }
+
+    return { session: summary, score };
   });
 
   return scored
