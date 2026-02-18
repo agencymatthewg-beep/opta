@@ -65,6 +65,7 @@ from opta_lmx.inference.schema import (
     ErrorResponse,
     PresetListResponse,
     PresetResponse,
+    QuantizeRequest,
 )
 
 logger = logging.getLogger(__name__)
@@ -698,7 +699,13 @@ async def benchmark_model(
             return internal_error(f"Benchmark failed on run {run_idx + 1}: {e}")
 
         total_ms = (time.monotonic() - start) * 1000
-        # Avoid division by zero
+
+        if token_count == 0:
+            return internal_error(
+                f"Model generated 0 tokens on run {run_idx + 1} — "
+                "check model health or increase max_tokens"
+            )
+
         generation_time_sec = max(total_ms / 1000, 0.001)
         tok_per_sec = token_count / generation_time_sec
 
@@ -898,7 +905,7 @@ async def stack_status(
 
 @router.post("/admin/quantize", response_model=None)
 async def start_quantize(
-    request: Request,
+    body: QuantizeRequest,
     _auth: AdminAuth,
 ) -> Response:
     """Start a model quantization job.
@@ -906,27 +913,14 @@ async def start_quantize(
     Converts a HuggingFace model to quantized MLX format in the background.
     Returns a job ID for polling progress via GET /admin/quantize/{job_id}.
     """
-    body = await request.json()
-    source_model = body.get("source_model")
-    if not source_model:
-        return JSONResponse(
-            status_code=400,
-            content={
-                "error": {
-                    "message": "source_model is required",
-                    "type": "invalid_request_error",
-                }
-            },
-        )
-
     from opta_lmx.manager.quantize import start_quantize as _start_quantize
 
     job = await _start_quantize(
-        source_model=source_model,
-        output_path=body.get("output_path"),
-        bits=body.get("bits", 4),
-        group_size=body.get("group_size", 64),
-        mode=body.get("mode", "affine"),
+        source_model=body.source_model,
+        output_path=body.output_path,
+        bits=body.bits,
+        group_size=body.group_size,
+        mode=body.mode,
     )
 
     return JSONResponse(content={

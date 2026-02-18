@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 # ─── Request Models ───────────────────────────────────────────────────────────
 # Ordered to avoid forward references: FunctionCall → ToolCall → ChatMessage
@@ -444,6 +444,23 @@ class BenchmarkResponse(BaseModel):
     avg_tokens_per_second: float
     avg_time_to_first_token_ms: float
     avg_total_time_ms: float
+
+
+class QuantizeRequest(BaseModel):
+    """Request to start a model quantization job."""
+
+    source_model: str = Field(..., description="HuggingFace model ID to quantize")
+    output_path: str | None = Field(None, description="Custom output path (auto-generated if omitted)")
+    bits: int = Field(4, description="Quantization bits (4 or 8)")
+    group_size: int = Field(64, ge=1, description="Quantization group size")
+    mode: str = Field("affine", pattern="^(affine|symmetric)$", description="Quantization mode")
+
+    @field_validator("bits")
+    @classmethod
+    def _validate_bits(cls, v: int) -> int:
+        if v not in (4, 8):
+            raise ValueError(f"bits must be 4 or 8 (got {v})")
+        return v
 
 
 class PresetResponse(BaseModel):

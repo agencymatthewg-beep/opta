@@ -16,7 +16,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from starlette.responses import Response
 
-from opta_lmx.api.deps import Embeddings, RemoteEmbedding
+from opta_lmx.api.deps import AdminAuth, Embeddings, RemoteEmbedding
 from opta_lmx.api.errors import internal_error, openai_error
 from opta_lmx.rag.chunker import chunk_code, chunk_text
 from opta_lmx.rag.store import VectorStore
@@ -182,6 +182,7 @@ async def _embed_texts(
 @router.post("/v1/rag/ingest", response_model=None)
 async def ingest_documents(
     body: IngestRequest,
+    _auth: AdminAuth,
     embedding_engine: Embeddings,
     remote_client: RemoteEmbedding,
 ) -> Response:
@@ -421,7 +422,7 @@ async def list_collections() -> StoreStatsResponse:
 
 
 @router.delete("/v1/rag/collections/{collection}", response_model=None)
-async def delete_collection(collection: str) -> Response:
+async def delete_collection(collection: str, _auth: AdminAuth) -> Response:
     """Delete a RAG collection and all its documents."""
     store = get_store()
     count = store.delete_collection(collection)
