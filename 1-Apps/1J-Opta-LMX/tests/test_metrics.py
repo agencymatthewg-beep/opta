@@ -90,6 +90,13 @@ def test_prometheus_format() -> None:
     assert "# TYPE lmx_request_duration_seconds histogram" in output
 
 
+def test_queued_requests_gauge() -> None:
+    """Prometheus output includes lmx_queued_requests gauge."""
+    collector = MetricsCollector()
+    output = collector.prometheus(queued_requests=3)
+    assert "lmx_queued_requests 3" in output
+
+
 def test_latency_histogram_buckets() -> None:
     """Latency histogram correctly buckets requests."""
     mc = MetricsCollector()
