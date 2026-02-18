@@ -79,6 +79,15 @@ class ChatCompletionRequest(BaseModel):
     response_format: dict[str, Any] | None = None
     frequency_penalty: float = Field(0.0, ge=-2.0, le=2.0)
     presence_penalty: float = Field(0.0, ge=-2.0, le=2.0)
+    # F5: Per-request context window override (Ollama-compatible)
+    num_ctx: int | None = Field(
+        None, ge=512, le=131072,
+        description=(
+            "Override the model's context window for this request. "
+            "Trims conversation to fit within this budget. "
+            "None = use model's native context length."
+        ),
+    )
 
 
 # ─── Response Models (Non-Streaming) ─────────────────────────────────────────
@@ -482,6 +491,7 @@ class PresetResponse(BaseModel):
     routing_alias: str | None = None
     auto_load: bool = False
     performance: dict[str, Any] = Field(default_factory=dict)
+    chat_template: str | None = None
 
 
 class PresetListResponse(BaseModel):

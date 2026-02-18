@@ -13,6 +13,11 @@ from typing import Any
 
 from opta_lmx.inference.context import estimate_prompt_tokens, fit_to_context
 from opta_lmx.inference.predictor import UsagePredictor
+from opta_lmx.inference.structured import (
+    build_json_system_prompt,
+    inject_json_instruction,
+    parse_json_output,
+)
 from opta_lmx.inference.schema import (
     ChatCompletionResponse,
     ChatMessage,
@@ -647,6 +652,7 @@ class InferenceEngine:
         frequency_penalty: float = 0.0,
         presence_penalty: float = 0.0,
         priority: str = "normal",
+        num_ctx: int | None = None,
     ) -> ChatCompletionResponse:
         """Non-streaming chat completion.
 
@@ -658,6 +664,7 @@ class InferenceEngine:
             top_p: Nucleus sampling parameter.
             stop: Stop sequences.
             tools: Tool definitions (passed through).
+            num_ctx: Per-request context window override.
 
         Returns:
             Complete ChatCompletionResponse.
@@ -667,11 +674,12 @@ class InferenceEngine:
         loaded.last_used_at = time.time()
         self._predictor.record_access(model_id)
 
-        # Trim context to fit model's window (if known)
-        if loaded.context_length:
+        # F5: Per-request context window override, falling back to model's native limit
+        effective_ctx = num_ctx or loaded.context_length
+        if effective_ctx:
             messages = fit_to_context(
                 messages,
-                max_context_tokens=loaded.context_length,
+                max_context_tokens=effective_ctx,
                 reserve_for_output=max_tokens or 1024,
             )
 
@@ -709,6 +717,17 @@ class InferenceEngine:
                 content, prompt_tokens, completion_tokens = await _run_inference()
         else:
             content, prompt_tokens, completion_tokens = await _run_inference()
+
+        # E11: Post-process structured output — extract and validate JSON
+        if response_format and not tools:
+            cleaned, parsed_json, is_valid, error = parse_json_output(content, response_format)
+            if parsed_json is not None:
+                import json as _json
+                content = _json.dumps(parsed_json)
+            if not is_valid:
+                logger.warning("structured_output_validation_failed", extra={
+                    "model_id": model_id, "error": error,
+                })
 
         # Parse MiniMax XML tool calls if tools were requested
         response_message: ResponseMessage
@@ -775,9 +794,18 @@ class InferenceEngine:
         presence_penalty: float = 0.0,
     ) -> tuple[str, int, int]:
         """Execute inference and return (content, prompt_tokens, completion_tokens)."""
+        # E11: Inject JSON system prompt for structured output enforcement.
+        # vllm-mlx engines don't handle response_format natively — the server
+        # layer injects instructions and post-processes output. We do the same.
+        effective_msgs = msg_dicts
+        if response_format:
+            json_instruction = build_json_system_prompt(response_format)
+            if json_instruction:
+                effective_msgs = inject_json_instruction(msg_dicts, json_instruction)
+
         if loaded.backend is not None:
             return await loaded.backend.generate(
-                messages=msg_dicts,
+                messages=effective_msgs,
                 temperature=temperature,
                 max_tokens=max_tokens or 2048,
                 top_p=top_p,
@@ -787,7 +815,7 @@ class InferenceEngine:
             )
 
         chat_kwargs: dict[str, Any] = {
-            "messages": msg_dicts,
+            "messages": effective_msgs,
             "temperature": temperature,
             "max_tokens": max_tokens or 2048,
             "top_p": top_p,
@@ -796,8 +824,6 @@ class InferenceEngine:
             chat_kwargs["stop"] = stop
         if tools:
             chat_kwargs["tools"] = tools
-        if response_format:
-            chat_kwargs["response_format"] = response_format
         if frequency_penalty != 0.0:
             chat_kwargs["frequency_penalty"] = frequency_penalty
         if presence_penalty != 0.0:
@@ -833,6 +859,7 @@ class InferenceEngine:
         frequency_penalty: float = 0.0,
         presence_penalty: float = 0.0,
         priority: str = "normal",
+        num_ctx: int | None = None,
     ) -> AsyncIterator[str]:
         """Streaming chat completion — yields token strings.
 
@@ -844,6 +871,7 @@ class InferenceEngine:
             top_p: Nucleus sampling parameter.
             stop: Stop sequences.
             tools: Tool definitions (passed through).
+            num_ctx: Per-request context window override.
 
         Yields:
             Individual token strings.
@@ -853,15 +881,22 @@ class InferenceEngine:
         loaded.last_used_at = time.time()
         self._predictor.record_access(model_id)
 
-        # Trim context to fit model's window (if known)
-        if loaded.context_length:
+        # F5: Per-request context window override, falling back to model's native limit
+        effective_ctx = num_ctx or loaded.context_length
+        if effective_ctx:
             messages = fit_to_context(
                 messages,
-                max_context_tokens=loaded.context_length,
+                max_context_tokens=effective_ctx,
                 reserve_for_output=max_tokens or 1024,
             )
 
         msg_dicts = _resolve_messages(messages)
+
+        # E11: Inject JSON system prompt for structured output enforcement
+        if response_format:
+            json_instruction = build_json_system_prompt(response_format)
+            if json_instruction:
+                msg_dicts = inject_json_instruction(msg_dicts, json_instruction)
 
         # F1: High-priority requests bypass semaphore queue
         sem = contextlib.nullcontext() if priority == "high" else self._inference_semaphore
@@ -892,8 +927,6 @@ class InferenceEngine:
                             chat_kwargs["stop"] = stop
                         if tools:
                             chat_kwargs["tools"] = tools
-                        if response_format:
-                            chat_kwargs["response_format"] = response_format
                         if frequency_penalty != 0.0:
                             chat_kwargs["frequency_penalty"] = frequency_penalty
                         if presence_penalty != 0.0:

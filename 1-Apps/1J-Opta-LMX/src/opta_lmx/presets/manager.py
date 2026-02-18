@@ -28,6 +28,7 @@ class Preset:
     routing_alias: str | None = None
     auto_load: bool = False
     performance: dict[str, Any] = field(default_factory=dict)
+    chat_template: str | None = None  # F4: Optional Jinja2 chat template override
 
 
 class PresetManager:
@@ -109,13 +110,18 @@ class PresetManager:
         # Build updated fields — request values override preset defaults
         updates: dict[str, Any] = {"model": preset.model}
 
-        for param_key in ("temperature", "top_p", "max_tokens", "stop"):
-            request_val = getattr(request, param_key)
+        # F4: Extended parameter list — covers all tunable inference fields
+        for param_key in (
+            "temperature", "top_p", "max_tokens", "stop",
+            "frequency_penalty", "presence_penalty", "response_format", "num_ctx",
+        ):
+            request_val = getattr(request, param_key, None)
             preset_val = params.get(param_key)
             # Use request value if it was explicitly set (differs from Pydantic default)
             # Otherwise use preset value if available
             if preset_val is not None:
-                field_default = ChatCompletionRequest.model_fields[param_key].default
+                field_info = ChatCompletionRequest.model_fields.get(param_key)
+                field_default = field_info.default if field_info else None
                 if request_val == field_default:
                     updates[param_key] = preset_val
 
@@ -181,4 +187,5 @@ class PresetManager:
             routing_alias=raw.get("routing_alias"),
             auto_load=raw.get("auto_load", False),
             performance=raw.get("performance", {}),
+            chat_template=raw.get("chat_template"),
         )

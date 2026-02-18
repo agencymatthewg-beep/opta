@@ -111,6 +111,7 @@ async def chat_completions(
                 frequency_penalty=body.frequency_penalty,
                 presence_penalty=body.presence_penalty,
                 priority=priority,
+                num_ctx=body.num_ctx,
             )
             # Approximate prompt tokens for metrics (4 chars ≈ 1 token)
             est_prompt_tokens = max(1, _estimate_prompt_tokens(body.messages))
@@ -158,6 +159,7 @@ async def chat_completions(
                 frequency_penalty=body.frequency_penalty,
                 presence_penalty=body.presence_penalty,
                 priority=priority,
+                num_ctx=body.num_ctx,
             )
             metrics.record(RequestMetric(
                 model_id=resolved_model,
