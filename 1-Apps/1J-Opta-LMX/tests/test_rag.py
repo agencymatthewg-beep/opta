@@ -769,3 +769,30 @@ class TestChunkMarkdown:
         chunks = chunk_markdown(md)
         for i, chunk in enumerate(chunks):
             assert chunk.index == i
+
+
+# ── Reranker Engine Tests ────────────────────────────────────────────
+
+
+class TestRerankerEngine:
+    """Tests for the local reranker engine (mocked — no real model in CI)."""
+
+    def test_reranker_not_loaded_initially(self) -> None:
+        from opta_lmx.rag.reranker import RerankerEngine
+        engine = RerankerEngine()
+        assert not engine.is_loaded
+
+    def test_reranker_rerank_returns_sorted_scores(self) -> None:
+        """Mock reranker returns scores in descending order."""
+        from opta_lmx.rag.reranker import RerankerEngine
+        engine = RerankerEngine()
+        # Simulate a loaded reranker with mock
+        engine._reranker = True  # mark as loaded
+        engine._rerank_fn = lambda query, docs, top_n: [
+            {"index": 1, "score": 0.95},
+            {"index": 0, "score": 0.70},
+        ]
+        results = engine.rerank("test query", ["doc A", "doc B"], top_n=2)
+        assert len(results) == 2
+        assert results[0]["index"] == 1
+        assert results[0]["score"] > results[1]["score"]
