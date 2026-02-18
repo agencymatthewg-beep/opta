@@ -100,6 +100,41 @@ class TestConcurrentRequestLimiting:
         assert engine.in_flight_count == 0
 
 
+class TestSemaphoreTimeout:
+    """Semaphore acquire times out and raises when queue is full."""
+
+    async def test_returns_error_when_semaphore_timeout(self, engine: InferenceEngine) -> None:
+        """Requests that can't acquire semaphore within timeout raise RuntimeError."""
+        engine._inference_timeout = 5
+        engine._semaphore_timeout = 0.2  # 200ms timeout for acquiring semaphore
+        await engine.load_model("test/model-a")
+
+        release = asyncio.Event()
+
+        async def blocking_generate(*args: object, **kwargs: object) -> tuple[str, int, int]:
+            await release.wait()
+            return "response", 5, 3
+
+        engine._do_generate = blocking_generate  # type: ignore[assignment]
+
+        messages = [ChatMessage(role="user", content="Hi")]
+
+        # Fill up the semaphore (limit=2)
+        tasks = [
+            asyncio.create_task(engine.generate("test/model-a", messages))
+            for _ in range(2)
+        ]
+        await asyncio.sleep(0.05)  # Let them acquire the semaphore
+
+        # This 3rd request should timeout waiting for semaphore
+        with pytest.raises(RuntimeError, match="Server is busy"):
+            await engine.generate("test/model-a", messages)
+
+        # Cleanup
+        release.set()
+        await asyncio.gather(*tasks)
+
+
 class TestInferenceTimeout:
     """Inference requests time out if they take too long."""
 
