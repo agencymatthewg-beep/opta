@@ -5,14 +5,15 @@
 See: .planning/PROJECT.md (updated 2026-02-18)
 
 **Core value:** Chat with your local AI from anywhere — phone, laptop, LAN, or WAN — with zero terminal commands.
-**Current focus:** Phases 1-5 complete — Web Command Center fully built. Ready for Phase 6 (iOS Foundation).
+**Current focus:** Web Command Center built (Phases 1-5). User verification required before iOS.
 
 ## Current Position
 
 Phase: 5 of 8 (Web Sessions)
 Plan: 3 of 3 in current phase
-Status: Phase complete — all web phases done
-Last activity: 2026-02-18 — Completed 05-03-PLAN.md
+Status: WEB COMPLETE — awaiting user verification before iOS phases
+Last activity: 2026-02-18 — Phase 6 research complete, Opus 4.6 web design research complete
+Gate: USER MUST explicitly verify web works as intended → then iOS phases unlock
 
 Progress: █████████████░░░░░ 12/18 (67%)
 
@@ -73,10 +74,28 @@ None.
 
 ### Blockers/Concerns
 
-None.
+- iOS phases (6-8) BLOCKED on explicit user verification that web works as intended
+- Do NOT suggest iOS as next step until user says web is verified
+
+### Pending Work (resume next session)
+
+1. **Replan roadmap** — incorporate Opus 4.6 web design research findings into planning approach
+2. **Web verification** — user needs to test web app against LMX server and confirm it works
+3. **iOS phases** — only after user explicitly approves web → then plan phase 6
+
+### Opus 4.6 Web Design Research (completed, not yet applied)
+
+Key findings to apply when replanning:
+- Install official `/frontend-design` skill from Anthropic cookbook
+- Create `opta-design-tokens` skill with CSS variables, glass system, Sora font
+- Use Sonnet 4.6 for component-level work, Opus 4.6 for architecture/coordination
+- Screenshot-driven verification loops for pixel-perfect UI
+- Add frontend aesthetics prompt block to per-app CLAUDE.md
+- Use `/clear` aggressively between design tasks
 
 ## Session Continuity
 
-Last session: 2026-02-18 03:15
-Stopped at: Completed all web phases (1-5). Ready for iOS (Phase 6).
+Last session: 2026-02-18 ~16:00
+Stopped at: Phase 6 research done. Opus 4.6 web design research done. Replanning NOT yet started.
+Resume with: `/gsd:resume-work` — apply research findings, replan roadmap, await user web verification
 Resume file: None

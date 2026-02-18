@@ -113,7 +113,9 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases 1 → 2 → 3 (parallel with 4, 5) → 6 → 7 → 8
+Phases 1 → 2 → 3 (parallel with 4, 5) → **USER VERIFICATION GATE** → 6 → 7 → 8
+
+**Gate:** iOS phases (6-8) are BLOCKED until user explicitly verifies web works as intended.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
