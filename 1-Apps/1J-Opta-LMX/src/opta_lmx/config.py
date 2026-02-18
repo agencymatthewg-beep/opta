@@ -202,6 +202,42 @@ class RAGConfig(BaseModel):
     )
     auto_persist: bool = Field(True, description="Auto-save store after mutations")
 
+    # Phase 9: Hybrid search tuning
+    rrf_k: int = Field(60, ge=1, le=200, description="RRF fusion constant (higher = flatter ranking)")
+    rrf_vector_weight: float = Field(
+        1.0, ge=0.0, le=5.0, description="Weight for vector search leg in RRF fusion"
+    )
+    rrf_keyword_weight: float = Field(
+        1.0, ge=0.0, le=5.0, description="Weight for keyword search leg in RRF fusion"
+    )
+
+    # Phase 9: Embedding configuration
+    embedding_model: str | None = Field(
+        None, description="Default embedding model HF ID for RAG ingestion"
+    )
+    embedding_dimensions: int | None = Field(
+        None, ge=64, le=4096, description="Expected embedding dimensions (None = auto-detect)"
+    )
+
+    # Phase 9: Reranking
+    reranker_model: str | None = Field(
+        None, description="Reranker model HF ID (e.g. jinaai/jina-reranker-v3-mlx)"
+    )
+    rerank_enabled: bool = Field(False, description="Enable reranking by default on search")
+    rerank_initial_k: int = Field(
+        50, ge=5, le=200, description="Candidates to retrieve before reranking"
+    )
+    rerank_final_k: int = Field(
+        5, ge=1, le=50, description="Results to return after reranking"
+    )
+
+    # Phase 9: Chunking strategy
+    chunking_strategy: str = Field(
+        "fixed",
+        pattern="^(fixed|markdown_headers|code)$",
+        description="Default chunking strategy: fixed, markdown_headers, or code",
+    )
+
     @model_validator(mode="after")
     def _validate_chunk_overlap(self) -> RAGConfig:
         if self.default_chunk_overlap >= self.default_chunk_size:

@@ -571,3 +571,53 @@ async def test_ingest_code_chunking(rag_client: AsyncClient) -> None:
     assert response.status_code == 200
     data = response.json()
     assert data["chunks_created"] >= 2
+
+
+# ── RAGConfig Phase 9 Tests ────────────────────────────────────────────
+
+
+class TestRAGConfig:
+    """Tests for RAGConfig new Phase 9 fields."""
+
+    def test_default_values(self) -> None:
+        from opta_lmx.config import RAGConfig
+        cfg = RAGConfig()
+        assert cfg.rrf_k == 60
+        assert cfg.rrf_vector_weight == 1.0
+        assert cfg.rrf_keyword_weight == 1.0
+        assert cfg.embedding_model is None
+        assert cfg.embedding_dimensions is None
+        assert cfg.reranker_model is None
+        assert cfg.rerank_enabled is False
+        assert cfg.rerank_initial_k == 50
+        assert cfg.rerank_final_k == 5
+        assert cfg.chunking_strategy == "fixed"
+
+    def test_custom_values(self) -> None:
+        from opta_lmx.config import RAGConfig
+        cfg = RAGConfig(
+            rrf_k=40,
+            rrf_vector_weight=1.5,
+            rrf_keyword_weight=0.8,
+            embedding_model="nomic-ai/nomic-embed-text-v2-moe",
+            embedding_dimensions=768,
+            reranker_model="jinaai/jina-reranker-v3-mlx",
+            rerank_enabled=True,
+            rerank_initial_k=30,
+            rerank_final_k=10,
+            chunking_strategy="markdown_headers",
+        )
+        assert cfg.rrf_k == 40
+        assert cfg.chunking_strategy == "markdown_headers"
+
+    def test_rrf_k_validation(self) -> None:
+        from opta_lmx.config import RAGConfig
+        import pytest
+        with pytest.raises(Exception):
+            RAGConfig(rrf_k=0)  # Must be >= 1
+
+    def test_chunking_strategy_validation(self) -> None:
+        from opta_lmx.config import RAGConfig
+        import pytest
+        with pytest.raises(Exception):
+            RAGConfig(chunking_strategy="banana")
