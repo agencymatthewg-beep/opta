@@ -162,6 +162,7 @@ class VectorStore:
 
     def __init__(self, persist_path: Path | None = None) -> None:
         self._collections: dict[str, list[Document]] = {}
+        self._collection_dims: dict[str, int] = {}  # collection -> embedding dim
         self._faiss_indexes: dict[str, Any] = {}
         self._bm25_indexes: dict[str, BM25Index] = {}
         self._persist_path = persist_path
@@ -206,6 +207,17 @@ class VectorStore:
             raise ValueError(
                 f"texts ({len(texts)}) and embeddings ({len(embeddings)}) must have same length"
             )
+
+        # Check embedding dimensions consistency
+        if embeddings:
+            new_dim = len(embeddings[0])
+            existing_dim = self._collection_dims.get(collection)
+            if existing_dim is not None and new_dim != existing_dim:
+                raise ValueError(
+                    f"Embedding dimension mismatch for collection '{collection}': "
+                    f"expected {existing_dim}, got {new_dim}"
+                )
+            self._collection_dims[collection] = new_dim
 
         if collection not in self._collections:
             self._collections[collection] = []
@@ -266,6 +278,14 @@ class VectorStore:
         docs = self._collections.get(collection, [])
         if not docs:
             return []
+
+        # Validate query embedding dimensions
+        expected_dim = self._collection_dims.get(collection)
+        if expected_dim is not None and len(query_embedding) != expected_dim:
+            raise ValueError(
+                f"Query embedding dimension mismatch for collection '{collection}': "
+                f"expected {expected_dim}, got {len(query_embedding)}"
+            )
 
         query_vec = np.array(query_embedding, dtype=np.float32)
 
@@ -376,6 +396,7 @@ class VectorStore:
     def delete_collection(self, collection: str) -> int:
         """Delete a collection and all its documents. Returns count deleted."""
         docs = self._collections.pop(collection, [])
+        self._collection_dims.pop(collection, None)
         self._faiss_indexes.pop(collection, None)
         self._bm25_indexes.pop(collection, None)
         count = len(docs)
@@ -478,6 +499,7 @@ class VectorStore:
             data = json.load(f)
 
         self._collections.clear()
+        self._collection_dims.clear()
         self._faiss_indexes.clear()
         self._bm25_indexes.clear()
         total = 0
@@ -486,6 +508,11 @@ class VectorStore:
                 Document.from_dict(d) for d in doc_dicts
             ]
             total += len(doc_dicts)
+            # Restore embedding dimensions from loaded data
+            if self._collections[collection]:
+                self._collection_dims[collection] = len(
+                    self._collections[collection][0].embedding
+                )
             self._rebuild_indexes(collection)
 
         logger.info("store_loaded", extra={

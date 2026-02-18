@@ -213,6 +213,27 @@ class TestVectorStore:
         )
         assert len(results) >= 1
 
+    def test_collection_embedding_dimensions_tracked(self) -> None:
+        """Collection records its embedding dimensions on first add."""
+        store = VectorStore()
+        store.add("col", ["text"], [[1.0, 2.0, 3.0]])
+        stats = store.get_stats()
+        assert stats["collections"]["col"]["embedding_dimensions"] == 3
+
+    def test_dimension_mismatch_on_add_raises(self) -> None:
+        """Adding documents with different dimensions raises ValueError."""
+        store = VectorStore()
+        store.add("col", ["first"], [[1.0, 2.0, 3.0]])
+        with pytest.raises(ValueError, match="dimension mismatch"):
+            store.add("col", ["second"], [[1.0, 2.0]])
+
+    def test_dimension_mismatch_on_search_raises(self) -> None:
+        """Searching with wrong dimensions raises ValueError."""
+        store = VectorStore()
+        store.add("col", ["text"], [[1.0, 2.0, 3.0]])
+        with pytest.raises(ValueError, match="dimension mismatch"):
+            store.search("col", [1.0, 2.0])  # 2D vs 3D
+
 
 class TestDocument:
     """Tests for Document serialization."""
