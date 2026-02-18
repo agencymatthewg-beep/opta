@@ -95,7 +95,7 @@ Key findings to apply when replanning:
 
 ## Session Continuity
 
-Last session: 2026-02-18 ~16:00
-Stopped at: Phase 6 research done. Opus 4.6 web design research done. Replanning NOT yet started.
-Resume with: `/gsd:resume-work` — apply research findings, replan roadmap, await user web verification
-Resume file: None
+Last session: 2026-02-18 ~16:30
+Stopped at: Web audit complete (7.5/10). 4 critical, 7 important, 6 minor issues found.
+Resume with: Fix audit issues (start with critical C1-C4), then user tests web app
+Resume file: .planning/AUDIT-WEB.md
