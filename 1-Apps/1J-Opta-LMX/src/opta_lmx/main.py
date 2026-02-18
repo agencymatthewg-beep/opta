@@ -90,6 +90,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         scheduler_prefill_batch_size=config.models.scheduler_prefill_batch_size,
         scheduler_completion_batch_size=config.models.scheduler_completion_batch_size,
         scheduler_cache_memory_percent=config.models.scheduler_cache_memory_percent,
+        semaphore_timeout_sec=config.models.semaphore_timeout_sec,
     )
 
     model_manager = ModelManager(
@@ -162,6 +163,23 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     app.state.remote_embedding = remote_embedding
     app.state.remote_reranking = remote_reranking
+
+    # Start background health check loop for helper nodes
+    from opta_lmx.helpers.health import health_check_loop
+
+    health_clients: list[HelperNodeClient] = []
+    if remote_embedding:
+        health_clients.append(remote_embedding)
+    if remote_reranking:
+        health_clients.append(remote_reranking)
+
+    health_task: asyncio.Task[None] | None = None
+    if health_clients:
+        health_task = asyncio.create_task(health_check_loop(health_clients, interval_sec=30.0))
+        logger.info("health_check_loop_started", extra={
+            "client_count": len(health_clients),
+            "interval_sec": 30,
+        })
 
     logger.info(
         "server_starting",
@@ -236,6 +254,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         ttl_task.cancel()
         with contextlib.suppress(asyncio.CancelledError):
             await ttl_task
+
+    # Cleanup: cancel health check loop
+    if health_task is not None:
+        health_task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await health_task
 
     # Cleanup: close helper node clients
     if remote_embedding:

@@ -153,6 +153,7 @@ class InferenceEngine:
         scheduler_prefill_batch_size: int = 8,
         scheduler_completion_batch_size: int = 32,
         scheduler_cache_memory_percent: float = 0.2,
+        semaphore_timeout_sec: float = 30.0,
     ) -> None:
         self._models: dict[str, LoadedModel] = {}
         self._memory = memory_monitor
@@ -172,6 +173,7 @@ class InferenceEngine:
         self._inference_semaphore = asyncio.Semaphore(max_concurrent_requests)
         self._current_concurrency_limit = max_concurrent_requests
         self._inference_timeout = inference_timeout_sec
+        self._semaphore_timeout = semaphore_timeout_sec
         self._warmup_on_load = warmup_on_load
         self._stream_interval = stream_interval
         self._scheduler_max_num_seqs = scheduler_max_num_seqs
@@ -713,8 +715,23 @@ class InferenceEngine:
                 self._in_flight -= 1
 
         if use_semaphore:
-            async with self._inference_semaphore:
+            try:
+                await asyncio.wait_for(
+                    self._inference_semaphore.acquire(), timeout=self._semaphore_timeout,
+                )
+            except TimeoutError:
+                logger.warning("semaphore_timeout", extra={
+                    "model_id": model_id,
+                    "timeout_sec": self._semaphore_timeout,
+                    "in_flight": self._in_flight,
+                })
+                raise RuntimeError(
+                    "Server is busy — all inference slots occupied. Try again shortly."
+                ) from None
+            try:
                 content, prompt_tokens, completion_tokens = await _run_inference()
+            finally:
+                self._inference_semaphore.release()
         else:
             content, prompt_tokens, completion_tokens = await _run_inference()
 
@@ -899,9 +916,25 @@ class InferenceEngine:
                 msg_dicts = inject_json_instruction(msg_dicts, json_instruction)
 
         # F1: High-priority requests bypass semaphore queue
-        sem = contextlib.nullcontext() if priority == "high" else self._inference_semaphore
+        if priority == "high":
+            sem_acquired = False
+        else:
+            try:
+                await asyncio.wait_for(
+                    self._inference_semaphore.acquire(), timeout=self._semaphore_timeout,
+                )
+                sem_acquired = True
+            except TimeoutError:
+                logger.warning("semaphore_timeout_stream", extra={
+                    "model_id": model_id,
+                    "timeout_sec": self._semaphore_timeout,
+                    "in_flight": self._in_flight,
+                })
+                raise RuntimeError(
+                    "Server is busy — all inference slots occupied. Try again shortly."
+                ) from None
 
-        async with sem:
+        try:
             self._in_flight += 1
             try:
                 async with asyncio.timeout(self._inference_timeout):
@@ -951,6 +984,9 @@ class InferenceEngine:
                 raise RuntimeError(f"Stream inference failed: {e}") from e
             finally:
                 self._in_flight -= 1
+        finally:
+            if sem_acquired:
+                self._inference_semaphore.release()
 
     def get_loaded_models(self) -> list[ModelInfo]:
         """Return info about all currently loaded models."""

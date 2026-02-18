@@ -170,6 +170,36 @@ async def chat_completions(
                 client_id=x_client_id,
             ))
             return JSONResponse(content=response.model_dump())
+        except RuntimeError as e:
+            err_msg = str(e)
+            if "Server is busy" in err_msg:
+                metrics.record(RequestMetric(
+                    model_id=resolved_model,
+                    latency_sec=time.monotonic() - start_time,
+                    prompt_tokens=0, completion_tokens=0,
+                    stream=False, error=True,
+                    client_id=x_client_id,
+                ))
+                return JSONResponse(
+                    status_code=429,
+                    content={
+                        "error": {
+                            "message": err_msg,
+                            "type": "server_error",
+                            "code": "rate_limit_exceeded",
+                        },
+                    },
+                    headers={"Retry-After": "5"},
+                )
+            logger.error("completion_error", extra={"model": resolved_model, "error": err_msg})
+            metrics.record(RequestMetric(
+                model_id=resolved_model,
+                latency_sec=time.monotonic() - start_time,
+                prompt_tokens=0, completion_tokens=0,
+                stream=False, error=True,
+                client_id=x_client_id,
+            ))
+            return internal_error(err_msg)
         except Exception as e:
             logger.error("completion_error", extra={"model": resolved_model, "error": str(e)})
             metrics.record(RequestMetric(

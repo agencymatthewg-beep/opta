@@ -52,6 +52,10 @@ class ModelsConfig(BaseModel):
     warmup_on_load: bool = Field(
         True, description="Run a small inference after model load to prime JIT/KV cache",
     )
+    semaphore_timeout_sec: float = Field(
+        30.0, ge=1.0, le=300.0,
+        description="Max seconds to wait for inference semaphore before returning 429",
+    )
     gguf_context_length: int = Field(
         4096, ge=512, description="Default context length for GGUF models"
     )
