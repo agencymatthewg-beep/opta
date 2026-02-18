@@ -29,12 +29,12 @@ routing:
     vision: ["mlx-community/Qwen2.5-VL-32B-Instruct-4bit"]
 ```
 
-### Layer 2: Remote Helpers (new config section)
+### Layer 2: Helper Nodes (config section)
 
-Embedding and reranking models are internal services called by LMX for its own pipelines (embedding endpoint proxy, future RAG). These run on LAN devices via OpenAI-compatible HTTP endpoints.
+Embedding and reranking models are internal services called by LMX for its own pipelines (embedding endpoint proxy, future RAG). These run on LAN devices via OpenAI-compatible HTTP endpoints. Helper Nodes are OFF by default — only enable if a Workstation opts in to contribute inference compute.
 
 ```yaml
-remote_helpers:
+helper_nodes:
   embedding:
     url: "http://192.168.188.20:1234"
     model: "nomic-embed-text-v1.5"
@@ -54,11 +54,11 @@ Each stack model has a preset YAML with `routing_alias` and `performance` overri
 ## Performance Design
 
 - **Local routing**: Zero-cost dict lookup in TaskRouter
-- **Remote helpers**: httpx.AsyncClient with connection pooling (keep-alive, max 4 connections)
+- **Helper nodes**: httpx.AsyncClient with connection pooling (keep-alive, max 4 connections)
 - **Timeout + fallback**: 10s timeout, configurable fallback ("local" or "skip")
 - **No retry loops**: Single attempt + fallback on LAN
 - **Batch embedding**: Array input in single HTTP call
-- **Not in hot path**: Remote helpers don't affect `/v1/chat/completions` latency
+- **Not in hot path**: Helper nodes don't affect `/v1/chat/completions` latency
 
 ## CLI Integration
 
@@ -72,12 +72,12 @@ Future CLI enhancement: `GET /admin/stack` endpoint for `opta stack` display com
 
 | Component | Change Type | File |
 |-----------|-------------|------|
-| Config | Add `RemoteHelpersConfig` | `config.py` |
-| Remote Client | New module | `remote/client.py` |
+| Config | `HelperNodesConfig` | `config.py` |
+| Helper Client | Module | `helpers/client.py` |
 | App Lifecycle | Wire clients | `main.py`, `deps.py` |
-| Embeddings | Remote proxy | `api/embeddings.py` |
+| Embeddings | Helper node proxy | `api/embeddings.py` |
 | Admin API | Stack status | `api/admin.py` |
-| Tests | New test files | `tests/test_remote_helpers.py` |
+| Tests | Test files | `tests/test_helper_nodes.py` |
 
 ## Research Basis
 

@@ -1,7 +1,11 @@
-"""Remote helper client — proxies embedding/reranking to LAN devices.
+"""Helper node client — proxies embedding/reranking to LAN devices.
 
 Uses httpx.AsyncClient with connection pooling for efficient LAN communication.
-Each client targets a single remote endpoint (embedding OR reranking).
+Each client targets a single helper node endpoint (embedding OR reranking).
+
+A Helper Node is a Workstation with opt-in inference capability enabled.
+By default, only the LLM Host runs models. Helper Nodes are experimental
+and may impact the Workstation's performance.
 
 Health metrics tracked per client:
 - Total requests, successes, failures
@@ -18,7 +22,7 @@ from typing import Any
 
 import httpx
 
-from opta_lmx.config import RemoteHelperEndpoint
+from opta_lmx.config import HelperNodeEndpoint
 
 logger = logging.getLogger(__name__)
 
@@ -26,15 +30,19 @@ logger = logging.getLogger(__name__)
 _LATENCY_WINDOW = 100
 
 
-class RemoteHelperClient:
-    """Async HTTP client for a remote helper endpoint.
+class HelperNodeClient:
+    """Async HTTP client for a helper node endpoint.
 
-    Provides connection-pooled, timeout-aware requests to a remote
-    OpenAI-compatible embedding or reranking endpoint on the LAN.
+    Provides connection-pooled, timeout-aware requests to a helper node
+    running an OpenAI-compatible embedding or reranking endpoint on the LAN.
     Tracks health metrics (latency, success rate) for monitoring.
+
+    Helper Nodes are Workstations that have opted into contributing
+    inference compute. They run lightweight models (embedding, reranking)
+    to offload work from the LLM Host.
     """
 
-    def __init__(self, config: RemoteHelperEndpoint) -> None:
+    def __init__(self, config: HelperNodeEndpoint) -> None:
         self._config = config
         self._client = httpx.AsyncClient(
             base_url=config.url,
@@ -48,18 +56,18 @@ class RemoteHelperClient:
         self._latencies: deque[float] = deque(maxlen=_LATENCY_WINDOW)
         self._last_check_at: float = 0.0
         self._last_error: str | None = None
-        logger.info("remote_helper_created", extra={
+        logger.info("helper_node_created", extra={
             "url": config.url, "model": config.model, "timeout": config.timeout_sec,
         })
 
     @property
     def url(self) -> str:
-        """Base URL of the remote endpoint."""
+        """Base URL of the helper node endpoint."""
         return self._config.url
 
     @property
     def model(self) -> str:
-        """Model name configured for this remote endpoint."""
+        """Model name configured for this helper node endpoint."""
         return self._config.model
 
     @property
@@ -73,7 +81,7 @@ class RemoteHelperClient:
         return self._healthy
 
     async def embed(self, texts: list[str]) -> list[list[float]]:
-        """Send an embedding request to the remote endpoint.
+        """Send an embedding request to the helper node.
 
         Args:
             texts: List of texts to embed.
@@ -82,7 +90,7 @@ class RemoteHelperClient:
             List of embedding vectors.
 
         Raises:
-            RemoteHelperError: If the request fails and fallback is 'skip'.
+            HelperNodeError: If the request fails and fallback is 'skip'.
         """
         payload: dict[str, Any] = {
             "input": texts,
@@ -100,7 +108,7 @@ class RemoteHelperClient:
             self._latencies.append(time.monotonic() - start)
 
             embeddings = [item["embedding"] for item in data["data"]]
-            logger.info("remote_embed_success", extra={
+            logger.info("helper_node_embed_success", extra={
                 "url": self._config.url,
                 "count": len(texts),
                 "dimensions": len(embeddings[0]) if embeddings else 0,
@@ -111,13 +119,13 @@ class RemoteHelperClient:
             self._failure_count += 1
             self._last_error = str(e)
             self._latencies.append(time.monotonic() - start)
-            logger.error("remote_embed_failed", extra={
+            logger.error("helper_node_embed_failed", extra={
                 "url": self._config.url,
                 "error": str(e),
                 "fallback": self._config.fallback,
             })
-            raise RemoteHelperError(
-                f"Remote embedding failed at {self._config.url}: {e}",
+            raise HelperNodeError(
+                f"Helper node embedding failed at {self._config.url}: {e}",
                 fallback=self._config.fallback,
             ) from e
 
@@ -127,7 +135,7 @@ class RemoteHelperClient:
         documents: list[str],
         top_n: int | None = None,
     ) -> list[dict[str, Any]]:
-        """Send a reranking request to the remote endpoint.
+        """Send a reranking request to the helper node.
 
         Args:
             query: The search query.
@@ -138,7 +146,7 @@ class RemoteHelperClient:
             List of reranked results with index and relevance_score.
 
         Raises:
-            RemoteHelperError: If the request fails.
+            HelperNodeError: If the request fails.
         """
         payload: dict[str, Any] = {
             "model": self._config.model,
@@ -159,7 +167,7 @@ class RemoteHelperClient:
             self._latencies.append(time.monotonic() - start)
 
             results = data.get("results", [])
-            logger.info("remote_rerank_success", extra={
+            logger.info("helper_node_rerank_success", extra={
                 "url": self._config.url,
                 "doc_count": len(documents),
                 "result_count": len(results),
@@ -170,18 +178,18 @@ class RemoteHelperClient:
             self._failure_count += 1
             self._last_error = str(e)
             self._latencies.append(time.monotonic() - start)
-            logger.error("remote_rerank_failed", extra={
+            logger.error("helper_node_rerank_failed", extra={
                 "url": self._config.url,
                 "error": str(e),
                 "fallback": self._config.fallback,
             })
-            raise RemoteHelperError(
-                f"Remote reranking failed at {self._config.url}: {e}",
+            raise HelperNodeError(
+                f"Helper node reranking failed at {self._config.url}: {e}",
                 fallback=self._config.fallback,
             ) from e
 
     async def health_check(self) -> bool:
-        """Check if the remote endpoint is reachable.
+        """Check if the helper node is reachable.
 
         Returns:
             True if the endpoint responds, False otherwise.
@@ -197,7 +205,7 @@ class RemoteHelperClient:
             return False
 
     def get_health_stats(self) -> dict[str, Any]:
-        """Return health and performance metrics for this helper.
+        """Return health and performance metrics for this helper node.
 
         Returns:
             Dict with url, model, healthy, latency stats, success rate, etc.
@@ -235,11 +243,11 @@ class RemoteHelperClient:
     async def close(self) -> None:
         """Close the HTTP client and release connections."""
         await self._client.aclose()
-        logger.info("remote_helper_closed", extra={"url": self._config.url})
+        logger.info("helper_node_closed", extra={"url": self._config.url})
 
 
-class RemoteHelperError(Exception):
-    """Raised when a remote helper request fails."""
+class HelperNodeError(Exception):
+    """Raised when a helper node request fails."""
 
     def __init__(self, message: str, fallback: str = "skip") -> None:
         super().__init__(message)

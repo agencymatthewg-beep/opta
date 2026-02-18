@@ -126,11 +126,16 @@ class PresetsConfig(BaseModel):
     enabled: bool = Field(True, description="Enable preset resolution in inference requests")
 
 
-class RemoteHelperEndpoint(BaseModel):
-    """Configuration for a single remote helper endpoint (embedding or reranking)."""
+class HelperNodeEndpoint(BaseModel):
+    """Configuration for a single helper node endpoint (embedding or reranking).
 
-    url: str = Field(..., description="Base URL of the remote helper (e.g. http://192.168.188.20:1234)")
-    model: str = Field(..., description="Model name to request from the remote endpoint")
+    A Helper Node is a Workstation with opt-in inference capability enabled.
+    By default, only the LLM Host runs models. Helper Nodes are experimental
+    and may impact the Workstation's performance.
+    """
+
+    url: str = Field(..., description="Base URL of the helper node (e.g. http://192.168.188.20:1234)")
+    model: str = Field(..., description="Model name to request from the helper node")
     timeout_sec: float = Field(10.0, ge=1.0, le=120.0, description="Request timeout in seconds")
     fallback: str = Field(
         "local",
@@ -139,14 +144,18 @@ class RemoteHelperEndpoint(BaseModel):
     )
 
 
-class RemoteHelpersConfig(BaseModel):
-    """Remote helper endpoints for embedding and reranking on LAN devices."""
+class HelperNodesConfig(BaseModel):
+    """Helper node endpoints for distributed embedding and reranking on LAN devices.
 
-    embedding: RemoteHelperEndpoint | None = Field(
-        None, description="Remote embedding endpoint (proxied by /v1/embeddings)",
+    Helper Nodes are OFF by default. Only enable if you want a Workstation
+    to contribute inference compute at the cost of its own performance.
+    """
+
+    embedding: HelperNodeEndpoint | None = Field(
+        None, description="Helper node embedding endpoint (proxied by /v1/embeddings)",
     )
-    reranking: RemoteHelperEndpoint | None = Field(
-        None, description="Remote reranking endpoint",
+    reranking: HelperNodeEndpoint | None = Field(
+        None, description="Helper node reranking endpoint",
     )
 
 
@@ -206,7 +215,7 @@ class LMXConfig(BaseSettings):
     logging: LoggingConfig = Field(default_factory=LoggingConfig)  # type: ignore[arg-type]
     routing: RoutingConfig = Field(default_factory=RoutingConfig)  # type: ignore[arg-type]
     presets: PresetsConfig = Field(default_factory=PresetsConfig)  # type: ignore[arg-type]
-    remote_helpers: RemoteHelpersConfig = Field(default_factory=RemoteHelpersConfig)  # type: ignore[arg-type]
+    helper_nodes: HelperNodesConfig = Field(default_factory=HelperNodesConfig)  # type: ignore[arg-type]
     rag: RAGConfig = Field(default_factory=RAGConfig)  # type: ignore[arg-type]
     security: SecurityConfig = Field(default_factory=SecurityConfig)  # type: ignore[arg-type]
 

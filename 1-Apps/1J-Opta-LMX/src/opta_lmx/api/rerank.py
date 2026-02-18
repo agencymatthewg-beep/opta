@@ -1,8 +1,9 @@
 """Reranking API route — /v1/rerank endpoint.
 
-Supports remote helper proxy for reranking on LAN devices.
-When a remote reranking helper is configured, requests are proxied to the
-LAN device first. On failure, falls back to error based on fallback strategy.
+Supports helper node proxy for reranking on LAN devices.
+When a helper node reranking endpoint is configured, requests are proxied
+to the LAN device first. On failure, falls back to error based on fallback
+strategy.
 
 Compatible with Cohere/Jina reranking API format.
 """
@@ -18,7 +19,7 @@ from starlette.responses import Response
 
 from opta_lmx.api.deps import RemoteReranking
 from opta_lmx.api.errors import openai_error
-from opta_lmx.remote.client import RemoteHelperError
+from opta_lmx.helpers.client import HelperNodeError
 
 logger = logging.getLogger(__name__)
 
@@ -93,7 +94,7 @@ async def rerank_documents(body: RerankRequest, remote_client: RemoteReranking) 
     if top_n is not None and top_n > len(body.documents):
         top_n = len(body.documents)
 
-    # Try remote helper if configured
+    # Try helper node if configured
     if remote_client is not None:
         try:
             results = await remote_client.rerank(
@@ -118,16 +119,16 @@ async def rerank_documents(body: RerankRequest, remote_client: RemoteReranking) 
                 model=remote_client.model,
                 usage=RerankUsage(total_tokens=est_tokens),
             ).model_dump())
-        except RemoteHelperError as e:
+        except HelperNodeError as e:
             if e.fallback == "skip":
                 return openai_error(
                     status_code=502,
-                    message=f"Remote reranking helper failed: {e}",
+                    message=f"Helper node reranking failed: {e}",
                     error_type="server_error",
-                    code="remote_helper_unavailable",
+                    code="helper_node_unavailable",
                 )
             # fallback == "local" — fall through to local (not yet implemented)
-            logger.info("remote_rerank_fallback_to_local", extra={
+            logger.info("helper_node_rerank_fallback_to_local", extra={
                 "remote_url": remote_client.url,
                 "reason": str(e),
             })
@@ -137,7 +138,7 @@ async def rerank_documents(body: RerankRequest, remote_client: RemoteReranking) 
         status_code=503,
         message=(
             "Reranking engine not available. "
-            "Configure remote_helpers.reranking in config.yaml."
+            "Configure helper_nodes.reranking in config.yaml."
         ),
         error_type="server_error",
         code="reranking_unavailable",

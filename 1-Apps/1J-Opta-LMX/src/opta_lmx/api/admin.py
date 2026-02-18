@@ -855,11 +855,11 @@ async def stack_status(
     remote_reranking: RemoteReranking,
     request: Request,
 ) -> dict[str, Any]:
-    """Model Stack overview — roles, loaded models, and remote helpers.
+    """Model Stack overview — roles, loaded models, and helper nodes.
 
     Returns the current state of each configured stack role:
     which alias maps to which models, which are loaded, and
-    the health of remote helper endpoints.
+    the health of helper node endpoints.
     """
     config = request.app.state.config
     loaded_ids = {m.model_id for m in engine.get_loaded_models()}
@@ -875,7 +875,7 @@ async def stack_status(
             "loaded": is_loaded,
         }
 
-    # Remote helpers
+    # Helper nodes
     helpers: dict[str, dict[str, Any]] = {}
     if remote_embedding is not None:
         helpers["embedding"] = {
@@ -894,7 +894,7 @@ async def stack_status(
 
     return {
         "roles": roles,
-        "remote_helpers": helpers,
+        "helper_nodes": helpers,
         "loaded_models": sorted(loaded_ids),
         "default_model": config.routing.default_model,
     }
@@ -1006,7 +1006,7 @@ async def predictor_stats(
     }
 
 
-# ── Remote helper health dashboard ──────────────────────────────────────
+# ── Helper node health dashboard ────────────────────────────────────────
 
 
 @router.get("/admin/helpers")
@@ -1015,9 +1015,9 @@ async def helpers_health(
     remote_reranking: RemoteReranking,
     _auth: AdminAuth,
 ) -> dict[str, Any]:
-    """Health dashboard for remote helper endpoints.
+    """Health dashboard for helper node endpoints.
 
-    Returns detailed metrics for each configured remote helper:
+    Returns detailed metrics for each configured helper node:
     latency stats, success rates, request counts, and health status.
     """
     helpers: dict[str, dict[str, Any]] = {}

@@ -106,23 +106,23 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.start_time = time.time()
     app.state.admin_key = config.security.admin_key
 
-    # Initialize remote helper clients (embedding/reranking on LAN devices)
-    from opta_lmx.remote.client import RemoteHelperClient
+    # Initialize helper node clients (embedding/reranking on LAN devices)
+    from opta_lmx.helpers.client import HelperNodeClient
 
-    remote_embedding: RemoteHelperClient | None = None
-    remote_reranking: RemoteHelperClient | None = None
+    remote_embedding: HelperNodeClient | None = None
+    remote_reranking: HelperNodeClient | None = None
 
-    if config.remote_helpers.embedding:
-        remote_embedding = RemoteHelperClient(config.remote_helpers.embedding)
-        logger.info("remote_embedding_configured", extra={
-            "url": config.remote_helpers.embedding.url,
-            "model": config.remote_helpers.embedding.model,
+    if config.helper_nodes.embedding:
+        remote_embedding = HelperNodeClient(config.helper_nodes.embedding)
+        logger.info("helper_node_embedding_configured", extra={
+            "url": config.helper_nodes.embedding.url,
+            "model": config.helper_nodes.embedding.model,
         })
-    if config.remote_helpers.reranking:
-        remote_reranking = RemoteHelperClient(config.remote_helpers.reranking)
-        logger.info("remote_reranking_configured", extra={
-            "url": config.remote_helpers.reranking.url,
-            "model": config.remote_helpers.reranking.model,
+    if config.helper_nodes.reranking:
+        remote_reranking = HelperNodeClient(config.helper_nodes.reranking)
+        logger.info("helper_node_reranking_configured", extra={
+            "url": config.helper_nodes.reranking.url,
+            "model": config.helper_nodes.reranking.model,
         })
 
     app.state.remote_embedding = remote_embedding
@@ -204,7 +204,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         with contextlib.suppress(asyncio.CancelledError):
             await ttl_task
 
-    # Cleanup: close remote helper clients
+    # Cleanup: close helper node clients
     if remote_embedding:
         await remote_embedding.close()
     if remote_reranking:

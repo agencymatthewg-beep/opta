@@ -20,7 +20,7 @@ from opta_lmx.api.deps import AdminAuth, Embeddings, RemoteEmbedding
 from opta_lmx.api.errors import internal_error, openai_error
 from opta_lmx.rag.chunker import chunk_code, chunk_text
 from opta_lmx.rag.store import VectorStore
-from opta_lmx.remote.client import RemoteHelperError
+from opta_lmx.helpers.client import HelperNodeError
 
 logger = logging.getLogger(__name__)
 
@@ -158,19 +158,19 @@ async def _embed_texts(
     embedding_engine: Any,
     remote_client: Any,
 ) -> list[list[float]]:
-    """Embed texts using remote helper (if available) or local engine."""
+    """Embed texts using helper node (if available) or local engine."""
     # Try remote first
     if remote_client is not None:
         try:
             return await remote_client.embed(texts)
-        except RemoteHelperError:
-            logger.info("rag_embed_fallback_to_local")
+        except HelperNodeError:
+            logger.info("rag_helper_node_embed_fallback_to_local")
 
     # Local engine
     if embedding_engine is None:
         raise RuntimeError(
             "No embedding engine available. Configure models.embedding_model "
-            "or remote_helpers.embedding."
+            "or helper_nodes.embedding."
         )
 
     return await embedding_engine.embed(texts, model_id=model)

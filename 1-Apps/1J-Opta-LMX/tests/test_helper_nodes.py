@@ -1,4 +1,4 @@
-"""Tests for Model Stack: remote helper config, client, and stack endpoint."""
+"""Tests for Model Stack: helper node config, client, and stack endpoint."""
 
 from __future__ import annotations
 
@@ -13,25 +13,25 @@ import pytest
 _DUMMY_REQUEST = httpx.Request("POST", "http://test")
 from httpx import AsyncClient
 
-from opta_lmx.config import LMXConfig, RemoteHelperEndpoint, RemoteHelpersConfig
-from opta_lmx.remote.client import RemoteHelperClient, RemoteHelperError
+from opta_lmx.config import LMXConfig, HelperNodeEndpoint, HelperNodesConfig
+from opta_lmx.helpers.client import HelperNodeClient, HelperNodeError
 
 
 # ─── Config Tests ────────────────────────────────────────────────────────────
 
 
-class TestRemoteHelpersConfig:
-    """Tests for RemoteHelpersConfig and RemoteHelperEndpoint validation."""
+class TestHelperNodesConfig:
+    """Tests for HelperNodesConfig and HelperNodeEndpoint validation."""
 
     def test_defaults_no_helpers(self) -> None:
-        """Default config has no remote helpers configured."""
+        """Default config has no helper nodes configured."""
         config = LMXConfig()
-        assert config.remote_helpers.embedding is None
-        assert config.remote_helpers.reranking is None
+        assert config.helper_nodes.embedding is None
+        assert config.helper_nodes.reranking is None
 
     def test_embedding_endpoint_config(self) -> None:
-        """Can configure a remote embedding endpoint."""
-        endpoint = RemoteHelperEndpoint(
+        """Can configure a helper node embedding endpoint."""
+        endpoint = HelperNodeEndpoint(
             url="http://192.168.188.20:1234",
             model="nomic-embed-text-v1.5",
         )
@@ -41,8 +41,8 @@ class TestRemoteHelpersConfig:
         assert endpoint.fallback == "local"
 
     def test_reranking_endpoint_config(self) -> None:
-        """Can configure a remote reranking endpoint with skip fallback."""
-        endpoint = RemoteHelperEndpoint(
+        """Can configure a helper node reranking endpoint with skip fallback."""
+        endpoint = HelperNodeEndpoint(
             url="http://192.168.188.21:1234",
             model="jina-reranker-v2-base",
             fallback="skip",
@@ -51,7 +51,7 @@ class TestRemoteHelpersConfig:
 
     def test_custom_timeout(self) -> None:
         """Timeout can be customized."""
-        endpoint = RemoteHelperEndpoint(
+        endpoint = HelperNodeEndpoint(
             url="http://10.0.0.1:8080",
             model="test-model",
             timeout_sec=30.0,
@@ -61,36 +61,36 @@ class TestRemoteHelpersConfig:
     def test_invalid_fallback_rejected(self) -> None:
         """Invalid fallback values are rejected."""
         with pytest.raises(Exception):
-            RemoteHelperEndpoint(
+            HelperNodeEndpoint(
                 url="http://10.0.0.1:8080",
                 model="test-model",
                 fallback="retry",  # not "local" or "skip"
             )
 
     def test_full_config_with_helpers(self) -> None:
-        """Full LMXConfig can include remote_helpers section."""
+        """Full LMXConfig can include helper_nodes section."""
         config = LMXConfig(
-            remote_helpers=RemoteHelpersConfig(
-                embedding=RemoteHelperEndpoint(
+            helper_nodes=HelperNodesConfig(
+                embedding=HelperNodeEndpoint(
                     url="http://192.168.188.20:1234",
                     model="nomic-embed",
                 ),
             ),
         )
-        assert config.remote_helpers.embedding is not None
-        assert config.remote_helpers.embedding.model == "nomic-embed"
-        assert config.remote_helpers.reranking is None
+        assert config.helper_nodes.embedding is not None
+        assert config.helper_nodes.embedding.model == "nomic-embed"
+        assert config.helper_nodes.reranking is None
 
 
 # ─── Client Tests ────────────────────────────────────────────────────────────
 
 
-class TestRemoteHelperClient:
-    """Tests for RemoteHelperClient HTTP operations."""
+class TestHelperNodeClient:
+    """Tests for HelperNodeClient HTTP operations."""
 
     @pytest.fixture
-    def endpoint(self) -> RemoteHelperEndpoint:
-        return RemoteHelperEndpoint(
+    def endpoint(self) -> HelperNodeEndpoint:
+        return HelperNodeEndpoint(
             url="http://192.168.188.20:1234",
             model="nomic-embed-text-v1.5",
             timeout_sec=5.0,
@@ -98,26 +98,26 @@ class TestRemoteHelperClient:
         )
 
     @pytest.fixture
-    def skip_endpoint(self) -> RemoteHelperEndpoint:
-        return RemoteHelperEndpoint(
+    def skip_endpoint(self) -> HelperNodeEndpoint:
+        return HelperNodeEndpoint(
             url="http://192.168.188.21:1234",
             model="jina-reranker",
             timeout_sec=5.0,
             fallback="skip",
         )
 
-    def test_client_properties(self, endpoint: RemoteHelperEndpoint) -> None:
+    def test_client_properties(self, endpoint: HelperNodeEndpoint) -> None:
         """Client exposes config properties."""
-        client = RemoteHelperClient(endpoint)
+        client = HelperNodeClient(endpoint)
         assert client.url == "http://192.168.188.20:1234"
         assert client.model == "nomic-embed-text-v1.5"
         assert client.fallback == "local"
         assert client.is_healthy is True
 
     @pytest.mark.asyncio
-    async def test_embed_success(self, endpoint: RemoteHelperEndpoint) -> None:
+    async def test_embed_success(self, endpoint: HelperNodeEndpoint) -> None:
         """Successful embed request returns vectors."""
-        client = RemoteHelperClient(endpoint)
+        client = HelperNodeClient(endpoint)
 
         mock_response = httpx.Response(
             200,
@@ -142,36 +142,36 @@ class TestRemoteHelperClient:
         assert client.is_healthy is True
 
     @pytest.mark.asyncio
-    async def test_embed_failure_local_fallback(self, endpoint: RemoteHelperEndpoint) -> None:
-        """Failed embed with local fallback raises RemoteHelperError with fallback='local'."""
-        client = RemoteHelperClient(endpoint)
+    async def test_embed_failure_local_fallback(self, endpoint: HelperNodeEndpoint) -> None:
+        """Failed embed with local fallback raises HelperNodeError with fallback='local'."""
+        client = HelperNodeClient(endpoint)
 
         client._client = AsyncMock()
         client._client.post = AsyncMock(side_effect=httpx.ConnectError("Connection refused"))
 
-        with pytest.raises(RemoteHelperError) as exc_info:
+        with pytest.raises(HelperNodeError) as exc_info:
             await client.embed(["test"])
 
         assert exc_info.value.fallback == "local"
         assert client.is_healthy is False
 
     @pytest.mark.asyncio
-    async def test_embed_failure_skip_fallback(self, skip_endpoint: RemoteHelperEndpoint) -> None:
-        """Failed embed with skip fallback raises RemoteHelperError with fallback='skip'."""
-        client = RemoteHelperClient(skip_endpoint)
+    async def test_embed_failure_skip_fallback(self, skip_endpoint: HelperNodeEndpoint) -> None:
+        """Failed embed with skip fallback raises HelperNodeError with fallback='skip'."""
+        client = HelperNodeClient(skip_endpoint)
 
         client._client = AsyncMock()
         client._client.post = AsyncMock(side_effect=httpx.ConnectError("Connection refused"))
 
-        with pytest.raises(RemoteHelperError) as exc_info:
+        with pytest.raises(HelperNodeError) as exc_info:
             await client.embed(["test"])
 
         assert exc_info.value.fallback == "skip"
 
     @pytest.mark.asyncio
-    async def test_rerank_success(self, skip_endpoint: RemoteHelperEndpoint) -> None:
+    async def test_rerank_success(self, skip_endpoint: HelperNodeEndpoint) -> None:
         """Successful rerank request returns sorted results."""
-        client = RemoteHelperClient(skip_endpoint)
+        client = HelperNodeClient(skip_endpoint)
 
         mock_response = httpx.Response(
             200,
@@ -193,22 +193,22 @@ class TestRemoteHelperClient:
         assert client.is_healthy is True
 
     @pytest.mark.asyncio
-    async def test_rerank_failure(self, skip_endpoint: RemoteHelperEndpoint) -> None:
-        """Failed rerank raises RemoteHelperError."""
-        client = RemoteHelperClient(skip_endpoint)
+    async def test_rerank_failure(self, skip_endpoint: HelperNodeEndpoint) -> None:
+        """Failed rerank raises HelperNodeError."""
+        client = HelperNodeClient(skip_endpoint)
 
         client._client = AsyncMock()
         client._client.post = AsyncMock(side_effect=httpx.TimeoutException("Timeout"))
 
-        with pytest.raises(RemoteHelperError):
+        with pytest.raises(HelperNodeError):
             await client.rerank("query", ["doc1"])
 
         assert client.is_healthy is False
 
     @pytest.mark.asyncio
-    async def test_health_check_healthy(self, endpoint: RemoteHelperEndpoint) -> None:
+    async def test_health_check_healthy(self, endpoint: HelperNodeEndpoint) -> None:
         """Health check returns True for 200 response."""
-        client = RemoteHelperClient(endpoint)
+        client = HelperNodeClient(endpoint)
 
         mock_response = httpx.Response(200, json={"status": "ok"}, request=httpx.Request("GET", "http://test"))
         client._client = AsyncMock()
@@ -218,9 +218,9 @@ class TestRemoteHelperClient:
         assert client.is_healthy is True
 
     @pytest.mark.asyncio
-    async def test_health_check_unhealthy(self, endpoint: RemoteHelperEndpoint) -> None:
+    async def test_health_check_unhealthy(self, endpoint: HelperNodeEndpoint) -> None:
         """Health check returns False on connection error."""
-        client = RemoteHelperClient(endpoint)
+        client = HelperNodeClient(endpoint)
 
         client._client = AsyncMock()
         client._client.get = AsyncMock(side_effect=httpx.ConnectError("refused"))
@@ -229,9 +229,9 @@ class TestRemoteHelperClient:
         assert client.is_healthy is False
 
     @pytest.mark.asyncio
-    async def test_close(self, endpoint: RemoteHelperEndpoint) -> None:
+    async def test_close(self, endpoint: HelperNodeEndpoint) -> None:
         """Close shuts down the HTTP client."""
-        client = RemoteHelperClient(endpoint)
+        client = HelperNodeClient(endpoint)
         client._client = AsyncMock()
         client._client.aclose = AsyncMock()
 
@@ -248,9 +248,9 @@ async def test_stack_endpoint_empty(client: AsyncClient) -> None:
     assert resp.status_code == 200
     data = resp.json()
     assert "roles" in data
-    assert "remote_helpers" in data
+    assert "helper_nodes" in data
     assert "loaded_models" in data
-    assert data["remote_helpers"] == {}
+    assert data["helper_nodes"] == {}
 
 
 async def test_stack_endpoint_with_loaded_model(client: AsyncClient) -> None:
@@ -278,11 +278,11 @@ async def test_stack_endpoint_with_loaded_model(client: AsyncClient) -> None:
     assert "test/coding-model" in data["loaded_models"]
 
 
-async def test_stack_endpoint_with_remote_helper(client: AsyncClient) -> None:
-    """Stack endpoint shows remote helper status."""
+async def test_stack_endpoint_with_helper_node(client: AsyncClient) -> None:
+    """Stack endpoint shows helper node status."""
     app = client._transport.app  # type: ignore[union-attr]
 
-    # Inject a mock remote embedding client
+    # Inject a mock helper node embedding client
     mock_remote = MagicMock()
     mock_remote.url = "http://192.168.188.20:1234"
     mock_remote.model = "nomic-embed-text-v1.5"
@@ -294,8 +294,8 @@ async def test_stack_endpoint_with_remote_helper(client: AsyncClient) -> None:
     assert resp.status_code == 200
     data = resp.json()
 
-    assert "embedding" in data["remote_helpers"]
-    helper = data["remote_helpers"]["embedding"]
+    assert "embedding" in data["helper_nodes"]
+    helper = data["helper_nodes"]["embedding"]
     assert helper["url"] == "http://192.168.188.20:1234"
     assert helper["model"] == "nomic-embed-text-v1.5"
     assert helper["healthy"] is True
@@ -306,11 +306,11 @@ async def test_stack_endpoint_with_remote_helper(client: AsyncClient) -> None:
 
 
 async def test_embeddings_uses_remote_when_configured(client: AsyncClient) -> None:
-    """Embedding endpoint proxies to remote helper when configured."""
+    """Embedding endpoint proxies to helper node when configured."""
     app = client._transport.app  # type: ignore[union-attr]
 
-    # Create a mock remote embedding client
-    mock_remote = AsyncMock(spec=RemoteHelperClient)
+    # Create a mock helper node embedding client
+    mock_remote = AsyncMock(spec=HelperNodeClient)
     mock_remote.embed = AsyncMock(return_value=[[0.1, 0.2, 0.3]])
     mock_remote.model = "nomic-embed"
     app.state.remote_embedding = mock_remote
@@ -329,13 +329,13 @@ async def test_embeddings_uses_remote_when_configured(client: AsyncClient) -> No
 
 
 async def test_embeddings_fallback_to_local(client: AsyncClient) -> None:
-    """Embedding endpoint falls back to local when remote fails with fallback='local'."""
+    """Embedding endpoint falls back to local when helper node fails with fallback='local'."""
     app = client._transport.app  # type: ignore[union-attr]
 
-    # Remote that fails with local fallback
-    mock_remote = AsyncMock(spec=RemoteHelperClient)
+    # Helper node that fails with local fallback
+    mock_remote = AsyncMock(spec=HelperNodeClient)
     mock_remote.embed = AsyncMock(
-        side_effect=RemoteHelperError("Connection refused", fallback="local"),
+        side_effect=HelperNodeError("Connection refused", fallback="local"),
     )
     mock_remote.url = "http://192.168.188.20:1234"
     app.state.remote_embedding = mock_remote
@@ -357,12 +357,12 @@ async def test_embeddings_fallback_to_local(client: AsyncClient) -> None:
 
 
 async def test_embeddings_skip_returns_502(client: AsyncClient) -> None:
-    """Embedding endpoint returns 502 when remote fails with fallback='skip'."""
+    """Embedding endpoint returns 502 when helper node fails with fallback='skip'."""
     app = client._transport.app  # type: ignore[union-attr]
 
-    mock_remote = AsyncMock(spec=RemoteHelperClient)
+    mock_remote = AsyncMock(spec=HelperNodeClient)
     mock_remote.embed = AsyncMock(
-        side_effect=RemoteHelperError("Connection refused", fallback="skip"),
+        side_effect=HelperNodeError("Connection refused", fallback="skip"),
     )
     app.state.remote_embedding = mock_remote
 

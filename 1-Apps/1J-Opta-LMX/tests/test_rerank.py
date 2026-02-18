@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from httpx import AsyncClient
 
-from opta_lmx.remote.client import RemoteHelperClient, RemoteHelperError
+from opta_lmx.helpers.client import HelperNodeClient, HelperNodeError
 
 
 async def test_rerank_no_backend(client: AsyncClient) -> None:
@@ -34,10 +34,10 @@ async def test_rerank_empty_query(client: AsyncClient) -> None:
 
 
 async def test_rerank_remote_success(client: AsyncClient) -> None:
-    """Reranking proxied to remote helper returns sorted results."""
+    """Reranking proxied to helper node returns sorted results."""
     app = client._transport.app  # type: ignore[union-attr]
 
-    mock_remote = AsyncMock(spec=RemoteHelperClient)
+    mock_remote = AsyncMock(spec=HelperNodeClient)
     mock_remote.rerank = AsyncMock(return_value=[
         {"index": 1, "relevance_score": 0.95},
         {"index": 0, "relevance_score": 0.72},
@@ -70,9 +70,9 @@ async def test_rerank_remote_failure_skip(client: AsyncClient) -> None:
     """Remote failure with skip fallback returns 502."""
     app = client._transport.app  # type: ignore[union-attr]
 
-    mock_remote = AsyncMock(spec=RemoteHelperClient)
+    mock_remote = AsyncMock(spec=HelperNodeClient)
     mock_remote.rerank = AsyncMock(
-        side_effect=RemoteHelperError("Connection refused", fallback="skip"),
+        side_effect=HelperNodeError("Connection refused", fallback="skip"),
     )
     app.state.remote_reranking = mock_remote
 
@@ -88,9 +88,9 @@ async def test_rerank_remote_failure_local_fallback(client: AsyncClient) -> None
     """Remote failure with local fallback falls through to 503 (no local engine yet)."""
     app = client._transport.app  # type: ignore[union-attr]
 
-    mock_remote = AsyncMock(spec=RemoteHelperClient)
+    mock_remote = AsyncMock(spec=HelperNodeClient)
     mock_remote.rerank = AsyncMock(
-        side_effect=RemoteHelperError("Connection refused", fallback="local"),
+        side_effect=HelperNodeError("Connection refused", fallback="local"),
     )
     mock_remote.url = "http://192.168.188.21:1234"
     app.state.remote_reranking = mock_remote
@@ -108,7 +108,7 @@ async def test_rerank_top_n_clamped(client: AsyncClient) -> None:
     """top_n is clamped to document count."""
     app = client._transport.app  # type: ignore[union-attr]
 
-    mock_remote = AsyncMock(spec=RemoteHelperClient)
+    mock_remote = AsyncMock(spec=HelperNodeClient)
     mock_remote.rerank = AsyncMock(return_value=[
         {"index": 0, "relevance_score": 0.9},
     ])
@@ -133,7 +133,7 @@ async def test_rerank_response_shape(client: AsyncClient) -> None:
     """Response includes all required fields in Cohere/Jina format."""
     app = client._transport.app  # type: ignore[union-attr]
 
-    mock_remote = AsyncMock(spec=RemoteHelperClient)
+    mock_remote = AsyncMock(spec=HelperNodeClient)
     mock_remote.rerank = AsyncMock(return_value=[
         {"index": 2, "relevance_score": 0.99},
         {"index": 0, "relevance_score": 0.85},

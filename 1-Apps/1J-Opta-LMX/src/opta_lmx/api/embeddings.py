@@ -1,9 +1,9 @@
 """Embeddings API route — OpenAI-compatible /v1/embeddings endpoint.
 
-Supports both local MLX embedding engine and remote helper proxy.
-When a remote embedding helper is configured, requests are proxied to the
-LAN device first. On failure, falls back to local or returns error based
-on the configured fallback strategy.
+Supports both local MLX embedding engine and helper node proxy.
+When a helper node embedding endpoint is configured, requests are proxied
+to the LAN device first. On failure, falls back to local or returns error
+based on the configured fallback strategy.
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ from starlette.responses import Response
 
 from opta_lmx.api.deps import Embeddings, RemoteEmbedding
 from opta_lmx.api.errors import internal_error, openai_error
-from opta_lmx.remote.client import RemoteHelperError
+from opta_lmx.helpers.client import HelperNodeError
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +81,7 @@ async def create_embeddings(
             code="invalid_input",
         )
 
-    # Try remote helper first if configured
+    # Try helper node first if configured
     if remote_client is not None:
         try:
             vectors = await remote_client.embed(texts)
@@ -96,16 +96,16 @@ async def create_embeddings(
                 model=remote_client.model,
                 usage=EmbeddingUsage(prompt_tokens=est_tokens, total_tokens=est_tokens),
             ).model_dump())
-        except RemoteHelperError as e:
+        except HelperNodeError as e:
             if e.fallback == "skip":
                 return openai_error(
                     status_code=502,
-                    message=f"Remote embedding helper failed: {e}",
+                    message=f"Helper node embedding failed: {e}",
                     error_type="server_error",
-                    code="remote_helper_unavailable",
+                    code="helper_node_unavailable",
                 )
             # fallback == "local" — fall through to local engine
-            logger.info("remote_embed_fallback_to_local", extra={
+            logger.info("helper_node_embed_fallback_to_local", extra={
                 "remote_url": remote_client.url,
                 "reason": str(e),
             })
@@ -115,7 +115,7 @@ async def create_embeddings(
         return openai_error(
             status_code=503,
             message=(
-                "Embedding engine not available. Configure remote_helpers.embedding "
+                "Embedding engine not available. Configure helper_nodes.embedding "
                 "or install mlx-embeddings."
             ),
             error_type="server_error",

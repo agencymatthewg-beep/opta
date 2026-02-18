@@ -314,7 +314,7 @@ class TestAdminStack:
         assert response.status_code == 200
         data = response.json()
         assert "roles" in data
-        assert "remote_helpers" in data
+        assert "helper_nodes" in data
         assert "loaded_models" in data
         assert "default_model" in data
 
@@ -329,11 +329,11 @@ class TestAdminStack:
         assert "chat" in data["roles"]
 
     @pytest.mark.asyncio
-    async def test_remote_helpers_empty_by_default(self, client: AsyncClient) -> None:
-        """Remote helpers are empty when not configured."""
+    async def test_helper_nodes_empty_by_default(self, client: AsyncClient) -> None:
+        """Helper nodes are empty when not configured."""
         response = await client.get("/admin/stack")
         data = response.json()
-        assert data["remote_helpers"] == {}
+        assert data["helper_nodes"] == {}
 
     @pytest.mark.asyncio
     async def test_stack_shows_loaded_model(self, client: AsyncClient) -> None:

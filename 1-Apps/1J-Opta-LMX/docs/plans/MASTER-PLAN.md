@@ -356,8 +356,8 @@ Detailed migration plan for CLI changes.
 - [x] Model presets (Phase 6A)
 - [x] Code audit clean (Phase 6D)
 - [x] KV cache + speculative decoding profiles (Phase 4B)
-- [x] Embedding endpoint with remote helper proxy
-- [x] Reranking endpoint with remote helper proxy
+- [x] Embedding endpoint with helper node proxy
+- [x] Reranking endpoint with helper node proxy
 - [x] RAG pipeline (vector store, BM25, hybrid search, chunking)
 - [x] Adaptive concurrency + usage prediction
 - [x] Model quantization pipeline
