@@ -110,15 +110,21 @@ export function ModelPicker({
                           </span>
                         </Select.ItemText>
                         <div className="flex items-center gap-2">
-                          <Badge variant="purple" size="sm">
-                            {model.quantization}
-                          </Badge>
-                          <span className="text-xs text-text-muted">
-                            {formatContextLength(model.context_length)}
-                          </span>
-                          <span className="text-xs text-text-muted">
-                            {model.vram_gb.toFixed(1)}GB
-                          </span>
+                          {model.quantization && (
+                            <Badge variant="purple" size="sm">
+                              {model.quantization}
+                            </Badge>
+                          )}
+                          {model.context_length != null && (
+                            <span className="text-xs text-text-muted">
+                              {formatContextLength(model.context_length)}
+                            </span>
+                          )}
+                          {model.vram_gb != null && (
+                            <span className="text-xs text-text-muted">
+                              {model.vram_gb.toFixed(1)}GB
+                            </span>
+                          )}
                         </div>
                       </div>
                     </Select.Item>

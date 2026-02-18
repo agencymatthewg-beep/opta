@@ -76,8 +76,8 @@ export function ModelList({
                     {model.name}
                   </p>
                   <p className="text-xs text-text-secondary">
-                    {model.vram_gb.toFixed(1)} GB
-                    {model.quantization ? ` \u00B7 ${model.quantization}` : ''}
+                    {model.vram_gb != null ? `${model.vram_gb.toFixed(1)} GB` : ''}
+                    {model.quantization ? `${model.vram_gb != null ? ' \u00B7 ' : ''}${model.quantization}` : ''}
                   </p>
                 </div>
               </div>

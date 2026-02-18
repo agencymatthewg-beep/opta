@@ -173,7 +173,7 @@ export function useConnection(settings: ConnectionSettings): UseConnectionReturn
     };
   }, [state.mode, probe]);
 
-  // Re-probe on visibility change (tab refocus, lid open) and online event
+  // Re-probe on visibility change (tab refocus, lid open), online/offline events
   useEffect(() => {
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') {
@@ -183,13 +183,18 @@ export function useConnection(settings: ConnectionSettings): UseConnectionReturn
     const handleOnline = () => {
       probe();
     };
+    const handleOffline = () => {
+      dispatch({ type: 'ALL_FAILED', error: 'Network offline' });
+    };
 
     document.addEventListener('visibilitychange', handleVisibility);
     window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibility);
       window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
     };
   }, [probe]);
 

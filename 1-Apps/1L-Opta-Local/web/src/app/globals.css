@@ -37,6 +37,7 @@
   --color-glass-bg: rgba(109, 40, 217, 0.15);
   --color-glass-border: rgba(139, 92, 246, 0.35);
   --color-glass-hover: rgba(139, 92, 246, 0.25);
+  --color-glass-highlight: rgba(255, 255, 255, 0.03);
 
   /* Typography */
   --font-sans: "Sora", -apple-system, BlinkMacSystemFont, sans-serif;
@@ -66,6 +67,13 @@
 
   /* Easing Functions */
   --ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Chart / Gauge tokens */
+  --color-chart-track: rgba(255, 255, 255, 0.08);
+  --color-chart-axis: rgba(255, 255, 255, 0.15);
+  --color-chart-tick: rgba(255, 255, 255, 0.4);
+  --color-chart-ref-stroke: rgba(139, 92, 246, 0.5);
+  --color-chart-ref-label: rgba(139, 92, 246, 0.7);
 }
 
 @layer base {
@@ -76,6 +84,20 @@
   body {
     @apply bg-opta-bg text-white antialiased;
     min-height: 100vh;
+  }
+
+  ::selection {
+    background: var(--color-primary);
+    color: white;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
   }
 }
 
@@ -95,7 +117,19 @@
     backdrop-filter: blur(var(--blur-md));
     -webkit-backdrop-filter: blur(var(--blur-md));
     border: 1px solid rgba(139, 92, 246, 0.3);
+    border-top: 1px solid var(--color-glass-highlight);
     box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+    transition: border-color var(--duration-slow) var(--ease-smooth),
+                box-shadow var(--duration-slow) var(--ease-smooth),
+                transform var(--duration-slow) var(--ease-smooth);
+  }
+
+  .glass:hover {
+    border-color: rgba(139, 92, 246, 0.4);
+    box-shadow:
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.1),
+      0 8px 32px -8px rgba(0, 0, 0, 0.3);
+    transform: translateY(-1px);
   }
 
   /* Glass Subtle - Background level (cards, secondary containers) */

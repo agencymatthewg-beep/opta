@@ -14,17 +14,22 @@ export interface ServerStatus {
   vram_total_gb: number;
   loaded_models: LoadedModel[];
   active_requests: number;
-  tokens_per_second: number;
-  temperature_celsius: number;
+  /** May be absent from partial SSE status updates. */
+  tokens_per_second?: number;
+  /** May be absent if hardware sensor is unavailable. */
+  temperature_celsius?: number;
   uptime_seconds: number;
 }
 
 export interface LoadedModel {
   id: string;
   name: string;
-  vram_gb: number;
-  quantization: string;
-  context_length: number;
+  /** VRAM consumed by this model (GB). Optional — not all endpoints return this. */
+  vram_gb?: number;
+  /** Quantization format (e.g. "4bit", "8bit"). Optional — OpenAI-compat omits this. */
+  quantization?: string;
+  /** Max context window size. Optional — OpenAI-compat omits this. */
+  context_length?: number;
   loaded_at: string; // ISO 8601
 }
 

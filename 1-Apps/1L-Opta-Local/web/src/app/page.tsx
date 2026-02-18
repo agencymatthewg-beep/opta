@@ -16,7 +16,8 @@
  */
 
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
-import { RefreshCw, Plus } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { RefreshCw, Plus, AlertCircle, WifiOff } from 'lucide-react';
 import { Button } from '@opta/ui';
 
 import { useSSE } from '@/hooks/useSSE';
@@ -62,6 +63,7 @@ export default function DashboardPage() {
   const client = connection?.client ?? null;
   const connectionType = connection?.connectionType ?? 'probing';
   const adminKey = connection?.adminKey ?? '';
+  const recheckConnection = connection?.recheckNow;
 
   // ---- Derived SSE URL (reacts to LAN/WAN changes) ----
   const sseUrl = useMemo(() => {
@@ -146,14 +148,19 @@ export default function DashboardPage() {
   // ---- Model unload handler (uses connection-aware client) ----
   const [unloadingId, setUnloadingId] = useState<string | null>(null);
 
+  const [actionError, setActionError] = useState<string | null>(null);
+
   const handleUnload = useCallback(
     async (modelId: string) => {
       if (!client) return;
       setUnloadingId(modelId);
+      setActionError(null);
       try {
         await client.unloadModel(modelId);
-      } catch {
-        // Error will be reflected when next SSE status event arrives
+      } catch (err) {
+        setActionError(
+          err instanceof Error ? err.message : 'Failed to unload model',
+        );
       } finally {
         setUnloadingId(null);
       }
@@ -169,13 +176,17 @@ export default function DashboardPage() {
     async (modelPath: string, quantization?: string) => {
       if (!client) return;
       setIsLoadingModel(true);
+      setActionError(null);
       try {
         await client.loadModel({
           model_path: modelPath,
           quantization,
         });
-        // Success -- close the dialog. SSE will update models list.
         setIsLoadOpen(false);
+      } catch (err) {
+        setActionError(
+          err instanceof Error ? err.message : 'Failed to load model',
+        );
       } finally {
         setIsLoadingModel(false);
       }
@@ -217,6 +228,50 @@ export default function DashboardPage() {
         </div>
       </header>
 
+      {/* Offline state */}
+      {connectionType === 'offline' && (
+        <div className="mb-4 glass-subtle rounded-xl p-6 text-center">
+          <WifiOff className="mx-auto h-8 w-8 text-neon-red mb-3" />
+          <p className="text-sm font-medium text-text-primary mb-1">
+            Server unreachable
+          </p>
+          <p className="text-xs text-text-muted mb-4">
+            {connection?.error ?? 'Could not connect via LAN or WAN'}
+          </p>
+          <Button
+            variant="glass"
+            size="sm"
+            onClick={recheckConnection}
+          >
+            <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+            Retry Connection
+          </Button>
+        </div>
+      )}
+
+      {/* Action error banner */}
+      <AnimatePresence>
+        {actionError && (
+          <motion.div
+            initial={{ opacity: 0, y: -8, height: 0 }}
+            animate={{ opacity: 1, y: 0, height: 'auto' }}
+            exit={{ opacity: 0, y: -8, height: 0 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            className="mb-4 flex items-center gap-2 rounded-lg border border-neon-red/20 bg-neon-red/10 px-4 py-3"
+          >
+            <AlertCircle className="h-4 w-4 shrink-0 text-neon-red" />
+            <p className="flex-1 text-sm text-neon-red">{actionError}</p>
+            <button
+              onClick={() => setActionError(null)}
+              className="text-xs text-neon-red/60 hover:text-neon-red"
+              aria-label="Dismiss error"
+            >
+              Dismiss
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Model Load Dialog (collapsible panel) */}
       <div className="mb-4">
         <ModelLoadDialog
@@ -228,7 +283,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Dashboard grid: 3 -> 2 -> 1 columns */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
         {/* VRAM Gauge */}
         <VRAMGauge
           usedGB={status?.vram_used_gb ?? 0}
@@ -251,7 +306,7 @@ export default function DashboardPage() {
 
         {/* Server Stats */}
         <div className="glass-subtle col-span-full rounded-xl p-6">
-          <h2 className="mb-4 text-sm font-semibold text-text-secondary uppercase tracking-wider">
+          <h2 className="mb-4 text-xs font-semibold text-text-muted uppercase tracking-widest">
             Server Info
           </h2>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -261,11 +316,11 @@ export default function DashboardPage() {
             />
             <StatItem
               label="Tokens/sec"
-              value={status?.tokens_per_second.toFixed(1) ?? '0.0'}
+              value={status?.tokens_per_second != null ? status.tokens_per_second.toFixed(1) : '0.0'}
             />
             <StatItem
               label="Temperature"
-              value={`${status?.temperature_celsius.toFixed(0) ?? '\u2014'}\u00B0C`}
+              value={status?.temperature_celsius != null ? `${status.temperature_celsius.toFixed(0)}\u00B0C` : '\u2014'}
             />
             <StatItem
               label="Uptime"
@@ -290,9 +345,13 @@ function StatItem({
   value: string | number;
 }) {
   return (
-    <div>
-      <p className="text-xs text-text-muted">{label}</p>
-      <p className="text-lg font-semibold text-text-primary">{value}</p>
+    <div className="space-y-1">
+      <p className="text-[10px] font-medium text-text-muted uppercase tracking-widest">
+        {label}
+      </p>
+      <p className="text-xl font-semibold text-text-primary tabular-nums">
+        {value}
+      </p>
     </div>
   );
 }

@@ -113,14 +113,14 @@ export function ThroughputChart({ data, averageTps }: ThroughputChartProps) {
               <XAxis
                 dataKey="timestamp"
                 tickFormatter={formatTime}
-                stroke="rgba(255,255,255,0.15)"
-                tick={{ fontSize: 11, fill: 'rgba(255,255,255,0.4)' }}
+                stroke="var(--color-chart-axis)"
+                tick={{ fontSize: 11, fill: 'var(--color-chart-tick)' }}
                 tickLine={false}
                 axisLine={false}
               />
               <YAxis
-                stroke="rgba(255,255,255,0.15)"
-                tick={{ fontSize: 11, fill: 'rgba(255,255,255,0.4)' }}
+                stroke="var(--color-chart-axis)"
+                tick={{ fontSize: 11, fill: 'var(--color-chart-tick)' }}
                 tickFormatter={formatYAxis}
                 tickLine={false}
                 axisLine={false}
@@ -130,11 +130,11 @@ export function ThroughputChart({ data, averageTps }: ThroughputChartProps) {
               {averageTps != null && averageTps > 0 && (
                 <ReferenceLine
                   y={averageTps}
-                  stroke="rgba(139,92,246,0.5)"
+                  stroke="var(--color-chart-ref-stroke)"
                   strokeDasharray="4 4"
                   label={{
                     value: `avg ${averageTps.toFixed(0)}`,
-                    fill: 'rgba(139,92,246,0.7)',
+                    fill: 'var(--color-chart-ref-label)',
                     fontSize: 11,
                     position: 'insideTopRight',
                   }}

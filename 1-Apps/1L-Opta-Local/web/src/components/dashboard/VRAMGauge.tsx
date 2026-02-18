@@ -73,7 +73,7 @@ export function VRAMGauge({ usedGB, totalGB, size = 160 }: VRAMGaugeProps) {
               cy={size / 2}
               r={radius}
               fill="none"
-              stroke="rgba(255,255,255,0.08)"
+              stroke="var(--color-chart-track)"
               strokeWidth={strokeWidth}
             />
             {/* Animated fill */}
@@ -94,14 +94,14 @@ export function VRAMGauge({ usedGB, totalGB, size = 160 }: VRAMGaugeProps) {
 
           {/* Center text overlay */}
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-2xl font-bold text-text-primary">
+            <span className="text-2xl font-bold text-text-primary tabular-nums">
               {usedGB.toFixed(1)}
             </span>
-            <span className="text-xs text-text-secondary">
+            <span className="text-[11px] text-text-secondary">
               / {totalGB.toFixed(0)} GB
             </span>
             <span
-              className="mt-1 text-[10px] font-medium"
+              className="mt-1.5 text-[10px] font-semibold uppercase tracking-widest"
               style={{ color }}
             >
               {(percentage * 100).toFixed(0)}%
