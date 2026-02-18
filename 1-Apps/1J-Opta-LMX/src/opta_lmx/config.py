@@ -78,6 +78,14 @@ class ModelsConfig(BaseModel):
     speculative_num_tokens: int = Field(
         5, ge=1, le=20, description="Tokens per speculative step",
     )
+    stream_interval: int = Field(
+        1, ge=1, le=32,
+        description="Tokens to batch before SSE yield (higher = less overhead, more latency)",
+    )
+    metal_cache_limit_gb: float | None = Field(
+        None, ge=0.5,
+        description="MLX Metal buffer cache limit in GB (None = MLX default)",
+    )
 
 
 class MemoryConfig(BaseModel):

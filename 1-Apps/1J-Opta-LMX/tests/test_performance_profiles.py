@@ -123,7 +123,7 @@ class TestCreateEngineKwargs:
 
     @pytest.mark.asyncio
     async def test_batched_engine_receives_overrides(self, engine_with_globals: InferenceEngine) -> None:
-        """BatchedEngine also receives performance overrides."""
+        """BatchedEngine receives overrides but speculative kwargs are stripped."""
         mock_batched = MagicMock()
         mock_instance = AsyncMock()
         mock_batched.return_value = mock_instance
@@ -135,7 +135,9 @@ class TestCreateEngineKwargs:
 
         call_kwargs = mock_batched.call_args[1]
         assert call_kwargs["kv_bits"] == 4
-        assert call_kwargs["speculative_model"] == "draft-model-global"
+        # E2: speculative kwargs are stripped for BatchedEngine (not supported)
+        assert "speculative_model" not in call_kwargs
+        assert "num_speculative_tokens" not in call_kwargs
         mock_instance.start.assert_called_once()
 
     @pytest.mark.asyncio

@@ -142,6 +142,7 @@ class InferenceEngine:
         max_concurrent_requests: int = 4,
         inference_timeout_sec: int = 300,
         warmup_on_load: bool = True,
+        stream_interval: int = 1,
     ) -> None:
         self._models: dict[str, LoadedModel] = {}
         self._memory = memory_monitor
@@ -162,6 +163,7 @@ class InferenceEngine:
         self._current_concurrency_limit = max_concurrent_requests
         self._inference_timeout = inference_timeout_sec
         self._warmup_on_load = warmup_on_load
+        self._stream_interval = stream_interval
         self._in_flight = 0  # Active inference requests (for graceful shutdown)
         self._predictor = UsagePredictor()
 
@@ -397,10 +399,26 @@ class InferenceEngine:
                 "overrides": {k: v for k, v in perf.items() if k != "memory_estimate_gb"},
             })
 
+        # E2: BatchedEngine silently ignores speculative decoding kwargs.
+        # Warn and strip them so the user knows speculative is inactive.
+        if use_batching and draft_model:
+            logger.warning("speculative_batching_conflict", extra={
+                "model_id": model_id,
+                "draft_model": draft_model,
+                "action": "stripping_speculative_kwargs",
+                "reason": "BatchedEngine does not support speculative decoding",
+            })
+            spec_kwargs.pop("speculative_model", None)
+            spec_kwargs.pop("num_speculative_tokens", None)
+
         if use_batching:
             from vllm_mlx.engine.batched import BatchedEngine
 
-            engine = BatchedEngine(model_name=model_id, **spec_kwargs)
+            engine = BatchedEngine(
+                model_name=model_id,
+                stream_interval=self._stream_interval,
+                **spec_kwargs,
+            )
             await engine.start()
             return engine
         else:
@@ -497,6 +515,7 @@ class InferenceEngine:
             "speculative_model": self._speculative_model,
             "speculative_num_tokens": self._speculative_num_tokens,
             "warmup_on_load": self._warmup_on_load,
+            "stream_interval": self._stream_interval,
         }
 
     def adapt_concurrency(self) -> int:
@@ -542,11 +561,11 @@ class InferenceEngine:
         return target
 
     async def _warmup_model(self, model_id: str) -> None:
-        """Run a minimal inference to prime JIT compilation and KV cache.
+        """Run a short inference to prime JIT compilation and KV cache.
 
-        This eliminates the cold-start penalty on the first real request
-        (typically 2-3x slower without warmup on Apple Silicon due to MLX
-        Metal shader compilation).
+        Generates 16 tokens to compile both prefill AND decode-loop Metal
+        shaders. With max_tokens=1, only the prefill kernel gets compiled,
+        leaving the first real request to pay for decode shader compilation.
         """
         loaded = self._models.get(model_id)
         if loaded is None:
@@ -558,12 +577,12 @@ class InferenceEngine:
         try:
             if loaded.backend is not None:
                 await loaded.backend.generate(
-                    messages=warmup_messages, temperature=0.0, max_tokens=1,
+                    messages=warmup_messages, temperature=0.0, max_tokens=16,
                     top_p=1.0, stop=None, tools=None, response_format=None,
                 )
             elif loaded.engine is not None:
                 await loaded.engine.chat(
-                    messages=warmup_messages, temperature=0.0, max_tokens=1,
+                    messages=warmup_messages, temperature=0.0, max_tokens=16,
                 )
             elapsed = time.monotonic() - start
             logger.info("model_warmup_complete", extra={

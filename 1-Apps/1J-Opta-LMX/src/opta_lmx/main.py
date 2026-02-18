@@ -49,6 +49,27 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     memory_monitor = MemoryMonitor(max_percent=config.memory.max_memory_percent)
     event_bus = EventBus()
 
+    # E1: Set MLX Metal memory limits to prevent fatal SIGABRT under pressure.
+    # Derives hard limit from the configured memory threshold percentage.
+    try:
+        import mlx.core as mx
+
+        total_bytes = int(memory_monitor.total_memory_gb() * (1024 ** 3))
+        metal_limit = int(total_bytes * config.memory.max_memory_percent / 100)
+        mx.metal.set_memory_limit(metal_limit, relaxed=True)
+
+        if config.models.metal_cache_limit_gb is not None:
+            cache_bytes = int(config.models.metal_cache_limit_gb * (1024 ** 3))
+            mx.metal.set_cache_limit(cache_bytes)
+
+        logger.info("metal_limits_set", extra={
+            "memory_limit_gb": round(metal_limit / (1024 ** 3), 1),
+            "cache_limit_gb": config.models.metal_cache_limit_gb,
+            "relaxed": True,
+        })
+    except Exception as e:
+        logger.warning("metal_limits_failed", extra={"error": str(e)})
+
     engine = InferenceEngine(
         memory_monitor=memory_monitor,
         use_batching=config.models.use_batching,
@@ -64,6 +85,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         max_concurrent_requests=config.models.max_concurrent_requests,
         inference_timeout_sec=config.models.inference_timeout_sec,
         warmup_on_load=config.models.warmup_on_load,
+        stream_interval=config.models.stream_interval,
     )
 
     model_manager = ModelManager(
