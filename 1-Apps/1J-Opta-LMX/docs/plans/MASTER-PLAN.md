@@ -288,7 +288,7 @@ Detailed migration plan for CLI changes.
 
 ### 6D. Code Audit ✅
 - Full codebase audit and cleanup
-- 389 tests passing across 28 test files
+- 486 tests passing across 32 test files (3 skipped for optional deps)
 - 35+ source files in `src/opta_lmx/`
 - 23+ API endpoints implemented
 
@@ -344,7 +344,7 @@ Detailed migration plan for CLI changes.
 - [x] Production deployment — launchd, log rotation, setup script (Phase 5C)
 - [ ] OpenClaw bots work with zero config change (Phase 5B — deferred to OptaPlus repo)
 - [x] GGUF fallback for models without MLX weights (gguf_backend.py, 14 tests, optional dep)
-- [x] 389 tests passing across 28 test files
+- [x] 486 tests passing across 32 test files
 - [x] 35+ source files, 23+ API endpoints
 
 ### v1.0 (Full Product)
@@ -363,7 +363,7 @@ Detailed migration plan for CLI changes.
 - [x] Model quantization pipeline
 - [x] Multimodal content support (vision models)
 - [x] Concurrent request limiting + inference timeout
-- [x] 389 tests across 28 test files
+- [x] 486 tests across 32 test files
 - [x] 35+ source modules in `src/opta_lmx/`
 - [ ] Opta CLI fully migrated (no LM Studio references) — Phase 5A, separate repo
 - [ ] OpenClaw bots integrated — Phase 5B, separate repo
