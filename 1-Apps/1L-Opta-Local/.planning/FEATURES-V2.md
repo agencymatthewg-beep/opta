@@ -6,13 +6,13 @@
 
 | # | Feature | Priority | Backend | Status |
 |---|---------|----------|---------|--------|
-| F02 | Connection Health Heartbeat | High | No | Planned |
-| F03 | Token Cost Estimator | High | No | Planned |
-| F06 | Multi-Model Arena Mode | High | No | Planned |
-| F07 | Smart Context from Clipboard | Medium | No | Planned |
-| F09 | Session Branching (Fork Chat) | Medium | No | Planned |
-| F11 | RAG Over Local Files | High | Exists | Planned |
-| F10 | Opta Agent Workspace | Medium | Needs Design | Planned |
+| F02 | Connection Health Heartbeat | High | No | **Implemented** |
+| F03 | Token Cost Estimator | High | No | **Implemented** |
+| F06 | Multi-Model Arena Mode | High | No | **Implemented** |
+| F07 | Smart Context from Clipboard | Medium | No | **Implemented** |
+| F09 | Session Branching (Fork Chat) | Medium | No | **Implemented** |
+| F11 | RAG Over Local Files | High | Exists | **Implemented** |
+| F10 | Opta Agent Workspace | Medium | Client-side | **Implemented** |
 
 ## F02: Connection Health Heartbeat
 
@@ -124,4 +124,5 @@
 
 ---
 
-*Captured 2026-02-18. Implementation order: F02 → F03 → F07 → F06 → F09 → F11 → F10*
+*Captured 2026-02-18. All 7 features implemented 2026-02-18 via 5 parallel agents + direct coding.*
+*Commit: `70b7e74` — 37 files, 6,761 lines added. TypeScript strict + Next.js build verified.*

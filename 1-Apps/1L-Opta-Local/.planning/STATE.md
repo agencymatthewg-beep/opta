@@ -5,17 +5,17 @@
 See: .planning/PROJECT.md (updated 2026-02-18)
 
 **Core value:** Chat with your local AI from anywhere — phone, laptop, LAN, or WAN — with zero terminal commands.
-**Current focus:** Web audit fixes applied. User verification required before iOS.
+**Current focus:** V2 features implemented (7/7). Web ready for user verification before iOS.
 
 ## Current Position
 
-Phase: 5 of 8 (Web Sessions)
-Plan: 3 of 3 in current phase
-Status: WEB COMPLETE + AUDIT FIXES APPLIED — awaiting user verification before iOS
-Last activity: 2026-02-18 — Critical/important audit fixes applied, dashboard polished
+Phase: 5 of 8 (Web Sessions) + V2 Features
+Plan: 3 of 3 in current phase + 7/7 V2 features
+Status: WEB COMPLETE + V2 FEATURES IMPLEMENTED — awaiting user verification before iOS
+Last activity: 2026-02-18 — 7 V2 features implemented via parallel agents
 Gate: USER MUST explicitly verify web works as intended → then iOS phases unlock
 
-Progress: █████████████░░░░░ 12/18 (67%)
+Progress: █████████████░░░░░ 12/18 (67%) + V2 complete
 
 ## Performance Metrics
 
@@ -80,6 +80,21 @@ Recent decisions affecting current work:
 - iOS phases (6-8) BLOCKED on explicit user verification that web works as intended
 - Do NOT suggest iOS as next step until user says web is verified
 
+### V2 Features Implemented (this session)
+
+| # | Feature | Route | Files | Lines |
+|---|---------|-------|-------|-------|
+| F02 | Connection Health Heartbeat | / | 4 | ~200 |
+| F03 | Token Cost Estimator | /chat | 3 | ~250 |
+| F06 | Multi-Model Arena Mode | /arena | 5 | ~800 |
+| F07 | Smart Context from Clipboard | /chat | 3 | ~400 |
+| F09 | Session Branching (Fork Chat) | /chat | 6 | ~700 |
+| F10 | Agent Workspace | /agents | 6 | ~1,200 |
+| F11 | RAG Over Local Files | /rag | 8 | ~1,500 |
+
+Commit: `70b7e74` — 37 files, 6,761 lines added
+Nav updated: Dashboard, Chat, Arena, RAG, Agents, Sessions, Settings
+
 ### Pending Work (resume next session)
 
 1. **Web verification** — user needs to test web app against LMX server and confirm it works
@@ -113,7 +128,7 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-02-18 ~19:50
-Stopped at: Critical/important audit fixes applied + aesthetic polish
-Resume with: User tests web app against LMX server
-Resume file: .planning/AUDIT-WEB.md
+Last session: 2026-02-18 ~21:00
+Stopped at: V2 features complete (7/7), committed, pushed
+Resume with: User tests web app against LMX server (verify V2 features)
+Resume file: .planning/FEATURES-V2.md
