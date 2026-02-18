@@ -282,7 +282,17 @@ async def anthropic_messages(
     start_time = time.monotonic()
 
     # Approximate input tokens
-    prompt_text = " ".join(m.content or "" for m in messages)
+    def _extract_text(content: str | list[dict[str, Any]] | None) -> str:
+        if isinstance(content, str):
+            return content
+        if isinstance(content, list):
+            return " ".join(
+                block.get("text", "") if isinstance(block, dict) else str(block)
+                for block in content
+            )
+        return ""
+
+    prompt_text = " ".join(_extract_text(m.content) for m in messages)
     est_input_tokens = max(1, len(prompt_text) // 4)
 
     if body.stream:

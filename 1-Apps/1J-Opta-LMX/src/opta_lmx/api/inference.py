@@ -13,6 +13,7 @@ from starlette.responses import Response
 
 from opta_lmx.api.deps import Embeddings, Engine, Metrics, Presets, Router
 from opta_lmx.api.errors import internal_error, model_not_found, openai_error
+from opta_lmx.inference.context import estimate_prompt_tokens as _estimate_prompt_tokens
 from opta_lmx.inference.schema import (
     ChatCompletionRequest,
     ErrorResponse,
@@ -25,22 +26,6 @@ from opta_lmx.monitoring.metrics import MetricsCollector, RequestMetric
 from opta_lmx.presets.manager import PRESET_PREFIX
 
 logger = logging.getLogger(__name__)
-
-
-def _estimate_prompt_tokens(messages: list) -> int:
-    """Estimate prompt token count from messages (~4 chars/token).
-
-    Handles both string and multimodal (list[ContentPart]) content.
-    """
-    total = 0
-    for m in messages:
-        if isinstance(m.content, str):
-            total += len(m.content)
-        elif isinstance(m.content, list):
-            for part in m.content:
-                if hasattr(part, "text"):
-                    total += len(part.text)
-    return max(1, total // 4)
 
 
 async def _counting_stream(

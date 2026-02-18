@@ -16,7 +16,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from starlette.responses import Response
 
-from opta_lmx.api.deps import AdminAuth, Embeddings, RemoteEmbedding
+from opta_lmx.api.deps import AdminAuth, Embeddings, RagStore, RemoteEmbedding
 from opta_lmx.api.errors import internal_error, openai_error
 from opta_lmx.rag.chunker import chunk_code, chunk_text
 from opta_lmx.rag.store import VectorStore
@@ -26,21 +26,12 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# Module-level store reference — set during app startup via init_rag_store()
-_store: VectorStore | None = None
 
-
-def init_rag_store(store: VectorStore) -> None:
-    """Set the module-level vector store (called during app startup)."""
-    global _store
-    _store = store
-
-
-def get_store() -> VectorStore:
-    """Get the vector store or raise if not initialized."""
-    if _store is None:
-        raise RuntimeError("RAG store not initialized")
-    return _store
+def _require_store(store: VectorStore | None) -> VectorStore:
+    """Validate that the RAG store is initialized, or raise a clear error."""
+    if store is None:
+        raise RuntimeError("RAG store not initialized — is rag.enabled set in config?")
+    return store
 
 
 # ── Request/Response Models ───────────────────────────────────────────────
@@ -185,13 +176,14 @@ async def ingest_documents(
     _auth: AdminAuth,
     embedding_engine: Embeddings,
     remote_client: RemoteEmbedding,
+    rag_store: RagStore,
 ) -> Response:
     """Ingest documents into a RAG collection.
 
     Documents are chunked (if enabled), embedded, and stored in the
     vector store for later retrieval via /v1/rag/query.
     """
-    store = get_store()
+    store = _require_store(rag_store)
     start = time.monotonic()
 
     # Chunk documents
@@ -274,13 +266,14 @@ async def query_collection(
     body: QueryRequest,
     embedding_engine: Embeddings,
     remote_client: RemoteEmbedding,
+    rag_store: RagStore,
 ) -> Response:
     """Query a RAG collection for relevant context.
 
     Embeds the query, searches the vector store using cosine similarity,
     and returns the top matching document chunks.
     """
-    store = get_store()
+    store = _require_store(rag_store)
     start = time.monotonic()
 
     # Embed query
@@ -326,6 +319,7 @@ async def assemble_context(
     body: ContextAssemblyRequest,
     embedding_engine: Embeddings,
     remote_client: RemoteEmbedding,
+    rag_store: RagStore,
 ) -> Response:
     """Assemble RAG context from multiple collections.
 
@@ -333,7 +327,7 @@ async def assemble_context(
     relevance, and assembles a formatted context string ready for
     injection into a system or user prompt. Respects token budget.
     """
-    store = get_store()
+    store = _require_store(rag_store)
     start = time.monotonic()
 
     # Embed query once
@@ -402,9 +396,9 @@ async def assemble_context(
 
 
 @router.get("/v1/rag/collections")
-async def list_collections() -> StoreStatsResponse:
+async def list_collections(rag_store: RagStore) -> StoreStatsResponse:
     """List all RAG collections and their statistics."""
-    store = get_store()
+    store = _require_store(rag_store)
     stats = store.get_stats()
 
     return StoreStatsResponse(
@@ -422,9 +416,9 @@ async def list_collections() -> StoreStatsResponse:
 
 
 @router.delete("/v1/rag/collections/{collection}", response_model=None)
-async def delete_collection(collection: str, _auth: AdminAuth) -> Response:
+async def delete_collection(collection: str, _auth: AdminAuth, rag_store: RagStore) -> Response:
     """Delete a RAG collection and all its documents."""
-    store = get_store()
+    store = _require_store(rag_store)
     count = store.delete_collection(collection)
     store.save()
 

@@ -10,6 +10,7 @@ All endpoints require admin key authentication (X-Admin-Key header).
 
 from __future__ import annotations
 
+import asyncio
 import logging
 
 from fastapi import APIRouter, HTTPException, Query
@@ -27,7 +28,7 @@ router = APIRouter(prefix="/sessions", tags=["sessions"])
 
 
 @router.get("", response_model=SessionListResponse)
-def list_sessions(
+async def list_sessions(
     _auth: AdminAuth,
     store: SessionStoreDep,
     limit: int = Query(50, ge=1, le=200, description="Max sessions to return"),
@@ -37,7 +38,8 @@ def list_sessions(
     since: str | None = Query(None, description="ISO 8601 date cutoff"),
 ) -> SessionListResponse:
     """List session summaries with pagination and optional filtering."""
-    return store.list_sessions(
+    return await asyncio.to_thread(
+        store.list_sessions,
         limit=limit,
         offset=offset,
         model=model,
@@ -47,7 +49,7 @@ def list_sessions(
 
 
 @router.get("/search", response_model=list[SessionSummary])
-def search_sessions(
+async def search_sessions(
     _auth: AdminAuth,
     store: SessionStoreDep,
     q: str = Query(..., min_length=1, description="Search query"),
@@ -58,30 +60,30 @@ def search_sessions(
     NOTE: This route MUST be defined before ``/{session_id}`` to prevent
     FastAPI from interpreting ``"search"`` as a session ID.
     """
-    return store.search_sessions(q, limit=limit)
+    return await asyncio.to_thread(store.search_sessions, q, limit=limit)
 
 
 @router.get("/{session_id}", response_model=SessionFull)
-def get_session(
+async def get_session(
     session_id: str,
     _auth: AdminAuth,
     store: SessionStoreDep,
 ) -> SessionFull:
     """Get a full session including all messages."""
-    session = store.get_session(session_id)
+    session = await asyncio.to_thread(store.get_session, session_id)
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found")
     return session
 
 
 @router.delete("/{session_id}", response_model=None)
-def delete_session(
+async def delete_session(
     session_id: str,
     _auth: AdminAuth,
     store: SessionStoreDep,
 ) -> dict[str, bool]:
     """Delete a session file from disk."""
-    deleted = store.delete_session(session_id)
+    deleted = await asyncio.to_thread(store.delete_session, session_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Session not found")
     return {"deleted": True}

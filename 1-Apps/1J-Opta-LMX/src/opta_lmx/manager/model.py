@@ -195,7 +195,7 @@ class ModelManager:
                 allow_patterns=allow_patterns,
                 ignore_patterns=ignore_patterns,
                 token=self._hf_token,
-                # tqdm_class=make_progress_tracker,
+                tqdm_class=make_progress_tracker,
             )
 
             task.status = "completed"

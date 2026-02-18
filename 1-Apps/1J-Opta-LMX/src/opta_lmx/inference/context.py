@@ -22,6 +22,22 @@ def estimate_tokens(text: str) -> int:
     return max(1, len(text) // _CHARS_PER_TOKEN)
 
 
+def estimate_prompt_tokens(messages: list[ChatMessage]) -> int:
+    """Estimate prompt token count from messages (~4 chars/token).
+
+    Handles both string and multimodal (list[ContentPart]) content.
+    """
+    total = 0
+    for m in messages:
+        if isinstance(m.content, str):
+            total += len(m.content)
+        elif isinstance(m.content, list):
+            for part in m.content:
+                if hasattr(part, "text"):
+                    total += len(part.text)
+    return max(1, total // _CHARS_PER_TOKEN)
+
+
 def estimate_message_tokens(message: ChatMessage) -> int:
     """Estimate token count for a single chat message.
 

@@ -175,13 +175,8 @@ async def get_model_performance(
         use_batching=loaded.use_batching,
         performance=loaded.performance_overrides,
         global_defaults={
-            "kv_bits": engine._kv_bits,
-            "kv_group_size": engine._kv_group_size,
-            "prefix_cache_enabled": engine._prefix_cache_enabled,
-            "speculative_model": engine._speculative_model,
-            "speculative_num_tokens": engine._speculative_num_tokens,
+            **engine.get_inference_defaults(),
             "max_concurrent_requests": engine.max_concurrent_requests,
-            "warmup_on_load": engine._warmup_on_load,
         },
     )
 

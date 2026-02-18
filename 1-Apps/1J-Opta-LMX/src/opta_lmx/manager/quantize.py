@@ -20,6 +20,9 @@ logger = logging.getLogger(__name__)
 # Single-threaded executor for quantization (one job at a time)
 _executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="quantize")
 
+# Strong references to background tasks to prevent GC during execution
+_background_tasks: set[asyncio.Task[None]] = set()
+
 
 @dataclass
 class QuantizeJob:
@@ -122,10 +125,10 @@ async def start_quantize(
         "mode": mode,
     })
 
-    # Run in background thread
+    # Run in background thread — strong reference prevents GC
     task = asyncio.create_task(_run_quantize(job))
-    # Task reference stored to prevent garbage collection
-    _ = task
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
 
     return job
 

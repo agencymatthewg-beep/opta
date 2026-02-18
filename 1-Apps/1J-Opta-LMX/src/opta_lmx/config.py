@@ -67,6 +67,7 @@ class ModelsConfig(BaseModel):
         if v is not None and v not in (4, 8):
             raise ValueError(f"kv_bits must be 4 or 8 (got {v}). Use None for FP16.")
         return v
+
     prefix_cache_enabled: bool = Field(True, description="Enable prefix caching for multi-turn")
     embedding_model: str | None = Field(
         None, description="Embedding model HF ID for /v1/embeddings (lazy-loaded)",
@@ -106,7 +107,7 @@ class RoutingConfig(BaseModel):
 
     aliases: dict[str, list[str]] = Field(
         default_factory=lambda: {
-            "code": list[str](), "reasoning": list[str](), "chat": list[str](),
+            "code": [], "reasoning": [], "chat": [],
         },
         description="Map alias → ordered list of preferred model IDs. First loaded match wins.",
     )

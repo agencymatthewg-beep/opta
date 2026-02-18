@@ -162,14 +162,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         except Exception as e:
             logger.error("auto_load_failed", extra={"model_id": model_id, "error": str(e)})
 
-    # Initialize RAG vector store
+    # Initialize RAG vector store (accessed via app.state by RagStore dependency)
     if config.rag.enabled:
-        from opta_lmx.api.rag import init_rag_store
         from opta_lmx.rag.store import VectorStore
 
         rag_store = VectorStore(persist_path=config.rag.persist_path)
         loaded_docs = rag_store.load()
-        init_rag_store(rag_store)
         app.state.rag_store = rag_store
         if loaded_docs > 0:
             logger.info("rag_store_loaded", extra={

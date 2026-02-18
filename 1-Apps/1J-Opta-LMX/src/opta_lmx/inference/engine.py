@@ -10,7 +10,7 @@ import time
 from collections.abc import AsyncIterator
 from typing import Any
 
-from opta_lmx.inference.context import fit_to_context
+from opta_lmx.inference.context import estimate_prompt_tokens, fit_to_context
 from opta_lmx.inference.predictor import UsagePredictor
 from opta_lmx.inference.schema import (
     ChatCompletionResponse,
@@ -76,19 +76,43 @@ def _detect_format(model_id: str) -> str:
 
 
 def _resolve_messages(messages: list[ChatMessage]) -> list[dict[str, Any]]:
-    """Convert ChatMessage list to dicts, preserving multimodal content.
+    """Convert ChatMessage list to dicts, preserving multimodal content and tool fields.
 
     - String content → {"role": ..., "content": "..."}
     - List content (multimodal) → {"role": ..., "content": [{...}, ...]}
     - None content → {"role": ..., "content": ""}
+    - tool_calls / tool_call_id are preserved when present (required by chat templates).
+
+    Note: MiniMax chat templates expect tool_call.function.arguments as a dict,
+    not a JSON string (they call .items() on it). We parse it here.
     """
+    import json as _json
+
     result: list[dict[str, Any]] = []
     for m in messages:
         if isinstance(m.content, list):
-            # Multimodal: pass content array through for vision models
-            result.append({"role": m.role, "content": [p.model_dump() for p in m.content]})
+            d: dict[str, Any] = {"role": m.role, "content": [p.model_dump() for p in m.content]}
         else:
-            result.append({"role": m.role, "content": m.content or ""})
+            d = {"role": m.role, "content": m.content or ""}
+        # Preserve tool call fields for chat template validation
+        if m.tool_calls:
+            resolved_tcs = []
+            for tc in m.tool_calls:
+                tc_dict = tc.model_dump()
+                # Parse arguments from JSON string → dict for chat template compatibility
+                fn = tc_dict.get("function")
+                if fn and isinstance(fn.get("arguments"), str):
+                    try:
+                        fn["arguments"] = _json.loads(fn["arguments"])
+                    except (_json.JSONDecodeError, TypeError):
+                        pass
+                resolved_tcs.append(tc_dict)
+            d["tool_calls"] = resolved_tcs
+        if m.tool_call_id:
+            d["tool_call_id"] = m.tool_call_id
+        if m.name:
+            d["name"] = m.name
+        result.append(d)
     return result
 
 
@@ -464,6 +488,17 @@ class InferenceEngine:
         loaded = set(self._models.keys())
         return self._predictor.predict_next(loaded, exclude=self._loading_models)
 
+    def get_inference_defaults(self) -> dict[str, Any]:
+        """Return current global inference defaults for admin reporting."""
+        return {
+            "kv_bits": self._kv_bits,
+            "kv_group_size": self._kv_group_size,
+            "prefix_cache_enabled": self._prefix_cache_enabled,
+            "speculative_model": self._speculative_model,
+            "speculative_num_tokens": self._speculative_num_tokens,
+            "warmup_on_load": self._warmup_on_load,
+        }
+
     def adapt_concurrency(self) -> int:
         """Dynamically adjust inference concurrency based on memory pressure.
 
@@ -492,12 +527,17 @@ class InferenceEngine:
             # orphaning waiters on the old semaphore.
             if self._in_flight == 0:
                 self._inference_semaphore = asyncio.Semaphore(target)
-            self._current_concurrency_limit = target
-            logger.info("concurrency_adapted", extra={
-                "new_limit": target,
-                "memory_usage_pct": round(usage_pct, 1),
-                "in_flight": self._in_flight,
-            })
+                self._current_concurrency_limit = target
+                logger.info("concurrency_adapted", extra={
+                    "new_limit": target,
+                    "memory_usage_pct": round(usage_pct, 1),
+                    "in_flight": self._in_flight,
+                })
+            else:
+                logger.debug("concurrency_adaptation_deferred", extra={
+                    "target": target,
+                    "in_flight": self._in_flight,
+                })
 
         return target
 
@@ -698,7 +738,7 @@ class InferenceEngine:
             content = result.text
             prompt_tokens = (
                 getattr(result, "prompt_tokens", 0)
-                or self._estimate_prompt_tokens(messages)
+                or estimate_prompt_tokens(messages)
             )
             completion_tokens = (
                 getattr(result, "completion_tokens", 0)
@@ -706,7 +746,7 @@ class InferenceEngine:
             )
         else:
             content = result if isinstance(result, str) else str(result)
-            prompt_tokens = self._estimate_prompt_tokens(messages)
+            prompt_tokens = estimate_prompt_tokens(messages)
             completion_tokens = max(1, len(content) // 4)
         return content, prompt_tokens, completion_tokens
 
@@ -909,15 +949,6 @@ class InferenceEngine:
 
         logger.info("drain_complete")
         return True
-
-    @staticmethod
-    def _estimate_prompt_tokens(messages: list[ChatMessage]) -> int:
-        """Estimate prompt token count from message content (~4 chars/token)."""
-        prompt_text = " ".join(
-            m.content if isinstance(m.content, str) else ""
-            for m in messages
-        )
-        return max(1, len(prompt_text) // 4)
 
     def get_model(self, model_id: str) -> LoadedModel:
         """Get a loaded model or raise KeyError."""

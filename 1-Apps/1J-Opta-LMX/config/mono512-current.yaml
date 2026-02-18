@@ -10,6 +10,10 @@ server:
 
 # Backend servers (mlx_lm.server instances)
 # These run independently; Opta-LMX routes to them
+# NOTE: backends section is for documentation/reference only.
+# LMX does not currently route to external mlx_lm.server instances.
+# LMXConfig has no 'backends' field — Pydantic silently drops this section.
+# Backend routing support is planned for a future release.
 backends:
   m2.5-4bit:
     url: "http://localhost:10001/v1"
@@ -24,7 +28,7 @@ backends:
 models:
   default_model: "mlx-community/MiniMax-M2.5-4bit"
   models_directory: "/Users/Shared/Opta-LMX/models"
-  auto_load: []
+  auto_load: ["mlx-community/MiniMax-M2.5-4bit"]
   use_batching: true
   max_concurrent_requests: 4
   inference_timeout_sec: 600

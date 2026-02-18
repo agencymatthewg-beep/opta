@@ -288,7 +288,6 @@ async def rag_client(
 
     from httpx import ASGITransport
 
-    from opta_lmx.api.rag import init_rag_store
     from opta_lmx.config import LMXConfig
     from opta_lmx.inference.embedding_engine import EmbeddingEngine
     from opta_lmx.inference.engine import InferenceEngine
@@ -304,9 +303,8 @@ async def rag_client(
     config = LMXConfig()
     test_app = create_app(config)
 
-    # Initialize RAG store
+    # Initialize RAG store via app.state (no module-level global)
     rag_store = VectorStore(persist_path=tmp_path / "test-rag-store.json")
-    init_rag_store(rag_store)
     test_app.state.rag_store = rag_store
 
     # Mock embedding engine with deterministic embeddings

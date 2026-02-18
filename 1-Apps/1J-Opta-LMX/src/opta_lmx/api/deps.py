@@ -20,6 +20,7 @@ from opta_lmx.monitoring.events import EventBus
 from opta_lmx.monitoring.metrics import MetricsCollector
 from opta_lmx.presets.manager import PresetManager
 from opta_lmx.helpers.client import HelperNodeClient
+from opta_lmx.rag.store import VectorStore
 from opta_lmx.router.strategy import TaskRouter
 from opta_lmx.sessions.store import SessionStore
 
@@ -84,6 +85,11 @@ def get_session_store(request: Request) -> SessionStore:
     return request.app.state.session_store  # type: ignore[no-any-return]
 
 
+def get_rag_store(request: Request) -> VectorStore | None:
+    """Get the RAG vector store from app state, or None if not configured."""
+    return getattr(request.app.state, "rag_store", None)
+
+
 def verify_admin_key(request: Request, x_admin_key: str | None = Header(None)) -> None:
     """Verify X-Admin-Key header if admin_key is configured.
 
@@ -111,4 +117,5 @@ Embeddings = Annotated[EmbeddingEngine | None, Depends(get_embedding_engine)]
 RemoteEmbedding = Annotated[HelperNodeClient | None, Depends(get_remote_embedding)]
 RemoteReranking = Annotated[HelperNodeClient | None, Depends(get_remote_reranking)]
 SessionStoreDep = Annotated[SessionStore, Depends(get_session_store)]
+RagStore = Annotated[VectorStore | None, Depends(get_rag_store)]
 AdminAuth = Annotated[None, Depends(verify_admin_key)]

@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from pathlib import Path
 
 from opta_lmx.sessions.models import (
@@ -39,6 +40,28 @@ class SessionStore:
 
     def __init__(self, sessions_dir: Path | None = None) -> None:
         self.sessions_dir = sessions_dir or _DEFAULT_SESSIONS_DIR
+
+    # ── Validation ─────────────────────────────────────────────────────────
+
+    def _validate_session_id(self, session_id: str) -> None:
+        """Validate session_id contains only safe characters.
+
+        Prevents path traversal attacks (e.g. ``../../.env``).
+        """
+        if not re.match(r'^[a-zA-Z0-9_-]+$', session_id):
+            raise ValueError(f"Invalid session_id: {session_id!r}")
+
+    def _safe_session_path(self, session_id: str) -> Path:
+        """Build a session file path with traversal protection.
+
+        Validates the session_id format and confirms the resolved path
+        is within the sessions directory.
+        """
+        self._validate_session_id(session_id)
+        path = (self.sessions_dir / f"{session_id}.json").resolve()
+        if not str(path).startswith(str(self.sessions_dir.resolve())):
+            raise ValueError("Path traversal detected")
+        return path
 
     # ── List ──────────────────────────────────────────────────────────────
 
@@ -85,7 +108,11 @@ class SessionStore:
 
     def get_session(self, session_id: str) -> SessionFull | None:
         """Load a full session by ID, or None if not found."""
-        path = self.sessions_dir / f"{session_id}.json"
+        try:
+            path = self._safe_session_path(session_id)
+        except ValueError:
+            logger.warning("invalid_session_id", extra={"session_id": session_id})
+            return None
         if not path.is_file():
             return None
 
@@ -107,7 +134,11 @@ class SessionStore:
 
         Returns True if the session was deleted, False if not found.
         """
-        path = self.sessions_dir / f"{session_id}.json"
+        try:
+            path = self._safe_session_path(session_id)
+        except ValueError:
+            logger.warning("invalid_session_id", extra={"session_id": session_id})
+            return False
         if not path.is_file():
             return False
 
@@ -308,7 +339,10 @@ class SessionStore:
 
     def _first_message_matches(self, session_id: str, query: str) -> bool:
         """Check if the first user message in a session matches the query."""
-        path = self.sessions_dir / f"{session_id}.json"
+        try:
+            path = self._safe_session_path(session_id)
+        except ValueError:
+            return False
         if not path.is_file():
             return False
 
