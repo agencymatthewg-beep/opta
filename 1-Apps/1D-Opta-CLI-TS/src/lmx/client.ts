@@ -80,7 +80,7 @@ export interface LmxStackRole {
 
 export interface LmxStackResponse {
   roles: Record<string, LmxStackRole>;
-  remote_helpers: Record<string, unknown>;
+  helper_nodes: Record<string, unknown>;
   loaded_models: string[];
   default_model: string | null;
 }

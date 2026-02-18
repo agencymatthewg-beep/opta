@@ -2,6 +2,8 @@
  * Provider manager — factory for selecting the active LLM provider.
  *
  * Reads config.provider.active to determine which provider to use.
+ * When fallbackOnFailure is enabled, wraps LMX in a FallbackProvider
+ * that auto-degrades to Anthropic on connection failure.
  * Caches provider instances by config key to avoid re-creation.
  */
 
@@ -13,8 +15,9 @@ let cachedProviderKey = '';
 
 function providerCacheKey(config: OptaConfig): string {
   const active = config.provider?.active ?? 'lmx';
+  const fallback = config.provider?.fallbackOnFailure ? '+fb' : '';
   if (active === 'lmx') {
-    return `lmx|${config.connection.host}:${config.connection.port}`;
+    return `lmx${fallback}|${config.connection.host}:${config.connection.port}`;
   }
   const apiKey = config.provider?.anthropic?.apiKey || process.env['ANTHROPIC_API_KEY'] || '';
   return `anthropic|${apiKey.slice(0, 8)}`;
@@ -33,7 +36,14 @@ export async function getProvider(config: OptaConfig): Promise<ProviderClient> {
     cachedProvider = new AnthropicProvider(config);
   } else {
     const { LmxProvider } = await import('./lmx.js');
-    cachedProvider = new LmxProvider(config);
+    const lmx = new LmxProvider(config);
+
+    if (config.provider?.fallbackOnFailure) {
+      const { FallbackProvider } = await import('./fallback.js');
+      cachedProvider = new FallbackProvider(lmx, config);
+    } else {
+      cachedProvider = lmx;
+    }
   }
 
   cachedProviderKey = key;

@@ -36,6 +36,7 @@ export const OptaConfigSchema = z.object({
           pythonPath: z.string().default('/Users/opta/.mlx-env/bin/python'),
         })
         .default({}),
+      inferenceTimeout: z.number().min(5000).max(600_000).default(120_000),
       retry: z
         .object({
           maxRetries: z.number().min(0).max(10).default(3),
@@ -194,6 +195,7 @@ export const OptaConfigSchema = z.object({
   provider: z
     .object({
       active: z.enum(['lmx', 'anthropic']).default('lmx'),
+      fallbackOnFailure: z.boolean().default(false),
       anthropic: z
         .object({
           apiKey: z.string().default(''),

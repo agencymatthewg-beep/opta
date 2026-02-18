@@ -14,12 +14,19 @@ export class LmxProvider implements ProviderClient {
     this.config = config;
   }
 
+  get baseURL(): string {
+    return `http://${this.config.connection.host}:${this.config.connection.port}/v1`;
+  }
+
   async getClient(): Promise<import('openai').default> {
     if (this.client) return this.client;
 
     const { default: OpenAI } = await import('openai');
-    const baseURL = `http://${this.config.connection.host}:${this.config.connection.port}/v1`;
-    this.client = new OpenAI({ baseURL, apiKey: 'opta-lmx' });
+    this.client = new OpenAI({
+      baseURL: this.baseURL,
+      apiKey: 'opta-lmx',
+      timeout: this.config.connection.inferenceTimeout,
+    });
     return this.client;
   }
 
@@ -38,10 +45,15 @@ export class LmxProvider implements ProviderClient {
     try {
       const url = `http://${this.config.connection.host}:${this.config.connection.port}/v1/models`;
       const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+      if (!res.ok) {
+        return { ok: false, latencyMs: Date.now() - start, error: `HTTP ${res.status}` };
+      }
+      const data = await res.json() as { data?: unknown[] };
+      const modelCount = Array.isArray(data?.data) ? data.data.length : 0;
       return {
-        ok: res.ok,
+        ok: true,
         latencyMs: Date.now() - start,
-        error: res.ok ? undefined : `HTTP ${res.status}`,
+        loadedModels: modelCount,
       };
     } catch (err) {
       return {

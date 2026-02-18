@@ -92,7 +92,7 @@ const scanHandler = async (_args: string, ctx: SlashContext): Promise<SlashResul
     lines.push('');
     lines.push(chalk.bold('Presets'));
     for (const p of presetsRes.presets) {
-      const model = p.model.replace(/^(lmstudio|mlx|huggingface)-community\//, '');
+      const model = p.model.replace(/^(mlx|huggingface)-community\//, '');
       const alias = p.routing_alias ? chalk.cyan(`alias:"${p.routing_alias}"`) : '';
       const auto = p.auto_load ? chalk.dim('auto-load') : '';
       lines.push(`  ${chalk.magenta('\u2666')} ${chalk.bold(p.name.padEnd(18))} \u2192 ${chalk.dim(model)}  ${alias}  ${auto}`);
@@ -261,7 +261,7 @@ const memoryHandler = async (_args: string, ctx: SlashContext): Promise<SlashRes
       lines.push('');
       lines.push(chalk.dim('Per-model:'));
       for (const [id, info] of modelEntries) {
-        const shortName = id.replace(/^(lmstudio|mlx|huggingface)-community\//, '');
+        const shortName = id.replace(/^(mlx|huggingface)-community\//, '');
         const loadedStr = info.loaded ? chalk.green('\u25cf') : chalk.dim('\u25cb');
         lines.push(`  ${loadedStr} ${shortName.padEnd(35)} ${chalk.dim(`${info.memory_gb.toFixed(1)} GB`)}`);
       }
@@ -271,6 +271,96 @@ const memoryHandler = async (_args: string, ctx: SlashContext): Promise<SlashRes
   } catch {
     console.log(chalk.red('  \u25cf LMX unreachable') + chalk.dim(` \u2014 ${ctx.config.connection.host}:${ctx.config.connection.port}`));
   }
+  return 'handled';
+};
+
+const diagnoseHandler = async (_args: string, ctx: SlashContext): Promise<SlashResult> => {
+  const { LmxClient } = await import('../../lmx/client.js');
+  const { getProvider } = await import('../../providers/manager.js');
+  const { host, port } = ctx.config.connection;
+
+  console.log(chalk.dim('  Running diagnostics...\n'));
+  const checks: string[] = [];
+  const lmx = new LmxClient({ host, port, adminKey: ctx.config.connection.adminKey });
+
+  // 1. Server reachability + latency
+  const healthStart = Date.now();
+  let serverOk = false;
+  try {
+    await lmx.health();
+    const latency = Date.now() - healthStart;
+    serverOk = true;
+    const latColor = latency < 50 ? chalk.green : latency < 200 ? chalk.yellow : chalk.red;
+    checks.push(`${chalk.green('\u2713')} Server reachable at ${host}:${port} ${latColor(`(${latency}ms)`)}`);
+  } catch (err) {
+    checks.push(`${chalk.red('\u2717')} Server unreachable at ${host}:${port}`);
+    checks.push(`  ${chalk.dim(err instanceof Error ? err.message : String(err))}`);
+  }
+
+  // 2. Models loaded
+  if (serverOk) {
+    try {
+      const models = await lmx.models();
+      const count = models.models.length;
+      checks.push(count > 0
+        ? `${chalk.green('\u2713')} ${count} model${count !== 1 ? 's' : ''} loaded`
+        : `${chalk.yellow('\u26a0')} No models loaded — run /load <model-id>`);
+    } catch {
+      checks.push(`${chalk.yellow('\u26a0')} Could not query loaded models`);
+    }
+  }
+
+  // 3. Memory utilization
+  if (serverOk) {
+    try {
+      const mem = await lmx.memory();
+      const pct = Math.round((mem.used_gb / mem.total_unified_memory_gb) * 100);
+      const pctColor = pct > 80 ? chalk.red : pct > 60 ? chalk.yellow : chalk.green;
+      checks.push(`${chalk.green('\u2713')} Memory: ${mem.used_gb.toFixed(1)}/${mem.total_unified_memory_gb.toFixed(1)} GB ${pctColor(`(${pct}%)`)}`);
+    } catch {
+      checks.push(`${chalk.yellow('\u26a0')} Could not query memory`);
+    }
+  }
+
+  // 4. Admin API
+  if (serverOk) {
+    try {
+      await lmx.status();
+      checks.push(`${chalk.green('\u2713')} Admin API responding`);
+    } catch {
+      checks.push(`${chalk.yellow('\u26a0')} Admin API not available (check admin key)`);
+    }
+  }
+
+  // 5. Provider config
+  const active = ctx.config.provider?.active ?? 'lmx';
+  const fallback = ctx.config.provider?.fallbackOnFailure ?? false;
+  checks.push(`${chalk.green('\u2713')} Provider: ${chalk.bold(active)}${fallback ? chalk.cyan(' + Anthropic fallback') : ''}`);
+
+  // 6. Anthropic fallback status
+  const hasAnthropicKey = !!(ctx.config.provider?.anthropic?.apiKey || process.env['ANTHROPIC_API_KEY']);
+  if (fallback && hasAnthropicKey) {
+    try {
+      const cfg = { ...ctx.config, provider: { ...ctx.config.provider, active: 'anthropic' as const } };
+      const anthropic = await getProvider(cfg);
+      const aHealth = await anthropic.health();
+      checks.push(aHealth.ok
+        ? `${chalk.green('\u2713')} Anthropic fallback ready ${chalk.dim(`(${aHealth.latencyMs}ms)`)}`
+        : `${chalk.red('\u2717')} Anthropic fallback unhealthy: ${aHealth.error}`);
+    } catch {
+      checks.push(`${chalk.yellow('\u26a0')} Could not verify Anthropic fallback`);
+    }
+  } else if (fallback && !hasAnthropicKey) {
+    checks.push(`${chalk.yellow('\u26a0')} Fallback enabled but no Anthropic API key configured`);
+  } else if (!fallback && hasAnthropicKey) {
+    checks.push(`${chalk.dim('\u2139')} Anthropic key present but fallback disabled — set provider.fallbackOnFailure: true to enable`);
+  }
+
+  // 7. Inference timeout
+  const timeout = ctx.config.connection.inferenceTimeout;
+  checks.push(`${chalk.green('\u2713')} Inference timeout: ${(timeout / 1000).toFixed(0)}s`);
+
+  console.log(box('LMX Diagnostics', checks));
   return 'handled';
 };
 
@@ -316,5 +406,14 @@ export const lmxCommands: SlashCommandDef[] = [
     category: 'server',
     usage: '/memory',
     examples: ['/memory'],
+  },
+  {
+    command: 'diagnose',
+    aliases: ['diag'],
+    description: 'Run LMX provider diagnostics',
+    handler: diagnoseHandler,
+    category: 'server',
+    usage: '/diagnose',
+    examples: ['/diagnose'],
   },
 ];

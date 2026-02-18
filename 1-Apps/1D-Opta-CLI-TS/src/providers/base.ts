@@ -15,6 +15,7 @@ export interface ProviderHealthResult {
   ok: boolean;
   latencyMs: number;
   error?: string;
+  loadedModels?: number;
 }
 
 export interface ProviderClient {

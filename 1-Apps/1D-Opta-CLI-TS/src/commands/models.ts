@@ -279,7 +279,6 @@ async function unloadModel(
 
 function shortId(id: string): string {
   return id
-    .replace(/^lmstudio-community\//, '')
     .replace(/^mlx-community\//, '')
     .replace(/^huggingface\//, '');
 }
