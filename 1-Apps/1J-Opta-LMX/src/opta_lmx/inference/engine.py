@@ -162,6 +162,13 @@ class InferenceEngine:
             MemoryError: If loading would exceed 90% memory threshold.
             RuntimeError: If model loading fails.
         """
+        # Block path traversal in model IDs (security).
+        if ".." in model_id:
+            raise ValueError(
+                f"Invalid model ID: '{model_id}'. "
+                "Path traversal sequences are not allowed."
+            )
+
         # Lock the check-and-mutate section to prevent two concurrent
         # load_model() calls for the same model from both passing the
         # "already loaded?" check.

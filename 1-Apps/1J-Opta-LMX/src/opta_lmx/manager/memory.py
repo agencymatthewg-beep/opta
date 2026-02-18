@@ -69,7 +69,10 @@ class MemoryMonitor:
         """
         current = self.usage_percent()
         if estimated_size_gb > 0:
-            additional = (estimated_size_gb / self.total_memory_gb()) * 100
+            # Apply 15% safety margin: MLX allocates in chunks and OS buffers
+            # consume additional memory beyond the raw model weight estimate.
+            buffered = estimated_size_gb * 1.15
+            additional = (buffered / self.total_memory_gb()) * 100
         else:
             additional = 0
         would_be = current + additional
