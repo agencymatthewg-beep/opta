@@ -24,6 +24,7 @@ from opta_lmx.api.inference import router as inference_router
 from opta_lmx.api.middleware import RequestIDMiddleware, RequestLoggingMiddleware
 from opta_lmx.api.rag import router as rag_router
 from opta_lmx.api.rerank import router as rerank_router
+from opta_lmx.api.sessions import router as sessions_router
 from opta_lmx.api.websocket import router as websocket_router
 from opta_lmx.config import LMXConfig, load_config
 from opta_lmx.inference.engine import InferenceEngine
@@ -34,6 +35,7 @@ from opta_lmx.monitoring.logging import setup_logging
 from opta_lmx.monitoring.metrics import MetricsCollector
 from opta_lmx.presets.manager import PresetManager
 from opta_lmx.router.strategy import TaskRouter
+from opta_lmx.sessions.store import SessionStore
 
 logger = logging.getLogger(__name__)
 
@@ -105,6 +107,13 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.pending_downloads = {}  # dict[str, dict[str, Any]]
     app.state.start_time = time.time()
     app.state.admin_key = config.security.admin_key
+
+    # Initialize session store for CLI session file access
+    session_store = SessionStore()
+    app.state.session_store = session_store
+    logger.info("session_store_initialized", extra={
+        "sessions_dir": str(session_store.sessions_dir),
+    })
 
     # Initialize helper node clients (embedding/reranking on LAN devices)
     from opta_lmx.helpers.client import HelperNodeClient
@@ -278,6 +287,7 @@ def create_app(config: LMXConfig | None = None) -> FastAPI:
         app.include_router(rag_router)
     app.include_router(anthropic_router)
     app.include_router(admin_router)
+    app.include_router(sessions_router, prefix="/admin")
     app.include_router(health_router)
     if config.server.websocket_enabled:
         app.include_router(websocket_router)

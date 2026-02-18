@@ -21,6 +21,7 @@ from opta_lmx.monitoring.metrics import MetricsCollector
 from opta_lmx.presets.manager import PresetManager
 from opta_lmx.helpers.client import HelperNodeClient
 from opta_lmx.router.strategy import TaskRouter
+from opta_lmx.sessions.store import SessionStore
 
 
 def get_engine(request: Request) -> InferenceEngine:
@@ -78,6 +79,11 @@ def get_remote_reranking(request: Request) -> HelperNodeClient | None:
     return getattr(request.app.state, "remote_reranking", None)
 
 
+def get_session_store(request: Request) -> SessionStore:
+    """Get the session store from app state."""
+    return request.app.state.session_store  # type: ignore[no-any-return]
+
+
 def verify_admin_key(request: Request, x_admin_key: str | None = Header(None)) -> None:
     """Verify X-Admin-Key header if admin_key is configured.
 
@@ -104,4 +110,5 @@ Events = Annotated[EventBus, Depends(get_event_bus)]
 Embeddings = Annotated[EmbeddingEngine | None, Depends(get_embedding_engine)]
 RemoteEmbedding = Annotated[HelperNodeClient | None, Depends(get_remote_embedding)]
 RemoteReranking = Annotated[HelperNodeClient | None, Depends(get_remote_reranking)]
+SessionStoreDep = Annotated[SessionStore, Depends(get_session_store)]
 AdminAuth = Annotated[None, Depends(verify_admin_key)]
