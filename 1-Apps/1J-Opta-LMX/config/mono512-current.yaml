@@ -41,7 +41,7 @@ memory:
 logging:
   level: "INFO"
   format: "structured"
-  file: "/tmp/opta-lmx.log"
+  file: "/var/log/opta-lmx/opta-lmx.log"
   max_file_bytes: 52428800   # 50MB
   backup_count: 5
 
