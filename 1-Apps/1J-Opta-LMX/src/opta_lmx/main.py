@@ -86,6 +86,10 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         inference_timeout_sec=config.models.inference_timeout_sec,
         warmup_on_load=config.models.warmup_on_load,
         stream_interval=config.models.stream_interval,
+        scheduler_max_num_seqs=config.models.scheduler_max_num_seqs,
+        scheduler_prefill_batch_size=config.models.scheduler_prefill_batch_size,
+        scheduler_completion_batch_size=config.models.scheduler_completion_batch_size,
+        scheduler_cache_memory_percent=config.models.scheduler_cache_memory_percent,
     )
 
     model_manager = ModelManager(

@@ -209,6 +209,14 @@ class AdminLoadRequest(BaseModel):
             "speculative). Merged on top of preset defaults when loading."
         ),
     )
+    keep_alive_sec: int | None = Field(
+        None,
+        ge=0,
+        description=(
+            "Per-model idle timeout in seconds. Overrides global TTL for this model. "
+            "0 means never auto-evict."
+        ),
+    )
 
 
 class AdminLoadResponse(BaseModel):

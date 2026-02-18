@@ -86,6 +86,23 @@ class ModelsConfig(BaseModel):
         None, ge=0.5,
         description="MLX Metal buffer cache limit in GB (None = MLX default)",
     )
+    # E3: Scheduler tuning for BatchedEngine
+    scheduler_max_num_seqs: int = Field(
+        256, ge=1, le=1024,
+        description="Max sequences the scheduler tracks (lower = less overhead for local use)",
+    )
+    scheduler_prefill_batch_size: int = Field(
+        8, ge=1, le=64,
+        description="Number of sequences to prefill in one batch",
+    )
+    scheduler_completion_batch_size: int = Field(
+        32, ge=1, le=256,
+        description="Number of sequences to decode in one batch",
+    )
+    scheduler_cache_memory_percent: float = Field(
+        0.2, ge=0.05, le=0.8,
+        description="Fraction of memory to use for KV cache (0.2 = 20%)",
+    )
 
 
 class MemoryConfig(BaseModel):

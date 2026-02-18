@@ -18,6 +18,7 @@ class RequestMetric:
     completion_tokens: int
     stream: bool
     error: bool = False
+    client_id: str | None = None
 
 
 class MetricsCollector:
@@ -36,6 +37,10 @@ class MetricsCollector:
         self._model_requests: dict[str, int] = {}
         self._model_errors: dict[str, int] = {}
         self._model_tokens: dict[str, int] = {}
+        # Per-client tracking (keyed by X-Client-ID header)
+        self._client_requests: dict[str, int] = {}
+        self._client_tokens: dict[str, int] = {}
+        self._client_errors: dict[str, int] = {}
         # Latency histogram buckets (seconds)
         self._latency_buckets = [0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0, 60.0]
         self._latency_bucket_counts: dict[str, list[int]] = {}
@@ -64,6 +69,16 @@ class MetricsCollector:
                 self._model_tokens.get(metric.model_id, 0)
                 + metric.completion_tokens
             )
+
+            # Per-client tracking
+            if metric.client_id:
+                cid = metric.client_id
+                self._client_requests[cid] = self._client_requests.get(cid, 0) + 1
+                self._client_tokens[cid] = (
+                    self._client_tokens.get(cid, 0) + metric.completion_tokens
+                )
+                if metric.error:
+                    self._client_errors[cid] = self._client_errors.get(cid, 0) + 1
 
             # Latency histogram — store in the single correct bucket
             if metric.model_id not in self._latency_bucket_counts:
@@ -131,6 +146,23 @@ class MetricsCollector:
             lines.append("# TYPE lmx_model_tokens_total counter")
             for model_id, count in sorted(self._model_tokens.items()):
                 lines.append(f'lmx_model_tokens_total{{model="{model_id}"}} {count}')
+
+            # --- Per-client counters ---
+            if self._client_requests:
+                lines.append("# HELP lmx_client_requests_total Requests per client.")
+                lines.append("# TYPE lmx_client_requests_total counter")
+                for cid, count in sorted(self._client_requests.items()):
+                    lines.append(f'lmx_client_requests_total{{client="{cid}"}} {count}')
+
+                lines.append("# HELP lmx_client_tokens_total Completion tokens per client.")
+                lines.append("# TYPE lmx_client_tokens_total counter")
+                for cid, count in sorted(self._client_tokens.items()):
+                    lines.append(f'lmx_client_tokens_total{{client="{cid}"}} {count}')
+
+                lines.append("# HELP lmx_client_errors_total Errors per client.")
+                lines.append("# TYPE lmx_client_errors_total counter")
+                for cid, count in sorted(self._client_errors.items()):
+                    lines.append(f'lmx_client_errors_total{{client="{cid}"}} {count}')
 
             # --- Latency histogram ---
             lines.append("# HELP lmx_request_duration_seconds Request latency histogram.")
@@ -205,4 +237,12 @@ class MetricsCollector:
                     for model_id in sorted(self._model_requests.keys())
                 },
                 "uptime_seconds": round(time.time() - self._started_at, 1),
+                "per_client": {
+                    cid: {
+                        "requests": self._client_requests.get(cid, 0),
+                        "errors": self._client_errors.get(cid, 0),
+                        "completion_tokens": self._client_tokens.get(cid, 0),
+                    }
+                    for cid in sorted(self._client_requests.keys())
+                },
             }

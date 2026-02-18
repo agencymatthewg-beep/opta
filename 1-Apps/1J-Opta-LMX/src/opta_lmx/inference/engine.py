@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import gc
 import logging
 import secrets
@@ -143,6 +144,10 @@ class InferenceEngine:
         inference_timeout_sec: int = 300,
         warmup_on_load: bool = True,
         stream_interval: int = 1,
+        scheduler_max_num_seqs: int = 256,
+        scheduler_prefill_batch_size: int = 8,
+        scheduler_completion_batch_size: int = 32,
+        scheduler_cache_memory_percent: float = 0.2,
     ) -> None:
         self._models: dict[str, LoadedModel] = {}
         self._memory = memory_monitor
@@ -164,6 +169,10 @@ class InferenceEngine:
         self._inference_timeout = inference_timeout_sec
         self._warmup_on_load = warmup_on_load
         self._stream_interval = stream_interval
+        self._scheduler_max_num_seqs = scheduler_max_num_seqs
+        self._scheduler_prefill_batch_size = scheduler_prefill_batch_size
+        self._scheduler_completion_batch_size = scheduler_completion_batch_size
+        self._scheduler_cache_memory_percent = scheduler_cache_memory_percent
         self._in_flight = 0  # Active inference requests (for graceful shutdown)
         self._predictor = UsagePredictor()
 
@@ -172,6 +181,7 @@ class InferenceEngine:
         model_id: str,
         use_batching: bool | None = None,
         performance_overrides: dict[str, Any] | None = None,
+        keep_alive_sec: int | None = None,
     ) -> ModelInfo:
         """Load an MLX model into memory via vllm-mlx.
 
@@ -243,7 +253,10 @@ class InferenceEngine:
                     )
 
         try:
-            return await self._do_load(model_id, use_batching, performance_overrides)
+            return await self._do_load(
+                model_id, use_batching, performance_overrides,
+                keep_alive_sec=keep_alive_sec,
+            )
         finally:
             self._loading_models.discard(model_id)
 
@@ -252,6 +265,7 @@ class InferenceEngine:
         model_id: str,
         use_batching: bool | None = None,
         performance_overrides: dict[str, Any] | None = None,
+        keep_alive_sec: int | None = None,
     ) -> ModelInfo:
         """Execute the actual model load (called after lock/guard checks)."""
         fmt = _detect_format(model_id)
@@ -316,6 +330,7 @@ class InferenceEngine:
             backend=backend_instance,
             context_length=ctx_len,
             performance_overrides=performance_overrides or {},
+            keep_alive_sec=keep_alive_sec,
         )
         async with self._load_lock:
             self._models[model_id] = loaded
@@ -413,10 +428,30 @@ class InferenceEngine:
 
         if use_batching:
             from vllm_mlx.engine.batched import BatchedEngine
+            from vllm_mlx.scheduler import SchedulerConfig
+
+            # E3: Build SchedulerConfig from global settings + per-model overrides
+            sched_overrides = perf.get("scheduler", {})
+            scheduler_config = SchedulerConfig(
+                max_num_seqs=sched_overrides.get(
+                    "max_num_seqs", self._scheduler_max_num_seqs,
+                ),
+                prefill_batch_size=sched_overrides.get(
+                    "prefill_batch_size", self._scheduler_prefill_batch_size,
+                ),
+                completion_batch_size=sched_overrides.get(
+                    "completion_batch_size", self._scheduler_completion_batch_size,
+                ),
+                cache_memory_percent=sched_overrides.get(
+                    "cache_memory_percent", self._scheduler_cache_memory_percent,
+                ),
+                enable_prefix_cache=prefix_cache if isinstance(prefix_cache, bool) else self._prefix_cache_enabled,
+            )
 
             engine = BatchedEngine(
                 model_name=model_id,
                 stream_interval=self._stream_interval,
+                scheduler_config=scheduler_config,
                 **spec_kwargs,
             )
             await engine.start()
@@ -516,6 +551,12 @@ class InferenceEngine:
             "speculative_num_tokens": self._speculative_num_tokens,
             "warmup_on_load": self._warmup_on_load,
             "stream_interval": self._stream_interval,
+            "scheduler": {
+                "max_num_seqs": self._scheduler_max_num_seqs,
+                "prefill_batch_size": self._scheduler_prefill_batch_size,
+                "completion_batch_size": self._scheduler_completion_batch_size,
+                "cache_memory_percent": self._scheduler_cache_memory_percent,
+            },
         }
 
     def adapt_concurrency(self) -> int:
@@ -605,6 +646,7 @@ class InferenceEngine:
         response_format: dict[str, Any] | None = None,
         frequency_penalty: float = 0.0,
         presence_penalty: float = 0.0,
+        priority: str = "normal",
     ) -> ChatCompletionResponse:
         """Non-streaming chat completion.
 
@@ -635,10 +677,13 @@ class InferenceEngine:
 
         msg_dicts = _resolve_messages(messages)
 
-        async with self._inference_semaphore:
+        # F1: High-priority requests bypass semaphore queue (CLI preempts bots)
+        use_semaphore = priority != "high"
+
+        async def _run_inference() -> tuple[str, int, int]:
             self._in_flight += 1
             try:
-                content, prompt_tokens, completion_tokens = await asyncio.wait_for(
+                return await asyncio.wait_for(
                     self._do_generate(
                         loaded, msg_dicts, messages, temperature,
                         max_tokens, top_p, stop, tools, response_format,
@@ -658,6 +703,12 @@ class InferenceEngine:
                 raise RuntimeError(f"Inference failed: {e}") from e
             finally:
                 self._in_flight -= 1
+
+        if use_semaphore:
+            async with self._inference_semaphore:
+                content, prompt_tokens, completion_tokens = await _run_inference()
+        else:
+            content, prompt_tokens, completion_tokens = await _run_inference()
 
         # Parse MiniMax XML tool calls if tools were requested
         response_message: ResponseMessage
@@ -781,6 +832,7 @@ class InferenceEngine:
         response_format: dict[str, Any] | None = None,
         frequency_penalty: float = 0.0,
         presence_penalty: float = 0.0,
+        priority: str = "normal",
     ) -> AsyncIterator[str]:
         """Streaming chat completion — yields token strings.
 
@@ -811,7 +863,10 @@ class InferenceEngine:
 
         msg_dicts = _resolve_messages(messages)
 
-        async with self._inference_semaphore:
+        # F1: High-priority requests bypass semaphore queue
+        sem = contextlib.nullcontext() if priority == "high" else self._inference_semaphore
+
+        async with sem:
             self._in_flight += 1
             try:
                 async with asyncio.timeout(self._inference_timeout):
@@ -908,10 +963,13 @@ class InferenceEngine:
         return model_id
 
     async def evict_idle_models(self, ttl_seconds: float) -> list[str]:
-        """Unload models idle longer than ttl_seconds.
+        """Unload models idle longer than their TTL.
+
+        Uses per-model keep_alive_sec when set, otherwise falls back
+        to the global ttl_seconds parameter.
 
         Args:
-            ttl_seconds: Maximum idle time before eviction.
+            ttl_seconds: Default maximum idle time before eviction.
 
         Returns:
             List of evicted model IDs.
@@ -921,12 +979,15 @@ class InferenceEngine:
 
         # Snapshot model IDs to avoid mutating dict during iteration
         for model_id, loaded in list(self._models.items()):
+            # F3: Per-model TTL overrides global TTL
+            effective_ttl = loaded.keep_alive_sec if loaded.keep_alive_sec is not None else ttl_seconds
             idle_time = now - loaded.last_used_at
-            if idle_time > ttl_seconds:
+            if idle_time > effective_ttl:
                 logger.info("ttl_eviction", extra={
                     "model_id": model_id,
                     "idle_seconds": round(idle_time, 1),
-                    "ttl_seconds": ttl_seconds,
+                    "ttl_seconds": effective_ttl,
+                    "per_model_override": loaded.keep_alive_sec is not None,
                 })
                 try:
                     await self.unload_model(model_id)

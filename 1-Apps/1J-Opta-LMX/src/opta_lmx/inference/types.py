@@ -53,3 +53,4 @@ class LoadedModel:
     backend: Any = None  # InferenceBackend instance (for GGUF); None = use engine directly
     context_length: int | None = None  # Max context length from model config
     performance_overrides: dict[str, Any] = field(default_factory=dict)  # Active perf settings
+    keep_alive_sec: int | None = None  # Per-model TTL override (None = use global)

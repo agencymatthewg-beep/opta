@@ -7,7 +7,7 @@ import secrets
 import time
 from collections.abc import AsyncIterator
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Header
 from fastapi.responses import JSONResponse, StreamingResponse
 from starlette.responses import Response
 
@@ -34,6 +34,7 @@ async def _counting_stream(
     start_time: float,
     prompt_tokens: int,
     metrics: MetricsCollector,
+    client_id: str | None = None,
 ) -> AsyncIterator[str]:
     """Wrap a token stream to count tokens and record metrics when complete."""
     completion_tokens = 0
@@ -53,6 +54,7 @@ async def _counting_stream(
             completion_tokens=completion_tokens,
             stream=True,
             error=error_occurred,
+            client_id=client_id,
         ))
 
 router = APIRouter()
@@ -69,6 +71,8 @@ async def chat_completions(
     task_router: Router,
     metrics: Metrics,
     preset_mgr: Presets,
+    x_client_id: str | None = Header(None),
+    x_priority: str | None = Header(None),
 ) -> Response:
     """OpenAI-compatible chat completion.
 
@@ -90,6 +94,7 @@ async def chat_completions(
     if not engine.is_model_loaded(resolved_model):
         return model_not_found(body.model)
     start_time = time.monotonic()
+    priority = x_priority or "normal"
 
     if body.stream:
         request_id = f"chatcmpl-{secrets.token_urlsafe(16)}"
@@ -105,6 +110,7 @@ async def chat_completions(
                 response_format=body.response_format,
                 frequency_penalty=body.frequency_penalty,
                 presence_penalty=body.presence_penalty,
+                priority=priority,
             )
             # Approximate prompt tokens for metrics (4 chars ≈ 1 token)
             est_prompt_tokens = max(1, _estimate_prompt_tokens(body.messages))
@@ -112,6 +118,7 @@ async def chat_completions(
             # Wrap stream to count tokens and record final metrics
             counted_stream = _counting_stream(
                 token_stream, resolved_model, start_time, est_prompt_tokens, metrics,
+                client_id=x_client_id,
             )
 
             if body.tools:
@@ -134,6 +141,7 @@ async def chat_completions(
                 latency_sec=time.monotonic() - start_time,
                 prompt_tokens=0, completion_tokens=0,
                 stream=True, error=True,
+                client_id=x_client_id,
             ))
             return internal_error(str(e))
     else:
@@ -149,6 +157,7 @@ async def chat_completions(
                 response_format=body.response_format,
                 frequency_penalty=body.frequency_penalty,
                 presence_penalty=body.presence_penalty,
+                priority=priority,
             )
             metrics.record(RequestMetric(
                 model_id=resolved_model,
@@ -156,6 +165,7 @@ async def chat_completions(
                 prompt_tokens=response.usage.prompt_tokens,
                 completion_tokens=response.usage.completion_tokens,
                 stream=False,
+                client_id=x_client_id,
             ))
             return JSONResponse(content=response.model_dump())
         except Exception as e:
@@ -165,6 +175,7 @@ async def chat_completions(
                 latency_sec=time.monotonic() - start_time,
                 prompt_tokens=0, completion_tokens=0,
                 stream=False, error=True,
+                client_id=x_client_id,
             ))
             return internal_error(str(e))
 

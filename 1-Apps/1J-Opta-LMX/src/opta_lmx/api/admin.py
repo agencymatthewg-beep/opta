@@ -275,7 +275,11 @@ async def load_model(
         perf = {**perf, **body.performance_overrides}
     start = time.monotonic()
     try:
-        info = await engine.load_model(body.model_id, performance_overrides=perf or None)
+        info = await engine.load_model(
+            body.model_id,
+            performance_overrides=perf or None,
+            keep_alive_sec=body.keep_alive_sec,
+        )
     except MemoryError as e:
         return insufficient_memory(str(e))
     except RuntimeError as e:
