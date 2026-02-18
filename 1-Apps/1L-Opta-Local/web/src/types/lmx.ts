@@ -34,11 +34,17 @@ export interface LoadedModel {
 
 export interface ChatMessage {
   id: string;
-  role: 'user' | 'assistant' | 'system';
+  role: 'user' | 'assistant' | 'system' | 'tool';
   content: string;
   model?: string;
   tokens_used?: number;
   created_at: string;
+  /** Tool calls made by an assistant message (from CLI sessions). */
+  tool_calls?: ToolCall[];
+  /** Tool call ID this message is a response to (role: 'tool'). */
+  tool_call_id?: string;
+  /** Tool function name (role: 'tool'). */
+  tool_name?: string;
 }
 
 export interface ChatCompletionRequest {
@@ -140,6 +146,8 @@ export interface SessionMessage {
   content: string | ContentPart[] | null;
   tool_calls?: ToolCall[];
   tool_call_id?: string;
+  /** Function name for tool role messages. */
+  name?: string;
 }
 
 /** Complete session with all messages, returned by GET /admin/sessions/:id. */
