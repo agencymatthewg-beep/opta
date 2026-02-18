@@ -14,7 +14,7 @@ None
 - Integer phases (1, 2, 3): Planned milestone work
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
-- [ ] **Phase 1: Web Project Setup** - Scaffold Next.js 16 with Opta design system and LMX client
+- [x] **Phase 1: Web Project Setup** - Scaffold Next.js 16 with Opta design system and LMX client
 - [ ] **Phase 2: Web Foundation** - Streaming chat with manual server connection
 - [ ] **Phase 3: Web Dashboard** - Real-time server monitoring via SSE
 - [ ] **Phase 4: Web Anywhere** - Cloudflare Tunnel WAN access
@@ -33,7 +33,7 @@ None
 
 Plans:
 - [x] 01-01: Next.js 16 scaffold with Tailwind + @opta/ui + design tokens
-- [ ] 01-02: LMX client library and connection settings
+- [x] 01-02: LMX client library and connection settings
 
 ### Phase 2: Web Foundation
 **Goal**: Working streaming chat UI with model selection — the core "chat with your local AI" experience
@@ -117,7 +117,7 @@ Phases 1 → 2 → 3 (parallel with 4, 5) → 6 → 7 → 8
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Web Project Setup | 1/2 | In progress | - |
+| 1. Web Project Setup | 2/2 | Complete | 2026-02-18 |
 | 2. Web Foundation | 0/2 | Not started | - |
 | 3. Web Dashboard | 0/3 | Not started | - |
 | 4. Web Anywhere | 0/2 | Not started | - |
