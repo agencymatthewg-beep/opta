@@ -16,6 +16,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 logger = logging.getLogger(__name__)
 
+RUNTIME_STATE_PATH = Path.home() / ".opta-lmx" / "runtime-state.json"
+
 DEFAULT_CONFIG_PATHS = [
     Path.home() / ".opta-lmx" / "config.yaml",
     Path(__file__).parent.parent.parent / "config" / "default-config.yaml",
