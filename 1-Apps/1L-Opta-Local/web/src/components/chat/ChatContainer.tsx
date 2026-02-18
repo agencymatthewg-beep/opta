@@ -9,14 +9,18 @@ import { useScrollAnchor } from '@/hooks/useScrollAnchor';
 import { useSessionPersist } from '@/hooks/useSessionPersist';
 import { createClient, getConnectionSettings } from '@/lib/connection';
 import type { LMXClient } from '@/lib/lmx-client';
+import type { ChatMessage as ChatMessageType } from '@/types/lmx';
 import { ChatMessage } from './ChatMessage';
 import { ChatInput } from './ChatInput';
+import { ToolCallBlock } from './ToolCallBlock';
 
 interface ChatContainerProps {
   /** Currently selected model ID */
   model: string;
   /** Optional session ID to restore. If not provided, generates a new one on first message. */
   sessionId?: string;
+  /** Pre-populated messages from a CLI session resume. Skips welcome state when provided. */
+  initialMessages?: ChatMessageType[];
 }
 
 const PROMPT_SUGGESTIONS = [
@@ -34,13 +38,14 @@ const PROMPT_SUGGESTIONS = [
  * chat flow via useChatStream, auto-saves sessions to IndexedDB via
  * useSessionPersist, and handles auto-scroll via useScrollAnchor.
  */
-export function ChatContainer({ model, sessionId: initialSessionId }: ChatContainerProps) {
+export function ChatContainer({ model, sessionId: initialSessionId, initialMessages }: ChatContainerProps) {
   const [client, setClient] = useState<LMXClient | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string>(
     initialSessionId ?? '',
   );
   const sessionInitialized = useRef(false);
+  const initialMessagesApplied = useRef(false);
 
   const { messages, setMessages, isStreaming, sendMessage, stop } = useChatStream({
     onError: (err) => setError(err.message),
@@ -85,9 +90,16 @@ export function ChatContainer({ model, sessionId: initialSessionId }: ChatContai
     };
   }, []);
 
-  // Restore session if ID was provided
+  // Hydrate initial messages from CLI session resume (takes priority over IndexedDB restore)
   useEffect(() => {
-    if (!initialSessionId || sessionInitialized.current) return;
+    if (!initialMessages || initialMessages.length === 0 || initialMessagesApplied.current) return;
+    initialMessagesApplied.current = true;
+    setMessages(initialMessages);
+  }, [initialMessages, setMessages]);
+
+  // Restore session from IndexedDB if ID was provided (skip if initialMessages were provided)
+  useEffect(() => {
+    if (initialMessages?.length || !initialSessionId || sessionInitialized.current) return;
     sessionInitialized.current = true;
 
     void (async () => {
@@ -96,7 +108,7 @@ export function ChatContainer({ model, sessionId: initialSessionId }: ChatContai
         setMessages(session.messages);
       }
     })();
-  }, [initialSessionId, restore, setMessages]);
+  }, [initialSessionId, initialMessages, restore, setMessages]);
 
   // Auto-scroll when messages change during streaming
   useEffect(() => {
@@ -139,18 +151,63 @@ export function ChatContainer({ model, sessionId: initialSessionId }: ChatContai
       >
         {hasMessages ? (
           <div className="px-4 py-6 space-y-6 max-w-4xl mx-auto">
-            {messages.map((msg, index) => (
-              <ChatMessage
-                key={msg.id}
-                content={msg.content}
-                role={msg.role as 'user' | 'assistant'}
-                isStreaming={
-                  isStreaming &&
-                  index === messages.length - 1 &&
-                  msg.role === 'assistant'
+            {messages.map((msg, index) => {
+              // Skip tool-role messages — their content is rendered inline
+              // with the preceding assistant message's ToolCallBlock
+              if (msg.role === 'tool') {
+                return null;
+              }
+
+              // Assistant messages with tool_calls: render tool call blocks then content
+              if (msg.role === 'assistant' && msg.tool_calls?.length) {
+                // Collect tool results from subsequent tool-role messages
+                const toolResults = new Map<string, string>();
+                for (let j = index + 1; j < messages.length; j++) {
+                  const next = messages[j]!;
+                  if (next.role === 'tool' && next.tool_call_id) {
+                    toolResults.set(next.tool_call_id, next.content);
+                  } else if (next.role !== 'tool') {
+                    break;
+                  }
                 }
-              />
-            ))}
+
+                return (
+                  <div key={msg.id} className="space-y-3">
+                    {msg.tool_calls.map((tc) => (
+                      <ToolCallBlock
+                        key={tc.id}
+                        toolCalls={[tc]}
+                        toolResult={toolResults.get(tc.id)}
+                      />
+                    ))}
+                    {msg.content && (
+                      <ChatMessage
+                        content={msg.content}
+                        role="assistant"
+                        isStreaming={
+                          isStreaming &&
+                          index === messages.length - 1
+                        }
+                      />
+                    )}
+                  </div>
+                );
+              }
+
+              // Regular user/assistant messages
+              return (
+                <ChatMessage
+                  key={msg.id}
+                  content={msg.content}
+                  role={msg.role as 'user' | 'assistant'}
+                  isStreaming={
+                    isStreaming &&
+                    index === messages.length - 1 &&
+                    msg.role === 'assistant'
+                  }
+                />
+              );
+            })}
           </div>
         ) : (
           /* Empty state — welcome + prompt suggestions */
