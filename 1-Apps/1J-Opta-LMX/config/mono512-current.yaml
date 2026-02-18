@@ -58,7 +58,7 @@ routing:
       - mlx-community/MiniMax-M2.5-5bit
 
 security:
-  admin_key: null           # Set for production admin auth
+  admin_key: "lmx-5NaMnOMeT_9ceajfV3RxmNpnL2UomuMvolw1IhX5LS8"  # Phase 10: production admin auth
 
 # Available models on disk (for reference):
 # ~/.cache/huggingface/hub/
