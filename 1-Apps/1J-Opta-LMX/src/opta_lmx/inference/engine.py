@@ -279,6 +279,7 @@ class InferenceEngine:
             backend_type=fmt,
             backend=backend_instance,
             context_length=ctx_len,
+            performance_overrides=performance_overrides or {},
         )
         async with self._load_lock:
             self._models[model_id] = loaded

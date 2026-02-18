@@ -424,3 +424,106 @@ class TestBenchmark:
         assert data["results"][0]["tokens_generated"] == 3
         assert data["avg_tokens_per_second"] > 0
         assert data["avg_time_to_first_token_ms"] >= 0
+
+
+# ─── Performance Override & Visibility ───────────────────────────────────
+
+
+class TestPerformanceOverrides:
+    """Tests for performance override wiring in load, models list, and perf endpoint."""
+
+    @pytest.mark.asyncio
+    async def test_load_stores_performance_overrides(self, client: AsyncClient) -> None:
+        """Loading with performance_overrides stores them in the loaded model."""
+        response = await client.post(
+            "/admin/models/load",
+            json={
+                "model_id": "test/model",
+                "performance_overrides": {"kv_bits": 4, "prefix_cache": False},
+            },
+        )
+        assert response.status_code == 200
+
+        # Verify via admin models list
+        models_resp = await client.get("/admin/models")
+        data = models_resp.json()
+        assert data["count"] == 1
+        model = data["loaded"][0]
+        assert model["performance"]["kv_bits"] == 4
+        assert model["performance"]["prefix_cache"] is False
+
+    @pytest.mark.asyncio
+    async def test_load_without_overrides_has_empty_performance(self, client: AsyncClient) -> None:
+        """Loading without overrides gives empty performance dict."""
+        await client.post("/admin/models/load", json={"model_id": "test/model"})
+        models_resp = await client.get("/admin/models")
+        model = models_resp.json()["loaded"][0]
+        assert model["performance"] == {}
+
+    @pytest.mark.asyncio
+    async def test_performance_endpoint_returns_model_details(self, client: AsyncClient) -> None:
+        """GET /admin/models/{id}/performance returns full model details."""
+        await client.post(
+            "/admin/models/load",
+            json={
+                "model_id": "test/model",
+                "performance_overrides": {"prefix_cache": True},
+            },
+        )
+        response = await client.get("/admin/models/test/model/performance")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["model_id"] == "test/model"
+        assert data["backend_type"] == "mlx"
+        assert data["performance"] == {"prefix_cache": True}
+        assert "global_defaults" in data
+        assert "kv_bits" in data["global_defaults"]
+        assert "prefix_cache_enabled" in data["global_defaults"]
+
+    @pytest.mark.asyncio
+    async def test_performance_endpoint_not_loaded_returns_404(self, client: AsyncClient) -> None:
+        """GET /admin/models/{id}/performance returns 404 when model not loaded."""
+        response = await client.get("/admin/models/nonexistent/model/performance")
+        assert response.status_code == 404
+
+    @pytest.mark.asyncio
+    async def test_performance_endpoint_shows_global_defaults(self, client: AsyncClient) -> None:
+        """Performance endpoint includes engine global defaults for comparison."""
+        await client.post("/admin/models/load", json={"model_id": "test/model"})
+        response = await client.get("/admin/models/test/model/performance")
+        data = response.json()
+        defaults = data["global_defaults"]
+        assert "max_concurrent_requests" in defaults
+        assert "speculative_model" in defaults
+        assert "warmup_on_load" in defaults
+
+    @pytest.mark.asyncio
+    async def test_load_overrides_merge_with_preset(self, client: AsyncClient) -> None:
+        """Manual overrides merge on top of preset defaults."""
+        app = client._transport.app  # type: ignore[union-attr]
+        preset_mgr = app.state.preset_manager
+
+        # Simulate a preset with performance section
+        from opta_lmx.presets.manager import Preset
+
+        preset_mgr._presets["test-preset"] = Preset(
+            name="test-preset",
+            model="test/model",
+            performance={"prefix_cache": True, "kv_bits": 8},
+        )
+
+        # Load with manual override that overrides kv_bits but keeps prefix_cache
+        response = await client.post(
+            "/admin/models/load",
+            json={
+                "model_id": "test/model",
+                "performance_overrides": {"kv_bits": 4},
+            },
+        )
+        assert response.status_code == 200
+
+        # Check merged result
+        perf_resp = await client.get("/admin/models/test/model/performance")
+        perf = perf_resp.json()["performance"]
+        assert perf["kv_bits"] == 4  # manual override wins
+        assert perf["prefix_cache"] is True  # from preset

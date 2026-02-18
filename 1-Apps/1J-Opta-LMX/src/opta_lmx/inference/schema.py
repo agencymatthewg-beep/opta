@@ -202,6 +202,13 @@ class AdminLoadRequest(BaseModel):
             " when model is not on disk."
         ),
     )
+    performance_overrides: dict[str, Any] | None = Field(
+        None,
+        description=(
+            "Manual performance overrides (kv_bits, kv_group_size, prefix_cache, "
+            "speculative). Merged on top of preset defaults when loading."
+        ),
+    )
 
 
 class AdminLoadResponse(BaseModel):
@@ -291,6 +298,7 @@ class AdminModelDetail(BaseModel):
     request_count: int = 0
     last_used_at: float = 0.0
     context_length: int | None = None
+    performance: dict[str, Any] = Field(default_factory=dict)
 
 
 class AdminModelsResponse(BaseModel):
@@ -298,6 +306,21 @@ class AdminModelsResponse(BaseModel):
 
     loaded: list[AdminModelDetail]
     count: int
+
+
+class AdminModelPerformanceResponse(BaseModel):
+    """Active performance configuration for a single loaded model."""
+
+    model_id: str
+    backend_type: str
+    loaded_at: float
+    request_count: int
+    last_used_at: float
+    memory_gb: float
+    context_length: int | None = None
+    use_batching: bool = True
+    performance: dict[str, Any] = Field(default_factory=dict)
+    global_defaults: dict[str, Any] = Field(default_factory=dict)
 
 
 # ─── Admin Download/Delete Models ─────────────────────────────────────────────

@@ -49,6 +49,7 @@ from opta_lmx.inference.schema import (
     AdminLoadResponse,
     AdminMemoryResponse,
     AdminModelDetail,
+    AdminModelPerformanceResponse,
     AdminModelsResponse,
     AdminStatusResponse,
     AdminUnloadRequest,
@@ -141,10 +142,46 @@ async def list_admin_models(
                 request_count=m.request_count,
                 last_used_at=m.last_used_at,
                 context_length=m.context_length,
+                performance=m.performance_overrides,
             )
             for m in loaded
         ],
         count=len(loaded),
+    )
+
+
+@router.get(
+    "/admin/models/{model_id:path}/performance",
+    response_model=None,
+    responses={403: {"model": ErrorResponse}, 404: {"model": ErrorResponse}},
+)
+async def get_model_performance(
+    model_id: str, _auth: AdminAuth, engine: Engine,
+) -> AdminModelPerformanceResponse | JSONResponse:
+    """Get active performance configuration for a loaded model."""
+    if not engine.is_model_loaded(model_id):
+        return model_not_found(model_id)
+
+    loaded = engine.get_model(model_id)
+    return AdminModelPerformanceResponse(
+        model_id=loaded.model_id,
+        backend_type=loaded.backend_type,
+        loaded_at=loaded.loaded_at,
+        request_count=loaded.request_count,
+        last_used_at=loaded.last_used_at,
+        memory_gb=loaded.estimated_memory_gb,
+        context_length=loaded.context_length,
+        use_batching=loaded.use_batching,
+        performance=loaded.performance_overrides,
+        global_defaults={
+            "kv_bits": engine._kv_bits,
+            "kv_group_size": engine._kv_group_size,
+            "prefix_cache_enabled": engine._prefix_cache_enabled,
+            "speculative_model": engine._speculative_model,
+            "speculative_num_tokens": engine._speculative_num_tokens,
+            "max_concurrent_requests": engine.max_concurrent_requests,
+            "warmup_on_load": engine._warmup_on_load,
+        },
     )
 
 
@@ -213,10 +250,12 @@ async def load_model(
             )
 
         # auto_download=True: skip confirmation, start download + auto-load
-        perf = preset_mgr.find_performance_for_model(body.model_id)
+        perf = preset_mgr.find_performance_for_model(body.model_id) or {}
+        if body.performance_overrides:
+            perf = {**perf, **body.performance_overrides}
         task = await manager.start_download(repo_id=body.model_id)
         bg = asyncio.create_task(
-            _load_after_download(task.download_id, body.model_id, manager, engine, perf),
+            _load_after_download(task.download_id, body.model_id, manager, engine, perf or None),
         )
         _background_tasks.add(bg)
         bg.add_done_callback(_background_tasks.discard)
@@ -235,10 +274,12 @@ async def load_model(
         )
 
     # Model is on disk — load immediately (with preset performance if available)
-    perf = preset_mgr.find_performance_for_model(body.model_id)
+    perf = preset_mgr.find_performance_for_model(body.model_id) or {}
+    if body.performance_overrides:
+        perf = {**perf, **body.performance_overrides}
     start = time.monotonic()
     try:
-        info = await engine.load_model(body.model_id, performance_overrides=perf)
+        info = await engine.load_model(body.model_id, performance_overrides=perf or None)
     except MemoryError as e:
         return insufficient_memory(str(e))
     except RuntimeError as e:
@@ -265,7 +306,7 @@ async def load_model(
 )
 async def confirm_and_load(
     body: ConfirmLoadRequest, _auth: AdminAuth, engine: Engine, manager: Manager,
-    request: Request,
+    preset_mgr: Presets, request: Request,
 ) -> JSONResponse:
     """Confirm a pending download and start download + auto-load.
 
@@ -295,9 +336,10 @@ async def confirm_and_load(
 
     model_id = entry["model_id"]
 
+    perf = preset_mgr.find_performance_for_model(model_id)
     task = await manager.start_download(repo_id=model_id)
     bg = asyncio.create_task(
-        _load_after_download(task.download_id, model_id, manager, engine),
+        _load_after_download(task.download_id, model_id, manager, engine, perf),
     )
     _background_tasks.add(bg)
     bg.add_done_callback(_background_tasks.discard)

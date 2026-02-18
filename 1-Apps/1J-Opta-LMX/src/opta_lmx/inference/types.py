@@ -52,3 +52,4 @@ class LoadedModel:
     backend_type: str = "mlx"  # "mlx" or "gguf"
     backend: Any = None  # InferenceBackend instance (for GGUF); None = use engine directly
     context_length: int | None = None  # Max context length from model config
+    performance_overrides: dict[str, Any] = field(default_factory=dict)  # Active perf settings
