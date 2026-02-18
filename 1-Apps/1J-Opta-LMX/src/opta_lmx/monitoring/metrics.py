@@ -99,6 +99,7 @@ class MetricsCollector:
         memory_total_gb: float = 0.0,
         in_flight_requests: int = 0,
         max_concurrent_requests: int = 4,
+        queued_requests: int = 0,
     ) -> str:
         """Render metrics in Prometheus text exposition format.
 
@@ -215,6 +216,10 @@ class MetricsCollector:
             lines.append("# HELP lmx_concurrent_limit Max concurrent inference requests allowed.")
             lines.append("# TYPE lmx_concurrent_limit gauge")
             lines.append(f"lmx_concurrent_limit {max_concurrent_requests}")
+
+            lines.append("# HELP lmx_queued_requests Requests waiting for inference semaphore.")
+            lines.append("# TYPE lmx_queued_requests gauge")
+            lines.append(f"lmx_queued_requests {queued_requests}")
 
             lines.append("")  # trailing newline
             return "\n".join(lines)

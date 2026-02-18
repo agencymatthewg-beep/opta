@@ -545,6 +545,8 @@ async def prometheus_metrics(
     Includes live gauges for loaded model count, memory, and concurrency.
     """
     config = request.app.state.config
+    # Approximate queued requests: in-flight minus concurrency limit (floor at 0)
+    queued = max(0, engine.in_flight_count - config.models.max_concurrent_requests)
     return PlainTextResponse(
         content=metrics.prometheus(
             loaded_model_count=len(engine.get_loaded_models()),
@@ -552,6 +554,7 @@ async def prometheus_metrics(
             memory_total_gb=memory.total_memory_gb(),
             in_flight_requests=engine.in_flight_count,
             max_concurrent_requests=config.models.max_concurrent_requests,
+            queued_requests=queued,
         ),
         media_type="text/plain; version=0.0.4; charset=utf-8",
     )
