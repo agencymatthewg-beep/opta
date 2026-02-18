@@ -7,6 +7,8 @@
 
     <key>ProgramArguments</key>
     <array>
+        <string>/usr/bin/caffeinate</string>
+        <string>-i</string>
         <string>/Users/Shared/Opta-LMX/venv/bin/python</string>
         <string>-m</string>
         <string>opta_lmx</string>
@@ -51,5 +53,11 @@
 
     <key>ProcessType</key>
     <string>Standard</string>
+
+    <key>ExitTimeOut</key>
+    <integer>60</integer>
+
+    <key>AbandonProcessGroup</key>
+    <false/>
 </dict>
 </plist>
