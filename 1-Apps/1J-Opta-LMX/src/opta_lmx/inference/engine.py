@@ -53,8 +53,10 @@ def _resolve_context_length(model_id: str) -> int | None:
         for key in ("max_position_embeddings", "max_sequence_length", "n_positions", "seq_length"):
             if key in config and isinstance(config[key], int):
                 return config[key]
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug("context_length_resolve_failed", extra={
+            "model_id": model_id, "error": str(e),
+        })
     return None
 
 
@@ -133,6 +135,7 @@ class InferenceEngine:
         self._loading_models: set[str] = set()  # Models currently being loaded
         self._max_concurrent = max_concurrent_requests
         self._inference_semaphore = asyncio.Semaphore(max_concurrent_requests)
+        self._current_concurrency_limit = max_concurrent_requests
         self._inference_timeout = inference_timeout_sec
         self._warmup_on_load = warmup_on_load
         self._in_flight = 0  # Active inference requests (for graceful shutdown)
@@ -393,13 +396,18 @@ class InferenceEngine:
 
         memory_before = self._memory.used_memory_gb()
 
-        # Close backend if present (GGUF)
-        if loaded.backend is not None:
-            loaded.backend.close()
-
-        if loaded.engine is not None:
-            del loaded.engine
-        gc.collect()
+        # Close backend if present (GGUF) — always clean up engine even if close() fails
+        try:
+            if loaded.backend is not None:
+                loaded.backend.close()
+        except Exception as e:
+            logger.warning("backend_close_failed", extra={
+                "model_id": model_id, "error": str(e),
+            })
+        finally:
+            if loaded.engine is not None:
+                del loaded.engine
+            gc.collect()
 
         # Try to clear MLX metal cache (only relevant for MLX models)
         if loaded.backend_type == "mlx":
@@ -407,8 +415,8 @@ class InferenceEngine:
                 import mlx.core as mx
 
                 mx.metal.clear_cache()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("metal_cache_clear_failed", extra={"error": str(e)})
 
         memory_after = self._memory.used_memory_gb()
         freed = max(0, memory_before - memory_after)
@@ -472,8 +480,12 @@ class InferenceEngine:
         else:
             target = 1
 
-        if target != self._inference_semaphore._value + self._in_flight:
-            self._inference_semaphore = asyncio.Semaphore(target)
+        if target != self._current_concurrency_limit:
+            # Only swap the semaphore when no requests are in-flight to avoid
+            # orphaning waiters on the old semaphore.
+            if self._in_flight == 0:
+                self._inference_semaphore = asyncio.Semaphore(target)
+            self._current_concurrency_limit = target
             logger.info("concurrency_adapted", extra={
                 "new_limit": target,
                 "memory_usage_pct": round(usage_pct, 1),
@@ -525,6 +537,8 @@ class InferenceEngine:
         stop: list[str] | None = None,
         tools: list[dict[str, Any]] | None = None,
         response_format: dict[str, Any] | None = None,
+        frequency_penalty: float = 0.0,
+        presence_penalty: float = 0.0,
     ) -> ChatCompletionResponse:
         """Non-streaming chat completion.
 
@@ -561,7 +575,8 @@ class InferenceEngine:
                 content, prompt_tokens, completion_tokens = await asyncio.wait_for(
                     self._do_generate(
                         loaded, msg_dicts, messages, temperature,
-                        max_tokens, top_p, stop, tools, response_format
+                        max_tokens, top_p, stop, tools, response_format,
+                        frequency_penalty, presence_penalty,
                     ),
                     timeout=self._inference_timeout,
                 )
@@ -639,6 +654,8 @@ class InferenceEngine:
         stop: list[str] | None,
         tools: list[dict[str, Any]] | None,
         response_format: dict[str, Any] | None,
+        frequency_penalty: float = 0.0,
+        presence_penalty: float = 0.0,
     ) -> tuple[str, int, int]:
         """Execute inference and return (content, prompt_tokens, completion_tokens)."""
         if loaded.backend is not None:
@@ -664,6 +681,10 @@ class InferenceEngine:
             chat_kwargs["tools"] = tools
         if response_format:
             chat_kwargs["response_format"] = response_format
+        if frequency_penalty != 0.0:
+            chat_kwargs["frequency_penalty"] = frequency_penalty
+        if presence_penalty != 0.0:
+            chat_kwargs["presence_penalty"] = presence_penalty
         result = await loaded.engine.chat(**chat_kwargs)
 
         if hasattr(result, "text"):
@@ -692,6 +713,8 @@ class InferenceEngine:
         stop: list[str] | None = None,
         tools: list[dict[str, Any]] | None = None,
         response_format: dict[str, Any] | None = None,
+        frequency_penalty: float = 0.0,
+        presence_penalty: float = 0.0,
     ) -> AsyncIterator[str]:
         """Streaming chat completion — yields token strings.
 
@@ -725,35 +748,47 @@ class InferenceEngine:
         async with self._inference_semaphore:
             self._in_flight += 1
             try:
-                if loaded.backend is not None:
-                    async for token in loaded.backend.stream(
-                        messages=msg_dicts,
-                        temperature=temperature,
-                        max_tokens=max_tokens or 2048,
-                        top_p=top_p,
-                        stop=stop,
-                        tools=tools,
-                        response_format=response_format,
-                    ):
-                        yield token
-                else:
-                    chat_kwargs: dict[str, Any] = {
-                        "messages": msg_dicts,
-                        "temperature": temperature,
-                        "max_tokens": max_tokens or 2048,
-                        "top_p": top_p,
-                    }
-                    if stop:
-                        chat_kwargs["stop"] = stop
-                    if tools:
-                        chat_kwargs["tools"] = tools
-                    if response_format:
-                        chat_kwargs["response_format"] = response_format
-                    stream = loaded.engine.stream_chat(**chat_kwargs)
-                    async for chunk in stream:
-                        delta = chunk.new_text if hasattr(chunk, "new_text") else str(chunk)
-                        if delta:
-                            yield delta
+                async with asyncio.timeout(self._inference_timeout):
+                    if loaded.backend is not None:
+                        async for token in loaded.backend.stream(
+                            messages=msg_dicts,
+                            temperature=temperature,
+                            max_tokens=max_tokens or 2048,
+                            top_p=top_p,
+                            stop=stop,
+                            tools=tools,
+                            response_format=response_format,
+                        ):
+                            yield token
+                    else:
+                        chat_kwargs: dict[str, Any] = {
+                            "messages": msg_dicts,
+                            "temperature": temperature,
+                            "max_tokens": max_tokens or 2048,
+                            "top_p": top_p,
+                        }
+                        if stop:
+                            chat_kwargs["stop"] = stop
+                        if tools:
+                            chat_kwargs["tools"] = tools
+                        if response_format:
+                            chat_kwargs["response_format"] = response_format
+                        if frequency_penalty != 0.0:
+                            chat_kwargs["frequency_penalty"] = frequency_penalty
+                        if presence_penalty != 0.0:
+                            chat_kwargs["presence_penalty"] = presence_penalty
+                        stream = loaded.engine.stream_chat(**chat_kwargs)
+                        async for chunk in stream:
+                            delta = chunk.new_text if hasattr(chunk, "new_text") else str(chunk)
+                            if delta:
+                                yield delta
+            except TimeoutError:
+                logger.error("stream_timeout", extra={
+                    "model_id": model_id, "timeout_sec": self._inference_timeout,
+                })
+                raise RuntimeError(
+                    f"Stream inference timed out after {self._inference_timeout}s"
+                ) from None
             except Exception as e:
                 logger.error("stream_failed", extra={"model_id": model_id, "error": str(e)})
                 raise RuntimeError(f"Stream inference failed: {e}") from e

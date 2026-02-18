@@ -11,7 +11,7 @@ import logging
 from pathlib import Path
 
 import yaml
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 logger = logging.getLogger(__name__)
@@ -60,6 +60,13 @@ class ModelsConfig(BaseModel):
     )
     kv_bits: int | None = Field(None, description="KV cache quantization bits (4 or 8, None=FP16)")
     kv_group_size: int = Field(64, ge=1, description="KV cache quantization group size")
+
+    @field_validator("kv_bits")
+    @classmethod
+    def _validate_kv_bits(cls, v: int | None) -> int | None:
+        if v is not None and v not in (4, 8):
+            raise ValueError(f"kv_bits must be 4 or 8 (got {v}). Use None for FP16.")
+        return v
     prefix_cache_enabled: bool = Field(True, description="Enable prefix caching for multi-turn")
     embedding_model: str | None = Field(
         None, description="Embedding model HF ID for /v1/embeddings (lazy-loaded)",

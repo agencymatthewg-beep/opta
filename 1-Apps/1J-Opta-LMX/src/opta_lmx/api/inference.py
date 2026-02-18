@@ -27,6 +27,22 @@ from opta_lmx.presets.manager import PRESET_PREFIX
 logger = logging.getLogger(__name__)
 
 
+def _estimate_prompt_tokens(messages: list) -> int:
+    """Estimate prompt token count from messages (~4 chars/token).
+
+    Handles both string and multimodal (list[ContentPart]) content.
+    """
+    total = 0
+    for m in messages:
+        if isinstance(m.content, str):
+            total += len(m.content)
+        elif isinstance(m.content, list):
+            for part in m.content:
+                if hasattr(part, "text"):
+                    total += len(part.text)
+    return max(1, total // 4)
+
+
 async def _counting_stream(
     token_stream: AsyncIterator[str],
     model_id: str,
@@ -102,10 +118,11 @@ async def chat_completions(
                 stop=[body.stop] if isinstance(body.stop, str) else body.stop,
                 tools=body.tools,
                 response_format=body.response_format,
+                frequency_penalty=body.frequency_penalty,
+                presence_penalty=body.presence_penalty,
             )
             # Approximate prompt tokens for metrics (4 chars ≈ 1 token)
-            prompt_text = " ".join(m.content or "" for m in body.messages)
-            est_prompt_tokens = max(1, len(prompt_text) // 4)
+            est_prompt_tokens = max(1, _estimate_prompt_tokens(body.messages))
 
             # Wrap stream to count tokens and record final metrics
             counted_stream = _counting_stream(
@@ -145,6 +162,8 @@ async def chat_completions(
                 stop=[body.stop] if isinstance(body.stop, str) else body.stop,
                 tools=body.tools,
                 response_format=body.response_format,
+                frequency_penalty=body.frequency_penalty,
+                presence_penalty=body.presence_penalty,
             )
             metrics.record(RequestMetric(
                 model_id=resolved_model,
