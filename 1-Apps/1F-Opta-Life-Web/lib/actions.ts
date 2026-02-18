@@ -1,6 +1,7 @@
 "use server";
 
-import { auth } from "@/auth";
+import { getUser, getSession } from "@/lib/supabase/auth";
+import { getGoogleAccessToken } from "@/lib/supabase/tokens";
 import { google, calendar_v3, gmail_v1 } from "googleapis";
 import { UnifiedEmail, AccountColor } from "@/types/accounts";
 
@@ -30,14 +31,17 @@ export type EmailResult = ActionSuccess<{ emails: gmail_v1.Schema$Thread[] }> | 
 // ============================================================================
 
 async function getAuthenticatedSession(): Promise<{ accessToken: string } | { error: string }> {
-    const session = await auth();
-    if (!session?.accessToken) {
+    const user = await getUser();
+    if (!user) {
         return { error: "Not authenticated" };
     }
-    if (session.error === "RefreshAccessTokenError") {
+
+    const accessToken = await getGoogleAccessToken(user.id);
+    if (!accessToken) {
         return { error: "Session expired. Please sign out and sign back in to reconnect your Google account." };
     }
-    return { accessToken: session.accessToken };
+
+    return { accessToken };
 }
 
 function getAuthenticatedCalendarClient(accessToken: string) {
@@ -635,8 +639,8 @@ export async function getPrimaryAccountEmails(): Promise<UnifiedEmailResult> {
     const authResult = await getAuthenticatedSession();
     if ("error" in authResult) return { error: authResult.error };
 
-    const session = await auth();
-    const primaryEmail = session?.user?.email || "Primary";
+    const user = await getUser();
+    const primaryEmail = user?.email || "Primary";
 
     const emails = await fetchEmailsForAccount(
         authResult.accessToken,
@@ -678,8 +682,8 @@ export async function getAllInboxEmails(
     const authResult = await getAuthenticatedSession();
     if ("error" in authResult) return { error: authResult.error };
 
-    const session = await auth();
-    const primaryEmail = session?.user?.email || "Primary";
+    const user = await getUser();
+    const primaryEmail = user?.email || "Primary";
 
     // Fetch from primary and all linked accounts in parallel
     const [primaryEmails, ...linkedResults] = await Promise.all([

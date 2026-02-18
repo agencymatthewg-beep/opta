@@ -2,26 +2,31 @@
 // Exchanges code for tokens and returns them to the client
 
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { createClient } from "@/lib/supabase/server";
 
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v2/userinfo";
 
 export async function GET(request: NextRequest) {
     // Ensure user is already signed in with primary account
-    const session = await auth();
-    if (!session) {
+    const supabase = await createClient();
+    const {
+        data: { user },
+        error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
         return NextResponse.redirect(new URL("/?error=not_authenticated", request.url));
     }
 
     const searchParams = request.nextUrl.searchParams;
     const code = searchParams.get("code");
     const state = searchParams.get("state");
-    const error = searchParams.get("error");
+    const oauthError = searchParams.get("error");
 
     // Handle OAuth errors
-    if (error) {
-        return NextResponse.redirect(new URL(`/?error=${encodeURIComponent(error)}`, request.url));
+    if (oauthError) {
+        return NextResponse.redirect(new URL(`/?error=${encodeURIComponent(oauthError)}`, request.url));
     }
 
     if (!code) {
@@ -75,7 +80,7 @@ export async function GET(request: NextRequest) {
         }
 
         // Check if trying to link the same account as primary
-        if (userInfo.email === session.user?.email) {
+        if (userInfo.email === user.email) {
             return NextResponse.redirect(new URL("/?error=same_account", request.url));
         }
 

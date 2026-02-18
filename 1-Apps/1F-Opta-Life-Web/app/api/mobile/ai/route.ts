@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { createClient } from "@/lib/supabase/server";
 import { processAiCommand } from "@/lib/ai-commander";
 import { getSystemBriefing } from "@/lib/ai-summary";
 import {
@@ -21,8 +21,13 @@ import {
  */
 export async function POST(request: NextRequest) {
     try {
-        const session = await auth();
-        if (!session?.accessToken) {
+        const supabase = await createClient();
+        const {
+            data: { user },
+            error,
+        } = await supabase.auth.getUser();
+
+        if (error || !user) {
             return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
         }
 
@@ -165,8 +170,13 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
     try {
-        const session = await auth();
-        if (!session?.accessToken) {
+        const supabase = await createClient();
+        const {
+            data: { user },
+            error,
+        } = await supabase.auth.getUser();
+
+        if (error || !user) {
             return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
         }
 

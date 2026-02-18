@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { createClient } from "@/lib/supabase/server";
 
 // ============================================================================
 // Mobile Authentication API
@@ -11,18 +11,15 @@ import { auth } from "@/auth";
  */
 export async function GET(request: NextRequest) {
     try {
-        const session = await auth();
+        const supabase = await createClient();
+        const {
+            data: { user },
+            error,
+        } = await supabase.auth.getUser();
 
-        if (!session?.accessToken) {
+        if (error || !user) {
             return NextResponse.json(
                 { error: "Not authenticated", authenticated: false },
-                { status: 401 }
-            );
-        }
-
-        if (session.error === "RefreshAccessTokenError") {
-            return NextResponse.json(
-                { error: "Session expired. Please sign in again.", authenticated: false },
                 { status: 401 }
             );
         }
@@ -30,9 +27,9 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({
             authenticated: true,
             user: {
-                name: session.user?.name,
-                email: session.user?.email,
-                image: session.user?.image,
+                name: user.user_metadata?.name || user.email?.split("@")[0],
+                email: user.email,
+                image: user.user_metadata?.avatar_url || null,
             },
         });
     } catch (error) {
@@ -55,9 +52,13 @@ export async function POST(request: NextRequest) {
         const { action } = body;
 
         if (action === "validate") {
-            const session = await auth();
+            const supabase = await createClient();
+            const {
+                data: { session },
+                error,
+            } = await supabase.auth.getSession();
 
-            if (!session?.accessToken) {
+            if (error || !session) {
                 return NextResponse.json(
                     { valid: false, error: "No active session" },
                     { status: 401 }
@@ -66,7 +67,7 @@ export async function POST(request: NextRequest) {
 
             return NextResponse.json({
                 valid: true,
-                expiresAt: null, // Session managed by NextAuth
+                expiresAt: session.expires_at || null,
             });
         }
 

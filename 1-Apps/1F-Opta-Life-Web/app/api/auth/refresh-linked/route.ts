@@ -2,14 +2,19 @@
 // Keeps client secret secure on the server
 
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { createClient } from "@/lib/supabase/server";
 
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 
 export async function POST(request: NextRequest) {
     // Ensure user is authenticated
-    const session = await auth();
-    if (!session) {
+    const supabase = await createClient();
+    const {
+        data: { user },
+        error,
+    } = await supabase.auth.getUser();
+
+    if (error || !user) {
         return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 

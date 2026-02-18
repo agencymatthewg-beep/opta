@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { createClient } from "@/lib/supabase/server";
 import {
     getTodoistDashboardData,
     createTodoistTask,
@@ -20,8 +20,14 @@ import {
  */
 export async function GET(request: NextRequest) {
     try {
-        const session = await auth();
-        if (!session?.accessToken) {
+        // Check for both cookie-based (web) and Bearer token (iOS) auth
+        const supabase = await createClient();
+        const {
+            data: { user },
+            error,
+        } = await supabase.auth.getUser();
+
+        if (error || !user) {
             return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
         }
 
@@ -70,8 +76,14 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
     try {
-        const session = await auth();
-        if (!session?.accessToken) {
+        // Check for both cookie-based (web) and Bearer token (iOS) auth
+        const supabase = await createClient();
+        const {
+            data: { user },
+            error,
+        } = await supabase.auth.getUser();
+
+        if (error || !user) {
             return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
         }
 

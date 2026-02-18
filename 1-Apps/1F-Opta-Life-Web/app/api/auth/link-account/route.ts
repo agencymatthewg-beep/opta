@@ -2,14 +2,19 @@
 // This redirects to Google OAuth with gmail.readonly scope
 
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { createClient } from "@/lib/supabase/server";
 
 const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 
 export async function GET() {
     // Ensure user is already signed in with primary account
-    const session = await auth();
-    if (!session) {
+    const supabase = await createClient();
+    const {
+        data: { user },
+        error,
+    } = await supabase.auth.getUser();
+
+    if (error || !user) {
         return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
