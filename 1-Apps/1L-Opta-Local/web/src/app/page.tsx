@@ -1,76 +1,106 @@
 'use client';
 
 /**
- * Dashboard — Root page (/).
+ * Dashboard -- Root page (/).
  *
  * Connects to LMX /admin/events via SSE, displays live VRAM gauge,
- * loaded models list, and connection status. Responsive CSS Grid layout:
+ * loaded models list, throughput chart, and server stats. Uses global
+ * ConnectionProvider for dynamic base URL (LAN/WAN auto-failover).
+ *
+ * Throughput data uses a CircularBuffer (capacity 300 = 5 min at 1/sec)
+ * flushed to React state on a 1-second interval -- separate from the
+ * 500ms VRAM/status flush to avoid coupling chart redraws to gauge updates.
+ *
+ * Responsive CSS Grid layout:
  * 3 columns (desktop) -> 2 columns (tablet) -> 1 column (mobile).
  */
 
-import { useState, useCallback, useEffect, useMemo } from 'react';
-import { MessageSquare, Settings, RefreshCw } from 'lucide-react';
-import Link from 'next/link';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import { RefreshCw, Plus } from 'lucide-react';
 import { Button } from '@opta/ui';
 
 import { useSSE } from '@/hooks/useSSE';
 import { useBufferedState } from '@/hooks/useBufferedState';
-import { getConnectionSettings, getBaseUrl } from '@/lib/connection';
-import type { ConnectionSettings } from '@/lib/connection';
+import { useConnectionContextSafe } from '@/components/shared/ConnectionProvider';
 import type { ServerStatus } from '@/types/lmx';
+import { CircularBuffer } from '@/lib/circular-buffer';
+import type { ThroughputPoint } from '@/lib/circular-buffer';
 
 import { VRAMGauge } from '@/components/dashboard/VRAMGauge';
 import { ModelList } from '@/components/dashboard/ModelList';
-import { ConnectionIndicator } from '@/components/dashboard/ConnectionIndicator';
+import { ThroughputChart } from '@/components/dashboard/ThroughputChart';
+import { ModelLoadDialog } from '@/components/dashboard/ModelLoadDialog';
 
 // ---------------------------------------------------------------------------
 // SSE event shape
 // ---------------------------------------------------------------------------
 
 interface SSEEvent {
-  type: 'status' | 'model_change';
-  data: ServerStatus;
+  type: 'status' | 'model_change' | 'throughput';
+  data: ServerStatus | ThroughputPoint;
 }
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+/** 300 data points = 5 minutes at 1 data point per second */
+const THROUGHPUT_BUFFER_CAPACITY = 300;
+
+/** Flush chart data to React state every 1 second */
+const CHART_FLUSH_INTERVAL_MS = 1000;
 
 // ---------------------------------------------------------------------------
 // Dashboard page
 // ---------------------------------------------------------------------------
 
 export default function DashboardPage() {
-  // ---- Connection settings (loaded from encrypted localStorage) ----
-  const [settings, setSettings] = useState<ConnectionSettings | null>(null);
-  const [settingsError, setSettingsError] = useState(false);
+  // ---- Connection from global provider (null while settings load) ----
+  const connection = useConnectionContextSafe();
+  const baseUrl = connection?.baseUrl ?? '';
+  const isConnected = connection?.isConnected ?? false;
+  const client = connection?.client ?? null;
+  const connectionType = connection?.connectionType ?? 'probing';
+  const adminKey = connection?.adminKey ?? '';
 
-  useEffect(() => {
-    let cancelled = false;
-    void getConnectionSettings()
-      .then((s) => {
-        if (!cancelled) setSettings(s);
-      })
-      .catch(() => {
-        if (!cancelled) setSettingsError(true);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  // ---- Derived SSE URL and headers ----
+  // ---- Derived SSE URL (reacts to LAN/WAN changes) ----
   const sseUrl = useMemo(() => {
-    if (!settings) return '';
-    return `${getBaseUrl(settings)}/admin/events`;
-  }, [settings]);
+    if (!isConnected) return '';
+    return `${baseUrl}/admin/events`;
+  }, [baseUrl, isConnected]);
 
+  // ---- Admin key header for SSE ----
   const sseHeaders = useMemo(() => {
-    if (!settings?.adminKey) return undefined;
-    return { 'X-Admin-Key': settings.adminKey };
-  }, [settings]);
+    if (!adminKey) return undefined;
+    return { 'X-Admin-Key': adminKey };
+  }, [adminKey]);
 
-  // ---- Buffered server status ----
+  // ---- Buffered server status (500ms flush) ----
   const [status, pushStatus] = useBufferedState<ServerStatus | null>(
     null,
     500,
   );
+
+  // ---- Throughput circular buffer + state (1s flush) ----
+  const throughputBufferRef = useRef(
+    new CircularBuffer<ThroughputPoint>(THROUGHPUT_BUFFER_CAPACITY),
+  );
+  const [chartData, setChartData] = useState<ThroughputPoint[]>([]);
+
+  // Flush throughput buffer to React state on 1-second interval
+  useEffect(() => {
+    const id = setInterval(() => {
+      setChartData(throughputBufferRef.current.toArray());
+    }, CHART_FLUSH_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, []);
+
+  // Compute average TPS from chart data
+  const averageTps = useMemo(() => {
+    if (chartData.length === 0) return undefined;
+    const sum = chartData.reduce((acc, p) => acc + p.tokensPerSecond, 0);
+    return sum / chartData.length;
+  }, [chartData]);
 
   // ---- SSE message handler ----
   const handleMessage = useCallback(
@@ -78,7 +108,10 @@ export default function DashboardPage() {
       switch (event.type) {
         case 'status':
         case 'model_change':
-          pushStatus(() => event.data);
+          pushStatus(() => event.data as ServerStatus);
+          break;
+        case 'throughput':
+          throughputBufferRef.current.push(event.data as ThroughputPoint);
           break;
       }
     },
@@ -90,19 +123,34 @@ export default function DashboardPage() {
     url: sseUrl,
     headers: sseHeaders,
     onMessage: handleMessage,
-    enabled: !!settings && sseUrl !== '',
+    enabled: isConnected && sseUrl !== '',
   });
 
-  // ---- Model unload handler ----
+  // ---- Synthesize throughput from status TPS ----
+  // If the server sends status events with tokens_per_second but no
+  // dedicated throughput events, create synthetic throughput points.
+  const lastStatusTpsRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (status?.tokens_per_second != null) {
+      const tps = status.tokens_per_second;
+      if (lastStatusTpsRef.current !== tps) {
+        lastStatusTpsRef.current = tps;
+        throughputBufferRef.current.push({
+          timestamp: Date.now(),
+          tokensPerSecond: tps,
+        });
+      }
+    }
+  }, [status]);
+
+  // ---- Model unload handler (uses connection-aware client) ----
   const [unloadingId, setUnloadingId] = useState<string | null>(null);
 
   const handleUnload = useCallback(
     async (modelId: string) => {
-      if (!settings) return;
+      if (!client) return;
       setUnloadingId(modelId);
       try {
-        const { createClient } = await import('@/lib/connection');
-        const client = createClient(settings);
         await client.unloadModel(modelId);
       } catch {
         // Error will be reflected when next SSE status event arrives
@@ -110,53 +158,54 @@ export default function DashboardPage() {
         setUnloadingId(null);
       }
     },
-    [settings],
+    [client],
   );
 
-  // ---- Loading / error states ----
-  if (settingsError) {
-    return (
-      <main className="flex min-h-screen items-center justify-center p-8">
-        <div className="glass-subtle max-w-sm rounded-xl p-8 text-center">
-          <p className="mb-2 text-lg font-semibold text-text-primary">
-            Settings Error
-          </p>
-          <p className="mb-4 text-sm text-text-secondary">
-            Could not load connection settings. Please configure your server
-            connection.
-          </p>
-          <Link href="/settings">
-            <Button variant="primary" size="md">
-              <Settings className="mr-2 h-4 w-4" />
-              Go to Settings
-            </Button>
-          </Link>
-        </div>
-      </main>
-    );
-  }
+  // ---- Model load handler ----
+  const [isLoadOpen, setIsLoadOpen] = useState(false);
+  const [isLoadingModel, setIsLoadingModel] = useState(false);
 
-  if (!settings) {
-    return (
-      <main className="flex min-h-screen items-center justify-center p-8">
-        <p className="text-sm text-text-muted">Loading settings...</p>
-      </main>
-    );
-  }
+  const handleLoadModel = useCallback(
+    async (modelPath: string, quantization?: string) => {
+      if (!client) return;
+      setIsLoadingModel(true);
+      try {
+        await client.loadModel({
+          model_path: modelPath,
+          quantization,
+        });
+        // Success -- close the dialog. SSE will update models list.
+        setIsLoadOpen(false);
+      } finally {
+        setIsLoadingModel(false);
+      }
+    },
+    [client],
+  );
 
   // ---- Dashboard render ----
   return (
     <main className="min-h-screen p-6">
-      {/* Header */}
+      {/* Page header */}
       <header className="mb-6 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <h1 className="text-2xl font-bold text-text-primary">
-            Opta Local
-          </h1>
-          <ConnectionIndicator state={connectionState} />
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold text-text-primary">Dashboard</h1>
+          {/* SSE connection state indicator (subtle) */}
+          {connectionType !== 'offline' && connectionState === 'error' && (
+            <span className="text-xs text-neon-red">SSE disconnected</span>
+          )}
         </div>
 
-        <nav className="flex items-center gap-2">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="glass"
+            size="sm"
+            onClick={() => setIsLoadOpen((prev) => !prev)}
+            aria-label="Load a model"
+          >
+            <Plus className="mr-1.5 h-4 w-4" />
+            Load Model
+          </Button>
           <Button
             variant="ghost"
             size="sm"
@@ -165,19 +214,18 @@ export default function DashboardPage() {
           >
             <RefreshCw className="h-4 w-4" />
           </Button>
-          <Link href="/chat">
-            <Button variant="glass" size="sm">
-              <MessageSquare className="mr-1.5 h-4 w-4" />
-              Chat
-            </Button>
-          </Link>
-          <Link href="/settings">
-            <Button variant="ghost" size="sm">
-              <Settings className="h-4 w-4" />
-            </Button>
-          </Link>
-        </nav>
+        </div>
       </header>
+
+      {/* Model Load Dialog (collapsible panel) */}
+      <div className="mb-4">
+        <ModelLoadDialog
+          onLoad={handleLoadModel}
+          isLoading={isLoadingModel}
+          isOpen={isLoadOpen}
+          onClose={() => setIsLoadOpen(false)}
+        />
+      </div>
 
       {/* Dashboard grid: 3 -> 2 -> 1 columns */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -196,6 +244,11 @@ export default function DashboardPage() {
           />
         </div>
 
+        {/* Throughput Chart -- full width */}
+        <div className="col-span-full">
+          <ThroughputChart data={chartData} averageTps={averageTps} />
+        </div>
+
         {/* Server Stats */}
         <div className="glass-subtle col-span-full rounded-xl p-6">
           <h2 className="mb-4 text-sm font-semibold text-text-secondary uppercase tracking-wider">
@@ -212,7 +265,7 @@ export default function DashboardPage() {
             />
             <StatItem
               label="Temperature"
-              value={`${status?.temperature_celsius.toFixed(0) ?? '—'}\u00B0C`}
+              value={`${status?.temperature_celsius.toFixed(0) ?? '\u2014'}\u00B0C`}
             />
             <StatItem
               label="Uptime"
@@ -249,7 +302,7 @@ function StatItem({
 // ---------------------------------------------------------------------------
 
 function formatUptime(seconds: number): string {
-  if (seconds <= 0) return '—';
+  if (seconds <= 0) return '\u2014';
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
   if (h > 0) return `${h}h ${m}m`;

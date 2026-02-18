@@ -58,6 +58,8 @@ export interface UseConnectionReturn {
   recheckNow: () => void;
   /** Configured LMXClient instance using the active URL */
   client: LMXClient;
+  /** Admin key for authenticated endpoints (SSE, admin API) */
+  adminKey: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -218,5 +220,6 @@ export function useConnection(settings: ConnectionSettings): UseConnectionReturn
     error: state.error,
     recheckNow: probe,
     client,
+    adminKey: settings.adminKey,
   };
 }
