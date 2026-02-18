@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Sora, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
+import { AppShell } from "@/components/shared/AppShell";
+
 const sora = Sora({
   variable: "--font-sora",
   subsets: ["latin"],
@@ -29,7 +31,7 @@ export default function RootLayout({
       <body
         className={`${sora.variable} ${jetbrainsMono.variable} font-sans antialiased bg-opta-bg text-white min-h-screen`}
       >
-        {children}
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );
