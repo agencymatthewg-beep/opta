@@ -372,3 +372,27 @@ async def test_embeddings_skip_returns_502(client: AsyncClient) -> None:
     })
 
     assert resp.status_code == 502
+
+
+# ─── Circuit Breaker State in Stack Endpoint ─────────────────────────────────
+
+
+async def test_stack_endpoint_shows_circuit_state(client: AsyncClient) -> None:
+    """Stack endpoint includes circuit breaker state for helper nodes."""
+    from opta_lmx.helpers.circuit_breaker import CircuitBreaker
+    app = client._transport.app  # type: ignore[union-attr]
+
+    mock_remote = MagicMock()
+    mock_remote.url = "http://192.168.188.20:1234"
+    mock_remote.model = "nomic-embed-text-v1.5"
+    mock_remote.is_healthy = True
+    mock_remote.fallback = "local"
+    mock_remote.circuit_breaker = CircuitBreaker()
+    app.state.remote_embedding = mock_remote
+
+    resp = await client.get("/admin/stack")
+    assert resp.status_code == 200
+    data = resp.json()
+
+    helper = data["helper_nodes"]["embedding"]
+    assert helper["circuit_state"] == "closed"

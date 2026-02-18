@@ -885,6 +885,7 @@ async def stack_status(
             "model": remote_embedding.model,
             "healthy": remote_embedding.is_healthy,
             "fallback": remote_embedding.fallback,
+            "circuit_state": remote_embedding.circuit_breaker.state.value,
         }
     if remote_reranking is not None:
         helpers["reranking"] = {
@@ -892,6 +893,7 @@ async def stack_status(
             "model": remote_reranking.model,
             "healthy": remote_reranking.is_healthy,
             "fallback": remote_reranking.fallback,
+            "circuit_state": remote_reranking.circuit_breaker.state.value,
         }
 
     return {
