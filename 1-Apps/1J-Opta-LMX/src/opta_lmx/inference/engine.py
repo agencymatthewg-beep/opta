@@ -782,6 +782,9 @@ class InferenceEngine:
                             delta = chunk.new_text if hasattr(chunk, "new_text") else str(chunk)
                             if delta:
                                 yield delta
+            except asyncio.CancelledError:
+                logger.info("stream_cancelled", extra={"model_id": model_id})
+                raise
             except TimeoutError:
                 logger.error("stream_timeout", extra={
                     "model_id": model_id, "timeout_sec": self._inference_timeout,

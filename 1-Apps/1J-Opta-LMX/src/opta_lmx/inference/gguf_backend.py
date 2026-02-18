@@ -103,27 +103,31 @@ class GGUFBackend:
         while the async generator awaits on the queue without blocking the
         event loop.
         """
-        queue: asyncio.Queue[str | None] = asyncio.Queue()
+        queue: asyncio.Queue[str | Exception | None] = asyncio.Queue()
         loop = asyncio.get_running_loop()
 
         def _run_stream() -> None:
             """Run blocking llama-cpp stream in thread, push tokens to queue."""
-            chat_messages = [{"role": m["role"], "content": m["content"]} for m in messages]
-            kwargs: dict[str, Any] = {
-                "messages": chat_messages,
-                "temperature": temperature,
-                "max_tokens": max_tokens,
-                "top_p": top_p,
-                "stream": True,
-            }
-            if stop:
-                kwargs["stop"] = stop
+            try:
+                chat_messages = [{"role": m["role"], "content": m["content"]} for m in messages]
+                kwargs: dict[str, Any] = {
+                    "messages": chat_messages,
+                    "temperature": temperature,
+                    "max_tokens": max_tokens,
+                    "top_p": top_p,
+                    "stream": True,
+                }
+                if stop:
+                    kwargs["stop"] = stop
 
-            for chunk in self._llm.create_chat_completion(**kwargs):
-                delta = chunk["choices"][0].get("delta", {})
-                if content := delta.get("content"):
-                    loop.call_soon_threadsafe(queue.put_nowait, content)
-            loop.call_soon_threadsafe(queue.put_nowait, None)  # Sentinel
+                for chunk in self._llm.create_chat_completion(**kwargs):
+                    delta = chunk["choices"][0].get("delta", {})
+                    if content := delta.get("content"):
+                        loop.call_soon_threadsafe(queue.put_nowait, content)
+                loop.call_soon_threadsafe(queue.put_nowait, None)  # Sentinel
+            except Exception as e:
+                logger.error("gguf_stream_failed", extra={"error": str(e)})
+                loop.call_soon_threadsafe(queue.put_nowait, e)
 
         # Run the entire blocking iteration in a background thread
         thread_task = loop.run_in_executor(None, _run_stream)
@@ -132,6 +136,8 @@ class GGUFBackend:
             token = await queue.get()
             if token is None:
                 break
+            if isinstance(token, Exception):
+                raise RuntimeError(f"GGUF stream error: {token}") from token
             yield token
 
         await thread_task  # Ensure thread completes cleanly
