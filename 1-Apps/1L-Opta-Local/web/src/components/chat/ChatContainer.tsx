@@ -1,18 +1,22 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, MessageSquare, Sparkles } from 'lucide-react';
 import { cn } from '@opta/ui';
 import { useChatStream } from '@/hooks/useChatStream';
 import { useScrollAnchor } from '@/hooks/useScrollAnchor';
+import { useSessionPersist } from '@/hooks/useSessionPersist';
 import { createClient, getConnectionSettings } from '@/lib/connection';
 import type { LMXClient } from '@/lib/lmx-client';
 import { ChatMessage } from './ChatMessage';
 import { ChatInput } from './ChatInput';
 
 interface ChatContainerProps {
+  /** Currently selected model ID */
   model: string;
+  /** Optional session ID to restore. If not provided, generates a new one on first message. */
+  sessionId?: string;
 }
 
 const PROMPT_SUGGESTIONS = [
@@ -23,16 +27,22 @@ const PROMPT_SUGGESTIONS = [
 ];
 
 /**
- * Main chat container integrating streaming, scroll behavior, and message UI.
+ * Main chat container integrating streaming, scroll behavior, session
+ * persistence, and message UI.
  *
  * Creates an LMXClient from saved ConnectionSettings, manages the streaming
- * chat flow via useChatStream, and handles auto-scroll via useScrollAnchor.
+ * chat flow via useChatStream, auto-saves sessions to IndexedDB via
+ * useSessionPersist, and handles auto-scroll via useScrollAnchor.
  */
-export function ChatContainer({ model }: ChatContainerProps) {
+export function ChatContainer({ model, sessionId: initialSessionId }: ChatContainerProps) {
   const [client, setClient] = useState<LMXClient | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<string>(
+    initialSessionId ?? '',
+  );
+  const sessionInitialized = useRef(false);
 
-  const { messages, isStreaming, sendMessage, stop } = useChatStream({
+  const { messages, setMessages, isStreaming, sendMessage, stop } = useChatStream({
     onError: (err) => setError(err.message),
   });
 
@@ -43,6 +53,14 @@ export function ChatContainer({ model }: ChatContainerProps) {
     scrollToBottom,
     autoScroll,
   } = useScrollAnchor();
+
+  // Session persistence — auto-saves after streaming completes
+  const { restore } = useSessionPersist(
+    sessionId,
+    messages,
+    model,
+    isStreaming,
+  );
 
   // Initialize client from saved connection settings
   useEffect(() => {
@@ -67,6 +85,19 @@ export function ChatContainer({ model }: ChatContainerProps) {
     };
   }, []);
 
+  // Restore session if ID was provided
+  useEffect(() => {
+    if (!initialSessionId || sessionInitialized.current) return;
+    sessionInitialized.current = true;
+
+    void (async () => {
+      const session = await restore();
+      if (session) {
+        setMessages(session.messages);
+      }
+    })();
+  }, [initialSessionId, restore, setMessages]);
+
   // Auto-scroll when messages change during streaming
   useEffect(() => {
     autoScroll();
@@ -78,10 +109,16 @@ export function ChatContainer({ model }: ChatContainerProps) {
         setError('Not connected. Check your connection settings.');
         return;
       }
+
+      // Generate session ID on first message if not already set
+      if (!sessionId) {
+        setSessionId(crypto.randomUUID());
+      }
+
       setError(null);
       void sendMessage(client, model, content);
     },
-    [client, model, sendMessage],
+    [client, model, sendMessage, sessionId],
   );
 
   const handlePromptSuggestion = useCallback(
