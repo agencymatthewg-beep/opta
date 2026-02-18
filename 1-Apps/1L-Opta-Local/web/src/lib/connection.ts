@@ -3,7 +3,8 @@
  *
  * Stores host/port/tunnel in plain localStorage and admin key encrypted
  * via Web Crypto API (storage.ts). Provides a factory to create a
- * configured LMXClient instance.
+ * configured LMXClient instance. Includes LAN health check with timeout
+ * and optimal URL resolution for LAN/WAN/offline detection.
  */
 
 import { LMXClient } from '@/lib/lmx-client';
@@ -12,6 +13,16 @@ import { getSecure, setSecure, removeSecure } from '@/lib/storage';
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
+
+/** Connection transport type: LAN (direct), WAN (tunnel), or offline */
+export type ConnectionType = 'lan' | 'wan' | 'offline';
+
+/** Result of an optimal URL probe */
+export interface ConnectionProbeResult {
+  url: string;
+  type: ConnectionType;
+  latencyMs: number;
+}
 
 export interface ConnectionSettings {
   host: string;
@@ -84,15 +95,133 @@ export async function saveConnectionSettings(
 }
 
 // ---------------------------------------------------------------------------
+// Health check constants
+// ---------------------------------------------------------------------------
+
+/** LAN health check timeout — LAN should respond in <100ms; 1.5s accommodates slow WiFi */
+const LAN_TIMEOUT_MS = 1500;
+
+/** WAN health check timeout — tunnel adds ~50-200ms latency */
+const WAN_TIMEOUT_MS = 8000;
+
+// ---------------------------------------------------------------------------
+// Health check
+// ---------------------------------------------------------------------------
+
+/**
+ * Check whether the LMX server is reachable at the given LAN URL.
+ * Uses AbortSignal.timeout for a clean 1.5s cutoff. Probes /v1/models
+ * as a lightweight endpoint that does not require an admin key.
+ */
+export async function checkLanHealth(lanUrl: string): Promise<boolean> {
+  try {
+    const response = await fetch(`${lanUrl}/v1/models`, {
+      signal: AbortSignal.timeout(LAN_TIMEOUT_MS),
+    });
+    return response.ok;
+  } catch {
+    // Timeout, network error, or AbortError — LAN unreachable
+    return false;
+  }
+}
+
+/**
+ * Check whether the LMX server is reachable at a given URL within a timeout.
+ * Returns latency in milliseconds if reachable, or null if not.
+ */
+async function probeUrl(
+  url: string,
+  timeoutMs: number,
+  adminKey?: string,
+): Promise<number | null> {
+  try {
+    const headers: Record<string, string> = {};
+    if (adminKey) {
+      headers['X-Admin-Key'] = adminKey;
+    }
+    const start = performance.now();
+    const response = await fetch(`${url}/v1/models`, {
+      signal: AbortSignal.timeout(timeoutMs),
+      headers,
+    });
+    if (response.ok) {
+      return Math.round(performance.now() - start);
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Check if LAN mode is available given current page protocol.
+ * HTTPS pages cannot fetch HTTP resources (mixed content blocking).
+ */
+export function isLanAvailable(): boolean {
+  if (typeof window === 'undefined') return false;
+  return window.location.protocol === 'http:';
+}
+
+// ---------------------------------------------------------------------------
+// Optimal URL resolution
+// ---------------------------------------------------------------------------
+
+/**
+ * Probe LAN first (fast timeout), then tunnel if configured.
+ * Returns the best reachable URL with its connection type and latency,
+ * or null if nothing is reachable.
+ */
+export async function getOptimalBaseUrl(
+  settings: ConnectionSettings,
+): Promise<ConnectionProbeResult | null> {
+  const lanUrl = `http://${settings.host}:${settings.port}`;
+
+  // Try LAN first (only if protocol allows it — HTTPS blocks HTTP fetches)
+  if (isLanAvailable()) {
+    const lanLatency = await probeUrl(lanUrl, LAN_TIMEOUT_MS, settings.adminKey);
+    if (lanLatency !== null) {
+      return { url: lanUrl, type: 'lan', latencyMs: lanLatency };
+    }
+  }
+
+  // Try WAN (tunnel) if configured
+  if (settings.useTunnel && settings.tunnelUrl) {
+    const tunnelUrl = settings.tunnelUrl.replace(/\/+$/, '');
+    const wanLatency = await probeUrl(tunnelUrl, WAN_TIMEOUT_MS, settings.adminKey);
+    if (wanLatency !== null) {
+      return { url: tunnelUrl, type: 'wan', latencyMs: wanLatency };
+    }
+  }
+
+  // Nothing reachable
+  return null;
+}
+
+// ---------------------------------------------------------------------------
 // URL builder
 // ---------------------------------------------------------------------------
 
-/** Build the base URL from connection settings. */
+/** Build the base URL from connection settings (static, no probing). */
 export function getBaseUrl(settings: ConnectionSettings): string {
   if (settings.useTunnel && settings.tunnelUrl) {
     // Tunnel URL is used as-is (includes protocol)
     return settings.tunnelUrl.replace(/\/+$/, '');
   }
+  return `http://${settings.host}:${settings.port}`;
+}
+
+/**
+ * Get the active URL based on live connection state.
+ * Use this instead of getBaseUrl when you have connection mode info.
+ */
+export function getActiveUrl(
+  settings: ConnectionSettings,
+  connectionType: ConnectionType,
+): string {
+  if (connectionType === 'wan' && settings.tunnelUrl) {
+    return settings.tunnelUrl.replace(/\/+$/, '');
+  }
+  // LAN, probing, or offline — use LAN URL as default
   return `http://${settings.host}:${settings.port}`;
 }
 
@@ -103,4 +232,12 @@ export function getBaseUrl(settings: ConnectionSettings): string {
 /** Create a configured LMXClient from connection settings. */
 export function createClient(settings: ConnectionSettings): LMXClient {
   return new LMXClient(getBaseUrl(settings), settings.adminKey);
+}
+
+/** Create a configured LMXClient using a specific base URL. */
+export function createClientWithUrl(
+  baseUrl: string,
+  adminKey: string,
+): LMXClient {
+  return new LMXClient(baseUrl, adminKey);
 }
