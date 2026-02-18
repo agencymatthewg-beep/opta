@@ -23,6 +23,7 @@ from typing import Any
 import httpx
 
 from opta_lmx.config import HelperNodeEndpoint
+from opta_lmx.helpers.circuit_breaker import CircuitBreaker, CircuitState
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +57,7 @@ class HelperNodeClient:
         self._latencies: deque[float] = deque(maxlen=_LATENCY_WINDOW)
         self._last_check_at: float = 0.0
         self._last_error: str | None = None
+        self.circuit_breaker = CircuitBreaker()
         logger.info("helper_node_created", extra={
             "url": config.url, "model": config.model, "timeout": config.timeout_sec,
         })
@@ -98,6 +100,12 @@ class HelperNodeClient:
         }
 
         self._total_requests += 1
+        if not self.circuit_breaker.allows_request:
+            self._failure_count += 1
+            raise HelperNodeError(
+                f"Circuit open for {self._config.url} — skipping request",
+                fallback=self._config.fallback,
+            )
         start = time.monotonic()
         try:
             resp = await self._client.post("/v1/embeddings", json=payload)
@@ -106,6 +114,7 @@ class HelperNodeClient:
             self._healthy = True
             self._success_count += 1
             self._latencies.append(time.monotonic() - start)
+            self.circuit_breaker.record_success()
 
             embeddings = [item["embedding"] for item in data["data"]]
             logger.info("helper_node_embed_success", extra={
@@ -119,6 +128,7 @@ class HelperNodeClient:
             self._failure_count += 1
             self._last_error = str(e)
             self._latencies.append(time.monotonic() - start)
+            self.circuit_breaker.record_failure()
             logger.error("helper_node_embed_failed", extra={
                 "url": self._config.url,
                 "error": str(e),
@@ -157,6 +167,12 @@ class HelperNodeClient:
             payload["top_n"] = top_n
 
         self._total_requests += 1
+        if not self.circuit_breaker.allows_request:
+            self._failure_count += 1
+            raise HelperNodeError(
+                f"Circuit open for {self._config.url} — skipping request",
+                fallback=self._config.fallback,
+            )
         start = time.monotonic()
         try:
             resp = await self._client.post("/v1/rerank", json=payload)
@@ -165,6 +181,7 @@ class HelperNodeClient:
             self._healthy = True
             self._success_count += 1
             self._latencies.append(time.monotonic() - start)
+            self.circuit_breaker.record_success()
 
             results = data.get("results", [])
             logger.info("helper_node_rerank_success", extra={
@@ -178,6 +195,7 @@ class HelperNodeClient:
             self._failure_count += 1
             self._last_error = str(e)
             self._latencies.append(time.monotonic() - start)
+            self.circuit_breaker.record_failure()
             logger.error("helper_node_rerank_failed", extra={
                 "url": self._config.url,
                 "error": str(e),
@@ -238,6 +256,7 @@ class HelperNodeClient:
             "p95_latency_ms": round(p95_latency * 1000, 1),
             "last_check_at": self._last_check_at,
             "last_error": self._last_error,
+            "circuit_state": self.circuit_breaker.state.value,
         }
 
     async def close(self) -> None:
