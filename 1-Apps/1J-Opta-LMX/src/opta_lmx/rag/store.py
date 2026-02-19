@@ -82,11 +82,22 @@ class SearchResult:
     score: float
 
 
+_FAISS_MIN_DIM = 32  # FAISS on ARM64 can segfault with low-dim vectors; real models use >= 384
+
+
 def _build_faiss_index(embeddings: NDArray[np.float32]) -> Any:
-    """Build a FAISS inner-product index from L2-normalised vectors."""
+    """Build a FAISS inner-product index from L2-normalised vectors.
+
+    Returns None (forcing NumPy fallback) when:
+    - faiss-cpu is not installed
+    - No embeddings to index
+    - Embedding dimension < 8 (ARM NEON SIMD alignment requirement)
+    """
     if not _FAISS_AVAILABLE or len(embeddings) == 0:
         return None
     dim = embeddings.shape[1]
+    if dim < _FAISS_MIN_DIM:
+        return None
     index = faiss.IndexFlatIP(dim)
     # Normalise so inner product = cosine similarity
     normed = embeddings.copy()
@@ -137,9 +148,10 @@ def _search_numpy(
     results: list[SearchResult] = []
     for idx in indices:
         score = float(similarities[idx])
-        if score < min_score:
+        if score < min_score and len(results) > 0:
             break
-        results.append(SearchResult(document=docs[idx], score=score))
+        if score >= min_score:
+            results.append(SearchResult(document=docs[idx], score=score))
         if len(results) >= top_k:
             break
 

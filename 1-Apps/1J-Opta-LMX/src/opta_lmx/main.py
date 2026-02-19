@@ -255,6 +255,20 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
                 "model_id": config.models.embedding_model, "error": str(e),
             })
 
+    # Start Metal cache maintenance background task
+    metal_task: asyncio.Task[None] | None = None
+    if config.memory.metal_cache_maintenance and config.models.metal_cache_limit_gb is not None:
+        from opta_lmx.maintenance.metal import metal_cache_maintenance_loop
+
+        metal_task = asyncio.create_task(metal_cache_maintenance_loop(
+            cache_limit_gb=config.models.metal_cache_limit_gb,
+            interval_sec=config.memory.metal_cache_check_interval_sec,
+        ))
+        logger.info("metal_cache_maintenance_started", extra={
+            "cache_limit_gb": config.models.metal_cache_limit_gb,
+            "interval_sec": config.memory.metal_cache_check_interval_sec,
+        })
+
     # Start TTL eviction background task if enabled
     ttl_task: asyncio.Task[None] | None = None
     if config.memory.ttl_enabled:
@@ -272,6 +286,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         })
 
     yield
+
+    # Cleanup: cancel Metal cache maintenance task
+    if metal_task is not None:
+        metal_task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await metal_task
 
     # Cleanup: cancel TTL task
     if ttl_task is not None:

@@ -111,12 +111,17 @@ class BM25Index:
             self._bm25 = None
             return
 
+        # Guard: BM25Okapi raises ZeroDivisionError if all documents tokenize
+        # to empty lists (e.g. single-character texts filtered by tokenizer).
+        if not any(doc for doc in self._corpus):
+            self._bm25 = None
+            return
+
         try:
             from rank_bm25 import BM25Okapi
 
             self._bm25 = BM25Okapi(self._corpus)
-        except ImportError:
-            logger.warning("rank_bm25_not_installed_skipping_index_build")
+        except (ImportError, ZeroDivisionError):
             self._bm25 = None
 
 

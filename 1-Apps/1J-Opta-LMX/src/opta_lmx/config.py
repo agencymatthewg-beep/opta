@@ -119,6 +119,13 @@ class MemoryConfig(BaseModel):
     ttl_enabled: bool = Field(False, description="Auto-unload models after idle timeout")
     ttl_seconds: int = Field(3600, ge=60, description="Idle timeout before eviction (seconds)")
     ttl_check_interval_sec: int = Field(60, ge=10, description="How often to check for idle models")
+    metal_cache_maintenance: bool = Field(
+        True, description="Enable periodic Metal buffer cache clearing",
+    )
+    metal_cache_check_interval_sec: float = Field(
+        300.0, ge=30.0, le=3600.0,
+        description="How often to check Metal cache (seconds, default 5 min)",
+    )
 
 
 class LoggingConfig(BaseModel):
