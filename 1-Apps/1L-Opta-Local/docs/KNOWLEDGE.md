@@ -21,7 +21,7 @@
 
 | App | What to Learn | Path |
 |-----|--------------|------|
-| **Opta LMX** | API endpoint design, SSE events format, admin API | `1-Apps/1J-Opta-LMX/` |
+| **Opta LMX** | API endpoint design, SSE events format, admin API | `1-Apps/1M-Opta-LMX/` |
 | **Opta CLI** | Session format, agent loop, model management commands | `1-Apps/1D-Opta-CLI-TS/` |
 | **OptaPlus** | SwiftUI design patterns, Bonjour discovery, tunnel relay | `1-Apps/1I-OptaPlus/` |
 | **AICompare Web** | Next.js 16 + React 19 project structure, @opta/ui usage | `1-Apps/1B-AICompare-Web/` |

@@ -67,7 +67,7 @@ describe('config', () => {
   it('has correct SSH config defaults', () => {
     expect(DEFAULT_CONFIG.connection.ssh.user).toBe('opta');
     expect(DEFAULT_CONFIG.connection.ssh.identityFile).toBe('~/.ssh/id_ed25519');
-    expect(DEFAULT_CONFIG.connection.ssh.lmxPath).toBe('/Users/Shared/312/Opta/1-Apps/1J-Opta-LMX');
+    expect(DEFAULT_CONFIG.connection.ssh.lmxPath).toBe('/Users/Shared/312/Opta/1-Apps/1M-Opta-LMX');
     expect(DEFAULT_CONFIG.connection.ssh.pythonPath).toBe('/Users/opta/.mlx-env/bin/python');
   });
 });

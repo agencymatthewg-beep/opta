@@ -82,7 +82,7 @@ export async function status(opts: StatusOptions): Promise<void> {
       ],
       [
         `Check connectivity: ping ${host}`,
-        'Start Opta LMX: cd 1-Apps/1J-Opta-LMX && python -m opta_lmx',
+        'Start Opta LMX: cd 1-Apps/1M-Opta-LMX && python -m opta_lmx',
         `Verify port: curl http://${host}:${port}/admin/health`,
       ]
     );

@@ -1,6 +1,6 @@
 # Opta CLI
 
-Agentic AI coding assistant powered by local LLMs. Privacy-first, runs entirely on your hardware via [Opta LMX](../1J-Opta-LMX/).
+Agentic AI coding assistant powered by local LLMs. Privacy-first, runs entirely on your hardware via [Opta LMX](../1M-Opta-LMX/).
 
 ## Features
 

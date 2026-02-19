@@ -667,7 +667,7 @@ export function isLanAvailable(): boolean {
 - [Cloudflare Tunnel overview](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/) — Architecture: outbound-only connections, TLS termination at edge
 - OptaPlus CLOUDFLARE-TUNNEL-RESEARCH.md (`1-Apps/1I-OptaPlus/docs/cloud-relay/research/`) — Proven tunnel setup on optamize.biz, ingress rules, launchd service, security analysis
 - OptaPlus OPTAPLUS-NETWORKING-CURRENT.md — LAN/WAN detection patterns, reconnect logic, Origin header handling
-- LMX main.py (`1-Apps/1J-Opta-LMX/src/opta_lmx/main.py`) — Confirmed CORS: `allow_origins=["*"]`, permissive for all origins
+- LMX main.py (`1-Apps/1M-Opta-LMX/src/opta_lmx/main.py`) — Confirmed CORS: `allow_origins=["*"]`, permissive for all origins
 - Opta Local connection.ts (`1-Apps/1L-Opta-Local/web/src/lib/connection.ts`) — Existing ConnectionSettings type with useTunnel/tunnelUrl fields
 
 ### Secondary (MEDIUM confidence)

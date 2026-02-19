@@ -2,7 +2,7 @@
 
 **Date:** 2026-02-17
 **Author:** Opta Max
-**Project:** Opta-LMX (`~/Synced/Opta/1-Apps/1J-Opta-LMX/`)
+**Project:** Opta-LMX (`~/Synced/Opta/1-Apps/1M-Opta-LMX/`)
 **Priority:** High — enables OpenClaw tool calling through local M2.5 inference
 
 ---

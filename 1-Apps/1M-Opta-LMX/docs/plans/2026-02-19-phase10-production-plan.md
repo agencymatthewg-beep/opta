@@ -10,7 +10,7 @@
 ## Pre-Flight
 
 ```bash
-cd ~/Synced/Opta/1-Apps/1J-Opta-LMX
+cd ~/Synced/Opta/1-Apps/1M-Opta-LMX
 source .venv/bin/activate
 pytest tests/ -x -q   # Confirm green baseline
 ```
@@ -1460,7 +1460,7 @@ Metal memory was added in Task 6 as part of the enhanced deep health check. No a
 ### Task 30: Full test suite run
 
 ```bash
-cd ~/Synced/Opta/1-Apps/1J-Opta-LMX
+cd ~/Synced/Opta/1-Apps/1M-Opta-LMX
 source .venv/bin/activate
 pytest tests/ -v --tb=short
 ```

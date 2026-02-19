@@ -211,7 +211,7 @@ Create APP.md for all existing Opta projects:
 
 | Project | Location | Priority |
 |---------|----------|----------|
-| **Opta-LMX** | `1J-Opta-LMX/APP.md` | 🔴 Now (new project) |
+| **Opta-LMX** | `1M-Opta-LMX/APP.md` | 🔴 Now (new project) |
 | **OptaPlus** | `1I-OptaPlus/APP.md` | 🔴 High (active development) |
 | **Opta CLI** | `1D-Opta-CLI-TS/APP.md` | 🔴 High (needs migration clarity) |
 | **Opta Life iOS** | `1E-Opta-Life-IOS/APP.md` | 🟡 Medium |

@@ -91,7 +91,7 @@ mv ~/Documents/Opta/OptaCloud ~/Documents/Opta/_MIGRATED-TO-SYNCED/
 | Opta Mini macOS | 1G-Opta-Mini-MacOS |
 | Opta Scan iOS | 1H-Opta-Scan-IOS |
 | OptaPlus (design system) | 1I-OptaPlus |
-| Opta LMX | 1J-Opta-LMX |
+| Opta LMX | 1M-Opta-LMX |
 | Optamize macOS | 1J-Optamize-MacOS |
 | Optamize Web | 1K-Optamize-Web |
 | Opta Local (optalocal.com) | 1L-Opta-Local |

@@ -19,13 +19,13 @@ tech-stack:
 
 key-files:
   created:
-    - 1-Apps/1J-Opta-LMX/src/opta_lmx/sessions/__init__.py
-    - 1-Apps/1J-Opta-LMX/src/opta_lmx/sessions/models.py
-    - 1-Apps/1J-Opta-LMX/src/opta_lmx/sessions/store.py
-    - 1-Apps/1J-Opta-LMX/src/opta_lmx/api/sessions.py
+    - 1-Apps/1M-Opta-LMX/src/opta_lmx/sessions/__init__.py
+    - 1-Apps/1M-Opta-LMX/src/opta_lmx/sessions/models.py
+    - 1-Apps/1M-Opta-LMX/src/opta_lmx/sessions/store.py
+    - 1-Apps/1M-Opta-LMX/src/opta_lmx/api/sessions.py
   modified:
-    - 1-Apps/1J-Opta-LMX/src/opta_lmx/api/deps.py
-    - 1-Apps/1J-Opta-LMX/src/opta_lmx/main.py
+    - 1-Apps/1M-Opta-LMX/src/opta_lmx/api/deps.py
+    - 1-Apps/1M-Opta-LMX/src/opta_lmx/main.py
 
 key-decisions:
   - "SessionStore uses synchronous file I/O (session files are small, disk is local SSD)"
@@ -77,12 +77,12 @@ Each task was committed atomically:
 2. **Task 2: Session API endpoints wired into LMX router** - `7d05949` (feat)
 
 ## Files Created/Modified
-- `1-Apps/1J-Opta-LMX/src/opta_lmx/sessions/__init__.py` - Empty package init
-- `1-Apps/1J-Opta-LMX/src/opta_lmx/sessions/models.py` - SessionSummary, SessionMessage, SessionFull, SessionListResponse Pydantic models
-- `1-Apps/1J-Opta-LMX/src/opta_lmx/sessions/store.py` - SessionStore class with list/get/delete/search and index.json support
-- `1-Apps/1J-Opta-LMX/src/opta_lmx/api/sessions.py` - FastAPI router with 4 admin endpoints
-- `1-Apps/1J-Opta-LMX/src/opta_lmx/api/deps.py` - Added get_session_store() dependency and SessionStoreDep type alias
-- `1-Apps/1J-Opta-LMX/src/opta_lmx/main.py` - Import sessions router, create SessionStore in lifespan, mount at /admin
+- `1-Apps/1M-Opta-LMX/src/opta_lmx/sessions/__init__.py` - Empty package init
+- `1-Apps/1M-Opta-LMX/src/opta_lmx/sessions/models.py` - SessionSummary, SessionMessage, SessionFull, SessionListResponse Pydantic models
+- `1-Apps/1M-Opta-LMX/src/opta_lmx/sessions/store.py` - SessionStore class with list/get/delete/search and index.json support
+- `1-Apps/1M-Opta-LMX/src/opta_lmx/api/sessions.py` - FastAPI router with 4 admin endpoints
+- `1-Apps/1M-Opta-LMX/src/opta_lmx/api/deps.py` - Added get_session_store() dependency and SessionStoreDep type alias
+- `1-Apps/1M-Opta-LMX/src/opta_lmx/main.py` - Import sessions router, create SessionStore in lifespan, mount at /admin
 
 ## Decisions Made
 - Synchronous file I/O for SessionStore (local SSD, small files, async overhead not justified)

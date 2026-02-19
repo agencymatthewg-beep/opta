@@ -11,7 +11,7 @@ The Opta local stack consists of 3 main components:
 | Component | Location | Purpose |
 |-----------|----------|---------|
 | **Opta CLI** | `1D-Opta-CLI-TS/` | Agentic AI coding CLI |
-| **Opta LMX** | `1J-Opta-LMX/` | Local inference server |
+| **Opta LMX** | `1M-Opta-LMX/` | Local inference server |
 | **optalocal.com** | `projects/optalocal-dashboard/` | Web dashboard |
 
 ---
@@ -42,7 +42,7 @@ The Opta local stack consists of 3 main components:
 
 ## 2. Opta LMX
 
-**Path:** `~/Synced/Opta/1-Apps/1J-Opta-LMX/`
+**Path:** `~/Synced/Opta/1-Apps/1M-Opta-LMX/`
 
 **Purpose:** Private AI inference engine for Apple Silicon
 

@@ -14,7 +14,7 @@
 | **Platform** | macOS (Apple Silicon — M3 Ultra primary, M4 Max secondary) |
 | **Language** | Python 3.11+ |
 | **Frameworks** | MLX, FastAPI, Uvicorn, huggingface_hub |
-| **Location** | `~/Synced/Opta/1-Apps/1J-Opta-LMX/` |
+| **Location** | `~/Synced/Opta/1-Apps/1M-Opta-LMX/` |
 | **Status** | Active — v0.5 (LM Studio Replacement) |
 
 ---

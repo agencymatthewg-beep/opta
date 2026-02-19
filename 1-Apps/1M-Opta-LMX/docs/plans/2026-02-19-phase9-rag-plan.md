@@ -89,7 +89,7 @@ class TestRAGConfig:
             RAGConfig(chunking_strategy="banana")
 ```
 
-**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1J-Opta-LMX && python -m pytest tests/test_rag.py::TestRAGConfig -x -v`
+**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1M-Opta-LMX && python -m pytest tests/test_rag.py::TestRAGConfig -x -v`
 **Expect:** FAIL (fields don't exist yet)
 
 ---
@@ -138,14 +138,14 @@ Add these fields to the `RAGConfig` class, after `auto_persist`:
     )
 ```
 
-**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1J-Opta-LMX && python -m pytest tests/test_rag.py::TestRAGConfig -x -v`
+**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1M-Opta-LMX && python -m pytest tests/test_rag.py::TestRAGConfig -x -v`
 **Expect:** PASS
 
 ---
 
 ### Task A3: Commit
 ```bash
-cd /Users/matthewbyrden/Synced/Opta/1-Apps/1J-Opta-LMX
+cd /Users/matthewbyrden/Synced/Opta/1-Apps/1M-Opta-LMX
 git add src/opta_lmx/config.py tests/test_rag.py
 git commit -m "feat(lmx): add Phase 9 RAGConfig fields — rrf, reranker, embedding, chunking"
 ```
@@ -194,7 +194,7 @@ Add to `TestVectorStore`:
         assert weighted_a[0][0] == 0  # Doc 0 wins with high list-A weight
 ```
 
-**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1J-Opta-LMX && python -m pytest tests/test_rag.py::TestVectorStore::test_rrf_k_parameter tests/test_rag.py::TestVectorStore::test_weighted_rrf -x -v`
+**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1M-Opta-LMX && python -m pytest tests/test_rag.py::TestVectorStore::test_rrf_k_parameter tests/test_rag.py::TestVectorStore::test_weighted_rrf -x -v`
 **Expect:** FAIL (weights parameter doesn't exist)
 
 ---
@@ -238,7 +238,7 @@ def reciprocal_rank_fusion(
     return merged
 ```
 
-**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1J-Opta-LMX && python -m pytest tests/test_rag.py::TestVectorStore::test_rrf_k_parameter tests/test_rag.py::TestVectorStore::test_weighted_rrf -x -v`
+**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1M-Opta-LMX && python -m pytest tests/test_rag.py::TestVectorStore::test_rrf_k_parameter tests/test_rag.py::TestVectorStore::test_weighted_rrf -x -v`
 **Expect:** PASS
 
 ---
@@ -267,7 +267,7 @@ Add to `TestVectorStore`:
         assert len(results) >= 1
 ```
 
-**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1J-Opta-LMX && python -m pytest tests/test_rag.py::TestVectorStore::test_hybrid_search_uses_rrf_config -x -v`
+**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1M-Opta-LMX && python -m pytest tests/test_rag.py::TestVectorStore::test_hybrid_search_uses_rrf_config -x -v`
 **Expect:** FAIL (search() doesn't accept rrf_k/rrf_weights)
 
 ---
@@ -324,14 +324,14 @@ In `_search_hybrid()`, pass them to `reciprocal_rank_fusion`:
         merged = reciprocal_rank_fusion(ranked_lists, k=rrf_k, weights=rrf_weights)
 ```
 
-**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1J-Opta-LMX && python -m pytest tests/test_rag.py::TestVectorStore -x -v`
+**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1M-Opta-LMX && python -m pytest tests/test_rag.py::TestVectorStore -x -v`
 **Expect:** PASS (all VectorStore tests)
 
 ---
 
 ### Task B5: Commit
 ```bash
-cd /Users/matthewbyrden/Synced/Opta/1-Apps/1J-Opta-LMX
+cd /Users/matthewbyrden/Synced/Opta/1-Apps/1M-Opta-LMX
 git add src/opta_lmx/rag/bm25.py src/opta_lmx/rag/store.py tests/test_rag.py
 git commit -m "feat(lmx): configurable RRF k + weighted fusion in hybrid search"
 ```
@@ -406,7 +406,7 @@ class TestChunkMarkdown:
             assert chunk.index == i
 ```
 
-**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1J-Opta-LMX && python -m pytest tests/test_rag.py::TestChunkMarkdown -x -v`
+**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1M-Opta-LMX && python -m pytest tests/test_rag.py::TestChunkMarkdown -x -v`
 **Expect:** FAIL (chunk_markdown doesn't exist)
 
 ---
@@ -522,7 +522,7 @@ def chunk_markdown(
 
 Note: Move the `import re` to the top of the file (it's not imported yet).
 
-**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1J-Opta-LMX && python -m pytest tests/test_rag.py::TestChunkMarkdown -x -v`
+**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1M-Opta-LMX && python -m pytest tests/test_rag.py::TestChunkMarkdown -x -v`
 **Expect:** PASS
 
 ---
@@ -550,7 +550,7 @@ async def test_ingest_markdown_chunking(rag_client: AsyncClient) -> None:
     assert data["chunks_created"] == 2
 ```
 
-**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1J-Opta-LMX && python -m pytest tests/test_rag.py::test_ingest_markdown_chunking -x -v`
+**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1M-Opta-LMX && python -m pytest tests/test_rag.py::test_ingest_markdown_chunking -x -v`
 **Expect:** FAIL (chunking="markdown_headers" not handled)
 
 ---
@@ -592,14 +592,14 @@ from opta_lmx.rag.chunker import chunk_code, chunk_markdown, chunk_text
 
 Place this `elif` before the final `else` block (auto/text).
 
-**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1J-Opta-LMX && python -m pytest tests/test_rag.py::test_ingest_markdown_chunking tests/test_rag.py::TestChunkMarkdown -x -v`
+**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1M-Opta-LMX && python -m pytest tests/test_rag.py::test_ingest_markdown_chunking tests/test_rag.py::TestChunkMarkdown -x -v`
 **Expect:** PASS
 
 ---
 
 ### Task C5: Commit
 ```bash
-cd /Users/matthewbyrden/Synced/Opta/1-Apps/1J-Opta-LMX
+cd /Users/matthewbyrden/Synced/Opta/1-Apps/1M-Opta-LMX
 git add src/opta_lmx/rag/chunker.py src/opta_lmx/api/rag.py tests/test_rag.py
 git commit -m "feat(lmx): markdown-header-aware chunking for RAG ingestion"
 ```
@@ -639,7 +639,7 @@ Add to `TestVectorStore`:
             store.search("col", [1.0, 2.0])  # 2D vs 3D
 ```
 
-**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1J-Opta-LMX && python -m pytest tests/test_rag.py::TestVectorStore::test_dimension_mismatch_on_add_raises tests/test_rag.py::TestVectorStore::test_dimension_mismatch_on_search_raises -x -v`
+**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1M-Opta-LMX && python -m pytest tests/test_rag.py::TestVectorStore::test_dimension_mismatch_on_add_raises tests/test_rag.py::TestVectorStore::test_dimension_mismatch_on_search_raises -x -v`
 **Expect:** FAIL (no dimension checks)
 
 ---
@@ -707,14 +707,14 @@ And after each collection is loaded in the loop:
                 )
 ```
 
-**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1J-Opta-LMX && python -m pytest tests/test_rag.py::TestVectorStore -x -v`
+**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1M-Opta-LMX && python -m pytest tests/test_rag.py::TestVectorStore -x -v`
 **Expect:** PASS
 
 ---
 
 ### Task D3: Commit
 ```bash
-cd /Users/matthewbyrden/Synced/Opta/1-Apps/1J-Opta-LMX
+cd /Users/matthewbyrden/Synced/Opta/1-Apps/1M-Opta-LMX
 git add src/opta_lmx/rag/store.py tests/test_rag.py
 git commit -m "feat(lmx): embedding dimension tracking + mismatch prevention per collection"
 ```
@@ -754,7 +754,7 @@ class TestRerankerEngine:
         assert results[0]["score"] > results[1]["score"]
 ```
 
-**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1J-Opta-LMX && python -m pytest tests/test_rag.py::TestRerankerEngine -x -v`
+**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1M-Opta-LMX && python -m pytest tests/test_rag.py::TestRerankerEngine -x -v`
 **Expect:** FAIL (module doesn't exist)
 
 ---
@@ -882,14 +882,14 @@ class RerankerEngine:
         return ranked
 ```
 
-**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1J-Opta-LMX && python -m pytest tests/test_rag.py::TestRerankerEngine -x -v`
+**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1M-Opta-LMX && python -m pytest tests/test_rag.py::TestRerankerEngine -x -v`
 **Expect:** PASS
 
 ---
 
 ### Task E3: Commit
 ```bash
-cd /Users/matthewbyrden/Synced/Opta/1-Apps/1J-Opta-LMX
+cd /Users/matthewbyrden/Synced/Opta/1-Apps/1M-Opta-LMX
 git add src/opta_lmx/rag/reranker.py tests/test_rag.py
 git commit -m "feat(lmx): local RerankerEngine with lazy-loaded cross-encoder support"
 ```
@@ -932,7 +932,7 @@ async def test_query_with_rerank(rag_client: AsyncClient) -> None:
     assert len(data["results"]) >= 1
 ```
 
-**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1J-Opta-LMX && python -m pytest tests/test_rag.py::test_query_with_rerank -x -v`
+**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1M-Opta-LMX && python -m pytest tests/test_rag.py::test_query_with_rerank -x -v`
 **Expect:** FAIL (rerank field not in QueryRequest)
 
 ---
@@ -1051,14 +1051,14 @@ In `query_collection`, before the search call:
 
 Then use `retrieval_k` instead of `body.top_k` in the `store.search()` call.
 
-**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1J-Opta-LMX && python -m pytest tests/test_rag.py::test_query_with_rerank -x -v`
+**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1M-Opta-LMX && python -m pytest tests/test_rag.py::test_query_with_rerank -x -v`
 **Expect:** PASS
 
 ---
 
 ### Task F3: Run full test suite
 ```bash
-cd /Users/matthewbyrden/Synced/Opta/1-Apps/1J-Opta-LMX && python -m pytest tests/test_rag.py -x -v
+cd /Users/matthewbyrden/Synced/Opta/1-Apps/1M-Opta-LMX && python -m pytest tests/test_rag.py -x -v
 ```
 **Expect:** All PASS
 
@@ -1066,7 +1066,7 @@ cd /Users/matthewbyrden/Synced/Opta/1-Apps/1J-Opta-LMX && python -m pytest tests
 
 ### Task F4: Commit
 ```bash
-cd /Users/matthewbyrden/Synced/Opta/1-Apps/1J-Opta-LMX
+cd /Users/matthewbyrden/Synced/Opta/1-Apps/1M-Opta-LMX
 git add src/opta_lmx/api/rag.py src/opta_lmx/api/deps.py tests/test_rag.py
 git commit -m "feat(lmx): rerank parameter on RAG search API with graceful fallback"
 ```
@@ -1147,7 +1147,7 @@ from fastapi import APIRouter, Request
 
 ### Task G3: Run full test suite
 ```bash
-cd /Users/matthewbyrden/Synced/Opta/1-Apps/1J-Opta-LMX && python -m pytest tests/ -x -v --timeout=60
+cd /Users/matthewbyrden/Synced/Opta/1-Apps/1M-Opta-LMX && python -m pytest tests/ -x -v --timeout=60
 ```
 **Expect:** All PASS
 
@@ -1155,7 +1155,7 @@ cd /Users/matthewbyrden/Synced/Opta/1-Apps/1J-Opta-LMX && python -m pytest tests
 
 ### Task G4: Commit
 ```bash
-cd /Users/matthewbyrden/Synced/Opta/1-Apps/1J-Opta-LMX
+cd /Users/matthewbyrden/Synced/Opta/1-Apps/1M-Opta-LMX
 git add src/opta_lmx/main.py src/opta_lmx/api/rag.py
 git commit -m "feat(lmx): wire RerankerEngine + RRF config into app lifespan and search"
 ```
@@ -1213,7 +1213,7 @@ rag:
 
 ### Task H3: Commit
 ```bash
-cd /Users/matthewbyrden/Synced/Opta/1-Apps/1J-Opta-LMX
+cd /Users/matthewbyrden/Synced/Opta/1-Apps/1M-Opta-LMX
 git add pyproject.toml config/default-config.yaml
 git commit -m "chore(lmx): add rerankers dep, Phase 9 RAG config to default-config.yaml"
 ```
@@ -1292,14 +1292,14 @@ Also add `Request` to the endpoint signature.
 
 ### Task I3: Run full test suite
 ```bash
-cd /Users/matthewbyrden/Synced/Opta/1-Apps/1J-Opta-LMX && python -m pytest tests/test_rag.py -x -v
+cd /Users/matthewbyrden/Synced/Opta/1-Apps/1M-Opta-LMX && python -m pytest tests/test_rag.py -x -v
 ```
 
 ---
 
 ### Task I4: Commit
 ```bash
-cd /Users/matthewbyrden/Synced/Opta/1-Apps/1J-Opta-LMX
+cd /Users/matthewbyrden/Synced/Opta/1-Apps/1M-Opta-LMX
 git add src/opta_lmx/api/rag.py tests/test_rag.py
 git commit -m "feat(lmx): reranking support in context assembly endpoint"
 ```
@@ -1310,7 +1310,7 @@ git commit -m "feat(lmx): reranking support in context assembly endpoint"
 
 ### Task J1: Run ALL tests
 ```bash
-cd /Users/matthewbyrden/Synced/Opta/1-Apps/1J-Opta-LMX && python -m pytest tests/ -x -v --timeout=60
+cd /Users/matthewbyrden/Synced/Opta/1-Apps/1M-Opta-LMX && python -m pytest tests/ -x -v --timeout=60
 ```
 **Expect:** All existing + new tests PASS.
 
@@ -1318,21 +1318,21 @@ cd /Users/matthewbyrden/Synced/Opta/1-Apps/1J-Opta-LMX && python -m pytest tests
 
 ### Task J2: Lint check
 ```bash
-cd /Users/matthewbyrden/Synced/Opta/1-Apps/1J-Opta-LMX && python -m ruff check src/opta_lmx/rag/ src/opta_lmx/api/rag.py src/opta_lmx/config.py
+cd /Users/matthewbyrden/Synced/Opta/1-Apps/1M-Opta-LMX && python -m ruff check src/opta_lmx/rag/ src/opta_lmx/api/rag.py src/opta_lmx/config.py
 ```
 
 ---
 
 ### Task J3: Type check (non-blocking)
 ```bash
-cd /Users/matthewbyrden/Synced/Opta/1-Apps/1J-Opta-LMX && python -m mypy src/opta_lmx/rag/ src/opta_lmx/api/rag.py src/opta_lmx/config.py --ignore-missing-imports
+cd /Users/matthewbyrden/Synced/Opta/1-Apps/1M-Opta-LMX && python -m mypy src/opta_lmx/rag/ src/opta_lmx/api/rag.py src/opta_lmx/config.py --ignore-missing-imports
 ```
 
 ---
 
 ### Task J4: Push
 ```bash
-cd /Users/matthewbyrden/Synced/Opta/1-Apps/1J-Opta-LMX && git push origin main
+cd /Users/matthewbyrden/Synced/Opta/1-Apps/1M-Opta-LMX && git push origin main
 ```
 
 ---

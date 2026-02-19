@@ -1,7 +1,7 @@
 {
-  "name": "Opta Life Manager",
-  "short_name": "Opta LM",
-  "description": "Personal dashboard for the Opta ecosystem",
+  "name": "Opta Life",
+  "short_name": "Opta Life",
+  "description": "Personal dashboard for the Opta Life ecosystem",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0a0a0f",

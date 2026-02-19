@@ -573,7 +573,7 @@ export function useSessionResume({ client, sessionId }: UseSessionResumeOptions)
    - What we know: LMX has no session endpoints. CLI has an HTTP server (`src/commands/server.ts`) that could serve session data.
    - What's unclear: Should we add session endpoints to LMX (Python, closer to data), or have Web talk to CLI's HTTP server (TypeScript, already has full session API)?
    - **Recommendation:** Add to LMX. It runs as a daemon on Mac Studio where sessions live. CLI server is ephemeral (only runs when user starts it). LMX is always available.
-   - Impact: Requires Python work in `1-Apps/1J-Opta-LMX/src/opta_lmx/api/` before this phase can ship.
+   - Impact: Requires Python work in `1-Apps/1M-Opta-LMX/src/opta_lmx/api/` before this phase can ship.
 
 2. **Session Ownership and Concurrency**
    - What we know: CLI saves sessions on exit. Web would save sessions via LMX. Both write to the same JSON files.
@@ -605,7 +605,7 @@ export function useSessionResume({ client, sessionId }: UseSessionResumeOptions)
 ## Sources
 
 ### Primary (HIGH confidence -- direct codebase analysis)
-- **Opta-LMX admin API** (`1-Apps/1J-Opta-LMX/src/opta_lmx/api/admin.py`) -- Complete admin endpoint inventory. Zero session endpoints confirmed.
+- **Opta-LMX admin API** (`1-Apps/1M-Opta-LMX/src/opta_lmx/api/admin.py`) -- Complete admin endpoint inventory. Zero session endpoints confirmed.
 - **Opta CLI session store** (`1-Apps/1D-Opta-CLI-TS/src/memory/store.ts`) -- Full session CRUD, Zod schema, search algorithm, index file format.
 - **Opta CLI AgentMessage type** (`1-Apps/1D-Opta-CLI-TS/src/core/agent.ts`) -- Canonical message schema with ContentPart, tool_calls.
 - **Opta CLI sessions command** (`1-Apps/1D-Opta-CLI-TS/src/commands/sessions.ts`) -- List, search, resume, delete, export actions.
@@ -643,7 +643,7 @@ export function useSessionResume({ client, sessionId }: UseSessionResumeOptions)
 - Architecture patterns: MEDIUM -- patterns derived from codebase analysis, not tested
 - Virtual scroll threshold: LOW -- needs real-world data
 
-**Blocker identified:** LMX needs session endpoints before Web Sessions can ship. This is a **cross-app dependency** requiring Python work in `1-Apps/1J-Opta-LMX/`.
+**Blocker identified:** LMX needs session endpoints before Web Sessions can ship. This is a **cross-app dependency** requiring Python work in `1-Apps/1M-Opta-LMX/`.
 
 **Research date:** 2026-02-18
 **Valid until:** 2026-03-18 (30 days -- session schema unlikely to change)

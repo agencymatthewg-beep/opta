@@ -122,8 +122,8 @@ Model management features currently in Opta CLI's plans migrate to Opta-LMX. CLI
 
 | Document | Location | Purpose |
 |----------|----------|---------|
-| Project Definition | `1J-Opta-LMX/docs/PROJECT-DEFINITION.md` | AIM, purpose, capabilities, non-negotiables |
-| CLI Migration | `1J-Opta-LMX/docs/OPTA-CLI-MIGRATION.md` | Feature overlap analysis, what moves, what stays |
-| Master Plan | `1J-Opta-LMX/docs/plans/MASTER-PLAN.md` | Full development plan with phases and sub-agent assignments |
-| This File | `1J-Opta-LMX/docs/context/CONVERSATION-CONTEXT.md` | How and why Opta-LMX was conceived |
+| Project Definition | `1M-Opta-LMX/docs/PROJECT-DEFINITION.md` | AIM, purpose, capabilities, non-negotiables |
+| CLI Migration | `1M-Opta-LMX/docs/OPTA-CLI-MIGRATION.md` | Feature overlap analysis, what moves, what stays |
+| Master Plan | `1M-Opta-LMX/docs/plans/MASTER-PLAN.md` | Full development plan with phases and sub-agent assignments |
+| This File | `1M-Opta-LMX/docs/context/CONVERSATION-CONTEXT.md` | How and why Opta-LMX was conceived |
 | Opta CLI V1 Design | `1D-Opta-CLI-TS/docs/plans/2026-02-12-opta-cli-v1-design.md` | Full CLI design (reference for migration) |

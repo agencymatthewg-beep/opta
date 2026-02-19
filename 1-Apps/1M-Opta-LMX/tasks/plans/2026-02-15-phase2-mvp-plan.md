@@ -191,7 +191,7 @@ if __name__ == "__main__":
 ### Verification
 
 ```bash
-cd ~/Synced/Opta/1-Apps/1J-Opta-LMX
+cd ~/Synced/Opta/1-Apps/1M-Opta-LMX
 pip install -e ".[dev]"
 python -c "import opta_lmx; print(opta_lmx.__version__)"
 # Expected: 0.1.0

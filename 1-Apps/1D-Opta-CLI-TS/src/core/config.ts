@@ -32,7 +32,7 @@ export const OptaConfigSchema = z.object({
         .object({
           user: z.string().default('opta'),
           identityFile: z.string().default('~/.ssh/id_ed25519'),
-          lmxPath: z.string().default('/Users/Shared/312/Opta/1-Apps/1J-Opta-LMX'),
+          lmxPath: z.string().default('/Users/Shared/312/Opta/1-Apps/1M-Opta-LMX'),
           pythonPath: z.string().default('/Users/opta/.mlx-env/bin/python'),
         })
         .default({}),

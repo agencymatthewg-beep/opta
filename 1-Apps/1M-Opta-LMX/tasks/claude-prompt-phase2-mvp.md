@@ -1,7 +1,7 @@
 # Claude Code Prompt — Opta-LMX Phase 2: MVP Implementation
 
-**Launch:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1J-Opta-LMX && claude --dangerously-skip-permissions`
-**Paste:** `Proceed with the plan located at: /Users/matthewbyrden/Synced/Opta/1-Apps/1J-Opta-LMX/tasks/claude-prompt-phase2-mvp.md`
+**Launch:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1M-Opta-LMX && claude --dangerously-skip-permissions`
+**Paste:** `Proceed with the plan located at: /Users/matthewbyrden/Synced/Opta/1-Apps/1M-Opta-LMX/tasks/claude-prompt-phase2-mvp.md`
 
 ---
 

@@ -121,7 +121,7 @@ class TestCircuitBreakerTransitions:
         assert cb.allows_request is True
 ```
 
-**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1J-Opta-LMX && python -m pytest tests/test_circuit_breaker.py -v` -- expect all FAIL (module not found).
+**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1M-Opta-LMX && python -m pytest tests/test_circuit_breaker.py -v` -- expect all FAIL (module not found).
 
 ### Task 1.2 -- Implement: CircuitBreaker class
 
@@ -195,7 +195,7 @@ class CircuitBreaker:
         self._last_failure_at = 0.0
 ```
 
-**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1J-Opta-LMX && python -m pytest tests/test_circuit_breaker.py -v` -- expect all PASS.
+**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1M-Opta-LMX && python -m pytest tests/test_circuit_breaker.py -v` -- expect all PASS.
 
 **Commit:** `feat(lmx): add circuit breaker for helper node connections`
 
@@ -284,7 +284,7 @@ class TestClientCircuitBreaker:
         assert "circuit open" in str(exc_info.value).lower()
 ```
 
-**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1J-Opta-LMX && python -m pytest tests/test_circuit_breaker.py::TestClientCircuitBreaker -v` -- expect FAIL.
+**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1M-Opta-LMX && python -m pytest tests/test_circuit_breaker.py::TestClientCircuitBreaker -v` -- expect FAIL.
 
 ### Task 1.4 -- Implement: Wire circuit breaker into HelperNodeClient
 
@@ -329,7 +329,7 @@ self.circuit_breaker.record_failure()
 "circuit_state": self.circuit_breaker.state.value,
 ```
 
-**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1J-Opta-LMX && python -m pytest tests/test_circuit_breaker.py -v && python -m pytest tests/test_helper_nodes.py -v` -- expect all PASS.
+**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1M-Opta-LMX && python -m pytest tests/test_circuit_breaker.py -v && python -m pytest tests/test_helper_nodes.py -v` -- expect all PASS.
 
 **Commit:** `feat(lmx): integrate circuit breaker into HelperNodeClient`
 
@@ -443,7 +443,7 @@ async def test_health_check_empty_clients() -> None:
     # No crash = pass
 ```
 
-**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1J-Opta-LMX && python -m pytest tests/test_health_check_loop.py -v` -- expect FAIL (module not found).
+**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1M-Opta-LMX && python -m pytest tests/test_health_check_loop.py -v` -- expect FAIL (module not found).
 
 ### Task 2.2 -- Implement: health_check_loop function
 
@@ -496,7 +496,7 @@ async def health_check_loop(
         await asyncio.sleep(interval_sec)
 ```
 
-**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1J-Opta-LMX && python -m pytest tests/test_health_check_loop.py -v` -- expect all PASS.
+**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1M-Opta-LMX && python -m pytest tests/test_health_check_loop.py -v` -- expect all PASS.
 
 **Commit:** `feat(lmx): add background health check loop for helper nodes`
 
@@ -539,7 +539,7 @@ async def health_check_loop(
             await health_task
 ```
 
-**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1J-Opta-LMX && python -m pytest tests/ -v -k "not integration"` -- expect all PASS.
+**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1M-Opta-LMX && python -m pytest tests/ -v -k "not integration"` -- expect all PASS.
 
 **Commit:** `feat(lmx): wire health check loop into app lifespan`
 
@@ -575,7 +575,7 @@ async def test_stack_endpoint_shows_circuit_state(client: AsyncClient) -> None:
     assert helper["circuit_state"] == "closed"
 ```
 
-**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1J-Opta-LMX && python -m pytest tests/test_helper_nodes.py::test_stack_endpoint_shows_circuit_state -v` -- expect FAIL (no `circuit_state` key).
+**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1M-Opta-LMX && python -m pytest tests/test_helper_nodes.py::test_stack_endpoint_shows_circuit_state -v` -- expect FAIL (no `circuit_state` key).
 
 ### Task 3.2 -- Implement: Add circuit_state to /admin/stack response
 
@@ -621,7 +621,7 @@ With:
         }
 ```
 
-**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1J-Opta-LMX && python -m pytest tests/test_helper_nodes.py -v` -- expect all PASS.
+**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1M-Opta-LMX && python -m pytest tests/test_helper_nodes.py -v` -- expect all PASS.
 
 **Commit:** `feat(lmx): show circuit breaker state in /admin/stack`
 
@@ -689,7 +689,7 @@ class TestStackPresetConfig:
         assert config.stack_presets["minimax"].roles["chat"] == "mlx-community/MiniMax-M2.5-4bit"
 ```
 
-**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1J-Opta-LMX && python -m pytest tests/test_stack_presets.py -v` -- expect FAIL (StackPresetConfig not found).
+**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1M-Opta-LMX && python -m pytest tests/test_stack_presets.py -v` -- expect FAIL (StackPresetConfig not found).
 
 ### Task 4.2 -- Implement: StackPresetConfig in config.py
 
@@ -721,7 +721,7 @@ class StackPresetConfig(BaseModel):
     )
 ```
 
-**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1J-Opta-LMX && python -m pytest tests/test_stack_presets.py -v` -- expect all PASS.
+**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1M-Opta-LMX && python -m pytest tests/test_stack_presets.py -v` -- expect all PASS.
 
 **Commit:** `feat(lmx): add stack presets config for named role-to-model mappings`
 
@@ -800,7 +800,7 @@ class TestBackendConfig:
         assert config.backends["m2.5-4bit"].url == "http://localhost:10001/v1"
 ```
 
-**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1J-Opta-LMX && python -m pytest tests/test_backends_config.py -v` -- expect FAIL (BackendConfig not found).
+**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1M-Opta-LMX && python -m pytest tests/test_backends_config.py -v` -- expect FAIL (BackendConfig not found).
 
 ### Task 5.2 -- Implement: BackendConfig in config.py
 
@@ -831,7 +831,7 @@ class BackendConfig(BaseModel):
     )
 ```
 
-**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1J-Opta-LMX && python -m pytest tests/test_backends_config.py -v` -- expect all PASS.
+**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1M-Opta-LMX && python -m pytest tests/test_backends_config.py -v` -- expect all PASS.
 
 ### Task 5.3 -- Test: /admin/stack shows backends
 
@@ -859,7 +859,7 @@ async def test_stack_endpoint_shows_backends(client: AsyncClient) -> None:
     assert data["backends"]["m2.5-4bit"]["url"] == "http://localhost:10001/v1"
 ```
 
-**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1J-Opta-LMX && python -m pytest tests/test_backends_config.py::test_stack_endpoint_shows_backends -v` -- expect FAIL.
+**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1M-Opta-LMX && python -m pytest tests/test_backends_config.py::test_stack_endpoint_shows_backends -v` -- expect FAIL.
 
 ### Task 5.4 -- Implement: Add backends to /admin/stack response
 
@@ -880,7 +880,7 @@ In the `stack_status()` function, add before the return statement:
 
 And add `"backends": backends_status,` to the return dict (alongside `"roles"`, `"helper_nodes"`, etc.).
 
-**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1J-Opta-LMX && python -m pytest tests/test_backends_config.py -v` -- expect all PASS.
+**Run:** `cd /Users/matthewbyrden/Synced/Opta/1-Apps/1M-Opta-LMX && python -m pytest tests/test_backends_config.py -v` -- expect all PASS.
 
 **Commit:** `feat(lmx): parse backends config and expose in /admin/stack`
 
@@ -944,7 +944,7 @@ __all__ = ["CircuitBreaker", "CircuitState", "HelperNodeClient", "health_check_l
 After all deliverables:
 
 ```bash
-cd /Users/matthewbyrden/Synced/Opta/1-Apps/1J-Opta-LMX
+cd /Users/matthewbyrden/Synced/Opta/1-Apps/1M-Opta-LMX
 python -m pytest tests/ -v -k "not integration" --tb=short
 ```
 

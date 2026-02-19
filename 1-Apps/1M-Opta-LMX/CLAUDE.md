@@ -250,7 +250,7 @@ assert response["choices"][0]["message"]["role"] == "assistant"
 
 ### Install for Development
 ```bash
-cd ~/Synced/Opta/1-Apps/1J-Opta-LMX
+cd ~/Synced/Opta/1-Apps/1M-Opta-LMX
 pip install -e ".[dev]"  # Editable install with dev deps
 ```
 

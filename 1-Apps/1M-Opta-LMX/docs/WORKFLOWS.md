@@ -24,7 +24,7 @@ This document outlines step-by-step procedures for common tasks during developme
 
 1. **Clone/navigate to project**
    ```bash
-   cd ~/Synced/Opta/1-Apps/1J-Opta-LMX
+   cd ~/Synced/Opta/1-Apps/1M-Opta-LMX
    ```
 
 2. **Create virtual environment**
@@ -320,7 +320,7 @@ llama2-7b:
 
 3. **Install Python package**
    ```bash
-   cd ~/Synced/Opta/1-Apps/1J-Opta-LMX
+   cd ~/Synced/Opta/1-Apps/1M-Opta-LMX
    pip install -e .
    ```
 
