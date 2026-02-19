@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import time
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -16,7 +15,6 @@ from opta_lmx.manager.quantize import (
     list_jobs,
     start_quantize,
 )
-
 
 # ─── QuantizeJob dataclass ────────────────────────────────────────────────────
 
@@ -82,18 +80,21 @@ class TestDoQuantize:
         with pytest.raises(FileExistsError, match="already exists"):
             _do_quantize("org/model", str(out), 4, 64, "affine")
 
-    @patch("mlx_lm.convert", create=True)
-    def test_calls_convert_with_correct_args(
-        self, mock_convert: MagicMock, tmp_path: Path
-    ) -> None:
+    def test_calls_convert_with_correct_args(self, tmp_path: Path) -> None:
         out = tmp_path / "output"
-        # Create a fake output after convert is called
+        mock_convert = MagicMock()
+
         def fake_convert(**kwargs: object) -> None:
             Path(kwargs["mlx_path"]).mkdir(parents=True)
             (Path(kwargs["mlx_path"]) / "weights.bin").write_bytes(b"x" * 100)
 
         mock_convert.side_effect = fake_convert
-        size = _do_quantize("org/model", str(out), 4, 64, "affine")
+        mock_mlx_lm = MagicMock()
+        mock_mlx_lm.convert = mock_convert
+
+        with patch.dict("sys.modules", {"mlx_lm": mock_mlx_lm}):
+            size = _do_quantize("org/model", str(out), 4, 64, "affine")
+
         mock_convert.assert_called_once_with(
             hf_path="org/model",
             mlx_path=str(out),
@@ -104,11 +105,9 @@ class TestDoQuantize:
         )
         assert size == 100
 
-    @patch("mlx_lm.convert", create=True)
-    def test_calculates_output_size(
-        self, mock_convert: MagicMock, tmp_path: Path
-    ) -> None:
+    def test_calculates_output_size(self, tmp_path: Path) -> None:
         out = tmp_path / "sized"
+        mock_convert = MagicMock()
 
         def fake_convert(**kwargs: object) -> None:
             p = Path(kwargs["mlx_path"])
@@ -120,7 +119,12 @@ class TestDoQuantize:
             (sub / "nested.bin").write_bytes(b"c" * 200)
 
         mock_convert.side_effect = fake_convert
-        size = _do_quantize("org/model", str(out), 8, 128, "mxfp8")
+        mock_mlx_lm = MagicMock()
+        mock_mlx_lm.convert = mock_convert
+
+        with patch.dict("sys.modules", {"mlx_lm": mock_mlx_lm}):
+            size = _do_quantize("org/model", str(out), 8, 128, "mxfp8")
+
         assert size == 500 + 50 + 200
 
 
@@ -171,39 +175,37 @@ class TestStartQuantize:
         _jobs.clear()
 
     @pytest.mark.asyncio
-    @patch("opta_lmx.manager.quantize._do_quantize", return_value=0)
-    async def test_creates_job_with_running_status(
-        self, mock_quant: MagicMock
-    ) -> None:
-        job = await start_quantize("org/model", "/tmp/out")
+    async def test_creates_job_with_running_status(self) -> None:
+        with patch("opta_lmx.manager.quantize.asyncio.create_task"):
+            job = await start_quantize("org/model", "/tmp/out")
         assert job.status == "running"
         assert job.source_model == "org/model"
         assert job.output_path == "/tmp/out"
         assert job.started_at > 0
 
     @pytest.mark.asyncio
-    @patch("opta_lmx.manager.quantize._do_quantize", return_value=0)
-    async def test_registers_job(self, mock_quant: MagicMock) -> None:
-        job = await start_quantize("org/model", "/tmp/out")
+    async def test_registers_job(self) -> None:
+        with patch("opta_lmx.manager.quantize.asyncio.create_task"):
+            job = await start_quantize("org/model", "/tmp/out")
         assert get_job(job.job_id) is job
 
     @pytest.mark.asyncio
-    @patch("opta_lmx.manager.quantize._do_quantize", return_value=0)
-    async def test_auto_generates_output_path(self, mock_quant: MagicMock) -> None:
-        job = await start_quantize("org/my-model")
+    async def test_auto_generates_output_path(self) -> None:
+        with patch("opta_lmx.manager.quantize.asyncio.create_task"):
+            job = await start_quantize("org/my-model")
         assert "org--my-model-4bit" in job.output_path
 
     @pytest.mark.asyncio
-    @patch("opta_lmx.manager.quantize._do_quantize", return_value=0)
-    async def test_custom_bits_and_group_size(self, mock_quant: MagicMock) -> None:
-        job = await start_quantize("m", "/tmp/o", bits=8, group_size=128, mode="mxfp8")
+    async def test_custom_bits_and_group_size(self) -> None:
+        with patch("opta_lmx.manager.quantize.asyncio.create_task"):
+            job = await start_quantize("m", "/tmp/o", bits=8, group_size=128, mode="mxfp8")
         assert job.bits == 8
         assert job.group_size == 128
         assert job.mode == "mxfp8"
 
     @pytest.mark.asyncio
-    @patch("opta_lmx.manager.quantize._do_quantize", return_value=0)
-    async def test_unique_job_ids(self, mock_quant: MagicMock) -> None:
-        j1 = await start_quantize("m", "/tmp/o1")
-        j2 = await start_quantize("m", "/tmp/o2")
+    async def test_unique_job_ids(self) -> None:
+        with patch("opta_lmx.manager.quantize.asyncio.create_task"):
+            j1 = await start_quantize("m", "/tmp/o1")
+            j2 = await start_quantize("m", "/tmp/o2")
         assert j1.job_id != j2.job_id

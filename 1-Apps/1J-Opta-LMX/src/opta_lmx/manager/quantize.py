@@ -56,11 +56,11 @@ def _do_quantize(
 
     Returns output directory size in bytes.
     """
-    from mlx_lm import convert
-
     out = Path(output_path)
     if out.exists():
         raise FileExistsError(f"Output path already exists: {output_path}")
+
+    from mlx_lm import convert
 
     convert(
         hf_path=source_model,
