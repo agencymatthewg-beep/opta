@@ -253,6 +253,56 @@ export async function buildToolRegistry(
 
 // --- Sub-Agent Tool Execution ---
 
+/**
+ * Resolve the model name to use for LMX sub-agent inference.
+ *
+ * When the main session is running a cloud provider model (anthropic/, zen/,
+ * google/, etc.), the sub-agent cannot use that model because it connects
+ * directly to LMX at config.connection.host:port/v1.
+ *
+ * Resolution order:
+ *   1. If model is already an LMX-native HuggingFace repo (mlx-community/ etc.) → use as-is
+ *   2. Query LMX admin API for the first loaded model → use that
+ *   3. Fall back to config.model.default as-is
+ */
+async function resolveLmxModel(config: OptaConfig): Promise<string> {
+  const model = config.model.default;
+
+  // Known LMX-compatible HuggingFace org prefixes
+  const LMX_ORG_PREFIXES = [
+    'mlx-community', 'lmstudio-community', 'inferencerlabs',
+    'unsloth', 'bartowski', 'TheBloke', 'NousResearch',
+  ];
+
+  const firstSlash = model.indexOf('/');
+  const org = firstSlash > 0 ? model.slice(0, firstSlash) : '';
+
+  if (LMX_ORG_PREFIXES.includes(org)) {
+    return model; // Already a valid LMX model ID
+  }
+
+  // Model has a cloud provider prefix — query LMX for the loaded model
+  try {
+    const headers: Record<string, string> = {};
+    if (config.connection.adminKey) {
+      headers['X-Admin-Key'] = config.connection.adminKey;
+    }
+    const resp = await fetch(
+      `http://${config.connection.host}:${config.connection.port}/admin/models`,
+      { headers, signal: AbortSignal.timeout(3000) },
+    );
+    if (resp.ok) {
+      const data = await resp.json() as { loaded?: Array<{ id: string }> };
+      const firstLoaded = data.loaded?.[0]?.id;
+      if (firstLoaded) return firstLoaded;
+    }
+  } catch {
+    // LMX unreachable — fall through to default
+  }
+
+  return model; // Last resort: use as-is
+}
+
 async function execSubAgentTool(
   name: string,
   argsJson: string,
@@ -271,19 +321,27 @@ async function execSubAgentTool(
   const { spawnSubAgent, formatSubAgentResult, createSubAgentContext } = await import('../core/subagent.js');
   const { nanoid } = await import('nanoid');
 
+  // Resolve the model to use for LMX sub-agent calls first (needed for childContext).
+  // If the main session switched to a cloud model (anthropic/, zen/, etc.),
+  // the sub-agent must still use the LMX-loaded model — not the cloud model name.
+  const lmxModel = await resolveLmxModel(config);
+  const subAgentConfig = lmxModel !== config.model.default
+    ? { ...config, model: { ...config.model, default: lmxModel } }
+    : config;
+
   // Validate depth before spawning (uses explicit context, not mutable registry state)
   let childContext: SubAgentContext;
   try {
     childContext = createSubAgentContext(
       parentCtx?.parentSessionId ?? 'root',
       parentCtx,
-      config,
+      subAgentConfig,
     );
   } catch (err) {
     return `Error: ${errorMessage(err)}`;
   }
 
-  // Create an OpenAI client for the sub-agent (shares config)
+  // Create an OpenAI client for the sub-agent (direct LMX connection)
   const { default: OpenAI } = await import('openai');
   const client = new OpenAI({
     baseURL: `http://${config.connection.host}:${config.connection.port}/v1`,
@@ -304,7 +362,7 @@ async function execSubAgentTool(
           : undefined,
         mode: args['mode'] ? String(args['mode']) : undefined,
       },
-      config,
+      subAgentConfig,
       client,
       registry,
       childContext,
@@ -327,7 +385,7 @@ async function execSubAgentTool(
     try {
       return await executeDelegation(
         { plan, subtasks },
-        config,
+        subAgentConfig,
         client,
         registry,
         (task, cfg, cli, reg) => spawnSubAgent(task, cfg, cli, reg, childContext),

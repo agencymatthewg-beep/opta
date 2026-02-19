@@ -6,10 +6,11 @@ import { InputBox } from './InputBox.js';
 import { InkStatusBar } from './StatusBar.js';
 import { SplitPane } from './SplitPane.js';
 import { Sidebar } from './Sidebar.js';
+import { HintBar } from './HintBar.js';
 import { useTerminalSize } from './hooks/useTerminalSize.js';
 import { useKeyboard } from './hooks/useKeyboard.js';
-import { StreamingIndicator } from './StreamingIndicator.js';
 import { PermissionPrompt } from './PermissionPrompt.js';
+import type { ScrollViewHandle } from './ScrollView.js';
 import { HelpOverlay } from './HelpOverlay.js';
 import { ModelPicker } from './ModelPicker.js';
 import { CommandBrowser } from './CommandBrowser.js';
@@ -28,8 +29,8 @@ const TOOL_RESULT_PREVIEW_LENGTH = 200;
 /** Minimum rows reserved for the message area even on tiny terminals. */
 const MIN_MESSAGE_AREA_HEIGHT = 10;
 
-/** Rows consumed by header, status bar, and input (not message area). */
-const CHROME_HEIGHT = 6;
+/** Rows consumed by header, status bar, input, and hint bar (not message area). */
+const CHROME_HEIGHT = 7;
 
 /** Workflow modes cycled by Shift+Tab. */
 export type WorkflowMode = 'normal' | 'plan' | 'research' | 'review';
@@ -195,8 +196,16 @@ function AppInner({
   const liveActivityRef = useRef<TurnActivityItem[]>([]);
   const thinkingTextRef = useRef('');
 
+  // Imperative scroll handle — filled by ScrollView via MessageList scrollRef prop
+  const scrollRef = useRef<ScrollViewHandle | null>(null);
+
+  // Token update throttle counter — skip state update every Nth token to reduce re-renders
+  const liveTextUpdateRef = useRef(0);
+
   const handleClear = useCallback(() => setMessages([]), []);
   const handleToggleSidebar = useCallback(() => setSidebarVisible(prev => !prev), []);
+  const handleScrollUp = useCallback(() => scrollRef.current?.scrollBy(-3), []);
+  const handleScrollDown = useCallback(() => scrollRef.current?.scrollBy(3), []);
   const handleExpandThinking = useCallback(() => setThinkingExpanded(prev => !prev), []);
   const handleHelp = useCallback(() => setShowHelp(prev => !prev), []);
   const handleModelSwitch = useCallback(() => setShowModelPicker(prev => !prev), []);
@@ -225,7 +234,7 @@ function AppInner({
     onToggleBypass: handleToggleBypass,
   });
 
-  // Elapsed timer -- ticks every 100ms while loading
+  // Elapsed timer -- ticks every 500ms while loading (reduced from 100ms to cut re-render rate)
   useEffect(() => {
     if (!isLoading) {
       return;
@@ -233,7 +242,7 @@ function AppInner({
     const start = Date.now();
     const timer = setInterval(() => {
       setTurnElapsed((Date.now() - start) / 1000);
-    }, 100);
+    }, 500);
     return () => clearInterval(timer);
   }, [isLoading]);
 
@@ -260,9 +269,13 @@ function AppInner({
         firstTokenReceived = true;
         setTurnPhase('streaming');
       }
-      // Accumulate in ref — update state (triggers re-render) after each chunk
+      // Accumulate in ref; only flush to state every 3rd token or on newlines
+      // to reduce re-render frequency without visible lag
       currentStreamingTextRef.current += text;
-      setLiveStreamingText(currentStreamingTextRef.current);
+      liveTextUpdateRef.current++;
+      if (liveTextUpdateRef.current % 3 === 0 || text.includes('\n')) {
+        setLiveStreamingText(currentStreamingTextRef.current);
+      }
     };
 
     const onToolStart = (name: string, id: string, argsJson: string) => {
@@ -310,6 +323,7 @@ function AppInner({
       setLiveStreamingText('');
       thinkingTextRef.current = '';
       firstTokenReceived = false;
+      liveTextUpdateRef.current = 0;
       setStreamingLabel('thinking');
       setTurnPhase('waiting');
       setFirstTokenLatency(null);
@@ -353,6 +367,8 @@ function AppInner({
 
       if (newMessages.length > 0) {
         setMessages(prev => [...prev, ...newMessages]);
+        // Scroll to bottom so new messages are visible
+        setTimeout(() => scrollRef.current?.scrollToBottom(), 0);
       }
 
       // Clear live state
@@ -565,6 +581,13 @@ function AppInner({
 
   const messageAreaHeight = Math.max(height - CHROME_HEIGHT, MIN_MESSAGE_AREA_HEIGHT);
 
+  // Effective message area width: subtract sidebar width + border + padding when visible
+  // SplitPane sidebar is 28 cols wide + 2 for border + 2 for paddingX = 32 total
+  const SIDEBAR_TOTAL_WIDTH = 32;
+  const messageAreaWidth = effectiveSidebarVisible
+    ? Math.max(width - SIDEBAR_TOTAL_WIDTH, 40)
+    : width;
+
   const mainContent = (
     <Box flexDirection="column" flexGrow={1}>
       <Box
@@ -605,7 +628,7 @@ function AppInner({
               messages={messages}
               height={messageAreaHeight - 2}
               focusable={true}
-              terminalWidth={width}
+              terminalWidth={messageAreaWidth}
               thinkingExpanded={thinkingExpanded}
               connectionState={connectionState}
               model={currentModel}
@@ -613,21 +636,19 @@ function AppInner({
               toolCount={registeredToolCount}
               liveActivity={liveActivity}
               liveStreamingText={liveStreamingText}
+              scrollRef={scrollRef}
             />
-            {isLoading && (
-              <StreamingIndicator
-                label={streamingLabel}
-                phase={turnPhase}
-                elapsed={turnElapsed}
-                speed={turnSpeed}
-                completionTokens={turnCompletionTokens}
-                firstTokenLatency={firstTokenLatency}
-              />
-            )}
             {insights.length > 0 && <InsightBlock insights={insights} />}
           </>
         )}
       </Box>
+
+      {/* Keybind hints — visible only when idle */}
+      <HintBar
+        workflowMode={workflowMode}
+        bypassPermissions={bypassPermissions}
+        isLoading={isLoading}
+      />
 
       {/* Permission prompt replaces the input area when active */}
       {permissionPending ? (
@@ -644,6 +665,8 @@ function AppInner({
             workflowMode={workflowMode}
             bypassPermissions={bypassPermissions}
             isLoading={isLoading || !!permissionPending}
+            onScrollUp={handleScrollUp}
+            onScrollDown={handleScrollDown}
           />
         </Box>
       )}
@@ -706,6 +729,7 @@ function AppInner({
         contextUsed={contextUsage.used}
         contextTotal={contextUsage.total}
         bypassPermissions={bypassPermissions}
+        streamingLabel={streamingLabel}
       />
     </Box>
   );

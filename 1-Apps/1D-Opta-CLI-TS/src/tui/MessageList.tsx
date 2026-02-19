@@ -1,6 +1,6 @@
 import React, { type ReactNode } from 'react';
 import { Box, Text } from 'ink';
-import { ScrollView } from './ScrollView.js';
+import { ScrollView, type ScrollViewHandle } from './ScrollView.js';
 import { MarkdownText } from './MarkdownText.js';
 import { ToolCard, CompactToolItem } from './ToolCard.js';
 import { ThinkingBlock } from './ThinkingBlock.js';
@@ -32,6 +32,12 @@ interface MessageListProps {
   liveActivity?: TurnActivityItem[];
   /** Partial streaming text being received (current assistant response). */
   liveStreamingText?: string;
+  /** Imperative scroll handle ref — filled by ScrollView, called by parent. */
+  scrollRef?: React.MutableRefObject<ScrollViewHandle | null>;
+  /** Called by InputBox Shift+Up to scroll the message list up. */
+  onScrollUp?: () => void;
+  /** Called by InputBox Shift+Down to scroll the message list down. */
+  onScrollDown?: () => void;
 }
 
 /** Format a Date as a lowercase 12-hour time string (e.g. "2:35 pm"). */
@@ -120,7 +126,6 @@ export function ChatMessage({ msg, index, isStreaming, markdownWidth, thinkingEx
           borderColor="#8b5cf6"
           flexDirection="column"
           paddingX={1}
-          marginBottom={1}
         >
           <Box justifyContent="space-between" width="100%">
             <Box>
@@ -147,7 +152,7 @@ export function ChatMessage({ msg, index, isStreaming, markdownWidth, thinkingEx
             />
           )}
           <Box paddingLeft={1} paddingY={0}>
-            <MarkdownText text={msg.content} isStreaming={isStreaming} width={markdownWidth - 2} />
+            <MarkdownText text={msg.content} isStreaming={isStreaming} width={markdownWidth - 3} />
           </Box>
         </Box>
       </Box>
@@ -184,6 +189,7 @@ export function MessageList({
   toolCount,
   liveActivity,
   liveStreamingText,
+  scrollRef,
 }: MessageListProps) {
   const hasLiveContent = (liveActivity && liveActivity.length > 0) || !!liveStreamingText;
 
@@ -261,12 +267,25 @@ export function MessageList({
 
   if (liveStreamingText) {
     liveRows.push(
-      <Box key="live-text" paddingX={2}>
-        <MarkdownText
-          text={liveStreamingText}
-          isStreaming={true}
-          width={markdownWidth - 4}
-        />
+      <Box key="live-text" flexDirection="column" marginBottom={1}>
+        <Box
+          borderStyle="round"
+          borderColor="#8b5cf6"
+          flexDirection="column"
+          paddingX={1}
+        >
+          <Box>
+            <Text color="#8b5cf6" bold>{'◆'} opta</Text>
+            <Text dimColor> ●</Text>
+          </Box>
+          <Box paddingLeft={1}>
+            <MarkdownText
+              text={liveStreamingText}
+              isStreaming={true}
+              width={markdownWidth - 5}
+            />
+          </Box>
+        </Box>
       </Box>,
     );
   }
@@ -274,7 +293,7 @@ export function MessageList({
   if (height !== undefined && height > 0) {
     return (
       <Box paddingX={1}>
-        <ScrollView height={height} autoScroll focusable={focusable} contentWidth={terminalWidth - PADDING_CHARS}>
+        <ScrollView height={height} autoScroll focusable={focusable} contentWidth={terminalWidth - PADDING_CHARS} scrollRef={scrollRef}>
           {messageRows}
           {liveRows}
         </ScrollView>
