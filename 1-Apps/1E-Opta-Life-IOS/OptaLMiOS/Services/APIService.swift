@@ -15,7 +15,7 @@ class APIService: ObservableObject {
     
     private init() {
         // Points to the Opta AI Gateway (Next.js)
-        self.baseURL = "https://lm.optamize.biz/api"
+        self.baseURL = "https://lm.optamize.biz/api/mobile"
     }
     
     // MARK: - Tasks API
@@ -163,6 +163,7 @@ class APIService: ObservableObject {
             throw APIError.invalidURL
         }
         
+        await refreshAccessToken()
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -176,6 +177,7 @@ class APIService: ObservableObject {
             throw APIError.invalidURL
         }
         
+        await refreshAccessToken()
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -190,6 +192,7 @@ class APIService: ObservableObject {
             throw APIError.invalidURL
         }
         
+        await refreshAccessToken()
         var request = URLRequest(url: url)
         request.httpMethod = "DELETE"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -232,10 +235,16 @@ class APIService: ObservableObject {
         }
     }
     
+    private var cachedAccessToken: String?
+    
+    /// Pre-fetch the Supabase access token before making requests
+    private func refreshAccessToken() async {
+        cachedAccessToken = try? await SupabaseService.shared.client.auth.session.accessToken
+    }
+    
     private func addAuthHeaders(_ request: inout URLRequest) {
-        // Add Supabase JWT token if available
-        if let token = try? Task.detached { await try? await SupabaseService.shared.client.auth.session.accessToken } {
-            // Note: This needs to be handled in an async context or pre-fetched
+        if let token = cachedAccessToken {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
     }
 }

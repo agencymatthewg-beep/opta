@@ -14,7 +14,7 @@ struct CalendarEvent: Identifiable, Codable, Hashable {
 
     // EventKit sync tracking fields (will be enabled when EventSource.swift compiles correctly)
     var ekEventIdentifier: String?
-    // var source: EventSource?
+    var source: EventSource?
     var lastSyncedAt: Date?
     
     var startDate: Date? {

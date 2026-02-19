@@ -8,7 +8,7 @@ import Supabase
 class OptaAIService: ObservableObject {
     static let shared = OptaAIService()
     
-    private let gatewayURL = URL(string: "https://lm.optamize.biz/api/chat")!
+    private let gatewayURL = URL(string: "https://lm.optamize.biz/api/mobile/ai")!
     private let authManager = AuthManager.shared
     
     @Published var isThinking = false

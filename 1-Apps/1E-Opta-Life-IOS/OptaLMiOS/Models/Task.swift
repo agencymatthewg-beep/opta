@@ -16,7 +16,7 @@ struct OptaTask: Identifiable, Codable, Hashable {
     // Sync tracking fields (will be enabled when TodoistModels.swift compiles correctly)
     var ekReminderIdentifier: String? = nil
     var todoistId: String? = nil
-    // var source: TaskSource = .backend
+    var source: TaskSource = .backend
     var lastSyncedAt: Date? = nil
     
     enum CodingKeys: String, CodingKey {
