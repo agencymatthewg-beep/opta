@@ -206,28 +206,25 @@ export default function DashboardPage() {
   // ---- Dashboard render ----
   return (
     <main className="min-h-screen p-6">
-      {/* Page header */}
-      <header className="mb-6 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="opta-section-header">
-            <h1 className="opta-section-title">Dashboard</h1>
-            <div className="opta-section-line" />
-          </div>
-          {/* Heartbeat health indicator */}
-          {isConnected && (
-            <HeartbeatIndicator
-              isHealthy={isHealthy}
-              consecutiveFailures={consecutiveFailures}
-              lastPingMs={lastPingMs}
-            />
-          )}
-          {/* SSE connection state indicator (subtle) */}
-          {connectionType !== 'offline' && connectionState === 'error' && (
-            <span className="text-xs text-neon-red">SSE disconnected</span>
-          )}
-        </div>
-
-        <div className="flex items-center gap-2">
+      {/* Page header — flat flex row so opta-section-line can grow */}
+      <header className="mb-6 flex items-center gap-3">
+        <h1 className="opta-section-title shrink-0">Dashboard</h1>
+        <div className="opta-section-line flex-1" />
+        {/* Heartbeat health indicator */}
+        {isConnected && (
+          <HeartbeatIndicator
+            isHealthy={isHealthy}
+            consecutiveFailures={consecutiveFailures}
+            lastPingMs={lastPingMs}
+          />
+        )}
+        {/* SSE error badge */}
+        {connectionType !== 'offline' && connectionState === 'error' && (
+          <span className="inline-flex items-center rounded-full border border-neon-red/30 bg-neon-red/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-neon-red">
+            SSE off
+          </span>
+        )}
+        <div className="flex shrink-0 items-center gap-2">
           <Button
             variant="glass"
             size="sm"
@@ -346,6 +343,7 @@ export default function DashboardPage() {
             models={status?.loaded_models ?? []}
             onUnload={handleUnload}
             isUnloading={unloadingId}
+            onLoad={() => setIsLoadOpen(true)}
           />
         </div>
 
@@ -356,10 +354,13 @@ export default function DashboardPage() {
 
         {/* Server Stats */}
         <div className="glass-subtle col-span-full rounded-xl p-6">
-          <h2 className="mb-4 text-xs font-semibold text-text-muted uppercase tracking-widest">
-            Server Info
-          </h2>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <div className="opta-section-header mb-5">
+            <h2 className="shrink-0 text-xs font-semibold uppercase tracking-[0.2em] text-text-muted">
+              Server Info
+            </h2>
+            <div className="opta-section-line opacity-30" />
+          </div>
+          <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
             <StatItem
               label="Active Requests"
               value={status?.active_requests ?? 0}
@@ -395,11 +396,11 @@ function StatItem({
   value: string | number;
 }) {
   return (
-    <div className="space-y-1">
-      <p className="text-[10px] font-medium text-text-muted uppercase tracking-widest">
+    <div className="space-y-2">
+      <p className="text-[11px] font-medium uppercase tracking-[0.15em] text-text-muted">
         {label}
       </p>
-      <p className="text-xl font-semibold text-text-primary tabular-nums">
+      <p className="text-2xl font-bold leading-none tabular-nums text-text-primary">
         {value}
       </p>
     </div>

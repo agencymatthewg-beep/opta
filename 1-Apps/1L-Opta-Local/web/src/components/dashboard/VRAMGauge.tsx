@@ -39,9 +39,9 @@ function getGaugeColor(percentage: number): string {
 // Component
 // ---------------------------------------------------------------------------
 
-export function VRAMGauge({ usedGB, totalGB, size = 160 }: VRAMGaugeProps) {
+export function VRAMGauge({ usedGB, totalGB, size = 200 }: VRAMGaugeProps) {
   const percentage = totalGB > 0 ? Math.min(usedGB / totalGB, 1) : 0;
-  const strokeWidth = 8;
+  const strokeWidth = 10;
   const radius = (size - strokeWidth * 2) / 2;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference * (1 - percentage);
@@ -94,7 +94,7 @@ export function VRAMGauge({ usedGB, totalGB, size = 160 }: VRAMGaugeProps) {
 
           {/* Center text overlay */}
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-2xl font-bold text-text-primary tabular-nums">
+            <span className="text-3xl font-bold text-text-primary tabular-nums">
               {usedGB.toFixed(1)}
             </span>
             <span className="text-[11px] text-text-secondary">

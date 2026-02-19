@@ -17,7 +17,7 @@ import {
   Badge,
   Button,
 } from '@opta/ui';
-import { Layers, X } from 'lucide-react';
+import { Layers, Plus, X } from 'lucide-react';
 import type { LoadedModel } from '@/types/lmx';
 
 // ---------------------------------------------------------------------------
@@ -31,6 +31,8 @@ interface ModelListProps {
   onUnload?: (modelId: string) => void;
   /** Model ID currently being unloaded (disables its button) */
   isUnloading?: string | null;
+  /** Called to open the load model dialog */
+  onLoad?: () => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -41,6 +43,7 @@ export function ModelList({
   models,
   onUnload,
   isUnloading = null,
+  onLoad,
 }: ModelListProps) {
   return (
     <Card variant="glass">
@@ -101,9 +104,15 @@ export function ModelList({
         </AnimatePresence>
 
         {models.length === 0 && (
-          <p className="py-8 text-center text-sm text-text-muted">
-            No models loaded
-          </p>
+          <div className="flex flex-col items-center gap-3 py-8">
+            <p className="text-sm text-text-muted">No models loaded</p>
+            {onLoad && (
+              <Button variant="glass" size="sm" onClick={onLoad}>
+                <Plus className="mr-1.5 h-3.5 w-3.5" />
+                Load Model
+              </Button>
+            )}
+          </div>
         )}
       </CardContent>
     </Card>

@@ -101,8 +101,8 @@ export function ThroughputChart({ data, averageTps }: ThroughputChartProps) {
       </CardHeader>
       <CardContent>
         {data.length === 0 ? (
-          <div className="flex h-[240px] items-center justify-center">
-            <p className="text-sm text-text-muted">Waiting for data...</p>
+          <div className="flex h-[80px] items-center justify-center">
+            <p className="text-sm text-text-muted">Waiting for throughput data&hellip;</p>
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={240}>
