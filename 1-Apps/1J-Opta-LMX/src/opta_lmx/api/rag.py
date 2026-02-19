@@ -16,7 +16,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from starlette.responses import Response
 
-from opta_lmx.api.deps import AdminAuth, Embeddings, RagStore, RemoteEmbedding
+from opta_lmx.api.deps import AdminAuth, Embeddings, RagStore, RerankerDep, RemoteEmbedding
 from opta_lmx.api.errors import internal_error, openai_error
 from opta_lmx.rag.chunker import chunk_code, chunk_markdown, chunk_text
 from opta_lmx.rag.store import VectorStore
@@ -82,6 +82,8 @@ class QueryRequest(BaseModel):
         pattern="^(vector|keyword|hybrid)$",
         description="Search mode: vector (semantic), keyword (BM25), or hybrid (RRF fusion)",
     )
+    rerank: bool = Field(False, description="Apply cross-encoder reranking to results")
+    rerank_top_k: int = Field(5, ge=1, le=50, description="Final results after reranking")
 
 
 class QueryResult(BaseModel):
@@ -129,6 +131,7 @@ class ContextAssemblyRequest(BaseModel):
     min_score: float = Field(0.1, ge=0.0, le=1.0, description="Minimum similarity")
     max_context_tokens: int = Field(4096, ge=256, le=32768, description="Max total context tokens")
     model: str | None = Field(None, description="Embedding model")
+    rerank: bool = Field(False, description="Apply reranking to context assembly results")
 
 
 class ContextAssemblyResponse(BaseModel):
@@ -279,11 +282,13 @@ async def query_collection(
     embedding_engine: Embeddings,
     remote_client: RemoteEmbedding,
     rag_store: RagStore,
+    reranker: RerankerDep,
 ) -> Response:
     """Query a RAG collection for relevant context.
 
     Embeds the query, searches the vector store using cosine similarity,
-    and returns the top matching document chunks.
+    and returns the top matching document chunks. Optionally applies
+    cross-encoder reranking for improved relevance ordering.
     """
     store = _require_store(rag_store)
     start = time.monotonic()
@@ -296,15 +301,58 @@ async def query_collection(
     except RuntimeError as e:
         return internal_error(str(e))
 
+    # Determine initial search breadth: if reranking, retrieve a broader candidate set
+    if body.rerank:
+        initial_top_k = max(body.rerank_top_k * 10, 50)
+    else:
+        initial_top_k = body.top_k
+
     # Search
     results = store.search(
         collection=body.collection,
         query_embedding=query_embeddings[0],
-        top_k=body.top_k,
+        top_k=initial_top_k,
         min_score=body.min_score,
         mode=body.search_mode,
         query_text=body.query,
     )
+
+    # Apply reranking if requested
+    if body.rerank and results:
+        if reranker is not None:
+            try:
+                doc_texts = [r.document.text for r in results]
+                ranked = reranker.rerank(body.query, doc_texts, top_n=body.rerank_top_k)  # type: ignore[union-attr]
+                # Reorder results based on reranker scores
+                reranked_results = []
+                for entry in ranked:
+                    idx = entry["index"]
+                    if 0 <= idx < len(results):
+                        # Replace vector score with reranker score
+                        original = results[idx]
+                        reranked_results.append(type(original)(
+                            document=original.document,
+                            score=entry["score"],
+                        ))
+                results = reranked_results
+                logger.info("rag_rerank_applied", extra={
+                    "collection": body.collection,
+                    "candidates": len(doc_texts),
+                    "reranked": len(results),
+                })
+            except Exception as e:
+                logger.warning("rag_rerank_failed_fallback_vector", extra={
+                    "error": str(e),
+                    "collection": body.collection,
+                })
+                # Fall back to vector-only results, trimmed to original top_k
+                results = results[:body.top_k]
+        else:
+            logger.warning("rag_rerank_requested_but_no_engine", extra={
+                "collection": body.collection,
+            })
+            # No reranker available — fall back to vector-only results
+            results = results[:body.top_k]
 
     elapsed_ms = (time.monotonic() - start) * 1000
 
@@ -332,12 +380,14 @@ async def assemble_context(
     embedding_engine: Embeddings,
     remote_client: RemoteEmbedding,
     rag_store: RagStore,
+    reranker: RerankerDep,
 ) -> Response:
     """Assemble RAG context from multiple collections.
 
     Searches across specified collections, deduplicates, ranks by
     relevance, and assembles a formatted context string ready for
     injection into a system or user prompt. Respects token budget.
+    Optionally applies cross-encoder reranking for improved relevance.
     """
     store = _require_store(rag_store)
     start = time.monotonic()
@@ -350,17 +400,44 @@ async def assemble_context(
     except RuntimeError as e:
         return internal_error(str(e))
 
+    # If reranking, fetch more candidates per collection
+    fetch_k = body.top_k_per_collection * 5 if body.rerank else body.top_k_per_collection
+
     # Search each collection
     all_results: list[tuple[str, Any]] = []  # (collection, SearchResult)
     for collection in body.collections:
         results = store.search(
             collection=collection,
             query_embedding=query_embeddings[0],
-            top_k=body.top_k_per_collection,
+            top_k=fetch_k,
             min_score=body.min_score,
         )
         for r in results:
             all_results.append((collection, r))
+
+    # Apply reranking if requested
+    if body.rerank and all_results and reranker is not None:
+        try:
+            doc_texts = [r.document.text for collection, r in all_results]
+            ranked = reranker.rerank(body.query, doc_texts, top_n=body.top_k_per_collection * len(body.collections))  # type: ignore[union-attr]
+            reranked: list[tuple[str, Any]] = []
+            for entry in ranked:
+                idx = entry["index"]
+                if 0 <= idx < len(all_results):
+                    collection, original = all_results[idx]
+                    reranked.append((collection, type(original)(
+                        document=original.document,
+                        score=entry["score"],
+                    )))
+            all_results = reranked
+            logger.info("rag_context_rerank_applied", extra={
+                "candidates": len(doc_texts),
+                "reranked": len(all_results),
+            })
+        except Exception as e:
+            logger.warning("rag_context_rerank_failed_fallback", extra={"error": str(e)})
+    elif body.rerank and reranker is None:
+        logger.warning("rag_context_rerank_requested_but_no_engine")
 
     # Sort by score descending (cross-collection ranking)
     all_results.sort(key=lambda x: x[1].score, reverse=True)

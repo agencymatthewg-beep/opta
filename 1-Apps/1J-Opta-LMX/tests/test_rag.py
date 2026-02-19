@@ -365,6 +365,7 @@ async def rag_client(
     from opta_lmx.monitoring.events import EventBus
     from opta_lmx.monitoring.metrics import MetricsCollector
     from opta_lmx.presets.manager import PresetManager
+    from opta_lmx.rag.reranker import RerankerEngine
     from opta_lmx.rag.store import VectorStore
     from opta_lmx.router.strategy import TaskRouter
 
@@ -378,6 +379,14 @@ async def rag_client(
     # Mock embedding engine with deterministic embeddings
     mock_emb_engine = EmbeddingEngine()
     mock_emb_engine.embed = AsyncMock(side_effect=lambda texts, **kw: _mock_embed(texts))
+
+    # Mock reranker engine — returns documents in reverse order with mock scores
+    mock_reranker = RerankerEngine()
+    mock_reranker._reranker = True  # mark as loaded
+    mock_reranker._rerank_fn = lambda query, docs, top_n: [
+        {"index": i, "score": round(1.0 - i * 0.1, 2)}
+        for i in range(min(top_n or len(docs), len(docs)))
+    ]
 
     async with AsyncClient(
         transport=ASGITransport(app=test_app),
@@ -398,6 +407,7 @@ async def rag_client(
         test_app.state.config = config
         test_app.state.remote_embedding = None
         test_app.state.remote_reranking = None
+        test_app.state.reranker_engine = mock_reranker
         yield http_client
 
 
@@ -655,6 +665,33 @@ async def test_ingest_markdown_chunking(rag_client: AsyncClient) -> None:
     assert response.status_code == 200
     data = response.json()
     assert data["chunks_created"] == 2
+
+
+async def test_query_with_rerank(rag_client: AsyncClient) -> None:
+    """POST /v1/rag/query with rerank=true returns reranked results."""
+    # Ingest documents
+    await rag_client.post(
+        "/v1/rag/ingest",
+        json={
+            "collection": "rerank_test",
+            "documents": ["Python ML library", "JavaScript web framework", "Python data science"],
+            "chunking": "none",
+        },
+    )
+
+    # Query with rerank — should succeed (falls back gracefully if no reranker)
+    response = await rag_client.post(
+        "/v1/rag/query",
+        json={
+            "collection": "rerank_test",
+            "query": "Python for machine learning",
+            "top_k": 3,
+            "rerank": True,
+        },
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["results"]) >= 1
 
 
 # ── RAGConfig Phase 9 Tests ────────────────────────────────────────────

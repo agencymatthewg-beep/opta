@@ -35,6 +35,7 @@ from opta_lmx.monitoring.logging import setup_logging
 from opta_lmx.monitoring.metrics import MetricsCollector
 from opta_lmx.presets.manager import PresetManager
 from opta_lmx.router.strategy import TaskRouter
+from opta_lmx.runtime_state import RuntimeState
 from opta_lmx.sessions.store import SessionStore
 
 logger = logging.getLogger(__name__)
@@ -44,6 +45,16 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Application lifespan: initialize engine, auto-load models, cleanup."""
     config: LMXConfig = app.state.config
+
+    # Crash loop detection — record startup and check for rapid restarts
+    runtime_state = RuntimeState()
+    runtime_state.record_startup()
+
+    safe_mode = runtime_state.is_crash_loop()
+    if safe_mode:
+        logger.warning("crash_loop_detected", extra={
+            "message": "Safe mode: skipping auto-load. Use admin API to load models.",
+        })
 
     # Initialize core services
     memory_monitor = MemoryMonitor(max_percent=config.memory.max_memory_percent)
@@ -134,6 +145,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.pending_downloads = {}  # dict[str, dict[str, Any]]
     app.state.start_time = time.time()
     app.state.admin_key = config.security.admin_key
+    app.state.runtime_state = runtime_state
 
     # Initialize session store for CLI session file access
     session_store = SessionStore()
@@ -192,19 +204,25 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     )
 
     # Auto-load configured models + preset auto_load models (deduplicated)
-    auto_load_ids = list(dict.fromkeys(
-        config.models.auto_load + preset_manager.get_auto_load_models()
-    ))
-    for model_id in auto_load_ids:
-        try:
-            perf = preset_manager.find_performance_for_model(model_id)
-            await engine.load_model(model_id, performance_overrides=perf)
-            logger.info("auto_load_success", extra={
-                "model_id": model_id,
-                "has_performance_profile": perf is not None,
-            })
-        except Exception as e:
-            logger.error("auto_load_failed", extra={"model_id": model_id, "error": str(e)})
+    # Skipped in safe mode (crash loop detected) to prevent repeated OOM/crash cycles.
+    if safe_mode:
+        logger.warning("auto_load_skipped_safe_mode", extra={
+            "message": "Crash loop detected — models must be loaded via admin API.",
+        })
+    else:
+        auto_load_ids = list(dict.fromkeys(
+            config.models.auto_load + preset_manager.get_auto_load_models()
+        ))
+        for model_id in auto_load_ids:
+            try:
+                perf = preset_manager.find_performance_for_model(model_id)
+                await engine.load_model(model_id, performance_overrides=perf)
+                logger.info("auto_load_success", extra={
+                    "model_id": model_id,
+                    "has_performance_profile": perf is not None,
+                })
+            except Exception as e:
+                logger.error("auto_load_failed", extra={"model_id": model_id, "error": str(e)})
 
     # Initialize RAG vector store (accessed via app.state by RagStore dependency)
     if config.rag.enabled:
@@ -218,6 +236,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
                 "documents": loaded_docs,
                 "path": str(config.rag.persist_path),
             })
+
+    # Initialize reranker engine (lazy-load — only loads model on first rerank request)
+    from opta_lmx.rag.reranker import RerankerEngine
+
+    reranker_engine = RerankerEngine(model_id=config.rag.reranker_model)
+    app.state.reranker_engine = reranker_engine
 
     # Pre-load embedding model if configured
     if config.models.embedding_model:
@@ -273,6 +297,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         rag_store_ref.save()
         logger.info("rag_store_persisted")
 
+    # Cleanup: unload reranker
+    reranker_ref = getattr(app.state, "reranker_engine", None)
+    if reranker_ref is not None and reranker_ref.is_loaded:
+        reranker_ref.unload()
+
     # Cleanup: unload embedding model
     if embedding_engine.is_loaded:
         await embedding_engine.unload()
@@ -287,6 +316,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     for model_id in [m.model_id for m in engine.get_loaded_models()]:
         with contextlib.suppress(Exception):
             await engine.unload_model(model_id)
+
+    # Record clean shutdown so crash loop detector resets on next startup
+    runtime_state.save(loaded_models=[], clean=True)
 
     logger.info("server_shutdown")
 
@@ -312,6 +344,15 @@ def create_app(config: LMXConfig | None = None) -> FastAPI:
 
     # Store config in app state for route handlers
     app.state.config = config
+
+    # Load shedding — reject non-health requests when memory is critically high
+    from opta_lmx.api.load_shedding import LoadSheddingMiddleware
+
+    app.add_middleware(LoadSheddingMiddleware, threshold_percent=95.0)
+
+    # TODO: Add rate limiting middleware (slowapi) once the dependency is installed.
+    # pip install slowapi → configure Limiter with key_func=get_remote_address,
+    # default_limits=["60/minute"] on inference endpoints.
 
     # Request logging — method, path, status, latency for all HTTP requests
     app.add_middleware(RequestLoggingMiddleware)

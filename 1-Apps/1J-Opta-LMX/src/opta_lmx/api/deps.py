@@ -90,6 +90,11 @@ def get_rag_store(request: Request) -> VectorStore | None:
     return getattr(request.app.state, "rag_store", None)
 
 
+def get_reranker_engine(request: Request) -> object | None:
+    """Get the local reranker engine from app state, or None."""
+    return getattr(request.app.state, "reranker_engine", None)
+
+
 def verify_admin_key(request: Request, x_admin_key: str | None = Header(None)) -> None:
     """Verify X-Admin-Key header if admin_key is configured.
 
@@ -118,4 +123,5 @@ RemoteEmbedding = Annotated[HelperNodeClient | None, Depends(get_remote_embeddin
 RemoteReranking = Annotated[HelperNodeClient | None, Depends(get_remote_reranking)]
 SessionStoreDep = Annotated[SessionStore, Depends(get_session_store)]
 RagStore = Annotated[VectorStore | None, Depends(get_rag_store)]
+RerankerDep = Annotated[object | None, Depends(get_reranker_engine)]
 AdminAuth = Annotated[None, Depends(verify_admin_key)]
