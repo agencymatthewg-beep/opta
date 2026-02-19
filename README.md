@@ -1,209 +1,94 @@
-# Opta - Multi-Platform Optimization Suite
+# Opta Ecosystem
 
-## Quick Context
-- Opta: documentation and resources
-- Contains: guides, examples, and reference materials
-- Use for: implementation and troubleshooting
+> One platform. Every device. Built by Matthew Byrden @ Opta Operations.
 
+---
 
-A comprehensive system optimization suite spanning iOS, Desktop, and Web platforms.
-
-## Project Structure
-
-This monorepo uses a numbered hierarchical structure for clear organization:
+## Structure
 
 ```
-/Opta/
-├── 1. Apps/
-│   ├── 1. iOS/
-│   │   ├── 1. Opta/                    # Main iOS app (SwiftUI)
-│   │   └── 3. Opta LM iOS/             # Life Manager iOS variant
-│   ├── 2. Desktop/
-│   │   ├── 1. Opta Native/             # Main desktop app (Tauri + React)
-│   │   └── 2. Opta Mini/               # Lightweight menu bar variant
-│   ├── 3. Web/
-│   │   ├── 1. Opta Life Manager/       # Web-based life management (Next.js)
-│   │   ├── 2. Opta LM Edge/            # Edge deployment variant
-│   │   ├── 3. Optamize Website/        # Marketing website
-│   │   └── 4. AI Components/           # Shared component library
-│   └── 4. Shared/
-│       ├── 1. opta-native/             # Rust core (UniFFI)
-│       └── 2. design-assets/           # Logos, icons, design specs
-├── 2. Gemini Deep Research/            # Research and exploration
-└── 3. Matthew x Opta/                  # Personal and agent context
-    ├── 1. personal/                    # Personal context (calendar, hardware, goals)
-    ├── 2. project/                     # Cross-project planning and docs
-    └── 3. agent-config/                # AI agent configurations (.claude, .serena, .opta)
+~/Synced/Opta/
+├── 1-Apps/          # All applications (canonical — see below)
+├── 2-Docs/          # Shared documentation (auth, infra, design)
+├── 3-Services/      # Deployed services (Vercel, launchd)
+├── docs/            # Monorepo-level docs (APP-MD-SYSTEM, etc.)
+├── personal/        # Hardware, goals, calendar
+├── research/        # Gemini Deep Research outputs
+├── ideas/           # Brainstorms and concepts
+└── scripts/         # Repo-level tooling
 ```
 
-## Primary Applications
+---
 
-### Opta Native (Desktop)
+## Apps (`1-Apps/`)
 
-**Location:** `1. Apps/2. Desktop/1. Opta Native/`
-**Tech Stack:** Tauri v2, React 19, TypeScript, Rust, Python MCP Server
+| Prefix | App | Platform | Status |
+|--------|-----|----------|--------|
+| **1A** | AI Components Web | Web | Scaffold |
+| **1B** | AICompare Web | Web | Active |
+| **1C** | MonoUsage | macOS + Node | Active |
+| **1D** | Opta CLI TS | CLI / TUI | Beta v0.5 |
+| **1E** | Opta Life iOS | iOS | Active |
+| **1F** | Opta Life Web | Web | Deployed → lm.optamize.biz |
+| **1G** | Opta Mini macOS | macOS | Active |
+| **1H** | Opta Scan iOS | iOS | Active |
+| **1I** | OptaPlus | iOS + macOS + Web | 9/13 phases |
+| **1J** | Optamize macOS | macOS (Tauri + Rust) | Active |
+| **1K** | Optamize Web | Web | Marketing |
+| **1L** | Opta Local | Web + iOS | In Dev → optalocal.com |
+| **1M** | Opta LMX | macOS service (Python + MLX) | ~80% · Live on Mono512 |
+| **—** | kimi-proxy | Local service (Python) | Running · port 4999 |
 
-The flagship desktop application providing:
-- Real-time hardware telemetry monitoring
-- Intelligent process management
-- Game detection and optimization
-- Shareable Optimization Score
-- Hybrid AI (local Llama 3 8B + cloud Claude)
+---
 
-**Development:**
-```bash
-cd "1. Apps/2. Desktop/1. Opta Native"
-npm install
-npm run tauri dev
-```
+## Services (`3-Services/`)
 
-### Opta iOS (Mobile)
+| Service | Description | Deployed |
+|---------|-------------|----------|
+| 3A-Opta-Gateway | AI provider routing API | ✅ Vercel |
 
-**Location:** `1. Apps/1. iOS/1. Opta/`
-**Tech Stack:** SwiftUI, Rust core (via UniFFI), CoreML
+---
 
-Native iOS application with:
-- On-device optimization insights
-- Cross-device sync with desktop
-- WidgetKit home screen widgets
-- Siri/Shortcuts integration
+## Docs (`2-Docs/`)
 
-**Development:**
-```bash
-cd "1. Apps/1. iOS/1. Opta"
-open Opta.xcodeproj
-```
+| Folder | Contents |
+|--------|----------|
+| `OptaCloud/` | Shared auth, Supabase schema, Swift/TS libs |
+| `design/` | Opta+ design system tokens |
 
-### Opta Life Manager (Web)
+---
 
-**Location:** `1. Apps/3. Web/1. Opta Life Manager/`
-**Tech Stack:** Next.js 15, React 19, TypeScript, Vercel
+## Rules
 
-Web-based life management dashboard:
-- Task and project tracking
-- Calendar integration
-- Optimization recommendations
-- Cross-platform synchronization
+- **All work lives in `~/Synced/`** — never `~/Documents/`, never `~/Desktop/`
+- `~/Synced/` syncs via Syncthing to Opta48 (MacBook), Mono512 (Mac Studio), Windows PC
+- Canonical project root: `~/Synced/Opta/1-Apps/`
 
-**Development:**
-```bash
-cd "1. Apps/3. Web/1. Opta Life Manager"
-npm install
-npm run dev
-```
+---
 
-## Shared Infrastructure
+## Tech Stack
 
-### Rust Core (`opta-native`)
+| Layer | Tech |
+|-------|------|
+| macOS native | Swift, SwiftUI, Tauri v2, Rust |
+| iOS native | SwiftUI, Firebase, Supabase |
+| Web | Next.js 15/16, React 19, TypeScript |
+| CLI/TUI | TypeScript, Commander, Ink |
+| AI inference | Python, MLX, FastAPI (Opta LMX) |
+| Design system | Opta+ — Obsidian Glassmorphism, Electric Violet |
 
-**Location:** `1. Apps/4. Shared/1. opta-native/`
+---
 
-Shared Rust workspace providing:
-- Hardware telemetry collection
-- Process management primitives
-- Cross-platform system APIs
-- UniFFI bindings for Swift/TypeScript
+## Key Paths
 
-**Workspace members:**
-- `opta_telemetry` - Hardware monitoring
-- `opta_process` - Process management
-- `opta_game_detector` - Game detection
-- `opta_mcp_server` - MCP protocol implementation
+| Resource | Path |
+|----------|------|
+| Apps index | `APPS-INDEX.md` |
+| Migration history | `MIGRATION-FROM-DOCUMENTS.md` |
+| APP.md system docs | `docs/APP-MD-SYSTEM.md` |
+| Local stack overview | `1-Apps/OPTA-LOCAL-STACK.md` |
+| OptaCloud docs | `2-Docs/OptaCloud/` |
 
-### Design Assets
+---
 
-**Location:** `1. Apps/4. Shared/2. design-assets/`
-
-- `logos/` - App logos (PNG, SVG)
-- `icons/` - Icon sets
-- `animation-frames/` - Opta Ring animation frames
-- `Opta Aesthetic Vision/` - Design specifications and inspiration
-
-## Claude Code Integration
-
-Each app has its own Claude configuration:
-
-| App | Instructions | Planning |
-|-----|--------------|----------|
-| Opta Native | `1. Apps/2. Desktop/1. Opta Native/CLAUDE.md` | `1. Apps/2. Desktop/1. Opta Native/.planning/` |
-| Opta iOS | `1. Apps/1. iOS/1. Opta/CLAUDE.md` | `1. Apps/1. iOS/1. Opta/.planning/` |
-
-### Shared Context
-
-Personal context is shared across all apps at:
-
-**Location:** `3. Matthew x Opta/1. personal/`
-
-- `calendar.md` - Events, subscriptions, deadlines
-- `hardware.md` - Device ecosystem (Mac Studio, MacBook Pro, etc.)
-- `workflows.md` - Work patterns and device roles
-- `goals.md` - Current priorities
-- `profile.md` - Communication style preferences
-
-### Agent Configuration
-
-**Location:** `3. Matthew x Opta/3. agent-config/`
-
-- `.claude/` - Claude Code configuration
-  - `commands.json` - Global slash commands
-  - `agents/` - Agent definitions (opta-optimizer)
-  - `skills/` - Reusable skills
-- `.serena/` - Serena MCP configuration
-- `.opta/` - Opta-specific agent context
-
-### Project Planning
-
-**Location:** `3. Matthew x Opta/2. project/`
-
-- `.planning/` - Cross-project planning
-  - `PROJECT.md` - Opta vision and requirements
-  - `ROADMAP.md` - Overall development roadmap
-  - `STATE.md` - Current progress
-  - `codebase/` - Architecture documentation
-
-## Development Workflow
-
-1. **Choose your target app** - Navigate to the specific numbered app folder
-2. **Claude commands are hierarchical** - Root commands work globally, app commands are local
-3. **Planning is per-app** - Each app tracks its own roadmap in `.planning/`
-4. **Personal context is shared** - All apps reference `3. Matthew x Opta/1. personal/`
-5. **Design system is unified** - All apps follow `DESIGN_SYSTEM.md` in Opta Native
-
-## Quick Commands
-
-From the root `/Opta/` directory:
-
-```bash
-# Desktop development
-cd "1. Apps/2. Desktop/1. Opta Native"
-npm run tauri dev
-
-# iOS development
-cd "1. Apps/1. iOS/1. Opta"
-open Opta.xcodeproj
-
-# Web development
-cd "1. Apps/3. Web/1. Opta Life Manager"
-npm run dev
-
-# Rust workspace
-cd "1. Apps/4. Shared/1. opta-native"
-cargo build --workspace
-```
-
-## Architecture
-
-Opta follows a hybrid architecture:
-
-- **Frontend:** React 19 (Desktop/Web), SwiftUI (iOS)
-- **Backend:** Rust core with UniFFI bindings
-- **AI:** Hybrid semantic router (local Llama 3 8B → cloud Claude for complex queries)
-- **Integration:** MCP (Model Context Protocol) for all external integrations
-- **Deployment:**
-  - Desktop: Tauri v2 native apps
-  - iOS: Native Swift with Rust core
-  - Web: Vercel Edge with React Server Components
-
-## License
-
-Proprietary - All rights reserved.
+*Last updated: 2026-02-19*
