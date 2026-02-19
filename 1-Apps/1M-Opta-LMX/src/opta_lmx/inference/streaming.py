@@ -22,6 +22,7 @@ async def format_sse_stream(
     token_stream: AsyncIterator[str],
     request_id: str,
     model: str,
+    max_tokens: int | None = None,
 ) -> AsyncIterator[str]:
     """Convert a token stream to OpenAI SSE format.
 
@@ -35,11 +36,16 @@ async def format_sse_stream(
         token_stream: Async iterator yielding token strings.
         request_id: Unique request ID (chatcmpl-xxx).
         model: Model ID for the response.
+        max_tokens: Maximum tokens requested (used to determine finish_reason).
 
     Yields:
         SSE-formatted strings.
     """
+    from opta_lmx.api.inference import _StreamEndMarker
+
     created = int(time.time())
+    completion_tokens = 0
+    hit_max_tokens = False
 
     # First chunk: send the role
     first_chunk = ChatCompletionChunk(
@@ -57,14 +63,20 @@ async def format_sse_stream(
 
     # Content chunks — wrapped in try/except for GUARDRAIL G-LMX-05
     try:
-        async for token in token_stream:
+        async for item in token_stream:
+            # Check for our end marker from _counting_stream
+            if isinstance(item, _StreamEndMarker):
+                completion_tokens = item.completion_tokens
+                hit_max_tokens = item.hit_max_tokens
+                continue
+            completion_tokens += 1
             chunk = ChatCompletionChunk(
                 id=request_id,
                 created=created,
                 model=model,
                 choices=[
                     ChunkChoice(
-                        delta=DeltaMessage(content=token),
+                        delta=DeltaMessage(content=item),
                         finish_reason=None,
                     )
                 ],
@@ -90,7 +102,13 @@ async def format_sse_stream(
         )
         yield f"data: {error_chunk.model_dump_json()}\n\n"
 
-    # Final chunk: finish_reason = stop
+    # Determine finish_reason: use authoritative hit_max_tokens from end marker,
+    # fall back to count-based check if marker was never received
+    finish_reason = "stop"
+    if hit_max_tokens or (max_tokens is not None and completion_tokens >= max_tokens):
+        finish_reason = "length"
+
+    # Final chunk: finish_reason depends on whether max_tokens was hit
     final_chunk = ChatCompletionChunk(
         id=request_id,
         created=created,
@@ -98,7 +116,7 @@ async def format_sse_stream(
         choices=[
             ChunkChoice(
                 delta=DeltaMessage(),
-                finish_reason="stop",
+                finish_reason=finish_reason,
             )
         ],
     )
@@ -112,6 +130,7 @@ async def format_sse_tool_stream(
     chunk_stream: AsyncIterator[StreamChunk],
     request_id: str,
     model: str,
+    max_tokens: int | None = None,
 ) -> AsyncIterator[str]:
     """Convert a StreamChunk stream to OpenAI SSE format with tool call support.
 
@@ -123,12 +142,17 @@ async def format_sse_tool_stream(
         chunk_stream: Async iterator yielding StreamChunk objects.
         request_id: Unique request ID (chatcmpl-xxx).
         model: Model ID for the response.
+        max_tokens: Maximum tokens requested (used to determine finish_reason).
 
     Yields:
         SSE-formatted strings.
     """
+    from opta_lmx.api.inference import _StreamEndMarker
+
     created = int(time.time())
     saw_tool_calls = False
+    completion_tokens = 0
+    hit_max_tokens = False
 
     # First chunk: send the role
     first_chunk = ChatCompletionChunk(
@@ -146,7 +170,14 @@ async def format_sse_tool_stream(
 
     try:
         async for stream_chunk in chunk_stream:
+            # Check for end marker from _counting_stream
+            if isinstance(stream_chunk, _StreamEndMarker):
+                completion_tokens = stream_chunk.completion_tokens
+                hit_max_tokens = stream_chunk.hit_max_tokens
+                continue
+
             if stream_chunk.content is not None:
+                completion_tokens += 1
                 chunk = ChatCompletionChunk(
                     id=request_id,
                     created=created,
@@ -205,8 +236,14 @@ async def format_sse_tool_stream(
         )
         yield f"data: {error_chunk.model_dump_json()}\n\n"
 
-    # Final chunk: finish_reason depends on whether tool calls were seen
-    finish_reason = "tool_calls" if saw_tool_calls else "stop"
+    # Determine finish_reason: check max_tokens first, then tool_calls
+    if saw_tool_calls:
+        finish_reason = "tool_calls"
+    elif hit_max_tokens or (max_tokens is not None and completion_tokens >= max_tokens):
+        finish_reason = "length"
+    else:
+        finish_reason = "stop"
+
     final_chunk = ChatCompletionChunk(
         id=request_id,
         created=created,
