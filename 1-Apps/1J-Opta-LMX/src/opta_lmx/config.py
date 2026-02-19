@@ -254,6 +254,26 @@ class RAGConfig(BaseModel):
         return self
 
 
+class StackPresetConfig(BaseModel):
+    """A named model stack preset mapping roles to model IDs."""
+
+    description: str = ""
+    roles: dict[str, str] = Field(
+        default_factory=dict,
+        description="Map role name (coding, reasoning, chat, vision) to model HF ID",
+    )
+
+
+class BackendConfig(BaseModel):
+    """Configuration for a backend compute device on the LAN."""
+
+    url: str = Field(..., description="Base URL of the backend (e.g. http://192.168.188.11:1234)")
+    name: str = Field("", description="Human-readable name for this backend")
+    gpu: str = Field("", description="GPU type (e.g. M3 Ultra, RTX 5080)")
+    vram_gb: float = Field(0, ge=0, description="VRAM in GB")
+    roles: list[str] = Field(default_factory=list, description="Roles this backend can serve")
+
+
 class SecurityConfig(BaseModel):
     """Authentication settings."""
 
@@ -286,6 +306,14 @@ class LMXConfig(BaseSettings):
     helper_nodes: HelperNodesConfig = Field(default_factory=HelperNodesConfig)  # type: ignore[arg-type]
     rag: RAGConfig = Field(default_factory=RAGConfig)  # type: ignore[arg-type]
     security: SecurityConfig = Field(default_factory=SecurityConfig)  # type: ignore[arg-type]
+    stack_presets: dict[str, StackPresetConfig] = Field(
+        default_factory=dict,
+        description="Named model stack presets mapping roles to model IDs",
+    )
+    backends: dict[str, BackendConfig] = Field(
+        default_factory=dict,
+        description="Named backend compute devices on the LAN",
+    )
 
 
 def load_config(path: Path | None = None) -> LMXConfig:

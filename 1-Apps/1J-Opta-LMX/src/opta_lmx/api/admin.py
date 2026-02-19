@@ -901,6 +901,14 @@ async def stack_status(
         "helper_nodes": helpers,
         "loaded_models": sorted(loaded_ids),
         "default_model": config.routing.default_model,
+        "backends": {
+            name: backend.model_dump()
+            for name, backend in config.backends.items()
+        },
+        "stack_presets": {
+            name: preset.model_dump()
+            for name, preset in config.stack_presets.items()
+        },
     }
 
 
