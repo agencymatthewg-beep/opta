@@ -209,7 +209,10 @@ export default function DashboardPage() {
       {/* Page header */}
       <header className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold text-text-primary">Dashboard</h1>
+          <div className="opta-section-header">
+            <h1 className="opta-section-title">Dashboard</h1>
+            <div className="opta-section-line" />
+          </div>
           {/* Heartbeat health indicator */}
           {isConnected && (
             <HeartbeatIndicator
