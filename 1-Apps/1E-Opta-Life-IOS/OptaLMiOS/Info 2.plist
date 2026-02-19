@@ -11,9 +11,9 @@
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>
-    <string>Opta LM iOS</string>
+    <string>Opta Life</string>
     <key>CFBundleDisplayName</key>
-    <string>Opta LM iOS</string>
+    <string>Opta Life</string>
     <key>CFBundlePackageType</key>
     <string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
     <key>CFBundleShortVersionString</key>
