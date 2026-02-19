@@ -6,8 +6,6 @@ export interface KeyBinding {
 export interface KeybindingConfig {
   exit: KeyBinding;
   toggleSidebar: KeyBinding;
-  nextPanel: KeyBinding;
-  previousPanel: KeyBinding;
   scrollUp: KeyBinding;
   scrollDown: KeyBinding;
   help: KeyBinding;
@@ -15,14 +13,14 @@ export interface KeybindingConfig {
   slashMenu: KeyBinding;
   expandThinking: KeyBinding;
   modelSwitch: KeyBinding;
+  cycleMode: KeyBinding;
+  toggleBypass: KeyBinding;
 }
 
 export function defaultKeybindings(): KeybindingConfig {
   return {
     exit: { key: 'ctrl+c', description: 'Exit Opta' },
     toggleSidebar: { key: 'ctrl+b', description: 'Toggle sidebar' },
-    nextPanel: { key: 'tab', description: 'Next panel' },
-    previousPanel: { key: 'shift+tab', description: 'Previous panel' },
     scrollUp: { key: 'up', description: 'Scroll up' },
     scrollDown: { key: 'down', description: 'Scroll down' },
     help: { key: 'ctrl+/', description: 'Show help' },
@@ -30,6 +28,8 @@ export function defaultKeybindings(): KeybindingConfig {
     slashMenu: { key: 'escape', description: 'Open command menu' },
     expandThinking: { key: 'ctrl+t', description: 'Toggle thinking' },
     modelSwitch: { key: 'ctrl+m', description: 'Switch model' },
+    cycleMode: { key: 'shift+tab', description: 'Cycle mode (Code/Plan/Research/Review)' },
+    toggleBypass: { key: 'ctrl+y', description: 'Toggle bypass permissions' },
   };
 }
 

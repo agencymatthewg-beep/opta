@@ -2,8 +2,9 @@ import chalk from 'chalk';
 import { loadConfig } from '../core/config.js';
 import { agentLoop, buildSystemPrompt } from '../core/agent.js';
 import type { AgentMessage } from '../core/agent.js';
-import { formatError, OptaError, EXIT } from '../core/errors.js';
+import { formatError, OptaError, ExitError, EXIT } from '../core/errors.js';
 import { buildConfigOverrides } from '../utils/config-helpers.js';
+import { errorMessage } from '../utils/errors.js';
 import {
   createSession,
   loadSession,
@@ -95,7 +96,7 @@ export async function startChat(opts: ChatOptions): Promise<void> {
     console.error(chalk.dim('    3. Check LMX status:     ') + chalk.cyan('opta status'));
     console.error(chalk.dim('    4. Run diagnostics:      ') + chalk.cyan('opta doctor'));
     console.error('');
-    process.exit(EXIT.NO_CONNECTION);
+    throw new ExitError(EXIT.NO_CONNECTION);
   }
 
   // Create or resume session
@@ -121,15 +122,14 @@ export async function startChat(opts: ChatOptions): Promise<void> {
           session = await loadSession(choice);
         } catch {
           // Ctrl+C — exit gracefully
-          process.exit(0);
+          return;
         }
       } else {
         console.error(
           chalk.red('✗') + ` Session not found: ${opts.resume}\n\n` +
           chalk.dim('Run ') + chalk.cyan('opta sessions') + chalk.dim(' to list available sessions')
         );
-        process.exit(EXIT.NOT_FOUND);
-        return; // unreachable but satisfies TS
+        throw new ExitError(EXIT.NOT_FOUND);
       }
     }
     if (!jsonMode) {
@@ -192,6 +192,10 @@ export async function startChat(opts: ChatOptions): Promise<void> {
 
     const emitter = createTuiEmitter();
 
+    // Track the current workflow mode set by the TUI (Shift+Tab).
+    // Updated via onModeChange callback and used on next agent call.
+    let currentTuiMode = 'normal';
+
     // Check LMX connection and emit status events for the TUI
     checkConnection(emitter, config).catch(() => {});
 
@@ -200,6 +204,7 @@ export async function startChat(opts: ChatOptions): Promise<void> {
       sessionId: session.id,
       emitter,
       title: session.title,
+      onModeChange: (mode) => { currentTuiMode = mode; },
       onSubmit: (text: string) => {
         // Fire-and-forget: the emitter events drive the TUI updates
         (async () => {
@@ -217,6 +222,7 @@ export async function startChat(opts: ChatOptions): Promise<void> {
           const result = await runAgentWithEvents(
             emitter, enrichedInput, config, session,
             images.length > 0 ? images.map(img => ({ base64: img.base64, mimeType: img.mimeType, name: img.name })) : undefined,
+            currentTuiMode,
           );
           session.messages = result.messages;
           session.toolCallCount += result.toolCallCount;
@@ -403,7 +409,7 @@ export async function startChat(opts: ChatOptions): Promise<void> {
       if (err instanceof OptaError) {
         console.error(formatError(err));
       } else {
-        console.error(chalk.red('✗') + ` ${err instanceof Error ? err.message : String(err)}`);
+        console.error(chalk.red('✗') + ` ${errorMessage(err)}`);
       }
     }
   }

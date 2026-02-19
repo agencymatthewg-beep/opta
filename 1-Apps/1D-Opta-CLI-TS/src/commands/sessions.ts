@@ -5,7 +5,7 @@ import {
   exportSession,
   searchSessions,
 } from '../memory/store.js';
-import { EXIT } from '../core/errors.js';
+import { EXIT, ExitError } from '../core/errors.js';
 
 interface SessionsOptions {
   json?: boolean;
@@ -31,7 +31,7 @@ export async function sessions(
       if (!id) {
         console.error(chalk.red('✗') + ' Session ID required\n');
         console.log(chalk.dim('Usage: opta sessions resume <id>'));
-        process.exit(EXIT.MISUSE);
+        throw new ExitError(EXIT.MISUSE);
       }
       // Delegate to chat --resume
       const { startChat } = await import('./chat.js');
@@ -43,7 +43,7 @@ export async function sessions(
       if (!id) {
         console.error(chalk.red('✗') + ' Session ID required\n');
         console.log(chalk.dim('Usage: opta sessions delete <id>'));
-        process.exit(EXIT.MISUSE);
+        throw new ExitError(EXIT.MISUSE);
       }
       await deleteSession(id);
       console.log(chalk.green('✓') + ` Deleted session ${id}`);
@@ -54,7 +54,7 @@ export async function sessions(
       if (!id) {
         console.error(chalk.red('✗') + ' Search query required\n');
         console.log(chalk.dim('Usage: opta sessions search <query>'));
-        process.exit(EXIT.MISUSE);
+        throw new ExitError(EXIT.MISUSE);
       }
       await searchSessionsFormatted(id, opts?.json);
       break;
@@ -63,21 +63,21 @@ export async function sessions(
       if (!id) {
         console.error(chalk.red('✗') + ' Session ID required\n');
         console.log(chalk.dim('Usage: opta sessions export <id>'));
-        process.exit(EXIT.MISUSE);
+        throw new ExitError(EXIT.MISUSE);
       }
       try {
         const json = await exportSession(id);
         console.log(json);
       } catch {
         console.error(chalk.red('✗') + ` Session not found: ${id}`);
-        process.exit(EXIT.NOT_FOUND);
+        throw new ExitError(EXIT.NOT_FOUND);
       }
       break;
 
     default:
       console.error(chalk.red('✗') + ` Unknown action: ${action}\n`);
       console.log(chalk.dim('Available actions: list, resume, delete, export, search'));
-      process.exit(EXIT.MISUSE);
+      throw new ExitError(EXIT.MISUSE);
   }
 }
 

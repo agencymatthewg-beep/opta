@@ -1,10 +1,12 @@
 import chalk from 'chalk';
 import { isTTY } from './output.js';
 import { formatTokens } from '../utils/tokens.js';
+import { estimateCost, formatCost } from '../utils/pricing.js';
 
 export interface StatusBarConfig {
   model: string;
   sessionId: string;
+  provider?: string;
 }
 
 /**
@@ -88,7 +90,8 @@ export class StatusBar {
     parts.push(`${this.toolCalls} tool${this.toolCalls !== 1 ? 's' : ''}`);
     if (speed > 0) parts.push(`${speed.toFixed(0)} t/s`);
     if (elapsed > 0) parts.push(`${elapsed.toFixed(1)}s`);
-    parts.push('$0.00');
+    const cost = estimateCost(this.promptTokens, this.completionTokens, this.config.provider ?? 'lmx', this.config.model);
+    parts.push(cost.isLocal ? 'Free' : formatCost(cost));
 
     return parts.join(' · ');
   }

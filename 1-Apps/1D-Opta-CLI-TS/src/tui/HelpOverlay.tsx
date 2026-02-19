@@ -44,12 +44,12 @@ const DISPLAY_ORDER: (keyof KeybindingConfig)[] = [
   'expandThinking',
   'clear',
   'help',
-  'nextPanel',
-  'previousPanel',
   'slashMenu',
   'scrollUp',
   'scrollDown',
   'modelSwitch',
+  'cycleMode',
+  'toggleBypass',
 ];
 
 /** Width reserved for the key column in the two-column layout. */

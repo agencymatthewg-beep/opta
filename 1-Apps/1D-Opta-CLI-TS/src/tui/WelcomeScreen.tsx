@@ -45,25 +45,25 @@ export function WelcomeScreen({ connectionState, model, contextTotal, toolCount 
       <Box marginTop={1} flexDirection="column">
         <Text bold dimColor>Quick Start:</Text>
         <Box paddingLeft={2} flexDirection="column">
-          <Box>
-            <Text color="cyan">{'Type a message'}</Text>
-            <Text dimColor>{'     Start chatting'}</Text>
+          <Box justifyContent="space-between">
+            <Text color="cyan">Type a message</Text>
+            <Text dimColor>Start chatting</Text>
           </Box>
-          <Box>
-            <Text color="cyan">{'/help'}</Text>
-            <Text dimColor>{'              Command reference'}</Text>
+          <Box justifyContent="space-between">
+            <Text color="cyan">/help</Text>
+            <Text dimColor>Command reference</Text>
           </Box>
-          <Box>
-            <Text color="cyan">{'/model'}</Text>
-            <Text dimColor>{'             Switch models'}</Text>
+          <Box justifyContent="space-between">
+            <Text color="cyan">/model</Text>
+            <Text dimColor>Switch models</Text>
           </Box>
-          <Box>
-            <Text color="cyan">{'@file.ts'}</Text>
-            <Text dimColor>{'           Attach file context'}</Text>
+          <Box justifyContent="space-between">
+            <Text color="cyan">@file.ts</Text>
+            <Text dimColor>Attach file context</Text>
           </Box>
-          <Box>
-            <Text color="cyan">{'!command'}</Text>
-            <Text dimColor>{'            Run shell command'}</Text>
+          <Box justifyContent="space-between">
+            <Text color="cyan">!command</Text>
+            <Text dimColor>Run shell command</Text>
           </Box>
         </Box>
       </Box>
@@ -72,21 +72,21 @@ export function WelcomeScreen({ connectionState, model, contextTotal, toolCount 
       <Box marginTop={1} flexDirection="column">
         <Text bold dimColor>Keybindings:</Text>
         <Box paddingLeft={2} flexDirection="column">
-          <Box>
-            <Text color="cyan">{'Ctrl+?'}</Text>
-            <Text dimColor>{'             Show all keybindings'}</Text>
+        <Box justifyContent="space-between">
+            <Text color="cyan">Ctrl+?</Text>
+            <Text dimColor>Show all keybindings</Text>
           </Box>
-          <Box>
-            <Text color="cyan">{'Ctrl+S'}</Text>
-            <Text dimColor>{'             Toggle sidebar'}</Text>
+          <Box justifyContent="space-between">
+            <Text color="cyan">Ctrl+S</Text>
+            <Text dimColor>Toggle sidebar</Text>
           </Box>
-          <Box>
-            <Text color="cyan">{'Ctrl+T'}</Text>
-            <Text dimColor>{'             Expand thinking'}</Text>
+          <Box justifyContent="space-between">
+            <Text color="cyan">Ctrl+T</Text>
+            <Text dimColor>Expand thinking</Text>
           </Box>
-          <Box>
-            <Text color="cyan">{'Ctrl+L'}</Text>
-            <Text dimColor>{'             Clear messages'}</Text>
+          <Box justifyContent="space-between">
+            <Text color="cyan">Ctrl+L</Text>
+            <Text dimColor>Clear messages</Text>
           </Box>
         </Box>
       </Box>

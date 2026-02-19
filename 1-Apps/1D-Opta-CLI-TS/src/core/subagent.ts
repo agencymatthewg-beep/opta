@@ -1,4 +1,6 @@
 import type { OptaConfig } from './config.js';
+import { errorMessage } from '../utils/errors.js';
+import { estimateMessageTokens } from '../utils/tokens.js';
 
 // --- Type Definitions ---
 
@@ -170,40 +172,10 @@ export async function spawnSubAgent(
   const startTime = Date.now();
   const budget = resolveBudget(task.budget ?? {}, config);
 
-  // Check if already cancelled before starting
-  if (signal?.aborted) {
-    return {
-      taskId: task.id,
-      status: 'cancelled',
-      response: 'Sub-agent cancelled before starting.',
-      toolCallCount: 0,
-      tokenEstimate: 0,
-      filesRead: [],
-      filesModified: [],
-      durationMs: Date.now() - startTime,
-    };
-  }
-
-  try {
-    validateBudget(budget);
-  } catch (err) {
-    return {
-      taskId: task.id,
-      status: 'error',
-      response: `Budget validation failed: ${err instanceof Error ? err.message : String(err)}`,
-      toolCallCount: 0,
-      tokenEstimate: 0,
-      filesRead: [],
-      filesModified: [],
-      durationMs: Date.now() - startTime,
-    };
-  }
-
-  const childConfig = deriveChildConfig(config, task.mode, budget);
-  const cwd = task.scope ?? parentContext?.parentCwd ?? process.cwd();
-  const systemPrompt = buildSubAgentPrompt(task.description, cwd, budget.maxToolCalls);
-  const model = config.model.default;
-
+  // Mutable state captured by the builder closure
+  let toolCallCount = 0;
+  const filesRead: string[] = [];
+  const filesModified: string[] = [];
   const messages: Array<{
     role: 'system' | 'user' | 'assistant' | 'tool';
     content: string | null;
@@ -213,14 +185,46 @@ export async function spawnSubAgent(
       function: { name: string; arguments: string };
     }>;
     tool_call_id?: string;
-  }> = [
+  }> = [];
+
+  /** Build a SubAgentResult from the current closure state. */
+  function buildResult(
+    status: SubAgentResult['status'],
+    response: string,
+  ): SubAgentResult {
+    return {
+      taskId: task.id,
+      status,
+      response,
+      toolCallCount,
+      tokenEstimate: estimateMessageTokens(messages),
+      filesRead: [...new Set(filesRead)],
+      filesModified: [...new Set(filesModified)],
+      durationMs: Date.now() - startTime,
+    };
+  }
+
+  // Check if already cancelled before starting
+  if (signal?.aborted) {
+    return buildResult('cancelled', 'Sub-agent cancelled before starting.');
+  }
+
+  try {
+    validateBudget(budget);
+  } catch (err) {
+    return buildResult('error', `Budget validation failed: ${errorMessage(err)}`);
+  }
+
+  const childConfig = deriveChildConfig(config, task.mode, budget);
+  const cwd = task.scope ?? parentContext?.parentCwd ?? process.cwd();
+  const systemPrompt = buildSubAgentPrompt(task.description, cwd, budget.maxToolCalls);
+  const model = config.model.default;
+
+  // Initialize messages array with system + user messages
+  messages.push(
     { role: 'system', content: systemPrompt },
     { role: 'user', content: task.description },
-  ];
-
-  let toolCallCount = 0;
-  const filesRead: string[] = [];
-  const filesModified: string[] = [];
+  );
 
   // Build the tool schemas to use (respect whitelist if provided)
   const toolSchemas = task.tools
@@ -245,18 +249,12 @@ export async function spawnSubAgent(
       // Check budget before each LLM call
       if (toolCallCount >= budget.maxToolCalls) {
         const lastAssistantMsg = [...messages].reverse().find(m => m.role === 'assistant');
-        return {
-          taskId: task.id,
-          status: 'budget_exceeded',
-          response: typeof lastAssistantMsg?.content === 'string'
+        return buildResult(
+          'budget_exceeded',
+          typeof lastAssistantMsg?.content === 'string'
             ? lastAssistantMsg.content
             : `Budget exceeded after ${toolCallCount} tool calls.`,
-          toolCallCount,
-          tokenEstimate: estimateTokensSimple(messages),
-          filesRead: [...new Set(filesRead)],
-          filesModified: [...new Set(filesModified)],
-          durationMs: Date.now() - startTime,
-        };
+        );
       }
 
       const response = await client.chat.completions.create({
@@ -270,16 +268,7 @@ export async function spawnSubAgent(
 
       const choice = response.choices[0];
       if (!choice) {
-        return {
-          taskId: task.id,
-          status: 'error',
-          response: 'No response from model.',
-          toolCallCount,
-          tokenEstimate: estimateTokensSimple(messages),
-          filesRead: [...new Set(filesRead)],
-          filesModified: [...new Set(filesModified)],
-          durationMs: Date.now() - startTime,
-        };
+        return buildResult('error', 'No response from model.');
       }
 
       const assistantMsg = choice.message;
@@ -288,16 +277,7 @@ export async function spawnSubAgent(
 
       // No tool calls = task complete
       if (toolCalls.length === 0) {
-        return {
-          taskId: task.id,
-          status: 'completed',
-          response: text,
-          toolCallCount,
-          tokenEstimate: estimateTokensSimple(messages),
-          filesRead: [...new Set(filesRead)],
-          filesModified: [...new Set(filesModified)],
-          durationMs: Date.now() - startTime,
-        };
+        return buildResult('completed', text);
       }
 
       // Add assistant message with tool calls
@@ -403,53 +383,17 @@ export async function spawnSubAgent(
     if (err instanceof Error && err.message === 'TIMEOUT') {
       // Distinguish external cancellation from internal timeout
       if (signal?.aborted) {
-        return {
-          taskId: task.id,
-          status: 'cancelled',
-          response: 'Sub-agent cancelled by parent.',
-          toolCallCount,
-          tokenEstimate: estimateTokensSimple(messages),
-          filesRead: [...new Set(filesRead)],
-          filesModified: [...new Set(filesModified)],
-          durationMs: Date.now() - startTime,
-        };
+        return buildResult('cancelled', 'Sub-agent cancelled by parent.');
       }
-      return {
-        taskId: task.id,
-        status: 'timeout',
-        response: `Sub-agent timed out after ${budget.timeoutMs}ms.`,
-        toolCallCount,
-        tokenEstimate: estimateTokensSimple(messages),
-        filesRead: [...new Set(filesRead)],
-        filesModified: [...new Set(filesModified)],
-        durationMs: Date.now() - startTime,
-      };
+      return buildResult('timeout', `Sub-agent timed out after ${budget.timeoutMs}ms.`);
     }
 
     // External cancellation may also surface as an AbortError
     if (signal?.aborted) {
-      return {
-        taskId: task.id,
-        status: 'cancelled',
-        response: 'Sub-agent cancelled by parent.',
-        toolCallCount,
-        tokenEstimate: estimateTokensSimple(messages),
-        filesRead: [...new Set(filesRead)],
-        filesModified: [...new Set(filesModified)],
-        durationMs: Date.now() - startTime,
-      };
+      return buildResult('cancelled', 'Sub-agent cancelled by parent.');
     }
 
-    return {
-      taskId: task.id,
-      status: 'error',
-      response: err instanceof Error ? err.message : String(err),
-      toolCallCount,
-      tokenEstimate: estimateTokensSimple(messages),
-      filesRead: [...new Set(filesRead)],
-      filesModified: [...new Set(filesModified)],
-      durationMs: Date.now() - startTime,
-    };
+    return buildResult('error', errorMessage(err));
   } finally {
     if (timeoutHandle !== undefined) clearTimeout(timeoutHandle);
   }
@@ -485,11 +429,3 @@ export function formatSubAgentResult(result: SubAgentResult): string {
   return lines.join('\n');
 }
 
-// --- Utility ---
-
-function estimateTokensSimple(messages: Array<{ content: string | null }>): number {
-  return messages.reduce((sum, m) => {
-    const len = typeof m.content === 'string' ? m.content.length : 0;
-    return sum + Math.ceil(len / 4);
-  }, 0);
-}

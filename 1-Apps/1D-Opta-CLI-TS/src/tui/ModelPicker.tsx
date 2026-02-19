@@ -7,6 +7,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Box, Text, useInput } from 'ink';
+import { errorMessage } from '../utils/errors.js';
 
 export interface ModelPickerProps {
   currentModel: string;
@@ -44,7 +45,7 @@ export function ModelPicker({ currentModel, connectionHost, connectionPort, onSe
         setLoading(false);
       })
       .catch(err => {
-        setError(err instanceof Error ? err.message : String(err));
+        setError(errorMessage(err));
         setLoading(false);
       });
   }, [connectionHost, connectionPort, currentModel]);

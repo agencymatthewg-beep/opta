@@ -3,7 +3,7 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { VERSION } from './core/version.js';
-import { EXIT } from './core/errors.js';
+import { EXIT, ExitError } from './core/errors.js';
 import { setVerbose, setDebug } from './core/debug.js';
 
 // --- SIGINT handler ---
@@ -261,4 +261,9 @@ program
     await completions(shell);
   });
 
-program.parse();
+program.parseAsync().catch((err: unknown) => {
+  if (err instanceof ExitError) {
+    process.exit(err.exitCode);
+  }
+  throw err;
+});

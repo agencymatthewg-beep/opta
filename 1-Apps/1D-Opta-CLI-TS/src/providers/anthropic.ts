@@ -8,6 +8,7 @@
 
 import type { ProviderClient, ProviderModelInfo, ProviderHealthResult } from './base.js';
 import type { OptaConfig } from '../core/config.js';
+import { errorMessage } from '../utils/errors.js';
 
 export class AnthropicProvider implements ProviderClient {
   readonly name = 'anthropic';
@@ -86,7 +87,7 @@ export class AnthropicProvider implements ProviderClient {
       return {
         ok: false,
         latencyMs: Date.now() - start,
-        error: err instanceof Error ? err.message : String(err),
+        error: errorMessage(err),
       };
     }
   }

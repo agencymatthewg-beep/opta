@@ -6,11 +6,11 @@ interface KeyboardActions {
   onHelp?: () => void;
   onClear?: () => void;
   onSlashMenu?: () => void;
-  onNextPanel?: () => void;
-  onPreviousPanel?: () => void;
   onToggleSidebar?: () => void;
   onExpandThinking?: () => void;
   onModelSwitch?: () => void;
+  onCycleMode?: () => void;
+  onToggleBypass?: () => void;
 }
 
 interface KeyboardOptions {
@@ -64,13 +64,6 @@ export function useKeyboard(actions: KeyboardActions, options?: KeyboardOptions)
     if (matchesBinding(input, key, bindings.expandThinking)) {
       actions.onExpandThinking?.();
     }
-    // Tab / Shift+Tab -- panel navigation
-    if (matchesBinding(input, key, bindings.nextPanel)) {
-      actions.onNextPanel?.();
-    }
-    if (matchesBinding(input, key, bindings.previousPanel)) {
-      actions.onPreviousPanel?.();
-    }
     // Slash menu
     if (matchesBinding(input, key, bindings.slashMenu)) {
       actions.onSlashMenu?.();
@@ -78,6 +71,14 @@ export function useKeyboard(actions: KeyboardActions, options?: KeyboardOptions)
     // Model switch
     if (matchesBinding(input, key, bindings.modelSwitch)) {
       actions.onModelSwitch?.();
+    }
+    // Cycle mode (Shift+Tab)
+    if (matchesBinding(input, key, bindings.cycleMode)) {
+      actions.onCycleMode?.();
+    }
+    // Toggle bypass
+    if (matchesBinding(input, key, bindings.toggleBypass)) {
+      actions.onToggleBypass?.();
     }
   });
 }

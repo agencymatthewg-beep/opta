@@ -23,7 +23,7 @@ describe('InkStatusBar', () => {
       <InkStatusBar model="test" tokens={1000} cost="$0.12" tools={5} speed={30} compact={false} />
     );
     const frame = lastFrame() ?? '';
-    expect(frame).toContain('5 tools');
+    // tools count was removed from the status bar display in the redesign
     expect(frame).toContain('30 t/s');
     expect(frame).toContain('$0.12');
   });

@@ -3,6 +3,7 @@
  */
 
 import chalk from 'chalk';
+import { errorMessage } from '../../utils/errors.js';
 import { agentLoop } from '../../core/agent.js';
 import { generateTitle, saveSession } from '../../memory/store.js';
 import { estimateTokens, formatTokens } from '../../utils/tokens.js';
@@ -200,7 +201,7 @@ const imageHandler = async (args: string, ctx: SlashContext): Promise<SlashResul
     ctx.session.toolCallCount += result.toolCallCount;
     await saveSession(ctx.session);
   } catch (err) {
-    console.error(chalk.red('\u2717') + ` Failed to read image: ${err instanceof Error ? err.message : err}`);
+    console.error(chalk.red('\u2717') + ` Failed to read image: ${errorMessage(err)}`);
   }
   return 'handled';
 };

@@ -3,8 +3,9 @@
  */
 
 import chalk from 'chalk';
+import { errorMessage } from '../../utils/errors.js';
 import { box, kv, statusDot, fmtTokens, progressBar } from '../../ui/box.js';
-import { estimateTokens } from '../../core/agent.js';
+import { estimateMessageTokens } from '../../utils/tokens.js';
 import type { SlashCommandDef, SlashContext, SlashResult } from './types.js';
 
 const planHandler = async (args: string, ctx: SlashContext): Promise<SlashResult> => {
@@ -254,7 +255,7 @@ const undoHandler = async (args: string, ctx: SlashContext): Promise<SlashResult
       console.log(chalk.dim('  Cancelled'));
       return 'handled';
     }
-    console.error(chalk.red('\u2717') + ` Undo failed: ${err instanceof Error ? err.message : err}`);
+    console.error(chalk.red('\u2717') + ` Undo failed: ${errorMessage(err)}`);
   }
   return 'handled';
 };
@@ -272,7 +273,7 @@ const statusHandler = async (_args: string, ctx: SlashContext): Promise<SlashRes
     const data = await res.json() as Record<string, unknown>;
     const model = (data.models as string[] | undefined)?.[0];
     const memory = data.memory as { used_gb?: number; total_gb?: number; usage_percent?: number } | undefined;
-    const tokens = estimateTokens(ctx.session.messages);
+    const tokens = estimateMessageTokens(ctx.session.messages);
     const uptimeSec = data.uptime_seconds as number | undefined;
 
     const lines: string[] = [

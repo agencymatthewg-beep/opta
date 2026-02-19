@@ -1,4 +1,5 @@
 import { debug } from '../core/debug.js';
+import { errorMessage } from '../utils/errors.js';
 
 export interface McpTool {
   name: string;
@@ -144,11 +145,11 @@ export async function connectMcpServer(
             const result = await client.callTool({ name: toolName, arguments: args }) as { content?: unknown; isError?: boolean };
             return extractContent(result);
           } catch (retryErr) {
-            const msg = retryErr instanceof Error ? retryErr.message : String(retryErr);
+            const msg = errorMessage(retryErr);
             return `Error: MCP tool "${toolName}" failed after reconnect: ${msg}`;
           }
         }
-        const msg = err instanceof Error ? err.message : String(err);
+        const msg = errorMessage(err);
         return `Error: MCP tool "${toolName}" failed: ${msg}`;
       }
     },

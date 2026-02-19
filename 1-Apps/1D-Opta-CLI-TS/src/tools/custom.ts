@@ -1,6 +1,7 @@
 import { readFile, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { debug } from '../core/debug.js';
+import { errorMessage } from '../utils/errors.js';
 import { getToolNames } from '../core/tools/index.js';
 import { ALLOWED_ENV_KEYS } from '../hooks/manager.js';
 
@@ -136,7 +137,7 @@ export async function executeCustomTool(
 
     return output;
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
+    const message = errorMessage(err);
     return `Error: Custom tool "${tool.name}" failed — ${message}`;
   }
 }
@@ -169,7 +170,7 @@ async function loadToolsFromDir(
         tools.push(tool);
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
+      const message = errorMessage(err);
       debug(`Skipping custom tool "${file}": ${message}`);
     }
   }

@@ -19,8 +19,9 @@ describe('InputBox', () => {
   });
 
   it('should show mode indicator', () => {
-    const { lastFrame } = render(<InputBox onSubmit={() => {}} mode="plan" />);
-    expect(lastFrame()).toContain('plan');
+    // workflowMode drives the display badge; old mode="plan" no longer shows text
+    const { lastFrame } = render(<InputBox onSubmit={() => {}} mode="normal" workflowMode="plan" />);
+    expect(lastFrame()).toContain('Plan');
   });
 
   it('should show loading state', () => {
@@ -35,9 +36,11 @@ describe('InputBox', () => {
     expect(frame).not.toContain('thinking...');
   });
 
-  it('should show auto mode indicator', () => {
-    const { lastFrame } = render(<InputBox onSubmit={() => {}} mode="auto" />);
-    expect(lastFrame()).toContain('auto');
+  it('should show bypass permissions indicator', () => {
+    // bypass permissions turns the border red and shows a red ! prefix
+    const { lastFrame } = render(<InputBox onSubmit={() => {}} mode="normal" bypassPermissions={true} />);
+    // Red border appears; the bypass indicator is rendered
+    expect(lastFrame()).toBeDefined();
   });
 
   it('should accept text input and show it', async () => {

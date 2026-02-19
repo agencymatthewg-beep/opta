@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import { loadConfig } from '../core/config.js';
-import { formatError, OptaError, EXIT } from '../core/errors.js';
+import { formatError, OptaError, ExitError, EXIT } from '../core/errors.js';
 import { createSpinner } from '../ui/spinner.js';
 import { LmxClient, lookupContextLimit } from '../lmx/client.js';
 
@@ -69,7 +69,7 @@ export async function status(opts: StatusOptions): Promise<void> {
 
     if (err instanceof OptaError) {
       console.error(formatError(err));
-      process.exit(err.code);
+      throw new ExitError(err.code);
     }
 
     throw new OptaError(

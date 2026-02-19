@@ -1,16 +1,17 @@
 import chalk from 'chalk';
 import { loadConfig, saveConfig } from '../core/config.js';
-import { formatError, OptaError, EXIT } from '../core/errors.js';
+import { formatError, OptaError, ExitError, EXIT } from '../core/errors.js';
 import { createSpinner } from '../ui/spinner.js';
 import { LmxClient, lookupContextLimit } from '../lmx/client.js';
-import type {
-  LmxModelDetail,
-  LmxAvailableModel,
-  LmxPreset,
-  LmxStackRole,
-  LmxMemoryResponse,
-} from '../lmx/client.js';
-import type { ProviderModelInfo } from '../providers/base.js';
+import {
+  scanModels as gatherScanData,
+  buildRoleMap,
+  shortId,
+  fmtGB,
+  fmtCtx,
+  summarizeScan,
+} from '../providers/model-scan.js';
+import type { ScanResult } from '../providers/model-scan.js';
 
 interface ModelsOptions {
   json?: boolean;
@@ -39,7 +40,7 @@ export async function models(
       await unloadModel(name, client);
       return;
     case 'scan':
-      await scanModels(client, config, opts);
+      await scanModelsCommand(client, config, opts);
       return;
     default:
       await listModels(client, config.model.default, opts);
@@ -98,7 +99,7 @@ async function listModels(
     spinner.stop();
     if (err instanceof OptaError) {
       console.error(formatError(err));
-      process.exit(err.code);
+      throw new ExitError(err.code);
     }
     throw err;
   }
@@ -114,7 +115,7 @@ async function useModel(
       chalk.red('✗') + ' Missing model name\n\n' +
       chalk.dim('Usage: opta models use <name>')
     );
-    process.exit(EXIT.MISUSE);
+    throw new ExitError(EXIT.MISUSE);
   }
 
   const spinner = await createSpinner();
@@ -130,7 +131,7 @@ async function useModel(
       for (const m of result.models) {
         console.log(`  ${m.model_id}`);
       }
-      process.exit(EXIT.NOT_FOUND);
+      throw new ExitError(EXIT.NOT_FOUND);
     }
 
     const contextLimit = found.context_length ?? lookupContextLimit(name);
@@ -144,7 +145,7 @@ async function useModel(
     spinner.stop();
     if (err instanceof OptaError) {
       console.error(formatError(err));
-      process.exit(err.code);
+      throw new ExitError(err.code);
     }
     throw err;
   }
@@ -160,7 +161,7 @@ async function infoModel(
       chalk.red('✗') + ' Missing model name\n\n' +
       chalk.dim('Usage: opta models info <name>')
     );
-    process.exit(EXIT.MISUSE);
+    throw new ExitError(EXIT.MISUSE);
   }
 
   const spinner = await createSpinner();
@@ -173,7 +174,7 @@ async function infoModel(
     const model = result.models.find((m) => m.model_id === name);
     if (!model) {
       console.error(chalk.red('✗') + ` Model "${name}" not found`);
-      process.exit(EXIT.NOT_FOUND);
+      throw new ExitError(EXIT.NOT_FOUND);
     }
 
     if (opts?.json) {
@@ -202,7 +203,7 @@ async function infoModel(
     spinner.stop();
     if (err instanceof OptaError) {
       console.error(formatError(err));
-      process.exit(err.code);
+      throw new ExitError(err.code);
     }
     throw err;
   }
@@ -217,7 +218,7 @@ async function loadModel(
       chalk.red('✗') + ' Missing model name\n\n' +
       chalk.dim('Usage: opta models load <name>')
     );
-    process.exit(EXIT.MISUSE);
+    throw new ExitError(EXIT.MISUSE);
   }
 
   const spinner = await createSpinner();
@@ -237,7 +238,7 @@ async function loadModel(
     spinner.stop();
     if (err instanceof OptaError) {
       console.error(formatError(err));
-      process.exit(err.code);
+      throw new ExitError(err.code);
     }
     throw err;
   }
@@ -252,7 +253,7 @@ async function unloadModel(
       chalk.red('✗') + ' Missing model name\n\n' +
       chalk.dim('Usage: opta models unload <name>')
     );
-    process.exit(EXIT.MISUSE);
+    throw new ExitError(EXIT.MISUSE);
   }
 
   const spinner = await createSpinner();
@@ -269,112 +270,14 @@ async function unloadModel(
     spinner.stop();
     if (err instanceof OptaError) {
       console.error(formatError(err));
-      process.exit(err.code);
+      throw new ExitError(err.code);
     }
     throw err;
   }
 }
 
-// --- Helpers ---
-
-function shortId(id: string): string {
-  return id
-    .replace(/^mlx-community\//, '')
-    .replace(/^huggingface\//, '');
-}
-
-function fmtGB(bytes: number): string {
-  return `${(bytes / 1e9).toFixed(1)}GB`;
-}
-
-function fmtCtx(tokens: number): string {
-  return `${(tokens / 1000).toFixed(0)}K ctx`;
-}
-
-// --- Scan: unified multi-source model discovery ---
-
-interface ScanResult {
-  loaded: LmxModelDetail[];
-  available: LmxAvailableModel[];
-  presets: LmxPreset[];
-  roles: Record<string, LmxStackRole>;
-  memory: LmxMemoryResponse | null;
-  cloud: ProviderModelInfo[];
-  cloudHealthy: boolean;
-  lmxReachable: boolean;
-}
-
-async function gatherScanData(
-  client: LmxClient,
-  config: Awaited<ReturnType<typeof loadConfig>>
-): Promise<ScanResult> {
-  const result: ScanResult = {
-    loaded: [],
-    available: [],
-    presets: [],
-    roles: {},
-    memory: null,
-    cloud: [],
-    cloudHealthy: false,
-    lmxReachable: false,
-  };
-
-  // Query LMX endpoints in parallel (all may fail if LMX is down)
-  const lmxPromises = Promise.all([
-    client.models().catch(() => null),
-    client.available().catch(() => null),
-    client.presets().catch(() => null),
-    client.stack().catch(() => null),
-    client.memory().catch(() => null),
-  ]);
-
-  // Query Anthropic provider in parallel with LMX
-  const anthropicPromise = (async () => {
-    if (config.provider?.active === 'anthropic' || config.provider?.anthropic?.apiKey || process.env['ANTHROPIC_API_KEY']) {
-      try {
-        const { getProvider } = await import('../providers/manager.js');
-        // Create a temporary config with anthropic active to get the provider
-        const anthropicConfig = { ...config, provider: { ...config.provider, active: 'anthropic' as const } };
-        const provider = await getProvider(anthropicConfig);
-        const models = await provider.listModels();
-        const health = await provider.health();
-        return { models, healthy: health.ok };
-      } catch {
-        return { models: [], healthy: false };
-      }
-    }
-    return { models: [], healthy: false };
-  })();
-
-  const [lmxResults, anthropicResult] = await Promise.all([lmxPromises, anthropicPromise]);
-  const [modelsRes, availRes, presetsRes, stackRes, memRes] = lmxResults;
-
-  if (modelsRes) {
-    result.loaded = modelsRes.models;
-    result.lmxReachable = true;
-  }
-  if (availRes) {
-    result.available = availRes;
-    result.lmxReachable = true;
-  }
-  if (presetsRes) {
-    result.presets = presetsRes.presets;
-  }
-  if (stackRes) {
-    result.roles = stackRes.roles;
-  }
-  if (memRes) {
-    result.memory = memRes;
-  }
-
-  result.cloud = anthropicResult.models;
-  result.cloudHealthy = anthropicResult.healthy;
-
-  return result;
-}
-
-async function scanModels(
-  client: LmxClient,
+async function scanModelsCommand(
+  _client: LmxClient,
   config: Awaited<ReturnType<typeof loadConfig>>,
   opts?: ModelsOptions
 ): Promise<void> {
@@ -383,7 +286,7 @@ async function scanModels(
   spinner.start(`Scanning LMX (${host}:${port}) + providers...`);
 
   try {
-    const scan = await gatherScanData(client, config);
+    const scan = await gatherScanData(config);
     spinner.stop();
 
     // --- JSON output ---
@@ -393,14 +296,7 @@ async function scanModels(
     }
 
     // --- Build role lookup (model_id -> role names) ---
-    const roleMap = new Map<string, string[]>();
-    for (const [role, info] of Object.entries(scan.roles)) {
-      if (info.resolved_model) {
-        const existing = roleMap.get(info.resolved_model) ?? [];
-        existing.push(role);
-        roleMap.set(info.resolved_model, existing);
-      }
-    }
+    const roleMap = buildRoleMap(scan.roles);
 
     // --- Build loaded set for dedup with available ---
     const loadedIds = new Set(scan.loaded.map((m) => m.model_id));
@@ -503,12 +399,12 @@ async function scanModels(
     }
 
     // --- Print: Summary footer ---
+    const summary = summarizeScan(scan);
     const counts: string[] = [];
-    if (scan.loaded.length > 0) counts.push(`${scan.loaded.length} loaded`);
-    const unloadedCount = scan.available.filter((a) => !loadedIds.has(a.repo_id)).length;
-    if (unloadedCount > 0) counts.push(`${unloadedCount} on disk`);
-    if (scan.presets.length > 0) counts.push(`${scan.presets.length} presets`);
-    if (scan.cloud.length > 0) counts.push(`${scan.cloud.length} cloud`);
+    if (summary.loadedCount > 0) counts.push(`${summary.loadedCount} loaded`);
+    if (summary.onDiskCount > 0) counts.push(`${summary.onDiskCount} on disk`);
+    if (summary.presetCount > 0) counts.push(`${summary.presetCount} presets`);
+    if (summary.cloudCount > 0) counts.push(`${summary.cloudCount} cloud`);
 
     console.log(`\n  ${chalk.dim(counts.join(' \u00b7 '))}`);
     console.log(chalk.dim(`  'opta models load <name>'  load from disk`));
@@ -517,7 +413,7 @@ async function scanModels(
     spinner.stop();
     if (err instanceof OptaError) {
       console.error(formatError(err));
-      process.exit(err.code);
+      throw new ExitError(err.code);
     }
     throw err;
   }

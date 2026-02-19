@@ -6,6 +6,8 @@
  * connection status. Zero extra model calls — pure event observation.
  */
 
+import { estimateTokens } from '../utils/tokens.js';
+
 export type InsightCategory = 'perf' | 'context' | 'tool' | 'connection' | 'summary';
 
 export interface Insight {
@@ -136,7 +138,7 @@ export class InsightEngine {
   toolEnd(name: string, _id: string, result: string): void {
     const resultLen = result.length;
     if (resultLen > 5000) {
-      this.emit('tool', `${name} returned ${fmtK(Math.ceil(resultLen / 4))} tokens of context`);
+      this.emit('tool', `${name} returned ${fmtK(estimateTokens(result))} tokens of context`);
     }
   }
 

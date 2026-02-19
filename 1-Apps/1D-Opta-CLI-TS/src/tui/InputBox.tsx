@@ -3,6 +3,7 @@ import { Box, Text, useInput } from 'ink';
 import { InputEditor } from '../ui/input.js';
 import { InputHistory } from '../ui/history.js';
 import fg from 'fast-glob';
+import { DEFAULT_IGNORE_GLOBS } from '../utils/ignore.js';
 import { isImagePath } from '../core/fileref.js';
 import { getAllCommands } from '../commands/slash/index.js';
 import type { SlashCommandDef } from '../commands/slash/index.js';
@@ -14,6 +15,8 @@ interface InputBoxProps {
   history?: InputHistory;
   /** Label shown when loading (e.g. "running edit_file" instead of "thinking"). */
   loadingLabel?: string;
+  workflowMode?: 'normal' | 'plan' | 'research' | 'review';
+  bypassPermissions?: boolean;
 }
 
 /** Debounce interval for @file glob searches (ms). */
@@ -80,7 +83,7 @@ function extractAtPrefix(buffer: string, cursor: number): string | null {
   return null;
 }
 
-export function InputBox({ onSubmit, mode, isLoading, history: historyProp, loadingLabel }: InputBoxProps) {
+export function InputBox({ onSubmit, mode, isLoading, history: historyProp, loadingLabel, workflowMode, bypassPermissions }: InputBoxProps) {
   const editor = useMemo(() => new InputEditor({ prompt: '>', multiline: true, mode }), []);
   const history = useMemo(() => historyProp ?? new InputHistory(), [historyProp]);
 
@@ -128,7 +131,7 @@ export function InputBox({ onSubmit, mode, isLoading, history: historyProp, load
         const matches = await fg(`**/${prefix}*`, {
           cwd: process.cwd(),
           onlyFiles: true,
-          ignore: ['node_modules/**', '.git/**', 'dist/**', 'coverage/**'],
+          ignore: [...DEFAULT_IGNORE_GLOBS],
           deep: 5,
         });
         setSuggestions(matches.slice(0, MAX_SUGGESTIONS));
@@ -317,32 +320,39 @@ export function InputBox({ onSubmit, mode, isLoading, history: historyProp, load
   const cursor = editor.getCursor();
   const lineCount = editor.getLineCount();
 
-  const modeIndicator = (() => {
-    const effectiveMode = buffer.startsWith('!') ? 'shell' : mode;
-    switch (effectiveMode) {
-      case 'plan': return <Text color="magenta">plan</Text>;
-      case 'shell': return <Text color="yellow">!</Text>;
-      case 'auto': return <Text color="yellow">auto</Text>;
-      default: return null;
+  const modeDisplay = (() => {
+    // Bypass indicator takes visual priority — red ! prefix
+    const bypassIndicator = bypassPermissions ? (
+      <Text color="red" bold>! </Text>
+    ) : null;
+
+    const wfMode = workflowMode ?? 'normal';
+    switch (wfMode) {
+      case 'plan':
+        return <><Text color="magenta" bold>[Plan] </Text>{bypassIndicator}</>;
+      case 'research':
+        return <><Text color="yellow" bold>[Research] </Text>{bypassIndicator}</>;
+      case 'review':
+        return <><Text color="blue" bold>[Review] </Text>{bypassIndicator}</>;
+      default: // normal/code
+        return bypassIndicator ? <><Text color="cyan" bold>[Code] </Text>{bypassIndicator}</> : null;
     }
   })();
 
   if (isLoading) {
-    const label = loadingLabel || 'thinking';
-    return (
+    const loadingContent = (
       <Box paddingX={1}>
-        <Text color="cyan">*</Text>
-        <Text dimColor> {label}...</Text>
+        {modeDisplay}
+        <Text color="cyan">⠋</Text>
+        <Text dimColor> {loadingLabel || 'thinking'}...</Text>
       </Box>
     );
+    return bypassPermissions ? (
+      <Box borderStyle="single" borderColor="red">{loadingContent}</Box>
+    ) : loadingContent;
   }
 
   // Render the buffer with a cursor indicator
-  const beforeCursor = buffer.slice(0, cursor);
-  const cursorChar = cursor < buffer.length ? buffer[cursor] : ' ';
-  const afterCursor = cursor < buffer.length ? buffer.slice(cursor + 1) : '';
-
-  // Split into lines for multiline display
   const displayLines = buffer.split('\n');
   const cursorLine = editor.getCursorLine();
   const cursorCol = editor.getCursorCol();
@@ -356,10 +366,10 @@ export function InputBox({ onSubmit, mode, isLoading, history: historyProp, load
     </>
   );
 
-  return (
+  const inputContent = (
     <Box flexDirection="column" paddingX={1}>
       <Box>
-        {modeIndicator && <>{modeIndicator}<Text dimColor> </Text></>}
+        {modeDisplay && <>{modeDisplay}</>}
         <Text color="cyan">&gt;</Text>
         <Text> </Text>
         {displayLines.length === 1 ? (
@@ -381,7 +391,7 @@ export function InputBox({ onSubmit, mode, isLoading, history: historyProp, load
         const lineIdx = idx + 1;
         const isCurrentLine = lineIdx === cursorLine;
         return (
-          <Box key={lineIdx} paddingLeft={modeIndicator ? 4 : 2}>
+          <Box key={lineIdx} paddingLeft={modeDisplay ? 4 : 2}>
             <Text dimColor>{'  '}</Text>
             {isCurrentLine ? renderLineWithCursor(line, cursorCol) : <Text>{line}</Text>}
           </Box>
@@ -390,7 +400,7 @@ export function InputBox({ onSubmit, mode, isLoading, history: historyProp, load
 
       {/* Slash command autocomplete suggestions */}
       {slashSuggestions.length > 0 && (
-        <Box flexDirection="column" paddingLeft={modeIndicator ? 4 : 2}>
+        <Box flexDirection="column" paddingLeft={modeDisplay ? 4 : 2}>
           {slashSuggestions.map((cmd, i) => (
             <Text key={cmd.command} dimColor>
               {i === 0 ? 'Tab> ' : '     '}/{cmd.command.padEnd(14)} {cmd.description}
@@ -401,7 +411,7 @@ export function InputBox({ onSubmit, mode, isLoading, history: historyProp, load
 
       {/* @file autocomplete suggestions (images shown with indicator) */}
       {suggestions.length > 0 && slashSuggestions.length === 0 && (
-        <Box flexDirection="column" paddingLeft={modeIndicator ? 4 : 2}>
+        <Box flexDirection="column" paddingLeft={modeDisplay ? 4 : 2}>
           {suggestions.map((s, i) => (
             <Text key={s} dimColor>
               {i === 0 ? 'Tab> ' : '     '}{s}{isImagePath(s) ? ' [image]' : ''}
@@ -411,4 +421,8 @@ export function InputBox({ onSubmit, mode, isLoading, history: historyProp, load
       )}
     </Box>
   );
+
+  return bypassPermissions ? (
+    <Box borderStyle="single" borderColor="red">{inputContent}</Box>
+  ) : inputContent;
 }

@@ -26,7 +26,18 @@ describe('StatusBar', () => {
     bar.finalizeTurn();
     const summary = bar.getSummaryString();
     expect(summary).toContain('1.5K');
-    expect(summary).toContain('$0.00');
+    // Default provider is 'lmx' (local inference), so cost shows "Free"
+    expect(summary).toContain('Free');
+  });
+
+  it('should format summary with cloud cost', () => {
+    const bar = new StatusBar({ model: 'claude-sonnet-4-5', sessionId: '123', provider: 'anthropic' });
+    bar.markStart();
+    bar.setPromptTokens(100_000);
+    bar.update(50_000);
+    bar.finalizeTurn();
+    const summary = bar.getSummaryString();
+    expect(summary).toContain('$');
   });
 
   it('should accumulate across multiple turns', () => {

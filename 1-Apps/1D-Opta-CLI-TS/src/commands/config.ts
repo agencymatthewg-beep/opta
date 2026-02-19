@@ -1,6 +1,7 @@
 import chalk from 'chalk';
 import { loadConfig, getConfigStore, OptaConfigSchema } from '../core/config.js';
-import { EXIT, OptaError } from '../core/errors.js';
+import { EXIT, ExitError, OptaError } from '../core/errors.js';
+import { errorMessage } from '../utils/errors.js';
 
 interface ConfigOptions {
   json?: boolean;
@@ -34,7 +35,7 @@ export async function config(
     default:
       console.error(chalk.red('✗') + ` Unknown action: ${action}\n`);
       console.log(chalk.dim('Available actions: list, get, set, reset'));
-      process.exit(EXIT.MISUSE);
+      throw new ExitError(EXIT.MISUSE);
   }
 }
 
@@ -62,7 +63,7 @@ async function getConfig(key?: string): Promise<void> {
     console.error(chalk.red('✗') + ' Key required\n');
     console.log(chalk.dim('Usage: opta config get <key>'));
     console.log(chalk.dim('Example: opta config get connection.host'));
-    process.exit(EXIT.MISUSE);
+    throw new ExitError(EXIT.MISUSE);
   }
 
   const cfg = await loadConfig();
@@ -75,7 +76,7 @@ async function getConfig(key?: string): Promise<void> {
     for (const k of Object.keys(flat)) {
       console.log(chalk.dim(`  ${k}`));
     }
-    process.exit(EXIT.NOT_FOUND);
+    throw new ExitError(EXIT.NOT_FOUND);
   }
 
   console.log(String(val));
@@ -88,7 +89,7 @@ async function setConfig(key?: string, value?: string): Promise<void> {
     console.error(chalk.red('✗') + ' Key and value required\n');
     console.log(chalk.dim('Usage: opta config set <key> <value>'));
     console.log(chalk.dim('Example: opta config set permissions.edit_file allow'));
-    process.exit(EXIT.MISUSE);
+    throw new ExitError(EXIT.MISUSE);
   }
 
   const store = await getConfigStore();
@@ -110,7 +111,7 @@ async function setConfig(key?: string, value?: string): Promise<void> {
     // Revert the change — the value is invalid
     store.delete(key);
     throw new OptaError(
-      `Invalid value for "${key}": ${e instanceof Error ? e.message : String(e)}`,
+      `Invalid value for "${key}": ${errorMessage(e)}`,
       EXIT.MISUSE,
     );
   }

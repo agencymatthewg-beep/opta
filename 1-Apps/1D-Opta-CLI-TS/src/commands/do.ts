@@ -1,7 +1,7 @@
 import chalk from 'chalk';
 import { loadConfig } from '../core/config.js';
 import { agentLoop } from '../core/agent.js';
-import { formatError, OptaError, EXIT } from '../core/errors.js';
+import { formatError, OptaError, ExitError, EXIT } from '../core/errors.js';
 import { buildConfigOverrides } from '../utils/config-helpers.js';
 
 // --- Types ---
@@ -80,7 +80,7 @@ export async function executeTask(task: string[], opts: DoOptions): Promise<void
       console.log(chalk.dim('Usage: opta do <task...>'));
       console.log(chalk.dim('Example: opta do "fix the authentication bug"'));
     }
-    process.exit(EXIT.MISUSE);
+    throw new ExitError(EXIT.MISUSE);
   }
 
   const overrides = buildConfigOverrides(opts);
@@ -100,7 +100,7 @@ export async function executeTask(task: string[], opts: DoOptions): Promise<void
       };
       const output = formatDoResult(doResult, outputFormat);
       if (output) console.log(output);
-      process.exit(EXIT.NO_CONNECTION);
+      throw new ExitError(EXIT.NO_CONNECTION);
     }
 
     if (!silent) {
@@ -145,7 +145,7 @@ export async function executeTask(task: string[], opts: DoOptions): Promise<void
       } else {
         console.error(err.message);
       }
-      process.exit(err.code);
+      throw new ExitError(err.code);
     }
     throw err;
   }

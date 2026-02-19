@@ -24,6 +24,18 @@ export class OptaError extends Error {
   }
 }
 
+/**
+ * Thrown instead of calling process.exit() so that command functions
+ * remain testable.  The top-level CLI entry point catches this and
+ * calls process.exit(code).
+ */
+export class ExitError extends Error {
+  constructor(public readonly exitCode: ExitCode) {
+    super(`exit ${exitCode}`);
+    this.name = 'ExitError';
+  }
+}
+
 export function formatError(error: OptaError): string {
   let output = chalk.red('✗') + ' ' + error.message;
 

@@ -330,8 +330,7 @@ export async function loadConfig(
 
   // 1. Load user config (~/.config/opta/config.json)
   try {
-    const { default: Conf } = await import('conf');
-    const store = new Conf({ projectName: 'opta' });
+    const store = await getConfigStore();
     Object.assign(raw, store.store);
   } catch {
     // conf not available or no saved config — use defaults
@@ -432,8 +431,7 @@ export interface ConfigIssue {
  * automatically repaired.
  */
 export async function healConfig(): Promise<ConfigIssue[]> {
-  const { default: Conf } = await import('conf');
-  const store = new Conf({ projectName: 'opta' });
+  const store = await getConfigStore();
   const raw = { ...store.store } as Record<string, unknown>;
 
   const result = OptaConfigSchema.safeParse(raw);
@@ -508,15 +506,19 @@ export async function healConfig(): Promise<ConfigIssue[]> {
 export async function saveConfig(
   updates: Record<string, unknown>
 ): Promise<void> {
-  const { default: Conf } = await import('conf');
-  const store = new Conf({ projectName: 'opta' });
+  const store = await getConfigStore();
 
   for (const [key, value] of Object.entries(updates)) {
     store.set(key, value);
   }
 }
 
+let _configStore: import('conf').default | null = null;
+
 export async function getConfigStore(): Promise<import('conf').default> {
-  const { default: Conf } = await import('conf');
-  return new Conf({ projectName: 'opta' });
+  if (!_configStore) {
+    const { default: Conf } = await import('conf');
+    _configStore = new Conf({ projectName: 'opta' });
+  }
+  return _configStore;
 }

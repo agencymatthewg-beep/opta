@@ -4,68 +4,43 @@
 
 import chalk from 'chalk';
 import { box, kv, progressBar } from '../../ui/box.js';
+import { errorMessage } from '../../utils/errors.js';
 import type { SlashCommandDef, SlashContext, SlashResult } from './types.js';
 
 const scanHandler = async (_args: string, ctx: SlashContext): Promise<SlashResult> => {
-  const { LmxClient, lookupContextLimit } = await import('../../lmx/client.js');
-  const lmx = new LmxClient({
-    host: ctx.config.connection.host,
-    port: ctx.config.connection.port,
-    adminKey: ctx.config.connection.adminKey,
-  });
+  const { lookupContextLimit } = await import('../../lmx/client.js');
+  const {
+    scanModels,
+    buildRoleMap,
+    shortId,
+    fmtGB,
+    fmtCtx,
+    summarizeScan,
+  } = await import('../../providers/model-scan.js');
 
   console.log(chalk.dim(`  Scanning ${ctx.config.connection.host}:${ctx.config.connection.port}...`));
 
-  const [modelsRes, availRes, presetsRes, stackRes, memRes, cloudModels] = await Promise.all([
-    lmx.models().catch(() => null),
-    lmx.available().catch(() => null),
-    lmx.presets().catch(() => null),
-    lmx.stack().catch(() => null),
-    lmx.memory().catch(() => null),
-    (async () => {
-      const hasKey = ctx.config.provider?.anthropic?.apiKey || process.env['ANTHROPIC_API_KEY'];
-      if (!hasKey) return [];
-      try {
-        const { getProvider } = await import('../../providers/manager.js');
-        const cfg = { ...ctx.config, provider: { ...ctx.config.provider, active: 'anthropic' as const } };
-        return (await getProvider(cfg)).listModels();
-      } catch { return []; }
-    })(),
-  ]);
+  const scan = await scanModels(ctx.config);
 
-  const loaded = modelsRes?.models ?? [];
-  const loadedIds = new Set(loaded.map(m => m.model_id));
-  const lmxReachable = modelsRes !== null || availRes !== null;
-
-  if (!lmxReachable && cloudModels.length === 0) {
+  if (!scan.lmxReachable && scan.cloud.length === 0) {
     console.log(chalk.yellow('  LMX unreachable, no cloud providers configured'));
     return 'handled';
   }
 
-  // Role lookup
-  const roleMap = new Map<string, string[]>();
-  if (stackRes) {
-    for (const [role, info] of Object.entries(stackRes.roles)) {
-      if (info.resolved_model) {
-        const existing = roleMap.get(info.resolved_model) ?? [];
-        existing.push(role);
-        roleMap.set(info.resolved_model, existing);
-      }
-    }
-  }
+  const roleMap = buildRoleMap(scan.roles);
+  const loadedIds = new Set(scan.loaded.map(m => m.model_id));
 
   const lines: string[] = [];
 
   // Loaded
-  if (lmxReachable) {
+  if (scan.lmxReachable) {
     lines.push(chalk.bold('Loaded') + chalk.dim(` \u2500 ${ctx.config.connection.host}:${ctx.config.connection.port}`));
-    if (loaded.length === 0) {
+    if (scan.loaded.length === 0) {
       lines.push(chalk.dim('  (no models loaded)'));
     }
-    for (const m of loaded) {
-      const ctxK = ((m.context_length ?? lookupContextLimit(m.model_id)) / 1000).toFixed(0);
-      const parts: string[] = [`${ctxK}K ctx`];
-      if (m.memory_bytes) parts.push(`${(m.memory_bytes / 1e9).toFixed(1)}GB`);
+    for (const m of scan.loaded) {
+      const parts: string[] = [fmtCtx(m.context_length ?? lookupContextLimit(m.model_id))];
+      if (m.memory_bytes) parts.push(fmtGB(m.memory_bytes));
       if (m.request_count) parts.push(`${m.request_count} reqs`);
       const roles = roleMap.get(m.model_id);
       if (roles) parts.push(roles.map(r => `role:${r}`).join(' '));
@@ -76,23 +51,22 @@ const scanHandler = async (_args: string, ctx: SlashContext): Promise<SlashResul
   }
 
   // On disk
-  const onDisk = (availRes ?? []).filter(a => !loadedIds.has(a.repo_id));
+  const onDisk = scan.available.filter(a => !loadedIds.has(a.repo_id));
   if (onDisk.length > 0) {
     lines.push('');
     lines.push(chalk.bold('On Disk') + chalk.dim(' \u2500 not loaded'));
     for (const a of onDisk) {
-      const ctxK = (lookupContextLimit(a.repo_id) / 1000).toFixed(0);
-      const size = a.size_bytes > 0 ? `${(a.size_bytes / 1e9).toFixed(1)}GB` : '';
-      lines.push(`  ${chalk.dim('\u25cb')} ${a.repo_id}  ${chalk.dim([`${ctxK}K ctx`, size].filter(Boolean).join(' \u00b7 '))}`);
+      const size = a.size_bytes > 0 ? fmtGB(a.size_bytes) : '';
+      lines.push(`  ${chalk.dim('\u25cb')} ${a.repo_id}  ${chalk.dim([fmtCtx(lookupContextLimit(a.repo_id)), size].filter(Boolean).join(' \u00b7 '))}`);
     }
   }
 
   // Presets
-  if (presetsRes?.presets.length) {
+  if (scan.presets.length > 0) {
     lines.push('');
     lines.push(chalk.bold('Presets'));
-    for (const p of presetsRes.presets) {
-      const model = p.model.replace(/^(mlx|huggingface)-community\//, '');
+    for (const p of scan.presets) {
+      const model = shortId(p.model);
       const alias = p.routing_alias ? chalk.cyan(`alias:"${p.routing_alias}"`) : '';
       const auto = p.auto_load ? chalk.dim('auto-load') : '';
       lines.push(`  ${chalk.magenta('\u2666')} ${chalk.bold(p.name.padEnd(18))} \u2192 ${chalk.dim(model)}  ${alias}  ${auto}`);
@@ -100,30 +74,31 @@ const scanHandler = async (_args: string, ctx: SlashContext): Promise<SlashResul
   }
 
   // Cloud
-  if (cloudModels.length > 0) {
+  if (scan.cloud.length > 0) {
     lines.push('');
     lines.push(chalk.bold('Cloud') + chalk.dim(' \u2500 Anthropic'));
-    for (const m of cloudModels) {
-      const ctxStr = m.contextLength ? `${(m.contextLength / 1000).toFixed(0)}K ctx` : '';
+    for (const m of scan.cloud) {
+      const ctxStr = m.contextLength ? fmtCtx(m.contextLength) : '';
       lines.push(`  ${chalk.blue('\u2601')} ${m.id}  ${chalk.dim([m.name ?? '', ctxStr].filter(Boolean).join(' \u00b7 '))}`);
     }
   }
 
   // Memory
-  if (memRes) {
+  if (scan.memory) {
     lines.push('');
-    const pct = Math.round((memRes.used_gb / memRes.total_unified_memory_gb) * 100);
+    const pct = Math.round((scan.memory.used_gb / scan.memory.total_unified_memory_gb) * 100);
     const pctColor = pct > 80 ? chalk.red : pct > 60 ? chalk.yellow : chalk.green;
-    lines.push(`Memory: ${memRes.used_gb.toFixed(1)} / ${memRes.total_unified_memory_gb.toFixed(1)} GB ${pctColor(`(${pct}%)`)}` +
-      chalk.dim(` \u00b7 threshold ${memRes.threshold_percent}%`));
+    lines.push(`Memory: ${scan.memory.used_gb.toFixed(1)} / ${scan.memory.total_unified_memory_gb.toFixed(1)} GB ${pctColor(`(${pct}%)`)}` +
+      chalk.dim(` \u00b7 threshold ${scan.memory.threshold_percent}%`));
   }
 
   // Footer
+  const summary = summarizeScan(scan);
   const counts: string[] = [];
-  if (loaded.length > 0) counts.push(`${loaded.length} loaded`);
-  if (onDisk.length > 0) counts.push(`${onDisk.length} on disk`);
-  if (presetsRes?.presets.length) counts.push(`${presetsRes.presets.length} presets`);
-  if (cloudModels.length > 0) counts.push(`${cloudModels.length} cloud`);
+  if (summary.loadedCount > 0) counts.push(`${summary.loadedCount} loaded`);
+  if (summary.onDiskCount > 0) counts.push(`${summary.onDiskCount} on disk`);
+  if (summary.presetCount > 0) counts.push(`${summary.presetCount} presets`);
+  if (summary.cloudCount > 0) counts.push(`${summary.cloudCount} cloud`);
   if (counts.length > 0) {
     lines.push('');
     lines.push(chalk.dim(counts.join(' \u00b7 ')));
@@ -158,7 +133,7 @@ const loadHandler = async (args: string, ctx: SlashContext): Promise<SlashResult
       console.log(chalk.dim(`  Load time: ${result.load_time_seconds.toFixed(1)}s`));
     }
   } catch (err) {
-    console.error(chalk.red('\u2717') + ` Failed to load: ${err instanceof Error ? err.message : err}`);
+    console.error(chalk.red('\u2717') + ` Failed to load: ${errorMessage(err)}`);
   }
   return 'handled';
 };
@@ -183,7 +158,7 @@ const unloadHandler = async (args: string, ctx: SlashContext): Promise<SlashResu
       console.log(chalk.dim(`  Freed: ${(result.freed_bytes / 1e9).toFixed(1)} GB`));
     }
   } catch (err) {
-    console.error(chalk.red('\u2717') + ` Failed to unload: ${err instanceof Error ? err.message : err}`);
+    console.error(chalk.red('\u2717') + ` Failed to unload: ${errorMessage(err)}`);
   }
   return 'handled';
 };
@@ -228,7 +203,7 @@ const serveHandler = async (args: string, ctx: SlashContext): Promise<SlashResul
       const { serve } = await import('../serve.js');
       await serve(action);
     } catch (err) {
-      console.error(chalk.red('\u2717') + ` serve ${action} failed: ${err instanceof Error ? err.message : err}`);
+      console.error(chalk.red('\u2717') + ` serve ${action} failed: ${errorMessage(err)}`);
     }
     return 'handled';
   }
@@ -294,7 +269,7 @@ const diagnoseHandler = async (_args: string, ctx: SlashContext): Promise<SlashR
     checks.push(`${chalk.green('\u2713')} Server reachable at ${host}:${port} ${latColor(`(${latency}ms)`)}`);
   } catch (err) {
     checks.push(`${chalk.red('\u2717')} Server unreachable at ${host}:${port}`);
-    checks.push(`  ${chalk.dim(err instanceof Error ? err.message : String(err))}`);
+    checks.push(`  ${chalk.dim(errorMessage(err))}`);
   }
 
   // 2. Models loaded

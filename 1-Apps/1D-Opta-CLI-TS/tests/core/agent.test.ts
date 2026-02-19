@@ -103,18 +103,23 @@ export const VERSION = "1.0";
 
 describe('agentLoop tool registry integration', () => {
   it('uses buildToolRegistry from mcp/registry', async () => {
-    const source = await readFile(resolve(process.cwd(), 'src/core/agent.ts'), 'utf-8');
-    expect(source).toContain('buildToolRegistry');
-    expect(source).toContain('registry.execute');
-    expect(source).toContain('registry.close');
+    const agentSource = await readFile(resolve(process.cwd(), 'src/core/agent.ts'), 'utf-8');
+    const execSource = await readFile(resolve(process.cwd(), 'src/core/agent-execution.ts'), 'utf-8');
+    // agent.ts builds the registry and closes it
+    expect(agentSource).toContain('buildToolRegistry');
+    expect(agentSource).toContain('registry.close');
+    // agent-execution.ts calls registry.execute
+    expect(execSource).toContain('registry.execute');
   });
 
   it('does not import TOOL_SCHEMAS or executeTool from tools.js', async () => {
-    const source = await readFile(resolve(process.cwd(), 'src/core/agent.ts'), 'utf-8');
-    // Should still import resolvePermission
-    expect(source).toContain("import { resolvePermission } from './tools/index.js'");
-    // Should NOT import TOOL_SCHEMAS or executeTool from tools.js
-    expect(source).not.toMatch(/import\s*\{[^}]*TOOL_SCHEMAS[^}]*\}\s*from\s*['"]\.\/tools/);
-    expect(source).not.toMatch(/import\s*\{[^}]*executeTool[^}]*\}\s*from\s*['"]\.\/tools/);
+    const agentSource = await readFile(resolve(process.cwd(), 'src/core/agent.ts'), 'utf-8');
+    const permSource = await readFile(resolve(process.cwd(), 'src/core/agent-permissions.ts'), 'utf-8');
+    // resolvePermission is used in the permissions module
+    expect(permSource).toContain("import { resolvePermission } from './tools/index.js'");
+    // Neither agent.ts nor agent-permissions.ts should import TOOL_SCHEMAS or executeTool from tools.js
+    const combined = agentSource + permSource;
+    expect(combined).not.toMatch(/import\s*\{[^}]*TOOL_SCHEMAS[^}]*\}\s*from\s*['"]\.\/tools/);
+    expect(combined).not.toMatch(/import\s*\{[^}]*executeTool[^}]*\}\s*from\s*['"]\.\/tools/);
   });
 });

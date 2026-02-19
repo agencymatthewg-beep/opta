@@ -23,6 +23,33 @@ export interface ToolCardProps {
   args?: Record<string, unknown>;
   result?: string;
   collapsed?: boolean;
+  compact?: boolean;
+}
+
+/**
+ * CompactToolItem — minimal single-line tool call display.
+ * Used for live activity rendering in the message list.
+ */
+export function CompactToolItem({ name, status, args }: { name: string; status: 'running' | 'done' | 'error'; args?: Record<string, unknown> }) {
+  const icon = TOOL_ICONS[name] ?? '';
+  const symbol = status === 'running' ? '↻' : status === 'done' ? '✔' : '✗';
+  const color = status === 'running' ? 'cyan' : status === 'done' ? 'green' : 'red';
+
+  // Get the most important argument
+  let argStr = '';
+  if (args) {
+    const path = args['path'] ?? args['file_path'] ?? args['command'] ?? args['pattern'] ?? args['glob'] ?? args['question'];
+    if (path) argStr = String(path).slice(0, 50);
+  }
+
+  return (
+    <Box paddingLeft={2} marginBottom={0}>
+      <Text color={color}>{symbol} </Text>
+      <Text dimColor>{icon} </Text>
+      <Text>{name}</Text>
+      {argStr && <Text dimColor> {argStr}</Text>}
+    </Box>
+  );
 }
 
 function countLines(content: unknown): number {
@@ -168,7 +195,12 @@ export const ToolCard = memo(function ToolCard({
   args,
   result,
   collapsed = true,
+  compact = false,
 }: ToolCardProps) {
+  if (compact) {
+    return <CompactToolItem name={name} status={status} args={args} />;
+  }
+
   const statusInfo = STATUS[status];
   const icon = TOOL_ICONS[name] ?? '\u{1F527}';
 

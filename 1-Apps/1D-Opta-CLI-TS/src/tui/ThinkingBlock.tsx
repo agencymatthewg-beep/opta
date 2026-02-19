@@ -9,6 +9,8 @@ export interface ThinkingBlockProps {
   expanded: boolean;
   /** Pre-computed token count. If not provided, estimated from text. */
   tokenCount?: number;
+  /** When true, renders a compact single-line format for live streaming display. */
+  isLive?: boolean;
 }
 
 /**
@@ -22,10 +24,20 @@ export const ThinkingBlock = memo(function ThinkingBlock({
   text,
   expanded,
   tokenCount,
+  isLive = false,
 }: ThinkingBlockProps) {
   if (!text) return null;
 
   const tokens = tokenCount ?? estimateTokens(text);
+
+  if (isLive) {
+    return (
+      <Box paddingLeft={2} marginBottom={0}>
+        <Text color="magenta">◩ </Text>
+        <Text dimColor>Thinking... {tokens} tokens</Text>
+      </Box>
+    );
+  }
 
   if (!expanded) {
     return (

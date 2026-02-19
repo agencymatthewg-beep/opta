@@ -1,4 +1,5 @@
 import fg from 'fast-glob';
+import { DEFAULT_IGNORE_GLOBS } from '../utils/ignore.js';
 
 export function fuzzyMatch(query: string, target: string): boolean {
   return target.toLowerCase().includes(query.toLowerCase());
@@ -24,7 +25,7 @@ export function getCompletions(query: string, files: string[], limit = 15): stri
 export async function getProjectFiles(cwd: string): Promise<string[]> {
   return fg(['**/*'], {
     cwd,
-    ignore: ['node_modules/**', 'dist/**', '.git/**', '.next/**', '*.lock'],
+    ignore: [...DEFAULT_IGNORE_GLOBS],
     onlyFiles: true,
     dot: false,
   });

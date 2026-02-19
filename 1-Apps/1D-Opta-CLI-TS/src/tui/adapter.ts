@@ -12,6 +12,7 @@ import type { AgentLoopOptions, AgentLoopResult } from '../core/agent.js';
 import type { Session } from '../memory/store.js';
 import type { PermissionDecision } from './PermissionPrompt.js';
 import { InsightEngine, type Insight } from '../core/insights.js';
+import { errorMessage } from '../utils/errors.js';
 
 /** Average characters per token for rough estimation. */
 const CHARS_PER_TOKEN = 4;
@@ -90,11 +91,13 @@ export async function runAgentWithEvents(
   config: OptaConfig,
   session: Session,
   images?: Array<{ base64: string; mimeType: string; name?: string }>,
+  mode?: string,
 ): Promise<AgentLoopResult> {
   const turnStartTime = Date.now();
   let completionTokens = 0;
   let toolCallCount = 0;
   let firstTokenTime: number | null = null;
+  let apiPromptTokens = 0;
 
   // Insight engine — observes agent events and emits ★ blocks
   const insights = new InsightEngine((insight) => {
@@ -123,6 +126,7 @@ export async function runAgentWithEvents(
     sessionId: session.id,
     silent: true, // We handle display in the TUI
     images,
+    mode: (mode && mode !== 'normal') ? mode as 'plan' | 'review' | 'research' : undefined,
     onStream: {
       onToken(text: string) {
         // Track first token latency
@@ -151,6 +155,9 @@ export async function runAgentWithEvents(
       onConnectionStatus(status: 'checking' | 'connected' | 'disconnected' | 'reconnecting') {
         emitter.emit('connection:status', status as 'checking' | 'connected' | 'disconnected' | 'error');
         insights.connectionStatus(status);
+      },
+      onUsage(usage: { promptTokens: number; completionTokens: number }) {
+        apiPromptTokens = usage.promptTokens;
       },
       /**
        * Bridge permission requests from the agent loop to the TUI.
@@ -195,7 +202,7 @@ export async function runAgentWithEvents(
 
     const turnStats = {
       tokens: completionTokens,
-      promptTokens: 0, // Not available from current API
+      promptTokens: apiPromptTokens,
       completionTokens,
       toolCalls: toolCallCount,
       elapsed,
@@ -209,8 +216,8 @@ export async function runAgentWithEvents(
     return result;
   } catch (err) {
     clearInterval(progressInterval);
-    const errorMessage = err instanceof Error ? err.message : String(err);
-    emitter.emit('error', errorMessage);
+    const errMsg = errorMessage(err);
+    emitter.emit('error', errMsg);
     throw err;
   }
 }

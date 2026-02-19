@@ -19,6 +19,8 @@
     "build": "tsup src/index.ts --format esm --dts --clean",
     "start": "node dist/index.js",
     "test": "vitest",
+    "test:tui": "vitest tests/tui/",
+    "test:core": "vitest tests/core/ tests/utils/ tests/ui/",
     "lint": "eslint src",
     "format": "prettier --write src",
     "typecheck": "tsc --noEmit"

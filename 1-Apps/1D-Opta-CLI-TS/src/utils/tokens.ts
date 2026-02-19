@@ -1,13 +1,26 @@
 /**
  * Canonical token estimation and formatting utilities.
  *
- * All token counting in Opta CLI should use these functions
- * rather than inline `text.length / 4` or ad-hoc formatters.
+ * All token counting in Opta CLI MUST use these functions
+ * rather than inline `text.length / 4` or ad-hoc approaches.
  */
 
+/** A content part in a multimodal message. */
+interface ContentPart {
+  type: string;
+  text?: string;
+  image_url?: { url: string };
+}
+
+/** A chat message with optional multimodal content and tool calls. */
+interface TokenMessage {
+  role: string;
+  content?: string | ContentPart[] | null;
+  tool_calls?: unknown[];
+}
+
 /**
- * Estimate token count using chars/4 heuristic.
- * This is a fast approximation — actual tokenizer counts vary by model.
+ * Estimate token count for a plain string using chars/4 heuristic.
  */
 export function estimateTokens(text: string): number {
   return Math.ceil(text.length / 4);
@@ -15,27 +28,27 @@ export function estimateTokens(text: string): number {
 
 /**
  * Estimate total tokens for an array of chat messages.
- * Accounts for tool_calls JSON serialization overhead.
+ * Handles string content, ContentPart[] (multimodal), and tool_calls.
  */
-export function estimateMessageTokens(
-  messages: Array<{ role: string; content?: string | null; tool_calls?: unknown[] }>,
-): number {
-  let total = 0;
-  for (const msg of messages) {
-    total += estimateTokens(msg.content ?? '');
-    if (msg.tool_calls) {
-      total += estimateTokens(JSON.stringify(msg.tool_calls));
+export function estimateMessageTokens(messages: TokenMessage[]): number {
+  return messages.reduce((sum, m) => {
+    let contentLen = 0;
+    if (typeof m.content === 'string') {
+      contentLen = m.content.length;
+    } else if (Array.isArray(m.content)) {
+      contentLen = m.content.reduce((s: number, p: ContentPart) => {
+        if (p.type === 'text' && p.text) return s + p.text.length;
+        if (p.type === 'image_url') return s + 1000;
+        return s;
+      }, 0);
     }
-  }
-  return total;
+    const toolCallsStr = m.tool_calls ? JSON.stringify(m.tool_calls) : '';
+    return sum + Math.ceil((contentLen + toolCallsStr.length) / 4);
+  }, 0);
 }
 
 /**
  * Format a token count for display.
- *
- * - 100K+ → "100K" (no decimal)
- * - 1K–99.9K → "1.5K" (one decimal)
- * - <1K → "500" (raw number)
  */
 export function formatTokens(n: number): string {
   if (n >= 100_000) return `${(n / 1000).toFixed(0)}K`;

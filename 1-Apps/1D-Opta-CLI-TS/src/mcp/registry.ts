@@ -2,6 +2,8 @@ import { TOOL_SCHEMAS, SUB_AGENT_TOOL_SCHEMAS, executeTool } from '../core/tools
 import { connectMcpServer, type McpConnection } from './client.js';
 import { ToolResultCache } from './cache.js';
 import { debug } from '../core/debug.js';
+import { errorMessage } from '../utils/errors.js';
+import { estimateTokens } from '../utils/tokens.js';
 import type { OptaConfig } from '../core/config.js';
 import type { SubAgentContext } from '../core/subagent.js';
 import { LspManager } from '../lsp/manager.js';
@@ -63,7 +65,7 @@ export async function buildToolRegistry(
       // Extract server name from the settled result — map index matches serverEntries order
       const idx = connectResults.indexOf(result);
       const name = serverEntries[idx]?.[0] ?? 'unknown';
-      const msg = result.reason instanceof Error ? result.reason.message : String(result.reason);
+      const msg = errorMessage(result.reason);
       debug(`MCP "${name}" failed to connect: ${msg}`);
       console.warn(`  MCP server "${name}" unavailable: ${msg}`);
     }
@@ -118,7 +120,7 @@ export async function buildToolRegistry(
   const toolThreshold = Math.floor(contextLimit / 256);
   if (totalTools > toolThreshold) {
     const schemaJson = JSON.stringify(baseSchemas) + JSON.stringify(subAgentSchemas) + JSON.stringify(mcpSchemas) + JSON.stringify(customSchemas);
-    const estimatedTokens = Math.ceil(schemaJson.length / 4);
+    const estimatedTokens = estimateTokens(schemaJson);
     console.warn(
       `  ${totalTools} tools (~${estimatedTokens} tokens) may degrade inference on ${(contextLimit / 1024).toFixed(0)}K context. Consider: lsp.enabled=false or reducing MCP servers.`
     );
@@ -278,7 +280,7 @@ async function execSubAgentTool(
       config,
     );
   } catch (err) {
-    return `Error: ${err instanceof Error ? err.message : String(err)}`;
+    return `Error: ${errorMessage(err)}`;
   }
 
   // Create an OpenAI client for the sub-agent (shares config)
@@ -331,7 +333,7 @@ async function execSubAgentTool(
         (task, cfg, cli, reg) => spawnSubAgent(task, cfg, cli, reg, childContext),
       );
     } catch (err) {
-      return `Error: ${err instanceof Error ? err.message : String(err)}`;
+      return `Error: ${errorMessage(err)}`;
     }
   }
 

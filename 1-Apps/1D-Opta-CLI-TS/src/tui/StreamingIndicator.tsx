@@ -1,26 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Text } from 'ink';
 
-// Smooth Braille spinner frames
-const BRAILLE_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
-
-// Legacy spinner frames (kept for backward compat rendering)
-const LEGACY_FRAMES = ['*', '~', '*', '~', '*', '~', '*', '~', '*', '~'];
-
-// --- Types ---
+// Braille spinner (thinking)
+const BRAILLE = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+// Pulsing circle (connecting)
+const PULSE = ['⦿', '◎', '○', '◎'];
+// Rotating arrow (reading)
+const ROTATE = ['↻', '↺'];
+// Filling square (deep thinking)
+const FILL = ['◧', '◩', '◪', '◨'];
 
 export interface StreamingIndicatorProps {
-  /** Current phase of the turn */
   phase: 'idle' | 'connecting' | 'waiting' | 'streaming' | 'tool-call' | 'done';
-  /** Elapsed seconds for current turn (ticking) */
   elapsed: number;
-  /** Current tokens/second rate */
   speed: number;
-  /** Completion tokens generated so far */
   completionTokens: number;
-  /** Contextual label (e.g. "thinking", "running read_file") */
   label: string;
-  /** Time in ms from submit to first token, null if no token yet */
   firstTokenLatency: number | null;
 }
 
@@ -31,129 +26,101 @@ function isNewProps(props: Props): props is StreamingIndicatorProps {
   return 'phase' in props;
 }
 
-// --- Legacy component (backward compat) ---
-
 function LegacyIndicator({ label = 'thinking' }: OldProps) {
   const [frame, setFrame] = useState(0);
-
   useEffect(() => {
-    const timer = setInterval(() => {
-      setFrame(prev => (prev + 1) % LEGACY_FRAMES.length);
-    }, 80);
-    return () => clearInterval(timer);
+    const t = setInterval(() => setFrame(f => (f + 1) % BRAILLE.length), 80);
+    return () => clearInterval(t);
   }, []);
-
   return (
-    <Text color="cyan">
-      {LEGACY_FRAMES[frame]} <Text dimColor>{label}...</Text>
-    </Text>
+    <Text color="cyan">{BRAILLE[frame]} <Text dimColor>{label}...</Text></Text>
   );
 }
 
-// --- Rich multi-phase component ---
-
-function RichIndicator({
-  phase,
-  elapsed,
-  speed,
-  completionTokens,
-  label,
-  firstTokenLatency,
-}: StreamingIndicatorProps) {
+function useAnimatedFrame(frames: string[], interval: number, active: boolean): string {
   const [frame, setFrame] = useState(0);
-
-  // Animate spinner for all active phases (not idle, not done)
-  const isAnimating = phase !== 'idle' && phase !== 'done';
-
   useEffect(() => {
-    if (!isAnimating) return;
-    const timer = setInterval(() => {
-      setFrame(prev => (prev + 1) % BRAILLE_FRAMES.length);
-    }, 80);
-    return () => clearInterval(timer);
-  }, [isAnimating]);
+    if (!active) return;
+    const t = setInterval(() => setFrame(f => (f + 1) % frames.length), interval);
+    return () => clearInterval(t);
+  }, [active, frames.length, interval]);
+  return frames[frame] ?? frames[0] ?? '';
+}
 
-  // idle: render nothing
-  if (phase === 'idle') {
-    return null;
-  }
+function RichIndicator({ phase, elapsed, speed, completionTokens, label, firstTokenLatency }: StreamingIndicatorProps) {
+  const isActive = phase !== 'idle' && phase !== 'done';
 
-  // done: static green indicator
+  const braille = useAnimatedFrame(BRAILLE, 80, isActive && (phase === 'waiting' || phase === 'streaming'));
+  const pulse = useAnimatedFrame(PULSE, 200, isActive && phase === 'connecting');
+  const rotate = useAnimatedFrame(ROTATE, 200, isActive && phase === 'tool-call');
+  const fill = useAnimatedFrame(FILL, 300, isActive && label === 'thinking deeply');
+
+  if (phase === 'idle') return null;
+
   if (phase === 'done') {
     return (
       <Box paddingX={1}>
-        <Text color="green">● </Text>
+        <Text color="green">✔ </Text>
         <Text color="green">Done</Text>
         <Text dimColor>  {elapsed.toFixed(1)}s</Text>
-        {completionTokens > 0 && (
-          <>
-            <Text dimColor> │ </Text>
-            <Text>{completionTokens} tokens</Text>
-          </>
-        )}
-        {speed > 0 && (
-          <>
-            <Text dimColor> │ </Text>
-            <Text color="green">{speed.toFixed(1)} tok/s</Text>
-          </>
-        )}
+        {completionTokens > 0 && <><Text dimColor> │ </Text><Text dimColor>{completionTokens} tok</Text></>}
+        {speed > 0 && <><Text dimColor> │ </Text><Text color="green">{speed.toFixed(0)} t/s</Text></>}
       </Box>
     );
   }
 
-  // Active phases: connecting, waiting, streaming, tool-call
-  const spinner = BRAILLE_FRAMES[frame];
+  // Determine symbol + color + text based on phase/label
+  let symbol: string;
+  let symbolColor: string;
+  let phaseText: string;
 
-  let phaseLabel: string;
-  switch (phase) {
-    case 'connecting':
-      phaseLabel = 'Connecting to LMX...';
-      break;
-    case 'waiting':
-      phaseLabel = 'Waiting for first token...';
-      break;
-    case 'streaming':
-      phaseLabel = 'Streaming';
-      break;
-    case 'tool-call':
-      phaseLabel = label ? `Running ${label}...` : 'Running tool...';
-      break;
-    default:
-      phaseLabel = label || 'Working...';
+  if (phase === 'connecting') {
+    symbol = pulse;
+    symbolColor = 'yellow';
+    phaseText = 'Connecting to LMX...';
+  } else if (phase === 'waiting' || (phase === 'streaming' && label === 'thinking deeply')) {
+    symbol = label === 'thinking deeply' ? fill : braille;
+    symbolColor = label === 'thinking deeply' ? 'magenta' : 'cyan';
+    phaseText = label === 'thinking deeply' ? 'Thinking deeply...' : 'Thinking...';
+  } else if (phase === 'tool-call') {
+    // Pick symbol based on tool type
+    const toolName = label.replace(/^running\s+/, '');
+    if (toolName.includes('run_command') || toolName.includes('bg_start')) {
+      symbol = '⚡';
+      symbolColor = 'yellow';
+      phaseText = `Running ${toolName.replace(/^running\s+/, '')}`;
+    } else if (toolName.includes('edit_file') || toolName.includes('write_file') || toolName.includes('multi_edit')) {
+      symbol = rotate;
+      symbolColor = 'yellow';
+      phaseText = `Writing ${toolName.replace(/^(edit_file|write_file|multi_edit)\s*/,'').replace(/running\s+/, '')}`;
+    } else {
+      // read/search/list/find
+      symbol = rotate;
+      symbolColor = 'cyan';
+      phaseText = label.startsWith('running ') ? label.slice(8) : label;
+    }
+  } else {
+    // streaming / writing response
+    symbol = '→';
+    symbolColor = 'green';
+    phaseText = 'Writing response...';
   }
 
   return (
     <Box paddingX={1}>
-      <Text color="cyan">{spinner} </Text>
-      <Text>{phaseLabel}</Text>
-      <Text dimColor>  {elapsed.toFixed(1)}s</Text>
-      {completionTokens > 0 && (
-        <>
-          <Text dimColor> │ </Text>
-          <Text>{completionTokens} tokens</Text>
-        </>
-      )}
-      {speed > 0 && phase === 'streaming' && (
-        <>
-          <Text dimColor> │ </Text>
-          <Text color="green">{speed.toFixed(0)} tok/s</Text>
-        </>
-      )}
-      {firstTokenLatency !== null && (
-        <>
-          <Text dimColor> │ </Text>
-          <Text dimColor>TTFT {(firstTokenLatency / 1000).toFixed(1)}s</Text>
-        </>
+      <Text color={symbolColor}>{symbol} </Text>
+      <Text dimColor>{phaseText}</Text>
+      {elapsed > 0 && <Text dimColor>  {elapsed.toFixed(1)}s</Text>}
+      {completionTokens > 0 && <><Text dimColor> │ </Text><Text dimColor>{completionTokens} tok</Text></>}
+      {speed > 0 && phase === 'streaming' && <><Text dimColor> │ </Text><Text color="green">{speed.toFixed(0)} t/s</Text></>}
+      {firstTokenLatency !== null && phase !== 'streaming' && (
+        <><Text dimColor> │ </Text><Text dimColor>TTFT {(firstTokenLatency / 1000).toFixed(1)}s</Text></>
       )}
     </Box>
   );
 }
 
-// --- Exported component: supports both old and new prop signatures ---
-
 export function StreamingIndicator(props: Props) {
-  if (isNewProps(props)) {
-    return <RichIndicator {...props} />;
-  }
+  if (isNewProps(props)) return <RichIndicator {...props} />;
   return <LegacyIndicator {...props} />;
 }

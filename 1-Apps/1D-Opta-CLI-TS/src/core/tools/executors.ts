@@ -3,8 +3,10 @@ import { resolve, relative } from 'node:path';
 import { realpathSync } from 'node:fs';
 import chalk from 'chalk';
 import { debug } from '../debug.js';
+import { errorMessage } from '../../utils/errors.js';
 import type { OptaConfig } from '../config.js';
 import { ProcessManager, type ProcessStatus } from '../background.js';
+import { DEFAULT_IGNORE_DIRS } from '../../utils/ignore.js';
 
 // --- Error Recovery Hints ---
 
@@ -14,7 +16,7 @@ import { ProcessManager, type ProcessStatus } from '../background.js';
  * Includes dim slash command suggestions for in-REPL recovery.
  */
 export function enrichError(error: unknown): string {
-  const message = error instanceof Error ? error.message : String(error);
+  const message = errorMessage(error);
   const code = (error as NodeJS.ErrnoException)?.code;
 
   // Network: connection refused
@@ -223,7 +225,7 @@ async function execListDir(args: Record<string, unknown>): Promise<string> {
       cwd: path,
       dot: false,
       onlyFiles: false,
-      ignore: ['node_modules', '.git', 'dist', 'coverage'],
+      ignore: [...DEFAULT_IGNORE_DIRS],
     });
     return files.sort().join('\n') || '(empty directory)';
   }
@@ -271,7 +273,7 @@ async function execSearchFiles(args: Record<string, unknown>): Promise<string> {
   const files = await fg(glob ?? '**/*', {
     cwd: searchPath,
     dot: false,
-    ignore: ['node_modules', '.git', 'dist'],
+    ignore: [...DEFAULT_IGNORE_DIRS],
   });
 
   const results: string[] = [];
@@ -305,7 +307,7 @@ async function execFindFiles(args: Record<string, unknown>): Promise<string> {
   const files = await fg(pattern, {
     cwd: searchPath,
     dot: false,
-    ignore: ['node_modules', '.git', 'dist', 'coverage'],
+    ignore: [...DEFAULT_IGNORE_DIRS],
   });
 
   return files.length > 0 ? files.sort().join('\n') : 'No files found.';
@@ -349,13 +351,17 @@ async function execWebSearch(args: Record<string, unknown>): Promise<string> {
   const query = String(args['query'] ?? '');
   const maxResults = Number(args['max_results'] ?? 5);
 
-  let searxngUrl = 'http://192.168.188.10:8888';
+  let searxngUrl: string;
   try {
     const { loadConfig } = await import('../config.js');
     const config = await loadConfig();
-    searxngUrl = config.search?.searxngUrl ?? searxngUrl;
+    searxngUrl = config.search?.searxngUrl ?? '';
   } catch {
-    // Use default
+    return 'Error: Could not load config for search URL. Run: opta config set search.searxngUrl <url>';
+  }
+
+  if (!searxngUrl) {
+    return 'Error: No SearXNG URL configured. Run: opta config set search.searxngUrl <url>';
   }
 
   const url = `${searxngUrl}/search?q=${encodeURIComponent(query)}&format=json`;
@@ -378,7 +384,7 @@ async function execWebSearch(args: Record<string, unknown>): Promise<string> {
       )
       .join('\n\n');
   } catch (err) {
-    return `Error: Search failed — ${err instanceof Error ? err.message : String(err)}`;
+    return `Error: Search failed — ${errorMessage(err)}`;
   }
 }
 
@@ -429,7 +435,7 @@ async function execWebFetch(args: Record<string, unknown>): Promise<string> {
 
     return text.slice(0, maxChars);
   } catch (err) {
-    return `Error: Fetch failed — ${err instanceof Error ? err.message : String(err)}`;
+    return `Error: Fetch failed — ${errorMessage(err)}`;
   }
 }
 
@@ -469,7 +475,7 @@ async function execMultiEdit(args: Record<string, unknown>): Promise<string> {
     } catch (err) {
       // All edits for this file fail
       for (const edit of group) {
-        failures.push(`edit #${edit.index + 1} in ${relative(process.cwd(), filePath)}: ${err instanceof Error ? err.message : String(err)}`);
+        failures.push(`edit #${edit.index + 1} in ${relative(process.cwd(), filePath)}: ${errorMessage(err)}`);
       }
       continue;
     }

@@ -4,6 +4,8 @@
 
 import chalk from 'chalk';
 import { box, kv, fmtTokens, progressBar } from '../../ui/box.js';
+import { estimateTokens } from '../../utils/tokens.js';
+import { estimateCost, formatCost } from '../../utils/pricing.js';
 import type { AgentMessage } from '../../core/agent.js';
 import type { SlashCommandDef, SlashContext, SlashResult } from './types.js';
 
@@ -34,7 +36,7 @@ const costHandler = async (_args: string, ctx: SlashContext): Promise<SlashResul
   let completionTok = 0;
   for (const m of msgs) {
     const len = typeof m.content === 'string' ? m.content.length : 0;
-    const tok = Math.ceil(len / 4);
+    const tok = estimateTokens(typeof m.content === 'string' ? m.content : '');
     if (m.role === 'assistant') completionTok += tok;
     else promptTok += tok;
   }
@@ -50,7 +52,13 @@ const costHandler = async (_args: string, ctx: SlashContext): Promise<SlashResul
     '',
     kv('Messages', String(msgs.length)),
     kv('Tool calls', String(ctx.session.toolCallCount)),
-    kv('Cost', chalk.green('$0.00') + chalk.dim(' (local inference)')),
+    (() => {
+      const provider = ctx.config.provider.active;
+      const model = provider === 'lmx' ? ctx.config.model.default : ctx.config.provider.anthropic.model;
+      const cost = estimateCost(promptTok, completionTok, provider, model);
+      if (cost.isLocal) return kv('Cost', chalk.green('Free') + chalk.dim(' (local inference)'));
+      return kv('Cost', chalk.yellow(formatCost(cost) + ' USD'));
+    })(),
   ]));
   return 'handled';
 };
@@ -75,7 +83,7 @@ const statsHandler = async (_args: string, _ctx: SlashContext): Promise<SlashRes
     chalk.dim('Model Usage:'),
     ...modelLines,
     '',
-    kv('Cost', chalk.green('$0.00') + chalk.dim(' (local inference)'), 14),
+    kv('Cost', chalk.green('Free') + chalk.dim(' (aggregate cost tracked per-turn)'), 14),
   ]));
   return 'handled';
 };

@@ -25,6 +25,8 @@ import {
   type HookResult,
 } from './manager.js';
 
+export { HookManager };
+
 // ── Session context (passed from agent loop) ────────────────────────────
 
 export interface SessionContext {

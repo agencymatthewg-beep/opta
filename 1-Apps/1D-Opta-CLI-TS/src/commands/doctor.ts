@@ -5,6 +5,7 @@ import { homedir } from 'node:os';
 import { loadConfig } from '../core/config.js';
 import { VERSION } from '../core/version.js';
 import { debug } from '../core/debug.js';
+import { errorMessage } from '../utils/errors.js';
 
 // --- Types ---
 
@@ -203,7 +204,7 @@ export async function checkConfig(): Promise<CheckResult> {
       message: 'Config valid',
     };
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
+    const msg = errorMessage(err);
     return {
       name: 'Config',
       status: 'fail',

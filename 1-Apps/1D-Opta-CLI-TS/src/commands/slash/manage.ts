@@ -4,6 +4,7 @@
 
 import chalk from 'chalk';
 import { box, kv } from '../../ui/box.js';
+import { errorMessage } from '../../utils/errors.js';
 import type { SlashCommandDef, SlashContext, SlashResult } from './types.js';
 
 const configHandler = async (args: string, ctx: SlashContext): Promise<SlashResult> => {
@@ -51,7 +52,7 @@ const configHandler = async (args: string, ctx: SlashContext): Promise<SlashResu
       const val = getNestedValue(config, key);
       console.log(`  ${chalk.dim(key + ':')} ${val !== undefined ? String(val) : chalk.dim('(not set)')}`);
     } catch (err) {
-      console.error(chalk.red('\u2717') + ` ${err instanceof Error ? err.message : err}`);
+      console.error(chalk.red('\u2717') + ` ${errorMessage(err)}`);
     }
     return 'handled';
   }
@@ -69,7 +70,7 @@ const configHandler = async (args: string, ctx: SlashContext): Promise<SlashResu
       await saveConfig(nested);
       console.log(chalk.green('\u2713') + ` ${key} = ${value}`);
     } catch (err) {
-      console.error(chalk.red('\u2717') + ` Failed to save: ${err instanceof Error ? err.message : err}`);
+      console.error(chalk.red('\u2717') + ` Failed to save: ${errorMessage(err)}`);
     }
     return 'handled';
   }
@@ -81,7 +82,7 @@ const configHandler = async (args: string, ctx: SlashContext): Promise<SlashResu
       store.clear();
       console.log(chalk.green('\u2713') + ' Config reset to defaults');
     } catch (err) {
-      console.error(chalk.red('\u2717') + ` ${err instanceof Error ? err.message : err}`);
+      console.error(chalk.red('\u2717') + ` ${errorMessage(err)}`);
     }
     return 'handled';
   }
@@ -116,7 +117,7 @@ const doctorHandler = async (_args: string, _ctx: SlashContext): Promise<SlashRe
     const { runDoctor } = await import('../doctor.js');
     await runDoctor({});
   } catch (err) {
-    console.error(chalk.red('\u2717') + ` Doctor failed: ${err instanceof Error ? err.message : err}`);
+    console.error(chalk.red('\u2717') + ` Doctor failed: ${errorMessage(err)}`);
   }
   return 'handled';
 };
@@ -186,7 +187,7 @@ const quickfixHandler = async (_args: string, _ctx: SlashContext): Promise<Slash
     );
   } catch (err) {
     console.error(
-      chalk.red('\u2717') + ` Quickfix failed: ${err instanceof Error ? err.message : err}`,
+      chalk.red('\u2717') + ` Quickfix failed: ${errorMessage(err)}`,
     );
   }
   return 'handled';
@@ -228,7 +229,7 @@ const permissionsHandler = async (args: string, ctx: SlashContext): Promise<Slas
     const color = newPerm === 'allow' ? chalk.green : newPerm === 'deny' ? chalk.red : chalk.yellow;
     console.log(chalk.green('\u2713') + ` ${toolName}: ${color(newPerm)}`);
   } catch (err) {
-    console.error(chalk.red('\u2717') + ` Failed: ${err instanceof Error ? err.message : err}`);
+    console.error(chalk.red('\u2717') + ` Failed: ${errorMessage(err)}`);
   }
   return 'handled';
 };

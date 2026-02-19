@@ -3,7 +3,9 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import { loadConfig } from '../core/config.js';
 import { agentLoop } from '../core/agent.js';
 import { createSession, loadSession, saveSession } from '../memory/store.js';
-import { EXIT } from '../core/errors.js';
+import { EXIT, ExitError } from '../core/errors.js';
+import { VERSION } from '../core/version.js';
+import { errorMessage } from '../utils/errors.js';
 
 // --- Server Handler (testable without HTTP) ---
 
@@ -36,7 +38,7 @@ export function createServerHandler(opts: ServerHandlerOptions) {
         status: 'ok',
         model: opts.model,
         uptime: Math.floor((Date.now() - startTime) / 1000),
-        version: '0.4.0',
+        version: VERSION,
       };
     },
 
@@ -74,7 +76,7 @@ export async function startServer(opts: ServerOptions): Promise<void> {
       chalk.red('\u2717') + ' No model configured\n\n' +
       chalk.dim('Run ') + chalk.cyan('opta status') + chalk.dim(' to check your LMX connection')
     );
-    process.exit(EXIT.NO_CONNECTION);
+    throw new ExitError(EXIT.NO_CONNECTION);
   }
 
   const serverPort = opts.port ?? 3456;
@@ -157,7 +159,7 @@ export async function startServer(opts: ServerOptions): Promise<void> {
       } catch (err) {
         res.writeHead(500, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({
-          error: err instanceof Error ? err.message : String(err),
+          error: errorMessage(err),
         }));
       }
       return;

@@ -6,7 +6,7 @@ describe('keybindings', () => {
     const bindings = defaultKeybindings();
     expect(bindings.exit).toBeDefined();
     expect(bindings.toggleSidebar).toBeDefined();
-    expect(bindings.nextPanel).toBeDefined();
+    expect(bindings.cycleMode).toBeDefined();
   });
 
   it('should resolve keybinding', () => {

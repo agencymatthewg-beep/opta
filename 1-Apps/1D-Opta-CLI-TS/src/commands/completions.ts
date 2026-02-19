@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import { EXIT } from '../core/errors.js';
+import { EXIT, ExitError } from '../core/errors.js';
 
 export async function completions(shell: string): Promise<void> {
   switch (shell.toLowerCase()) {
@@ -15,7 +15,7 @@ export async function completions(shell: string): Promise<void> {
     default:
       console.error(chalk.red('\u2717') + ` Unsupported shell: ${shell}\n`);
       console.log(chalk.dim('Supported: bash, zsh, fish'));
-      process.exit(EXIT.MISUSE);
+      throw new ExitError(EXIT.MISUSE);
   }
 }
 

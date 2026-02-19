@@ -10,6 +10,7 @@ import { readFile } from 'node:fs/promises';
 import { resolve, extname } from 'node:path';
 import { LspClient } from './client.js';
 import { BUILTIN_SERVERS, detectLanguage } from './servers.js';
+import { errorMessage } from '../utils/errors.js';
 import {
   filePathToUri,
   toPosition,
@@ -277,7 +278,7 @@ export class LspManager {
       this.clients.set(language, client);
       return client;
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = errorMessage(err);
       this.serverAvailable.set(language, false);
       return `LSP server for ${language} failed to start: ${msg}\n\nUse search_files as a fallback.`;
     }

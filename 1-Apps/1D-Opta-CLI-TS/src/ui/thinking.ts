@@ -61,17 +61,15 @@ export class ThinkingRenderer {
       return this.cleanOutput(content);
     }
 
-    // Still buffering — show thinking indicator if we have content
-    if (this.buffer.length > 20 && !this.headerPrinted && isTTY) {
+    // Still buffering — show thinking indicator once if we have content
+    // Don't stream every chunk - that causes shaking
+    if (this.buffer.length > 100 && !this.headerPrinted && isTTY) {
       process.stdout.write(chalk.dim('\n  ⚙ thinking...\n'));
       this.headerPrinted = true;
-    }
-    if (this.headerPrinted && isTTY) {
-      // Show latest thinking text dim
-      const newContent = chunk.replace(/\n/g, '\n' + chalk.dim('    '));
-      process.stdout.write(chalk.dim('    ' + newContent));
       this.thinkingDisplayed = true;
     }
+    // Skip streaming individual chunks - just buffer until complete
+    // This prevents the "shaking" effect from rapid stdout updates
 
     return ''; // Buffer everything until we know
   }
@@ -97,15 +95,12 @@ export class ThinkingRenderer {
 
     const tokens = estimateTokens(text);
 
-    if (this.thinkingDisplayed) {
-      // We already showed streaming thinking text — now collapse it
-      // Clear the thinking lines and replace with summary
-      const lines = (text.match(/\n/g) || []).length + 2; // header + content lines
-      for (let i = 0; i < lines; i++) {
-        process.stdout.write('\x1b[A\x1b[2K'); // move up, clear line
-      }
+    // Simply show the thinking indicator - don't try to clear/replace lines (causes shaking)
+    // The final thinking will be shown when complete via getCollapsedSummary()
+    if (!this.thinkingDisplayed) {
+      process.stdout.write(chalk.dim(`  ⚙ thinking (${tokens} tokens)\n`));
+      this.thinkingDisplayed = true;
     }
-    process.stdout.write(chalk.dim(`  ⚙ thinking (${tokens} tokens)\n\n`));
   }
 
   /** Get the raw thinking text (for toggle display). */

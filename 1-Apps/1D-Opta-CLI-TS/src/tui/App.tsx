@@ -9,7 +9,6 @@ import { Sidebar } from './Sidebar.js';
 import { useTerminalSize } from './hooks/useTerminalSize.js';
 import { useKeyboard } from './hooks/useKeyboard.js';
 import { StreamingIndicator } from './StreamingIndicator.js';
-import { FocusProvider, useFocusPanel } from './FocusContext.js';
 import { PermissionPrompt } from './PermissionPrompt.js';
 import { HelpOverlay } from './HelpOverlay.js';
 import { ModelPicker } from './ModelPicker.js';
@@ -32,6 +31,12 @@ const MIN_MESSAGE_AREA_HEIGHT = 10;
 /** Rows consumed by header, status bar, and input (not message area). */
 const CHROME_HEIGHT = 6;
 
+/** Workflow modes cycled by Shift+Tab. */
+export type WorkflowMode = 'normal' | 'plan' | 'research' | 'review';
+
+/** Ordered cycle of workflow modes (Shift+Tab). */
+const WORKFLOW_MODES: WorkflowMode[] = ['normal', 'plan', 'research', 'review'];
+
 export interface TuiMessage {
   role: string;
   content: string;
@@ -45,6 +50,21 @@ export interface TuiMessage {
   thinking?: { text: string; tokens: number };
   /** Number of images attached to this message (for visual indicator). */
   imageCount?: number;
+}
+
+/**
+ * A single item of live activity during the current turn.
+ * Accumulated in a ref during streaming and cleared on turn:end
+ * after being collapsed into a permanent activity-summary message.
+ */
+export interface TurnActivityItem {
+  type: 'tool' | 'thinking';
+  toolName?: string;
+  /** Internal tracking id — used to match tool:end events. */
+  toolId?: string;
+  toolStatus?: 'running' | 'done' | 'error';
+  toolArgs?: Record<string, unknown>;
+  thinkingTokens?: number;
 }
 
 /** Result from dispatching a slash command in TUI mode. */
@@ -71,6 +91,8 @@ interface AppProps {
   onSlashCommand?: (input: string) => Promise<SlashCommandResult>;
   /** Initial session title (for resumed sessions). New session titles arrive via emitter 'title' event. */
   title?: string;
+  /** Called when user cycles workflow mode (Shift+Tab). Propagates to agent config. */
+  onModeChange?: (mode: WorkflowMode) => void;
 }
 
 function AppInner({
@@ -82,14 +104,21 @@ function AppInner({
   onSubmit,
   onSlashCommand,
   title: initialTitle,
+  onModeChange,
 }: AppProps) {
   const { exit } = useApp();
   const { width, height } = useTerminalSize();
-  const { activePanel, nextPanel, previousPanel } = useFocusPanel();
 
   const [messages, setMessages] = useState<TuiMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [mode, setMode] = useState<'normal' | 'plan' | 'shell' | 'auto'>('normal');
+  // Two-axis mode system:
+  //   workflowMode — affects system prompt and tool availability (Shift+Tab)
+  //   bypassPermissions — auto-approves all tool permission prompts (Ctrl+Y, red border)
+  const [workflowMode, setWorkflowMode] = useState<WorkflowMode>('normal');
+  const [bypassPermissions, setBypassPermissions] = useState(false);
+  // Live activity during a turn (collapses to permanent messages on turn:end)
+  const [liveActivity, setLiveActivity] = useState<TurnActivityItem[]>([]);
+  const [liveStreamingText, setLiveStreamingText] = useState('');
   const [currentModel, setCurrentModel] = useState(initialModel);
   const [tokens, setTokens] = useState(0);
   const [promptTokens, setPromptTokens] = useState(0);
@@ -161,10 +190,9 @@ function AppInner({
     total: contextLimit,
   }), [promptTokens, completionTokens, contextLimit]);
 
-  // Ref to track the current streaming assistant message index
-  const streamingMsgIdx = useRef<number | null>(null);
-
-  // Ref to accumulate thinking text during a turn
+  // Refs for accumulating streaming data during a turn without per-token re-renders
+  const currentStreamingTextRef = useRef('');
+  const liveActivityRef = useRef<TurnActivityItem[]>([]);
   const thinkingTextRef = useRef('');
 
   const handleClear = useCallback(() => setMessages([]), []);
@@ -173,15 +201,28 @@ function AppInner({
   const handleHelp = useCallback(() => setShowHelp(prev => !prev), []);
   const handleModelSwitch = useCallback(() => setShowModelPicker(prev => !prev), []);
 
+  const handleCycleMode = useCallback(() => {
+    setWorkflowMode(prev => {
+      const idx = WORKFLOW_MODES.indexOf(prev);
+      const next = WORKFLOW_MODES[(idx + 1) % WORKFLOW_MODES.length]!;
+      onModeChange?.(next);
+      return next;
+    });
+  }, [onModeChange]);
+
+  const handleToggleBypass = useCallback(() => {
+    setBypassPermissions(prev => !prev);
+  }, []);
+
   useKeyboard({
     onExit: exit,
     onClear: handleClear,
     onHelp: handleHelp,
-    onNextPanel: nextPanel,
-    onPreviousPanel: previousPanel,
     onToggleSidebar: handleToggleSidebar,
     onExpandThinking: handleExpandThinking,
     onModelSwitch: handleModelSwitch,
+    onCycleMode: handleCycleMode,
+    onToggleBypass: handleToggleBypass,
   });
 
   // Elapsed timer -- ticks every 100ms while loading
@@ -215,26 +256,13 @@ function AppInner({
     let firstTokenReceived = false;
 
     const onToken = (text: string) => {
-      // Transition to streaming phase on first token
       if (!firstTokenReceived) {
         firstTokenReceived = true;
         setTurnPhase('streaming');
       }
-
-      setMessages(prev => {
-        const idx = streamingMsgIdx.current;
-        if (idx !== null && idx < prev.length) {
-          // Append to existing streaming assistant message
-          const updated = [...prev];
-          const msg = updated[idx]!;
-          updated[idx] = { ...msg, content: msg.content + text };
-          return updated;
-        }
-        // Create new assistant message and track its index
-        const newIdx = prev.length;
-        streamingMsgIdx.current = newIdx;
-        return [...prev, { role: 'assistant', content: text }];
-      });
+      // Accumulate in ref — update state (triggers re-render) after each chunk
+      currentStreamingTextRef.current += text;
+      setLiveStreamingText(currentStreamingTextRef.current);
     };
 
     const onToolStart = (name: string, id: string, argsJson: string) => {
@@ -244,35 +272,28 @@ function AppInner({
       try {
         parsedArgs = JSON.parse(argsJson) as Record<string, unknown>;
       } catch {
-        // args may not be valid JSON; leave undefined
+        // args may not be valid JSON
       }
-      setMessages(prev => [
-        ...prev,
-        { role: 'tool', content: 'running...', toolName: name, toolId: id, toolStatus: 'running', toolArgs: parsedArgs },
-      ]);
+      const item: TurnActivityItem = {
+        type: 'tool',
+        toolName: name,
+        toolId: id,
+        toolStatus: 'running',
+        toolArgs: parsedArgs,
+      };
+      liveActivityRef.current = [...liveActivityRef.current, item];
+      setLiveActivity([...liveActivityRef.current]);
     };
 
-    const onToolEnd = (name: string, id: string, result: string) => {
+    const onToolEnd = (_name: string, id: string, _result: string) => {
       setStreamingLabel('thinking');
       setTurnPhase('streaming');
-      setMessages(prev => {
-        const updated = [...prev];
-        // Find the matching tool:start message and update it
-        const idx = updated.findIndex(
-          m => m.role === 'tool' && m.toolId === id && m.toolStatus === 'running'
-        );
-        if (idx !== -1) {
-          const truncated = result.length > TOOL_RESULT_PREVIEW_LENGTH
-            ? result.slice(0, TOOL_RESULT_PREVIEW_LENGTH) + '...'
-            : result;
-          updated[idx] = {
-            ...updated[idx]!,
-            content: truncated,
-            toolStatus: 'done',
-          };
-        }
-        return updated;
-      });
+      liveActivityRef.current = liveActivityRef.current.map(item =>
+        item.type === 'tool' && item.toolId === id
+          ? { ...item, toolStatus: 'done' as const }
+          : item
+      );
+      setLiveActivity([...liveActivityRef.current]);
       setToolCallCount(prev => prev + 1);
     };
 
@@ -283,8 +304,12 @@ function AppInner({
 
     const onTurnStart = () => {
       setIsLoading(true);
-      streamingMsgIdx.current = null;
+      liveActivityRef.current = [];
+      setLiveActivity([]);
+      currentStreamingTextRef.current = '';
+      setLiveStreamingText('');
       thinkingTextRef.current = '';
+      firstTokenReceived = false;
       setStreamingLabel('thinking');
       setTurnPhase('waiting');
       setFirstTokenLatency(null);
@@ -297,30 +322,46 @@ function AppInner({
     const onTurnEnd = (stats: TurnStats) => {
       setIsLoading(false);
       setTurnPhase('done');
-
-      // Transition back to idle after 2 seconds
       setTimeout(() => setTurnPhase('idle'), 2000);
 
-      // Attach accumulated thinking to the assistant message
-      if (thinkingTextRef.current && streamingMsgIdx.current !== null) {
-        const thinkText = thinkingTextRef.current;
-        const thinkTokens = estimateTokens(thinkText);
-        setMessages(prev => {
-          const idx = streamingMsgIdx.current;
-          if (idx !== null && idx < prev.length) {
-            const updated = [...prev];
-            updated[idx] = {
-              ...updated[idx]!,
-              thinking: { text: thinkText, tokens: thinkTokens },
-            };
-            return updated;
-          }
-          return prev;
+      const finalText = currentStreamingTextRef.current;
+      const finalThinking = thinkingTextRef.current;
+      const toolsUsed = liveActivityRef.current.filter(a => a.type === 'tool');
+
+      // Collapse live state into permanent messages (chronological order):
+      // 1. Activity summary line (dim, lists tool calls + elapsed)
+      // 2. Assistant response in purple box
+      const newMessages: TuiMessage[] = [];
+
+      if (toolsUsed.length > 0) {
+        const toolNames = toolsUsed.map(t => t.toolName ?? 'tool').join(' · ');
+        newMessages.push({
+          role: 'activity-summary',
+          content: `\u25C7 ${toolNames}  ${stats.elapsed.toFixed(1)}s`,
         });
       }
 
-      streamingMsgIdx.current = null;
+      if (finalText || finalThinking) {
+        const thinkTokens = finalThinking ? estimateTokens(finalThinking) : 0;
+        newMessages.push({
+          role: 'assistant',
+          content: finalText,
+          ...(finalThinking ? { thinking: { text: finalThinking, tokens: thinkTokens } } : {}),
+          ...(toolsUsed.length > 0 ? { toolCalls: toolsUsed.length } : {}),
+        });
+      }
+
+      if (newMessages.length > 0) {
+        setMessages(prev => [...prev, ...newMessages]);
+      }
+
+      // Clear live state
+      setLiveActivity([]);
+      setLiveStreamingText('');
+      currentStreamingTextRef.current = '';
+      liveActivityRef.current = [];
       thinkingTextRef.current = '';
+
       setTokens(prev => prev + stats.tokens);
       setCompletionTokens(prev => prev + stats.completionTokens);
       setPromptTokens(prev => prev + stats.promptTokens);
@@ -333,7 +374,11 @@ function AppInner({
 
     const onError = (msg: string) => {
       setIsLoading(false);
-      streamingMsgIdx.current = null;
+      // Clear any partial live state so it doesn't linger
+      setLiveActivity([]);
+      setLiveStreamingText('');
+      currentStreamingTextRef.current = '';
+      liveActivityRef.current = [];
       thinkingTextRef.current = '';
       setMessages(prev => [...prev, { role: 'error', content: msg }]);
     };
@@ -509,7 +554,6 @@ function AppInner({
       setIsLoading(false);
     }
 
-    setMode('normal');
   }, [onMessage, onSubmit, onSlashCommand, isStreamingMode, exit]);
 
   // Responsive layout: derive narrow modes from terminal width
@@ -527,8 +571,6 @@ function AppInner({
         flexDirection="column"
         height={messageAreaHeight}
         overflow="hidden"
-        borderStyle={activePanel === 'messages' ? 'single' : undefined}
-        borderColor={activePanel === 'messages' ? 'cyan' : 'gray'}
       >
         {showHelp ? (
           <HelpOverlay onClose={() => setShowHelp(false)} />
@@ -561,15 +603,16 @@ function AppInner({
           <>
             <MessageList
               messages={messages}
-              height={activePanel === 'messages' ? messageAreaHeight - 2 : messageAreaHeight}
-              focusable={activePanel === 'messages'}
-              streamingIdx={streamingMsgIdx.current}
+              height={messageAreaHeight - 2}
+              focusable={true}
               terminalWidth={width}
               thinkingExpanded={thinkingExpanded}
               connectionState={connectionState}
               model={currentModel}
               contextTotal={contextUsage.total}
               toolCount={registeredToolCount}
+              liveActivity={liveActivity}
+              liveStreamingText={liveStreamingText}
             />
             {isLoading && (
               <StreamingIndicator
@@ -594,11 +637,14 @@ function AppInner({
           onDecision={permissionPending.resolve}
         />
       ) : (
-        <Box
-          borderStyle={activePanel === 'input' ? 'single' : undefined}
-          borderColor={activePanel === 'input' ? 'cyan' : 'gray'}
-        >
-          <InputBox onSubmit={handleSubmit} mode={mode} isLoading={isLoading || !!permissionPending} />
+        <Box>
+          <InputBox
+            onSubmit={handleSubmit}
+            mode="normal"
+            workflowMode={workflowMode}
+            bypassPermissions={bypassPermissions}
+            isLoading={isLoading || !!permissionPending}
+          />
         </Box>
       )}
 
@@ -618,7 +664,7 @@ function AppInner({
       tokens={{ prompt: promptTokens, completion: completionTokens, total: tokens }}
       tools={toolCallCount}
       cost={cost}
-      mode={mode}
+      mode="normal"
       elapsed={elapsed}
       speed={speed}
       title={sessionTitle}
@@ -651,7 +697,6 @@ function AppInner({
         cost={cost}
         tools={toolCallCount}
         speed={speed}
-        mode={mode}
         compact={compactMode}
         connectionState={connectionState}
         turnElapsed={turnElapsed}
@@ -660,15 +705,12 @@ function AppInner({
         completionTokens={completionTokens}
         contextUsed={contextUsage.used}
         contextTotal={contextUsage.total}
+        bypassPermissions={bypassPermissions}
       />
     </Box>
   );
 }
 
 export function App(props: AppProps) {
-  return (
-    <FocusProvider>
-      <AppInner {...props} />
-    </FocusProvider>
-  );
+  return <AppInner {...props} />;
 }

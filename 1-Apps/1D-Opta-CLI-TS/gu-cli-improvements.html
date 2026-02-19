@@ -1,0 +1,1435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Opta CLI — Improvement Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --void: #09090b;
+    --surface: #18181b;
+    --elevated: #27272a;
+    --border: #3f3f46;
+    --text-primary: #fafafa;
+    --text-secondary: #a1a1aa;
+    --text-muted: #52525b;
+    --primary: #8b5cf6;
+    --primary-glow: #a855f7;
+    --neon-blue: #3b82f6;
+    --neon-green: #22c55e;
+    --neon-amber: #f59e0b;
+    --neon-red: #ef4444;
+    --neon-cyan: #06b6d4;
+    --neon-rose: #f43f5e;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--void);
+    color: var(--text-primary);
+    font-family: 'Sora', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Noise overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 1000;
+  }
+
+  /* Ambient glow effects */
+  .ambient-orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(120px);
+    opacity: 0.12;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .ambient-orb.violet { width: 600px; height: 600px; background: var(--primary); top: -200px; right: -100px; }
+  .ambient-orb.blue { width: 400px; height: 400px; background: var(--neon-blue); bottom: 10%; left: -100px; }
+  .ambient-orb.green { width: 300px; height: 300px; background: var(--neon-green); bottom: -100px; right: 20%; opacity: 0.06; }
+
+  .container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 40px 32px 80px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Glass panel base */
+  .glass {
+    background: rgba(24, 24, 27, 0.6);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    position: relative;
+  }
+  .glass::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 16px;
+    border: 1px solid transparent;
+    background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 50%) border-box;
+    mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  .glass-strong {
+    background: rgba(39, 39, 42, 0.7);
+    backdrop-filter: blur(32px);
+    -webkit-backdrop-filter: blur(32px);
+  }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 48px;
+    flex-wrap: wrap;
+    gap: 24px;
+  }
+
+  .header-left h1 {
+    font-size: 42px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #fafafa 0%, #c4b5fd 40%, #8b5cf6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: -1.5px;
+    line-height: 1.1;
+  }
+
+  .header-left .subtitle {
+    color: var(--text-secondary);
+    font-size: 15px;
+    margin-top: 8px;
+    font-weight: 300;
+    letter-spacing: 0.3px;
+  }
+
+  .health-badge {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 28px;
+  }
+
+  .health-score {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 48px;
+    font-weight: 600;
+    background: linear-gradient(135deg, var(--neon-green), var(--neon-cyan));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+  }
+
+  .health-label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--text-muted);
+  }
+
+  .health-out-of {
+    font-size: 18px;
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* Neon divider */
+  .neon-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--primary), var(--neon-blue), transparent);
+    margin: 32px 0;
+    box-shadow: 0 0 8px rgba(139, 92, 246, 0.3);
+  }
+
+  /* Metrics strip */
+  .metrics-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 40px;
+  }
+
+  .metric-card {
+    padding: 20px;
+    text-align: center;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .metric-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(139, 92, 246, 0.3);
+    box-shadow: 0 8px 32px rgba(139, 92, 246, 0.1);
+  }
+
+  .metric-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 32px;
+    font-weight: 600;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .metric-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-muted);
+  }
+
+  .metric-value.green { color: var(--neon-green); }
+  .metric-value.amber { color: var(--neon-amber); }
+  .metric-value.red { color: var(--neon-red); }
+  .metric-value.blue { color: var(--neon-blue); }
+  .metric-value.violet { color: var(--primary); }
+  .metric-value.cyan { color: var(--neon-cyan); }
+
+  /* Scorecard */
+  .scorecard-section {
+    margin-bottom: 48px;
+  }
+
+  .section-title {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .section-title::before {
+    content: '';
+    width: 3px;
+    height: 20px;
+    background: var(--primary);
+    border-radius: 2px;
+    box-shadow: 0 0 8px rgba(139, 92, 246, 0.5);
+  }
+
+  .scorecard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+  }
+
+  .score-item {
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: all 0.25s ease;
+  }
+
+  .score-item:hover {
+    border-color: rgba(139, 92, 246, 0.2);
+  }
+
+  .score-name {
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+
+  .score-bar-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .score-bar {
+    width: 100px;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .score-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 1.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    width: 0;
+  }
+
+  .score-bar-fill.excellent { background: linear-gradient(90deg, var(--neon-green), var(--neon-cyan)); }
+  .score-bar-fill.good { background: linear-gradient(90deg, var(--neon-blue), var(--primary)); }
+  .score-bar-fill.fair { background: linear-gradient(90deg, var(--neon-amber), var(--neon-red)); }
+
+  .score-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+    min-width: 36px;
+    text-align: right;
+  }
+
+  /* Progress tracker */
+  .progress-section {
+    margin-bottom: 48px;
+  }
+
+  .progress-bar-container {
+    padding: 28px;
+  }
+
+  .progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 16px;
+  }
+
+  .progress-title {
+    font-size: 16px;
+    font-weight: 500;
+  }
+
+  .progress-pct {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--primary);
+  }
+
+  .progress-track {
+    width: 100%;
+    height: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 5px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .progress-fill {
+    height: 100%;
+    border-radius: 5px;
+    background: linear-gradient(90deg, var(--primary), var(--neon-blue));
+    transition: width 2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    width: 0;
+    position: relative;
+  }
+
+  .progress-fill::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    background: var(--primary);
+    border-radius: 50%;
+    box-shadow: 0 0 12px var(--primary-glow), 0 0 24px rgba(139, 92, 246, 0.3);
+  }
+
+  .progress-tiers {
+    display: flex;
+    gap: 24px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+
+  .tier-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .tier-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  .tier-dot.p0 { background: var(--neon-red); box-shadow: 0 0 6px var(--neon-red); }
+  .tier-dot.p1 { background: var(--neon-amber); box-shadow: 0 0 6px var(--neon-amber); }
+  .tier-dot.p2 { background: var(--neon-blue); box-shadow: 0 0 6px var(--neon-blue); }
+  .tier-dot.p3 { background: var(--primary); box-shadow: 0 0 6px var(--primary); }
+
+  /* Priority sections */
+  .priority-section {
+    margin-bottom: 40px;
+  }
+
+  .priority-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding: 0 4px;
+  }
+
+  .priority-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 6px;
+    letter-spacing: 0.5px;
+  }
+
+  .priority-tag.p0 { background: rgba(239, 68, 68, 0.15); color: var(--neon-red); border: 1px solid rgba(239, 68, 68, 0.3); }
+  .priority-tag.p1 { background: rgba(245, 158, 11, 0.15); color: var(--neon-amber); border: 1px solid rgba(245, 158, 11, 0.3); }
+  .priority-tag.p2 { background: rgba(59, 130, 246, 0.15); color: var(--neon-blue); border: 1px solid rgba(59, 130, 246, 0.3); }
+  .priority-tag.p3 { background: rgba(139, 92, 246, 0.15); color: var(--primary); border: 1px solid rgba(139, 92, 246, 0.3); }
+
+  .priority-label {
+    font-size: 14px;
+    color: var(--text-secondary);
+    font-weight: 400;
+  }
+
+  .priority-count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-left: auto;
+  }
+
+  /* Idea cards */
+  .ideas-grid {
+    display: grid;
+    gap: 10px;
+  }
+
+  .idea-card {
+    padding: 0;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .idea-card:hover {
+    transform: translateY(-1px);
+    border-color: rgba(139, 92, 246, 0.25);
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.3), 0 0 20px rgba(139, 92, 246, 0.05);
+  }
+
+  .idea-card.completed {
+    opacity: 0.5;
+  }
+
+  .idea-card.completed .idea-summary { text-decoration: line-through; }
+
+  .idea-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 22px;
+  }
+
+  .idea-number {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    min-width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: rgba(139, 92, 246, 0.12);
+    color: var(--primary);
+    flex-shrink: 0;
+  }
+
+  .idea-summary {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+    flex: 1;
+    line-height: 1.4;
+  }
+
+  .idea-meta {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .idea-effort, .idea-impact {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .idea-effort {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-muted);
+  }
+
+  .idea-impact.high { background: rgba(34, 197, 94, 0.12); color: var(--neon-green); }
+  .idea-impact.medium { background: rgba(245, 158, 11, 0.12); color: var(--neon-amber); }
+  .idea-impact.low { background: rgba(255, 255, 255, 0.05); color: var(--text-muted); }
+
+  .idea-chevron {
+    color: var(--text-muted);
+    transition: transform 0.3s ease;
+    flex-shrink: 0;
+    font-size: 14px;
+  }
+
+  .idea-card.expanded .idea-chevron { transform: rotate(90deg); }
+
+  .idea-details {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .idea-card.expanded .idea-details { max-height: 400px; }
+
+  .idea-details-inner {
+    padding: 0 22px 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
+    padding-top: 16px;
+  }
+
+  .idea-description {
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--text-secondary);
+    margin-bottom: 14px;
+  }
+
+  .idea-files {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .idea-file {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 4px;
+    background: rgba(139, 92, 246, 0.08);
+    color: var(--primary);
+    border: 1px solid rgba(139, 92, 246, 0.15);
+  }
+
+  .idea-stat {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-right: 16px;
+  }
+
+  .idea-stat-val {
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  /* Agent refactor visualization */
+  .refactor-viz {
+    padding: 28px;
+    margin-top: 8px;
+  }
+
+  .refactor-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    text-align: center;
+    background: linear-gradient(135deg, #fafafa, var(--primary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .refactor-flow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .refactor-before {
+    text-align: center;
+    padding: 24px 32px;
+    border-radius: 12px;
+    background: rgba(239, 68, 68, 0.06);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    min-width: 160px;
+  }
+
+  .refactor-before .file-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    color: var(--neon-red);
+    font-weight: 500;
+  }
+
+  .refactor-before .line-count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--neon-red);
+    margin: 8px 0 4px;
+  }
+
+  .refactor-before .desc {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .refactor-arrow {
+    font-size: 28px;
+    color: var(--text-muted);
+    animation: pulse-arrow 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-arrow {
+    0%, 100% { opacity: 0.4; transform: translateX(0); }
+    50% { opacity: 1; transform: translateX(4px); }
+  }
+
+  .refactor-after {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    min-width: 320px;
+  }
+
+  .refactor-module {
+    padding: 14px 18px;
+    border-radius: 10px;
+    background: rgba(34, 197, 94, 0.06);
+    border: 1px solid rgba(34, 197, 94, 0.15);
+    text-align: center;
+    transition: all 0.25s ease;
+  }
+
+  .refactor-module:hover {
+    border-color: rgba(34, 197, 94, 0.35);
+    transform: translateY(-1px);
+  }
+
+  .refactor-module .mod-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--neon-green);
+    font-weight: 500;
+  }
+
+  .refactor-module .mod-lines {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--neon-green);
+    margin: 4px 0 2px;
+  }
+
+  .refactor-module .mod-desc {
+    font-size: 10px;
+    color: var(--text-muted);
+  }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    margin-top: 48px;
+    padding: 24px;
+    color: var(--text-muted);
+    font-size: 12px;
+    letter-spacing: 0.5px;
+  }
+
+  .footer span {
+    color: var(--primary);
+  }
+
+  /* Status pill */
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 100px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .status-pill.pending { background: rgba(255,255,255,0.04); color: var(--text-muted); }
+  .status-pill.active { background: rgba(139,92,246,0.12); color: var(--primary); }
+  .status-pill.done { background: rgba(34,197,94,0.12); color: var(--neon-green); }
+
+  .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .status-pill.active .status-dot {
+    animation: breathe 2s ease-in-out infinite;
+  }
+
+  @keyframes breathe {
+    0%, 100% { opacity: 0.4; box-shadow: none; }
+    50% { opacity: 1; box-shadow: 0 0 6px currentColor; }
+  }
+
+  /* Entry animations */
+  .animate-in {
+    opacity: 0;
+    transform: translateY(12px);
+    animation: slideIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+
+  @keyframes slideIn {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .container { padding: 24px 16px 60px; }
+    .header-left h1 { font-size: 28px; }
+    .health-score { font-size: 36px; }
+    .refactor-flow { flex-direction: column; }
+    .refactor-arrow { transform: rotate(90deg); }
+    @keyframes pulse-arrow {
+      0%, 100% { opacity: 0.4; transform: rotate(90deg) translateX(0); }
+      50% { opacity: 1; transform: rotate(90deg) translateX(4px); }
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="ambient-orb violet"></div>
+<div class="ambient-orb blue"></div>
+<div class="ambient-orb green"></div>
+
+<div class="container">
+
+  <!-- Header -->
+  <div class="header animate-in" style="animation-delay: 0.1s">
+    <div class="header-left">
+      <h1>Opta CLI Improvements</h1>
+      <div class="subtitle">Codebase assessment &amp; developer velocity roadmap &mdash; 18 Feb 2026</div>
+    </div>
+    <div class="health-badge glass">
+      <div>
+        <div class="health-label">Health Score</div>
+        <div style="display: flex; align-items: baseline; gap: 4px;">
+          <span class="health-score" id="healthScore">0.0</span>
+          <span class="health-out-of">/ 5.0</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Key Metrics -->
+  <div class="metrics-strip animate-in" style="animation-delay: 0.2s">
+    <div class="metric-card glass">
+      <div class="metric-value green" data-count="876">0</div>
+      <div class="metric-label">Tests Passing</div>
+    </div>
+    <div class="metric-card glass">
+      <div class="metric-value amber" data-count="377">0</div>
+      <div class="metric-label">Lint Warnings</div>
+    </div>
+    <div class="metric-card glass">
+      <div class="metric-value red" data-count="59">0</div>
+      <div class="metric-label">Non-null Assertions</div>
+    </div>
+    <div class="metric-card glass">
+      <div class="metric-value violet" data-count="25">0</div>
+      <div class="metric-label">Error Duplications</div>
+    </div>
+    <div class="metric-card glass">
+      <div class="metric-value cyan" data-count="947">0</div>
+      <div class="metric-label">God File Lines</div>
+    </div>
+    <div class="metric-card glass">
+      <div class="metric-value blue" data-count="3">0</div>
+      <div class="metric-label">Token Impls</div>
+    </div>
+  </div>
+
+  <div class="neon-divider"></div>
+
+  <!-- Scorecard -->
+  <div class="scorecard-section animate-in" style="animation-delay: 0.3s">
+    <div class="section-title">Assessment Scorecard</div>
+    <div class="scorecard-grid">
+      <div class="score-item glass">
+        <span class="score-name">Code Quality</span>
+        <div class="score-bar-wrap">
+          <div class="score-bar"><div class="score-bar-fill good" data-width="80"></div></div>
+          <span class="score-val">4.0</span>
+        </div>
+      </div>
+      <div class="score-item glass">
+        <span class="score-name">Architecture</span>
+        <div class="score-bar-wrap">
+          <div class="score-bar"><div class="score-bar-fill excellent" data-width="90"></div></div>
+          <span class="score-val">4.5</span>
+        </div>
+      </div>
+      <div class="score-item glass">
+        <span class="score-name">Test Coverage</span>
+        <div class="score-bar-wrap">
+          <div class="score-bar"><div class="score-bar-fill good" data-width="80"></div></div>
+          <span class="score-val">4.0</span>
+        </div>
+      </div>
+      <div class="score-item glass">
+        <span class="score-name">Build &amp; Deps</span>
+        <div class="score-bar-wrap">
+          <div class="score-bar"><div class="score-bar-fill good" data-width="80"></div></div>
+          <span class="score-val">4.0</span>
+        </div>
+      </div>
+      <div class="score-item glass">
+        <span class="score-name">Performance</span>
+        <div class="score-bar-wrap">
+          <div class="score-bar"><div class="score-bar-fill good" data-width="80"></div></div>
+          <span class="score-val">4.0</span>
+        </div>
+      </div>
+      <div class="score-item glass">
+        <span class="score-name">Security</span>
+        <div class="score-bar-wrap">
+          <div class="score-bar"><div class="score-bar-fill fair" data-width="70"></div></div>
+          <span class="score-val">3.5</span>
+        </div>
+      </div>
+      <div class="score-item glass">
+        <span class="score-name">Developer Experience</span>
+        <div class="score-bar-wrap">
+          <div class="score-bar"><div class="score-bar-fill excellent" data-width="90"></div></div>
+          <span class="score-val">4.5</span>
+        </div>
+      </div>
+      <div class="score-item glass">
+        <span class="score-name">Dead Code</span>
+        <div class="score-bar-wrap">
+          <div class="score-bar"><div class="score-bar-fill fair" data-width="70"></div></div>
+          <span class="score-val">3.5</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Progress Tracker -->
+  <div class="progress-section animate-in" style="animation-delay: 0.4s">
+    <div class="section-title">Improvement Progress</div>
+    <div class="progress-bar-container glass">
+      <div class="progress-header">
+        <span class="progress-title">0 of 18 improvements completed</span>
+        <span class="progress-pct" id="progressPct">0%</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <div class="progress-tiers">
+        <div class="tier-pill"><span class="tier-dot p0"></span> P0 &mdash; 5 ideas &middot; Do Now</div>
+        <div class="tier-pill"><span class="tier-dot p1"></span> P1 &mdash; 6 ideas &middot; This Week</div>
+        <div class="tier-pill"><span class="tier-dot p2"></span> P2 &mdash; 3 ideas &middot; Schedule</div>
+        <div class="tier-pill"><span class="tier-dot p3"></span> P3 &mdash; 4 ideas &middot; Refactor Session</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="neon-divider"></div>
+
+  <!-- P0 - Do Now -->
+  <div class="priority-section animate-in" style="animation-delay: 0.5s">
+    <div class="priority-header">
+      <span class="priority-tag p0">P0</span>
+      <span class="priority-label">Do Now &mdash; Under 15 min each, immediate payoff</span>
+      <span class="priority-count">5 ideas</span>
+    </div>
+    <div class="ideas-grid">
+
+      <div class="idea-card glass" onclick="toggleCard(this)">
+        <div class="idea-header">
+          <span class="idea-number">1</span>
+          <span class="idea-summary">Unified error message extraction</span>
+          <div class="idea-meta">
+            <span class="idea-effort">15 min</span>
+            <span class="idea-impact high">High</span>
+          </div>
+          <span class="idea-chevron">&#9654;</span>
+        </div>
+        <div class="idea-details">
+          <div class="idea-details-inner">
+            <p class="idea-description">Create a single <code>errorMessage(err: unknown): string</code> function to replace the 25+ scattered <code>err instanceof Error ? err.message : String(err)</code> patterns across 16 files. Every new catch block becomes shorter and consistent. One import, one function.</p>
+            <div style="margin-bottom: 10px">
+              <span class="idea-stat">Duplicates: <span class="idea-stat-val">25+</span></span>
+              <span class="idea-stat">Files affected: <span class="idea-stat-val">16</span></span>
+            </div>
+            <div class="idea-files">
+              <span class="idea-file">utils/errors.ts</span>
+              <span class="idea-file">core/agent.ts</span>
+              <span class="idea-file">core/subagent.ts</span>
+              <span class="idea-file">mcp/registry.ts</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="idea-card glass" onclick="toggleCard(this)">
+        <div class="idea-header">
+          <span class="idea-number">2</span>
+          <span class="idea-summary">Token estimation consolidation</span>
+          <div class="idea-meta">
+            <span class="idea-effort">1 hr</span>
+            <span class="idea-impact high">High</span>
+          </div>
+          <span class="idea-chevron">&#9654;</span>
+        </div>
+        <div class="idea-details">
+          <div class="idea-details-inner">
+            <p class="idea-description">Merge 3 separate <code>estimateTokens</code> functions (utils/tokens.ts, agent.ts:204, subagent.ts:490) plus 7 inline <code>Math.ceil(x/4)</code> sites into a single module with overloads. When you eventually swap in a real tokenizer, you change one file instead of ten.</p>
+            <div style="margin-bottom: 10px">
+              <span class="idea-stat">Implementations: <span class="idea-stat-val">3</span></span>
+              <span class="idea-stat">Inline sites: <span class="idea-stat-val">7</span></span>
+            </div>
+            <div class="idea-files">
+              <span class="idea-file">utils/tokens.ts</span>
+              <span class="idea-file">core/agent.ts</span>
+              <span class="idea-file">core/subagent.ts</span>
+              <span class="idea-file">slash/debug.ts</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="idea-card glass" onclick="toggleCard(this)">
+        <div class="idea-header">
+          <span class="idea-number">13</span>
+          <span class="idea-summary">Remove stubs.ts dead code</span>
+          <div class="idea-meta">
+            <span class="idea-effort">5 min</span>
+            <span class="idea-impact low">Low</span>
+          </div>
+          <span class="idea-chevron">&#9654;</span>
+        </div>
+        <div class="idea-details">
+          <div class="idea-details-inner">
+            <p class="idea-description">63 lines of empty async functions with TODO comments that nothing imports. These are roadmap placeholders (branchConversation, optimizeContext, etc.) that belong in an issue tracker, not compiled source. Removing them eliminates noise from grep results and test coverage reports.</p>
+            <div style="margin-bottom: 10px">
+              <span class="idea-stat">Dead lines: <span class="idea-stat-val">63</span></span>
+              <span class="idea-stat">Functions: <span class="idea-stat-val">7</span></span>
+            </div>
+            <div class="idea-files">
+              <span class="idea-file">core/stubs.ts</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="idea-card glass" onclick="toggleCard(this)">
+        <div class="idea-header">
+          <span class="idea-number">14</span>
+          <span class="idea-summary">Fix hardcoded version in server.ts</span>
+          <div class="idea-meta">
+            <span class="idea-effort">5 min</span>
+            <span class="idea-impact medium">Med</span>
+          </div>
+          <span class="idea-chevron">&#9654;</span>
+        </div>
+        <div class="idea-details">
+          <div class="idea-details-inner">
+            <p class="idea-description">Line 39 says <code>version: '0.4.0'</code> while package.json says <code>0.5.0-alpha.1</code>. Import from <code>core/version.ts</code> which already reads from package.json. One-line fix that eliminates a guaranteed future version drift bug.</p>
+            <div class="idea-files">
+              <span class="idea-file">commands/server.ts:39</span>
+              <span class="idea-file">core/version.ts</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="idea-card glass" onclick="toggleCard(this)">
+        <div class="idea-header">
+          <span class="idea-number">15</span>
+          <span class="idea-summary">Fix SearXNG URL mismatch</span>
+          <div class="idea-meta">
+            <span class="idea-effort">10 min</span>
+            <span class="idea-impact medium">Med</span>
+          </div>
+          <span class="idea-chevron">&#9654;</span>
+        </div>
+        <div class="idea-details">
+          <div class="idea-details-inner">
+            <p class="idea-description">executors.ts:352 hardcodes <code>192.168.188.10:8888</code> as fallback while config.ts:130 defaults to <code>192.168.188.11:8081</code> &mdash; completely different host AND port. Remove the hardcoded fallback; if config isn't available, fail with an actionable error rather than silently hitting the wrong server.</p>
+            <div class="idea-files">
+              <span class="idea-file">core/tools/executors.ts:352</span>
+              <span class="idea-file">core/config.ts:130</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- P1 - This Week -->
+  <div class="priority-section animate-in" style="animation-delay: 0.6s">
+    <div class="priority-header">
+      <span class="priority-tag p1">P1</span>
+      <span class="priority-label">This Week &mdash; Small effort, compound returns</span>
+      <span class="priority-count">6 ideas</span>
+    </div>
+    <div class="ideas-grid">
+
+      <div class="idea-card glass" onclick="toggleCard(this)">
+        <div class="idea-header">
+          <span class="idea-number">3</span>
+          <span class="idea-summary">Safe JSON parse utility</span>
+          <div class="idea-meta">
+            <span class="idea-effort">30 min</span>
+            <span class="idea-impact medium">Med</span>
+          </div>
+          <span class="idea-chevron">&#9654;</span>
+        </div>
+        <div class="idea-details">
+          <div class="idea-details-inner">
+            <p class="idea-description">Replace 10+ identical <code>try { JSON.parse(argsJson) } catch</code> blocks with a shared <code>safeParseJson(input): Record&lt;string, unknown&gt; | null</code>. Especially impactful in registry.ts where 5 of these sit in a row.</p>
+            <div class="idea-files">
+              <span class="idea-file">utils/json.ts</span>
+              <span class="idea-file">mcp/registry.ts</span>
+              <span class="idea-file">core/agent.ts</span>
+              <span class="idea-file">core/subagent.ts</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="idea-card glass" onclick="toggleCard(this)">
+        <div class="idea-header">
+          <span class="idea-number">4</span>
+          <span class="idea-summary">Shared ignore patterns</span>
+          <div class="idea-meta">
+            <span class="idea-effort">20 min</span>
+            <span class="idea-impact medium">Med</span>
+          </div>
+          <span class="idea-chevron">&#9654;</span>
+        </div>
+        <div class="idea-details">
+          <div class="idea-details-inner">
+            <p class="idea-description">One <code>DEFAULT_IGNORE_DIRS</code> constant and a <code>toGlobIgnore()</code> adapter replaces the 5 inconsistent ignore lists across executors.ts, autocomplete.ts, and InputBox.tsx. No more "wait, does this one exclude .next?"</p>
+            <div class="idea-files">
+              <span class="idea-file">utils/ignore.ts</span>
+              <span class="idea-file">core/tools/executors.ts</span>
+              <span class="idea-file">ui/autocomplete.ts</span>
+              <span class="idea-file">tui/InputBox.tsx</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="idea-card glass" onclick="toggleCard(this)">
+        <div class="idea-header">
+          <span class="idea-number">10</span>
+          <span class="idea-summary">Config store singleton</span>
+          <div class="idea-meta">
+            <span class="idea-effort">15 min</span>
+            <span class="idea-impact medium">Med</span>
+          </div>
+          <span class="idea-chevron">&#9654;</span>
+        </div>
+        <div class="idea-details">
+          <div class="idea-details-inner">
+            <p class="idea-description"><code>new Conf({ projectName: 'opta' })</code> is instantiated 4 separate times in config.ts. The <code>getConfigStore()</code> function already exists but isn't used by loadConfig, healConfig, or saveConfig. Wire it up as a lazy singleton.</p>
+            <div class="idea-files">
+              <span class="idea-file">core/config.ts</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="idea-card glass" onclick="toggleCard(this)">
+        <div class="idea-header">
+          <span class="idea-number">12</span>
+          <span class="idea-summary">Hoist dynamic imports from loop</span>
+          <div class="idea-meta">
+            <span class="idea-effort">10 min</span>
+            <span class="idea-impact low">Low</span>
+          </div>
+          <span class="idea-chevron">&#9654;</span>
+        </div>
+        <div class="idea-details">
+          <div class="idea-details-inner">
+            <p class="idea-description">Move <code>await import()</code> calls for config.js, git/utils.js, and git/checkpoints.js from inside the <code>while(true)</code> loop body to the function preamble. Cached by module loader but still yield a microtask per iteration &mdash; unnecessary async overhead on the critical path.</p>
+            <div class="idea-files">
+              <span class="idea-file">core/agent.ts:737,752,861,863</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="idea-card glass" onclick="toggleCard(this)">
+        <div class="idea-header">
+          <span class="idea-number">17</span>
+          <span class="idea-summary">Set vitest coverage thresholds</span>
+          <div class="idea-meta">
+            <span class="idea-effort">5 min</span>
+            <span class="idea-impact medium">Med</span>
+          </div>
+          <span class="idea-chevron">&#9654;</span>
+        </div>
+        <div class="idea-details">
+          <div class="idea-details-inner">
+            <p class="idea-description">All coverage thresholds in vitest.config.ts are at 0. Even setting them to current actuals (40-50%) prevents silent regressions. Takes 60 seconds to configure, saves discovering regressions weeks later.</p>
+            <div class="idea-files">
+              <span class="idea-file">vitest.config.ts</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="idea-card glass" onclick="toggleCard(this)">
+        <div class="idea-header">
+          <span class="idea-number">18</span>
+          <span class="idea-summary">Named constants for magic numbers</span>
+          <div class="idea-meta">
+            <span class="idea-effort">20 min</span>
+            <span class="idea-impact low">Low</span>
+          </div>
+          <span class="idea-chevron">&#9654;</span>
+        </div>
+        <div class="idea-details">
+          <div class="idea-details-inner">
+            <p class="idea-description">The compaction logic uses inline magic numbers (6, 4000, 20, 500, 0.05, 2000). Extract as named constants like <code>MIN_COMPACTION_WINDOW</code>, <code>MAX_SUMMARY_BUDGET</code> &mdash; makes the algorithm self-documenting and tunable without reading the math.</p>
+            <div class="idea-files">
+              <span class="idea-file">core/agent.ts:230,238</span>
+              <span class="idea-file">core/context.ts:20</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- P2 - Schedule -->
+  <div class="priority-section animate-in" style="animation-delay: 0.7s">
+    <div class="priority-header">
+      <span class="priority-tag p2">P2</span>
+      <span class="priority-label">Schedule &mdash; Medium effort, significant velocity gain</span>
+      <span class="priority-count">3 ideas</span>
+    </div>
+    <div class="ideas-grid">
+
+      <div class="idea-card glass" onclick="toggleCard(this)">
+        <div class="idea-header">
+          <span class="idea-number">9</span>
+          <span class="idea-summary">Shared model scan service</span>
+          <div class="idea-meta">
+            <span class="idea-effort">2 hr</span>
+            <span class="idea-impact high">High</span>
+          </div>
+          <span class="idea-chevron">&#9654;</span>
+        </div>
+        <div class="idea-details">
+          <div class="idea-details-inner">
+            <p class="idea-description">commands/models.ts and slash/lmx.ts both query the same 5 LMX endpoints, build the same role lookup map, and render nearly identical output. Extract a shared <code>services/model-scan.ts</code> that returns structured data, then each consumer formats for its context. ~200 lines of duplication gone.</p>
+            <div style="margin-bottom: 10px">
+              <span class="idea-stat">Duplicate lines: <span class="idea-stat-val">~200</span></span>
+              <span class="idea-stat">Endpoints: <span class="idea-stat-val">5</span></span>
+            </div>
+            <div class="idea-files">
+              <span class="idea-file">commands/models.ts</span>
+              <span class="idea-file">commands/slash/lmx.ts</span>
+              <span class="idea-file">services/model-scan.ts</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="idea-card glass" onclick="toggleCard(this)">
+        <div class="idea-header">
+          <span class="idea-number">11</span>
+          <span class="idea-summary">SubAgentResult builder</span>
+          <div class="idea-meta">
+            <span class="idea-effort">30 min</span>
+            <span class="idea-impact medium">Med</span>
+          </div>
+          <span class="idea-chevron">&#9654;</span>
+        </div>
+        <div class="idea-details">
+          <div class="idea-details-inner">
+            <p class="idea-description">spawnSubAgent constructs the same result object shape in 7 locations, each repeating <code>[...new Set(filesRead)]</code>, <code>Date.now() - startTime</code>, etc. A <code>buildResult()</code> helper captures the closure once and reduces each return to one line.</p>
+            <div style="margin-bottom: 10px">
+              <span class="idea-stat">Return sites: <span class="idea-stat-val">7</span></span>
+            </div>
+            <div class="idea-files">
+              <span class="idea-file">core/subagent.ts</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="idea-card glass" onclick="toggleCard(this)">
+        <div class="idea-header">
+          <span class="idea-number">16</span>
+          <span class="idea-summary">Replace process.exit() with thrown errors</span>
+          <div class="idea-meta">
+            <span class="idea-effort">2 hr</span>
+            <span class="idea-impact high">High</span>
+          </div>
+          <span class="idea-chevron">&#9654;</span>
+        </div>
+        <div class="idea-details">
+          <div class="idea-details-inner">
+            <p class="idea-description">30+ direct <code>process.exit()</code> calls across command files (models.ts alone has 13) bypass cleanup handlers and make code paths untestable. Commands should throw OptaError and let index.ts handle the exit. This is already the pattern in agentLoop &mdash; extend it everywhere.</p>
+            <div style="margin-bottom: 10px">
+              <span class="idea-stat">Exit calls: <span class="idea-stat-val">30+</span></span>
+              <span class="idea-stat">Worst offender: <span class="idea-stat-val">models.ts (13)</span></span>
+            </div>
+            <div class="idea-files">
+              <span class="idea-file">commands/models.ts</span>
+              <span class="idea-file">commands/sessions.ts</span>
+              <span class="idea-file">commands/config.ts</span>
+              <span class="idea-file">index.ts</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- P3 - Agent Refactor -->
+  <div class="priority-section animate-in" style="animation-delay: 0.8s">
+    <div class="priority-header">
+      <span class="priority-tag p3">P3</span>
+      <span class="priority-label">Agent.ts Refactor &mdash; Do together as a focused session</span>
+      <span class="priority-count">4 ideas</span>
+    </div>
+    <div class="ideas-grid">
+
+      <div class="idea-card glass" onclick="toggleCard(this)">
+        <div class="idea-header">
+          <span class="idea-number">5</span>
+          <span class="idea-summary">Extract agent-streaming.ts</span>
+          <div class="idea-meta">
+            <span class="idea-effort">1 hr</span>
+            <span class="idea-impact high">High</span>
+          </div>
+          <span class="idea-chevron">&#9654;</span>
+        </div>
+        <div class="idea-details">
+          <div class="idea-details-inner">
+            <p class="idea-description">Lines 292-403 (<code>createStreamWithRetry</code> + <code>collectStream</code>) are already self-contained. Move them out with their retry/backoff logic. The agent loop calls collectStream() &mdash; clean extraction seam.</p>
+            <div class="idea-files">
+              <span class="idea-file">core/agent-streaming.ts</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="idea-card glass" onclick="toggleCard(this)">
+        <div class="idea-header">
+          <span class="idea-number">6</span>
+          <span class="idea-summary">Extract agent-permissions.ts</span>
+          <div class="idea-meta">
+            <span class="idea-effort">1 hr</span>
+            <span class="idea-impact high">High</span>
+          </div>
+          <span class="idea-chevron">&#9654;</span>
+        </div>
+        <div class="idea-details">
+          <div class="idea-details-inner">
+            <p class="idea-description">The <code>promptToolApproval</code> function and permission decision block (~lines 700-750) are a distinct concern. Extracting makes the permission logic independently testable &mdash; currently impossible since it's buried in the loop.</p>
+            <div class="idea-files">
+              <span class="idea-file">core/agent-permissions.ts</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="idea-card glass" onclick="toggleCard(this)">
+        <div class="idea-header">
+          <span class="idea-number">7</span>
+          <span class="idea-summary">Extract agent-execution.ts</span>
+          <div class="idea-meta">
+            <span class="idea-effort">1.5 hr</span>
+            <span class="idea-impact high">High</span>
+          </div>
+          <span class="idea-chevron">&#9654;</span>
+        </div>
+        <div class="idea-details">
+          <div class="idea-details-inner">
+            <p class="idea-description">Parallel tool execution with semaphore (~lines 806-877) handles tool dispatch, result collection, checkpointing, and insight capture. Clear inputs (tool calls, config) and outputs (tool results). Pulling it out shrinks the main loop dramatically.</p>
+            <div class="idea-files">
+              <span class="idea-file">core/agent-execution.ts</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="idea-card glass" onclick="toggleCard(this)">
+        <div class="idea-header">
+          <span class="idea-number">8</span>
+          <span class="idea-summary">Extract agent-setup.ts</span>
+          <div class="idea-meta">
+            <span class="idea-effort">1 hr</span>
+            <span class="idea-impact medium">Med</span>
+          </div>
+          <span class="idea-chevron">&#9654;</span>
+        </div>
+        <div class="idea-details">
+          <div class="idea-details-inner">
+            <p class="idea-description">Client creation, system prompt building, OPIS loading, and config derivation (~lines 100-250) run once at the start. They don't need to live alongside the hot loop. After extraction, agentLoop() becomes a ~150-line orchestrator.</p>
+            <div class="idea-files">
+              <span class="idea-file">core/agent-setup.ts</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Refactor visualization -->
+    <div class="refactor-viz glass-strong">
+      <div class="refactor-title">Agent.ts Decomposition</div>
+      <div class="refactor-flow">
+        <div class="refactor-before">
+          <div class="file-name">agent.ts</div>
+          <div class="line-count">947</div>
+          <div class="desc">lines &middot; god file</div>
+        </div>
+        <div class="refactor-arrow">&#10230;</div>
+        <div class="refactor-after">
+          <div class="refactor-module">
+            <div class="mod-name">agent.ts</div>
+            <div class="mod-lines">~150</div>
+            <div class="mod-desc">orchestrator</div>
+          </div>
+          <div class="refactor-module">
+            <div class="mod-name">streaming.ts</div>
+            <div class="mod-lines">~120</div>
+            <div class="mod-desc">retry + stream</div>
+          </div>
+          <div class="refactor-module">
+            <div class="mod-name">permissions.ts</div>
+            <div class="mod-lines">~80</div>
+            <div class="mod-desc">approval flow</div>
+          </div>
+          <div class="refactor-module">
+            <div class="mod-name">execution.ts</div>
+            <div class="mod-lines">~150</div>
+            <div class="mod-desc">parallel tools</div>
+          </div>
+          <div class="refactor-module">
+            <div class="mod-name">setup.ts</div>
+            <div class="mod-lines">~160</div>
+            <div class="mod-desc">init + prompts</div>
+          </div>
+          <div class="refactor-module">
+            <div class="mod-name">compaction.ts</div>
+            <div class="mod-lines">~80</div>
+            <div class="mod-desc">context mgmt</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    Generated by <span>Opta CLI</span> assessment engine &middot; 18 Feb 2026
+  </div>
+
+</div>
+
+<script>
+  // Expand/collapse idea cards
+  function toggleCard(card) {
+    card.classList.toggle('expanded');
+  }
+
+  // Animate counters
+  function animateCounter(el, target, duration = 1500) {
+    const start = performance.now();
+    const from = 0;
+    function update(now) {
+      const elapsed = now - start;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const current = Math.round(from + (target - from) * eased);
+      el.textContent = current.toLocaleString();
+      if (progress < 1) requestAnimationFrame(update);
+    }
+    requestAnimationFrame(update);
+  }
+
+  // Animate health score
+  function animateHealth() {
+    const el = document.getElementById('healthScore');
+    const start = performance.now();
+    const target = 4.0;
+    const duration = 2000;
+    function update(now) {
+      const elapsed = now - start;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      el.textContent = (target * eased).toFixed(1);
+      if (progress < 1) requestAnimationFrame(update);
+    }
+    requestAnimationFrame(update);
+  }
+
+  // Animate score bars
+  function animateBars() {
+    document.querySelectorAll('.score-bar-fill').forEach(bar => {
+      const width = bar.getAttribute('data-width');
+      setTimeout(() => { bar.style.width = width + '%'; }, 600);
+    });
+  }
+
+  // Animate metric counters
+  function animateMetrics() {
+    document.querySelectorAll('.metric-value[data-count]').forEach(el => {
+      const target = parseInt(el.getAttribute('data-count'));
+      setTimeout(() => animateCounter(el, target), 400);
+    });
+  }
+
+  // Init
+  document.addEventListener('DOMContentLoaded', () => {
+    animateHealth();
+    animateBars();
+    animateMetrics();
+  });
+</script>
+
+</body>
+</html>

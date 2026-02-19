@@ -1,9 +1,10 @@
 import { execFileSync, spawn } from 'node:child_process';
 import chalk from 'chalk';
 import { loadConfig } from '../core/config.js';
-import { OptaError, EXIT } from '../core/errors.js';
+import { OptaError, ExitError, EXIT } from '../core/errors.js';
 import { createSpinner } from '../ui/spinner.js';
 import { LmxClient } from '../lmx/client.js';
+import { errorMessage } from '../utils/errors.js';
 
 interface ServeOptions {
   json?: boolean;
@@ -121,13 +122,13 @@ async function serveStart(opts?: ServeOptions): Promise<void> {
 
     spinner.fail('Opta LMX did not start within 30 seconds');
     console.log(chalk.dim(`  Check logs: opta serve logs`));
-    process.exit(EXIT.ERROR);
+    throw new ExitError(EXIT.ERROR);
   } catch (err) {
     spinner.fail('Failed to start Opta LMX');
     throw new OptaError(
       `Failed to start Opta LMX on ${host}`,
       EXIT.ERROR,
-      [err instanceof Error ? err.message : String(err)],
+      [errorMessage(err)],
       [
         isRemote ? `Check SSH access: ssh -i ~/.ssh/id_ed25519 ${config.connection.ssh.user}@${host}` : 'Check Python environment',
         isRemote ? `SSH config: opta config set connection.ssh.user <user>` : '',
@@ -174,7 +175,7 @@ async function serveStop(_opts?: ServeOptions): Promise<void> {
     throw new OptaError(
       `Failed to stop Opta LMX on ${host}`,
       EXIT.ERROR,
-      [err instanceof Error ? err.message : String(err)],
+      [errorMessage(err)],
       [
         isRemote ? `SSH manually: ssh ${host}` : 'Check running processes',
       ],
@@ -208,7 +209,7 @@ async function serveLogs(): Promise<void> {
     throw new OptaError(
       'Failed to read Opta LMX logs',
       EXIT.ERROR,
-      [err instanceof Error ? err.message : String(err)],
+      [errorMessage(err)],
       [isRemote ? `SSH manually: ssh ${host}` : 'Check /tmp/opta-lmx.log'],
     );
   }

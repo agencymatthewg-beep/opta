@@ -1,6 +1,7 @@
 import chalk from 'chalk';
 import { loadConfig, saveConfig, getConfigStore } from '../core/config.js';
 import { connectMcpServer } from '../mcp/client.js';
+import { errorMessage } from '../utils/errors.js';
 
 interface McpListOptions {
   json?: boolean;
@@ -95,6 +96,6 @@ export async function mcpTest(name: string): Promise<void> {
     await conn.close();
     console.log(chalk.green('\u2713') + ' Connection closed cleanly');
   } catch (err) {
-    console.log(chalk.red('\u2717') + ` Failed: ${err instanceof Error ? err.message : err}`);
+    console.log(chalk.red('\u2717') + ` Failed: ${errorMessage(err)}`);
   }
 }

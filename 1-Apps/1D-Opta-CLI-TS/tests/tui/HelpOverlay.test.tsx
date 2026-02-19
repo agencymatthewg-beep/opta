@@ -25,7 +25,10 @@ describe('HelpOverlay', () => {
 
   it('renders all keybinding descriptions', () => {
     const onClose = vi.fn();
-    const { lastFrame, unmount } = render(<HelpOverlay onClose={onClose} />);
+    // Use a taller stdout so all keybindings fit (default 24 rows clips new entries)
+    const { lastFrame, unmount } = render(<HelpOverlay onClose={onClose} />, {
+      stdout: { columns: 100, rows: 50 } as NodeJS.WriteStream,
+    });
     const frame = lastFrame()!;
     const bindings = defaultKeybindings();
 
@@ -37,14 +40,18 @@ describe('HelpOverlay', () => {
 
   it('renders formatted key labels', () => {
     const onClose = vi.fn();
-    const { lastFrame, unmount } = render(<HelpOverlay onClose={onClose} />);
+    const { lastFrame, unmount } = render(<HelpOverlay onClose={onClose} />, {
+      stdout: { columns: 100, rows: 50 } as NodeJS.WriteStream,
+    });
     const frame = lastFrame()!;
 
-    // Check that key labels are formatted properly (capitalized)
+    // Core keybindings — capitalized format
     expect(frame).toContain('Ctrl+C');
     expect(frame).toContain('Ctrl+B');
     expect(frame).toContain('Ctrl+L');
-    expect(frame).toContain('Tab');
+    // New mode/bypass bindings
+    expect(frame).toContain('Shift+Tab');
+    expect(frame).toContain('Ctrl+Y');
     unmount();
   });
 
