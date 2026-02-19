@@ -11,6 +11,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, X, Filter } from 'lucide-react';
 import { cn, Badge } from '@opta/ui';
+import { shortModelName } from '@/lib/format';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -47,12 +48,7 @@ interface SessionSearchProps {
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Extract a short display name from a full model path. */
-function shortModelLabel(model: string): string {
-  const parts = model.split('/');
-  const name = parts.length > 1 ? parts[parts.length - 1]! : model;
-  return name.length > 24 ? name.slice(0, 23) + '\u2026' : name;
-}
+// shortModelName imported from shared utils
 
 // ---------------------------------------------------------------------------
 // Component
@@ -172,7 +168,7 @@ export function SessionSearch({
                   modelFilter !== model && 'opacity-60 hover:opacity-100',
                 )}
               >
-                {shortModelLabel(model)}
+                {shortModelName(model)}
               </Badge>
             </button>
           ))}

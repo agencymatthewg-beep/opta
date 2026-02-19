@@ -13,6 +13,7 @@ import { motion } from 'framer-motion';
 import { MessageSquare, Clock, Tag, Trash2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { cn, Badge } from '@opta/ui';
+import { truncate, shortModelName } from '@/lib/format';
 import type { SessionSummary } from '@/types/lmx';
 
 // ---------------------------------------------------------------------------
@@ -33,20 +34,6 @@ interface SessionCardProps {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-/** Truncate a string to maxLen characters, appending ellipsis if truncated. */
-function truncate(str: string, maxLen: number): string {
-  if (str.length <= maxLen) return str;
-  return str.slice(0, maxLen - 1) + '\u2026';
-}
-
-/** Extract a short model name from a full HuggingFace-style path. */
-function shortModelName(model: string): string {
-  // "mlx-community/Qwen2.5-Coder-32B-Instruct-4bit" -> "Qwen2.5-Coder-32B-Instruct-4bit"
-  const parts = model.split('/');
-  const name = parts.length > 1 ? parts[parts.length - 1]! : model;
-  return truncate(name, 30);
-}
 
 /** Format an ISO date as a human-readable relative string. */
 function relativeDate(iso: string): string {

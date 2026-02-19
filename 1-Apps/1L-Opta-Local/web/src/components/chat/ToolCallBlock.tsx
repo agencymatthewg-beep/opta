@@ -12,6 +12,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Wrench, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '@opta/ui';
+import { truncate } from '@/lib/format';
 import type { ToolCall } from '@/types/lmx';
 
 interface ToolCallBlockProps {
@@ -31,14 +32,6 @@ function formatArgs(argsStr: string): string {
   } catch {
     return argsStr;
   }
-}
-
-/**
- * Truncate a string to a maximum length with ellipsis.
- */
-function truncate(str: string, maxLen: number): string {
-  if (str.length <= maxLen) return str;
-  return str.slice(0, maxLen) + '...';
 }
 
 /**

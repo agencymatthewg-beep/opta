@@ -19,9 +19,9 @@ None
 - [x] **Phase 3: Web Dashboard** - Real-time server monitoring via SSE
 - [x] **Phase 4: Web Anywhere** - Cloudflare Tunnel WAN access
 - [x] **Phase 5: Web Sessions** - Resume CLI sessions in browser
-- [ ] **Phase 6: iOS Foundation** - Bonjour discovery and SwiftUI streaming chat
-- [ ] **Phase 7: iOS Dashboard + WAN** - Native monitoring and QR tunnel pairing
-- [ ] **Phase 8: iOS Sessions + Polish** - Session management, haptics, final testing
+- [x] **Phase 6: iOS Foundation** - Bonjour discovery and SwiftUI streaming chat
+- [x] **Phase 7: iOS Dashboard + WAN** - Native monitoring and QR tunnel pairing
+- [x] **Phase 8: iOS Sessions + Polish** - Session management, haptics, final testing
 
 ## Phase Details
 
@@ -86,9 +86,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 06-01: Xcode project setup with SwiftUI + Observation framework
-- [ ] 06-02: Bonjour discovery service and connection flow
-- [ ] 06-03: Streaming chat UI and model picker
+- [x] 06-01: Xcode project setup with SwiftUI + Observation framework
+- [x] 06-02: Bonjour discovery service and connection flow
+- [x] 06-03: Streaming chat UI and model picker
 
 ### Phase 7: iOS Dashboard + WAN
 **Goal**: Native dashboard with animated VRAM gauge, model management, and QR code tunnel pairing
@@ -97,8 +97,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 07-01: SSE async stream client and dashboard views (VRAM gauge, model list)
-- [ ] 07-02: QR scanner for tunnel pairing and connection type indicator
+- [x] 07-01: SSE async stream client and dashboard views (VRAM gauge, model list)
+- [x] 07-02: QR scanner for tunnel pairing and connection type indicator
 
 ### Phase 8: iOS Sessions + Polish
 **Goal**: Session management, haptic feedback, final testing and App Store preparation
@@ -107,8 +107,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 08-01: Session list and resume views
-- [ ] 08-02: Haptic feedback, performance optimization, TestFlight prep
+- [x] 08-01: Session list and resume views
+- [x] 08-02: Haptic feedback, performance optimization, TestFlight prep
 
 ## Progress
 
@@ -124,6 +124,6 @@ Phases 1 → 2 → 3 (parallel with 4, 5) → **USER VERIFICATION GATE** → 6 �
 | 3. Web Dashboard | 3/3 | Complete | 2026-02-18 |
 | 4. Web Anywhere | 2/2 | Complete | 2026-02-18 |
 | 5. Web Sessions | 3/3 | Complete | 2026-02-18 |
-| 6. iOS Foundation | 0/3 | Not started | - |
-| 7. iOS Dashboard + WAN | 0/2 | Not started | - |
-| 8. iOS Sessions + Polish | 0/2 | Not started | - |
+| 6. iOS Foundation | 3/3 | Complete | 2026-02-19 |
+| 7. iOS Dashboard + WAN | 2/2 | Complete | 2026-02-19 |
+| 8. iOS Sessions + Polish | 2/2 | Complete | 2026-02-19 |

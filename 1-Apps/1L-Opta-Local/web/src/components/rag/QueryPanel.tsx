@@ -22,6 +22,7 @@ import {
   Hash,
 } from 'lucide-react';
 import { cn, Button, Badge } from '@opta/ui';
+import { truncate } from '@/lib/format';
 import type { RagQueryRequest, RagQueryResponse, RagQueryResult } from '@/types/rag';
 
 // ---------------------------------------------------------------------------
@@ -64,10 +65,7 @@ function scoreBadgeVariant(score: number): 'default' | 'purple' {
   return 'default';
 }
 
-function truncateText(text: string, maxLen: number): string {
-  if (text.length <= maxLen) return text;
-  return text.slice(0, maxLen - 1) + '\u2026';
-}
+// truncate imported from @/lib/format
 
 // ---------------------------------------------------------------------------
 // Component
@@ -439,7 +437,7 @@ function ResultCard({ result, index, isCopied, onCopy }: ResultCardProps) {
       <p className="text-sm text-text-secondary leading-relaxed whitespace-pre-wrap break-words font-mono">
         {isExpanded || !isLong
           ? result.text
-          : truncateText(result.text, 300)}
+          : truncate(result.text, 300)}
       </p>
 
       {isLong && (

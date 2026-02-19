@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Opta Local — Domain Deployment Strategy</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --void: #09090b;
+    --surface: #18181b;
+    --elevated: #27272a;
+    --border: #3f3f46;
+    --text-primary: #fafafa;
+    --text-secondary: #a1a1aa;
+    --text-muted: #52525b;
+    --primary: #8b5cf6;
+    --primary-glow: #a855f7;
+    --neon-blue: #3b82f6;
+    --neon-green: #22c55e;
+    --neon-amber: #f59e0b;
+    --neon-red: #ef4444;
+    --neon-cyan: #06b6d4;
+    --neon-pink: #ec4899;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--void);
+    color: var(--text-primary);
+    font-family: 'Sora', system-ui, sans-serif;
+    line-height: 1.6;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Ambient particles */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background:
+      radial-gradient(1px 1px at 15% 25%, rgba(139,92,246,0.15), transparent),
+      radial-gradient(1px 1px at 85% 15%, rgba(59,130,246,0.1), transparent),
+      radial-gradient(1px 1px at 45% 75%, rgba(139,92,246,0.08), transparent),
+      radial-gradient(1px 1px at 70% 60%, rgba(6,182,212,0.1), transparent),
+      radial-gradient(1px 1px at 30% 90%, rgba(59,130,246,0.06), transparent);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 3rem 2rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Glass panels */
+  .glass {
+    background: rgba(24, 24, 27, 0.6);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  .glass::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+  }
+
+  .glass-subtle {
+    background: rgba(24, 24, 27, 0.35);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 12px;
+  }
+
+  .glass-strong {
+    background: rgba(39, 39, 42, 0.7);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  .glass-strong::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+  }
+
+  /* Hero */
+  .hero {
+    text-align: center;
+    padding: 4rem 2rem;
+    margin-bottom: 3rem;
+    position: relative;
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 1rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--neon-cyan);
+    background: rgba(6, 182, 212, 0.1);
+    border: 1px solid rgba(6, 182, 212, 0.2);
+    margin-bottom: 1.5rem;
+  }
+  .hero-badge .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--neon-cyan);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .hero h1 {
+    font-size: 3rem;
+    font-weight: 700;
+    line-height: 1.1;
+    background: linear-gradient(135deg, #fafafa 0%, #a78bfa 50%, #818cf8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 1rem;
+  }
+
+  .hero p {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    max-width: 600px;
+    margin: 0 auto 2rem;
+  }
+
+  /* Stats row */
+  .stats-row {
+    display: flex;
+    justify-content: center;
+    gap: 2.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
+  }
+  .stat {
+    text-align: center;
+  }
+  .stat-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .stat-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-muted);
+    margin-top: 0.25rem;
+  }
+  .stat-green { color: var(--neon-green); }
+  .stat-blue { color: var(--neon-blue); }
+  .stat-cyan { color: var(--neon-cyan); }
+  .stat-purple { color: var(--primary); }
+  .stat-amber { color: var(--neon-amber); }
+
+  /* Verdict section */
+  .verdict {
+    padding: 2rem;
+    margin-bottom: 2.5rem;
+    text-align: center;
+  }
+  .verdict h2 {
+    font-size: 1.4rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    color: var(--neon-green);
+  }
+  .verdict p {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    max-width: 700px;
+    margin: 0 auto;
+  }
+
+  /* Section divider */
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--primary), transparent);
+    margin: 3rem 0;
+    box-shadow: 0 0 8px rgba(139, 92, 246, 0.3);
+  }
+
+  /* Section headers */
+  .section-header {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    background: linear-gradient(135deg, #fafafa, #a78bfa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .section-sub {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-top: -1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  /* Architecture diagram */
+  .arch-diagram {
+    padding: 2rem;
+    margin-bottom: 2.5rem;
+  }
+  .arch-grid {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr auto 1fr;
+    align-items: center;
+    gap: 1rem;
+    margin: 2rem 0;
+  }
+  .arch-node {
+    padding: 1.25rem;
+    text-align: center;
+    border-radius: 12px;
+  }
+  .arch-node-title {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+  }
+  .arch-node-domain {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+  }
+  .arch-node-tech {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+  }
+  .arch-arrow {
+    text-align: center;
+    color: var(--primary);
+    font-size: 1.2rem;
+  }
+  .arch-arrow-label {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    display: block;
+    margin-top: 0.25rem;
+  }
+
+  .node-web { border-color: var(--neon-blue); }
+  .node-web .arch-node-domain { color: var(--neon-blue); }
+  .node-tunnel { border-color: var(--neon-amber); }
+  .node-tunnel .arch-node-domain { color: var(--neon-amber); }
+  .node-lmx { border-color: var(--neon-green); }
+  .node-lmx .arch-node-domain { color: var(--neon-green); }
+
+  /* Benefits grid */
+  .benefits-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 2.5rem;
+  }
+  .benefit-card {
+    padding: 1.5rem;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .benefit-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  }
+  .benefit-icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    margin-bottom: 1rem;
+  }
+  .benefit-card h3 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+  .benefit-card p {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  .icon-pwa { background: rgba(139, 92, 246, 0.15); color: var(--primary); }
+  .icon-https { background: rgba(34, 197, 94, 0.15); color: var(--neon-green); }
+  .icon-url { background: rgba(59, 130, 246, 0.15); color: var(--neon-blue); }
+  .icon-tunnel { background: rgba(245, 158, 11, 0.15); color: var(--neon-amber); }
+  .icon-cost { background: rgba(6, 182, 212, 0.15); color: var(--neon-cyan); }
+  .icon-seo { background: rgba(236, 72, 153, 0.15); color: var(--neon-pink); }
+
+  /* Comparison table */
+  .compare-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    margin: 1.5rem 0;
+  }
+  .compare-table th {
+    text-align: left;
+    padding: 0.75rem 1rem;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .compare-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    color: var(--text-secondary);
+  }
+  .compare-table tr:hover td {
+    background: rgba(139, 92, 246, 0.04);
+  }
+  .badge-yes {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    background: rgba(34, 197, 94, 0.15);
+    color: var(--neon-green);
+  }
+  .badge-no {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--neon-red);
+  }
+  .badge-partial {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    background: rgba(245, 158, 11, 0.15);
+    color: var(--neon-amber);
+  }
+
+  /* Phase cards */
+  .phase-timeline {
+    position: relative;
+    padding-left: 2rem;
+    margin-bottom: 2.5rem;
+  }
+  .phase-timeline::before {
+    content: '';
+    position: absolute;
+    left: 0.75rem;
+    top: 0.5rem;
+    bottom: 0.5rem;
+    width: 2px;
+    background: linear-gradient(180deg, var(--primary), var(--neon-blue), var(--neon-green), var(--neon-cyan));
+  }
+  .phase-item {
+    position: relative;
+    margin-bottom: 1.5rem;
+    padding: 1.25rem 1.5rem;
+  }
+  .phase-item::before {
+    content: '';
+    position: absolute;
+    left: -1.6rem;
+    top: 1.5rem;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    border: 2px solid var(--primary);
+    background: var(--void);
+  }
+  .phase-item:nth-child(1)::before { border-color: var(--primary); }
+  .phase-item:nth-child(2)::before { border-color: var(--neon-blue); }
+  .phase-item:nth-child(3)::before { border-color: var(--neon-green); }
+  .phase-item:nth-child(4)::before { border-color: var(--neon-cyan); }
+  .phase-number {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 600;
+    margin-bottom: 0.35rem;
+  }
+  .phase-item:nth-child(1) .phase-number { color: var(--primary); }
+  .phase-item:nth-child(2) .phase-number { color: var(--neon-blue); }
+  .phase-item:nth-child(3) .phase-number { color: var(--neon-green); }
+  .phase-item:nth-child(4) .phase-number { color: var(--neon-cyan); }
+  .phase-item h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+  .phase-item p {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+  }
+  .phase-time {
+    font-size: 0.7rem;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-muted);
+  }
+
+  /* Code blocks */
+  .code-block {
+    background: rgba(9, 9, 11, 0.8);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+    padding: 1.25rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    line-height: 1.7;
+    overflow-x: auto;
+    margin: 1rem 0;
+    color: var(--text-secondary);
+  }
+  .code-block .comment { color: var(--text-muted); }
+  .code-block .domain { color: var(--neon-blue); }
+  .code-block .arrow { color: var(--primary); }
+  .code-block .target { color: var(--neon-green); }
+  .code-block .label { color: var(--neon-amber); }
+
+  /* Security section */
+  .security-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0;
+  }
+  .security-item {
+    padding: 1rem 1.25rem;
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+  }
+  .security-icon {
+    flex-shrink: 0;
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    background: rgba(34, 197, 94, 0.12);
+    color: var(--neon-green);
+  }
+  .security-item h4 {
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+  }
+  .security-item p {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+  }
+
+  /* Warnings */
+  .warning-box {
+    padding: 1.25rem 1.5rem;
+    border: 1px solid rgba(245, 158, 11, 0.2);
+    background: rgba(245, 158, 11, 0.05);
+    border-radius: 12px;
+    margin: 1.5rem 0;
+  }
+  .warning-box h4 {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--neon-amber);
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .warning-box p {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  /* Cost box */
+  .cost-box {
+    padding: 2rem;
+    text-align: center;
+    margin: 2rem 0;
+    border: 1px solid rgba(34, 197, 94, 0.2);
+    background: rgba(34, 197, 94, 0.04);
+    border-radius: 16px;
+  }
+  .cost-value {
+    font-size: 3rem;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--neon-green);
+    margin-bottom: 0.25rem;
+  }
+  .cost-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 1rem;
+  }
+  .cost-breakdown {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    flex-wrap: wrap;
+  }
+  .cost-item {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+  }
+  .cost-item strong {
+    color: var(--text-primary);
+  }
+
+  /* DNS table */
+  .dns-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+    margin: 1.25rem 0;
+  }
+  .dns-table th {
+    text-align: left;
+    padding: 0.6rem 1rem;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .dns-table td {
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+  }
+  .dns-type {
+    display: inline-block;
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    background: rgba(139, 92, 246, 0.15);
+    color: var(--primary);
+  }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-muted);
+    font-size: 0.7rem;
+  }
+  .footer a {
+    color: var(--primary);
+    text-decoration: none;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .hero h1 { font-size: 2rem; }
+    .stats-row { gap: 1.5rem; }
+    .stat-value { font-size: 1.4rem; }
+    .arch-grid { grid-template-columns: 1fr; gap: 0.5rem; }
+    .arch-arrow { transform: rotate(90deg); }
+    .container { padding: 1.5rem 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Hero -->
+  <div class="hero glass">
+    <div class="hero-badge"><span class="dot"></span> Deployment Analysis</div>
+    <h1>optamize.biz<br>Domain Strategy</h1>
+    <p>Should Opta Local deploy to the optamize domain? What does it unlock? Full investigation with architecture, security, and cost analysis.</p>
+
+    <div class="stats-row">
+      <div class="stat">
+        <div class="stat-value stat-green">$0</div>
+        <div class="stat-label">Total Cost AUD</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value stat-blue">3</div>
+        <div class="stat-label">Subdomains</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value stat-cyan">6</div>
+        <div class="stat-label">New APIs Unlocked</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value stat-purple">4</div>
+        <div class="stat-label">Deploy Phases</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value stat-amber">~30m</div>
+        <div class="stat-label">Setup Time</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Verdict -->
+  <div class="verdict glass-strong">
+    <h2>Verdict: Yes — Deploy to optamize.biz</h2>
+    <p>
+      The optamize domain transforms Opta Local from a dev tool into a production-grade application.
+      HTTPS unlocks 6 browser APIs (PWA, Service Workers, WebAuthn, Notifications, Clipboard, Credential Management),
+      enables stable shareable URLs, and costs exactly $0 using Cloudflare free tier.
+      The existing codebase already handles the one gotcha (mixed content blocking on LAN).
+    </p>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Architecture -->
+  <h2 class="section-header">Recommended Architecture</h2>
+  <p class="section-sub">Three subdomains, zero monthly cost, complete separation of concerns</p>
+
+  <div class="arch-diagram glass">
+    <div class="arch-grid">
+      <div class="arch-node glass-subtle node-web">
+        <div class="arch-node-title">Web Client</div>
+        <div class="arch-node-domain">local.optamize.biz</div>
+        <div class="arch-node-tech">Cloudflare Pages · Next.js Static</div>
+      </div>
+      <div class="arch-arrow">
+        →
+        <span class="arch-arrow-label">HTTPS</span>
+      </div>
+      <div class="arch-node glass-subtle node-tunnel">
+        <div class="arch-node-title">Tunnel</div>
+        <div class="arch-node-domain">lmx.optamize.biz</div>
+        <div class="arch-node-tech">Cloudflare Tunnel · Zero Trust</div>
+      </div>
+      <div class="arch-arrow">
+        →
+        <span class="arch-arrow-label">Encrypted</span>
+      </div>
+      <div class="arch-node glass-subtle node-lmx">
+        <div class="arch-node-title">Inference</div>
+        <div class="arch-node-domain">192.168.188.11:1234</div>
+        <div class="arch-node-tech">Mac Studio · Opta LMX · FastAPI</div>
+      </div>
+    </div>
+
+    <div style="text-align: center; margin-top: 1rem; font-size: 0.75rem; color: var(--text-muted);">
+      Marketing site remains at <strong style="color: var(--text-secondary);">optamize.biz</strong> — unchanged
+    </div>
+  </div>
+
+  <!-- DNS Records -->
+  <div class="glass" style="padding: 1.5rem; margin-bottom: 2.5rem;">
+    <h3 style="font-size: 0.95rem; font-weight: 600; margin-bottom: 1rem;">DNS Configuration</h3>
+    <table class="dns-table">
+      <thead>
+        <tr><th>Record</th><th>Name</th><th>Target</th><th>Purpose</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="dns-type">CNAME</span></td>
+          <td style="color: var(--neon-blue);">local</td>
+          <td style="color: var(--text-secondary);">&lt;project&gt;.pages.dev</td>
+          <td style="color: var(--text-muted); font-family: Sora, sans-serif;">Web client (Cloudflare Pages)</td>
+        </tr>
+        <tr>
+          <td><span class="dns-type">CNAME</span></td>
+          <td style="color: var(--neon-amber);">lmx</td>
+          <td style="color: var(--text-secondary);">&lt;tunnel-id&gt;.cfargotunnel.com</td>
+          <td style="color: var(--text-muted); font-family: Sora, sans-serif;">LMX API (Cloudflare Tunnel)</td>
+        </tr>
+        <tr>
+          <td><span class="dns-type">A</span></td>
+          <td style="color: var(--text-secondary);">@</td>
+          <td style="color: var(--text-secondary);">existing</td>
+          <td style="color: var(--text-muted); font-family: Sora, sans-serif;">Marketing site (unchanged)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- What HTTPS Unlocks -->
+  <h2 class="section-header">What HTTPS Unlocks</h2>
+  <p class="section-sub">6 browser APIs that require secure context (HTTPS or localhost)</p>
+
+  <div class="benefits-grid">
+    <div class="benefit-card glass">
+      <div class="benefit-icon icon-pwa">⚡</div>
+      <h3>Progressive Web App</h3>
+      <p>Install to home screen on any device. Offline shell via Service Worker. App-like experience without app store distribution.</p>
+    </div>
+    <div class="benefit-card glass">
+      <div class="benefit-icon icon-https">🔐</div>
+      <h3>Service Workers</h3>
+      <p>Cache static assets for instant load. Background sync for queued messages. Push notifications for long-running inference jobs.</p>
+    </div>
+    <div class="benefit-card glass">
+      <div class="benefit-icon icon-url">🔗</div>
+      <h3>Stable URL</h3>
+      <p>Shareable <code style="font-size: 0.75rem; color: var(--neon-blue);">local.optamize.biz/chat</code> — works from any device, any network. Bookmarkable. No IP addresses.</p>
+    </div>
+    <div class="benefit-card glass">
+      <div class="benefit-icon icon-tunnel">🔑</div>
+      <h3>WebAuthn / Passkeys</h3>
+      <p>Hardware key authentication for admin access. Biometric unlock on mobile. Replaces the admin key flow with passwordless auth.</p>
+    </div>
+    <div class="benefit-card glass">
+      <div class="benefit-icon icon-cost">📋</div>
+      <h3>Clipboard API (Full)</h3>
+      <p>Read/write clipboard programmatically. Auto-detect pasted content types. Already built in F07 — works better with HTTPS.</p>
+    </div>
+    <div class="benefit-card glass">
+      <div class="benefit-icon icon-seo">🔔</div>
+      <h3>Push Notifications</h3>
+      <p>Notify when long inference completes. Alert on LMX health changes. Background updates without keeping tab open.</p>
+    </div>
+  </div>
+
+  <!-- Comparison Table -->
+  <div class="glass" style="padding: 1.5rem; margin-bottom: 2.5rem;">
+    <h3 style="font-size: 0.95rem; font-weight: 600; margin-bottom: 1rem;">localhost:3004 vs local.optamize.biz</h3>
+    <table class="compare-table">
+      <thead>
+        <tr><th>Capability</th><th>localhost:3004</th><th>local.optamize.biz</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="color: var(--text-primary);">Access from phone</td>
+          <td><span class="badge-no">No</span></td>
+          <td><span class="badge-yes">Yes</span></td>
+        </tr>
+        <tr>
+          <td style="color: var(--text-primary);">PWA installable</td>
+          <td><span class="badge-partial">Dev only</span></td>
+          <td><span class="badge-yes">Yes</span></td>
+        </tr>
+        <tr>
+          <td style="color: var(--text-primary);">Service Workers</td>
+          <td><span class="badge-yes">Yes</span></td>
+          <td><span class="badge-yes">Yes</span></td>
+        </tr>
+        <tr>
+          <td style="color: var(--text-primary);">Push Notifications</td>
+          <td><span class="badge-no">No</span></td>
+          <td><span class="badge-yes">Yes</span></td>
+        </tr>
+        <tr>
+          <td style="color: var(--text-primary);">WebAuthn / Passkeys</td>
+          <td><span class="badge-yes">Yes</span></td>
+          <td><span class="badge-yes">Yes</span></td>
+        </tr>
+        <tr>
+          <td style="color: var(--text-primary);">LAN direct (fastest)</td>
+          <td><span class="badge-yes">Yes</span></td>
+          <td><span class="badge-no">Mixed content</span></td>
+        </tr>
+        <tr>
+          <td style="color: var(--text-primary);">WAN access</td>
+          <td><span class="badge-no">No</span></td>
+          <td><span class="badge-yes">Tunnel</span></td>
+        </tr>
+        <tr>
+          <td style="color: var(--text-primary);">Shareable URL</td>
+          <td><span class="badge-no">No</span></td>
+          <td><span class="badge-yes">Yes</span></td>
+        </tr>
+        <tr>
+          <td style="color: var(--text-primary);">Offline caching</td>
+          <td><span class="badge-no">No</span></td>
+          <td><span class="badge-yes">SW cache</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Critical Gotcha -->
+  <div class="warning-box">
+    <h4>⚠️ Mixed Content: The One Gotcha</h4>
+    <p>
+      When served over HTTPS, browsers permanently block HTTP requests to LAN endpoints (192.168.188.11).
+      This means <strong>LAN direct mode is unavailable</strong> from the deployed domain — all traffic routes through the
+      Cloudflare Tunnel instead. Adds ~20-40ms latency vs LAN direct.<br><br>
+      <strong>Already handled:</strong> <code style="font-size: 0.75rem; color: var(--neon-cyan);">connection.ts</code> line 160-162 checks
+      <code style="font-size: 0.75rem; color: var(--neon-cyan);">window.location.protocol</code> and skips LAN probing on HTTPS.
+      Zero code changes needed.
+    </p>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Security Hardening -->
+  <h2 class="section-header">Security Hardening</h2>
+  <p class="section-sub">Required before exposing LMX to the internet via tunnel</p>
+
+  <div class="security-grid">
+    <div class="security-item glass-subtle">
+      <div class="security-icon">🔒</div>
+      <div>
+        <h4>Set Admin Key</h4>
+        <p>LMX config requires <code style="font-size: 0.7rem;">admin_key</code> — currently empty in dev. Set a strong key in production-config.yaml.</p>
+      </div>
+    </div>
+    <div class="security-item glass-subtle">
+      <div class="security-icon">🌐</div>
+      <div>
+        <h4>Tighten CORS</h4>
+        <p>Replace <code style="font-size: 0.7rem;">allow_origins=["*"]</code> with <code style="font-size: 0.7rem;">["https://local.optamize.biz"]</code> in main.py.</p>
+      </div>
+    </div>
+    <div class="security-item glass-subtle">
+      <div class="security-icon">🛡️</div>
+      <div>
+        <h4>Cloudflare Access</h4>
+        <p>Add email-based auth policy on <code style="font-size: 0.7rem;">lmx.optamize.biz</code>. Free for up to 50 users. Blocks unauthorized tunnel access.</p>
+      </div>
+    </div>
+    <div class="security-item glass-subtle">
+      <div class="security-icon">📊</div>
+      <div>
+        <h4>Rate Limiting</h4>
+        <p>Cloudflare WAF free tier includes rate limiting rules. Prevent abuse of inference endpoints.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Deployment Phases -->
+  <h2 class="section-header">Implementation Roadmap</h2>
+  <p class="section-sub">4 phases, ~30 minutes total, all using free-tier services</p>
+
+  <div class="phase-timeline">
+    <div class="phase-item glass-subtle">
+      <div class="phase-number">Phase 1 — LMX Tunnel</div>
+      <h3>Create Cloudflare Tunnel to Mac Studio</h3>
+      <p>Install cloudflared on Mac Studio. Create named tunnel mapping <code style="font-size: 0.75rem; color: var(--neon-amber);">lmx.optamize.biz</code> → <code style="font-size: 0.75rem; color: var(--neon-green);">localhost:1234</code>. Add CNAME record. Verify SSE streaming works through tunnel.</p>
+      <div class="phase-time">~10 min · Mac Studio terminal + Cloudflare dashboard</div>
+    </div>
+
+    <div class="phase-item glass-subtle">
+      <div class="phase-number">Phase 2 — Deploy Web Client</div>
+      <h3>Ship to Cloudflare Pages</h3>
+      <p>Add <code style="font-size: 0.75rem;">next.config.ts</code> output: 'export'. Connect repo to Cloudflare Pages. Set custom domain <code style="font-size: 0.75rem; color: var(--neon-blue);">local.optamize.biz</code>. Update default LMX endpoint to <code style="font-size: 0.75rem; color: var(--neon-amber);">https://lmx.optamize.biz</code>.</p>
+      <div class="phase-time">~10 min · Cloudflare Pages dashboard + 1 config change</div>
+    </div>
+
+    <div class="phase-item glass-subtle">
+      <div class="phase-number">Phase 3 — Security Hardening</div>
+      <h3>Lock Down Public Access</h3>
+      <p>Set admin key in LMX production config. Tighten CORS to allow only <code style="font-size: 0.75rem;">local.optamize.biz</code>. Add Cloudflare Access policy with email auth. Enable WAF rate limiting.</p>
+      <div class="phase-time">~5 min · LMX config + Cloudflare Zero Trust</div>
+    </div>
+
+    <div class="phase-item glass-subtle">
+      <div class="phase-number">Phase 4 — PWA Enhancement</div>
+      <h3>Progressive Web App Manifest</h3>
+      <p>Add <code style="font-size: 0.75rem;">manifest.json</code> with app name, icons, theme. Register Service Worker for offline shell caching. Add install prompt banner. Test on mobile Safari + Chrome.</p>
+      <div class="phase-time">~5 min · 2 files + test on devices</div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Cost -->
+  <div class="cost-box">
+    <div class="cost-value">$0.00</div>
+    <div class="cost-label">Monthly Cost — All Free Tier</div>
+    <div class="cost-breakdown">
+      <div class="cost-item"><strong>Cloudflare Pages:</strong> free (100k req/day)</div>
+      <div class="cost-item"><strong>Cloudflare Tunnel:</strong> free (unlimited)</div>
+      <div class="cost-item"><strong>Cloudflare Access:</strong> free (50 users)</div>
+      <div class="cost-item"><strong>DNS:</strong> already on Cloudflare</div>
+    </div>
+  </div>
+
+  <!-- Admin Key Note -->
+  <div class="glass" style="padding: 1.5rem; margin-bottom: 2.5rem;">
+    <h3 style="font-size: 0.95rem; font-weight: 600; margin-bottom: 0.75rem;">One-Time Migration Note</h3>
+    <p style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.6;">
+      The encrypted admin key in localStorage uses <code style="font-size: 0.75rem; color: var(--neon-cyan);">PBKDF2</code> with
+      <code style="font-size: 0.75rem; color: var(--neon-cyan);">window.location.origin</code> as the salt. When you switch from
+      <code style="font-size: 0.75rem;">localhost:3004</code> to <code style="font-size: 0.75rem; color: var(--neon-blue);">local.optamize.biz</code>,
+      the origin changes and the old encrypted key won't decrypt. You'll need to re-enter the admin key once on the new domain.
+      This is a one-time step — after that, the key persists in the new origin's localStorage.
+    </p>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <p>Generated by Opta Operations · <a href="https://optamize.biz">optamize.biz</a></p>
+    <p style="margin-top: 0.5rem;">Analysis date: 18 Feb 2026 · Based on Cloudflare free tier pricing · Opta Local v2</p>
+  </div>
+
+</div>
+
+</body>
+</html>
