@@ -148,6 +148,15 @@ package-lock.json
 .lsp/
 .serena/
 
+# Python
+.venv/
+**/.venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+.mypy_cache/
+**/.mypy_cache/
+
 # Syncthing
 .stfolder/
 .stversions/

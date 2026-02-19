@@ -245,6 +245,12 @@ importers:
       '@streamdown/code':
         specifier: ^1.0.2
         version: 1.0.2(react@19.2.3)
+      '@supabase/ssr':
+        specifier: ^0.5.2
+        version: 0.5.2(@supabase/supabase-js@2.96.0)
+      '@supabase/supabase-js':
+        specifier: ^2.47.10
+        version: 2.96.0
       '@tanstack/react-virtual':
         specifier: ^3.13.18
         version: 3.13.18(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
