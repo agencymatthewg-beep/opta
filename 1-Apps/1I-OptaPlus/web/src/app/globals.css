@@ -1,0 +1,121 @@
+@import "tailwindcss";
+
+@theme {
+  --color-void: #050505;
+  --color-surface: #0A0A0A;
+  --color-elevated: #121212;
+  --color-primary: #8B5CF6;
+  --color-primary-glow: #A78BFA;
+  --color-text-primary: #EDEDED;
+  --color-text-secondary: #A1A1AA;
+  --color-text-muted: #52525B;
+  --color-border: rgba(255, 255, 255, 0.06);
+  --color-success: #22C55E;
+  --color-warning: #F59E0B;
+  --color-error: #EF4444;
+
+  --font-sora: "Sora", system-ui, sans-serif;
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    background: var(--color-void);
+    color: var(--color-text-primary);
+    font-family: var(--font-sora);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+}
+
+/* Glass panel utility */
+.glass {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.glass-heavy {
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Glow effect */
+.glow-primary {
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.15), 0 0 60px rgba(139, 92, 246, 0.05);
+}
+
+/* Code block styling */
+pre code {
+  font-family: "SF Mono", "Menlo", "Consolas", monospace;
+  font-size: 0.875rem;
+}
+
+/* Markdown content */
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3 {
+  font-weight: 600;
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+}
+.markdown-content h1 { font-size: 1.5rem; }
+.markdown-content h2 { font-size: 1.25rem; }
+.markdown-content h3 { font-size: 1.1rem; }
+.markdown-content p { margin-bottom: 0.5em; }
+.markdown-content ul, .markdown-content ol { padding-left: 1.5em; margin-bottom: 0.5em; }
+.markdown-content li { margin-bottom: 0.25em; }
+.markdown-content blockquote {
+  border-left: 3px solid var(--color-primary);
+  padding-left: 1em;
+  opacity: 0.8;
+  margin-bottom: 0.5em;
+}
+.markdown-content code:not(pre code) {
+  background: rgba(255, 255, 255, 0.08);
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+.markdown-content pre {
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 8px;
+  padding: 1em;
+  overflow-x: auto;
+  margin-bottom: 0.5em;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.markdown-content a {
+  color: var(--color-primary-glow);
+  text-decoration: underline;
+}
+.markdown-content table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-bottom: 0.5em;
+}
+.markdown-content th, .markdown-content td {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.5em;
+  text-align: left;
+}

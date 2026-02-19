@@ -58,6 +58,10 @@ struct ContentView: View {
                     .accessibilityLabel("Settings")
                     .accessibilityHint("Configure bots, appearance, and preferences")
             }
+            .overlay(alignment: .top) {
+                GlobalConnectionOverlay()
+                    .padding(.top, 50)
+            }
             .tint(.optaPrimary)
             .onChange(of: selectedTab) { _, _ in
                 HapticManager.shared.selection()

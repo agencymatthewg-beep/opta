@@ -133,6 +133,59 @@ public final class SyncCoordinator: ObservableObject {
         enqueue(text: text, targetGateway: false, targetTelegram: true)
     }
 
+    // MARK: - Conflict Resolution
+
+    /// Resolve a sync conflict between local and remote versions of data.
+    /// Uses server-timestamp-wins strategy: the version with the later timestamp wins.
+    /// For equal timestamps, gateway (remote) wins as it is the source of truth.
+    ///
+    /// - Parameters:
+    ///   - local: The local version with its timestamp
+    ///   - remote: The remote/gateway version with its timestamp
+    /// - Returns: The winning version (`.local` or `.remote`)
+    public enum ConflictWinner { case local, remote }
+
+    public func resolveConflict(
+        localTimestamp: Date,
+        remoteTimestamp: Date
+    ) -> ConflictWinner {
+        // Server timestamp wins; ties go to remote (gateway is source of truth)
+        if localTimestamp > remoteTimestamp {
+            Self.logger.info("Conflict resolved: local wins (local=\(localTimestamp), remote=\(remoteTimestamp))")
+            return .local
+        }
+        Self.logger.info("Conflict resolved: remote wins (local=\(localTimestamp), remote=\(remoteTimestamp))")
+        return .remote
+    }
+
+    /// Merge message arrays from local cache and gateway, deduplicating by ID.
+    /// Gateway messages take precedence for content when IDs match.
+    public func mergeMessages(local: [MessageMapping], remote: [MessageMapping]) -> [MessageMapping] {
+        var merged: [String: MessageMapping] = [:]
+
+        // Local first
+        for msg in local {
+            merged[msg.localId] = msg
+        }
+
+        // Remote overwrites on conflict (server is source of truth)
+        for msg in remote {
+            if let existing = merged[msg.localId] {
+                let winner = resolveConflict(
+                    localTimestamp: existing.timestamp,
+                    remoteTimestamp: msg.timestamp
+                )
+                if winner == .remote {
+                    merged[msg.localId] = msg
+                }
+            } else {
+                merged[msg.localId] = msg
+            }
+        }
+
+        return Array(merged.values).sorted { $0.timestamp < $1.timestamp }
+    }
+
     // MARK: - Offline Queue
 
     private func enqueue(text: String, targetGateway: Bool, targetTelegram: Bool) {

@@ -102,11 +102,34 @@ public final class NetworkEnvironment: ObservableObject {
         }
     }
 
+    /// Callback fired when a network path change is detected.
+    /// ChatViewModel observes this to trigger reconnection on network toggle.
+    public var onNetworkChange: (() -> Void)?
+
+    /// Whether the network is currently satisfied (has connectivity).
+    @Published public var isNetworkAvailable: Bool = true
+
+    /// Track the previous path status to detect actual transitions.
+    private var previousPathStatus: NWPath.Status?
+
     private func startMonitoring() {
-        monitor.pathUpdateHandler = { [weak self] _ in
+        monitor.pathUpdateHandler = { [weak self] path in
             Task { @MainActor in
-                // Network changed — re-probe on next connection attempt
-                self?.connectionType = .unknown
+                guard let self = self else { return }
+                let wasAvailable = self.isNetworkAvailable
+                self.isNetworkAvailable = path.status == .satisfied
+
+                // Detect actual network transition (not just initial report)
+                let isTransition = self.previousPathStatus != nil && path.status != self.previousPathStatus
+                self.previousPathStatus = path.status
+
+                // Network changed — invalidate cached route
+                self.connectionType = .unknown
+
+                // If network came back up (or interface changed), notify listeners
+                if isTransition && self.isNetworkAvailable {
+                    self.onNetworkChange?()
+                }
             }
         }
         monitor.start(queue: .global())

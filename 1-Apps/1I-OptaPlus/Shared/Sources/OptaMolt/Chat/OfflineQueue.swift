@@ -210,3 +210,93 @@ public final class OfflineQueue: ObservableObject {
         }
     }
 }
+
+
+// MARK: - Draft Store
+
+/// Persists unsent draft text per bot/session so it survives app restarts.
+/// Drafts are saved to Application Support and cleared when the message is sent.
+@MainActor
+public final class DraftStore: ObservableObject {
+
+    private static let logger = Logger(subsystem: "biz.optamize.OptaPlus", category: "DraftStore")
+
+    /// Current draft text (bound to the input field).
+    @Published public var text: String = "" {
+        didSet {
+            scheduleSave()
+        }
+    }
+
+    private let botId: String
+    private let sessionKey: String
+    private let fileManager = FileManager.default
+    private var saveTask: Task<Void, Never>?
+
+    /// Debounce interval for saving drafts (seconds).
+    private static let saveDebounce: TimeInterval = 0.5
+
+    public init(botId: String, sessionKey: String = "main") {
+        self.botId = botId
+        self.sessionKey = sessionKey
+        self.text = loadFromDisk()
+        if !text.isEmpty {
+            Self.logger.info("Restored draft for bot \(botId)/\(sessionKey): \(self.text.prefix(50))...")
+        }
+    }
+
+    /// Clear the draft (called after successful send).
+    public func clear() {
+        text = ""
+        deleteFromDisk()
+    }
+
+    // MARK: - Persistence
+
+    private var storageDir: URL {
+        let appSupport = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        let dir = appSupport.appendingPathComponent("OptaPlus/Drafts", isDirectory: true)
+        try? fileManager.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir
+    }
+
+    private var fileURL: URL {
+        storageDir.appendingPathComponent("draft-\(botId)-\(sessionKey).txt")
+    }
+
+    private func scheduleSave() {
+        saveTask?.cancel()
+        saveTask = Task {
+            try? await Task.sleep(nanoseconds: UInt64(Self.saveDebounce * 1_000_000_000))
+            guard !Task.isCancelled else { return }
+            saveToDisk()
+        }
+    }
+
+    private func saveToDisk() {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty {
+            deleteFromDisk()
+            return
+        }
+        do {
+            try text.write(to: fileURL, atomically: true, encoding: .utf8)
+        } catch {
+            Self.logger.error("Failed to save draft: \(error.localizedDescription)")
+        }
+    }
+
+    private func loadFromDisk() -> String {
+        guard fileManager.fileExists(atPath: fileURL.path) else { return "" }
+        do {
+            return try String(contentsOf: fileURL, encoding: .utf8)
+        } catch {
+            Self.logger.error("Failed to load draft: \(error.localizedDescription)")
+            return ""
+        }
+    }
+
+    private func deleteFromDisk() {
+        try? fileManager.removeItem(at: fileURL)
+    }
+}

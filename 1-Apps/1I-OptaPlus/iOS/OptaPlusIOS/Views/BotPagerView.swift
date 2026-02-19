@@ -39,6 +39,10 @@ struct BotPagerView<Content: View>: View {
             }
             .scrollTargetBehavior(.paging)
             .scrollPosition(id: $currentBotId)
+            // Prevent edge swipe gesture conflicts on iPhone 15 / Dynamic Island devices.
+            // The system back-swipe gesture zone (~20pt from edges) can intercept horizontal paging.
+            .contentMargins(.horizontal, 0, for: .scrollIndicators)
+            .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
         }
         .background(Color.optaVoid)
         .onAppear {

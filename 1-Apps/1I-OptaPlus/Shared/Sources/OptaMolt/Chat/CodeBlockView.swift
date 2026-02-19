@@ -55,8 +55,9 @@ public struct CodeBlockView: View {
 
     public var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Header with language and actions
+            // Header with language and actions (outside text selection zone)
             header
+                .contentShape(Rectangle())
 
             // Code content
             codeContent
@@ -234,6 +235,7 @@ public struct CodeBlockView: View {
             .scaleEffect(copyScale)
         }
         .buttonStyle(.plain)
+        .contentShape(Rectangle())
         .accessibilityLabel(copied ? "Copied to clipboard" : "Copy code")
     }
 

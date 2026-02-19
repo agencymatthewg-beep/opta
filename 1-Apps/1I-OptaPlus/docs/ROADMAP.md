@@ -58,13 +58,13 @@ updated: 2026-02-15
 **Goal:** Bug fixes, stability. v0.9 user feedback incorporated.
 
 **Changes:**
-- 🐛 Fix WebSocket reconnect logic (edge case when network toggles)
-- 🐛 Fix CloudKit sync conflict (last-write-wins clarified)
-- ✨ Add offline draft support (save locally, sync on reconnect)
-- ✨ Improve message rendering (code block copy button fix)
-- ✨ Add connection diagnostics view (debug panel) — macOS only
-- 📱 iOS: Fix swipe gesture on iPhone 15 (edge detect)
-- 🍎 macOS: Fix window restoration (order + position)
+- ✅ Fix WebSocket reconnect logic (network toggle triggers fresh URL resolution via NetworkEnvironment)
+- ✅ Fix CloudKit sync conflict (server-timestamp-wins + merge logic in SyncCoordinator)
+- ✅ Add offline draft support (DraftStore in OfflineQueue.swift — persists to Application Support)
+- ✅ Improve message rendering (code block copy button — added contentShape for hit target)
+- ✅ Add connection diagnostics view (ConnectionDiagnosticsView.swift) — macOS only
+- ✅ iOS: Fix swipe gesture on iPhone 15 (scrollBounceBehavior + contentMargins on pager)
+- ✅ macOS: Fix window restoration (WindowStatePersistence wired into WindowRoot lifecycle)
 
 **Effort:** 15-20 hours
 

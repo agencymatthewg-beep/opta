@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import WidgetKit
 import OptaPlus
 import OptaMolt
 
@@ -13,6 +14,10 @@ import OptaMolt
 
 @MainActor
 final class AppState: ObservableObject {
+    /// Shared instance for App Intents (Siri Shortcuts) access.
+    /// Set during app launch from the @StateObject instance.
+    static var shared: AppState!
+
     // Primary storage: BotNodes are the single source of truth
     @Published private(set) var botNodes: [BotNode] = []
 
@@ -158,6 +163,26 @@ final class AppState: ObservableObject {
         reloadFromStore()
     }
 
+    // MARK: - Widget Data Sync
+
+    /// Push current bot states to WidgetKit via shared App Group data.
+    func syncWidgetData() {
+        let widgetBots = bots.map { bot -> WidgetBotInfo in
+            let vm = chatViewModels[bot.id]
+            let lastMsg = vm?.messages.last
+            return WidgetBotInfo(
+                id: bot.id,
+                name: bot.name,
+                emoji: bot.emoji,
+                isConnected: vm?.connectionState == .connected,
+                lastMessage: lastMsg?.content.prefix(100).description,
+                lastMessageDate: lastMsg?.timestamp,
+                accentColorHex: "#8B5CF6"
+            )
+        }
+        WidgetDataManager.shared.updateBotStatuses(widgetBots)
+    }
+
     // MARK: - Defaults
 
     private func addDefaultBots() {
@@ -268,13 +293,38 @@ struct OptaPlusIOSApp: App {
                 .environment(\.backgroundMode, themeManager.backgroundMode)
                 .preferredColorScheme(.dark)
                 .onAppear {
+                    // Make AppState available to App Intents (Siri Shortcuts)
+                    AppState.shared = appState
+
                     if let bot = appState.selectedBot {
                         appState.selectBot(bot)
                     }
+
+                    // Request push notification permission
+                    Task {
+                        await PushNotificationManager.requestPermission()
+                    }
+
+                    // Sync widget data
+                    appState.syncWidgetData()
                 }
                 .onOpenURL { url in
                     if let info = PairingCoordinator.parseDeepLink(url) {
                         pairingCoordinator.pendingPairingInfo = info
+                    }
+                    // Handle widget quick action deep links: optaplus://send?message=...&bot=...
+                    if url.scheme == "optaplus" && url.host == "send",
+                       let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+                       let message = components.queryItems?.first(where: { $0.name == "message" })?.value {
+                        let botId = components.queryItems?.first(where: { $0.name == "bot" })?.value
+                        if let botId, !botId.isEmpty, let bot = appState.bots.first(where: { $0.id == botId }) {
+                            appState.selectBot(bot)
+                            let vm = appState.viewModel(for: bot)
+                            Task { await vm.send(message) }
+                        } else if let bot = appState.selectedBot {
+                            let vm = appState.viewModel(for: bot)
+                            Task { await vm.send(message) }
+                        }
                     }
                 }
         }

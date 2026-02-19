@@ -332,6 +332,18 @@ public final class ChatViewModel: ObservableObject {
         client?.disconnect()
         cancellables.removeAll()
 
+        // Listen for network changes (WiFi toggle, cellular switch) to auto-reconnect
+        // with a fresh URL resolution (LAN vs remote may have changed).
+        networkEnv.onNetworkChange = { [weak self] in
+            Task { @MainActor in
+                guard let self = self else { return }
+                // Only reconnect if we were connected or trying to reconnect
+                guard self.connectionState == .connected || self.connectionState == .reconnecting else { return }
+                Self.logger.info("Network changed — re-resolving connection URL")
+                self.reconnect()
+            }
+        }
+
         Task {
             guard let url = await networkEnv.resolveURL(for: botConfig) else {
                 errorMessage = "No connection URL available"

@@ -91,10 +91,33 @@ struct WindowRoot: View {
                 }
             }
             .onAppear {
-                // If no bot pre-selected, use the default
+                // If no bot pre-selected, try restoring from persistence
                 if windowState.selectedBotId == nil {
-                    windowState.selectedBotId = appState.selectedBotId
+                    if let restored = WindowStatePersistence.restoreSelectedBot() {
+                        windowState.selectedBotId = restored
+                    } else {
+                        windowState.selectedBotId = appState.selectedBotId
+                    }
                 }
+
+                // Restore window frame position
+                if let frame = WindowStatePersistence.restoreFrame(),
+                   let window = NSApp.keyWindow {
+                    window.setFrame(frame, display: true)
+                }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: NSWindow.didMoveNotification)) { notification in
+                if let window = notification.object as? NSWindow {
+                    WindowStatePersistence.saveFrame(window.frame)
+                }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: NSWindow.didResizeNotification)) { notification in
+                if let window = notification.object as? NSWindow {
+                    WindowStatePersistence.saveFrame(window.frame)
+                }
+            }
+            .onChange(of: windowState.selectedBotId) { _, newId in
+                WindowStatePersistence.saveSelectedBot(newId)
             }
     }
 }

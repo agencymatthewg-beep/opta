@@ -349,7 +349,7 @@ public struct MessageBubble: View {
                 
                 // Link previews for URLs in message
                 if !isStreaming, let msg = message {
-                    LinkPreviewsView(text: msg.content)
+                    RichLinkPreviewsView(text: msg.content)
                     InlineImageURLsView(text: msg.content)
                 }
 

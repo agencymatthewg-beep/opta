@@ -74,4 +74,56 @@ final class HapticManager {
         notificationGenerator.notificationOccurred(type)
         notificationGenerator.prepare()
     }
+
+    // MARK: - Contextual Patterns (v1.0)
+
+    /// Message sent successfully
+    func messageSent() {
+        impact(.light)
+    }
+
+    /// Bot connected
+    func botConnected() {
+        notification(.success)
+    }
+
+    /// Bot disconnected
+    func botDisconnected() {
+        notification(.warning)
+    }
+
+    /// Error occurred
+    func error() {
+        notification(.error)
+    }
+
+    /// Reaction added to a message
+    func reactionAdded() {
+        impact(.rigid)
+    }
+
+    /// Long-press context menu triggered
+    func contextMenu() {
+        impact(.medium)
+    }
+
+    /// Pull-to-refresh activated
+    func pullToRefresh() {
+        impact(.light)
+    }
+
+    /// Swipe action completed (e.g., swipe to reply)
+    func swipeAction() {
+        impact(.medium)
+    }
+
+    /// Bot started thinking/processing
+    func botThinking() {
+        impact(.soft)
+    }
+
+    /// New message received from bot
+    func messageReceived() {
+        impact(.light)
+    }
 }
