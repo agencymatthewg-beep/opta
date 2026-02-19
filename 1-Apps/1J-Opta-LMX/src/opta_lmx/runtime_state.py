@@ -76,6 +76,25 @@ class RuntimeState:
         self._path.parent.mkdir(parents=True, exist_ok=True)
         self._path.write_text(json.dumps(data, indent=2))
 
+    def is_crash_loop(self, threshold: int = 3, window_sec: float = 60.0) -> bool:
+        """Detect crash loop: 3+ startups within 60 seconds means safe mode.
+
+        Args:
+            threshold: Number of startups within the window to trigger safe mode.
+            window_sec: Time window in seconds to check for rapid restarts.
+
+        Returns:
+            True if the process is in a crash loop (safe mode should be enabled).
+        """
+        data = self.load()
+        if data is None:
+            return False
+        count = data.get("startup_count", 0)
+        last_startup = data.get("last_startup_at", 0)
+        if count >= threshold and (time.time() - last_startup) < window_sec:
+            return True
+        return False
+
     def clear(self) -> None:
         """Remove state file."""
         if self._path.exists():

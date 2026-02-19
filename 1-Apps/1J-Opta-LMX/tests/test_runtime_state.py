@@ -47,3 +47,51 @@ class TestRuntimeState:
         data = state.load()
         assert data is not None
         assert data["startup_count"] == 1
+
+
+class TestCrashLoopDetection:
+    """Crash loop detection via rapid startup counting."""
+
+    def test_crash_loop_detection(self, tmp_path: Path) -> None:
+        """3 rapid startups within window triggers crash loop."""
+        state = RuntimeState(state_path=tmp_path / "state.json")
+        # Simulate 3 rapid startups
+        for _ in range(3):
+            state.record_startup()
+        assert state.is_crash_loop() is True
+
+    def test_no_crash_loop_normal(self, tmp_path: Path) -> None:
+        """Single startup does not trigger crash loop."""
+        state = RuntimeState(state_path=tmp_path / "state.json")
+        state.record_startup()
+        assert state.is_crash_loop() is False
+
+    def test_no_crash_loop_when_no_state_file(self, tmp_path: Path) -> None:
+        """No state file means no crash loop."""
+        state = RuntimeState(state_path=tmp_path / "state.json")
+        assert state.is_crash_loop() is False
+
+    def test_crash_loop_below_threshold(self, tmp_path: Path) -> None:
+        """2 startups (below default threshold of 3) is not a crash loop."""
+        state = RuntimeState(state_path=tmp_path / "state.json")
+        state.record_startup()
+        state.record_startup()
+        assert state.is_crash_loop() is False
+
+    def test_crash_loop_custom_threshold(self, tmp_path: Path) -> None:
+        """Custom threshold of 2 triggers crash loop on 2 startups."""
+        state = RuntimeState(state_path=tmp_path / "state.json")
+        state.record_startup()
+        state.record_startup()
+        assert state.is_crash_loop(threshold=2) is True
+
+    def test_crash_loop_resets_after_clean_shutdown(self, tmp_path: Path) -> None:
+        """Clean shutdown resets startup count, preventing false crash loop."""
+        state = RuntimeState(state_path=tmp_path / "state.json")
+        for _ in range(3):
+            state.record_startup()
+        assert state.is_crash_loop() is True
+
+        # Clean shutdown resets the startup_count to 0
+        state.save(loaded_models=[], clean=True)
+        assert state.is_crash_loop() is False
