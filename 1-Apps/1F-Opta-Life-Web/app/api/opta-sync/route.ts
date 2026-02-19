@@ -272,7 +272,7 @@ export async function POST(request: NextRequest) {
         success: true,
         status: "healthy",
         timestamp,
-        service: "opta-life-manager",
+        service: "opta-life",
       });
     }
 

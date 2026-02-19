@@ -109,7 +109,7 @@ export default function Dashboard({ session }: { session: Session | null }) {
         <header className="mb-12 flex justify-between items-end">
           <div>
             <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-br from-white to-primary-glow bg-clip-text text-transparent mb-2">
-              Opta Life Manager
+              Opta Life
             </h1>
             <p className="text-text-secondary font-light text-lg">
               {date ? formatDate(date) : "Loading..."}
