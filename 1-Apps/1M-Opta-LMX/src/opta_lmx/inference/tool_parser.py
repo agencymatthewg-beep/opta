@@ -517,16 +517,26 @@ async def wrap_stream_with_tool_parsing(
 
     When no tool calls are present, all tokens pass through as content.
 
+    Preserves _StreamEndMarker objects from the input stream.
+
     Args:
         token_stream: Raw token stream from the inference engine.
         tools: Tool definitions for parameter type coercion.
 
     Yields:
         StreamChunk objects with either content or tool call data.
+        May also yield _StreamEndMarker from the input stream.
     """
+    from opta_lmx.api.inference import _StreamEndMarker
+
     parser = StreamingToolParser(tools=tools)
 
     async for token in token_stream:
+        # Preserve end marker from _counting_stream
+        if isinstance(token, _StreamEndMarker):
+            yield token
+            continue
+
         result = parser.feed(token)
 
         if result.content_delta:
