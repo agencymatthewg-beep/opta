@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { Sparkles, ArrowRight, Mail, Calendar, Trash2, Search, Send, User, Bot, Plus, CalendarDays, ClipboardList } from "lucide-react";
+import { Sparkles, Mail, Calendar, Trash2, Send, User, Bot, Plus, CalendarDays, ClipboardList } from "lucide-react";
 import { processAiCommand, CommandActionType } from "@/lib/ai-commander";
 import { useTasks } from "@/contextsHooks/TaskContext";
 

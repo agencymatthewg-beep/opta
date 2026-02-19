@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, memo } from "react";
 import { Cloud, Droplets, Wind, ThermometerSun, RefreshCw } from "lucide-react";
 import { getWeather, WeatherData } from "@/lib/weather";
 import { cn } from "@/lib/utils";
@@ -24,7 +24,7 @@ function getWeatherIcon(code: number, isDay: boolean = true): string {
     return weatherIcons[code] || "🌡️";
 }
 
-export function WeatherWidget() {
+export const WeatherWidget = memo(function WeatherWidget() {
     const [weather, setWeather] = useState<WeatherData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -104,6 +104,7 @@ export function WeatherWidget() {
                 <button
                     onClick={loadWeather}
                     disabled={loading}
+                    aria-label="Refresh weather"
                     className="p-2 text-text-muted hover:text-text-secondary transition-colors"
                 >
                     <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />
@@ -159,4 +160,4 @@ export function WeatherWidget() {
             </div>
         </div>
     );
-}
+});

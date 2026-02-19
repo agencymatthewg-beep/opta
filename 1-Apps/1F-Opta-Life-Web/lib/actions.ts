@@ -1,6 +1,6 @@
 "use server";
 
-import { getUser, getSession } from "@/lib/supabase/auth";
+import { getUser } from "@/lib/supabase/auth";
 import { getGoogleAccessToken } from "@/lib/supabase/tokens";
 import { google, calendar_v3, gmail_v1 } from "googleapis";
 import { UnifiedEmail, AccountColor } from "@/types/accounts";

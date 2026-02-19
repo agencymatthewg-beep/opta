@@ -1,7 +1,7 @@
 // Secure storage for linked account tokens in localStorage
 // Uses Web Crypto API for encryption with a session-derived key
 
-import { LinkedAccount, LinkedAccountWithColor, AccountColor, ACCOUNT_COLORS } from "@/types/accounts";
+import { LinkedAccount, LinkedAccountWithColor, ACCOUNT_COLORS } from "@/types/accounts";
 
 const STORAGE_KEY = "opta_linked_accounts";
 const MAX_LINKED_ACCOUNTS = 2; // Primary account is separate, so 2 additional

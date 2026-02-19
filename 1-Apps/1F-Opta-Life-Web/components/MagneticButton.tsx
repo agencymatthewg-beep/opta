@@ -1,16 +1,18 @@
 "use client";
 
-import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
+import { motion, useMotionValue, useSpring } from "framer-motion";
 import { useRef, useState } from "react";
 
 export const MagneticButton = ({
     children,
     className,
-    onClick
+    onClick,
+    "aria-label": ariaLabel,
 }: {
     children: React.ReactNode;
     className?: string;
     onClick?: React.MouseEventHandler<HTMLButtonElement>;
+    "aria-label"?: string;
 }) => {
     const ref = useRef<HTMLButtonElement>(null);
     const [isHovered, setIsHovered] = useState(false);
@@ -48,6 +50,7 @@ export const MagneticButton = ({
             ref={ref}
             className={className}
             onClick={onClick}
+            aria-label={ariaLabel}
             onMouseMove={handleMouseMove}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={handleMouseLeave}

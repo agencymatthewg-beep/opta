@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { getAllInboxEmails } from "@/lib/actions";
-import { Mail, Plus, Settings } from "lucide-react";
+import { Plus } from "lucide-react";
 import { UnifiedEmail, LinkedAccountWithColor, ACCOUNT_COLOR_CLASSES } from "@/types/accounts";
 import { getLinkedAccounts, saveLinkedAccount } from "@/lib/account-storage";
 import { refreshAllExpiredTokens } from "@/lib/token-refresh";
@@ -19,8 +19,6 @@ export function GmailWidget({ sessionToken, primaryEmail }: GmailWidgetProps) {
     const [linkedAccounts, setLinkedAccounts] = useState<LinkedAccountWithColor[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [showManageAccounts, setShowManageAccounts] = useState(false);
-
     const loadEmails = useCallback(async () => {
         setLoading(true);
         setError(null);

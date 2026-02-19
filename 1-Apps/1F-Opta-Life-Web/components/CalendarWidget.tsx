@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createEvent, getCalendarEvents } from "@/lib/actions";
-import { Calendar as CalendarIcon, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 
 type CalendarEvent = {
     id?: string | null;
@@ -72,6 +72,8 @@ export function CalendarWidget() {
             <div className="flex justify-end">
                 <button
                     onClick={() => setIsCreating(!isCreating)}
+                    aria-label={isCreating ? "Cancel adding event" : "Add new event"}
+                    aria-expanded={isCreating}
                     className="text-xs text-primary hover:text-white transition-colors flex items-center gap-1 uppercase tracking-wider font-medium"
                 >
                     <Plus className="w-3 h-3" /> {isCreating ? "Cancel" : "Add Event"}

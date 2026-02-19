@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Sparkles, Calendar, Mail, CheckCircle2, AlertCircle, Clock } from "lucide-react";
+import { Sparkles, Calendar, Mail, CheckCircle2, Clock } from "lucide-react";
 import { getCalendarEventsForDays, getUnreadEmails } from "@/lib/actions";
 import { useTasks } from "@/contextsHooks/TaskContext";
 
@@ -66,7 +66,8 @@ export function OptaBriefingWidget() {
         }
 
         loadBriefing();
-    }, [tasks]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [tasks.length]);
 
     const getGreeting = () => {
         if (!briefing) return "";

@@ -116,6 +116,7 @@ export function NewsWidget() {
                 <button
                     onClick={loadNews}
                     disabled={loading}
+                    aria-label="Refresh news"
                     className="p-1 text-text-muted hover:text-text-secondary transition-colors"
                 >
                     <RefreshCw className={cn("w-3 h-3", loading && "animate-spin")} />

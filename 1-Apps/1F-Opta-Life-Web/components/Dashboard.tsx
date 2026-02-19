@@ -31,6 +31,8 @@ import { ClawdbotWidget } from "@/components/clawdbot";
 import { motion, Variants, AnimatePresence } from "framer-motion";
 import { MagneticButton } from "@/components/MagneticButton";
 import { SettingsPanel } from "@/components/SettingsPanel";
+import { WidgetErrorBoundary } from "@/components/WidgetErrorBoundary";
+import Image from "next/image";
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -105,10 +107,10 @@ export default function Dashboard({ session }: { session: Session | null }) {
         onClearCompleted={clearCompleted}
       />
 
-      <main className="container mx-auto px-6 py-12 relative z-10">
-        <header className="mb-12 flex justify-between items-end">
+      <main className="container mx-auto px-4 sm:px-6 py-6 sm:py-12 relative z-10">
+        <header className="mb-8 md:mb-12 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
           <div>
-            <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-br from-white to-primary-glow bg-clip-text text-transparent mb-2">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight bg-gradient-to-br from-white to-primary-glow bg-clip-text text-transparent mb-2">
               Opta Life Manager
             </h1>
             <p className="text-text-secondary font-light text-lg">
@@ -137,7 +139,7 @@ export default function Dashboard({ session }: { session: Session | null }) {
                 </div>
                 <div className="w-12 h-12 rounded-full border border-glass-border flex items-center justify-center bg-void/50 backdrop-blur-sm shadow-[0_0_20px_rgba(139,92,246,0.15)] overflow-hidden">
                   {session.user.image ? (
-                    <img src={session.user.image} alt="User" className="w-full h-full object-cover" />
+                    <Image src={session.user.image} alt={session.user.name || "User avatar"} width={48} height={48} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-primary-dim to-void opacity-80" />
                   )}
@@ -201,7 +203,9 @@ export default function Dashboard({ session }: { session: Session | null }) {
                 <h3 className="text-xs font-bold text-text-muted uppercase tracking-[0.15em]">Tasks</h3>
                 <div className="w-2 h-2 rounded-full bg-neon-green animate-pulse" />
               </div>
-              <TodoistWidget />
+              <WidgetErrorBoundary widgetName="Tasks">
+                <TodoistWidget />
+              </WidgetErrorBoundary>
             </motion.div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -217,10 +221,12 @@ export default function Dashboard({ session }: { session: Session | null }) {
                   <h3 className="text-xs font-bold text-text-muted uppercase tracking-[0.15em]">Unified Inbox</h3>
                   <div className="w-2 h-2 rounded-full bg-neon-amber animate-pulse" />
                 </div>
-                <GmailWidget
-                  sessionToken={session?.user?.email ? `opta-${session.user.email}` : undefined}
-                  primaryEmail={session?.user?.email || undefined}
-                />
+                <WidgetErrorBoundary widgetName="Email">
+                  <GmailWidget
+                    sessionToken={session?.user?.email ? `opta-${session.user.email}` : undefined}
+                    primaryEmail={session?.user?.email || undefined}
+                  />
+                </WidgetErrorBoundary>
               </motion.div>
 
               <motion.div
@@ -235,7 +241,9 @@ export default function Dashboard({ session }: { session: Session | null }) {
                   <h3 className="text-xs font-bold text-text-muted uppercase tracking-[0.15em]">Schedule</h3>
                   <div className="w-2 h-2 rounded-full bg-neon-blue animate-pulse" />
                 </div>
-                <CalendarWidget />
+                <WidgetErrorBoundary widgetName="Calendar">
+                  <CalendarWidget />
+                </WidgetErrorBoundary>
               </motion.div>
             </div>
 
@@ -251,7 +259,9 @@ export default function Dashboard({ session }: { session: Session | null }) {
                 <h3 className="text-xs font-bold text-text-muted uppercase tracking-[0.15em]">Opta Briefing</h3>
                 <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
               </div>
-              <OptaBriefingWidget />
+              <WidgetErrorBoundary widgetName="Briefing">
+                <OptaBriefingWidget />
+              </WidgetErrorBoundary>
             </motion.div>
 
             <motion.div variants={itemVariants} className="glass-panel p-4">
@@ -289,7 +299,9 @@ export default function Dashboard({ session }: { session: Session | null }) {
                     <h3 className="text-xs font-bold text-text-muted uppercase tracking-[0.15em]">Clawdbot</h3>
                     <div className="w-2 h-2 rounded-full bg-neon-cyan animate-pulse" />
                   </div>
-                  <ClawdbotWidget />
+                  <WidgetErrorBoundary widgetName="Clawdbot">
+                    <ClawdbotWidget />
+                  </WidgetErrorBoundary>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -306,7 +318,9 @@ export default function Dashboard({ session }: { session: Session | null }) {
                 <h3 className="text-xs font-bold text-text-muted uppercase tracking-[0.15em]">Insights</h3>
                 <div className="w-2 h-2 rounded-full bg-neon-purple animate-pulse" />
               </div>
-              <SmartInsightsWidget />
+              <WidgetErrorBoundary widgetName="Insights">
+                <SmartInsightsWidget />
+              </WidgetErrorBoundary>
             </motion.div>
 
             <motion.div
@@ -321,7 +335,9 @@ export default function Dashboard({ session }: { session: Session | null }) {
                 <h3 className="text-xs font-bold text-text-muted uppercase tracking-[0.15em]">Weather</h3>
                 <div className="w-2 h-2 rounded-full bg-neon-cyan animate-pulse" />
               </div>
-              <WeatherWidget />
+              <WidgetErrorBoundary widgetName="Weather">
+                <WeatherWidget />
+              </WidgetErrorBoundary>
             </motion.div>
 
             <motion.div
@@ -336,7 +352,9 @@ export default function Dashboard({ session }: { session: Session | null }) {
                 <h3 className="text-xs font-bold text-text-muted uppercase tracking-[0.15em]">Tech & AI News</h3>
                 <div className="w-2 h-2 rounded-full bg-neon-amber animate-pulse" />
               </div>
-              <NewsWidget />
+              <WidgetErrorBoundary widgetName="News">
+                <NewsWidget />
+              </WidgetErrorBoundary>
             </motion.div>
           </div>
         </motion.div>
@@ -351,7 +369,8 @@ function ActionButton({ icon, label, onClick }: { icon: React.ReactNode, label: 
       onClick={(e) => {
         if (onClick) onClick();
       }}
-      className="flex flex-col items-center justify-center p-3 rounded-lg bg-white/5 hover:bg-white/10 border border-transparent hover:border-glass-border transition-colors group cursor-none"
+      aria-label={`Navigate to ${label}`}
+      className="flex flex-col items-center justify-center p-3 rounded-lg bg-white/5 hover:bg-white/10 border border-transparent hover:border-glass-border transition-colors group cursor-none focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-1 focus:ring-offset-void"
     >
       <div className="text-primary group-hover:text-primary-glow mb-1 transition-colors">
         {icon}

@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useTransition } from "react";
 import {
-    CheckCircle2,
     Circle,
     AlertCircle,
     Clock,
@@ -221,6 +220,7 @@ export function TodoistWidget() {
                     <button
                         onClick={loadData}
                         disabled={loading}
+                        aria-label="Refresh tasks"
                         className="p-1.5 text-text-muted hover:text-text-secondary transition-colors"
                         title="Refresh"
                     >
@@ -228,6 +228,8 @@ export function TodoistWidget() {
                     </button>
                     <button
                         onClick={() => setIsAdding(!isAdding)}
+                        aria-label={isAdding ? "Cancel adding task" : "Add new task"}
+                        aria-expanded={isAdding}
                         className="p-1.5 text-primary hover:text-primary-glow transition-colors"
                         title="Add Task"
                     >
@@ -334,6 +336,7 @@ function TaskItem({
             <button
                 onClick={onComplete}
                 disabled={isPending}
+                aria-label={`Complete task: ${task.content}`}
                 className={cn(
                     "mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all shrink-0",
                     priorityClass,
