@@ -57,7 +57,13 @@ public final class SecureStorage {
             kSecAttrSynchronizable as String: true
         ]
         let status = SecItemAdd(query as CFDictionary, nil)
-        return status == errSecSuccess
+        if status == errSecSuccess {
+            return true
+        }
+
+        // Some runtimes (like tests/CLI) lack sync entitlement; fallback to local keychain.
+        Self.logger.error("Syncable keychain save failed with status \(status, privacy: .public); falling back to non-sync save")
+        return save(key: key, value: value)
     }
 
     /// Retrieve a string value from Keychain.
@@ -66,6 +72,7 @@ public final class SecureStorage {
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: serviceName,
             kSecAttrAccount as String: key,
+            kSecAttrSynchronizable as String: kSecAttrSynchronizableAny,
             kSecReturnData as String: true,
             kSecMatchLimit as String: kSecMatchLimitOne
         ]
@@ -105,7 +112,8 @@ public final class SecureStorage {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: serviceName,
-            kSecAttrAccount as String: key
+            kSecAttrAccount as String: key,
+            kSecAttrSynchronizable as String: kSecAttrSynchronizableAny
         ]
         
         let status = SecItemDelete(query as CFDictionary)
@@ -117,7 +125,8 @@ public final class SecureStorage {
     public func deleteAll() -> Bool {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: serviceName
+            kSecAttrService as String: serviceName,
+            kSecAttrSynchronizable as String: kSecAttrSynchronizableAny
         ]
         
         let status = SecItemDelete(query as CFDictionary)

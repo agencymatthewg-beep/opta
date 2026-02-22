@@ -21,7 +21,10 @@ public final class BotPairingStore {
     public func saveToken(_ token: PairingToken) {
         guard let data = try? JSONEncoder().encode(token),
               let json = String(data: data, encoding: .utf8) else { return }
-        storage.saveSyncable(key: token.keychainKey, value: json)
+        guard storage.saveSyncable(key: token.keychainKey, value: json) else {
+            Self.logger.error("Failed to persist pairing token for \(token.botId)")
+            return
+        }
         var index = tokenIndex()
         index.insert(token.keychainKey)
         saveTokenIndex(index)

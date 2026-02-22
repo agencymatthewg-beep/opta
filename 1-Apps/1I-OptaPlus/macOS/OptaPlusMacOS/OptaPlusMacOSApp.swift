@@ -319,6 +319,7 @@ final class AppState: ObservableObject {
 
     private let botsKey = "optaplus.bots"
     private let selectedBotKey = "optaplus.selectedBot"
+    private let secureStorage = SecureStorage.shared
 
     init() {
         loadBots()
@@ -397,6 +398,7 @@ final class AppState: ObservableObject {
     func removeBot(id: String) {
         chatViewModels[id]?.disconnect()
         chatViewModels.removeValue(forKey: id)
+        secureStorage.deleteBotToken(botId: id)
         bots.removeAll { $0.id == id }
         
         if selectedBotId == id {
@@ -425,10 +427,10 @@ final class AppState: ObservableObject {
     private func addDefaultBots() {
         let defaults: [BotConfig] = [
             BotConfig(name: "Opta Max", host: "192.168.188.9", port: 18793,
-                      token: "8c081eb5c0769f34ec0fedde6e6ddd5f5299fb946b91b1ed",
+                      token: "",
                       emoji: "🥷🏿", remoteURL: "wss://gateway.optamize.biz"),
             BotConfig(name: "Mono", host: "192.168.188.11", port: 19001,
-                      token: "e5acead966cc3922795eaea658612d9c47e4b7fa87563729",
+                      token: "",
                       emoji: "🟢", remoteURL: "wss://mono.optamize.biz"),
             BotConfig(name: "Opta512", host: "192.168.188.11", port: 19000,
                       token: "", emoji: "🟣",
@@ -450,7 +452,12 @@ final class AppState: ObservableObject {
     // MARK: - Persistence
     
     private func saveBots() {
-        if let data = try? JSONEncoder().encode(bots) {
+        for bot in bots {
+            persistTokenInSecureStorage(bot)
+        }
+
+        let persistedBots = bots.map(\.userDefaultsPersistedCopy)
+        if let data = try? JSONEncoder().encode(persistedBots) {
             UserDefaults.standard.set(data, forKey: botsKey)
         }
     }
@@ -460,7 +467,33 @@ final class AppState: ObservableObject {
               let decoded = try? JSONDecoder().decode([BotConfig].self, from: data) else {
             return
         }
-        bots = decoded
+        migrateLegacyTokensToSecureStorage(from: decoded)
+
+        bots = decoded.map { bot in
+            let secureToken = secureStorage.loadBotToken(botId: bot.id) ?? bot.token
+            return bot.applyingRuntimeToken(secureToken)
+        }
+
+        // Scrub any legacy plaintext tokens left in UserDefaults after migration.
+        if decoded.contains(where: { !$0.token.isEmpty }) {
+            saveBots()
+        }
+    }
+
+    private func persistTokenInSecureStorage(_ bot: BotConfig) {
+        if bot.token.isEmpty {
+            _ = secureStorage.deleteBotToken(botId: bot.id)
+        } else {
+            _ = secureStorage.saveBotToken(bot.token, botId: bot.id)
+        }
+    }
+
+    private func migrateLegacyTokensToSecureStorage(from legacyBots: [BotConfig]) {
+        for bot in legacyBots where !bot.token.isEmpty {
+            if secureStorage.loadBotToken(botId: bot.id) == nil {
+                _ = secureStorage.saveBotToken(bot.token, botId: bot.id)
+            }
+        }
     }
 
     // MARK: - Connected Bot Count

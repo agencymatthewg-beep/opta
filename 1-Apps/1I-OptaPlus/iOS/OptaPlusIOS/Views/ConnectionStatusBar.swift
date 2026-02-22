@@ -44,7 +44,7 @@ struct ConnectionStatusBar: View {
                 // Action button
                 if viewModel.connectionState == .disconnected {
                     Button("Retry") {
-                        HapticManager.shared.light()
+                        HapticManager.shared.impact(.light)
                         viewModel.connect()
                     }
                     .font(.system(size: 11, weight: .semibold))
@@ -75,6 +75,10 @@ struct ConnectionStatusBar: View {
             ProgressView()
                 .scaleEffect(0.7)
                 .tint(.white)
+        case .reconnecting:
+            ProgressView()
+                .scaleEffect(0.7)
+                .tint(.white)
         case .disconnected:
             Image(systemName: "wifi.slash")
                 .font(.system(size: 14, weight: .medium))
@@ -91,6 +95,7 @@ struct ConnectionStatusBar: View {
     private var statusTitle: String {
         switch viewModel.connectionState {
         case .connecting: "Connecting..."
+        case .reconnecting: "Reconnecting..."
         case .disconnected: "Disconnected"
         case .connected: "Connected"
         }
@@ -100,6 +105,11 @@ struct ConnectionStatusBar: View {
         switch viewModel.connectionState {
         case .connecting:
             return "Establishing connection"
+        case .reconnecting:
+            if let countdown = viewModel.reconnectCountdown {
+                return "Retrying in \(countdown)s"
+            }
+            return "Re-establishing connection"
         case .disconnected:
             if let countdown = viewModel.reconnectCountdown {
                 return "Retrying in \(countdown)s"
@@ -116,6 +126,8 @@ struct ConnectionStatusBar: View {
         Group {
             switch viewModel.connectionState {
             case .connecting:
+                Color(hex: "#F59E0B").opacity(0.15)
+            case .reconnecting:
                 Color(hex: "#F59E0B").opacity(0.15)
             case .disconnected:
                 Color(hex: "#EF4444").opacity(0.15)
@@ -144,7 +156,7 @@ struct ConnectionDot: View {
                     .opacity(isPulsing ? 0 : 1)
             )
             .onAppear {
-                if state == .connecting {
+                if state == .connecting || state == .reconnecting {
                     withAnimation(.easeInOut(duration: 1.0).repeatForever(autoreverses: false)) {
                         isPulsing = true
                     }
@@ -152,7 +164,7 @@ struct ConnectionDot: View {
             }
             .onChange(of: state) { _, newState in
                 isPulsing = false
-                if newState == .connecting {
+                if newState == .connecting || newState == .reconnecting {
                     withAnimation(.easeInOut(duration: 1.0).repeatForever(autoreverses: false)) {
                         isPulsing = true
                     }
@@ -164,6 +176,7 @@ struct ConnectionDot: View {
         switch state {
         case .connected: Color(hex: "#22C55E")
         case .connecting: Color(hex: "#F59E0B")
+        case .reconnecting: Color(hex: "#F59E0B")
         case .disconnected: Color(hex: "#EF4444")
         }
     }
@@ -198,7 +211,7 @@ struct GlobalConnectionOverlay: View {
                     Spacer()
                     
                     Button("Reconnect All") {
-                        HapticManager.shared.medium()
+                        HapticManager.shared.impact(.medium)
                         for bot in disconnectedBots {
                             appState.viewModel(for: bot).connect()
                         }

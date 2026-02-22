@@ -481,8 +481,9 @@ extension MarkdownContent {
             blocks.append(.paragraph(currentParagraph.joined(separator: "\n")))
         }
 
-        // Handle empty content
-        if blocks.isEmpty && !content.isEmpty {
+        // Handle truly non-empty content that produced no blocks.
+        // Whitespace-only input should remain empty.
+        if blocks.isEmpty && !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             blocks.append(.paragraph(content))
         }
 
@@ -592,8 +593,8 @@ extension MarkdownContent {
 
     /// Check if a line is a bullet list item (supports nesting with indentation)
     func isBulletLine(_ line: String) -> Bool {
-        let trimmed = line.trimmingCharacters(in: .init(charactersIn: " "))
-        return trimmed.hasPrefix("- ") || trimmed.hasPrefix("* ") || trimmed.hasPrefix("+ ")
+        let leadingTrimmed = String(line.drop(while: { $0 == " " }))
+        return leadingTrimmed.hasPrefix("- ") || leadingTrimmed.hasPrefix("* ") || leadingTrimmed.hasPrefix("+ ")
     }
 
     /// Check if a line is a numbered list item (e.g., "1. ", "2. ")
@@ -608,15 +609,15 @@ extension MarkdownContent {
 
     /// Extract content after bullet marker
     func extractBulletContent(_ line: String) -> String {
-        let trimmed = line.trimmingCharacters(in: .init(charactersIn: " "))
-        if trimmed.hasPrefix("- ") {
-            return String(trimmed.dropFirst(2))
-        } else if trimmed.hasPrefix("* ") {
-            return String(trimmed.dropFirst(2))
-        } else if trimmed.hasPrefix("+ ") {
-            return String(trimmed.dropFirst(2))
+        let leadingTrimmed = String(line.drop(while: { $0 == " " }))
+        if leadingTrimmed.hasPrefix("- ") {
+            return String(leadingTrimmed.dropFirst(2)).trimmingCharacters(in: .whitespaces)
+        } else if leadingTrimmed.hasPrefix("* ") {
+            return String(leadingTrimmed.dropFirst(2)).trimmingCharacters(in: .whitespaces)
+        } else if leadingTrimmed.hasPrefix("+ ") {
+            return String(leadingTrimmed.dropFirst(2)).trimmingCharacters(in: .whitespaces)
         }
-        return trimmed
+        return leadingTrimmed.trimmingCharacters(in: .whitespaces)
     }
 
     /// Get indent level of a bullet line (number of leading spaces / 2)
@@ -1018,8 +1019,11 @@ extension MarkdownContent {
         while i < result.endIndex {
             let char = result[i]
             if char == "[" {
-                openBrackets += 1
-                lastOpenIndex = i
+                let isEscaped = i > result.startIndex && result[result.index(before: i)] == "\\"
+                if !isEscaped {
+                    openBrackets += 1
+                    lastOpenIndex = i
+                }
             } else if char == "]" {
                 if openBrackets > 0 {
                     openBrackets -= 1
@@ -1039,7 +1043,9 @@ extension MarkdownContent {
                         if !foundClose {
                             // Incomplete link - escape the opening bracket
                             if let openIdx = lastOpenIndex {
-                                result.insert(contentsOf: "\\", at: openIdx)
+                                if openIdx == result.startIndex || result[result.index(before: openIdx)] != "\\" {
+                                    result.insert(contentsOf: "\\", at: openIdx)
+                                }
                                 // Reset iteration
                                 i = result.startIndex
                                 openBrackets = 0

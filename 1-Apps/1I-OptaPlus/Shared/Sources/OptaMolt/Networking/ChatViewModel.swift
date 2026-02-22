@@ -92,6 +92,18 @@ public struct BotConfig: Identifiable, Codable, Sendable, Hashable {
         self.connectionMode = connectionMode
     }
 
+    /// Copy used for UserDefaults persistence where token must not be stored.
+    public var userDefaultsPersistedCopy: BotConfig {
+        applyingRuntimeToken("")
+    }
+
+    /// Copy with runtime token applied after loading metadata from persistence.
+    public func applyingRuntimeToken(_ token: String?) -> BotConfig {
+        var copy = self
+        copy.token = token ?? ""
+        return copy
+    }
+
     // Codable migration: handle missing remoteURL/connectionMode from old configs
     enum CodingKeys: String, CodingKey {
         case id, name, host, port, token, emoji, sessions, remoteURL, connectionMode

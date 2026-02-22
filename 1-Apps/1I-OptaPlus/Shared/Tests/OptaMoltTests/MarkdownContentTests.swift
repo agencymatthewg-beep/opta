@@ -214,6 +214,17 @@ final class MarkdownContentTests: XCTestCase {
         XCTAssertNotNil(view.body)
     }
 
+    func testIncompleteLinkEscapedOnceAndStable() {
+        let content = "Click [here](http://example"
+        let view = MarkdownContent(content: content)
+
+        let once = view.handleIncompleteLinks(content)
+        let twice = view.handleIncompleteLinks(once)
+
+        XCTAssertEqual(once, "Click \\[here](http://example")
+        XCTAssertEqual(twice, once)
+    }
+
     func testIncompleteInlineCodeDoesNotCrash() {
         // Unclosed backtick should render gracefully
         let content = "Use `incomplete code"

@@ -42,6 +42,7 @@
 		MD000001AAAA000900000001 /* ConversationBranchingModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = MD000002AAAA000900000001 /* ConversationBranchingModule.swift */; };
 		MD000001AAAA001000000001 /* SoundscapeModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = MD000002AAAA001000000001 /* SoundscapeModule.swift */; };
 		MD000001AAAA001100000001 /* WidgetModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = MD000002AAAA001100000001 /* WidgetModule.swift */; };
+		CT000001EEEE000100000001 /* OptaPlusMacOSTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CT000002EEEE000100000001 /* OptaPlusMacOSTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -81,6 +82,8 @@
 		MD000002AAAA000900000001 /* ConversationBranchingModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationBranchingModule.swift; sourceTree = "<group>"; };
 		MD000002AAAA001000000001 /* SoundscapeModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundscapeModule.swift; sourceTree = "<group>"; };
 		MD000002AAAA001100000001 /* WidgetModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetModule.swift; sourceTree = "<group>"; };
+		CT000002EEEE000100000001 /* OptaPlusMacOSTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptaPlusMacOSTests.swift; sourceTree = "<group>"; };
+		CT000003EEEE000100000001 /* OptaPlusMacOSTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = OptaPlusMacOSTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -100,6 +103,7 @@
 			isa = PBXGroup;
 			children = (
 				CD00000EBBBB000100000001 /* OptaPlusMacOS */,
+				CT000004EEEE000100000001 /* OptaPlusMacOSTests */,
 				CD00000FBBBB000100000001 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -154,10 +158,19 @@
 			path = Modules;
 			sourceTree = "<group>";
 		};
+		CT000004EEEE000100000001 /* OptaPlusMacOSTests */ = {
+			isa = PBXGroup;
+			children = (
+				CT000002EEEE000100000001 /* OptaPlusMacOSTests.swift */,
+			);
+			path = OptaPlusMacOSTests;
+			sourceTree = "<group>";
+		};
 		CD00000FBBBB000100000001 /* Products */ = {
 			isa = PBXGroup;
 			children = (
 				CD000009BBBB000100000001 /* OptaPlusMacOS.app */,
+				CT000003EEEE000100000001 /* OptaPlusMacOSTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -186,6 +199,23 @@
 			productReference = CD000009BBBB000100000001 /* OptaPlusMacOS.app */;
 			productType = "com.apple.product-type.application";
 		};
+		CT000005EEEE000100000001 /* OptaPlusMacOSTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CT000009EEEE000100000001 /* Build configuration list for PBXNativeTarget "OptaPlusMacOSTests" */;
+			buildPhases = (
+				CT000006EEEE000100000001 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = OptaPlusMacOSTests;
+			packageProductDependencies = (
+			);
+			productName = OptaPlusMacOSTests;
+			productReference = CT000003EEEE000100000001 /* OptaPlusMacOSTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -197,6 +227,9 @@
 				LastUpgradeCheck = 1500;
 				TargetAttributes = {
 					CD000010BBBB000100000001 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+					CT000005EEEE000100000001 = {
 						CreatedOnToolsVersion = 15.0;
 					};
 				};
@@ -218,6 +251,7 @@
 			projectRoot = "";
 			targets = (
 				CD000010BBBB000100000001 /* OptaPlusMacOS */,
+				CT000005EEEE000100000001 /* OptaPlusMacOSTests */,
 			);
 		};
 /* End PBXProject section */
@@ -270,6 +304,14 @@
 				MD000001AAAA000900000001 /* ConversationBranchingModule.swift in Sources */,
 				MD000001AAAA001000000001 /* SoundscapeModule.swift in Sources */,
 				MD000001AAAA001100000001 /* WidgetModule.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CT000006EEEE000100000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CT000001EEEE000100000001 /* OptaPlusMacOSTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -456,6 +498,38 @@
 			};
 			name = Release;
 		};
+		CT000007EEEE000100000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.optamolt.macos.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		CT000008EEEE000100000001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.optamolt.macos.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -473,6 +547,15 @@
 			buildConfigurations = (
 				CD000016BBBB000200000001 /* Debug */,
 				CD000017BBBB000200000001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		CT000009EEEE000100000001 /* Build configuration list for PBXNativeTarget "OptaPlusMacOSTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CT000007EEEE000100000001 /* Debug */,
+				CT000008EEEE000100000001 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

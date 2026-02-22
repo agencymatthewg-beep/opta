@@ -187,8 +187,8 @@ final class AppState: ObservableObject {
 
     private func addDefaultBots() {
         let defaults: [(name: String, host: String, port: Int, token: String, emoji: String, remote: String)] = [
-            ("Opta Max", "192.168.188.9", 18793, "8c081eb5c0769f34ec0fedde6e6ddd5f5299fb946b91b1ed", "🥷🏿", "wss://gateway.optamize.biz"),
-            ("Mono", "192.168.188.11", 19001, "e5acead966cc3922795eaea658612d9c47e4b7fa87563729", "🟢", "wss://mono.optamize.biz"),
+            ("Opta Max", "192.168.188.9", 18793, "", "🥷🏿", "wss://gateway.optamize.biz"),
+            ("Mono", "192.168.188.11", 19001, "", "🟢", "wss://mono.optamize.biz"),
             ("Opta512", "192.168.188.11", 19000, "", "🟣", "wss://opta512.optamize.biz"),
             ("Floda", "192.168.188.11", 19002, "", "🧪", "wss://floda.optamize.biz"),
             ("Saturday", "192.168.188.11", 19003, "", "🔵", "wss://saturday.optamize.biz"),
@@ -229,6 +229,7 @@ final class AppState: ObservableObject {
               let legacyBots = try? JSONDecoder().decode([BotConfig].self, from: data),
               !legacyBots.isEmpty else {
             UserDefaults.standard.set(true, forKey: migrationKey)
+            UserDefaults.standard.removeObject(forKey: legacyBotsKey)
             return
         }
         let deviceId = DeviceIdentity.current.deviceId
@@ -256,6 +257,7 @@ final class AppState: ObservableObject {
             }
         }
         UserDefaults.standard.set(true, forKey: migrationKey)
+        UserDefaults.standard.removeObject(forKey: legacyBotsKey)
     }
 
     // MARK: - Reload
