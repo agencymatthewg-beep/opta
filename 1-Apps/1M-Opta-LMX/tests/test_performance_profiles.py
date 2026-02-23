@@ -446,3 +446,33 @@ class TestBackendPolicyFallback:
             "mlx-lm",
             "gguf",
         ]
+
+
+class TestMLXLMFallback:
+    @pytest.mark.asyncio
+    async def test_mlx_lm_fallback_selected_when_vllm_probe_failed(self) -> None:
+        monitor = MemoryMonitor(max_percent=90)
+        engine = InferenceEngine(memory_monitor=monitor, use_batching=False, warmup_on_load=False)
+        engine._compatibility.record(
+            model_id="test/model",
+            backend="vllm-mlx",
+            backend_version_value="0.2.6",
+            outcome="fail",
+            reason="probe_failed",
+        )
+        create_engine = AsyncMock(return_value=MagicMock())
+        engine._create_engine = create_engine  # type: ignore[assignment]
+
+        mock_backend = MagicMock()
+        mock_backend.generate = AsyncMock(return_value=("ok", 2, 1))
+        mock_backend.stream = AsyncMock()
+
+        with patch(
+            "opta_lmx.inference.engine.MLXLMBackend",
+            return_value=mock_backend,
+        ) as backend_cls:
+            info = await engine.load_model("test/model")
+
+        assert info.loaded is True
+        backend_cls.assert_called_once_with(model_id="test/model")
+        create_engine.assert_not_awaited()

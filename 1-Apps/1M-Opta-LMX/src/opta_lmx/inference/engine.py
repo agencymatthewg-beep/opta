@@ -16,6 +16,7 @@ from typing import Any, cast
 
 from opta_lmx.inference.context import estimate_prompt_tokens, fit_to_context
 from opta_lmx.inference.backend_policy import backend_candidates
+from opta_lmx.inference.mlx_lm_backend import MLXLMBackend
 from opta_lmx.inference.predictor import UsagePredictor
 from opta_lmx.inference.schema import (
     ChatCompletionResponse,
@@ -580,6 +581,7 @@ class InferenceEngine:
             allow_failed=allow_unsupported_runtime,
         )
         selected_backend = candidate_backends[0] if candidate_backends else "vllm-mlx"
+        runtime_backend = "mlx" if selected_backend in {"vllm-mlx", "mlx-lm"} else selected_backend
         runtime_issue = (
             _detect_runtime_incompatibility(model_id)
             if fmt == "mlx" and selected_backend == "vllm-mlx"
@@ -609,7 +611,7 @@ class InferenceEngine:
                 self._compatibility.record(
                     model_id=model_id,
                     backend=selected_backend,
-                    backend_version_value=backend_version("mlx"),
+                    backend_version_value=backend_version(runtime_backend),
                     outcome="fail",
                     reason=f"runtime_incompatible:{runtime_issue.get('matched_signature')}",
                     metadata={"runtime_versions": runtime_versions},
@@ -669,7 +671,7 @@ class InferenceEngine:
                 self._compatibility.record(
                     model_id=model_id,
                     backend=selected_backend,
-                    backend_version_value=backend_version("mlx"),
+                    backend_version_value=backend_version(runtime_backend),
                     outcome="fail",
                     reason=failure_reason,
                     metadata={
@@ -698,7 +700,10 @@ class InferenceEngine:
         engine: Any = None
 
         try:
-            if fmt == "gguf":
+            if selected_backend == "mlx-lm":
+                backend_instance = MLXLMBackend(model_id=model_id)
+                engine = None
+            elif fmt == "gguf":
                 if spec_requested and spec_require_supported:
                     raise RuntimeError(
                         "Speculative decoding is not supported for GGUF models in Opta-LMX. "
@@ -835,8 +840,8 @@ class InferenceEngine:
             self._readiness.set_state(model_id, "routable")
             self._compatibility.record(
                 model_id=model_id,
-                backend=detect_backend_type(model_id),
-                backend_version_value=backend_version(detect_backend_type(model_id)),
+                backend=selected_backend,
+                backend_version_value=backend_version(runtime_backend),
                 outcome="pass",
                 reason="canary_ok",
             )
@@ -850,8 +855,8 @@ class InferenceEngine:
             )
             self._compatibility.record(
                 model_id=model_id,
-                backend=detect_backend_type(model_id),
-                backend_version_value=backend_version(detect_backend_type(model_id)),
+                backend=selected_backend,
+                backend_version_value=backend_version(runtime_backend),
                 outcome="fail",
                 reason=f"canary_failed:{e}",
             )
