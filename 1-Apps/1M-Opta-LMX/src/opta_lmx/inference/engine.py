@@ -18,6 +18,7 @@ from opta_lmx.inference.context import estimate_prompt_tokens, fit_to_context
 from opta_lmx.inference.backend_policy import backend_candidates
 from opta_lmx.inference.mlx_lm_backend import MLXLMBackend
 from opta_lmx.inference.predictor import UsagePredictor
+from opta_lmx.inference.gguf_resolver import resolve_local_gguf_equivalents
 from opta_lmx.inference.schema import (
     ChatCompletionResponse,
     ChatMessage,
@@ -581,6 +582,17 @@ class InferenceEngine:
             allow_failed=allow_unsupported_runtime,
         )
         selected_backend = candidate_backends[0] if candidate_backends else "vllm-mlx"
+        gguf_model_path: str | None = None
+        if selected_backend == "gguf" and fmt != "gguf":
+            if not self._gguf_fallback_enabled:
+                raise RuntimeError("gguf_fallback_disabled")
+            gguf_candidates = resolve_local_gguf_equivalents(model_id)
+            if not gguf_candidates:
+                raise RuntimeError(
+                    f"No local GGUF equivalent found for model '{model_id}' while GGUF fallback is enabled.",
+                )
+            gguf_model_path = gguf_candidates[0]
+            fmt = "gguf"
         runtime_backend = "mlx" if selected_backend in {"vllm-mlx", "mlx-lm"} else selected_backend
         runtime_issue = (
             _detect_runtime_incompatibility(model_id)
@@ -721,7 +733,7 @@ class InferenceEngine:
                 from opta_lmx.inference.gguf_backend import GGUFBackend
 
                 backend_instance = GGUFBackend(
-                    model_path=model_id,
+                    model_path=gguf_model_path or model_id,
                     n_ctx=self._gguf_context_length,
                     n_gpu_layers=self._gguf_gpu_layers,
                 )
