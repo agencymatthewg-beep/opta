@@ -120,6 +120,82 @@ class CompatibilityRegistry:
         })
         self._save(rows)
 
+    def list_records(
+        self,
+        *,
+        model_id: str | None = None,
+        backend: str | None = None,
+        outcome: str | None = None,
+        since_ts: float | None = None,
+        limit: int = 200,
+    ) -> list[dict[str, Any]]:
+        """Return newest compatibility rows with optional filters."""
+        rows = self._load()
+        filtered: list[dict[str, Any]] = []
+
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            if model_id is not None and row.get("model_id") != model_id:
+                continue
+            if backend is not None and row.get("backend") != backend:
+                continue
+            if outcome is not None and row.get("outcome") != outcome:
+                continue
+            ts_raw = row.get("ts")
+            try:
+                ts_value = float(ts_raw) if ts_raw is not None else 0.0
+            except (TypeError, ValueError):
+                ts_value = 0.0
+            if since_ts is not None and ts_value < since_ts:
+                continue
+            filtered.append(row)
+
+        filtered.sort(key=lambda row: float(row.get("ts", 0.0)), reverse=True)
+        return filtered[: max(0, limit)]
+
+    def latest_record(
+        self,
+        model_id: str,
+        *,
+        backend: str | None = None,
+    ) -> dict[str, Any] | None:
+        """Return newest compatibility row for model (+ optional backend)."""
+        rows = self.list_records(model_id=model_id, backend=backend, limit=1)
+        return rows[0] if rows else None
+
+    def summary_by_model(self) -> dict[str, dict[str, Any]]:
+        """Aggregate totals and outcomes grouped by model id."""
+        rows = self._load()
+        summary: dict[str, dict[str, Any]] = {}
+
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            model_id = row.get("model_id")
+            if not isinstance(model_id, str) or not model_id:
+                continue
+            item = summary.setdefault(model_id, {
+                "total": 0,
+                "pass": 0,
+                "fail": 0,
+                "latest_ts": 0.0,
+            })
+            item["total"] = int(item["total"]) + 1
+            outcome = row.get("outcome")
+            if outcome == "pass":
+                item["pass"] = int(item["pass"]) + 1
+            elif outcome == "fail":
+                item["fail"] = int(item["fail"]) + 1
+            try:
+                ts_value = float(row.get("ts", 0.0))
+            except (TypeError, ValueError):
+                ts_value = 0.0
+            if ts_value > float(item["latest_ts"]):
+                item["latest_ts"] = ts_value
+
+        return summary
+
 
 class ReadinessTracker:
     """Tracks model readiness and crash-loop quarantine state."""
