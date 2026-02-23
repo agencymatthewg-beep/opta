@@ -226,6 +226,13 @@ class AdminLoadRequest(BaseModel):
             "0 means never auto-evict."
         ),
     )
+    allow_unsupported_runtime: bool = Field(
+        False,
+        description=(
+            "Override known runtime/backend compatibility blocklists. "
+            "Use only for manual recovery testing; may be unstable."
+        ),
+    )
 
 
 class AdminLoadResponse(BaseModel):

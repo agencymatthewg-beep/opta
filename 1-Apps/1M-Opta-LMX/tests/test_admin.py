@@ -2,13 +2,17 @@
 
 from __future__ import annotations
 
+import inspect
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from httpx import AsyncClient
 
 from opta_lmx import __version__
-from opta_lmx.inference.engine import LoadedModel
+from opta_lmx.inference.engine import LoadedModel, ModelRuntimeCompatibilityError
+from opta_lmx.inference.schema import AdminLoadRequest
+from opta_lmx.model_safety import ErrorCodes
 
 # ─── Helper ──────────────────────────────────────────────────────────────
 
@@ -123,6 +127,17 @@ class TestAdminMemory:
 
 class TestAdminLoad:
     """Tests for POST /admin/models/load."""
+
+    def test_admin_load_request_declares_allow_unsupported_runtime_once(self) -> None:
+        """Schema class should not duplicate allow_unsupported_runtime declarations."""
+        source = inspect.getsource(AdminLoadRequest)
+        assert source.count("allow_unsupported_runtime") == 1
+
+    def test_loader_error_codes_are_defined(self) -> None:
+        """Loader timeout/crash/probe codes should be exposed for deterministic API mapping."""
+        assert ErrorCodes.MODEL_LOAD_TIMEOUT == "model_load_timeout"
+        assert ErrorCodes.MODEL_LOADER_CRASHED == "model_loader_crashed"
+        assert ErrorCodes.MODEL_PROBE_FAILED == "model_probe_failed"
 
     @pytest.mark.asyncio
     async def test_load_model_on_disk(self, client: AsyncClient) -> None:
