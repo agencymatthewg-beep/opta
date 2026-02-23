@@ -9,6 +9,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from opta_lmx.inference.backend_policy import backend_candidates
+from opta_lmx.inference.autotune_registry import AutotuneRegistry
 from opta_lmx.inference.schema import ChatMessage
 from opta_lmx.inference.engine import InferenceEngine
 from opta_lmx.inference.types import LoadedModel
@@ -476,3 +477,32 @@ class TestMLXLMFallback:
         assert info.loaded is True
         backend_cls.assert_called_once_with(model_id="test/model")
         create_engine.assert_not_awaited()
+
+
+class TestAutotuneRegistry:
+    def test_autotune_registry_persistence_roundtrip(self, tmp_path) -> None:
+        registry = AutotuneRegistry(path=tmp_path / "autotune-registry.json")
+        registry.save_best(
+            model_id="test/model",
+            backend="vllm-mlx",
+            backend_version="0.2.6",
+            profile={"use_batching": True, "kv_bits": 8},
+            metrics={
+                "avg_tokens_per_second": 120.0,
+                "avg_ttft_ms": 450.0,
+                "avg_total_ms": 1400.0,
+                "error_rate": 0.0,
+                "queue_wait_ms": 30.0,
+            },
+            score=113.25,
+        )
+
+        loaded = AutotuneRegistry(path=tmp_path / "autotune-registry.json")
+        record = loaded.get_best(
+            model_id="test/model",
+            backend="vllm-mlx",
+            backend_version="0.2.6",
+        )
+        assert record is not None
+        assert record["profile"]["kv_bits"] == 8
+        assert record["metrics"]["avg_tokens_per_second"] == 120.0

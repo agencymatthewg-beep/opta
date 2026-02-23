@@ -176,3 +176,14 @@ class BenchmarkStore:
             self._suites.append(suite)
 
         return len(self._suites)
+
+
+def benchmark_summary_to_autotune_metrics(summary: dict[str, Any]) -> dict[str, float]:
+    """Normalize benchmark summary fields into autotune scoring metrics."""
+    return {
+        "avg_tokens_per_second": float(summary.get("avg_tokens_per_second", 0.0) or 0.0),
+        "avg_ttft_ms": float(summary.get("avg_ttft_ms", 0.0) or 0.0),
+        "avg_total_ms": float(summary.get("avg_total_time_ms", 0.0) or 0.0),
+        "error_rate": float(summary.get("error_rate", 0.0) or 0.0),
+        "queue_wait_ms": float(summary.get("queue_wait_ms", 0.0) or 0.0),
+    }
