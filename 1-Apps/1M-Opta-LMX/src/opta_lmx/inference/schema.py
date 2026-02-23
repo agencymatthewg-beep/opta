@@ -273,6 +273,22 @@ class AdminProbeResponse(BaseModel):
     candidates: list[AdminProbeCandidate] = Field(default_factory=list)
 
 
+class AdminCompatibilityRecord(BaseModel):
+    ts: float
+    model_id: str
+    backend: str
+    backend_version: str | None = None
+    outcome: str
+    reason: str | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class AdminCompatibilityResponse(BaseModel):
+    total: int
+    rows: list[AdminCompatibilityRecord] = Field(default_factory=list)
+    summary: dict[str, dict[str, Any]] | None = None
+
+
 class AdminUnloadRequest(BaseModel):
     """Request to unload a model."""
 

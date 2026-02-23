@@ -365,6 +365,75 @@ class TestAdminProbe:
         assert kwargs["allow_unsupported_runtime"] is True
 
 
+class TestAdminCompatibility:
+    @pytest.mark.asyncio
+    async def test_admin_models_compatibility_returns_filtered_rows(
+        self,
+        client: AsyncClient,
+        tmp_path,
+    ) -> None:
+        app = client._transport.app  # type: ignore[union-attr]
+        registry = CompatibilityRegistry(path=tmp_path / "compat-admin.json")
+        registry.record(
+            model_id="test/model",
+            backend="vllm-mlx",
+            backend_version_value="0.2.6",
+            outcome="fail",
+            reason="loader_crash",
+        )
+        registry.record(
+            model_id="other/model",
+            backend="vllm-mlx",
+            backend_version_value="0.2.6",
+            outcome="pass",
+            reason="ok",
+        )
+        app.state.engine._compatibility = registry
+
+        response = await client.get(
+            "/admin/models/compatibility",
+            params={"model_id": "test/model", "backend": "vllm-mlx", "outcome": "fail"},
+        )
+        assert response.status_code == 200
+        body = response.json()
+        assert body["total"] == 1
+        assert body["rows"][0]["model_id"] == "test/model"
+        assert body["rows"][0]["outcome"] == "fail"
+
+    @pytest.mark.asyncio
+    async def test_admin_models_compatibility_supports_since_and_limit(
+        self,
+        client: AsyncClient,
+        tmp_path,
+    ) -> None:
+        app = client._transport.app  # type: ignore[union-attr]
+        registry = CompatibilityRegistry(path=tmp_path / "compat-admin.json")
+        registry.record(
+            model_id="test/model",
+            backend="vllm-mlx",
+            backend_version_value="0.2.6",
+            outcome="pass",
+            reason="ok",
+        )
+        registry.record(
+            model_id="test/model",
+            backend="mlx-lm",
+            backend_version_value="0.30.7",
+            outcome="unknown",
+            reason="not_probed",
+        )
+        app.state.engine._compatibility = registry
+
+        response = await client.get(
+            "/admin/models/compatibility",
+            params={"model_id": "test/model", "since_ts": 0, "limit": 1},
+        )
+        assert response.status_code == 200
+        body = response.json()
+        assert body["total"] == 1
+        assert len(body["rows"]) == 1
+
+
 class TestAdminUnload:
     """Tests for POST /admin/models/unload."""
 

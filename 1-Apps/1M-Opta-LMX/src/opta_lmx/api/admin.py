@@ -55,6 +55,7 @@ from opta_lmx.inference.schema import (
     AdminModelDetail,
     AdminModelPerformanceResponse,
     AdminModelsResponse,
+    AdminCompatibilityResponse,
     AdminProbeRequest,
     AdminProbeResponse,
     AdminStatusResponse,
@@ -607,6 +608,39 @@ async def probe_model(
         return internal_error(str(exc))
 
     return AdminProbeResponse.model_validate(result)
+
+
+@router.get(
+    "/admin/models/compatibility",
+    response_model=AdminCompatibilityResponse,
+    responses={403: {"model": ErrorResponse}},
+)
+async def list_model_compatibility(
+    _auth: AdminAuth,
+    engine: Engine,
+    model_id: str | None = None,
+    backend: str | None = None,
+    outcome: str | None = None,
+    since_ts: float | None = None,
+    limit: int = 200,
+    include_summary: bool = False,
+) -> AdminCompatibilityResponse:
+    """List compatibility registry rows with optional filtering."""
+    bounded_limit = max(1, min(limit, 2000))
+    rows = engine._compatibility.list_records(
+        model_id=model_id,
+        backend=backend,
+        outcome=outcome,
+        since_ts=since_ts,
+        limit=bounded_limit,
+    )
+    payload: dict[str, Any] = {
+        "total": len(rows),
+        "rows": rows,
+    }
+    if include_summary:
+        payload["summary"] = engine._compatibility.summary_by_model()
+    return AdminCompatibilityResponse.model_validate(payload)
 
 
 @router.post(
