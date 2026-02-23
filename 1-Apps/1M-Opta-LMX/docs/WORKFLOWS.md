@@ -1,7 +1,7 @@
 ---
 title: WORKFLOWS.md — Development & Deployment Workflows
 created: 2026-02-15
-updated: 2026-02-15
+updated: 2026-02-22
 type: operations
 audience: Developers, deployers, operators
 status: Active
@@ -18,7 +18,7 @@ This document outlines step-by-step procedures for common tasks during developme
 **Goal:** Set up a development environment on your machine to work on LMX code.
 
 **Time:** ~15 minutes  
-**Tools needed:** Terminal, Python 3.11+, git
+**Tools needed:** Terminal, Python 3.12+, git
 
 ### Steps
 
@@ -29,7 +29,7 @@ This document outlines step-by-step procedures for common tasks during developme
 
 2. **Create virtual environment**
    ```bash
-   python3.11 -m venv .venv
+   python3.12 -m venv .venv
    source .venv/bin/activate
    ```
 
@@ -50,7 +50,7 @@ This document outlines step-by-step procedures for common tasks during developme
 
 ### Troubleshooting
 - **MLX not found** — Make sure you're on macOS with Apple Silicon (M3 Ultra or M4)
-- **Python version mismatch** — Use `python3.11` explicitly, not `python3`
+- **Python version mismatch** — Use `python3.12` explicitly, not `python3`
 - **Test failures** — Check that you have at least one MLX model downloaded
 
 ---
@@ -336,7 +336,7 @@ llama2-7b:
        <string>com.opta.lmx</string>
        <key>ProgramArguments</key>
        <array>
-           <string>/usr/local/bin/python3.11</string>
+           <string>/usr/local/bin/python3.12</string>
            <string>-m</string>
            <string>uvicorn</string>
            <string>src.opta_lmx.main:app</string>
@@ -641,6 +641,169 @@ Load Test Results (10 concurrent requests):
    git add pyproject.toml
    git commit -m "chore: upgrade mlx to 0.14.0"
    ```
+
+---
+
+## Workflow 10: Operate & Test Multi-Agent + Skills-Native
+
+**Goal:** Validate end-to-end agent run lifecycle, skills execution, and MCP bridge behavior.
+
+**Time:** ~15-20 minutes  
+**Prerequisites:** Server dependencies installed, at least one model loaded
+
+### Steps
+
+1. **Start the API server**
+   ```bash
+   uvicorn src.opta_lmx.main:app --host 127.0.0.1 --port 1234
+   ```
+
+2. **Verify skills registry and MCP bridge surface**
+   ```bash
+   curl -s http://127.0.0.1:1234/v1/skills | jq .
+   curl -s http://127.0.0.1:1234/v1/skills/mcp/tools | jq .
+   ```
+
+3. **Execute a known skill through native endpoint**
+   ```bash
+   curl -s -X POST http://127.0.0.1:1234/v1/skills/add/execute \
+     -H "Content-Type: application/json" \
+     -d '{"arguments":{"left":2,"right":5}}' | jq .
+   ```
+
+4. **Execute the same capability through MCP-style adapter**
+   ```bash
+   curl -s -X POST http://127.0.0.1:1234/v1/skills/mcp/call \
+     -H "Content-Type: application/json" \
+     -d '{"name":"add","arguments":{"left":2,"right":5}}' | jq .
+   ```
+
+5. **Create a strategy-native agent run**
+   ```bash
+   RUN_ID=$(curl -s -X POST http://127.0.0.1:1234/v1/agents/runs \
+     -H "Content-Type: application/json" \
+     -H "x-priority: interactive" \
+     -H "traceparent: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01" \
+     -d '{
+       "request":{
+         "strategy":"parallel_map",
+         "prompt":"Summarize release risks",
+         "roles":["researcher","reviewer"],
+         "model":"auto",
+         "max_parallelism":2,
+         "timeout_sec":90
+       },
+       "metadata":{"source":"workflow-10"}
+     }' | jq -r '.id')
+
+   echo "$RUN_ID"
+   ```
+
+6. **Poll run status to completion**
+   ```bash
+   curl -s "http://127.0.0.1:1234/v1/agents/runs/$RUN_ID" | jq .
+   curl -s "http://127.0.0.1:1234/v1/agents/runs?limit=20&status=completed" | jq .
+   ```
+
+7. **Validate cancellation path**
+   ```bash
+   SLOW_RUN_ID=$(curl -s -X POST http://127.0.0.1:1234/v1/agents/runs \
+     -H "Content-Type: application/json" \
+     -d '{
+       "agent":"default",
+       "input":{
+         "strategy":"handoff",
+         "prompt":"Long planning chain",
+         "roles":["planner","coder","reviewer"],
+         "timeout_sec":300
+       }
+     }' | jq -r '.id')
+
+   curl -s -X POST "http://127.0.0.1:1234/v1/agents/runs/$SLOW_RUN_ID/cancel" | jq .
+   ```
+
+### Expected Results
+- `/v1/skills` and `/v1/skills/mcp/tools` return non-empty tool/skill metadata.
+- Native and MCP skill calls return consistent functional output.
+- Agent run transitions through `queued`/`running` to a terminal state (`completed`, `failed`, or `cancelled`).
+- Cancel endpoint sets target run status to `cancelled`.
+
+---
+
+## Workflow 11: Deploy Monitoring and Alert Pack (OC-043)
+
+**Goal:** Install Opta LMX operations dashboards and alerts for OpenClaw bot fleet runtime visibility.
+
+**Time:** ~20 minutes  
+**Prerequisites:** Prometheus + Grafana access, `GET /admin/metrics` reachable
+
+### Steps
+
+1. **Verify metrics endpoint**
+   ```bash
+   curl -s http://127.0.0.1:1234/admin/metrics | head -40
+   ```
+
+2. **Install alert rules into Prometheus**
+   ```bash
+   sudo mkdir -p /etc/prometheus/rules/opta-lmx
+   sudo cp docs/ops/monitoring/prometheus-alerts.yaml \
+     /etc/prometheus/rules/opta-lmx/prometheus-alerts.yaml
+   ```
+
+3. **Reference rules in `prometheus.yml`**
+   ```yaml
+   rule_files:
+     - /etc/prometheus/rules/opta-lmx/prometheus-alerts.yaml
+   ```
+
+4. **Reload Prometheus**
+   ```bash
+   curl -X POST http://localhost:9090/-/reload
+   ```
+
+5. **Import Grafana dashboard**
+   - In Grafana: `Dashboards` -> `Import`
+   - Upload: `docs/ops/monitoring/grafana-openclaw-dashboard.json`
+   - Select the Prometheus datasource
+
+6. **Verify alert and panel health**
+   ```bash
+   curl -s http://localhost:9090/api/v1/rules | jq '.status'
+   ```
+
+### Expected Results
+- Alert rules load without Prometheus parse errors.
+- Grafana dashboard `Opta LMX OpenClaw Fleet` renders all six core panels.
+- Queue, latency, error ratio, and memory pressure signals are visible in one view.
+
+---
+
+## Workflow 5: Reliability + Perf Gate Verification
+
+**Goal:** Validate never-crash loader behavior and tuned-profile performance gates before merge.
+
+**Time:** ~2-5 minutes
+
+### Steps
+
+1. **Run gate tests**
+   ```bash
+   PYTHONPATH=src .venv/bin/pytest -q tests/test_chaos_resilience.py tests/test_perf_gate.py
+   ```
+
+2. **Interpret loader gate**
+   - Loader crash/timeout simulations must quarantine the model.
+   - API process remains alive; no hard process exit is allowed.
+
+3. **Interpret autotune perf gate**
+   - `avg_tokens_per_second` baseline comparison is enforced.
+   - Gate must fail when throughput regression exceeds 15%.
+
+4. **If gate fails**
+   - Do not merge.
+   - Attach failure output to the PR/session log.
+   - Either update tuned baseline deliberately (with rationale) or fix runtime regression.
 
 ---
 

@@ -72,6 +72,15 @@ async def _wait_for_run(runtime: AgentsRuntime, run_id: str, target: set[RunStat
     raise AssertionError(f"Timed out waiting for run {run_id} to reach {target}")
 
 
+def assert_loader_failure_gate(*, engine: InferenceEngine, model_id: str, attempts: int) -> None:
+    """Reliability gate assertion for repeated loader failures."""
+    readiness = engine.model_readiness(model_id)
+    assert readiness.get("state") == "quarantined"
+    assert int(readiness.get("crash_count", 0)) >= min(3, attempts)
+    assert engine.in_flight_count == 0
+    assert model_id not in engine.get_loaded_model_ids()
+
+
 async def test_chaos_agent_cancel_queued_run_under_pressure(tmp_path: Path) -> None:
     engine = _BlockingEngine()
     runtime = AgentsRuntime(
@@ -193,6 +202,10 @@ async def test_chaos_loader_repeated_failures_eventually_quarantine() -> None:
     )
     with pytest.MonkeyPatch.context() as mp:
         mp.setattr(
+            "opta_lmx.inference.engine.backend_candidates",
+            lambda *_args, **_kwargs: ["vllm-mlx"],
+        )
+        mp.setattr(
             "opta_lmx.inference.engine.run_loader_supervisor",
             AsyncMock(return_value=LoaderSupervisorOutcome(ok=False, failure=failure)),
         )
@@ -202,3 +215,43 @@ async def test_chaos_loader_repeated_failures_eventually_quarantine() -> None:
 
     state = engine.model_readiness("test/model-chaos-loader")
     assert state["state"] == "quarantined"
+
+
+async def test_chaos_loader_failure_gate_reports_zero_api_crashes() -> None:
+    """Reliability gate: repeated loader crash/timeout outcomes never crash API process."""
+    monitor = MemoryMonitor(max_percent=90)
+    engine = InferenceEngine(memory_monitor=monitor, use_batching=False, warmup_on_load=False)
+    engine._create_engine = AsyncMock(return_value=MagicMock())  # type: ignore[assignment]
+
+    failure_crash = LoaderFailure(
+        code=ErrorCodes.MODEL_LOADER_CRASHED,
+        message="Child loader crashed with signal 6",
+        signal=6,
+    )
+    failure_timeout = LoaderFailure(
+        code=ErrorCodes.MODEL_LOAD_TIMEOUT,
+        message="Child loader timed out",
+    )
+    attempts = 20
+    sequence = [
+        LoaderSupervisorOutcome(
+            ok=False,
+            failure=failure_crash if idx % 2 == 0 else failure_timeout,
+        )
+        for idx in range(attempts)
+    ]
+
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setattr(
+            "opta_lmx.inference.engine.backend_candidates",
+            lambda *_args, **_kwargs: ["vllm-mlx"],
+        )
+        mp.setattr(
+            "opta_lmx.inference.engine.run_loader_supervisor",
+            AsyncMock(side_effect=sequence),
+        )
+        for _ in range(attempts):
+            with pytest.raises(RuntimeError):
+                await engine.load_model("test/model-chaos-gate")
+
+    assert_loader_failure_gate(engine=engine, model_id="test/model-chaos-gate", attempts=attempts)

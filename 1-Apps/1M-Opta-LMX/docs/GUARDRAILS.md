@@ -1,7 +1,7 @@
 ---
 title: GUARDRAILS.md — Non-Negotiable Safety Rules
 created: 2026-02-15
-updated: 2026-02-15
+updated: 2026-02-20
 type: safety
 audience: All developers, reviewers, deployers
 status: Active
@@ -220,6 +220,34 @@ assert response["choices"][0]["message"]["role"] == "assistant"
 
 ---
 
+### G-LMX-07: Never-Crash Loader Gate (Synthetic Chaos)
+
+**Rule:** Synthetic loader crash/timeout scenarios must not crash the API process.
+
+**Why:** Loader instability must be isolated from the serving process to prevent full service outage.
+
+**Enforcement:**
+- Required gate test: `tests/test_chaos_resilience.py`
+- Test must verify repeated loader failures transition model readiness to quarantine.
+- API process survives all iterations; failures are surfaced as deterministic error codes.
+
+---
+
+### G-LMX-08: Autotune Performance Regression Gate (15%)
+
+**Rule:** A tuned profile must fail the gate if `avg_tokens_per_second` drops by more than **15%** versus stored baseline.
+
+**Why:** Prevents silent throughput regressions after tuning/runtime/config changes.
+
+**Enforcement:**
+- Required gate test: `tests/test_perf_gate.py`
+- Baseline comparison uses:
+  - `drop_ratio = (baseline_tps - current_tps) / baseline_tps`
+  - fail when `drop_ratio > 0.15`
+- Regression gate applies per tuned profile, not only global averages.
+
+---
+
 ## 🟡 DEPLOYMENT GUARDRAILS
 
 ### G-DEPLOY-01: launchd Configuration
@@ -235,7 +263,7 @@ assert response["choices"][0]["message"]["role"] == "assistant"
 
 <key>ProgramArguments</key>
 <array>
-    <string>/usr/local/bin/python3.11</string>
+    <string>/usr/local/bin/python3.12</string>
     <string>-m</string>
     <string>uvicorn</string>
     <string>src.opta_lmx.main:app</string>
