@@ -442,6 +442,90 @@ class InferenceEngine:
             return 0.0, False
         return (remaining_percent / 100.0) * total, False
 
+    async def probe_model_backends(
+        self,
+        model_id: str,
+        *,
+        timeout_sec: float = 90.0,
+        allow_unsupported_runtime: bool = False,
+    ) -> dict[str, Any]:
+        """Probe backend candidates for a model without fully loading it."""
+        candidates = backend_candidates(
+            model_id,
+            self,
+            self._compatibility,
+            allow_failed=allow_unsupported_runtime,
+        )
+        outcomes: list[dict[str, Any]] = []
+
+        for backend in candidates:
+            if backend == "vllm-mlx":
+                if not self._loader_isolation_enabled:
+                    outcomes.append({
+                        "backend": backend,
+                        "outcome": "unknown",
+                        "reason": "loader_isolation_disabled",
+                    })
+                    continue
+                try:
+                    outcome = await run_loader_supervisor(
+                        LoadSpec(
+                            model_id=model_id,
+                            backend=backend,
+                            use_batching=self._use_batching,
+                            performance_overrides={},
+                            probe_only=True,
+                        ),
+                        timeout_sec=float(timeout_sec),
+                    )
+                except Exception as exc:
+                    outcomes.append({
+                        "backend": backend,
+                        "outcome": "fail",
+                        "reason": f"{ErrorCodes.MODEL_PROBE_FAILED}:{exc}",
+                    })
+                    continue
+                if outcome.ok:
+                    outcomes.append({"backend": backend, "outcome": "pass", "reason": None})
+                else:
+                    failure = outcome.failure
+                    reason = (
+                        f"{failure.code}:{failure.message}"
+                        if failure is not None
+                        else ErrorCodes.MODEL_PROBE_FAILED
+                    )
+                    outcomes.append({"backend": backend, "outcome": "fail", "reason": reason})
+                continue
+
+            if backend == "gguf":
+                resolved = resolve_local_gguf_equivalents(model_id)
+                if resolved:
+                    outcomes.append({"backend": backend, "outcome": "pass", "reason": None})
+                else:
+                    outcomes.append({
+                        "backend": backend,
+                        "outcome": "fail",
+                        "reason": "no_local_gguf_equivalent",
+                    })
+                continue
+
+            # mlx-lm and other adapters can be lightweight-admitted here.
+            outcomes.append({"backend": backend, "outcome": "unknown", "reason": "not_probed"})
+
+        recommended_backend = next(
+            (
+                row["backend"]
+                for row in outcomes
+                if row.get("outcome") in {"pass", "unknown"}
+            ),
+            None,
+        )
+        return {
+            "model_id": model_id,
+            "recommended_backend": recommended_backend,
+            "candidates": outcomes,
+        }
+
     async def load_model(
         self,
         model_id: str,

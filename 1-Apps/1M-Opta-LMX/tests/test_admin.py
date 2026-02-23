@@ -315,6 +315,56 @@ class TestAdminLoad:
         assert body["error"]["param"] == "model_id"
 
 
+class TestAdminProbe:
+    @pytest.mark.asyncio
+    async def test_admin_probe_returns_candidate_backends_and_outcomes(
+        self,
+        client: AsyncClient,
+    ) -> None:
+        app = client._transport.app  # type: ignore[union-attr]
+        app.state.engine.probe_model_backends = AsyncMock(
+            return_value={
+                "model_id": "test/model",
+                "recommended_backend": "vllm-mlx",
+                "candidates": [
+                    {"backend": "vllm-mlx", "outcome": "pass", "reason": None},
+                    {"backend": "mlx-lm", "outcome": "unknown", "reason": "not_probed"},
+                ],
+            },
+        )
+
+        response = await client.post("/admin/models/probe", json={"model_id": "test/model"})
+        assert response.status_code == 200
+        body = response.json()
+        assert body["recommended_backend"] == "vllm-mlx"
+        assert body["candidates"][0]["backend"] == "vllm-mlx"
+        assert body["candidates"][0]["outcome"] == "pass"
+
+    @pytest.mark.asyncio
+    async def test_admin_probe_respects_allow_unsupported_runtime(
+        self,
+        client: AsyncClient,
+    ) -> None:
+        app = client._transport.app  # type: ignore[union-attr]
+        app.state.engine.probe_model_backends = AsyncMock(
+            return_value={
+                "model_id": "test/model",
+                "recommended_backend": "mlx-lm",
+                "candidates": [
+                    {"backend": "mlx-lm", "outcome": "unknown", "reason": "not_probed"},
+                ],
+            },
+        )
+
+        response = await client.post(
+            "/admin/models/probe",
+            json={"model_id": "test/model", "allow_unsupported_runtime": True},
+        )
+        assert response.status_code == 200
+        kwargs = app.state.engine.probe_model_backends.await_args.kwargs
+        assert kwargs["allow_unsupported_runtime"] is True
+
+
 class TestAdminUnload:
     """Tests for POST /admin/models/unload."""
 

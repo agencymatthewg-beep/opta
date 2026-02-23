@@ -77,6 +77,12 @@ class ChatCompletionRequest(BaseModel):
     tools: list[dict[str, Any]] | None = None  # pass through unchanged
     tool_choice: str | dict[str, Any] | None = None
     response_format: dict[str, Any] | None = None
+    user: str | None = None
+    n: int = Field(1, ge=1, le=16)
+    seed: int | None = None
+    logprobs: bool | None = None
+    top_logprobs: int | None = Field(None, ge=0, le=20)
+    stream_options: dict[str, Any] | None = None
     frequency_penalty: float = Field(0.0, ge=-2.0, le=2.0)
     presence_penalty: float = Field(0.0, ge=-2.0, le=2.0)
     # F5: Per-request context window override (Ollama-compatible)
@@ -244,6 +250,29 @@ class AdminLoadResponse(BaseModel):
     time_to_load_ms: float | None = None
 
 
+class AdminProbeRequest(BaseModel):
+    """Request to probe backend compatibility before loading a model."""
+
+    model_id: str
+    timeout_sec: float = Field(90.0, ge=1.0, le=900.0)
+    allow_unsupported_runtime: bool = Field(
+        False,
+        description="Include otherwise-blocked backends in candidate probing.",
+    )
+
+
+class AdminProbeCandidate(BaseModel):
+    backend: str
+    outcome: str
+    reason: str | None = None
+
+
+class AdminProbeResponse(BaseModel):
+    model_id: str
+    recommended_backend: str | None = None
+    candidates: list[AdminProbeCandidate] = Field(default_factory=list)
+
+
 class AdminUnloadRequest(BaseModel):
     """Request to unload a model."""
 
@@ -323,6 +352,8 @@ class AdminModelDetail(BaseModel):
     last_used_at: float = 0.0
     context_length: int | None = None
     performance: dict[str, Any] = Field(default_factory=dict)
+    speculative: dict[str, Any] = Field(default_factory=dict)
+    readiness: dict[str, Any] = Field(default_factory=dict)
 
 
 class AdminModelsResponse(BaseModel):
@@ -344,6 +375,8 @@ class AdminModelPerformanceResponse(BaseModel):
     context_length: int | None = None
     use_batching: bool = True
     performance: dict[str, Any] = Field(default_factory=dict)
+    speculative: dict[str, Any] = Field(default_factory=dict)
+    readiness: dict[str, Any] = Field(default_factory=dict)
     global_defaults: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -388,6 +421,7 @@ class DownloadProgressResponse(BaseModel):
     files_completed: int = 0
     files_total: int = 0
     error: str | None = None
+    error_code: str | None = None
 
 
 class AdminDeleteResponse(BaseModel):
@@ -446,6 +480,21 @@ class BenchmarkRequest(BaseModel):
     runs: int = Field(1, ge=1, le=5, description="Number of benchmark runs (results averaged)")
 
 
+class SpeculativeBenchmarkStats(BaseModel):
+    """Speculative decoding stats for a run or aggregate benchmark."""
+
+    requested: bool = False
+    active: bool = False
+    reason: str | None = None
+    draft_model: str | None = None
+    num_tokens: int | None = None
+    accepted_tokens: int = 0
+    rejected_tokens: int = 0
+    ignored_tokens: int = 0
+    acceptance_ratio: float | None = None
+    telemetry: str = "unavailable"
+
+
 class BenchmarkResult(BaseModel):
     """Result of a single benchmark run."""
 
@@ -454,6 +503,7 @@ class BenchmarkResult(BaseModel):
     time_to_first_token_ms: float
     total_time_ms: float
     tokens_per_second: float
+    speculative: SpeculativeBenchmarkStats | None = None
 
 
 class BenchmarkResponse(BaseModel):
@@ -468,6 +518,7 @@ class BenchmarkResponse(BaseModel):
     avg_tokens_per_second: float
     avg_time_to_first_token_ms: float
     avg_total_time_ms: float
+    speculative: SpeculativeBenchmarkStats | None = None
 
 
 class QuantizeRequest(BaseModel):

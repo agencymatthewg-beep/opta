@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 import secrets
 import time
 from collections.abc import AsyncIterator
@@ -13,6 +14,7 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from opta_lmx.inference.engine import InferenceEngine
     from opta_lmx.manager.model import ModelManager
+    from opta_lmx.monitoring.journal import RuntimeJournalManager
 
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse, PlainTextResponse, StreamingResponse
@@ -34,6 +36,7 @@ from opta_lmx.api.deps import (
 )
 from opta_lmx.api.errors import (
     download_not_found,
+    insufficient_disk,
     insufficient_memory,
     internal_error,
     model_in_use,
@@ -41,6 +44,7 @@ from opta_lmx.api.errors import (
     openai_error,
 )
 from opta_lmx.config import load_config
+from opta_lmx.inference.engine import ModelRuntimeCompatibilityError
 from opta_lmx.inference.schema import (
     AdminDeleteResponse,
     AdminDownloadRequest,
@@ -51,6 +55,8 @@ from opta_lmx.inference.schema import (
     AdminModelDetail,
     AdminModelPerformanceResponse,
     AdminModelsResponse,
+    AdminProbeRequest,
+    AdminProbeResponse,
     AdminStatusResponse,
     AdminUnloadRequest,
     AdminUnloadResponse,
@@ -66,7 +72,11 @@ from opta_lmx.inference.schema import (
     PresetListResponse,
     PresetResponse,
     QuantizeRequest,
+    SpeculativeBenchmarkStats,
 )
+from opta_lmx.model_safety import AdmissionFailure, ErrorCodes, validate_architecture
+from opta_lmx.monitoring.metrics import speculative_metric_kwargs
+from opta_lmx.security.jwt_verifier import SupabaseJWTVerifier
 
 logger = logging.getLogger(__name__)
 
@@ -93,12 +103,73 @@ def _human_size(size_bytes: int) -> str:
     return f"{value:.1f} PB"
 
 
+def _get_journal_manager(request: Request) -> RuntimeJournalManager | None:
+    """Return runtime journal manager if available."""
+    manager = getattr(request.app.state, "journal_manager", None)
+    if manager is None or not hasattr(manager, "write_update_log"):
+        return None
+    return manager
+
+
+def _write_update_journal_with_manager(
+    journal_manager: RuntimeJournalManager | None,
+    *,
+    title: str,
+    summary: str,
+    category: str,
+    promoted: bool | None = None,
+    command_inputs: dict[str, Any] | None = None,
+    steps: list[dict[str, Any]] | None = None,
+) -> None:
+    """Write numbered update log and fail-open on journaling errors."""
+    if journal_manager is None:
+        return
+    try:
+        journal_manager.write_update_log(
+            title=title,
+            summary=summary,
+            category=category,
+            promoted=promoted,
+            command_inputs=command_inputs,
+            steps=steps,
+        )
+    except Exception:
+        logger.warning(
+            "update_journal_write_failed",
+            extra={"title": title, "category": category},
+        )
+
+
+def _write_update_journal(
+    request: Request,
+    *,
+    title: str,
+    summary: str,
+    category: str,
+    promoted: bool | None = None,
+    command_inputs: dict[str, Any] | None = None,
+    steps: list[dict[str, Any]] | None = None,
+) -> None:
+    """Request-aware helper for numbered update journaling."""
+    _write_update_journal_with_manager(
+        _get_journal_manager(request),
+        title=title,
+        summary=summary,
+        category=category,
+        promoted=promoted,
+        command_inputs=command_inputs,
+        steps=steps,
+    )
+
+
 async def _load_after_download(
     download_id: str,
     model_id: str,
     manager: ModelManager,
     engine: InferenceEngine,
     performance_overrides: dict[str, Any] | None = None,
+    keep_alive_sec: int | None = None,
+    journal_manager: RuntimeJournalManager | None = None,
 ) -> None:
     """Wait for a download to complete, then auto-load the model."""
     while True:
@@ -108,9 +179,45 @@ async def _load_after_download(
         await asyncio.sleep(2)
 
     if task and task.status == "completed":
+        # Pre-load readiness guard: ensure local cache is still complete before load.
+        is_ready = await manager.is_local_snapshot_complete(model_id)
+        if not is_ready:
+            logger.warning(
+                "auto_load_skipped_snapshot_incomplete",
+                extra={"model_id": model_id, "download_id": download_id},
+            )
+            return
+
         try:
-            await engine.load_model(model_id, performance_overrides=performance_overrides)
+            await engine.load_model(
+                model_id,
+                performance_overrides=performance_overrides,
+                keep_alive_sec=keep_alive_sec,
+            )
             logger.info("auto_load_after_download", extra={"model_id": model_id})
+            _write_update_journal_with_manager(
+                journal_manager,
+                title=f"Load {model_id}",
+                summary=f"Auto-loaded {model_id} after download completion.",
+                category="sync",
+                promoted=True,
+                command_inputs={
+                    "model_id": model_id,
+                    "download_id": download_id,
+                    "auto_download": True,
+                    "keep_alive_sec": keep_alive_sec,
+                    "performance_overrides": performance_overrides or {},
+                },
+                steps=[
+                    {
+                        "target": "lmx",
+                        "component": "model",
+                        "step": "auto-load-after-download",
+                        "status": "ok",
+                        "message": "download completed and model loaded",
+                    }
+                ],
+            )
         except Exception as e:
             logger.error(
                 "auto_load_after_download_failed",
@@ -144,6 +251,19 @@ async def list_admin_models(
                 last_used_at=m.last_used_at,
                 context_length=m.context_length,
                 performance=m.performance_overrides,
+                speculative={
+                    "requested": m.speculative_requested,
+                    "active": m.speculative_active,
+                    "reason": m.speculative_reason,
+                    "draft_model": m.speculative_draft_model,
+                    "num_tokens": m.speculative_num_tokens,
+                    "telemetry": "unavailable",
+                },
+                readiness={
+                    "state": getattr(m, "readiness_state", "routable"),
+                    "reason": getattr(m, "readiness_reason", None),
+                    "crash_count": getattr(m, "crash_count", 0),
+                },
             )
             for m in loaded
         ],
@@ -174,6 +294,19 @@ async def get_model_performance(
         context_length=loaded.context_length,
         use_batching=loaded.use_batching,
         performance=loaded.performance_overrides,
+        speculative={
+            "requested": loaded.speculative_requested,
+            "active": loaded.speculative_active,
+            "reason": loaded.speculative_reason,
+            "draft_model": loaded.speculative_draft_model,
+            "num_tokens": loaded.speculative_num_tokens,
+            "telemetry": "unavailable",
+        },
+        readiness={
+            "state": getattr(loaded, "readiness_state", "routable"),
+            "reason": getattr(loaded, "readiness_reason", None),
+            "crash_count": getattr(loaded, "crash_count", 0),
+        },
         global_defaults={
             **engine.get_inference_defaults(),
             "max_concurrent_requests": engine.max_concurrent_requests,
@@ -205,12 +338,65 @@ async def load_model(
     if engine.is_model_loaded(body.model_id):
         return AdminLoadResponse(success=True, model_id=body.model_id)
 
+    # Admission gate: architecture/backend compatibility.
+    try:
+        validate_architecture(body.model_id)
+    except AdmissionFailure as e:
+        return openai_error(
+            status_code=e.status_code,
+            message=e.message,
+            error_type=e.error_type,
+            param=e.param,
+            code=e.code,
+        )
+
+    # Refuse automatic routing reload for quarantined models unless caller
+    # explicitly accepts unsupported runtime risk.
+    if hasattr(engine, "model_readiness"):
+        readiness = engine.model_readiness(body.model_id)
+        if readiness.get("state") == "quarantined" and not body.allow_unsupported_runtime:
+            return openai_error(
+                status_code=409,
+                message=(
+                    f"Model '{body.model_id}' is quarantined after instability. "
+                    "Use a supported variant or pass allow_unsupported_runtime=true to override."
+                ),
+                error_type="invalid_request_error",
+                param="model_id",
+                code=ErrorCodes.MODEL_UNSTABLE,
+            )
+
+    # max_context_length is reserved for future backend-native support.
+    if body.max_context_length is not None:
+        return openai_error(
+            status_code=400,
+            message="The 'max_context_length' parameter is not currently supported.",
+            error_type="invalid_request_error",
+            param="max_context_length",
+            code="not_supported",
+        )
+
     # Check if model is on disk
     is_available = await manager.is_model_available(body.model_id)
+    snapshot_incomplete = False
+    if is_available:
+        # A repo can appear in cache scans while still missing required blobs.
+        # Guard this before engine load to avoid opaque 500 errors and crash loops.
+        is_complete = await manager.is_local_snapshot_complete(body.model_id)
+        if not is_complete:
+            snapshot_incomplete = True
+            is_available = False
+            logger.warning(
+                "model_snapshot_incomplete",
+                extra={"model_id": body.model_id},
+            )
 
     if not is_available:
-        # Estimate download size
-        estimated = await manager.estimate_size(body.model_id, None, None, None)
+        # Estimate download size only for truly missing models.
+        # Snapshot-repair flows can avoid this remote metadata call.
+        estimated = 0
+        if not snapshot_incomplete:
+            estimated = await manager.estimate_size(body.model_id, None, None, None)
 
         if not body.auto_download:
             # Two-phase: return confirmation prompt
@@ -240,7 +426,11 @@ async def load_model(
                     estimated_size_bytes=estimated if estimated > 0 else None,
                     estimated_size_human=_human_size(estimated) if estimated > 0 else None,
                     confirmation_token=token,
-                    message="Model not found locally. Confirm download?",
+                    message=(
+                        "Model cache is incomplete. Confirm download to repair local files?"
+                        if snapshot_incomplete
+                        else "Model not found locally. Confirm download?"
+                    ),
                     confirm_url="/admin/models/load/confirm",
                 ).model_dump(),
             )
@@ -249,9 +439,22 @@ async def load_model(
         perf = preset_mgr.find_performance_for_model(body.model_id) or {}
         if body.performance_overrides:
             perf = {**perf, **body.performance_overrides}
-        task = await manager.start_download(repo_id=body.model_id)
+        try:
+            task = await manager.start_download(repo_id=body.model_id)
+        except OSError as e:
+            return insufficient_disk(str(e))
+        except Exception as e:
+            return internal_error(f"Failed to start download: {e}")
         bg = asyncio.create_task(
-            _load_after_download(task.download_id, body.model_id, manager, engine, perf or None),
+            _load_after_download(
+                task.download_id,
+                body.model_id,
+                manager,
+                engine,
+                perf or None,
+                keep_alive_sec=body.keep_alive_sec,
+                journal_manager=_get_journal_manager(request),
+            ),
         )
         _background_tasks.add(bg)
         bg.add_done_callback(_background_tasks.discard)
@@ -274,14 +477,29 @@ async def load_model(
     if body.performance_overrides:
         perf = {**perf, **body.performance_overrides}
     start = time.monotonic()
+    previous_hf_offline = os.environ.get("HF_HUB_OFFLINE")
+    # Force local-only artifact resolution for "already on disk" loads so
+    # engine startup does not silently re-enter network/download flows.
+    os.environ["HF_HUB_OFFLINE"] = "1"
     try:
         info = await engine.load_model(
             body.model_id,
             performance_overrides=perf or None,
             keep_alive_sec=body.keep_alive_sec,
+            allow_unsupported_runtime=body.allow_unsupported_runtime,
+        )
+    except ModelRuntimeCompatibilityError as e:
+        return openai_error(
+            status_code=422,
+            message=str(e),
+            error_type="not_supported_error",
+            param="model_id",
+            code=ErrorCodes.MODEL_UNSUPPORTED_BACKEND,
         )
     except MemoryError as e:
         return insufficient_memory(str(e))
+    except OSError as e:
+        return insufficient_disk(str(e))
     except RuntimeError as e:
         msg = str(e)
         if msg.startswith(f"{ErrorCodes.MODEL_LOAD_TIMEOUT}:"):
@@ -317,8 +535,40 @@ async def load_model(
                 code=ErrorCodes.MODEL_CANARY_FAILED,
             )
         return internal_error(str(e))
+    finally:
+        if previous_hf_offline is None:
+            os.environ.pop("HF_HUB_OFFLINE", None)
+        else:
+            os.environ["HF_HUB_OFFLINE"] = previous_hf_offline
 
     elapsed_ms = (time.monotonic() - start) * 1000
+    _write_update_journal(
+        request,
+        title=f"Load {body.model_id}",
+        summary=f"Loaded {body.model_id} into memory from local artifacts.",
+        category="sync",
+        promoted=True,
+        command_inputs={
+            "model_id": body.model_id,
+            "auto_download": body.auto_download,
+            "keep_alive_sec": body.keep_alive_sec,
+            "allow_unsupported_runtime": body.allow_unsupported_runtime,
+            "performance_overrides": body.performance_overrides or {},
+            "source": "disk",
+        },
+        steps=[
+            {
+                "target": "lmx",
+                "component": "model",
+                "step": "load",
+                "status": "ok",
+                "message": (
+                    f"memory_after_load_gb={round(info.memory_used_gb, 2)} "
+                    f"time_to_load_ms={round(elapsed_ms, 1)}"
+                ),
+            }
+        ],
+    )
 
     return AdminLoadResponse(
         success=True,
@@ -326,6 +576,37 @@ async def load_model(
         memory_after_load_gb=info.memory_used_gb,
         time_to_load_ms=round(elapsed_ms, 1),
     )
+
+
+@router.post(
+    "/admin/models/probe",
+    response_model=AdminProbeResponse,
+    responses={403: {"model": ErrorResponse}, 422: {"model": ErrorResponse}},
+)
+async def probe_model(
+    body: AdminProbeRequest,
+    _auth: AdminAuth,
+    engine: Engine,
+) -> AdminProbeResponse:
+    """Probe candidate backends for a model without fully loading it."""
+    try:
+        result = await engine.probe_model_backends(
+            body.model_id,
+            timeout_sec=body.timeout_sec,
+            allow_unsupported_runtime=body.allow_unsupported_runtime,
+        )
+    except AdmissionFailure as exc:
+        return openai_error(
+            status_code=exc.status_code,
+            message=exc.message,
+            error_type=exc.error_type,
+            param=exc.param,
+            code=exc.code,
+        )
+    except Exception as exc:
+        return internal_error(str(exc))
+
+    return AdminProbeResponse.model_validate(result)
 
 
 @router.post(
@@ -370,9 +651,21 @@ async def confirm_and_load(
     model_id = entry["model_id"]
 
     perf = preset_mgr.find_performance_for_model(model_id)
-    task = await manager.start_download(repo_id=model_id)
+    try:
+        task = await manager.start_download(repo_id=model_id)
+    except OSError as e:
+        return insufficient_disk(str(e))
+    except Exception as e:
+        return internal_error(f"Failed to start download: {e}")
     bg = asyncio.create_task(
-        _load_after_download(task.download_id, model_id, manager, engine, perf),
+        _load_after_download(
+            task.download_id,
+            model_id,
+            manager,
+            engine,
+            perf,
+            journal_manager=_get_journal_manager(request),
+        ),
     )
     _background_tasks.add(bg)
     bg.add_done_callback(_background_tasks.discard)
@@ -395,13 +688,33 @@ async def confirm_and_load(
     responses={403: {"model": ErrorResponse}, 404: {"model": ErrorResponse}},
 )
 async def unload_model(
-    body: AdminUnloadRequest, _auth: AdminAuth, engine: Engine,
+    body: AdminUnloadRequest, _auth: AdminAuth, engine: Engine, request: Request,
 ) -> AdminUnloadResponse | JSONResponse:
     """Unload a model and free memory."""
     try:
         freed = await engine.unload_model(body.model_id)
     except KeyError:
         return model_not_found(body.model_id)
+
+    _write_update_journal(
+        request,
+        title=f"Unload {body.model_id}",
+        summary=f"Unloaded {body.model_id} from memory.",
+        category="sync",
+        promoted=False,
+        command_inputs={
+            "model_id": body.model_id,
+        },
+        steps=[
+            {
+                "target": "lmx",
+                "component": "model",
+                "step": "unload",
+                "status": "ok",
+                "message": f"memory_freed_gb={round(freed, 2)}",
+            }
+        ],
+    )
 
     return AdminUnloadResponse(
         success=True,
@@ -488,6 +801,8 @@ async def start_download(
             allow_patterns=body.allow_patterns,
             ignore_patterns=body.ignore_patterns,
         )
+    except OSError as e:
+        return insufficient_disk(str(e))
     except Exception as e:
         return internal_error(f"Failed to start download: {e}")
 
@@ -522,6 +837,7 @@ async def get_download_progress(
         files_completed=task.files_completed,
         files_total=task.files_total,
         error=task.error,
+        error_code=task.error_code,
     )
 
 
@@ -570,23 +886,20 @@ async def delete_model(
 )
 async def prometheus_metrics(
     _auth: AdminAuth, metrics: Metrics, engine: Engine, memory: Memory,
-    request: Request,
 ) -> PlainTextResponse:
     """Prometheus-compatible metrics endpoint.
 
     Returns metrics in Prometheus text exposition format for scraping.
     Includes live gauges for loaded model count, memory, and concurrency.
     """
-    config = request.app.state.config
-    # Approximate queued requests: in-flight minus concurrency limit (floor at 0)
-    queued = max(0, engine.in_flight_count - config.models.max_concurrent_requests)
+    queued = engine.waiting_queue_count
     return PlainTextResponse(
         content=metrics.prometheus(
-            loaded_model_count=len(engine.get_loaded_models()),
+            loaded_model_count=len(engine.get_loaded_model_ids()),
             memory_used_gb=memory.used_memory_gb(),
             memory_total_gb=memory.total_memory_gb(),
             in_flight_requests=engine.in_flight_count,
-            max_concurrent_requests=config.models.max_concurrent_requests,
+            max_concurrent_requests=engine.max_concurrent_requests,
             queued_requests=queued,
         ),
         media_type="text/plain; version=0.0.4; charset=utf-8",
@@ -639,8 +952,21 @@ async def reload_config(
     # Update memory threshold
     memory.threshold_percent = new_config.memory.max_memory_percent
 
-    # Update admin key
+    # Update auth settings
     request.app.state.admin_key = new_config.security.admin_key
+    request.app.state.inference_api_key = new_config.security.inference_api_key
+    request.app.state.supabase_jwt_enabled = new_config.security.supabase_jwt_enabled
+    request.app.state.supabase_jwt_require = new_config.security.supabase_jwt_require
+    request.app.state.supabase_jwt_verifier = (
+        SupabaseJWTVerifier(
+            issuer=new_config.security.supabase_jwt_issuer,
+            audience=new_config.security.supabase_jwt_audience,
+            jwks_url=new_config.security.supabase_jwt_jwks_url,
+            user_id_claim=new_config.security.supabase_jwt_claim_user_id,
+        )
+        if new_config.security.supabase_jwt_enabled
+        else None
+    )
 
     # Update logging level
     import logging as _logging
@@ -679,6 +1005,43 @@ async def reload_config(
                 new_config.routing.aliases[alias] = merged
             task_router.update_config(new_config.routing)
 
+    _write_update_journal(
+        request,
+        title="Reload LMX Config",
+        summary="Reloaded runtime configuration via /admin/config/reload.",
+        category="sync",
+        promoted=True,
+        command_inputs={
+            "routing_aliases": len(new_config.routing.aliases),
+            "memory_threshold": new_config.memory.max_memory_percent,
+            "log_level": new_config.logging.level,
+            "presets_enabled": new_config.presets.enabled,
+        },
+        steps=[
+            {
+                "target": "lmx",
+                "component": "config",
+                "step": "routing",
+                "status": "ok",
+                "message": f"aliases={len(new_config.routing.aliases)}",
+            },
+            {
+                "target": "lmx",
+                "component": "config",
+                "step": "memory-threshold",
+                "status": "ok",
+                "message": f"max_memory_percent={new_config.memory.max_memory_percent}",
+            },
+            {
+                "target": "lmx",
+                "component": "config",
+                "step": "logging",
+                "status": "ok",
+                "message": f"level={new_config.logging.level}",
+            },
+        ],
+    )
+
     return JSONResponse(content={
         "success": True,
         "updated": ["routing", "memory", "security", "logging", "presets"],
@@ -697,7 +1060,7 @@ async def reload_config(
     },
 )
 async def benchmark_model(
-    body: BenchmarkRequest, _auth: AdminAuth, engine: Engine,
+    body: BenchmarkRequest, _auth: AdminAuth, engine: Engine, metrics: Metrics,
 ) -> BenchmarkResponse | JSONResponse:
     """Run an inference benchmark on a loaded model.
 
@@ -707,6 +1070,7 @@ async def benchmark_model(
     if not engine.is_model_loaded(body.model_id):
         return model_not_found(body.model_id)
 
+    loaded = engine.get_model(body.model_id)
     results: list[BenchmarkResult] = []
 
     for run_idx in range(body.runs):
@@ -743,6 +1107,25 @@ async def benchmark_model(
 
         generation_time_sec = max(total_ms / 1000, 0.001)
         tok_per_sec = token_count / generation_time_sec
+        telemetry = engine.pop_speculative_telemetry() or {
+            "requested": loaded.speculative_requested,
+            "active": loaded.speculative_active,
+            "reason": loaded.speculative_reason,
+            "draft_model": loaded.speculative_draft_model,
+            "num_tokens": loaded.speculative_num_tokens,
+            "accepted_tokens": 0,
+            "rejected_tokens": 0,
+            "ignored_tokens": token_count if loaded.speculative_active else 0,
+            "acceptance_ratio": None,
+            "telemetry": "unavailable" if loaded.speculative_active else "not_requested",
+        }
+        metric_kwargs = speculative_metric_kwargs(telemetry)
+        if loaded.speculative_active:
+            metrics.record_speculative(
+                accepted_tokens=int(metric_kwargs.get("speculative_accepted_tokens", 0)),
+                rejected_tokens=int(metric_kwargs.get("speculative_rejected_tokens", 0)),
+                ignored_tokens=int(metric_kwargs.get("speculative_ignored_tokens", 0)),
+            )
 
         results.append(BenchmarkResult(
             run=run_idx + 1,
@@ -750,6 +1133,18 @@ async def benchmark_model(
             time_to_first_token_ms=round(ttft_ms or 0, 2),
             total_time_ms=round(total_ms, 2),
             tokens_per_second=round(tok_per_sec, 2),
+            speculative=SpeculativeBenchmarkStats(
+                requested=bool(metric_kwargs.get("speculative_requested", False)),
+                active=bool(metric_kwargs.get("speculative_active", False)),
+                reason=metric_kwargs.get("speculative_reason"),
+                draft_model=metric_kwargs.get("speculative_draft_model"),
+                num_tokens=metric_kwargs.get("speculative_num_tokens"),
+                accepted_tokens=int(metric_kwargs.get("speculative_accepted_tokens", 0)),
+                rejected_tokens=int(metric_kwargs.get("speculative_rejected_tokens", 0)),
+                ignored_tokens=int(metric_kwargs.get("speculative_ignored_tokens", 0)),
+                acceptance_ratio=telemetry.get("acceptance_ratio"),
+                telemetry=str(metric_kwargs.get("speculative_telemetry", "unavailable")),
+            ),
         ))
 
     # Compute averages
@@ -757,7 +1152,13 @@ async def benchmark_model(
     avg_ttft = sum(r.time_to_first_token_ms for r in results) / len(results)
     avg_total = sum(r.total_time_ms for r in results) / len(results)
 
-    loaded = engine.get_model(body.model_id)
+    accepted_total = sum((r.speculative.accepted_tokens if r.speculative else 0) for r in results)
+    rejected_total = sum((r.speculative.rejected_tokens if r.speculative else 0) for r in results)
+    ignored_total = sum((r.speculative.ignored_tokens if r.speculative else 0) for r in results)
+    acceptance_ratio: float | None = None
+    denominator = accepted_total + rejected_total
+    if denominator > 0:
+        acceptance_ratio = round(accepted_total / denominator, 6)
 
     logger.info("benchmark_complete", extra={
         "model_id": body.model_id,
@@ -776,6 +1177,18 @@ async def benchmark_model(
         avg_tokens_per_second=round(avg_tps, 2),
         avg_time_to_first_token_ms=round(avg_ttft, 2),
         avg_total_time_ms=round(avg_total, 2),
+        speculative=SpeculativeBenchmarkStats(
+            requested=loaded.speculative_requested,
+            active=loaded.speculative_active,
+            reason=loaded.speculative_reason,
+            draft_model=loaded.speculative_draft_model,
+            num_tokens=loaded.speculative_num_tokens,
+            accepted_tokens=accepted_total,
+            rejected_tokens=rejected_total,
+            ignored_tokens=ignored_total,
+            acceptance_ratio=acceptance_ratio,
+            telemetry="unavailable",
+        ),
     )
 
 
@@ -897,12 +1310,17 @@ async def stack_status(
     the health of helper node endpoints.
     """
     config = request.app.state.config
-    loaded_ids = {m.model_id for m in engine.get_loaded_models()}
+    loaded_ids = set(engine.get_loaded_model_ids())
 
     # Build role status from routing aliases
     roles: dict[str, dict[str, Any]] = {}
+    load_snapshot = engine.get_model_load_snapshot(list(loaded_ids))
     for alias, preferences in config.routing.aliases.items():
-        resolved = task_router.resolve(alias, list(loaded_ids))
+        resolved = task_router.resolve(
+            alias,
+            list(loaded_ids),
+            model_load_snapshot=load_snapshot,
+        )
         is_loaded = resolved in loaded_ids
         roles[alias] = {
             "preferences": preferences,
