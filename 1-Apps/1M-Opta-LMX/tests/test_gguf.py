@@ -395,6 +395,9 @@ async def test_loader_supervisor_failure_stops_inprocess_load_and_marks_failure(
     with patch(
         "opta_lmx.inference.engine.run_loader_supervisor",
         AsyncMock(return_value=LoaderSupervisorOutcome(ok=False, failure=failure)),
+    ), patch(
+        "opta_lmx.inference.engine.backend_candidates",
+        return_value=["vllm-mlx"],
     ):
         with pytest.raises(RuntimeError, match=ErrorCodes.MODEL_LOADER_CRASHED):
             await engine.load_model("test/model-loader-fail")

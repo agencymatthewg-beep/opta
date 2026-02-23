@@ -471,7 +471,10 @@ class TestMLXLMFallback:
         with patch(
             "opta_lmx.inference.engine.MLXLMBackend",
             return_value=mock_backend,
-        ) as backend_cls:
+        ) as backend_cls, patch(
+            "opta_lmx.inference.engine.backend_candidates",
+            return_value=["mlx-lm"],
+        ):
             info = await engine.load_model("test/model")
 
         assert info.loaded is True
