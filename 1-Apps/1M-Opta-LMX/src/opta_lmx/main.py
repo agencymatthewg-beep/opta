@@ -95,6 +95,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         prefix_cache_enabled=config.models.prefix_cache_enabled,
         max_concurrent_requests=config.models.max_concurrent_requests,
         inference_timeout_sec=config.models.inference_timeout_sec,
+        loader_isolation_enabled=config.models.loader_isolation_enabled,
+        loader_timeout_sec=config.models.loader_timeout_sec,
         warmup_on_load=config.models.warmup_on_load,
         stream_interval=config.models.stream_interval,
         scheduler_max_num_seqs=config.models.scheduler_max_num_seqs,

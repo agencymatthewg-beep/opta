@@ -9,6 +9,9 @@ import pytest
 
 from opta_lmx.inference.engine import InferenceEngine, _detect_format
 from opta_lmx.manager.memory import MemoryMonitor
+from opta_lmx.model_safety import ErrorCodes
+from opta_lmx.runtime.child_loader_supervisor import LoaderSupervisorOutcome
+from opta_lmx.runtime.loader_protocol import LoaderFailure
 
 # ─── Unit Tests: Format Detection ─────────────────────────────────────────
 
@@ -276,3 +279,35 @@ def test_gguf_config_custom_values() -> None:
     config = ModelsConfig(gguf_context_length=8192, gguf_gpu_layers=32)
     assert config.gguf_context_length == 8192
     assert config.gguf_gpu_layers == 32
+
+
+def test_loader_isolation_config_defaults() -> None:
+    """ModelsConfig exposes loader isolation controls for crash-safe bring-up."""
+    from opta_lmx.config import ModelsConfig
+
+    config = ModelsConfig()
+    assert config.loader_isolation_enabled is True
+    assert config.loader_timeout_sec == 120
+
+
+@pytest.mark.asyncio
+async def test_loader_supervisor_failure_stops_inprocess_load_and_marks_failure() -> None:
+    """Loader supervisor failures should abort before in-process engine creation."""
+    monitor = MemoryMonitor(max_percent=90)
+    engine = InferenceEngine(memory_monitor=monitor, use_batching=False, warmup_on_load=False)
+    create_engine = AsyncMock(return_value=MagicMock())
+    engine._create_engine = create_engine  # type: ignore[assignment]
+
+    failure = LoaderFailure(
+        code=ErrorCodes.MODEL_LOADER_CRASHED,
+        message="Child loader crashed with signal 6",
+        signal=6,
+    )
+    with patch(
+        "opta_lmx.inference.engine.run_loader_supervisor",
+        AsyncMock(return_value=LoaderSupervisorOutcome(ok=False, failure=failure)),
+    ):
+        with pytest.raises(RuntimeError, match=ErrorCodes.MODEL_LOADER_CRASHED):
+            await engine.load_model("test/model-loader-fail")
+
+    create_engine.assert_not_awaited()

@@ -179,6 +179,125 @@ class TestAdminLoad:
         assert data["confirmation_token"] is not None
         assert data["confirm_url"] == "/admin/models/load/confirm"
 
+    @pytest.mark.asyncio
+    async def test_load_rejects_unsupported_max_context_length(self, client: AsyncClient) -> None:
+        """max_context_length is rejected until backend-native support exists."""
+        response = await client.post(
+            "/admin/models/load",
+            json={"model_id": "test/model", "max_context_length": 8192},
+        )
+        assert response.status_code == 400
+        body = response.json()
+        assert body["error"]["param"] == "max_context_length"
+        assert body["error"]["code"] == "not_supported"
+
+    @pytest.mark.asyncio
+    async def test_load_incomplete_snapshot_returns_202_repair_prompt(
+        self,
+        client: AsyncClient,
+    ) -> None:
+        """Cached-but-incomplete models should require a repair download instead of 500."""
+        app = client._transport.app  # type: ignore[union-attr]
+        app.state.model_manager.is_model_available = AsyncMock(return_value=True)
+        app.state.model_manager.is_local_snapshot_complete = AsyncMock(return_value=False)
+        estimate = AsyncMock(return_value=1_000_000_000)
+        app.state.model_manager.estimate_size = estimate
+
+        response = await client.post("/admin/models/load", json={"model_id": "broken/model"})
+        assert response.status_code == 202
+        data = response.json()
+        assert data["status"] == "download_required"
+        assert "repair" in data["message"].lower()
+        estimate.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_load_auto_download_returns_507_when_disk_is_insufficient(
+        self,
+        client: AsyncClient,
+    ) -> None:
+        """auto_download should surface disk-space failures with structured 507."""
+        app = client._transport.app  # type: ignore[union-attr]
+        app.state.model_manager.is_model_available = AsyncMock(return_value=False)
+        app.state.model_manager.estimate_size = AsyncMock(return_value=2_000_000_000)
+        app.state.model_manager.start_download = AsyncMock(
+            side_effect=OSError("Insufficient disk space"),
+        )
+
+        response = await client.post(
+            "/admin/models/load",
+            json={"model_id": "broken/model", "auto_download": True},
+        )
+        assert response.status_code == 507
+        body = response.json()
+        assert body["error"]["code"] == "insufficient_disk"
+
+    @pytest.mark.asyncio
+    async def test_load_on_disk_returns_507_when_engine_raises_oserror(
+        self,
+        client: AsyncClient,
+    ) -> None:
+        """On-disk load should map OSError to structured insufficient_disk errors."""
+        app = client._transport.app  # type: ignore[union-attr]
+        app.state.engine.load_model = AsyncMock(side_effect=OSError("No space left on device"))
+
+        response = await client.post("/admin/models/load", json={"model_id": "test/model"})
+        assert response.status_code == 507
+        body = response.json()
+        assert body["error"]["code"] == "insufficient_disk"
+
+    @pytest.mark.asyncio
+    async def test_load_runtime_incompatible_returns_422(
+        self,
+        client: AsyncClient,
+    ) -> None:
+        """Runtime compatibility guard errors should surface as explicit 422."""
+        app = client._transport.app  # type: ignore[union-attr]
+        app.state.engine.load_model = AsyncMock(
+            side_effect=ModelRuntimeCompatibilityError("blocked-test"),
+        )
+
+        response = await client.post("/admin/models/load", json={"model_id": "test/model"})
+        assert response.status_code == 422
+        body = response.json()
+        assert body["error"]["code"] == "model_unsupported_backend"
+        assert body["error"]["param"] == "model_id"
+
+    @pytest.mark.asyncio
+    async def test_load_passes_allow_unsupported_runtime_flag(
+        self,
+        client: AsyncClient,
+    ) -> None:
+        """Load API forwards allow_unsupported_runtime to engine for explicit override."""
+        app = client._transport.app  # type: ignore[union-attr]
+        app.state.engine.load_model = AsyncMock(
+            return_value=SimpleNamespace(memory_used_gb=11.1),
+        )
+
+        response = await client.post(
+            "/admin/models/load",
+            json={"model_id": "test/model", "allow_unsupported_runtime": True},
+        )
+        assert response.status_code == 200
+        kwargs = app.state.engine.load_model.await_args.kwargs
+        assert kwargs["allow_unsupported_runtime"] is True
+
+    @pytest.mark.asyncio
+    async def test_load_runtime_timeout_maps_to_deterministic_loader_code(
+        self,
+        client: AsyncClient,
+    ) -> None:
+        """Loader timeout errors should map to deterministic model_load_timeout API code."""
+        app = client._transport.app  # type: ignore[union-attr]
+        app.state.engine.load_model = AsyncMock(
+            side_effect=RuntimeError("model_load_timeout:Loader timed out after 120s"),
+        )
+
+        response = await client.post("/admin/models/load", json={"model_id": "test/model"})
+        assert response.status_code == 409
+        body = response.json()
+        assert body["error"]["code"] == "model_load_timeout"
+        assert body["error"]["param"] == "model_id"
+
 
 class TestAdminUnload:
     """Tests for POST /admin/models/unload."""

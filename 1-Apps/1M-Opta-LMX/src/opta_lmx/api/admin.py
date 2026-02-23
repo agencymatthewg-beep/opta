@@ -283,6 +283,39 @@ async def load_model(
     except MemoryError as e:
         return insufficient_memory(str(e))
     except RuntimeError as e:
+        msg = str(e)
+        if msg.startswith(f"{ErrorCodes.MODEL_LOAD_TIMEOUT}:"):
+            return openai_error(
+                status_code=409,
+                message=msg,
+                error_type="invalid_request_error",
+                param="model_id",
+                code=ErrorCodes.MODEL_LOAD_TIMEOUT,
+            )
+        if msg.startswith(f"{ErrorCodes.MODEL_LOADER_CRASHED}:"):
+            return openai_error(
+                status_code=409,
+                message=msg,
+                error_type="invalid_request_error",
+                param="model_id",
+                code=ErrorCodes.MODEL_LOADER_CRASHED,
+            )
+        if msg.startswith(f"{ErrorCodes.MODEL_PROBE_FAILED}:"):
+            return openai_error(
+                status_code=409,
+                message=msg,
+                error_type="invalid_request_error",
+                param="model_id",
+                code=ErrorCodes.MODEL_PROBE_FAILED,
+            )
+        if "failed canary" in msg.lower() or "quarantined" in msg.lower():
+            return openai_error(
+                status_code=409,
+                message=msg,
+                error_type="invalid_request_error",
+                param="model_id",
+                code=ErrorCodes.MODEL_CANARY_FAILED,
+            )
         return internal_error(str(e))
 
     elapsed_ms = (time.monotonic() - start) * 1000

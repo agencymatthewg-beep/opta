@@ -51,6 +51,16 @@ class ModelsConfig(BaseModel):
     inference_timeout_sec: int = Field(
         300, ge=10, le=3600, description="Max seconds per inference request before timeout",
     )
+    loader_isolation_enabled: bool = Field(
+        True,
+        description="Run model bring-up probe in an isolated child process before in-process load.",
+    )
+    loader_timeout_sec: int = Field(
+        120,
+        ge=10,
+        le=900,
+        description="Timeout in seconds for child-process loader probe.",
+    )
     warmup_on_load: bool = Field(
         True, description="Run a small inference after model load to prime JIT/KV cache",
     )
