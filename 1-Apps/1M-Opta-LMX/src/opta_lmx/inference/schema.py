@@ -289,6 +289,53 @@ class AdminCompatibilityResponse(BaseModel):
     summary: dict[str, dict[str, Any]] | None = None
 
 
+class AdminAutotuneRequest(BaseModel):
+    """Request to benchmark candidate performance profiles and persist the best one."""
+
+    model_id: str
+    prompt: str = Field(
+        "Explain the theory of relativity in simple terms.",
+        description="Prompt used for profile benchmarking.",
+    )
+    max_tokens: int = Field(128, ge=1, le=4096)
+    temperature: float = Field(0.7, ge=0, le=2.0)
+    runs: int = Field(1, ge=1, le=5)
+    profiles: list[dict[str, Any]] = Field(
+        default_factory=list,
+        description="Candidate performance override dictionaries.",
+    )
+    allow_unsupported_runtime: bool = Field(
+        False,
+        description="Allow evaluating candidates on otherwise blocked backends.",
+    )
+
+
+class AdminAutotuneCandidate(BaseModel):
+    profile: dict[str, Any] = Field(default_factory=dict)
+    metrics: dict[str, float] = Field(default_factory=dict)
+    score: float
+
+
+class AdminAutotuneResponse(BaseModel):
+    model_id: str
+    backend: str
+    backend_version: str
+    best_profile: dict[str, Any] = Field(default_factory=dict)
+    best_metrics: dict[str, float] = Field(default_factory=dict)
+    best_score: float
+    candidates: list[AdminAutotuneCandidate] = Field(default_factory=list)
+
+
+class AdminAutotuneRecordResponse(BaseModel):
+    ts: float
+    model_id: str
+    backend: str
+    backend_version: str
+    profile: dict[str, Any] = Field(default_factory=dict)
+    metrics: dict[str, Any] = Field(default_factory=dict)
+    score: float
+
+
 class AdminUnloadRequest(BaseModel):
     """Request to unload a model."""
 

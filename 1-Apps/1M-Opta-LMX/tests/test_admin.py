@@ -10,11 +10,12 @@ import pytest
 from httpx import AsyncClient
 
 from opta_lmx import __version__
+from opta_lmx.inference.autotune_registry import AutotuneRegistry
 from opta_lmx.inference.backend_policy import backend_candidates
 from opta_lmx.inference.engine import LoadedModel, ModelRuntimeCompatibilityError
 from opta_lmx.inference.schema import AdminLoadRequest
 from opta_lmx.model_safety import CompatibilityRegistry
-from opta_lmx.model_safety import ErrorCodes
+from opta_lmx.model_safety import ErrorCodes, backend_version
 
 # ─── Helper ──────────────────────────────────────────────────────────────
 
@@ -432,6 +433,91 @@ class TestAdminCompatibility:
         body = response.json()
         assert body["total"] == 1
         assert len(body["rows"]) == 1
+
+
+class TestAdminAutotune:
+    @pytest.mark.asyncio
+    async def test_admin_autotune_post_and_get_roundtrip(
+        self,
+        client: AsyncClient,
+        tmp_path,
+    ) -> None:
+        app = client._transport.app  # type: ignore[union-attr]
+        app.state.engine._autotune = AutotuneRegistry(path=tmp_path / "autotune-admin.json")
+
+        async def stream_tokens(**_kwargs):
+            for token in ("A", "B", "C"):
+                yield token
+
+        app.state.engine.stream_generate = stream_tokens
+
+        response = await client.post(
+            "/admin/models/autotune",
+            json={
+                "model_id": "test/model",
+                "runs": 1,
+                "max_tokens": 16,
+                "profiles": [
+                    {"kv_bits": 4},
+                    {"kv_bits": 8},
+                ],
+            },
+        )
+        assert response.status_code == 200
+        body = response.json()
+        assert body["model_id"] == "test/model"
+        assert len(body["candidates"]) == 2
+        assert body["best_profile"] in [{"kv_bits": 4}, {"kv_bits": 8}]
+
+        get_resp = await client.get(
+            "/admin/models/test/model/autotune",
+            params={"backend": body["backend"], "backend_version": body["backend_version"]},
+        )
+        assert get_resp.status_code == 200
+        saved = get_resp.json()
+        assert saved["model_id"] == "test/model"
+        assert saved["profile"] == body["best_profile"]
+
+    @pytest.mark.asyncio
+    async def test_load_applies_tuned_profile_when_explicit_override_missing(
+        self,
+        client: AsyncClient,
+        tmp_path,
+    ) -> None:
+        from opta_lmx.presets.manager import Preset
+
+        app = client._transport.app  # type: ignore[union-attr]
+        preset_mgr = app.state.preset_manager
+        preset_mgr._presets["p"] = Preset(  # noqa: SLF001 - test-only fixture setup
+            name="p",
+            model="test/model",
+            performance={"kv_bits": 8, "prefix_cache": True},
+        )
+
+        registry = AutotuneRegistry(path=tmp_path / "autotune-load.json")
+        registry.save_best(
+            model_id="test/model",
+            backend="vllm-mlx",
+            backend_version=backend_version("mlx"),
+            profile={"kv_bits": 4, "prefix_cache": False},
+            metrics={
+                "avg_tokens_per_second": 100.0,
+                "avg_ttft_ms": 50.0,
+                "avg_total_ms": 150.0,
+                "error_rate": 0.0,
+                "queue_wait_ms": 0.0,
+            },
+            score=99.25,
+        )
+        app.state.engine._autotune = registry
+        app.state.engine.load_model = AsyncMock(return_value=SimpleNamespace(memory_used_gb=1.0))
+
+        response = await client.post("/admin/models/load", json={"model_id": "test/model"})
+        assert response.status_code == 200
+        kwargs = app.state.engine.load_model.await_args.kwargs
+        perf = kwargs["performance_overrides"]
+        assert perf["kv_bits"] == 4
+        assert perf["prefix_cache"] is False
 
 
 class TestAdminUnload:

@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-import yaml
+import yaml  # type: ignore[import-untyped]
 
 from opta_lmx.inference.schema import ChatCompletionRequest
 
@@ -154,6 +154,36 @@ class PresetManager:
             if preset.model == model_id and preset.performance:
                 return preset.performance
         return None
+
+    @staticmethod
+    def _deep_merge_dicts(base: dict[str, Any], overlay: dict[str, Any]) -> dict[str, Any]:
+        """Recursively merge two dicts where overlay values win."""
+        merged: dict[str, Any] = dict(base)
+        for key, value in overlay.items():
+            existing = merged.get(key)
+            if isinstance(existing, dict) and isinstance(value, dict):
+                merged[key] = PresetManager._deep_merge_dicts(existing, value)
+            else:
+                merged[key] = value
+        return merged
+
+    def compose_performance_for_load(
+        self,
+        model_id: str,
+        *,
+        tuned: dict[str, Any] | None = None,
+        explicit: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Compose effective load performance profile.
+
+        Precedence (highest last): preset < tuned < explicit
+        """
+        merged: dict[str, Any] = dict(self.find_performance_for_model(model_id) or {})
+        if tuned:
+            merged = self._deep_merge_dicts(merged, tuned)
+        if explicit:
+            merged = self._deep_merge_dicts(merged, explicit)
+        return merged
 
     def get_routing_aliases(self) -> dict[str, list[str]]:
         """Return {alias: [model_id]} mappings from presets with routing_alias set."""

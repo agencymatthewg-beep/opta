@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import logging
 import os
@@ -45,7 +46,11 @@ from opta_lmx.api.errors import (
 )
 from opta_lmx.config import load_config
 from opta_lmx.inference.engine import ModelRuntimeCompatibilityError
+from opta_lmx.inference.autotune_scoring import score_profile
 from opta_lmx.inference.schema import (
+    AdminAutotuneRecordResponse,
+    AdminAutotuneRequest,
+    AdminAutotuneResponse,
     AdminDeleteResponse,
     AdminDownloadRequest,
     AdminDownloadResponse,
@@ -76,6 +81,7 @@ from opta_lmx.inference.schema import (
     SpeculativeBenchmarkStats,
 )
 from opta_lmx.model_safety import AdmissionFailure, ErrorCodes, validate_architecture
+from opta_lmx.monitoring.benchmark import benchmark_summary_to_autotune_metrics
 from opta_lmx.monitoring.metrics import speculative_metric_kwargs
 from opta_lmx.security.jwt_verifier import SupabaseJWTVerifier
 
@@ -437,9 +443,16 @@ async def load_model(
             )
 
         # auto_download=True: skip confirmation, start download + auto-load
-        perf = preset_mgr.find_performance_for_model(body.model_id) or {}
-        if body.performance_overrides:
-            perf = {**perf, **body.performance_overrides}
+        tuned = engine.get_tuned_profile(
+            body.model_id,
+            allow_failed=body.allow_unsupported_runtime,
+        )
+        tuned_profile = tuned.get("profile") if isinstance(tuned, dict) else None
+        perf = preset_mgr.compose_performance_for_load(
+            body.model_id,
+            tuned=tuned_profile if isinstance(tuned_profile, dict) else None,
+            explicit=body.performance_overrides,
+        )
         try:
             task = await manager.start_download(repo_id=body.model_id)
         except OSError as e:
@@ -474,9 +487,16 @@ async def load_model(
         )
 
     # Model is on disk — load immediately (with preset performance if available)
-    perf = preset_mgr.find_performance_for_model(body.model_id) or {}
-    if body.performance_overrides:
-        perf = {**perf, **body.performance_overrides}
+    tuned = engine.get_tuned_profile(
+        body.model_id,
+        allow_failed=body.allow_unsupported_runtime,
+    )
+    tuned_profile = tuned.get("profile") if isinstance(tuned, dict) else None
+    perf = preset_mgr.compose_performance_for_load(
+        body.model_id,
+        tuned=tuned_profile if isinstance(tuned_profile, dict) else None,
+        explicit=body.performance_overrides,
+    )
     start = time.monotonic()
     previous_hf_offline = os.environ.get("HF_HUB_OFFLINE")
     # Force local-only artifact resolution for "already on disk" loads so
@@ -644,6 +664,192 @@ async def list_model_compatibility(
 
 
 @router.post(
+    "/admin/models/autotune",
+    response_model=None,
+    responses={
+        200: {"model": AdminAutotuneResponse},
+        403: {"model": ErrorResponse},
+        404: {"model": ErrorResponse},
+    },
+)
+async def autotune_model(
+    body: AdminAutotuneRequest,
+    _auth: AdminAuth,
+    engine: Engine,
+    metrics: Metrics,
+    preset_mgr: Presets,
+) -> AdminAutotuneResponse | JSONResponse:
+    """Benchmark candidate load profiles and persist best profile for this model/backend."""
+    candidate_inputs = list(body.profiles or [{}])
+    original_loaded = engine.is_model_loaded(body.model_id)
+    original_perf: dict[str, Any] | None = None
+    if original_loaded:
+        try:
+            original_perf = dict(engine.get_model(body.model_id).performance_overrides or {})
+        except Exception:
+            original_perf = None
+
+    candidates: list[dict[str, Any]] = []
+    best_row: dict[str, Any] | None = None
+    best_sort_key: tuple[float, float, float] | None = None
+    backend_name = engine.resolve_autotune_backend(
+        body.model_id,
+        allow_failed=body.allow_unsupported_runtime,
+    )
+    backend_version_value = engine.autotune_backend_version(backend_name)
+
+    try:
+        for candidate in candidate_inputs:
+            if engine.is_model_loaded(body.model_id):
+                await engine.unload_model(body.model_id, reason="autotune_candidate_swap")
+
+            explicit = candidate if isinstance(candidate, dict) else {}
+            effective_profile = preset_mgr.compose_performance_for_load(
+                body.model_id,
+                tuned=None,
+                explicit=explicit,
+            )
+
+            try:
+                await engine.load_model(
+                    body.model_id,
+                    performance_overrides=effective_profile or None,
+                    allow_unsupported_runtime=body.allow_unsupported_runtime,
+                )
+            except ModelRuntimeCompatibilityError as e:
+                return openai_error(
+                    status_code=422,
+                    message=str(e),
+                    error_type="not_supported_error",
+                    param="model_id",
+                    code=ErrorCodes.MODEL_UNSUPPORTED_BACKEND,
+                )
+            except MemoryError as e:
+                return insufficient_memory(str(e))
+            except OSError as e:
+                return insufficient_disk(str(e))
+            except RuntimeError as e:
+                return openai_error(
+                    status_code=409,
+                    message=str(e),
+                    error_type="invalid_request_error",
+                    param="model_id",
+                    code=ErrorCodes.MODEL_PROBE_FAILED,
+                )
+
+            benchmark_payload = await benchmark_model(
+                BenchmarkRequest(
+                    model_id=body.model_id,
+                    prompt=body.prompt,
+                    max_tokens=body.max_tokens,
+                    temperature=body.temperature,
+                    runs=body.runs,
+                ),
+                _auth,
+                engine,
+                metrics,
+            )
+            if isinstance(benchmark_payload, JSONResponse):
+                return benchmark_payload
+
+            backend_name = engine.resolve_autotune_backend(
+                body.model_id,
+                allow_failed=body.allow_unsupported_runtime,
+            )
+            backend_version_value = engine.autotune_backend_version(backend_name)
+
+            metrics_payload = benchmark_summary_to_autotune_metrics(
+                {
+                    "avg_tokens_per_second": benchmark_payload.avg_tokens_per_second,
+                    "avg_ttft_ms": benchmark_payload.avg_time_to_first_token_ms,
+                    "avg_total_time_ms": benchmark_payload.avg_total_time_ms,
+                    "error_rate": 0.0,
+                    "queue_wait_ms": 0.0,
+                },
+            )
+            score_result = score_profile(
+                avg_tokens_per_second=metrics_payload["avg_tokens_per_second"],
+                avg_ttft_ms=metrics_payload["avg_ttft_ms"],
+                error_rate=metrics_payload["error_rate"],
+                avg_total_ms=metrics_payload["avg_total_ms"],
+                queue_wait_ms=metrics_payload["queue_wait_ms"],
+            )
+            score_value = engine.save_tuned_profile(
+                model_id=body.model_id,
+                backend=backend_name,
+                backend_version_value=backend_version_value,
+                profile=effective_profile,
+                metrics=metrics_payload,
+            )
+
+            row = {
+                "profile": effective_profile,
+                "metrics": metrics_payload,
+                "score": score_value,
+            }
+            candidates.append(row)
+            if best_sort_key is None or score_result.sort_key < best_sort_key:
+                best_sort_key = score_result.sort_key
+                best_row = row
+    finally:
+        if engine.is_model_loaded(body.model_id):
+            with contextlib.suppress(Exception):
+                await engine.unload_model(body.model_id, reason="autotune_cleanup")
+        if original_loaded:
+            with contextlib.suppress(Exception):
+                await engine.load_model(
+                    body.model_id,
+                    performance_overrides=original_perf or None,
+                    allow_unsupported_runtime=body.allow_unsupported_runtime,
+                )
+
+    if not candidates or best_row is None:
+        return internal_error("Autotune did not produce benchmark results.")
+
+    return AdminAutotuneResponse.model_validate(
+        {
+            "model_id": body.model_id,
+            "backend": backend_name,
+            "backend_version": backend_version_value,
+            "best_profile": best_row["profile"],
+            "best_metrics": best_row["metrics"],
+            "best_score": best_row["score"],
+            "candidates": candidates,
+        },
+    )
+
+
+@router.get(
+    "/admin/models/{model_id:path}/autotune",
+    response_model=None,
+    responses={403: {"model": ErrorResponse}, 404: {"model": ErrorResponse}},
+)
+async def get_model_autotune(
+    model_id: str,
+    _auth: AdminAuth,
+    engine: Engine,
+    backend: str | None = None,
+    backend_version: str | None = None,
+) -> AdminAutotuneRecordResponse | JSONResponse:
+    """Return best-known autotune profile for a model/backend."""
+    record = engine.get_tuned_profile(
+        model_id,
+        backend=backend,
+        backend_version_value=backend_version,
+    )
+    if not isinstance(record, dict):
+        return openai_error(
+            status_code=404,
+            message=f"No autotune profile found for model '{model_id}'.",
+            error_type="invalid_request_error",
+            param="model_id",
+            code="autotune_not_found",
+        )
+
+    return AdminAutotuneRecordResponse.model_validate(record)
+
+
+@router.post(
     "/admin/models/load/confirm",
     response_model=None,
     responses={
@@ -684,7 +890,13 @@ async def confirm_and_load(
 
     model_id = entry["model_id"]
 
-    perf = preset_mgr.find_performance_for_model(model_id)
+    tuned = engine.get_tuned_profile(model_id)
+    tuned_profile = tuned.get("profile") if isinstance(tuned, dict) else None
+    perf = preset_mgr.compose_performance_for_load(
+        model_id,
+        tuned=tuned_profile if isinstance(tuned_profile, dict) else None,
+        explicit=None,
+    )
     try:
         task = await manager.start_download(repo_id=model_id)
     except OSError as e:

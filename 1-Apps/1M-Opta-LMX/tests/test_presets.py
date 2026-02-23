@@ -150,6 +150,31 @@ class TestPresetManagerLookup:
         aliases = mgr.get_routing_aliases()
         assert aliases == {"code": ["m1", "m2"]}
 
+    def test_autotune_compose_performance_precedence(self, tmp_path: Path) -> None:
+        """compose_performance_for_load uses explicit > tuned > preset precedence."""
+        presets_dir = tmp_path / "presets"
+        _write_preset(presets_dir, "a", {
+            "name": "a",
+            "model": "m1",
+            "performance": {
+                "kv_bits": 8,
+                "scheduler": {"max_num_seqs": 64, "prefill_batch_size": 2},
+                "prefix_cache": True,
+            },
+        })
+
+        mgr = PresetManager(presets_dir)
+        mgr.load_presets()
+        merged = mgr.compose_performance_for_load(
+            "m1",
+            tuned={"kv_bits": 4, "scheduler": {"max_num_seqs": 256}},
+            explicit={"scheduler": {"prefill_batch_size": 12}},
+        )
+        assert merged["kv_bits"] == 4
+        assert merged["prefix_cache"] is True
+        assert merged["scheduler"]["max_num_seqs"] == 256
+        assert merged["scheduler"]["prefill_batch_size"] == 12
+
 
 class TestPresetApply:
     """Test applying presets to requests."""
