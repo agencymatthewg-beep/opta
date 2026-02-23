@@ -10,8 +10,10 @@ import pytest
 from httpx import AsyncClient
 
 from opta_lmx import __version__
+from opta_lmx.inference.backend_policy import backend_candidates
 from opta_lmx.inference.engine import LoadedModel, ModelRuntimeCompatibilityError
 from opta_lmx.inference.schema import AdminLoadRequest
+from opta_lmx.model_safety import CompatibilityRegistry
 from opta_lmx.model_safety import ErrorCodes
 
 # ─── Helper ──────────────────────────────────────────────────────────────
@@ -161,6 +163,20 @@ class TestAdminLoad:
         )
         assert response.status_code == 200
         assert response.json()["success"] is True
+
+    @pytest.mark.asyncio
+    async def test_load_writes_update_journal(self, client: AsyncClient) -> None:
+        """Successful model loads emit an update journal entry when enabled."""
+        app = client._transport.app  # type: ignore[union-attr]
+        app.state.journal_manager = MagicMock()
+        app.state.journal_manager.write_update_log = MagicMock()
+
+        response = await client.post("/admin/models/load", json={"model_id": "test/model"})
+        assert response.status_code == 200
+        app.state.journal_manager.write_update_log.assert_called_once()
+        call = app.state.journal_manager.write_update_log.call_args.kwargs
+        assert call["title"] == "Load test/model"
+        assert call["category"] == "sync"
 
     @pytest.mark.asyncio
     async def test_load_not_on_disk_returns_202(self, client: AsyncClient) -> None:
@@ -322,6 +338,24 @@ class TestAdminUnload:
             "/admin/models/unload", json={"model_id": "nonexistent/model"},
         )
         assert response.status_code == 404
+
+    @pytest.mark.asyncio
+    async def test_unload_writes_update_journal(self, client: AsyncClient) -> None:
+        """Successful unloads emit an update journal entry when enabled."""
+        app = client._transport.app  # type: ignore[union-attr]
+        app.state.journal_manager = MagicMock()
+        app.state.journal_manager.write_update_log = MagicMock()
+
+        await client.post("/admin/models/load", json={"model_id": "test/model"})
+        app.state.journal_manager.write_update_log.reset_mock()
+
+        response = await client.post("/admin/models/unload", json={"model_id": "test/model"})
+        assert response.status_code == 200
+        app.state.journal_manager.write_update_log.assert_called_once()
+        call = app.state.journal_manager.write_update_log.call_args.kwargs
+        assert call["title"] == "Unload test/model"
+        assert call["category"] == "sync"
+        assert call["promoted"] is False
 
 
 # ─── Models List ─────────────────────────────────────────────────────────
@@ -511,6 +545,20 @@ class TestConfigReload:
         # Threshold should match the loaded config
         assert app.state.memory_monitor.threshold_percent == 85
 
+    @pytest.mark.asyncio
+    async def test_reload_writes_update_journal(self, client: AsyncClient) -> None:
+        """Config reload emits an update journal entry when enabled."""
+        app = client._transport.app  # type: ignore[union-attr]
+        app.state.journal_manager = MagicMock()
+        app.state.journal_manager.write_update_log = MagicMock()
+
+        response = await client.post("/admin/config/reload")
+        assert response.status_code == 200
+        app.state.journal_manager.write_update_log.assert_called_once()
+        call = app.state.journal_manager.write_update_log.call_args.kwargs
+        assert call["title"] == "Reload LMX Config"
+        assert call["category"] == "sync"
+
 
 # ─── Benchmark ───────────────────────────────────────────────────────────
 
@@ -556,6 +604,10 @@ class TestBenchmark:
         assert data["results"][0]["tokens_generated"] == 3
         assert data["avg_tokens_per_second"] > 0
         assert data["avg_time_to_first_token_ms"] >= 0
+        assert "speculative" in data
+        assert isinstance(data["speculative"]["active"], bool)
+        assert isinstance(data["speculative"]["ignored_tokens"], int)
+        assert "speculative" in data["results"][0]
 
 
 # ─── Performance Override & Visibility ───────────────────────────────────
@@ -608,9 +660,21 @@ class TestPerformanceOverrides:
         assert data["model_id"] == "test/model"
         assert data["backend_type"] == "mlx"
         assert data["performance"] == {"prefix_cache": True}
+        assert "speculative" in data
+        assert isinstance(data["speculative"]["active"], bool)
         assert "global_defaults" in data
         assert "kv_bits" in data["global_defaults"]
         assert "prefix_cache_enabled" in data["global_defaults"]
+
+
+class TestBackendPolicyFallback:
+    def test_backend_policy_fallback_for_gguf_model_id(self, tmp_path) -> None:
+        cfg = SimpleNamespace(
+            backend_preference_order=["vllm-mlx", "mlx-lm"],
+            gguf_fallback_enabled=False,
+        )
+        registry = CompatibilityRegistry(path=tmp_path / "compat-admin-policy.json")
+        assert backend_candidates("models/local-model.gguf", cfg, registry) == ["gguf"]
 
     @pytest.mark.asyncio
     async def test_performance_endpoint_not_loaded_returns_404(self, client: AsyncClient) -> None:

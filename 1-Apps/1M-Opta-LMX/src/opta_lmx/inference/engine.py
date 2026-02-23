@@ -15,6 +15,7 @@ from collections.abc import AsyncIterator
 from typing import Any, cast
 
 from opta_lmx.inference.context import estimate_prompt_tokens, fit_to_context
+from opta_lmx.inference.backend_policy import backend_candidates
 from opta_lmx.inference.predictor import UsagePredictor
 from opta_lmx.inference.schema import (
     ChatCompletionResponse,
@@ -291,6 +292,8 @@ class InferenceEngine:
         inference_timeout_sec: int = 300,
         loader_isolation_enabled: bool = True,
         loader_timeout_sec: int = 120,
+        backend_preference_order: list[str] | None = None,
+        gguf_fallback_enabled: bool = False,
         warmup_on_load: bool = True,
         stream_interval: int = 1,
         scheduler_max_num_seqs: int = 256,
@@ -330,6 +333,8 @@ class InferenceEngine:
         self._inference_timeout = inference_timeout_sec
         self._loader_isolation_enabled = loader_isolation_enabled
         self._loader_timeout_sec = loader_timeout_sec
+        self._backend_preference_order = list(backend_preference_order or ["vllm-mlx", "mlx-lm"])
+        self._gguf_fallback_enabled = gguf_fallback_enabled
         self._semaphore_timeout = semaphore_timeout_sec
         self._waiting_global_slot = 0
         self._waiting_model_slot = 0
@@ -568,7 +573,18 @@ class InferenceEngine:
     ) -> ModelInfo:
         """Execute the actual model load (called after lock/guard checks)."""
         fmt = _detect_format(model_id)
-        runtime_issue = _detect_runtime_incompatibility(model_id) if fmt == "mlx" else None
+        candidate_backends = backend_candidates(
+            model_id,
+            self,
+            self._compatibility,
+            allow_failed=allow_unsupported_runtime,
+        )
+        selected_backend = candidate_backends[0] if candidate_backends else "vllm-mlx"
+        runtime_issue = (
+            _detect_runtime_incompatibility(model_id)
+            if fmt == "mlx" and selected_backend == "vllm-mlx"
+            else None
+        )
         if runtime_issue is not None:
             runtime_versions = runtime_issue.get("runtime_versions", {})
             version_hint_parts = [
@@ -592,8 +608,8 @@ class InferenceEngine:
                 )
                 self._compatibility.record(
                     model_id=model_id,
-                    backend=detect_backend_type(model_id),
-                    backend_version_value=backend_version(detect_backend_type(model_id)),
+                    backend=selected_backend,
+                    backend_version_value=backend_version("mlx"),
                     outcome="fail",
                     reason=f"runtime_incompatible:{runtime_issue.get('matched_signature')}",
                     metadata={"runtime_versions": runtime_versions},
@@ -618,12 +634,12 @@ class InferenceEngine:
         perf = performance_overrides or {}
         self._readiness.set_state(model_id, "loading")
 
-        if fmt == "mlx" and self._loader_isolation_enabled:
+        if fmt == "mlx" and selected_backend == "vllm-mlx" and self._loader_isolation_enabled:
             try:
                 outcome = await run_loader_supervisor(
                     LoadSpec(
                         model_id=model_id,
-                        backend="vllm-mlx",
+                        backend=selected_backend,
                         use_batching=batching,
                         performance_overrides=perf,
                         probe_only=True,
@@ -652,7 +668,7 @@ class InferenceEngine:
                 )
                 self._compatibility.record(
                     model_id=model_id,
-                    backend="vllm-mlx",
+                    backend=selected_backend,
                     backend_version_value=backend_version("mlx"),
                     outcome="fail",
                     reason=failure_reason,
