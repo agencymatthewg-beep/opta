@@ -1,14 +1,24 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { DEFAULT_SETTINGS, getOptimalBaseUrl } from '@/lib/connection';
+import { DEFAULT_SETTINGS, getOptimalBaseUrl, isLanAvailable } from '@/lib/connection';
 
-describe('DEFAULT_SETTINGS tunnel URL', () => {
-  it('tunnelUrl is a string (reads from env var or defaults to empty string)', () => {
-    expect(typeof DEFAULT_SETTINGS.tunnelUrl).toBe('string');
+describe('isLanAvailable', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
-  it('tunnelUrl matches NEXT_PUBLIC_DEFAULT_LMX_TUNNEL_URL env var at module load time', () => {
-    const envVal = process.env.NEXT_PUBLIC_DEFAULT_LMX_TUNNEL_URL ?? '';
-    expect(DEFAULT_SETTINGS.tunnelUrl).toBe(envVal);
+  it('returns true on http: (plain LAN)', () => {
+    vi.stubGlobal('window', { location: { protocol: 'http:' } });
+    expect(isLanAvailable()).toBe(true);
+  });
+
+  it('returns false on https: (mixed content blocked)', () => {
+    vi.stubGlobal('window', { location: { protocol: 'https:' } });
+    expect(isLanAvailable()).toBe(false);
+  });
+
+  it('returns false when window is undefined (SSR)', () => {
+    vi.stubGlobal('window', undefined);
+    expect(isLanAvailable()).toBe(false);
   });
 });
 

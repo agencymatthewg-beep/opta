@@ -40,13 +40,13 @@ export const CONNECTION_SETTINGS_UPDATED_EVENT =
 // Defaults
 // ---------------------------------------------------------------------------
 
-export const DEFAULT_SETTINGS: ConnectionSettings = {
+export const DEFAULT_SETTINGS: ConnectionSettings = Object.freeze({
   host: '192.168.188.11',
   port: 1234,
   adminKey: '',
   useTunnel: false,
   tunnelUrl: process.env.NEXT_PUBLIC_DEFAULT_LMX_TUNNEL_URL ?? '',
-};
+});
 
 // ---------------------------------------------------------------------------
 // localStorage keys
