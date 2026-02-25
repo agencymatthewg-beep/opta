@@ -300,7 +300,7 @@ class BenchmarkResultStore:
         """Write result to a timestamped JSON file. Returns the path written."""
         self._dir.mkdir(parents=True, exist_ok=True)
         slug = _model_to_slug(result.model_id)
-        ts = result.timestamp.replace(":", "-").replace(".", "-")
+        ts = _MODEL_SLUG_RE.sub("-", result.timestamp)
         base = f"{slug}_{ts}"
         path = self._dir / f"{base}.json"
         # Avoid overwriting existing files with the same name (e.g. same model +
@@ -326,5 +326,5 @@ class BenchmarkResultStore:
                 if model_id is None or result.model_id == model_id:
                     results.append(result)
             except Exception:
-                logger.warning("benchmark_result_load_failed", extra={"path": str(path)})
+                logger.warning("benchmark_result_load_failed", extra={"path": str(path)}, exc_info=True)
         return results
