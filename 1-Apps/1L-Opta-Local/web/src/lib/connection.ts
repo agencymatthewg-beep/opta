@@ -32,6 +32,10 @@ export interface ConnectionSettings {
   tunnelUrl: string;
 }
 
+/** Broadcast when connection settings change so providers can refresh state. */
+export const CONNECTION_SETTINGS_UPDATED_EVENT =
+  'opta-local:connection-settings-updated';
+
 // ---------------------------------------------------------------------------
 // Defaults
 // ---------------------------------------------------------------------------
@@ -41,7 +45,7 @@ export const DEFAULT_SETTINGS: ConnectionSettings = {
   port: 1234,
   adminKey: '',
   useTunnel: false,
-  tunnelUrl: '',
+  tunnelUrl: process.env.NEXT_PUBLIC_DEFAULT_LMX_TUNNEL_URL ?? '',
 };
 
 // ---------------------------------------------------------------------------
@@ -91,6 +95,10 @@ export async function saveConnectionSettings(
     await setSecure(STORAGE_KEY_ADMIN_KEY, settings.adminKey);
   } else {
     removeSecure(STORAGE_KEY_ADMIN_KEY);
+  }
+
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event(CONNECTION_SETTINGS_UPDATED_EVENT));
   }
 }
 
