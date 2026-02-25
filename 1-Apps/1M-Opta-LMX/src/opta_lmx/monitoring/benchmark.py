@@ -9,10 +9,14 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import time
+from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
+
+from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
 
@@ -187,3 +191,93 @@ def benchmark_summary_to_autotune_metrics(summary: dict[str, Any]) -> dict[str, 
         "error_rate": float(summary.get("error_rate", 0.0) or 0.0),
         "queue_wait_ms": float(summary.get("queue_wait_ms", 0.0) or 0.0),
     }
+
+
+def compute_repetition_ratio(text: str) -> float:
+    """Compute fraction of 5-gram sequences that are excessively repeated.
+
+    A 5-gram must appear more than twice to count as pathological repetition.
+    This allows natural sentence repetition (e.g. 2-3 repetitions of a phrase)
+    while flagging looping/degenerate outputs where the same n-gram appears
+    many times in a row.
+    """
+    words = text.lower().split()
+    if len(words) < 5:
+        return 0.0
+    ngrams = [tuple(words[i : i + 5]) for i in range(len(words) - 4)]
+    counts = Counter(ngrams)
+    # Only count occurrences beyond the second as "excess" repetition
+    repeated = sum(c - 2 for c in counts.values() if c > 2)
+    return repeated / len(ngrams) if ngrams else 0.0
+
+
+def classify_coherence(
+    output_text: str,
+    completed_naturally: bool,
+    output_token_count: int,
+    num_output_tokens: int,
+) -> str:
+    """Classify output coherence as ok/truncated/repetitive/garbled."""
+    if compute_repetition_ratio(output_text) > 0.3:
+        return "repetitive"
+    if not completed_naturally and output_token_count >= num_output_tokens:
+        return "truncated"
+    has_punctuation = any(c in output_text for c in ".!?,;:")
+    has_spaces = " " in output_text
+    if not has_punctuation and not has_spaces and len(output_text) > 20:
+        return "garbled"
+    return "ok"
+
+
+class ToolCallBenchmark(BaseModel):
+    tool_definition: dict[str, object]
+    expected_tool_name: str
+    prompt_used: str
+    call_produced: bool
+    tool_name_correct: bool
+    params_valid_json: bool
+    params_match_schema: bool
+    raw_tool_call: dict[str, object] | None
+    latency_sec: float
+
+
+class SkillsBenchmark(BaseModel):
+    skill_name: str
+    skill_invoked_successfully: bool
+    skill_result_preview: str | None
+    skill_latency_sec: float | None
+    error: str | None
+
+
+class BenchmarkRunStats(BaseModel):
+    # Performance
+    ttft_p50_sec: float
+    ttft_p95_sec: float
+    ttft_mean_sec: float
+    toks_per_sec_p50: float
+    toks_per_sec_p95: float
+    toks_per_sec_mean: float
+    prompt_tokens: int
+    output_tokens: int
+    runs_completed: int
+    warmup_runs_discarded: int
+    # Output quality
+    output_text: str
+    output_token_count: int
+    completed_naturally: bool
+    repetition_ratio: float
+    coherence_flag: str  # "ok" | "truncated" | "repetitive" | "garbled"
+    # Capability quality
+    tool_call: ToolCallBenchmark | None
+    skills: list[SkillsBenchmark]
+
+
+class BenchmarkResult(BaseModel):
+    model_id: str
+    backend: str
+    timestamp: str
+    status: str  # "ok" | "insufficient_data"
+    hardware: str
+    lmx_version: str
+    prompt_preview: str
+    stats: BenchmarkRunStats
