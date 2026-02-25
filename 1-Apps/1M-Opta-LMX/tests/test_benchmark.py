@@ -253,3 +253,13 @@ async def test_benchmark_results_endpoint_filters_by_model(
     data = resp.json()
     assert len(data) == 1
     assert data[0]["model_id"] == "model/a"
+
+
+async def test_benchmark_router_mounted() -> None:
+    from opta_lmx.config import LMXConfig
+    from opta_lmx.main import create_app
+    config = LMXConfig()
+    app = create_app(config)
+    routes = [r.path for r in app.routes]
+    assert "/admin/benchmark/run" in routes
+    assert "/admin/benchmark/results" in routes
