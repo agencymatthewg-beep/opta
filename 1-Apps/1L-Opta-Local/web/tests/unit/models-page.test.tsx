@@ -1,5 +1,6 @@
-import { render, screen } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { cleanup, render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { HTMLAttributes, ReactNode } from 'react';
 
 // Mock ConnectionProvider so the page doesn't need a real connection
 vi.mock('@/components/shared/ConnectionProvider', () => ({
@@ -9,14 +10,18 @@ vi.mock('@/components/shared/ConnectionProvider', () => ({
 // Mock framer-motion to avoid animation complexity in unit tests
 vi.mock('framer-motion', () => ({
   motion: {
-    div: ({ children, ...p }: React.HTMLAttributes<HTMLDivElement>) =>
+    div: ({ children, ...p }: HTMLAttributes<HTMLDivElement>) =>
       <div {...p}>{children}</div>,
   },
-  AnimatePresence: ({ children }: { children: React.ReactNode }) =>
+  AnimatePresence: ({ children }: { children: ReactNode }) =>
     <>{children}</>,
 }));
 
 import ModelsPage from '@/app/models/page';
+
+afterEach(() => {
+  cleanup();
+});
 
 describe('ModelsPage', () => {
   it('renders the page header', () => {
