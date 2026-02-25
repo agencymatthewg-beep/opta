@@ -133,3 +133,123 @@ def test_result_store_filters_by_model_id(tmp_path: Path) -> None:
     results_a = store.load_all(model_id="model/a")
     assert len(results_a) == 2
     assert all(r.model_id == "model/a" for r in results_a)
+
+
+import pytest
+from httpx import ASGITransport, AsyncClient
+from unittest.mock import AsyncMock, MagicMock
+
+
+async def test_benchmark_model_not_loaded_returns_409(mock_engine) -> None:
+    from opta_lmx.config import LMXConfig
+    from opta_lmx.main import create_app
+    config = LMXConfig()
+    app = create_app(config)
+    app.state.engine = mock_engine
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        resp = await client.post("/admin/benchmark/run", json={
+            "model_id": "not/loaded",
+            "num_output_tokens": 50,
+            "runs": 2,
+        })
+    assert resp.status_code == 409
+    assert resp.json()["detail"] == "model_not_loaded"
+
+
+async def test_benchmark_run_returns_all_required_fields(
+    mock_engine, tmp_path
+) -> None:
+    from opta_lmx.config import LMXConfig
+    from opta_lmx.main import create_app
+    from opta_lmx.monitoring.benchmark import BenchmarkResultStore
+
+    await mock_engine.load_model("test/model")
+    config = LMXConfig()
+    store = BenchmarkResultStore(directory=tmp_path / "benchmarks")
+    app = create_app(config)
+    app.state.engine = mock_engine
+    app.state.benchmark_store = store
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        resp = await client.post("/admin/benchmark/run", json={
+            "model_id": "test/model",
+            "num_output_tokens": 50,
+            "runs": 3,
+            "warmup_runs": 1,
+        })
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["status"] == "ok"
+    assert data["model_id"] == "test/model"
+    stats = data["stats"]
+    assert "ttft_p50_sec" in stats
+    assert "toks_per_sec_mean" in stats
+    assert "coherence_flag" in stats
+    assert "output_text" in stats
+    assert stats["runs_completed"] == 3
+    assert stats["warmup_runs_discarded"] == 1
+
+
+async def test_benchmark_result_persisted_to_disk(
+    mock_engine, tmp_path
+) -> None:
+    from opta_lmx.config import LMXConfig
+    from opta_lmx.main import create_app
+    from opta_lmx.monitoring.benchmark import BenchmarkResultStore
+
+    await mock_engine.load_model("test/model")
+    config = LMXConfig()
+    store = BenchmarkResultStore(directory=tmp_path / "benchmarks")
+    app = create_app(config)
+    app.state.engine = mock_engine
+    app.state.benchmark_store = store
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        await client.post("/admin/benchmark/run", json={
+            "model_id": "test/model",
+            "runs": 2,
+            "warmup_runs": 0,
+        })
+
+    results = store.load_all()
+    assert len(results) == 1
+    assert results[0].model_id == "test/model"
+
+
+async def test_benchmark_results_endpoint_filters_by_model(
+    mock_engine, tmp_path
+) -> None:
+    from opta_lmx.config import LMXConfig
+    from opta_lmx.main import create_app
+    from opta_lmx.monitoring.benchmark import BenchmarkResultStore, BenchmarkResult
+
+    store = BenchmarkResultStore(directory=tmp_path / "benchmarks")
+    for mid in ["model/a", "model/b"]:
+        store.save(BenchmarkResult(
+            model_id=mid, backend="mlx-lm",
+            timestamp="2026-02-26T00:00:00Z", status="ok",
+            hardware="M3 Ultra 512GB", lmx_version="0.1.0",
+            prompt_preview="prompt", stats=_make_stats(),
+        ))
+    config = LMXConfig()
+    app = create_app(config)
+    app.state.engine = mock_engine
+    app.state.benchmark_store = store
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        resp = await client.get("/admin/benchmark/results?model_id=model/a")
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data) == 1
+    assert data[0]["model_id"] == "model/a"
