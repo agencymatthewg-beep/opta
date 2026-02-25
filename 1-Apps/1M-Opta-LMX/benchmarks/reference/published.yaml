@@ -1,0 +1,17 @@
+# benchmarks/reference/published.yaml
+# Published performance benchmarks from community sources.
+# Hardware: M3 Ultra 512GB unless noted.
+# Add entries as each model is tested on LMX.
+#
+# Format:
+# <huggingface-model-id>:
+#   lm_studio:
+#     toks_per_sec: <float>
+#     ttft_sec: <float>
+#     source: "<url or description>"
+#     hardware: "<hardware string>"
+#   ollama:
+#     toks_per_sec: <float>
+#     ttft_sec: <float>
+#     source: "<url or description>"
+#     hardware: "<hardware string>"
