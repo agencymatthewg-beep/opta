@@ -7,6 +7,7 @@ import contextlib
 import contextvars
 import gc
 import inspect
+import json
 import logging
 import secrets
 import time
@@ -15,12 +16,17 @@ from collections.abc import AsyncIterator
 from importlib import metadata as importlib_metadata
 from typing import Any, cast
 
+from opta_lmx.inference._model_config import (
+    BLOCKED_RUNTIME_SIGNATURES as _UNSUPPORTED_RUNTIME_SIGNATURES,
+    _load_model_config,
+    _normalize_signature,
+)
 from opta_lmx.inference.autotune_registry import AutotuneRegistry
-from opta_lmx.inference.context import estimate_prompt_tokens, fit_to_context
 from opta_lmx.inference.backend_policy import backend_candidates
+from opta_lmx.inference.context import estimate_prompt_tokens, fit_to_context
+from opta_lmx.inference.gguf_resolver import resolve_local_gguf_equivalents
 from opta_lmx.inference.mlx_lm_backend import MLXLMBackend
 from opta_lmx.inference.predictor import UsagePredictor
-from opta_lmx.inference.gguf_resolver import resolve_local_gguf_equivalents
 from opta_lmx.inference.schema import (
     ChatCompletionResponse,
     ChatMessage,
@@ -43,52 +49,21 @@ from opta_lmx.model_safety import (
     ErrorCodes,
     ReadinessTracker,
     backend_version,
-    detect_backend_type,
 )
 from opta_lmx.monitoring.events import EventBus, ServerEvent
 from opta_lmx.runtime.child_loader_supervisor import run_loader_supervisor
-from opta_lmx.runtime.loader_protocol import LoadSpec, LoaderFailure
+from opta_lmx.runtime.loader_protocol import LoaderFailure, LoadSpec
 
 logger = logging.getLogger(__name__)
 
 _SENTINEL = object()  # Sentinel for sync-to-async iterator conversion
-_UNSUPPORTED_RUNTIME_SIGNATURES = ("glm_moe_dsa", "glmmoedsa")
+_READINESS_TELEMETRY_STATES = frozenset(
+    {"admitted", "loading", "canary_pending", "routable", "quarantined"}
+)
 
 
 class ModelRuntimeCompatibilityError(RuntimeError):
     """Raised when a model is known-incompatible with the active runtime stack."""
-
-
-def _load_model_config(model_id: str) -> dict[str, Any] | None:
-    """Load config.json for a model from local path or HuggingFace cache."""
-    try:
-        import json
-        from pathlib import Path
-
-        from huggingface_hub import try_to_load_from_cache
-
-        config_path_obj: Path | None = None
-
-        model_path = Path(model_id).expanduser()
-        if model_path.exists():
-            candidate = model_path / "config.json" if model_path.is_dir() else model_path
-            if candidate.name == "config.json" and candidate.exists():
-                config_path_obj = candidate
-
-        if config_path_obj is None:
-            config_path = try_to_load_from_cache(model_id, "config.json")
-            if not isinstance(config_path, str) or not Path(config_path).exists():
-                return None
-            config_path_obj = Path(config_path)
-
-        raw = json.loads(config_path_obj.read_text())
-        if isinstance(raw, dict):
-            return cast(dict[str, Any], raw)
-    except Exception as e:
-        logger.debug("model_config_resolve_failed", extra={
-            "model_id": model_id, "error": str(e),
-        })
-    return None
 
 
 def _collect_model_signature_hints(config: dict[str, Any]) -> list[str]:
@@ -104,18 +79,6 @@ def _collect_model_signature_hints(config: dict[str, Any]) -> list[str]:
             if isinstance(item, str) and item.strip():
                 hints.append(item.strip())
     return hints
-
-
-def _normalize_signature(signature: str) -> str:
-    """Normalize architecture signature for robust substring checks."""
-    normalized_chars = [
-        ch.lower() if ch.isalnum() else "_"
-        for ch in signature
-    ]
-    normalized = "".join(normalized_chars).strip("_")
-    while "__" in normalized:
-        normalized = normalized.replace("__", "_")
-    return normalized
 
 
 def _runtime_backend_versions() -> dict[str, str | None]:
@@ -240,8 +203,6 @@ def _resolve_messages(messages: list[ChatMessage]) -> list[dict[str, Any]]:
     Note: MiniMax chat templates expect tool_call.function.arguments as a dict,
     not a JSON string (they call .items() on it). We parse it here.
     """
-    import json as _json
-
     result: list[dict[str, Any]] = []
     for m in messages:
         if isinstance(m.content, list):
@@ -256,8 +217,8 @@ def _resolve_messages(messages: list[ChatMessage]) -> list[dict[str, Any]]:
                 # Parse arguments from JSON string → dict for chat template compatibility
                 fn = tc_dict.get("function")
                 if fn and isinstance(fn.get("arguments"), str):
-                    with contextlib.suppress(_json.JSONDecodeError, TypeError):
-                        fn["arguments"] = _json.loads(fn["arguments"])
+                    with contextlib.suppress(json.JSONDecodeError, TypeError):
+                        fn["arguments"] = json.loads(fn["arguments"])
                 resolved_tcs.append(tc_dict)
             d["tool_calls"] = resolved_tcs
         if m.tool_call_id:
@@ -405,7 +366,9 @@ class InferenceEngine:
         """Total GB currently reserved by in-flight cold loads."""
         return sum(self._load_memory_reservations_gb.values())
 
-    def _reservation_estimate_gb(self, performance_overrides: dict[str, Any] | None) -> float | None:
+    def _reservation_estimate_gb(
+        self, performance_overrides: dict[str, Any] | None
+    ) -> float | None:
         """Best-effort memory reservation for a model cold load.
 
         Uses preset `memory_estimate_gb` when available and applies the same 15%
@@ -415,6 +378,8 @@ class InferenceEngine:
             return None
 
         raw_estimate = performance_overrides.get("memory_estimate_gb")
+        if raw_estimate is None:
+            return None
         with contextlib.suppress(TypeError, ValueError):
             estimate_gb = float(raw_estimate)
             if estimate_gb > 0:
@@ -453,6 +418,166 @@ class InferenceEngine:
         if loaded.backend is not None and loaded.backend.__class__.__name__ == "MLXLMBackend":
             return "mlx-lm"
         return "vllm-mlx"
+
+    async def _publish_engine_event(
+        self,
+        *,
+        event_type: str,
+        data: dict[str, Any],
+    ) -> None:
+        """Best-effort SSE publishing that never interrupts engine control-flow."""
+        if self._event_bus is None:
+            return
+        try:
+            await self._event_bus.publish(ServerEvent(event_type=event_type, data=data))
+        except Exception as exc:
+            logger.warning(
+                "engine_event_publish_failed",
+                extra={"event_type": event_type, "error": str(exc)},
+            )
+
+    async def _set_readiness_state(
+        self,
+        model_id: str,
+        state: str,
+        *,
+        reason: str | None = None,
+    ) -> dict[str, Any]:
+        """Set readiness and emit transition SSE when the state value changes."""
+        previous = self._readiness.get(model_id)
+        previous_state = previous.get("state")
+        self._readiness.set_state(model_id, state, reason=reason)
+        current = self._readiness.get(model_id)
+        current_state = current.get("state")
+        if (
+            current_state != previous_state
+            and isinstance(current_state, str)
+            and current_state in _READINESS_TELEMETRY_STATES
+        ):
+            await self._publish_engine_event(
+                event_type="model_readiness_changed",
+                data={
+                    "model_id": model_id,
+                    "previous_state": previous_state,
+                    "state": current_state,
+                    "reason": current.get("reason"),
+                    "crash_count": current.get("crash_count"),
+                    "updated_at": current.get("updated_at"),
+                },
+            )
+        return current
+
+    async def _mark_readiness_failure(
+        self,
+        model_id: str,
+        *,
+        reason: str,
+        quarantine_threshold: int,
+    ) -> dict[str, Any]:
+        """Record a readiness failure and emit state-transition SSE if applicable."""
+        previous = self._readiness.get(model_id)
+        previous_state = previous.get("state")
+        self._readiness.mark_failure(
+            model_id,
+            reason=reason,
+            quarantine_threshold=quarantine_threshold,
+        )
+        current = self._readiness.get(model_id)
+        current_state = current.get("state")
+        if (
+            current_state != previous_state
+            and isinstance(current_state, str)
+            and current_state in _READINESS_TELEMETRY_STATES
+        ):
+            await self._publish_engine_event(
+                event_type="model_readiness_changed",
+                data={
+                    "model_id": model_id,
+                    "previous_state": previous_state,
+                    "state": current_state,
+                    "reason": current.get("reason"),
+                    "crash_count": current.get("crash_count"),
+                    "last_failure_reason": current.get("last_failure_reason"),
+                    "updated_at": current.get("updated_at"),
+                },
+            )
+        return current
+
+    async def _record_compatibility(
+        self,
+        *,
+        model_id: str,
+        backend: str,
+        backend_version_value: str,
+        outcome: str,
+        reason: str | None = None,
+        metadata: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Persist compatibility row and emit SSE telemetry."""
+        row = self._compatibility.record(
+            model_id=model_id,
+            backend=backend,
+            backend_version_value=backend_version_value,
+            outcome=outcome,
+            reason=reason,
+            metadata=metadata,
+        )
+        await self._publish_engine_event(
+            event_type="model_compatibility_recorded",
+            data=row,
+        )
+        return row
+
+    def get_loaded_backend_label(self, model_id: str) -> str | None:
+        """Return loaded backend label (vllm-mlx/mlx-lm/gguf) or None."""
+        loaded = self._models.get(model_id)
+        if loaded is None:
+            return None
+        return self._loaded_backend_name(loaded)
+
+    def model_backend_label(self, model_id: str) -> str | None:
+        """Backward-compatible alias for backend label lookup."""
+        return self.get_loaded_backend_label(model_id)
+
+    def get_model_backend(self, model_id: str) -> str | None:
+        """Compatibility alias for API metric attribution helpers."""
+        return self.get_loaded_backend_label(model_id)
+
+    def resolve_model_backend(self, model_id: str) -> str | None:
+        """Compatibility alias for backend resolution helpers."""
+        return self.get_loaded_backend_label(model_id)
+
+    def resolve_backend_for_model(self, model_id: str) -> str | None:
+        """Compatibility alias for backend resolution helpers."""
+        return self.get_loaded_backend_label(model_id)
+
+    def readiness_snapshot(self) -> dict[str, dict[str, Any]]:
+        """Return readiness rows for all known models."""
+        return self._readiness.snapshot()
+
+    def get_readiness_snapshot(self) -> dict[str, dict[str, Any]]:
+        """Alias for readiness snapshot retrieval."""
+        return self.readiness_snapshot()
+
+    def compatibility_summary_by_model(self) -> dict[str, dict[str, Any]]:
+        """Return compatibility totals grouped by model."""
+        return self._compatibility.summary_by_model()
+
+    def compatibility_summary(self) -> dict[str, dict[str, Any]]:
+        """Compatibility alias for admin metrics endpoint helpers."""
+        return self.compatibility_summary_by_model()
+
+    def get_compatibility_summary(self) -> dict[str, dict[str, Any]]:
+        """Compatibility alias for admin metrics endpoint helpers."""
+        return self.compatibility_summary_by_model()
+
+    def model_compatibility_summary(self) -> dict[str, dict[str, Any]]:
+        """Compatibility alias for admin metrics endpoint helpers."""
+        return self.compatibility_summary_by_model()
+
+    def get_compatibility_summary_by_model(self) -> dict[str, dict[str, Any]]:
+        """Alias for compatibility summary retrieval."""
+        return self.compatibility_summary_by_model()
 
     def autotune_backend_version(self, backend: str) -> str:
         """Resolve backend package version used for autotune keying."""
@@ -596,7 +721,31 @@ class InferenceEngine:
                     })
                 continue
 
-            # mlx-lm and other adapters can be lightweight-admitted here.
+            if backend == "mlx-lm":
+                backend_instance: MLXLMBackend | None = None
+                try:
+                    backend_instance = MLXLMBackend(model_id=model_id)
+                    async with asyncio.timeout(float(timeout_sec)):
+                        await backend_instance.probe()
+                    outcomes.append({"backend": backend, "outcome": "pass", "reason": None})
+                except TimeoutError:
+                    outcomes.append({
+                        "backend": backend,
+                        "outcome": "fail",
+                        "reason": f"{ErrorCodes.MODEL_PROBE_FAILED}:probe_timeout",
+                    })
+                except Exception as exc:
+                    outcomes.append({
+                        "backend": backend,
+                        "outcome": "fail",
+                        "reason": f"{ErrorCodes.MODEL_PROBE_FAILED}:{exc}",
+                    })
+                finally:
+                    if backend_instance is not None:
+                        backend_instance.close()
+                continue
+
+            # Unknown backend candidates are retained as informational.
             outcomes.append({"backend": backend, "outcome": "unknown", "reason": "not_probed"})
 
         recommended_backend = next(
@@ -620,6 +769,7 @@ class InferenceEngine:
         performance_overrides: dict[str, Any] | None = None,
         keep_alive_sec: int | None = None,
         allow_unsupported_runtime: bool = False,
+        preferred_backend: str | None = None,
     ) -> ModelInfo:
         """Load an MLX model into memory via vllm-mlx.
 
@@ -724,12 +874,13 @@ class InferenceEngine:
                 # Retry admission after eviction attempt (or model set changed).
                 continue
 
-        self._readiness.set_state(model_id, "admitted")
+        await self._set_readiness_state(model_id, "admitted")
         try:
             return await self._do_load(
                 model_id, use_batching, performance_overrides,
                 keep_alive_sec=keep_alive_sec,
                 allow_unsupported_runtime=allow_unsupported_runtime,
+                preferred_backend=preferred_backend,
             )
         finally:
             async with self._load_lock:
@@ -743,6 +894,7 @@ class InferenceEngine:
         performance_overrides: dict[str, Any] | None = None,
         keep_alive_sec: int | None = None,
         allow_unsupported_runtime: bool = False,
+        preferred_backend: str | None = None,
     ) -> ModelInfo:
         """Execute the actual model load (called after lock/guard checks)."""
         fmt = _detect_format(model_id)
@@ -750,7 +902,8 @@ class InferenceEngine:
             model_id,
             self,
             self._compatibility,
-            allow_failed=allow_unsupported_runtime,
+            allow_failed=allow_unsupported_runtime or preferred_backend is not None,
+            preferred_backend=preferred_backend,
         )
         selected_backend = candidate_backends[0] if candidate_backends else "vllm-mlx"
         gguf_model_path: str | None = None
@@ -760,7 +913,8 @@ class InferenceEngine:
             gguf_candidates = resolve_local_gguf_equivalents(model_id)
             if not gguf_candidates:
                 raise RuntimeError(
-                    f"No local GGUF equivalent found for model '{model_id}' while GGUF fallback is enabled.",
+                    "No local GGUF equivalent found for model "
+                    f"'{model_id}' while GGUF fallback is enabled.",
                 )
             gguf_model_path = gguf_candidates[0]
             fmt = "gguf"
@@ -777,7 +931,11 @@ class InferenceEngine:
                 for name, version in runtime_versions.items()
                 if isinstance(version, str) and version
             ]
-            version_hint = ", ".join(version_hint_parts) if version_hint_parts else "unknown versions"
+            version_hint = (
+                ", ".join(version_hint_parts)
+                if version_hint_parts
+                else "unknown versions"
+            )
             if not allow_unsupported_runtime:
                 logger.warning("model_runtime_incompatible_blocked", extra={
                     "model_id": model_id,
@@ -786,12 +944,12 @@ class InferenceEngine:
                     "architectures": runtime_issue.get("architectures"),
                     "runtime_versions": runtime_versions,
                 })
-                self._readiness.set_state(
+                await self._set_readiness_state(
                     model_id,
                     "quarantined",
                     reason=f"{ErrorCodes.MODEL_UNSUPPORTED_BACKEND}:{runtime_issue.get('matched_signature')}",
                 )
-                self._compatibility.record(
+                await self._record_compatibility(
                     model_id=model_id,
                     backend=selected_backend,
                     backend_version_value=backend_version(runtime_backend),
@@ -817,7 +975,7 @@ class InferenceEngine:
 
         batching = use_batching if use_batching is not None else self._use_batching
         perf = performance_overrides or {}
-        self._readiness.set_state(model_id, "loading")
+        await self._set_readiness_state(model_id, "loading")
 
         if fmt == "mlx" and selected_backend == "vllm-mlx" and self._loader_isolation_enabled:
             try:
@@ -844,14 +1002,18 @@ class InferenceEngine:
                 )
 
             if outcome is None or not outcome.ok:
-                failure = fallback_failure if outcome is None else (outcome.failure or fallback_failure)
+                failure = (
+                    fallback_failure
+                    if outcome is None
+                    else (outcome.failure or fallback_failure)
+                )
                 failure_reason = f"{failure.code}:{failure.message}"
-                self._readiness.mark_failure(
+                await self._mark_readiness_failure(
                     model_id,
                     reason=failure_reason,
                     quarantine_threshold=self._runtime_failure_quarantine_threshold,
                 )
-                self._compatibility.record(
+                await self._record_compatibility(
                     model_id=model_id,
                     backend=selected_backend,
                     backend_version_value=backend_version(runtime_backend),
@@ -981,7 +1143,7 @@ class InferenceEngine:
             speculative_num_tokens=cast(int | None, speculative_status.get("num_tokens")),
         )
         loaded.readiness_state = "canary_pending"
-        self._readiness.set_state(model_id, "canary_pending")
+        await self._set_readiness_state(model_id, "canary_pending")
         async with self._load_lock:
             self._models[model_id] = loaded
 
@@ -999,16 +1161,15 @@ class InferenceEngine:
             },
         )
 
-        if self._event_bus:
-            await self._event_bus.publish(ServerEvent(
-                event_type="model_loaded",
-                data={
-                    "model_id": model_id,
-                    "format": fmt,
-                    "memory_gb": round(model_memory_gb, 2),
-                    "duration_sec": round(elapsed, 2),
-                },
-            ))
+        await self._publish_engine_event(
+            event_type="model_loaded",
+            data={
+                "model_id": model_id,
+                "format": fmt,
+                "memory_gb": round(model_memory_gb, 2),
+                "duration_sec": round(elapsed, 2),
+            },
+        )
 
         # Warmup: run a minimal inference to prime JIT/Metal shaders
         if self._warmup_on_load:
@@ -1016,32 +1177,57 @@ class InferenceEngine:
 
         # Canary promotion: model becomes routable only after a successful
         # post-load inference check.
+        canary_started_at = time.monotonic()
+        await self._publish_engine_event(
+            event_type="model_canary_started",
+            data={
+                "model_id": model_id,
+                "backend": selected_backend,
+            },
+        )
         try:
             await self._run_load_canary(model_id)
             loaded.readiness_state = "routable"
             loaded.readiness_reason = None
-            self._readiness.set_state(model_id, "routable")
-            self._compatibility.record(
+            await self._set_readiness_state(model_id, "routable")
+            await self._record_compatibility(
                 model_id=model_id,
                 backend=selected_backend,
                 backend_version_value=backend_version(runtime_backend),
                 outcome="pass",
                 reason="canary_ok",
             )
+            await self._publish_engine_event(
+                event_type="model_canary_passed",
+                data={
+                    "model_id": model_id,
+                    "backend": selected_backend,
+                    "duration_sec": round(time.monotonic() - canary_started_at, 4),
+                },
+            )
         except Exception as e:
             loaded.readiness_state = "quarantined"
             loaded.readiness_reason = f"{ErrorCodes.MODEL_CANARY_FAILED}:{e}"
-            self._readiness.mark_failure(
+            await self._mark_readiness_failure(
                 model_id,
                 reason=str(e),
                 quarantine_threshold=self._runtime_failure_quarantine_threshold,
             )
-            self._compatibility.record(
+            await self._record_compatibility(
                 model_id=model_id,
                 backend=selected_backend,
                 backend_version_value=backend_version(runtime_backend),
                 outcome="fail",
                 reason=f"canary_failed:{e}",
+            )
+            await self._publish_engine_event(
+                event_type="model_canary_failed",
+                data={
+                    "model_id": model_id,
+                    "backend": selected_backend,
+                    "duration_sec": round(time.monotonic() - canary_started_at, 4),
+                    "error": str(e),
+                },
             )
             await self.unload_model(model_id, reason="canary_failed")
             raise RuntimeError(
@@ -1215,10 +1401,7 @@ class InferenceEngine:
 
         mapping = self._coerce_payload_mapping(payload)
         nested = mapping.get("speculative")
-        if isinstance(nested, dict):
-            combined = {**mapping, **nested}
-        else:
-            combined = mapping
+        combined = {**mapping, **nested} if isinstance(nested, dict) else mapping
 
         accepted = self._read_int_field(
             combined,
@@ -2004,12 +2187,11 @@ class InferenceEngine:
                     f"Inference timed out after {self._inference_timeout}s"
                 ) from None
             except Exception as e:
-                self._readiness.mark_failure(
+                state = await self._mark_readiness_failure(
                     model_id,
                     reason=str(e),
                     quarantine_threshold=self._runtime_failure_quarantine_threshold,
                 )
-                state = self._readiness.get(model_id)
                 if state.get("state") == "quarantined":
                     loaded.readiness_state = "quarantined"
                     loaded.readiness_reason = f"{ErrorCodes.MODEL_UNSTABLE}:{state.get('reason')}"
@@ -2028,7 +2210,12 @@ class InferenceEngine:
                 priority=priority,
                 client_id=client_id,
             ):
-                content, prompt_tokens, completion_tokens, speculative_telemetry = await _run_inference()
+                (
+                    content,
+                    prompt_tokens,
+                    completion_tokens,
+                    speculative_telemetry,
+                ) = await _run_inference()
         finally:
             self._record_latency_sample(time.monotonic() - request_started)
             self.adapt_concurrency()
@@ -2292,15 +2479,16 @@ class InferenceEngine:
                         f"Stream inference timed out after {self._inference_timeout}s"
                     ) from None
                 except Exception as e:
-                    self._readiness.mark_failure(
+                    state = await self._mark_readiness_failure(
                         model_id,
                         reason=str(e),
                         quarantine_threshold=self._runtime_failure_quarantine_threshold,
                     )
-                    state = self._readiness.get(model_id)
                     if state.get("state") == "quarantined":
                         loaded.readiness_state = "quarantined"
-                        loaded.readiness_reason = f"{ErrorCodes.MODEL_UNSTABLE}:{state.get('reason')}"
+                        loaded.readiness_reason = (
+                            f"{ErrorCodes.MODEL_UNSTABLE}:{state.get('reason')}"
+                        )
                     logger.error("stream_failed", extra={"model_id": model_id, "error": str(e)})
                     raise RuntimeError(f"Stream inference failed: {e}") from e
                 finally:

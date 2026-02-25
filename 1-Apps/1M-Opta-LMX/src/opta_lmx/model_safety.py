@@ -9,15 +9,18 @@ Provides:
 from __future__ import annotations
 
 import json
+import logging
 import platform
 import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+logger = logging.getLogger(__name__)
+
 
 @dataclass
-class AdmissionFailure(Exception):
+class AdmissionFailure(Exception):  # noqa: N818
     """Deterministic admission error with code + stable HTTP status."""
 
     code: str
@@ -81,22 +84,37 @@ class CompatibilityRegistry:
     """Persistent pass/fail ledger for model/backend/version compatibility."""
 
     def __init__(self, path: Path | None = None) -> None:
-        self._path = (path or (Path.home() / ".opta-lmx" / "compatibility-registry.json")).expanduser()
+        self._path = (
+            path
+            or (Path.home() / ".opta-lmx" / "compatibility-registry.json")
+        ).expanduser()
         self._path.parent.mkdir(parents=True, exist_ok=True)
+        self._cache: list[dict[str, Any]] | None = None
 
     def _load(self) -> list[dict[str, Any]]:
+        if self._cache is not None:
+            return list(self._cache)
         if not self._path.exists():
-            return []
+            self._cache = []
+            return list(self._cache)
         try:
             payload = json.loads(self._path.read_text())
             if isinstance(payload, list):
-                return payload
+                self._cache = payload
+                return list(self._cache)
         except Exception:
-            return []
-        return []
+            pass
+        self._cache = []
+        return list(self._cache)
 
     def _save(self, rows: list[dict[str, Any]]) -> None:
+        if len(rows) > 2000:
+            logger.warning(
+                "compatibility_registry_truncated",
+                extra={"total_rows": len(rows), "kept": 2000},
+            )
         self._path.write_text(json.dumps(rows[-2000:], indent=2, sort_keys=True))
+        self._cache = list(rows[-2000:])
 
     def record(
         self,
@@ -107,9 +125,9 @@ class CompatibilityRegistry:
         outcome: str,
         reason: str | None = None,
         metadata: dict[str, Any] | None = None,
-    ) -> None:
+    ) -> dict[str, Any]:
         rows = self._load()
-        rows.append({
+        row = {
             "ts": time.time(),
             "model_id": model_id,
             "backend": backend,
@@ -117,8 +135,10 @@ class CompatibilityRegistry:
             "outcome": outcome,
             "reason": reason,
             "metadata": metadata or {},
-        })
+        }
+        rows.append(row)
         self._save(rows)
+        return dict(row)
 
     def list_records(
         self,
@@ -223,6 +243,13 @@ class ReadinessTracker:
 
     def get(self, model_id: str) -> dict[str, Any]:
         return dict(self._state.get(model_id, {"state": "unknown"}))
+
+    def snapshot(self) -> dict[str, dict[str, Any]]:
+        """Return a copy of all known readiness rows keyed by model_id."""
+        return {
+            model_id: dict(row)
+            for model_id, row in self._state.items()
+        }
 
     def is_routable(self, model_id: str) -> bool:
         return self._state.get(model_id, {}).get("state") == "routable"

@@ -10,7 +10,7 @@ import os
 import secrets
 import time
 from collections.abc import AsyncIterator
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 if TYPE_CHECKING:
     from opta_lmx.inference.engine import InferenceEngine
@@ -45,12 +45,13 @@ from opta_lmx.api.errors import (
     openai_error,
 )
 from opta_lmx.config import load_config
-from opta_lmx.inference.engine import ModelRuntimeCompatibilityError
 from opta_lmx.inference.autotune_scoring import score_profile
+from opta_lmx.inference.engine import ModelRuntimeCompatibilityError
 from opta_lmx.inference.schema import (
     AdminAutotuneRecordResponse,
     AdminAutotuneRequest,
     AdminAutotuneResponse,
+    AdminCompatibilityResponse,
     AdminDeleteResponse,
     AdminDownloadRequest,
     AdminDownloadResponse,
@@ -60,7 +61,6 @@ from opta_lmx.inference.schema import (
     AdminModelDetail,
     AdminModelPerformanceResponse,
     AdminModelsResponse,
-    AdminCompatibilityResponse,
     AdminProbeRequest,
     AdminProbeResponse,
     AdminStatusResponse,
@@ -103,11 +103,11 @@ def _human_size(size_bytes: int) -> str:
     if size_bytes <= 0:
         return "unknown"
     value = float(size_bytes)
-    for unit in ("B", "KB", "MB", "GB", "TB"):
+    for unit in ("B", "KB", "MB", "GB", "TB", "PB"):
         if abs(value) < 1024:
             return f"{value:.1f} {unit}"
         value /= 1024
-    return f"{value:.1f} PB"
+    return f"{value:.1f} EB"  # safety fallback, unreachable for realistic sizes
 
 
 def _get_journal_manager(request: Request) -> RuntimeJournalManager | None:
@@ -115,7 +115,7 @@ def _get_journal_manager(request: Request) -> RuntimeJournalManager | None:
     manager = getattr(request.app.state, "journal_manager", None)
     if manager is None or not hasattr(manager, "write_update_log"):
         return None
-    return manager
+    return cast("RuntimeJournalManager", manager)
 
 
 def _write_update_journal_with_manager(
@@ -176,6 +176,8 @@ async def _load_after_download(
     engine: InferenceEngine,
     performance_overrides: dict[str, Any] | None = None,
     keep_alive_sec: int | None = None,
+    allow_unsupported_runtime: bool = False,
+    preferred_backend: str | None = None,
     journal_manager: RuntimeJournalManager | None = None,
 ) -> None:
     """Wait for a download to complete, then auto-load the model."""
@@ -200,6 +202,8 @@ async def _load_after_download(
                 model_id,
                 performance_overrides=performance_overrides,
                 keep_alive_sec=keep_alive_sec,
+                allow_unsupported_runtime=allow_unsupported_runtime,
+                preferred_backend=preferred_backend,
             )
             logger.info("auto_load_after_download", extra={"model_id": model_id})
             _write_update_journal_with_manager(
@@ -213,6 +217,8 @@ async def _load_after_download(
                     "download_id": download_id,
                     "auto_download": True,
                     "keep_alive_sec": keep_alive_sec,
+                    "allow_unsupported_runtime": allow_unsupported_runtime,
+                    "backend": preferred_backend,
                     "performance_overrides": performance_overrides or {},
                 },
                 steps=[
@@ -362,16 +368,43 @@ async def load_model(
     if hasattr(engine, "model_readiness"):
         readiness = engine.model_readiness(body.model_id)
         if readiness.get("state") == "quarantined" and not body.allow_unsupported_runtime:
-            return openai_error(
-                status_code=409,
-                message=(
-                    f"Model '{body.model_id}' is quarantined after instability. "
-                    "Use a supported variant or pass allow_unsupported_runtime=true to override."
-                ),
-                error_type="invalid_request_error",
-                param="model_id",
-                code=ErrorCodes.MODEL_UNSTABLE,
-            )
+            allow_backend_switch = False
+            if body.backend:
+                failed_backend: str | None = None
+                with contextlib.suppress(Exception):
+                    failed_rows = engine._compatibility.list_records(
+                        model_id=body.model_id,
+                        outcome="fail",
+                        limit=1,
+                    )
+                    if failed_rows and isinstance(failed_rows[0], dict):
+                        candidate_backend = failed_rows[0].get("backend")
+                        if isinstance(candidate_backend, str):
+                            failed_backend = candidate_backend
+                allow_backend_switch = bool(
+                    failed_backend and body.backend != failed_backend
+                )
+
+            if allow_backend_switch:
+                logger.info(
+                    "quarantine_override_backend_switch",
+                    extra={
+                        "model_id": body.model_id,
+                        "requested_backend": body.backend,
+                    },
+                )
+            else:
+                return openai_error(
+                    status_code=409,
+                    message=(
+                        f"Model '{body.model_id}' is quarantined after instability. "
+                        "Use a supported variant, switch backend, or pass "
+                        "allow_unsupported_runtime=true to override."
+                    ),
+                    error_type="invalid_request_error",
+                    param="model_id",
+                    code=ErrorCodes.MODEL_UNSTABLE,
+                )
 
     # max_context_length is reserved for future backend-native support.
     if body.max_context_length is not None:
@@ -467,6 +500,8 @@ async def load_model(
                 engine,
                 perf or None,
                 keep_alive_sec=body.keep_alive_sec,
+                allow_unsupported_runtime=body.allow_unsupported_runtime,
+                preferred_backend=body.backend,
                 journal_manager=_get_journal_manager(request),
             ),
         )
@@ -508,6 +543,7 @@ async def load_model(
             performance_overrides=perf or None,
             keep_alive_sec=body.keep_alive_sec,
             allow_unsupported_runtime=body.allow_unsupported_runtime,
+            preferred_backend=body.backend,
         )
     except ModelRuntimeCompatibilityError as e:
         return openai_error(
@@ -556,6 +592,16 @@ async def load_model(
                 code=ErrorCodes.MODEL_CANARY_FAILED,
             )
         return internal_error(str(e))
+    except ValueError as e:
+        message = str(e)
+        param = "backend" if "backend" in message.lower() else "model_id"
+        return openai_error(
+            status_code=400,
+            message=message,
+            error_type="invalid_request_error",
+            param=param,
+            code="invalid_value",
+        )
     finally:
         if previous_hf_offline is None:
             os.environ.pop("HF_HUB_OFFLINE", None)
@@ -574,6 +620,7 @@ async def load_model(
             "auto_download": body.auto_download,
             "keep_alive_sec": body.keep_alive_sec,
             "allow_unsupported_runtime": body.allow_unsupported_runtime,
+            "backend": body.backend,
             "performance_overrides": body.performance_overrides or {},
             "source": "disk",
         },
@@ -608,7 +655,7 @@ async def probe_model(
     body: AdminProbeRequest,
     _auth: AdminAuth,
     engine: Engine,
-) -> AdminProbeResponse:
+) -> AdminProbeResponse | JSONResponse:
     """Probe candidate backends for a model without fully loading it."""
     try:
         result = await engine.probe_model_backends(
@@ -752,6 +799,7 @@ async def autotune_model(
             if isinstance(benchmark_payload, JSONResponse):
                 return benchmark_payload
 
+            # Re-resolve after load: the active backend may differ from the pre-load candidate.
             backend_name = engine.resolve_autotune_backend(
                 body.model_id,
                 allow_failed=body.allow_unsupported_runtime,
@@ -796,11 +844,16 @@ async def autotune_model(
             with contextlib.suppress(Exception):
                 await engine.unload_model(body.model_id, reason="autotune_cleanup")
         if original_loaded:
-            with contextlib.suppress(Exception):
+            try:
                 await engine.load_model(
                     body.model_id,
                     performance_overrides=original_perf or None,
                     allow_unsupported_runtime=body.allow_unsupported_runtime,
+                )
+            except Exception as _restore_exc:
+                logger.warning(
+                    "autotune_model_restore_failed",
+                    extra={"model_id": body.model_id, "error": str(_restore_exc)},
                 )
 
     if not candidates or best_row is None:
@@ -1139,15 +1192,82 @@ async def prometheus_metrics(
     Includes live gauges for loaded model count, memory, and concurrency.
     """
     queued = engine.waiting_queue_count
+    prometheus_kwargs: dict[str, Any] = {
+        "loaded_model_count": len(engine.get_loaded_model_ids()),
+        "memory_used_gb": memory.used_memory_gb(),
+        "memory_total_gb": memory.total_memory_gb(),
+        "in_flight_requests": engine.in_flight_count,
+        "max_concurrent_requests": engine.max_concurrent_requests,
+        "queued_requests": queued,
+    }
+
+    readiness_snapshot: dict[str, Any] | None = None
+    readiness_helpers = (
+        "readiness_snapshot",
+        "get_readiness_snapshot",
+        "model_readiness_snapshot",
+    )
+    for helper_name in readiness_helpers:
+        helper = getattr(engine, helper_name, None)
+        if callable(helper):
+            try:
+                snapshot = helper()
+            except Exception:
+                snapshot = None
+            if isinstance(snapshot, dict):
+                readiness_snapshot = snapshot
+                break
+    if readiness_snapshot is None and hasattr(engine, "model_readiness"):
+        try:
+            readiness_snapshot = {
+                model_id: engine.model_readiness(model_id)
+                for model_id in engine.get_loaded_model_ids()
+            }
+        except Exception:
+            readiness_snapshot = None
+    if readiness_snapshot is not None:
+        prometheus_kwargs["model_readiness"] = readiness_snapshot
+
+    compatibility_summary: dict[str, Any] | None = None
+    compatibility_helpers = (
+        "compatibility_summary",
+        "get_compatibility_summary",
+        "model_compatibility_summary",
+        "compatibility_summary_by_model",
+        "get_compatibility_summary_by_model",
+    )
+    for helper_name in compatibility_helpers:
+        helper = getattr(engine, helper_name, None)
+        if callable(helper):
+            try:
+                summary = helper()
+            except Exception:
+                summary = None
+            if isinstance(summary, dict):
+                compatibility_summary = summary
+                break
+    if compatibility_summary is None:
+        registry = getattr(engine, "_compatibility", None)
+        summary_by_model = getattr(registry, "summary_by_model", None)
+        if callable(summary_by_model):
+            try:
+                candidate_summary = summary_by_model()
+            except Exception:
+                candidate_summary = None
+            if isinstance(candidate_summary, dict):
+                compatibility_summary = candidate_summary
+    if compatibility_summary is not None:
+        prometheus_kwargs["compatibility_summary"] = compatibility_summary
+
+    try:
+        content = metrics.prometheus(**prometheus_kwargs)
+    except TypeError:
+        prometheus_kwargs.pop("model_readiness", None)
+        prometheus_kwargs.pop("compatibility_summary", None)
+        content = metrics.prometheus(**prometheus_kwargs)
+
     return PlainTextResponse(
-        content=metrics.prometheus(
-            loaded_model_count=len(engine.get_loaded_model_ids()),
-            memory_used_gb=memory.used_memory_gb(),
-            memory_total_gb=memory.total_memory_gb(),
-            in_flight_requests=engine.in_flight_count,
-            max_concurrent_requests=engine.max_concurrent_requests,
-            queued_requests=queued,
-        ),
+        content=content,
         media_type="text/plain; version=0.0.4; charset=utf-8",
     )
 
@@ -1455,9 +1575,12 @@ async def list_presets(
                 model=p.model,
                 parameters=p.parameters,
                 system_prompt=p.system_prompt,
+                prompt_profiles=p.prompt_profiles,
+                default_prompt_profile=p.default_prompt_profile,
                 routing_alias=p.routing_alias,
                 auto_load=p.auto_load,
                 performance=p.performance,
+                chat_template=p.chat_template,
             )
             for p in presets
         ],
@@ -1484,9 +1607,12 @@ async def get_preset(
         model=preset.model,
         parameters=preset.parameters,
         system_prompt=preset.system_prompt,
+        prompt_profiles=preset.prompt_profiles,
+        default_prompt_profile=preset.default_prompt_profile,
         routing_alias=preset.routing_alias,
         auto_load=preset.auto_load,
         performance=preset.performance,
+        chat_template=preset.chat_template,
     )
 
 
