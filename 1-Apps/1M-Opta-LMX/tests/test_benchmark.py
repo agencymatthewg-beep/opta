@@ -1,6 +1,8 @@
 # tests/test_benchmark.py
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 from opta_lmx.monitoring.benchmark import (
     ToolCallBenchmark,
@@ -10,6 +12,16 @@ from opta_lmx.monitoring.benchmark import (
     compute_repetition_ratio,
     classify_coherence,
 )
+
+
+def _make_stats() -> "BenchmarkRunStats":
+    return BenchmarkRunStats(
+        ttft_p50_sec=0.5, ttft_p95_sec=0.6, ttft_mean_sec=0.52,
+        toks_per_sec_p50=20.0, toks_per_sec_p95=19.5, toks_per_sec_mean=19.8,
+        prompt_tokens=10, output_tokens=50, runs_completed=5, warmup_runs_discarded=1,
+        output_text="test", output_token_count=50, completed_naturally=True,
+        repetition_ratio=0.0, coherence_flag="ok", tool_call=None, skills=[],
+    )
 
 
 def test_compute_repetition_ratio_clean_text() -> None:
@@ -87,3 +99,37 @@ def test_benchmark_result_model_round_trips_json() -> None:
     restored = BenchmarkResult.model_validate_json(as_json)
     assert restored.model_id == "test/model"
     assert restored.stats.toks_per_sec_mean == 19.8
+
+
+def test_result_store_saves_and_loads(tmp_path: Path) -> None:
+    from opta_lmx.monitoring.benchmark import BenchmarkResultStore
+    store = BenchmarkResultStore(directory=tmp_path)
+    result = BenchmarkResult(
+        model_id="test/model",
+        backend="mlx-lm",
+        timestamp="2026-02-26T00:00:00Z",
+        status="ok",
+        hardware="M3 Ultra 512GB",
+        lmx_version="0.1.0",
+        prompt_preview="Write a detailed...",
+        stats=_make_stats(),
+    )
+    store.save(result)
+    loaded = store.load_all()
+    assert len(loaded) == 1
+    assert loaded[0].model_id == "test/model"
+
+
+def test_result_store_filters_by_model_id(tmp_path: Path) -> None:
+    from opta_lmx.monitoring.benchmark import BenchmarkResultStore
+    store = BenchmarkResultStore(directory=tmp_path)
+    for model_id in ["model/a", "model/b", "model/a"]:
+        store.save(BenchmarkResult(
+            model_id=model_id, backend="mlx-lm",
+            timestamp="2026-02-26T00:00:00Z", status="ok",
+            hardware="M3 Ultra 512GB", lmx_version="0.1.0",
+            prompt_preview="prompt", stats=_make_stats(),
+        ))
+    results_a = store.load_all(model_id="model/a")
+    assert len(results_a) == 2
+    assert all(r.model_id == "model/a" for r in results_a)

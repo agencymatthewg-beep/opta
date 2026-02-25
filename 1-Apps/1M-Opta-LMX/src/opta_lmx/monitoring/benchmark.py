@@ -281,3 +281,50 @@ class BenchmarkResult(BaseModel):
     lmx_version: str
     prompt_preview: str
     stats: BenchmarkRunStats
+
+
+_MODEL_SLUG_RE = re.compile(r"[^a-zA-Z0-9_-]")
+
+
+def _model_to_slug(model_id: str) -> str:
+    return _MODEL_SLUG_RE.sub("_", model_id)[:60]
+
+
+class BenchmarkResultStore:
+    """Persists BenchmarkResult objects as individual JSON files."""
+
+    def __init__(self, directory: Path | None = None) -> None:
+        self._dir = directory or (Path.home() / ".opta-lmx" / "benchmarks")
+
+    def save(self, result: BenchmarkResult) -> Path:
+        """Write result to a timestamped JSON file. Returns the path written."""
+        self._dir.mkdir(parents=True, exist_ok=True)
+        slug = _model_to_slug(result.model_id)
+        ts = result.timestamp.replace(":", "-").replace(".", "-")
+        base = f"{slug}_{ts}"
+        path = self._dir / f"{base}.json"
+        # Avoid overwriting existing files with the same name (e.g. same model +
+        # timestamp called twice in the same test or rapid successive saves).
+        idx = 1
+        while path.exists():
+            path = self._dir / f"{base}_{idx}.json"
+            idx += 1
+        path.write_text(result.model_dump_json(indent=2), encoding="utf-8")
+        logger.info("benchmark_result_saved", extra={"path": str(path)})
+        return path
+
+    def load_all(self, model_id: str | None = None) -> list[BenchmarkResult]:
+        """Load all stored results, optionally filtered by model_id."""
+        if not self._dir.exists():
+            return []
+        results: list[BenchmarkResult] = []
+        for path in sorted(self._dir.glob("*.json")):
+            try:
+                result = BenchmarkResult.model_validate_json(
+                    path.read_text(encoding="utf-8")
+                )
+                if model_id is None or result.model_id == model_id:
+                    results.append(result)
+            except Exception:
+                logger.warning("benchmark_result_load_failed", extra={"path": str(path)})
+        return results
