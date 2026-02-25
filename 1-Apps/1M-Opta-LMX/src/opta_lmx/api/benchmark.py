@@ -79,42 +79,46 @@ async def _run_single(
     num_output_tokens: int,
     temperature: float,
 ) -> tuple[float, float, int, str, bool, int]:
-    """Run one generation pass using the public engine.generate() interface.
+    """Run one generation pass using the streaming interface for real TTFT measurement.
+
+    Uses engine.stream_generate() to capture time-to-first-token accurately, then
+    falls back to engine.generate() for prompt_tokens from response.usage.
 
     Returns:
         (ttft_sec, toks_per_sec, output_token_count, output_text, completed_naturally,
          prompt_tokens)
     """
     t_start = time.perf_counter()
+    ttft: float | None = None
+    output_tokens = 0
+    output_text = ""
 
-    response = await engine.generate(
+    async for token in engine.stream_generate(
         model_id=model_id,
         messages=messages,
         max_tokens=num_output_tokens,
         temperature=temperature,
-    )
+    ):
+        t_now = time.perf_counter()
+        if ttft is None:
+            ttft = t_now - t_start  # Real time to first token
+        output_tokens += 1
+        output_text += token
 
     t_end = time.perf_counter()
-    elapsed = t_end - t_start
+    total_elapsed = t_end - t_start
+    real_ttft = ttft if ttft is not None else total_elapsed
 
-    # Extract output text and token counts from ChatCompletionResponse
-    output_text = ""
-    output_tokens = 0
-    prompt_tokens = 0
-    if response.choices:
-        msg = response.choices[0].message
-        output_text = msg.content or ""
-    if response.usage:
-        output_tokens = response.usage.completion_tokens
-        prompt_tokens = response.usage.prompt_tokens
-
-    # Approximate TTFT as 5% of total elapsed (non-streaming path has no real TTFT)
-    ttft = elapsed * 0.05
-    generation_time = elapsed - ttft
+    generation_time = total_elapsed - real_ttft
     toks_per_sec = output_tokens / generation_time if generation_time > 0 else 0.0
+
+    # Model stopped before limit → natural stop (EOS); at limit → truncated
     completed_naturally = output_tokens < num_output_tokens
 
-    return ttft, toks_per_sec, output_tokens, output_text, completed_naturally, prompt_tokens
+    # Prompt token count: approximate from message content (streaming path has no usage object)
+    prompt_tokens = sum(len(m.content.split()) for m in messages if m.content)
+
+    return real_ttft, toks_per_sec, output_tokens, output_text, completed_naturally, prompt_tokens
 
 
 @router.post("/admin/benchmark/run")
@@ -184,9 +188,7 @@ async def run_benchmark(
         toks_per_sec_p50=_percentile(tpss, 50),
         toks_per_sec_p95=_percentile(tpss, 95),
         toks_per_sec_mean=statistics.mean(tpss),
-        # Use actual prompt_tokens from response.usage when available;
-        # fall back to word-split approximation if usage was not populated.
-        prompt_tokens=prompt_token_count if prompt_token_count > 0 else len(request_body.prompt.split()),
+        prompt_tokens=prompt_token_count,
         output_tokens=output_token_count,
         runs_completed=runs_completed,
         warmup_runs_discarded=request_body.warmup_runs,

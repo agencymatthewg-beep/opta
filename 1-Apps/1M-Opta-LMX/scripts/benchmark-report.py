@@ -2,6 +2,10 @@
 """Generate an HTML benchmark comparison report from stored LMX results.
 
 Usage:
+    # Pull directly from a running LMX server (recommended):
+    python scripts/benchmark-report.py --api http://192.168.188.11:1234 --api-key <key>
+
+    # Or from local JSON files:
     python scripts/benchmark-report.py [--results-dir DIR] [--reference FILE]
                                        [--output FILE] [--no-open]
 """
@@ -10,8 +14,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
+import urllib.request
 from datetime import datetime
 from pathlib import Path
 
@@ -25,6 +31,20 @@ except ImportError:
 _DEFAULT_RESULTS_DIR = Path.home() / ".opta-lmx" / "benchmarks"
 _DEFAULT_REFERENCE = Path(__file__).parent.parent / "benchmarks" / "reference" / "published.yaml"
 _COHERENCE_EMOJI = {"ok": "✓", "truncated": "⚠", "repetitive": "⚠", "garbled": "✗"}
+
+
+def _load_results_from_api(base_url: str, api_key: str) -> list[dict]:
+    """Pull benchmark results directly from a running LMX server."""
+    url = base_url.rstrip("/") + "/admin/benchmark/results"
+    req = urllib.request.Request(url, headers={"X-Admin-Key": api_key})
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            results = json.loads(resp.read().decode())
+            print(f"  Fetched {len(results)} result(s) from {url}")
+            return results
+    except Exception as e:
+        print(f"Error: could not fetch from {url}: {e}", file=sys.stderr)
+        sys.exit(1)
 
 
 def _load_results(directory: Path) -> list[dict]:
@@ -89,7 +109,7 @@ def _render_report(results: list[dict], reference: dict) -> str:
           <td title="{model_id}">{short_name}</td>
           <td>{latest['backend']}</td>
           <td><strong>{tps:.1f}</strong></td>
-          <td>{ttft:.2f}s</td>
+          <td>{ttft * 1000:.0f}ms</td>
           <td>{vs_lms_tps}</td>
           <td>{vs_oll_tps}</td>
           <td>{tools}</td>
@@ -148,7 +168,7 @@ def _render_report(results: list[dict], reference: dict) -> str:
           <div class="section-title">Results ({s['runs_completed']} runs, {s['output_tokens']} tokens, temp=0)</div>
           <table class="inner-table">
             <tr><td>tok/s</td><td>p50: {s['toks_per_sec_p50']:.1f} &nbsp; p95: {s['toks_per_sec_p95']:.1f} &nbsp; mean: <strong>{tps:.1f}</strong></td></tr>
-            <tr><td>TTFT</td><td>p50: {s['ttft_p50_sec']:.2f}s &nbsp; p95: {s['ttft_p95_sec']:.2f}s &nbsp; mean: <strong>{ttft:.2f}s</strong></td></tr>
+            <tr><td>TTFT</td><td>p50: {s['ttft_p50_sec']*1000:.0f}ms &nbsp; p95: {s['ttft_p95_sec']*1000:.0f}ms &nbsp; mean: <strong>{ttft*1000:.0f}ms</strong></td></tr>
           </table>
           <div class="deltas">
             vs LM Studio: <span class="delta">{vs_lms_tps} tok/s</span> / <span class="delta">{vs_lms_ttft} TTFT</span> &nbsp;|&nbsp;
@@ -221,14 +241,25 @@ def _render_report(results: list[dict], reference: dict) -> str:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Generate LMX benchmark HTML report")
+    parser.add_argument("--api", metavar="URL", help="Pull results from a running LMX server (e.g. http://192.168.188.11:1234)")
+    parser.add_argument("--api-key", metavar="KEY", default=os.environ.get("LMX_ADMIN_KEY", ""),
+                        help="Admin key for the LMX server (or set LMX_ADMIN_KEY env var)")
     parser.add_argument("--results-dir", type=Path, default=_DEFAULT_RESULTS_DIR)
     parser.add_argument("--reference", type=Path, default=_DEFAULT_REFERENCE)
     parser.add_argument("--output", type=Path, default=Path("/tmp/opta-lmx-benchmark.html"))
     parser.add_argument("--no-open", action="store_true", help="Don't open in browser")
     args = parser.parse_args()
 
-    print(f"Loading results from {args.results_dir}...")
-    results = _load_results(args.results_dir)
+    if args.api:
+        if not args.api_key:
+            print("Error: --api requires --api-key or LMX_ADMIN_KEY env var", file=sys.stderr)
+            sys.exit(1)
+        print(f"Fetching results from {args.api}...")
+        results = _load_results_from_api(args.api, args.api_key)
+    else:
+        print(f"Loading results from {args.results_dir}...")
+        results = _load_results(args.results_dir)
+
     if not results:
         print("No benchmark results found.")
         sys.exit(0)
