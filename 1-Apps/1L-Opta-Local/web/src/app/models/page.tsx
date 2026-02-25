@@ -9,7 +9,8 @@
  */
 
 import { useState, useCallback } from 'react';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, AlertCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { cn } from '@opta/ui';
 
@@ -27,10 +28,14 @@ export default function ModelsPage() {
   const [isLoadDialogOpen, setIsLoadDialogOpen] = useState(false);
   const [isLoadingModel, setIsLoadingModel] = useState(false);
   const [unloadingId, setUnloadingId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const handleLoad = useCallback(
     async (modelPath: string, quantization?: string) => {
       if (!client) return;
+      // Errors thrown here are caught by ModelLoadDialog's internal handler
+      // and surfaced inline in the dialog — no page-level catch needed.
+      setActionError(null);
       setIsLoadingModel(true);
       try {
         const req: ModelLoadRequest = { model_path: modelPath };
@@ -48,10 +53,13 @@ export default function ModelsPage() {
   const handleUnload = useCallback(
     async (modelId: string) => {
       if (!client) return;
+      setActionError(null);
       setUnloadingId(modelId);
       try {
         await client.unloadModel(modelId);
         refresh();
+      } catch (err) {
+        setActionError(err instanceof Error ? err.message : 'Failed to unload model');
       } finally {
         setUnloadingId(null);
       }
@@ -78,6 +86,19 @@ export default function ModelsPage() {
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        <AnimatePresence>
+          {actionError && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="flex items-center gap-2 rounded-lg bg-neon-red/10 border border-neon-red/20 px-3 py-2 mb-2"
+            >
+              <AlertCircle className="h-3.5 w-3.5 shrink-0 text-neon-red" />
+              <p className="text-xs text-neon-red">{actionError}</p>
+            </motion.div>
+          )}
+        </AnimatePresence>
         {!client ? (
           <p className="text-sm text-text-muted text-center pt-12">
             Not connected — check Settings to configure your server.
