@@ -332,6 +332,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     )
     await agent_runtime.start()
 
+    from opta_lmx.monitoring.benchmark import BenchmarkResultStore
+    app.state.benchmark_store = BenchmarkResultStore()
+
     app.state.engine = engine
     app.state.embedding_engine = embedding_engine
     app.state.skill_registry = skill_registry

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import statistics
 import time
@@ -48,7 +49,13 @@ def _percentile(values: list[float], p: float) -> float:
     return sorted_vals[idx]
 
 
+_hardware_cache: str | None = None
+
+
 def _detect_hardware() -> str:
+    global _hardware_cache
+    if _hardware_cache is not None:
+        return _hardware_cache
     try:
         import subprocess
         result = subprocess.run(
@@ -57,10 +64,12 @@ def _detect_hardware() -> str:
         )
         brand = result.stdout.strip()
         if brand:
-            return brand
+            _hardware_cache = brand
+            return _hardware_cache
     except Exception:
         pass
-    return "Apple Silicon"
+    _hardware_cache = "Apple Silicon"
+    return _hardware_cache
 
 
 async def _run_single(
@@ -69,11 +78,12 @@ async def _run_single(
     messages: list[ChatMessage],
     num_output_tokens: int,
     temperature: float,
-) -> tuple[float, float, int, str, bool]:
+) -> tuple[float, float, int, str, bool, int]:
     """Run one generation pass using the public engine.generate() interface.
 
     Returns:
-        (ttft_sec, toks_per_sec, token_count, output_text, completed_naturally)
+        (ttft_sec, toks_per_sec, output_token_count, output_text, completed_naturally,
+         prompt_tokens)
     """
     t_start = time.perf_counter()
 
@@ -90,11 +100,13 @@ async def _run_single(
     # Extract output text and token counts from ChatCompletionResponse
     output_text = ""
     output_tokens = 0
+    prompt_tokens = 0
     if response.choices:
         msg = response.choices[0].message
         output_text = msg.content or ""
     if response.usage:
         output_tokens = response.usage.completion_tokens
+        prompt_tokens = response.usage.prompt_tokens
 
     # Approximate TTFT as 5% of total elapsed (non-streaming path has no real TTFT)
     ttft = elapsed * 0.05
@@ -102,7 +114,7 @@ async def _run_single(
     toks_per_sec = output_tokens / generation_time if generation_time > 0 else 0.0
     completed_naturally = output_tokens < num_output_tokens
 
-    return ttft, toks_per_sec, output_tokens, output_text, completed_naturally
+    return ttft, toks_per_sec, output_tokens, output_text, completed_naturally, prompt_tokens
 
 
 @router.post("/admin/benchmark/run")
@@ -121,12 +133,13 @@ async def run_benchmark(
     tpss: list[float] = []
     output_text = ""
     output_token_count = 0
+    prompt_token_count = 0
     completed_naturally = True
     total_runs = request_body.warmup_runs + request_body.runs
 
     for i in range(total_runs):
         try:
-            ttft, tps, n_tokens, text, completed = await _run_single(
+            ttft, tps, n_tokens, text, completed, n_prompt_tokens = await _run_single(
                 engine,
                 request_body.model_id,
                 messages,
@@ -139,6 +152,7 @@ async def run_benchmark(
                 if i == request_body.warmup_runs:  # use first non-warmup run as representative
                     output_text = text
                     output_token_count = n_tokens
+                    prompt_token_count = n_prompt_tokens
                     completed_naturally = completed
         except Exception:
             logger.warning(
@@ -170,7 +184,9 @@ async def run_benchmark(
         toks_per_sec_p50=_percentile(tpss, 50),
         toks_per_sec_p95=_percentile(tpss, 95),
         toks_per_sec_mean=statistics.mean(tpss),
-        prompt_tokens=len(request_body.prompt.split()),
+        # Use actual prompt_tokens from response.usage when available;
+        # fall back to word-split approximation if usage was not populated.
+        prompt_tokens=prompt_token_count if prompt_token_count > 0 else len(request_body.prompt.split()),
         output_tokens=output_token_count,
         runs_completed=runs_completed,
         warmup_runs_discarded=request_body.warmup_runs,
@@ -201,17 +217,14 @@ async def run_benchmark(
         backend=backend,
         timestamp=datetime.now(UTC).isoformat(),
         status=status,
-        hardware=_detect_hardware(),
+        hardware=await asyncio.to_thread(_detect_hardware),
         lmx_version=__version__,
         prompt_preview=request_body.prompt[:100],
         stats=stats,
     )
 
-    # Persist result — use injected store if set, otherwise create a default one
-    store: BenchmarkResultStore | None = getattr(request.app.state, "benchmark_store", None)
-    if store is None:
-        store = BenchmarkResultStore()
-        request.app.state.benchmark_store = store
+    # Persist result — store is initialized at startup in main.py lifespan
+    store: BenchmarkResultStore = request.app.state.benchmark_store
     store.save(result)
 
     logger.info("benchmark_run_complete", extra={
@@ -229,9 +242,7 @@ async def get_benchmark_results(
     model_id: str | None = Query(None),
 ) -> list[dict[str, Any]]:
     """Return stored benchmark results, optionally filtered by model_id."""
-    store: BenchmarkResultStore | None = getattr(request.app.state, "benchmark_store", None)
-    if store is None:
-        store = BenchmarkResultStore()
-        request.app.state.benchmark_store = store
+    # store is initialized at startup in main.py lifespan
+    store: BenchmarkResultStore = request.app.state.benchmark_store
     results = store.load_all(model_id=model_id)
     return [r.model_dump() for r in results]
