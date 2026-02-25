@@ -25,16 +25,13 @@ def test_compute_repetition_ratio_looping_text() -> None:
 
 
 def test_classify_coherence_ok() -> None:
-    stats = BenchmarkRunStats(
-        ttft_p50_sec=0.5, ttft_p95_sec=0.6, ttft_mean_sec=0.52,
-        toks_per_sec_p50=20.0, toks_per_sec_p95=19.5, toks_per_sec_mean=19.8,
-        prompt_tokens=10, output_tokens=50, runs_completed=5, warmup_runs_discarded=1,
-        output_text="This is a coherent response about transformers.",
-        output_token_count=50, completed_naturally=True,
-        repetition_ratio=0.02, coherence_flag="ok",
-        tool_call=None, skills=[],
+    flag = classify_coherence(
+        output_text="This is a coherent response about transformers and neural networks.",
+        completed_naturally=True,
+        output_token_count=50,
+        num_output_tokens=200,
     )
-    assert stats.coherence_flag == "ok"
+    assert flag == "ok"
 
 
 def test_classify_coherence_repetitive() -> None:
@@ -68,7 +65,6 @@ def test_classify_coherence_garbled() -> None:
 
 
 def test_benchmark_result_model_round_trips_json() -> None:
-    import json
     result = BenchmarkResult(
         model_id="test/model",
         backend="mlx-lm",

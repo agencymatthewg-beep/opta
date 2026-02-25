@@ -14,7 +14,7 @@ import time
 from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -230,14 +230,14 @@ def classify_coherence(
 
 
 class ToolCallBenchmark(BaseModel):
-    tool_definition: dict[str, object]
+    tool_definition: dict[str, Any]
     expected_tool_name: str
     prompt_used: str
     call_produced: bool
     tool_name_correct: bool
     params_valid_json: bool
     params_match_schema: bool
-    raw_tool_call: dict[str, object] | None
+    raw_tool_call: dict[str, Any] | None
     latency_sec: float
 
 
@@ -266,7 +266,7 @@ class BenchmarkRunStats(BaseModel):
     output_token_count: int
     completed_naturally: bool
     repetition_ratio: float
-    coherence_flag: str  # "ok" | "truncated" | "repetitive" | "garbled"
+    coherence_flag: Literal["ok", "truncated", "repetitive", "garbled"]
     # Capability quality
     tool_call: ToolCallBenchmark | None
     skills: list[SkillsBenchmark]
@@ -276,7 +276,7 @@ class BenchmarkResult(BaseModel):
     model_id: str
     backend: str
     timestamp: str
-    status: str  # "ok" | "insufficient_data"
+    status: Literal["ok", "insufficient_data"]
     hardware: str
     lmx_version: str
     prompt_preview: str
