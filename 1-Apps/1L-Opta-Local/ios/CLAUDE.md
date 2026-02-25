@@ -11,7 +11,20 @@
 - **State:** Observation framework (`@Observable`)
 - **Networking:** URLSession with async/await
 - **Storage:** SwiftData for sessions, Keychain for credentials
-- **Build:** Xcode 16+
+- **Build:** XcodeGen + Xcode 16+
+
+## Commands
+
+```bash
+# Regenerate .xcodeproj after adding/removing Swift files or editing project.yml
+xcodegen generate
+open OptaLocal.xcodeproj
+
+# CLI build (CI / no GUI)
+xcodebuild -scheme OptaLocal -destination 'platform=iOS Simulator,name=iPhone 16' build
+```
+
+**`project.yml`** (XcodeGen) is the source of truth for the Xcode project — always edit it, never the `.xcodeproj` directly. Bundle ID: `com.opta.local`, deployment target: iOS 17+.
 
 ## Mandatory Rules
 
@@ -55,6 +68,8 @@
 
 ## File Structure
 
+All of the following are implemented in `ios/OptaLocal/`:
+
 ```
 OptaLocal/
 ├── OptaLocalApp.swift           # App entry point, tab navigation
@@ -67,11 +82,13 @@ OptaLocal/
 │   ├── LMXClient.swift          # Protocol + implementation
 │   ├── SSEClient.swift          # Server-Sent Events async stream
 │   ├── BonjourDiscovery.swift   # NWBrowser-based discovery
+│   ├── ConnectionManager.swift  # Active connection state machine
 │   └── KeychainManager.swift    # Secure credential storage
 ├── ViewModels/
 │   ├── DashboardViewModel.swift # Observable dashboard state
 │   ├── ChatViewModel.swift      # Chat state and streaming
-│   └── ConnectionViewModel.swift # Connection management
+│   ├── ConnectionViewModel.swift # Connection management
+│   └── SessionsViewModel.swift  # Session list + resume state
 ├── Views/
 │   ├── Dashboard/
 │   │   ├── DashboardView.swift
@@ -85,7 +102,8 @@ OptaLocal/
 │   │   ├── DiscoveryView.swift
 │   │   └── QRScannerView.swift
 │   ├── Sessions/
-│   │   └── SessionListView.swift
+│   │   ├── SessionListView.swift
+│   │   └── SessionResumeView.swift  # Resume a session from CLI/Web
 │   └── Settings/
 │       └── SettingsView.swift
 └── Utilities/
