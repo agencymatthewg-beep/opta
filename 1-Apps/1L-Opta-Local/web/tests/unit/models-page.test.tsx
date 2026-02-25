@@ -21,11 +21,11 @@ import ModelsPage from '@/app/models/page';
 describe('ModelsPage', () => {
   it('renders the page header', () => {
     render(<ModelsPage />);
-    expect(screen.getByRole('heading', { name: /models/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /models/i })).toBeTruthy();
   });
 
   it('shows offline state when no client', () => {
     render(<ModelsPage />);
-    expect(screen.getByText(/not connected/i)).toBeInTheDocument();
+    expect(screen.getByText(/not connected/i)).toBeTruthy();
   });
 });
