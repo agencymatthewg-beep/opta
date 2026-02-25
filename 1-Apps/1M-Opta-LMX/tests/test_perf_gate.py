@@ -8,10 +8,13 @@ import time
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from httpx import ASGITransport, AsyncClient
 
+from opta_lmx.config import LMXConfig
 from opta_lmx.inference.autotune_scoring import score_profile
 from opta_lmx.inference.engine import InferenceEngine
 from opta_lmx.inference.schema import ChatMessage
+from opta_lmx.main import create_app
 from opta_lmx.manager.memory import MemoryMonitor
 
 
@@ -71,11 +74,22 @@ async def test_openclaw_perf_regression_gate() -> None:
     clients = [f"bot-{index}" for index in range(6)]
     messages = [ChatMessage(role="user", content="perf gate")]
     latencies: list[float] = []
+    queue_waits: list[float] = []
+    error_count = 0
 
     async def _run(client_id: str) -> None:
+        nonlocal error_count
         started = time.perf_counter()
-        await engine.generate("test/model-a", messages, client_id=client_id)
-        latencies.append(time.perf_counter() - started)
+        try:
+            await engine.generate("test/model-a", messages, client_id=client_id)
+        except Exception:
+            error_count += 1
+            raise
+        finally:
+            queue_wait = engine.pop_queue_wait_seconds()
+            if queue_wait is not None:
+                queue_waits.append(queue_wait)
+            latencies.append(time.perf_counter() - started)
 
     tasks = [
         asyncio.create_task(_run(client_id))
@@ -88,8 +102,12 @@ async def test_openclaw_perf_regression_gate() -> None:
 
     throughput_rps = len(tasks) / elapsed if elapsed > 0 else 0.0
     p95_sec = _p95(latencies)
+    queue_wait_p95_sec = _p95(queue_waits)
+    error_rate = error_count / len(tasks) if tasks else 0.0
     max_p95_sec = float(os.getenv("LMX_PERF_GATE_MAX_P95_SEC", "0.60"))
     min_throughput_rps = float(os.getenv("LMX_PERF_GATE_MIN_THROUGHPUT_RPS", "20.0"))
+    max_queue_wait_p95_sec = float(os.getenv("LMX_PERF_GATE_MAX_QUEUE_WAIT_P95_SEC", "1.50"))
+    max_error_rate = float(os.getenv("LMX_PERF_GATE_MAX_ERROR_RATE", "0.01"))
 
     assert p95_sec <= max_p95_sec, (
         f"Perf gate failed: p95={p95_sec:.4f}s exceeds max {max_p95_sec:.4f}s"
@@ -97,6 +115,13 @@ async def test_openclaw_perf_regression_gate() -> None:
     assert throughput_rps >= min_throughput_rps, (
         f"Perf gate failed: throughput={throughput_rps:.2f} rps below min "
         f"{min_throughput_rps:.2f} rps"
+    )
+    assert queue_wait_p95_sec <= max_queue_wait_p95_sec, (
+        f"Perf gate failed: queue_wait_p95={queue_wait_p95_sec:.4f}s exceeds max "
+        f"{max_queue_wait_p95_sec:.4f}s"
+    )
+    assert error_rate <= max_error_rate, (
+        f"Perf gate failed: error_rate={error_rate:.4f} exceeds max {max_error_rate:.4f}"
     )
 
 
@@ -135,3 +160,38 @@ def test_autotune_perf_regression_gate_uses_15_percent_threshold() -> None:
             regressed,
             max_drop_ratio=0.15,
         )
+
+
+async def test_benchmark_endpoint_overhead_under_50ms(
+    mock_engine, tmp_path
+) -> None:
+    """Benchmark handler bookkeeping (excluding generation) must be < 50ms."""
+    from opta_lmx.monitoring.benchmark import BenchmarkResultStore
+
+    await mock_engine.load_model("test/model")
+
+    # Pre-warm hardware detection cache so subprocess latency is excluded from
+    # the timed section (the cache ensures the second call is instant).
+    from opta_lmx.api.benchmark import _detect_hardware
+    await asyncio.to_thread(_detect_hardware)
+
+    config = LMXConfig()
+    store = BenchmarkResultStore(directory=tmp_path / "benchmarks")
+    app = create_app(config)
+    app.state.engine = mock_engine
+    app.state.benchmark_store = store
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        t_start = time.perf_counter()
+        resp = await client.post("/admin/benchmark/run", json={
+            "model_id": "test/model",
+            "runs": 1,
+            "warmup_runs": 0,
+        })
+        elapsed_ms = (time.perf_counter() - t_start) * 1000
+
+    assert resp.status_code == 200, f"Expected 200, got {resp.status_code}: {resp.text}"
+    # Mock generation is near-zero; total overhead should be well under 50ms
+    assert elapsed_ms < 50, f"Benchmark endpoint overhead {elapsed_ms:.1f}ms exceeds 50ms gate"
