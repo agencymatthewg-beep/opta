@@ -258,20 +258,37 @@ export function AppShell({ children }: { children: ReactNode }) {
                   className="shrink-0 transition-transform duration-500 group-hover:rotate-45"
                 >
                   <defs>
-                    <linearGradient id="hdr-ring-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#fafafa" stopOpacity="0.9" />
-                      <stop offset="50%" stopColor="#a855f7" />
-                      <stop offset="100%" stopColor="#6366f1" />
-                    </linearGradient>
+                    {/* Radial gradient: light source at upper-left → deep dark at lower-right */}
+                    <radialGradient id="hdr-ring-3d" cx="32%" cy="26%" r="72%" gradientUnits="objectBoundingBox">
+                      <stop offset="0%"   stopColor="#f5f3ff" />
+                      <stop offset="15%"  stopColor="#e9d5ff" />
+                      <stop offset="35%"  stopColor="#a855f7" />
+                      <stop offset="65%"  stopColor="#6d28d9" />
+                      <stop offset="85%"  stopColor="#3b0764" />
+                      <stop offset="100%" stopColor="#13052e" />
+                    </radialGradient>
+                    {/* Soft glow: blur behind + sharp on top */}
+                    <filter id="hdr-ring-glow" x="-35%" y="-35%" width="170%" height="170%">
+                      <feGaussianBlur in="SourceGraphic" stdDeviation="0.8" result="blur" />
+                      <feMerge>
+                        <feMergeNode in="blur" />
+                        <feMergeNode in="SourceGraphic" />
+                      </feMerge>
+                    </filter>
                   </defs>
                   <circle
                     cx="12"
                     cy="12"
                     r="8"
-                    stroke="url(#hdr-ring-grad)"
+                    stroke="url(#hdr-ring-3d)"
                     strokeWidth="5.5"
                     fill="none"
+                    filter="url(#hdr-ring-glow)"
                   />
+                  {/* Specular highlight — upper-left bright zone (lit sphere illusion) */}
+                  <circle cx="8.5"  cy="7.2"  r="1.8" fill="white"   fillOpacity="0.55" />
+                  {/* Counter-specular — lower-right dim bounce */}
+                  <circle cx="15.5" cy="17.0" r="0.8" fill="#c084fc" fillOpacity="0.35" />
                 </svg>
 
                 <span className="flex min-w-0 flex-col leading-none">
