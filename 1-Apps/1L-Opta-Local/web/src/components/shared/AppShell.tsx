@@ -8,12 +8,13 @@
  * This is a client component because it uses hooks and context.
  */
 
-import { type ReactNode, useState, useCallback } from 'react';
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard,
   MessageSquare,
+  Layers,
   History,
   Settings,
   Swords,
@@ -32,6 +33,7 @@ import {
 } from '@/components/shared/ConnectionProvider';
 import { ConnectionBadge } from '@/components/shared/ConnectionBadge';
 import { AuthProvider, useAuthSafe } from '@/components/shared/AuthProvider';
+import { POST_SIGN_IN_NEXT_KEY, sanitizeNextPath } from '@/lib/auth-utils';
 
 // ---------------------------------------------------------------------------
 // Nav items
@@ -40,6 +42,7 @@ import { AuthProvider, useAuthSafe } from '@/components/shared/AuthProvider';
 const navItems = [
   { label: 'Dashboard', href: '/', icon: LayoutDashboard },
   { label: 'Chat', href: '/chat', icon: MessageSquare },
+  { label: 'Models', href: '/models', icon: Layers },
   { label: 'Arena', href: '/arena', icon: Swords },
   { label: 'RAG', href: '/rag', icon: Database },
   { label: 'Agents', href: '/agents', icon: Workflow },
@@ -47,6 +50,10 @@ const navItems = [
   { label: 'Sessions', href: '/sessions', icon: History },
   { label: 'Settings', href: '/settings', icon: Settings },
 ] as const;
+
+function isActiveRoute(pathname: string, href: string) {
+  return href === '/' ? pathname === '/' : pathname.startsWith(href);
+}
 
 // ---------------------------------------------------------------------------
 // Header badge (reads context safely)
@@ -71,7 +78,7 @@ function HeaderConnectionBadge() {
 // Header user badge (reads auth context safely)
 // ---------------------------------------------------------------------------
 
-function HeaderUserBadge() {
+function HeaderUserBadge({ signInHref }: { signInHref: string }) {
   const auth = useAuthSafe();
 
   // No auth context yet (still loading) — render nothing
@@ -96,7 +103,7 @@ function HeaderUserBadge() {
         className={cn(
           'flex h-7 w-7 items-center justify-center rounded-full',
           'bg-primary/20 text-primary text-xs font-semibold',
-          'border border-primary/30 hover:bg-primary/30 transition-colors',
+          'border border-transparent hover:bg-primary/30 transition-colors',
         )}
         aria-label="User settings"
       >
@@ -109,11 +116,11 @@ function HeaderUserBadge() {
   if (isCloudMode) {
     return (
       <Link
-        href="/sign-in"
+        href={signInHref}
         className={cn(
           'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1',
           'glass-subtle text-xs font-medium',
-          'border-opta-border text-text-secondary hover:text-text-primary transition-colors',
+          'border-transparent text-text-secondary hover:text-text-primary transition-colors',
         )}
       >
         <User className="h-3 w-3" />
@@ -123,6 +130,39 @@ function HeaderUserBadge() {
   }
 
   // LAN mode, not signed in — show nothing (existing behavior)
+  return null;
+}
+
+function PostSignInNextRedirect() {
+  const auth = useAuthSafe();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  useEffect(() => {
+    if (!auth || auth.isLoading || !auth.user) return;
+
+    const storedNext = sanitizeNextPath(
+      typeof window === 'undefined'
+        ? null
+        : window.sessionStorage.getItem(POST_SIGN_IN_NEXT_KEY),
+    );
+
+    if (!storedNext) return;
+
+    const currentPath =
+      typeof window === 'undefined'
+        ? pathname
+        : `${window.location.pathname}${window.location.search}`;
+
+    if (storedNext === currentPath) {
+      window.sessionStorage.removeItem(POST_SIGN_IN_NEXT_KEY);
+      return;
+    }
+
+    window.sessionStorage.removeItem(POST_SIGN_IN_NEXT_KEY);
+    router.replace(storedNext);
+  }, [auth, pathname, router]);
+
   return null;
 }
 
@@ -138,19 +178,63 @@ export function AppShell({ children }: { children: ReactNode }) {
     setMobileMenuOpen(false);
   }, []);
 
+  const toggleMobileMenu = useCallback(() => {
+    setMobileMenuOpen((prev) => !prev);
+  }, []);
+
+  const signInHref = useMemo(() => {
+    if (pathname === '/sign-in') return '/sign-in';
+    const safeNext = sanitizeNextPath(pathname) ?? '/';
+
+    return `/sign-in?next=${encodeURIComponent(safeNext)}`;
+  }, [pathname]);
+
+  useEffect(() => {
+    closeMobileMenu();
+  }, [closeMobileMenu, pathname]);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        closeMobileMenu();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [closeMobileMenu, mobileMenuOpen]);
+
   return (
     <AuthProvider>
       <ConnectionProvider>
+        <PostSignInNextRedirect />
+
+        {/* Global ambient background glow */}
+        <div className="fixed -inset-[50%] -z-10 pointer-events-none opacity-40 blur-[200px] rounded-full mix-blend-screen bg-gradient-to-tr from-opta-primary/20 via-opta-primary-glow/10 to-transparent animate-[opta-breathe_8s_ease-in-out_infinite]" />
+
         {/* Sticky global header */}
-        <header className="fixed top-0 left-0 right-0 z-50 glass-subtle border-b border-opta-border">
-          <div className="flex items-center justify-between px-4 py-2 max-w-screen-2xl mx-auto">
+        <header className="fixed inset-x-0 top-0 z-50 glass-subtle border-b border-transparent">
+
+          <div className="mx-auto flex h-11 max-w-screen-2xl items-center gap-3 px-3 sm:px-4">
             {/* Left: branding + mobile hamburger */}
-            <div className="flex items-center gap-2">
+            <div className="flex min-w-0 items-center gap-2">
               <button
                 type="button"
-                className="sm:hidden flex items-center justify-center h-7 w-7 rounded-lg text-text-secondary hover:text-text-primary hover:bg-opta-surface/50 transition-colors"
-                onClick={() => setMobileMenuOpen((prev) => !prev)}
-                aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+                className="flex h-7 w-7 items-center justify-center rounded-lg text-text-secondary transition-colors hover:bg-opta-surface/50 hover:text-text-primary sm:hidden"
+                onClick={toggleMobileMenu}
+                aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+                aria-expanded={mobileMenuOpen}
+                aria-controls="mobile-nav-drawer"
+                aria-haspopup="dialog"
               >
                 {mobileMenuOpen ? (
                   <X className="h-4 w-4" />
@@ -158,54 +242,53 @@ export function AppShell({ children }: { children: ReactNode }) {
                   <Menu className="h-4 w-4" />
                 )}
               </button>
+
               <Link
                 href="/"
-                className="flex items-center gap-2 group"
+                className="group flex min-w-0 items-center gap-2"
                 onClick={closeMobileMenu}
                 aria-label="Opta Local home"
               >
-                {/* Mini Opta ring mark */}
                 <svg
                   width="18"
                   height="18"
                   viewBox="0 0 24 24"
                   fill="none"
                   aria-hidden
-                  className="shrink-0 transition-transform group-hover:rotate-45 duration-500"
+                  className="shrink-0 transition-transform duration-500 group-hover:rotate-45"
                 >
                   <defs>
                     <linearGradient id="hdr-ring-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%"   stopColor="#fafafa" stopOpacity="0.9" />
-                      <stop offset="50%"  stopColor="#a855f7" />
+                      <stop offset="0%" stopColor="#fafafa" stopOpacity="0.9" />
+                      <stop offset="50%" stopColor="#a855f7" />
                       <stop offset="100%" stopColor="#6366f1" />
                     </linearGradient>
                   </defs>
                   <circle
-                    cx="12" cy="12" r="8"
+                    cx="12"
+                    cy="12"
+                    r="8"
                     stroke="url(#hdr-ring-grad)"
                     strokeWidth="5.5"
                     fill="none"
                   />
                 </svg>
-                {/* Brand text */}
-                <span className="flex items-baseline gap-1.5">
+
+                <span className="flex min-w-0 flex-col leading-none">
                   <span className="opta-gradient-text text-sm font-bold tracking-[0.1em]">
-                    OPTA
+                    OPTA LOCAL
                   </span>
-                  <span className="text-[10px] font-light tracking-[0.18em] uppercase text-text-muted">
-                    LOCAL
+                  <span className="hidden text-[10px] uppercase tracking-[0.16em] text-text-muted md:block">
+                    Command Surface
                   </span>
                 </span>
               </Link>
             </div>
 
             {/* Center: navigation (desktop) */}
-            <nav className="hidden sm:flex items-center gap-1">
+            <nav className="hidden flex-1 items-center gap-1 sm:flex" aria-label="Primary navigation">
               {navItems.map((item) => {
-                const isActive =
-                  item.href === '/'
-                    ? pathname === '/'
-                    : pathname.startsWith(item.href);
+                const isActive = isActiveRoute(pathname, item.href);
                 const Icon = item.icon;
 
                 return (
@@ -213,11 +296,12 @@ export function AppShell({ children }: { children: ReactNode }) {
                     key={item.href}
                     href={item.href}
                     className={cn(
-                      'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200',
+                      'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-200',
                       isActive
                         ? 'bg-primary/15 text-primary shadow-[0_0_12px_rgba(168,85,247,0.2),inset_0_-1px_0_rgba(168,85,247,0.5)]'
-                        : 'text-text-secondary hover:text-text-primary hover:bg-opta-surface/50',
+                        : 'text-text-secondary hover:bg-opta-surface/50 hover:text-text-primary',
                     )}
+                    aria-current={isActive ? 'page' : undefined}
                   >
                     <Icon className="h-3.5 w-3.5" />
                     <span>{item.label}</span>
@@ -227,42 +311,71 @@ export function AppShell({ children }: { children: ReactNode }) {
             </nav>
 
             {/* Right: connection badge + user */}
-            <div className="flex items-center gap-2">
+            <div className="ml-auto flex items-center gap-2">
               <HeaderConnectionBadge />
-              <HeaderUserBadge />
+              <HeaderUserBadge signInHref={signInHref} />
             </div>
           </div>
-
-          {/* Mobile navigation drawer */}
-          {mobileMenuOpen && (
-            <nav className="sm:hidden border-t border-opta-border glass-subtle px-4 py-2 space-y-0.5">
-              {navItems.map((item) => {
-                const isActive =
-                  item.href === '/'
-                    ? pathname === '/'
-                    : pathname.startsWith(item.href);
-                const Icon = item.icon;
-
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={closeMobileMenu}
-                    className={cn(
-                      'flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200',
-                      isActive
-                        ? 'bg-primary/15 text-primary shadow-[inset_0_-1px_0_rgba(168,85,247,0.5)]'
-                        : 'text-text-secondary hover:text-text-primary hover:bg-opta-surface/50',
-                    )}
-                  >
-                    <Icon className="h-4 w-4" />
-                    <span>{item.label}</span>
-                  </Link>
-                );
-              })}
-            </nav>
-          )}
         </header>
+
+        {/* Mobile navigation drawer */}
+        {mobileMenuOpen && (
+          <div className="fixed inset-0 top-11 z-40 sm:hidden">
+            <button
+              type="button"
+              className="absolute inset-0 bg-opta-bg/55 backdrop-blur-[1px]"
+              aria-label="Close navigation menu"
+              onClick={closeMobileMenu}
+            />
+
+            <section
+              id="mobile-nav-drawer"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Mobile navigation"
+              className="relative mx-3 mt-2 rounded-xl border border-transparent glass-strong p-2"
+            >
+              <div className="mb-1 flex items-center justify-between px-2 py-1">
+                <h2 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+                  Navigate
+                </h2>
+                <button
+                  type="button"
+                  onClick={closeMobileMenu}
+                  className="rounded-md p-1.5 text-text-secondary transition-colors hover:bg-opta-surface/50 hover:text-text-primary"
+                  aria-label="Close navigation menu"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+
+              <nav className="space-y-0.5" aria-label="Primary navigation">
+                {navItems.map((item) => {
+                  const isActive = isActiveRoute(pathname, item.href);
+                  const Icon = item.icon;
+
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={closeMobileMenu}
+                      className={cn(
+                        'flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200',
+                        isActive
+                          ? 'bg-primary/15 text-primary shadow-[inset_0_-1px_0_rgba(168,85,247,0.5)]'
+                          : 'text-text-secondary hover:bg-opta-surface/50 hover:text-text-primary',
+                      )}
+                      aria-current={isActive ? 'page' : undefined}
+                    >
+                      <Icon className="h-4 w-4" />
+                      <span>{item.label}</span>
+                    </Link>
+                  );
+                })}
+              </nav>
+            </section>
+          </div>
+        )}
 
         {/* Content area — offset by header height */}
         <div className="pt-11">{children}</div>
