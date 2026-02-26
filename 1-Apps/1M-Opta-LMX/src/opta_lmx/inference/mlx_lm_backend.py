@@ -70,14 +70,15 @@ class MLXLMBackend:
         assert self._tokenizer is not None
 
         prompt = _messages_to_prompt(messages)
+        from mlx_lm.sample_utils import make_sampler
+        sampler = make_sampler(temp=temperature, top_p=top_p)
         result = await asyncio.to_thread(
             self._generate_fn,
             self._model,
             self._tokenizer,
             prompt=prompt,
             max_tokens=max_tokens,
-            temp=temperature,
-            top_p=top_p,
+            sampler=sampler,
         )
         if isinstance(result, str):
             content = result
