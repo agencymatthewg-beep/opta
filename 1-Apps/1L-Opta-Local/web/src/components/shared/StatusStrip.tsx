@@ -78,7 +78,7 @@ export function StatusStrip() {
       cancelled = true;
       clearInterval(interval);
     };
-  }, [liveStatus, isConnected, connection?.client]);
+  }, [liveStatus, isConnected, connection]);
 
   // Merge: prefer live SSE status over polled
   const effectiveStatus: ServerStatus | null = liveStatus ?? polledStatus;
