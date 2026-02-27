@@ -16,6 +16,10 @@ vi.mock('@/hooks/useConnection', () => ({
   useConnection: vi.fn(),
 }));
 
+vi.mock('@/components/shared/AuthProvider', () => ({
+  useAuth: () => ({ user: { id: 'test-user' }, isLoading: false }),
+}));
+
 vi.mock('@/lib/connection', async () => {
   const actual =
     await vi.importActual<typeof import('@/lib/connection')>('@/lib/connection');
