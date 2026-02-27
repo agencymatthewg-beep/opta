@@ -1,0 +1,75 @@
+# Opta-LMX Production Configuration — Mono512 (Mac Studio M3 Ultra, 512GB)
+# Current active setup as of 2026-02-18
+# Install to: ~/.opta-lmx/config.yaml on the Mac Studio
+
+server:
+  host: "0.0.0.0"          # LAN-accessible (192.168.188.11:1234)
+  port: 1234
+  workers: 1
+  timeout_sec: 600          # 10 min — large models can be slow on first prompt
+
+# Backend servers (mlx_lm.server instances)
+# These run independently; Opta-LMX routes to them
+# NOTE: backends section is for documentation/reference only.
+# LMX does not currently route to external mlx_lm.server instances.
+# LMXConfig has no 'backends' field — Pydantic silently drops this section.
+# Backend routing support is planned for a future release.
+backends:
+  m2.5-4bit:
+    url: "http://localhost:10001/v1"
+    model: "mlx-community/MiniMax-M2.5-4bit"
+    status: active
+  m2.5-5bit:
+    url: "http://localhost:10002/v1"
+    model: "mlx-community/MiniMax-M2.5-5bit"
+    status: active
+  # Port 10003: Reserved for Kimi-K2.5 (needs mlx_lm upgrade for 3.6bit quant)
+
+models:
+  default_model: "inferencerlabs/MiniMax-M2.5-MLX-6.5bit"
+  models_directory: "/Users/Shared/Opta-LMX/models"
+  auto_load: ["inferencerlabs/MiniMax-M2.5-MLX-6.5bit", "mlx-community/MiniMax-M2.5-4bit"]
+  use_batching: true
+  max_concurrent_requests: 4
+  inference_timeout_sec: 600
+  warmup_on_load: true
+
+memory:
+  max_memory_percent: 85    # Conservative for 512GB
+  auto_evict_lru: true
+
+logging:
+  level: "INFO"
+  format: "structured"
+  file: "/tmp/opta-lmx-service.log"
+  max_file_bytes: 52428800   # 50MB
+  backup_count: 5
+
+routing:
+  default_model: "inferencerlabs/MiniMax-M2.5-MLX-6.5bit"
+  aliases:
+    code:
+      - inferencerlabs/MiniMax-M2.5-MLX-6.5bit
+      - mlx-community/MiniMax-M2.5-8bit
+    chat:
+      - mlx-community/MiniMax-M2.5-4bit
+    fast:
+      - mlx-community/MiniMax-M2.5-4bit
+    quality:
+      - inferencerlabs/MiniMax-M2.5-MLX-6.5bit
+      - mlx-community/MiniMax-M2.5-8bit
+
+security:
+  admin_key: "lmx-5NaMnOMeT_9ceajfV3RxmNpnL2UomuMvolw1IhX5LS8"  # Phase 10: production admin auth
+
+# Available models on disk (for reference):
+# ~/.cache/huggingface/hub/
+#   models--mlx-community--MiniMax-M2.5-4bit
+#   models--mlx-community--MiniMax-M2.5-5bit
+#   models--mlx-community--MiniMax-M2.5-6bit
+#   models--mlx-community--MiniMax-M2.5-8bit
+#   models--lmstudio-community--MiniMax-M2.5-MLX-4bit
+#   models--lmstudio-community--MiniMax-M2.5-MLX-6bit
+#   models--lmstudio-community--MiniMax-M2.5-MLX-8bit
+#   models--inferencerlabs--Kimi-K2.5-MLX-3.6bit (incompatible with mlx_lm v0.30.7)
+#   models--inferencerlabs--MiniMax-M2.5-MLX-6.5bit

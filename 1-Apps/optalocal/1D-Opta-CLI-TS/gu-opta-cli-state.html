@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Opta CLI — Autonomous Operations Assessment</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --void: #09090b;
+      --surface: #18181b;
+      --elevated: #27272a;
+      --border: #3f3f46;
+      --text-primary: #fafafa;
+      --text-secondary: #a1a1aa;
+      --text-muted: #52525b;
+      --primary: #8b5cf6;
+      --primary-glow: #a855f7;
+      --neon-blue: #3b82f6;
+      --neon-green: #22c55e;
+      --neon-amber: #f59e0b;
+      --neon-red: #ef4444;
+      --neon-cyan: #06b6d4;
+    }
+
+    body {
+      background: var(--void);
+      color: var(--text-primary);
+      font-family: system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 20% 0%, rgba(139,92,246,0.08) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 80% 100%, rgba(59,130,246,0.06) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 30% at 50% 50%, rgba(168,85,247,0.04) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 48px 32px 80px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero {
+      text-align: center;
+      margin-bottom: 64px;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      border-radius: 100px;
+      border: 1px solid rgba(139,92,246,0.4);
+      background: rgba(139,92,246,0.1);
+      font-size: 11px;
+      font-family: 'Sora', sans-serif;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--primary-glow);
+      margin-bottom: 24px;
+    }
+
+    .hero-badge::before {
+      content: '';
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--neon-green);
+      box-shadow: 0 0 8px var(--neon-green);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+    h1 {
+      font-family: 'Sora', sans-serif;
+      font-size: clamp(32px, 5vw, 56px);
+      font-weight: 700;
+      line-height: 1.1;
+      background: linear-gradient(135deg, #fafafa 0%, #c4b5fd 40%, #818cf8 70%, #6366f1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 16px;
+    }
+
+    .hero-sub {
+      font-size: 18px;
+      color: var(--text-secondary);
+      max-width: 640px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    .divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(139,92,246,0.5), rgba(59,130,246,0.3), transparent);
+      margin: 48px 0;
+      position: relative;
+    }
+    .divider::after {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      background: inherit;
+      filter: blur(4px);
+      opacity: 0.5;
+    }
+
+    .section-label {
+      font-family: 'Sora', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--primary);
+      margin-bottom: 8px;
+    }
+
+    h2 {
+      font-family: 'Sora', sans-serif;
+      font-size: 28px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 32px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    h2 .glow-line {
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, rgba(139,92,246,0.4), transparent);
+    }
+
+    .glass {
+      background: rgba(24,24,27,0.8);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 28px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    .glass::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+    }
+    .glass:hover {
+      border-color: rgba(139,92,246,0.25);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4), 0 0 40px rgba(139,92,246,0.05);
+    }
+
+    .cap-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+      margin-bottom: 40px;
+    }
+
+    .cap-card {
+      background: rgba(24,24,27,0.8);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 14px;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    .cap-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+    }
+
+    .cap-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      gap: 8px;
+    }
+
+    .cap-name {
+      font-family: 'Sora', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+      line-height: 1.3;
+    }
+
+    .cap-detail {
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 10px;
+      border-radius: 100px;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .status-pill::before {
+      content: '';
+      width: 5px; height: 5px;
+      border-radius: 50%;
+    }
+
+    .status-full { background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.3); color: var(--neon-green); }
+    .status-full::before { background: var(--neon-green); box-shadow: 0 0 6px var(--neon-green); }
+
+    .status-partial { background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); color: var(--neon-amber); }
+    .status-partial::before { background: var(--neon-amber); box-shadow: 0 0 6px var(--neon-amber); }
+
+    .status-missing { background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3); color: var(--neon-red); }
+    .status-missing::before { background: var(--neon-red); box-shadow: 0 0 6px var(--neon-red); }
+
+    .level-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      margin-bottom: 32px;
+    }
+
+    .level-card {
+      background: rgba(24,24,27,0.9);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 12px;
+      padding: 16px 12px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .level-card.active {
+      border-color: rgba(139,92,246,0.4);
+      background: rgba(139,92,246,0.08);
+    }
+    .level-card.active::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--primary), var(--primary-glow));
+      box-shadow: 0 0 12px var(--primary);
+    }
+
+    .level-num {
+      font-family: 'Sora', sans-serif;
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+    .level-card.active .level-num {
+      background: linear-gradient(135deg, var(--primary), var(--primary-glow));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .level-name {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    .level-stats { font-size: 10px; color: var(--text-secondary); line-height: 1.7; }
+    .level-stat-row { display: flex; justify-content: space-between; }
+
+    .roadmap { display: flex; flex-direction: column; gap: 0; }
+
+    .roadmap-item {
+      display: grid;
+      grid-template-columns: 40px 1fr;
+      gap: 0 20px;
+    }
+
+    .roadmap-line {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .roadmap-dot {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Sora', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 1;
+    }
+
+    .dot-critical { background: rgba(239,68,68,0.15); border: 2px solid rgba(239,68,68,0.5); color: var(--neon-red); box-shadow: 0 0 20px rgba(239,68,68,0.2); }
+    .dot-high { background: rgba(245,158,11,0.15); border: 2px solid rgba(245,158,11,0.5); color: var(--neon-amber); box-shadow: 0 0 20px rgba(245,158,11,0.2); }
+    .dot-medium { background: rgba(59,130,246,0.15); border: 2px solid rgba(59,130,246,0.5); color: var(--neon-blue); box-shadow: 0 0 20px rgba(59,130,246,0.2); }
+    .dot-done { background: rgba(34,197,94,0.12); border: 2px solid rgba(34,197,94,0.4); color: var(--neon-green); font-size: 16px; }
+
+    .roadmap-connector {
+      flex: 1;
+      width: 2px;
+      background: linear-gradient(180deg, rgba(139,92,246,0.2), rgba(139,92,246,0.05));
+      margin: 4px 0;
+      min-height: 16px;
+    }
+
+    .roadmap-content { padding: 0 0 32px 0; }
+
+    .roadmap-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+      min-height: 40px;
+    }
+
+    .roadmap-title {
+      font-family: 'Sora', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .roadmap-tag {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: 100px;
+    }
+
+    .tag-critical { background: rgba(239,68,68,0.15); color: var(--neon-red); border: 1px solid rgba(239,68,68,0.3); }
+    .tag-high { background: rgba(245,158,11,0.12); color: var(--neon-amber); border: 1px solid rgba(245,158,11,0.3); }
+    .tag-medium { background: rgba(59,130,246,0.12); color: var(--neon-blue); border: 1px solid rgba(59,130,246,0.3); }
+    .tag-done { background: rgba(34,197,94,0.1); color: var(--neon-green); border: 1px solid rgba(34,197,94,0.3); }
+
+    .roadmap-desc {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: 10px;
+    }
+
+    .roadmap-meta { display: flex; flex-wrap: wrap; gap: 6px; }
+
+    .meta-chip {
+      font-size: 11px;
+      color: var(--text-muted);
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 6px;
+      padding: 2px 8px;
+    }
+    .meta-chip.file { color: var(--primary); border-color: rgba(139,92,246,0.2); background: rgba(139,92,246,0.05); font-family: 'Menlo','Monaco',monospace; font-size: 10px; }
+
+    .metrics-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+
+    .metric-card {
+      background: rgba(24,24,27,0.9);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+    }
+    .metric-value {
+      font-family: 'Sora', sans-serif;
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .metric-label { font-size: 11px; color: var(--text-muted); letter-spacing: 0.06em; }
+
+    .mv-green { color: var(--neon-green); text-shadow: 0 0 20px rgba(34,197,94,0.4); }
+    .mv-amber { color: var(--neon-amber); text-shadow: 0 0 20px rgba(245,158,11,0.4); }
+    .mv-blue { color: var(--neon-blue); text-shadow: 0 0 20px rgba(59,130,246,0.4); }
+    .mv-purple { color: var(--primary); text-shadow: 0 0 20px rgba(139,92,246,0.5); }
+    .mv-red { color: var(--neon-red); text-shadow: 0 0 20px rgba(239,68,68,0.4); }
+
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+    .gap-list { display: flex; flex-direction: column; gap: 10px; }
+    .gap-item { display: flex; gap: 12px; align-items: flex-start; padding: 12px; background: rgba(255,255,255,0.02); border-radius: 10px; border: 1px solid rgba(255,255,255,0.05); }
+    .gap-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+    .gap-text { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+    .gap-text strong { color: var(--text-primary); font-weight: 600; }
+
+    code {
+      font-family: 'Menlo','Monaco',monospace;
+      font-size: 11px;
+      background: rgba(139,92,246,0.1);
+      border: 1px solid rgba(139,92,246,0.2);
+      border-radius: 4px;
+      padding: 1px 5px;
+      color: #c4b5fd;
+    }
+
+    .completed-row { opacity: 0.65; }
+
+    .footer {
+      text-align: center;
+      margin-top: 64px;
+      padding-top: 32px;
+      border-top: 1px solid rgba(255,255,255,0.05);
+    }
+    .footer-text { font-size: 12px; color: var(--text-muted); letter-spacing: 0.06em; }
+    .footer-brand {
+      font-family: 'Sora', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      background: linear-gradient(135deg, var(--primary), var(--primary-glow));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-top: 8px;
+    }
+
+    @media (max-width: 768px) {
+      .two-col { grid-template-columns: 1fr; }
+      .level-grid { grid-template-columns: repeat(3,1fr); }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-badge">Autonomous Ops Assessment · Feb 26 2026</div>
+    <h1>Opta CLI<br>Long-Run Autonomy</h1>
+    <p class="hero-sub">Comprehensive assessment of autonomous working capabilities — and the roadmap to achieve truly unattended, resilient long-running model sessions.</p>
+  </div>
+
+  <!-- Key Metrics -->
+  <div class="metrics-row">
+    <div class="metric-card">
+      <div class="metric-value mv-purple">400+</div>
+      <div class="metric-label">Max tool calls<br>(Level 5, CEO mode)</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-value mv-green">60m</div>
+      <div class="metric-label">Max session duration<br>(Level 5)</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-value mv-blue">65%</div>
+      <div class="metric-label">Context compaction<br>threshold</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-value mv-amber">36+</div>
+      <div class="metric-label">Available tools<br>(8 core + 28 ext)</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-value mv-blue">3</div>
+      <div class="metric-label">Sub-agent depth<br>limit</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-value mv-red">4</div>
+      <div class="metric-label">Critical gaps<br>blocking full autonomy</div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Current Capabilities -->
+  <div class="section-label">Current State</div>
+  <h2>Capability Map <span class="glow-line"></span></h2>
+
+  <div class="cap-grid">
+    <div class="cap-card">
+      <div class="cap-header">
+        <div class="cap-name">Agent Loop</div>
+        <div class="status-pill status-full">Full</div>
+      </div>
+      <div class="cap-detail">Multi-turn with circuit breaker (warn@25, pause@30, hard-stop@80–400+). Streaming SSE. Finish-reason truncation detection.</div>
+    </div>
+    <div class="cap-card">
+      <div class="cap-header">
+        <div class="cap-name">Context Compaction</div>
+        <div class="status-pill status-full">Full</div>
+      </div>
+      <div class="cap-detail">Auto-compact at 65% of context limit. LM-backed history summarizer. Token savings tracked and reported per turn.</div>
+    </div>
+    <div class="cap-card">
+      <div class="cap-header">
+        <div class="cap-name">Session Persistence</div>
+        <div class="status-pill status-full">Full</div>
+      </div>
+      <div class="cap-detail">JSON sessions in <code>~/.config/opta/sessions/</code>. Fast index. Cross-invocation resume via <code>opta session resume</code>.</div>
+    </div>
+    <div class="cap-card">
+      <div class="cap-header">
+        <div class="cap-name">Learning System</div>
+        <div class="status-pill status-full">Full</div>
+      </div>
+      <div class="cap-detail">JSONL ledger. Lexical retrieval with token weighting. Adaptive capture level (exhaustive/balanced/lean) calibrated to system pressure.</div>
+    </div>
+    <div class="cap-card">
+      <div class="cap-header">
+        <div class="cap-name">Sub-Agent Orchestration</div>
+        <div class="status-pill status-full">Full</div>
+      </div>
+      <div class="cap-detail">Spawn agents (depth 2-3). Delegate multi-step tasks (max 5 subtasks). Dependency graph with topological sort + parallel execution waves.</div>
+    </div>
+    <div class="cap-card">
+      <div class="cap-header">
+        <div class="cap-name">Background Tasks</div>
+        <div class="status-pill status-full">Full</div>
+      </div>
+      <div class="cap-detail">ProcessManager: bg_start / status / output / kill. 5MB circular output buffer. Max 3 concurrent. SIGTERM→SIGKILL graceful teardown.</div>
+    </div>
+    <div class="cap-card">
+      <div class="cap-header">
+        <div class="cap-name">Policy / Autonomy Levels</div>
+        <div class="status-pill status-full">Full</div>
+      </div>
+      <div class="cap-detail">5 levels. CEO mode with reassessment pass. Permission gating with audit log. Full autonomy at level 3+ when all tools set to 'allow'.</div>
+    </div>
+    <div class="cap-card">
+      <div class="cap-header">
+        <div class="cap-name">OPIS Context Loading</div>
+        <div class="status-pill status-full">Full</div>
+      </div>
+      <div class="cap-detail">APP.md + GUARDRAILS.md + DECISIONS.md injected into system prompt. Fallback chain: <code>.opta/memory.md</code> → <code>CLAUDE.md</code> → empty.</div>
+    </div>
+    <div class="cap-card">
+      <div class="cap-header">
+        <div class="cap-name">Browser Automation</div>
+        <div class="status-pill status-full">Full</div>
+      </div>
+      <div class="cap-detail">Playwright + Peekaboo MCP + AgentQL semantic fallback. Policy-gated. Visual diff, replay, artifact retention. Fully integrated today.</div>
+    </div>
+    <div class="cap-card">
+      <div class="cap-header">
+        <div class="cap-name">LMX Health Monitoring</div>
+        <div class="status-pill status-partial">Partial</div>
+      </div>
+      <div class="cap-detail">Reactive probes only — no continuous background monitoring. No auto-failover during an active session. <strong>Session-blocking gap.</strong></div>
+    </div>
+    <div class="cap-card">
+      <div class="cap-header">
+        <div class="cap-name">Circuit Breaker (Unattended)</div>
+        <div class="status-pill status-partial">Partial</div>
+      </div>
+      <div class="cap-detail">pause@30 prompts the user — breaks headless sessions. CEO mode doesn't override this. No autonomous checkpoint-and-continue strategy.</div>
+    </div>
+    <div class="cap-card">
+      <div class="cap-header">
+        <div class="cap-name">Git Tool Suite</div>
+        <div class="status-pill status-missing">Missing</div>
+      </div>
+      <div class="cap-detail">No first-class git tools. Auto-commit fires at top-level only. Cannot diff, branch, push, or resolve conflicts mid-session autonomously.</div>
+    </div>
+    <div class="cap-card">
+      <div class="cap-header">
+        <div class="cap-name">Skills Module</div>
+        <div class="status-pill status-missing">Missing</div>
+      </div>
+      <div class="cap-detail">Architecture planned but <code>src/skills/</code> is unimplemented. Cannot bundle or compose tools into reusable workflow primitives.</div>
+    </div>
+    <div class="cap-card">
+      <div class="cap-header">
+        <div class="cap-name">Work Estimation + ETA</div>
+        <div class="status-pill status-missing">Missing</div>
+      </div>
+      <div class="cap-detail">No pre-task budget estimation. No ETA display. Agent can silently run into hardStopAt mid-task with no upfront warning.</div>
+    </div>
+    <div class="cap-card">
+      <div class="cap-header">
+        <div class="cap-name">Session Crash Recovery</div>
+        <div class="status-pill status-missing">Missing</div>
+      </div>
+      <div class="cap-detail">Sessions only persist on clean exit. A hard crash (LMX OOM, power loss) loses all progress since the session was invoked.</div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Autonomy Levels -->
+  <div class="section-label">Permission Model</div>
+  <h2>Autonomy Levels <span class="glow-line"></span></h2>
+
+  <div class="level-grid">
+    <div class="level-card">
+      <div class="level-num">1</div>
+      <div class="level-name">Safe</div>
+      <div class="level-stats">
+        <div class="level-stat-row"><span>Duration</span><span>10 min</span></div>
+        <div class="level-stat-row"><span>Pause at</span><span>50 calls</span></div>
+        <div class="level-stat-row"><span>Hard stop</span><span>80 calls</span></div>
+        <div class="level-stat-row"><span>Mode</span><span>read-only</span></div>
+      </div>
+    </div>
+    <div class="level-card">
+      <div class="level-num">2</div>
+      <div class="level-name">Basic</div>
+      <div class="level-stats">
+        <div class="level-stat-row"><span>Duration</span><span>15 min</span></div>
+        <div class="level-stat-row"><span>Pause at</span><span>80 calls</span></div>
+        <div class="level-stat-row"><span>Hard stop</span><span>120 calls</span></div>
+        <div class="level-stat-row"><span>Mode</span><span>file editing</span></div>
+      </div>
+    </div>
+    <div class="level-card active">
+      <div class="level-num">3</div>
+      <div class="level-name">Auto</div>
+      <div class="level-stats">
+        <div class="level-stat-row"><span>Duration</span><span>20 min</span></div>
+        <div class="level-stat-row"><span>Pause at</span><span>120 calls</span></div>
+        <div class="level-stat-row"><span>Hard stop</span><span>200 calls</span></div>
+        <div class="level-stat-row"><span>Mode</span><span>full tools</span></div>
+      </div>
+    </div>
+    <div class="level-card active">
+      <div class="level-num">4</div>
+      <div class="level-name">Delegate</div>
+      <div class="level-stats">
+        <div class="level-stat-row"><span>Duration</span><span>30 min</span></div>
+        <div class="level-stat-row"><span>Pause at</span><span>150 calls</span></div>
+        <div class="level-stat-row"><span>Hard stop</span><span>300 calls</span></div>
+        <div class="level-stat-row"><span>Mode</span><span>browser+agents</span></div>
+      </div>
+    </div>
+    <div class="level-card active">
+      <div class="level-num">5</div>
+      <div class="level-name">CEO</div>
+      <div class="level-stats">
+        <div class="level-stat-row"><span>Duration</span><span>60 min</span></div>
+        <div class="level-stat-row"><span>Pause at</span><span>200+</span></div>
+        <div class="level-stat-row"><span>Hard stop</span><span>400+</span></div>
+        <div class="level-stat-row"><span>Mode</span><span>unrestricted</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="glass" style="margin-bottom: 40px;">
+    <div style="font-family:'Sora',sans-serif;font-size:13px;font-weight:600;color:var(--neon-amber);margin-bottom:8px;">⚠ Headless Session Blocker</div>
+    <div style="font-size:13px;color:var(--text-secondary);line-height:1.6;">Even at Level 5 CEO mode, when <code>pauseAt</code> is reached the agent blocks waiting for user input — breaking any unattended run. The fix is an <strong>autonomous circuit breaker strategy</strong>: when no TTY is present or <code>autonomy.headlessContinue: true</code> is set, checkpoint state to the learning ledger, emit a progress summary, and automatically continue rather than blocking.</div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Improvement Roadmap -->
+  <div class="section-label">What To Build Next</div>
+  <h2>Autonomous Ops Roadmap <span class="glow-line"></span></h2>
+
+  <div class="roadmap">
+
+    <div class="roadmap-item completed-row">
+      <div class="roadmap-line">
+        <div class="roadmap-dot dot-done">✓</div>
+        <div class="roadmap-connector"></div>
+      </div>
+      <div class="roadmap-content">
+        <div class="roadmap-header">
+          <div class="roadmap-title">Model Swap Resilience (C1, C3, H1, H2, H4)</div>
+          <span class="roadmap-tag tag-done">Done Today</span>
+        </div>
+        <div class="roadmap-desc">Post-rollback health check, size-aware timeout (284GB → 7min instead of 5min), 30s retry cooldown gate, HTTP 500 actionable guidance, pre-unload download size warning.</div>
+        <div class="roadmap-meta">
+          <span class="meta-chip file">src/commands/models.ts</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="roadmap-item">
+      <div class="roadmap-line">
+        <div class="roadmap-dot dot-critical">R1</div>
+        <div class="roadmap-connector"></div>
+      </div>
+      <div class="roadmap-content">
+        <div class="roadmap-header">
+          <div class="roadmap-title">LMX Watchdog — Continuous Health Monitor</div>
+          <span class="roadmap-tag tag-critical">Critical</span>
+        </div>
+        <div class="roadmap-desc">Background thread pings <code>/healthz</code> every 15s during active sessions. On failure: pause tool dispatch → probe Anthropic fallback → switch provider silently → resume. Emit TUI banner on switch. Right now a silent LMX crash terminates the session with no recovery path — the most dangerous single-point failure for long-run autonomy on Mono512 LAN.</div>
+        <div class="roadmap-meta">
+          <span class="meta-chip file">src/lmx/watchdog.ts</span>
+          <span class="meta-chip file">src/providers/manager.ts</span>
+          <span class="meta-chip file">src/tui/StatusBar.tsx</span>
+          <span class="meta-chip">~3h</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="roadmap-item">
+      <div class="roadmap-line">
+        <div class="roadmap-dot dot-critical">R2</div>
+        <div class="roadmap-connector"></div>
+      </div>
+      <div class="roadmap-content">
+        <div class="roadmap-header">
+          <div class="roadmap-title">Autonomous Circuit Breaker — Headless Continue</div>
+          <span class="roadmap-tag tag-critical">Critical</span>
+        </div>
+        <div class="roadmap-desc">When running without a TTY (or when <code>autonomy.headlessContinue: true</code> is set and level ≥ 4), replace the user-confirmation pause with: write a structured checkpoint to the learning ledger, emit a progress snapshot to stdout, then automatically continue. Smallest code change, biggest unattended session impact. Config flag keeps it opt-in for safety.</div>
+        <div class="roadmap-meta">
+          <span class="meta-chip file">src/core/agent.ts</span>
+          <span class="meta-chip file">src/core/config.ts</span>
+          <span class="meta-chip">~2h</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="roadmap-item">
+      <div class="roadmap-line">
+        <div class="roadmap-dot dot-critical">R3</div>
+        <div class="roadmap-connector"></div>
+      </div>
+      <div class="roadmap-content">
+        <div class="roadmap-header">
+          <div class="roadmap-title">Session Crash Recovery — Mid-Session Checkpoints</div>
+          <span class="roadmap-tag tag-critical">Critical</span>
+        </div>
+        <div class="roadmap-desc">Write incremental checkpoints to <code>.opta/recovery/{session-id}.json</code> every N tool calls (configurable, default 10). On next launch, detect an incomplete session file and offer to resume from the last good checkpoint. Today sessions only persist on clean exit — an LMX OOM or Mac crash loses everything since the session started.</div>
+        <div class="roadmap-meta">
+          <span class="meta-chip file">src/memory/store.ts</span>
+          <span class="meta-chip file">src/core/agent.ts</span>
+          <span class="meta-chip">~2h</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="roadmap-item">
+      <div class="roadmap-line">
+        <div class="roadmap-dot dot-high">R4</div>
+        <div class="roadmap-connector"></div>
+      </div>
+      <div class="roadmap-content">
+        <div class="roadmap-header">
+          <div class="roadmap-title">Git Tool Suite — First-Class Version Control</div>
+          <span class="roadmap-tag tag-high">High</span>
+        </div>
+        <div class="roadmap-desc">Add 7 new tools: <code>git_status</code>, <code>git_diff</code>, <code>git_commit</code>, <code>git_push</code>, <code>git_log</code>, <code>git_branch</code>, <code>git_stash</code>. Autonomous agents need to checkpoint their own work, create branches for risky changes, verify diffs before committing, and push at session boundaries. Today an agent can edit 50 files but cannot verify what it changed or safely persist mid-session work.</div>
+        <div class="roadmap-meta">
+          <span class="meta-chip file">src/core/tools/schemas.ts</span>
+          <span class="meta-chip file">src/core/tools/executors.ts</span>
+          <span class="meta-chip file">src/core/tools/permissions.ts</span>
+          <span class="meta-chip">~4h</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="roadmap-item">
+      <div class="roadmap-line">
+        <div class="roadmap-dot dot-high">R5</div>
+        <div class="roadmap-connector"></div>
+      </div>
+      <div class="roadmap-content">
+        <div class="roadmap-header">
+          <div class="roadmap-title">Pre-Task Work Estimator + Budget Panel</div>
+          <span class="roadmap-tag tag-high">High</span>
+        </div>
+        <div class="roadmap-desc">Before starting a task, analyse the request complexity and emit: estimated tool calls, predicted context growth rate, expected compaction points, and whether the <code>hardStopAt</code> budget is sufficient. If insufficient, warn upfront with the option to elevate the autonomy level or decompose the task. Surface in TUI as a pre-run "Budget" panel.</div>
+        <div class="roadmap-meta">
+          <span class="meta-chip file">src/core/estimator.ts</span>
+          <span class="meta-chip file">src/tui/BudgetPanel.tsx</span>
+          <span class="meta-chip">~3h</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="roadmap-item">
+      <div class="roadmap-line">
+        <div class="roadmap-dot dot-high">R6</div>
+        <div class="roadmap-connector"></div>
+      </div>
+      <div class="roadmap-content">
+        <div class="roadmap-header">
+          <div class="roadmap-title">Skills Module — Composable Workflow Primitives</div>
+          <span class="roadmap-tag tag-high">High</span>
+        </div>
+        <div class="roadmap-desc">Build <code>src/skills/</code>: composable capability bundles that combine tools + prompt fragments + pre/post hooks into named, reusable workflows. Example built-in skills: <code>research-and-synthesize</code> (web_search + web_fetch + learning_log), <code>refactor-with-tests</code> (read + multi_edit + run_command + git_commit). Transforms ad-hoc multi-step patterns into first-class primitives that agents can invoke by name.</div>
+        <div class="roadmap-meta">
+          <span class="meta-chip file">src/skills/registry.ts</span>
+          <span class="meta-chip file">src/skills/executor.ts</span>
+          <span class="meta-chip file">src/core/tools/schemas.ts</span>
+          <span class="meta-chip">~5h</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="roadmap-item">
+      <div class="roadmap-line">
+        <div class="roadmap-dot dot-medium">R7</div>
+        <div class="roadmap-connector"></div>
+      </div>
+      <div class="roadmap-content">
+        <div class="roadmap-header">
+          <div class="roadmap-title">Proactive Compaction — Smooth Context Pressure Gradient</div>
+          <span class="roadmap-tag tag-medium">Medium</span>
+        </div>
+        <div class="roadmap-desc">Lower hard trigger to 50% (from 65%) and add gradient: at 40% start pruning low-value early tool results from the rolling window; at 50% compact; at 70% aggressive compact of everything pre-summary. Currently the 65% threshold causes sudden large compactions that use expensive LM calls. A gradient approach spreads the cost and keeps the context cleaner for longer sessions.</div>
+        <div class="roadmap-meta">
+          <span class="meta-chip file">src/core/agent.ts</span>
+          <span class="meta-chip file">src/core/config.ts</span>
+          <span class="meta-chip">~2h</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="roadmap-item">
+      <div class="roadmap-line">
+        <div class="roadmap-dot dot-medium">R8</div>
+        <div class="roadmap-connector"></div>
+      </div>
+      <div class="roadmap-content">
+        <div class="roadmap-header">
+          <div class="roadmap-title">Persistent Task Queue — Multi-Session Workflows</div>
+          <span class="roadmap-tag tag-medium">Medium</span>
+        </div>
+        <div class="roadmap-desc">Persistent queue at <code>.opta/queue.json</code>. Sessions can enqueue follow-on tasks to run after the current session completes or after the model restarts. Enables true multi-session pipelines: Session A commits code → enqueues "run tests and fix failures" → daemon picks it up → Session B executes automatically. Integrates with the daemon scheduler.</div>
+        <div class="roadmap-meta">
+          <span class="meta-chip file">src/core/task-queue.ts</span>
+          <span class="meta-chip file">src/daemon/scheduler.ts</span>
+          <span class="meta-chip">~4h</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="roadmap-item">
+      <div class="roadmap-line">
+        <div class="roadmap-dot dot-medium">R9</div>
+        <div class="roadmap-connector"></div>
+      </div>
+      <div class="roadmap-content">
+        <div class="roadmap-header">
+          <div class="roadmap-title">Adaptive Autonomy — Self-Calibrating Level</div>
+          <span class="roadmap-tag tag-medium">Medium</span>
+        </div>
+        <div class="roadmap-desc">Track task success rates per autonomy level in the learning ledger. When a task class achieves ≥90% success rate at level N, automatically suggest elevation to N+1. Step down when error rate rises. Currently autonomy level is a static session setting. A self-calibrating level makes the system genuinely improve over time as it learns what it can handle safely.</div>
+        <div class="roadmap-meta">
+          <span class="meta-chip file">src/learning/ledger.ts</span>
+          <span class="meta-chip file">src/core/autonomy.ts</span>
+          <span class="meta-chip">~3h</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Priority Summary -->
+  <div class="section-label">Quick Wins</div>
+  <h2>Highest Leverage Moves <span class="glow-line"></span></h2>
+
+  <div class="two-col">
+    <div class="glass">
+      <div style="font-family:'Sora',sans-serif;font-size:14px;font-weight:600;color:var(--neon-red);margin-bottom:16px;">🔴 Do First — Session Survival</div>
+      <div class="gap-list">
+        <div class="gap-item">
+          <div class="gap-icon">🔁</div>
+          <div class="gap-text"><strong>R2: Autonomous Circuit Breaker (~2h)</strong> — Smallest change, biggest impact. Eliminates the primary blocker for headless sessions without touching the permission model.</div>
+        </div>
+        <div class="gap-item">
+          <div class="gap-icon">❤️</div>
+          <div class="gap-text"><strong>R1: LMX Watchdog (~3h)</strong> — Auto-failover to Anthropic means LAN outages or Mono512 reboots don't kill multi-hour sessions.</div>
+        </div>
+        <div class="gap-item">
+          <div class="gap-icon">💾</div>
+          <div class="gap-text"><strong>R3: Crash Recovery (~2h)</strong> — Mid-session checkpoints. Hard crashes become minor setbacks rather than total progress loss.</div>
+        </div>
+      </div>
+    </div>
+    <div class="glass">
+      <div style="font-family:'Sora',sans-serif;font-size:14px;font-weight:600;color:var(--neon-amber);margin-bottom:16px;">🟡 Do Next — Capability Expansion</div>
+      <div class="gap-list">
+        <div class="gap-item">
+          <div class="gap-icon">🌿</div>
+          <div class="gap-text"><strong>R4: Git Tool Suite (~4h)</strong> — Transforms agents from "code editors" to "developers". First-class commit, diff, branch, push within any session.</div>
+        </div>
+        <div class="gap-item">
+          <div class="gap-icon">📊</div>
+          <div class="gap-text"><strong>R5: Work Estimator (~3h)</strong> — Agents know their budget before starting. Prevents silent mid-task hard stops on large jobs.</div>
+        </div>
+        <div class="gap-item">
+          <div class="gap-icon">🧩</div>
+          <div class="gap-text"><strong>R6: Skills Module (~5h)</strong> — Composable workflows. Turns recurring patterns into first-class primitives agents can call by name.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-text">Generated · Feb 26 2026 · Opta CLI Autonomous Ops Assessment</div>
+    <div class="footer-brand">Opta — Representation of Optimal</div>
+  </div>
+
+</div>
+</body>
+</html>

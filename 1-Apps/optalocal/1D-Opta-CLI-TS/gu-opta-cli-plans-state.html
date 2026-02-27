@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Opta CLI — Plan State Assessment</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap');
+
+  :root {
+    --void: #09090b;
+    --surface: #18181b;
+    --elevated: #27272a;
+    --border: #3f3f46;
+    --text-primary: #fafafa;
+    --text-secondary: #a1a1aa;
+    --text-muted: #52525b;
+    --primary: #8b5cf6;
+    --primary-glow: #a855f7;
+    --neon-blue: #3b82f6;
+    --neon-green: #22c55e;
+    --neon-amber: #f59e0b;
+    --neon-red: #ef4444;
+    --neon-teal: #14b8a6;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--void);
+    color: var(--text-primary);
+    font-family: 'Sora', system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background particles */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 20% 10%, rgba(139,92,246,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 90%, rgba(59,130,246,0.06) 0%, transparent 50%),
+      radial-gradient(ellipse 40% 40% at 50% 50%, rgba(20,184,166,0.04) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 32px 24px 80px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── GLASS PANELS ── */
+  .glass {
+    background: rgba(24,24,27,0.85);
+    backdrop-filter: blur(20px) saturate(1.4);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06);
+    position: relative;
+    overflow: hidden;
+  }
+  .glass::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12) 40%, rgba(139,92,246,0.3) 60%, transparent);
+    pointer-events: none;
+  }
+  .glass-subtle {
+    background: rgba(18,18,21,0.6);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  }
+
+  /* ── HEADER ── */
+  .header {
+    text-align: center;
+    padding: 48px 32px 40px;
+    margin-bottom: 32px;
+  }
+  .header-eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--primary);
+    margin-bottom: 12px;
+    opacity: 0.9;
+  }
+  .header h1 {
+    font-size: 38px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #ffffff 0%, #c4b5fd 45%, #818cf8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.2;
+    margin-bottom: 8px;
+  }
+  .header-sub {
+    font-size: 15px;
+    color: var(--text-secondary);
+    font-weight: 400;
+  }
+  .header-date {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 8px;
+    letter-spacing: 0.05em;
+  }
+
+  /* ── NEON DIVIDER ── */
+  .neon-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--primary) 30%, var(--neon-blue) 70%, transparent);
+    box-shadow: 0 0 12px rgba(139,92,246,0.5);
+    margin: 32px 0;
+    border: none;
+  }
+
+  /* ── OVERALL GAUGE ── */
+  .gauge-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .gauge-card {
+    padding: 20px;
+    text-align: center;
+  }
+  .gauge-number {
+    font-size: 36px;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .gauge-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  /* ── PROGRESS BAR ── */
+  .progress-track {
+    height: 6px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 999px;
+    overflow: hidden;
+    margin-top: 8px;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+    position: relative;
+  }
+  .progress-fill::after {
+    content: '';
+    position: absolute;
+    right: 0; top: 0; bottom: 0;
+    width: 24px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4));
+    border-radius: 999px;
+  }
+  .progress-fill.violet { background: linear-gradient(90deg, var(--primary), var(--primary-glow)); box-shadow: 0 0 8px rgba(139,92,246,0.6); }
+  .progress-fill.green  { background: linear-gradient(90deg, #16a34a, var(--neon-green)); box-shadow: 0 0 8px rgba(34,197,94,0.5); }
+  .progress-fill.amber  { background: linear-gradient(90deg, #d97706, var(--neon-amber)); box-shadow: 0 0 8px rgba(245,158,11,0.5); }
+  .progress-fill.red    { background: linear-gradient(90deg, #dc2626, var(--neon-red)); box-shadow: 0 0 8px rgba(239,68,68,0.5); }
+  .progress-fill.blue   { background: linear-gradient(90deg, #1d4ed8, var(--neon-blue)); box-shadow: 0 0 8px rgba(59,130,246,0.5); }
+  .progress-fill.teal   { background: linear-gradient(90deg, #0d9488, var(--neon-teal)); box-shadow: 0 0 8px rgba(20,184,166,0.5); }
+
+  /* ── SECTION HEADER ── */
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .section-icon {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  .section-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+  .section-subtitle {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 1px;
+  }
+  .section-badge {
+    margin-left: auto;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 999px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  /* ── PLAN CARD ── */
+  .plan-card {
+    padding: 24px 28px;
+    margin-bottom: 16px;
+  }
+  .plan-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .plan-status-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 5px;
+    box-shadow: 0 0 8px currentColor;
+  }
+  .plan-title-block { flex: 1; min-width: 0; }
+  .plan-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 3px;
+  }
+  .plan-meta {
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+  }
+  .plan-progress-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+    text-align: right;
+  }
+
+  /* ── TASK LIST ── */
+  .task-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 16px;
+  }
+  .task-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.04);
+    transition: background 0.15s;
+  }
+  .task-item:hover { background: rgba(255,255,255,0.04); }
+  .task-check {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    border: 1.5px solid;
+    flex-shrink: 0;
+    margin-top: 1px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+  }
+  .task-check.done    { border-color: var(--neon-green); color: var(--neon-green); background: rgba(34,197,94,0.1); }
+  .task-check.partial { border-color: var(--neon-amber); color: var(--neon-amber); background: rgba(245,158,11,0.1); }
+  .task-check.open    { border-color: var(--text-muted); color: transparent; }
+  .task-check.blocked { border-color: var(--neon-red); color: var(--neon-red); background: rgba(239,68,68,0.08); }
+
+  .task-body { flex: 1; min-width: 0; }
+  .task-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+    display: flex; align-items: center; gap: 8px;
+    flex-wrap: wrap;
+  }
+  .task-name.done-text { color: var(--text-muted); text-decoration: line-through; text-decoration-color: var(--text-muted); }
+  .task-detail {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+  .task-priority {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 7px;
+    border-radius: 999px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    flex-shrink: 0;
+  }
+  .pri-critical { background: rgba(239,68,68,0.15); color: var(--neon-red); border: 1px solid rgba(239,68,68,0.25); }
+  .pri-high     { background: rgba(245,158,11,0.12); color: var(--neon-amber); border: 1px solid rgba(245,158,11,0.2); }
+  .pri-med      { background: rgba(59,130,246,0.12); color: var(--neon-blue); border: 1px solid rgba(59,130,246,0.2); }
+  .pri-low      { background: rgba(139,92,246,0.1); color: var(--primary); border: 1px solid rgba(139,92,246,0.2); }
+
+  /* ── COMPLETED PLAN CARD ── */
+  .completed-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: 8px;
+  }
+  .completed-card {
+    padding: 16px 20px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.05);
+    position: relative;
+    overflow: hidden;
+  }
+  .completed-card::after {
+    content: '✓';
+    position: absolute;
+    top: 12px; right: 14px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--neon-green);
+    opacity: 0.5;
+  }
+  .completed-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+    padding-right: 20px;
+  }
+  .completed-detail {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  /* ── CRITICAL PATH CALLOUT ── */
+  .callout {
+    padding: 20px 24px;
+    border-radius: 12px;
+    border-left: 3px solid;
+    margin-bottom: 16px;
+  }
+  .callout.red    { background: rgba(239,68,68,0.06); border-color: var(--neon-red); }
+  .callout.amber  { background: rgba(245,158,11,0.06); border-color: var(--neon-amber); }
+  .callout.green  { background: rgba(34,197,94,0.06); border-color: var(--neon-green); }
+  .callout.violet { background: rgba(139,92,246,0.07); border-color: var(--primary); }
+  .callout-title {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .callout-body {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+  }
+  .callout-body code {
+    font-family: ui-monospace, monospace;
+    background: rgba(255,255,255,0.07);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    color: var(--primary-glow);
+  }
+
+  /* ── BADGE ── */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+  .badge.done     { background: rgba(34,197,94,0.12); color: var(--neon-green); border: 1px solid rgba(34,197,94,0.2); }
+  .badge.partial  { background: rgba(245,158,11,0.12); color: var(--neon-amber); border: 1px solid rgba(245,158,11,0.2); }
+  .badge.open     { background: rgba(99,102,241,0.1); color: #818cf8; border: 1px solid rgba(99,102,241,0.2); }
+  .badge.today    { background: rgba(20,184,166,0.12); color: var(--neon-teal); border: 1px solid rgba(20,184,166,0.2); }
+
+  /* ── LAYOUT ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+  .mb-24 { margin-bottom: 24px; }
+  .mb-16 { margin-bottom: 16px; }
+  .mb-8  { margin-bottom: 8px; }
+
+  @media (max-width: 768px) {
+    .gauge-grid { grid-template-columns: repeat(2, 1fr); }
+    .completed-grid { grid-template-columns: 1fr; }
+    .two-col { grid-template-columns: 1fr; }
+    .header h1 { font-size: 28px; }
+  }
+
+  /* ── GLOW ANIMATION ── */
+  @keyframes pulse-glow {
+    0%, 100% { opacity: 0.7; }
+    50% { opacity: 1; }
+  }
+  .pulse { animation: pulse-glow 2.5s ease-in-out infinite; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- HEADER -->
+  <div class="glass header mb-24">
+    <div class="header-eyebrow">Opta CLI · Plan State Assessment</div>
+    <h1>v1.0 Readiness Report</h1>
+    <div class="header-sub">Across all active planning documents — current status vs v1.0 gate</div>
+    <div class="header-date">2026-02-27 · v0.5.0-alpha.1 · main · 1,698 tests passing</div>
+  </div>
+
+  <!-- OVERALL GAUGES -->
+  <div class="gauge-grid mb-24">
+    <div class="glass glass-subtle gauge-card">
+      <div class="gauge-number" style="color: var(--primary);">50%</div>
+      <div class="gauge-label">v1 Impl Plan</div>
+      <div class="progress-track" style="margin-top:12px;"><div class="progress-fill violet" style="width:50%"></div></div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">5 of 10 tasks done</div>
+    </div>
+    <div class="glass glass-subtle gauge-card">
+      <div class="gauge-number" style="color: var(--neon-red);">0%</div>
+      <div class="gauge-label">TUI Quality Plan</div>
+      <div class="progress-track" style="margin-top:12px;"><div class="progress-fill red" style="width:2%"></div></div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">0 of 7 tasks done</div>
+    </div>
+    <div class="glass glass-subtle gauge-card">
+      <div class="gauge-number" style="color: var(--neon-green);">100%</div>
+      <div class="gauge-label">Completed Plans</div>
+      <div class="progress-track" style="margin-top:12px;"><div class="progress-fill green" style="width:100%"></div></div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">4 plans fully delivered</div>
+    </div>
+    <div class="glass glass-subtle gauge-card">
+      <div class="gauge-number" style="color: var(--neon-amber);">12</div>
+      <div class="gauge-label">Open Tasks</div>
+      <div class="progress-track" style="margin-top:12px;"><div class="progress-fill amber" style="width:65%"></div></div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">5 critical · 7 quality</div>
+    </div>
+  </div>
+
+  <!-- CRITICAL PATH CALLOUTS -->
+  <div class="mb-24">
+    <div class="section-header mb-16">
+      <div class="section-icon" style="background: rgba(239,68,68,0.12);">⚡</div>
+      <div>
+        <div class="section-title">Critical Path to v1.0</div>
+        <div class="section-subtitle">Blockers that must clear before the tag can be cut</div>
+      </div>
+    </div>
+
+    <div class="callout red">
+      <div class="callout-title" style="color: var(--neon-red);">🔴 Integration Tests — Expansion Incomplete</div>
+      <div class="callout-body">
+        Task 3 of the v1 plan is only partially done. Browser E2E tests exist (63 tests added), but <code>tests/integration/chat-session-full-flow.test.ts</code> and <code>tests/integration/daemon-multi-client.test.ts</code> were never created. These two files are required for the "confidence floor" before v1.0.
+      </div>
+    </div>
+
+    <div class="callout red">
+      <div class="callout-title" style="color: var(--neon-red);">🔴 Doctor Completeness — Playwright &amp; Daemon Checks Missing</div>
+      <div class="callout-body">
+        Task 4 of the v1 plan added the account check, but <code>checkPlaywright()</code> and <code>checkDaemon()</code> were never added to <code>src/commands/doctor.ts</code>. The install bar requires <code>opta doctor</code> to surface all known failure modes. Playwright was just added to <code>optionalDependencies</code> today — this check is now more relevant than ever.
+      </div>
+    </div>
+
+    <div class="callout amber">
+      <div class="callout-title" style="color: var(--neon-amber);">🟠 Browser Policy Defaults — Security Audit Pending</div>
+      <div class="callout-body">
+        Task 7 of the v1 plan (browser policy audit) has not been started. The security bar requires <code>tests/security/browser-policy.test.ts</code> covering cross-origin credential access defaults. This is a v1.0 security gate.
+      </div>
+    </div>
+
+    <div class="callout amber">
+      <div class="callout-title" style="color: var(--neon-amber);">🟠 Public README — Still CLAUDE.md Content Only</div>
+      <div class="callout-body">
+        Task 8 of the v1 plan has not been started. The current <code>README.md</code> contains the old Python Aider content. A user-facing README with install instructions, quick start, commands table, and troubleshooting is required before v1.0 can be published.
+      </div>
+    </div>
+
+    <div class="callout violet">
+      <div class="callout-title" style="color: var(--primary);">🟣 TUI Quality Plan — Entirely Unstarted (16h estimated)</div>
+      <div class="callout-body">
+        All 7 TUI quality tasks are open. The three HIGH-priority items (menu resize stability, error boundary, layout constants) directly affect the "stability bar" for v1.0. Without the error boundary, any TUI component throw crashes the whole app. Menu resize-on-navigate is a visible daily-driver regression.
+      </div>
+    </div>
+  </div>
+
+  <hr class="neon-divider">
+
+  <!-- PLAN 1: v1 IMPLEMENTATION PLAN -->
+  <div class="glass plan-card mb-16">
+    <div class="plan-header">
+      <div class="plan-status-dot pulse" style="color: var(--neon-amber);background: var(--neon-amber);"></div>
+      <div class="plan-title-block">
+        <div class="plan-title">v1.0 Implementation Plan <span class="badge partial" style="margin-left:8px;">In Progress</span></div>
+        <div class="plan-meta">2026-02-26 · docs/plans/2026-02-26-opta-v1-implementation-plan.md · 10 tasks</div>
+      </div>
+      <div class="plan-progress-label">50% · 5/10</div>
+    </div>
+
+    <div class="progress-track" style="height:8px;">
+      <div class="progress-fill violet" style="width:50%"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);margin-top:4px;">
+      <span>5 done</span><span>2 partial</span><span>3 open</span>
+    </div>
+
+    <div class="task-list">
+      <div class="task-item">
+        <div class="task-check done">✓</div>
+        <div class="task-body">
+          <div class="task-name done-text">Task 1 — Zero-Config Anthropic Mode <span class="task-priority pri-critical">CRITICAL</span></div>
+          <div class="task-detail">probeProvider() implemented in providers/manager.ts · session #S432 · external users unblocked</div>
+        </div>
+      </div>
+      <div class="task-item">
+        <div class="task-check done">✓</div>
+        <div class="task-body">
+          <div class="task-name done-text">Task 2 — Daemon Crash Recovery <span class="task-priority pri-critical">CRITICAL</span></div>
+          <div class="task-detail">R1 LMX watchdog (lmx/watchdog.ts · 7 tests) + R3 crash recovery (memory/recovery.ts · 6 tests) · commit cf1a60e1</div>
+        </div>
+      </div>
+      <div class="task-item">
+        <div class="task-check partial">~</div>
+        <div class="task-body">
+          <div class="task-name">Task 3 — Integration Test Expansion <span class="task-priority pri-critical">CRITICAL</span></div>
+          <div class="task-detail">⚠ Browser E2E done (63 tests). Missing: <code>chat-session-full-flow.test.ts</code> + <code>daemon-multi-client.test.ts</code></div>
+        </div>
+      </div>
+      <div class="task-item">
+        <div class="task-check partial">~</div>
+        <div class="task-body">
+          <div class="task-name">Task 4 — opta doctor Completeness <span class="task-priority pri-high">HIGH</span></div>
+          <div class="task-detail">⚠ Account check added (9th check). Missing: <code>checkPlaywright()</code> + <code>checkDaemon()</code> — both now relevant after today's browser fixes</div>
+        </div>
+      </div>
+      <div class="task-item">
+        <div class="task-check done">✓</div>
+        <div class="task-body">
+          <div class="task-name done-text">Task 5 — Shell Injection Formal Audit <span class="task-priority pri-high">HIGH</span></div>
+          <div class="task-detail">parseShellCommand() tokenizer in place · commit a27ef02 · replaces all spawn('sh', ['-c']) patterns</div>
+        </div>
+      </div>
+      <div class="task-item">
+        <div class="task-check done">✓</div>
+        <div class="task-body">
+          <div class="task-name done-text">Task 6 — API Key → OS Keychain <span class="task-priority pri-high">HIGH</span></div>
+          <div class="task-detail">src/keychain/ fully implemented · keychain.ts + api-keys.ts + commands/keychain.ts · 33 tests · commit 84a22458</div>
+        </div>
+      </div>
+      <div class="task-item">
+        <div class="task-check open"></div>
+        <div class="task-body">
+          <div class="task-name">Task 7 — Browser Policy Defaults Audit <span class="task-priority pri-high">HIGH</span></div>
+          <div class="task-detail">Not started · Requires: read policy-engine.ts defaults → write tests/security/browser-policy.test.ts → harden cross-origin credential rules</div>
+        </div>
+      </div>
+      <div class="task-item">
+        <div class="task-check open"></div>
+        <div class="task-body">
+          <div class="task-name">Task 8 — Public User-Facing README <span class="task-priority pri-med">MED</span></div>
+          <div class="task-detail">Not started · README.md has stale Python/Aider content · Needs: install, quick start, commands table, TUI controls, troubleshooting</div>
+        </div>
+      </div>
+      <div class="task-item">
+        <div class="task-check open"></div>
+        <div class="task-body">
+          <div class="task-name">Task 9 — TUI Performance Budget <span class="task-priority pri-low">LOW</span></div>
+          <div class="task-detail">Not started · Create tests/tui/render-performance.test.tsx · Budget: &lt;16ms per render (60fps) · MessageList with 50 messages</div>
+        </div>
+      </div>
+      <div class="task-item">
+        <div class="task-check done">✓</div>
+        <div class="task-body">
+          <div class="task-name done-text">Task 10 — CI Clean Environment Verification <span class="task-priority pri-low">LOW</span></div>
+          <div class="task-detail">.github/workflows/ci.yml exists with Node 20+22 matrix · release.yml + parity workflows also in place</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PLAN 2: TUI QUALITY PLAN -->
+  <div class="glass plan-card mb-24">
+    <div class="plan-header">
+      <div class="plan-status-dot pulse" style="color: var(--neon-red);background: var(--neon-red);"></div>
+      <div class="plan-title-block">
+        <div class="plan-title">TUI Quality Improvement Plan <span class="badge open" style="margin-left:8px;">Not Started</span></div>
+        <div class="plan-meta">2026-02-26 · docs/plans/2026-02-26-tui-quality-improvement-plan.md · 7 tasks · ~16h estimated</div>
+      </div>
+      <div class="plan-progress-label">0% · 0/7</div>
+    </div>
+
+    <div class="progress-track" style="height:8px;">
+      <div class="progress-fill red" style="width:2%"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);margin-top:4px;">
+      <span>0 done</span><span>3 HIGH · 3 MED · 1 LOW open</span>
+    </div>
+
+    <div class="task-list">
+      <div class="task-item">
+        <div class="task-check open"></div>
+        <div class="task-body">
+          <div class="task-name">Task 1 — Fix Menu Size Stability <span class="task-priority pri-high">HIGH · 2h</span></div>
+          <div class="task-detail">OptaMenuOverlay.tsx — add explicit height prop + fix itemViewportRows clamp + add MenuItemList minHeight + lock dimensions on open</div>
+        </div>
+      </div>
+      <div class="task-item">
+        <div class="task-check open"></div>
+        <div class="task-body">
+          <div class="task-name">Task 2 — Centralize Layout Constants <span class="task-priority pri-high">HIGH · 2h</span></div>
+          <div class="task-detail">Create src/tui/layout.ts with LAYOUT constants + computeMenuWidth/Height/MessageLayoutWidths · Update App, OptaMenuOverlay, MessageList, StatusBar</div>
+        </div>
+      </div>
+      <div class="task-item">
+        <div class="task-check open"></div>
+        <div class="task-body">
+          <div class="task-name">Task 3 — Add Error Boundary <span class="task-priority pri-high">HIGH · 1h</span></div>
+          <div class="task-detail">Create src/tui/ErrorBoundary.tsx (React class component) · Wrap App in render.tsx + each overlay individually in App.tsx</div>
+        </div>
+      </div>
+      <div class="task-item">
+        <div class="task-check open"></div>
+        <div class="task-body">
+          <div class="task-name">Task 4 — Centralize Animation Config <span class="task-priority pri-med">MED · 1.5h</span></div>
+          <div class="task-detail">Create src/tui/animations.ts with ANIMATION constants + animateHeight/Width helpers · Replace hardcoded 0.45/0.55/0.28/0.55/0.75 inline values</div>
+        </div>
+      </div>
+      <div class="task-item">
+        <div class="task-check open"></div>
+        <div class="task-body">
+          <div class="task-name">Task 5 — Guided Flow Validation Feedback <span class="task-priority pri-med">MED · 1.5h</span></div>
+          <div class="task-detail">Add error field to GuidedFlowState · Set error on silent no-op (e.g. malformed RAG pair input) · Display in GuidedFlowInput.tsx</div>
+        </div>
+      </div>
+      <div class="task-item">
+        <div class="task-check open"></div>
+        <div class="task-body">
+          <div class="task-name">Task 6 — Fix InputBox Editor Lifecycle <span class="task-priority pri-med">MED · 1h</span></div>
+          <div class="task-detail">Move InputEditor instantiation from render body to useRef initializer · Add unmount guard to debounced glob autocomplete</div>
+        </div>
+      </div>
+      <div class="task-item">
+        <div class="task-check open"></div>
+        <div class="task-body">
+          <div class="task-name">Task 7 — Fix StatusBar Low-Risk Color <span class="task-priority pri-low">LOW · 0.5h</span></div>
+          <div class="task-detail">Add explicit low-risk branch: highestPendingApprovalRisk === 'low' → TUI_COLORS.success (currently falls through to undefined)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="neon-divider">
+
+  <!-- TODAY'S FIXES (new section) -->
+  <div class="glass plan-card mb-24" style="border: 1px solid rgba(20,184,166,0.25);">
+    <div class="plan-header">
+      <div class="plan-status-dot" style="color: var(--neon-teal);background: var(--neon-teal);"></div>
+      <div class="plan-title-block">
+        <div class="plan-title">Browser Integration Debugging <span class="badge today" style="margin-left:8px;">Completed Today</span></div>
+        <div class="plan-meta">2026-02-27 · session #S445 · bug investigation → 5 fixes delivered</div>
+      </div>
+      <div class="plan-progress-label" style="color:var(--neon-teal);">100% · 5/5</div>
+    </div>
+    <div class="progress-track" style="height:8px;">
+      <div class="progress-fill teal" style="width:100%"></div>
+    </div>
+    <div class="task-list" style="margin-top:16px;">
+      <div class="task-item">
+        <div class="task-check done">✓</div>
+        <div class="task-body">
+          <div class="task-name done-text">Added playwright to optionalDependencies + installed runtime</div>
+          <div class="task-detail">package.json · "playwright": "^1.50.0" · npx playwright install chromium</div>
+        </div>
+      </div>
+      <div class="task-item">
+        <div class="task-check done">✓</div>
+        <div class="task-body">
+          <div class="task-name done-text">Added "premature close" to retryable errors</div>
+          <div class="task-detail">src/core/agent-streaming.ts · isRetryableError() — undici stream close is now transient, not fatal</div>
+        </div>
+      </div>
+      <div class="task-item">
+        <div class="task-check done">✓</div>
+        <div class="task-body">
+          <div class="task-name done-text">Fixed critical: browser.enabled guard missing in trigger-session.ts</div>
+          <div class="task-detail">Bug: only browser.runtime.enabled was checked (defaults true) → browser triggered for ALL users. Fix: added browser.enabled === false early return</div>
+        </div>
+      </div>
+      <div class="task-item">
+        <div class="task-check done">✓</div>
+        <div class="task-body">
+          <div class="task-name done-text">Fixed critical: browserRuntimeDisabled() missing browser.enabled check</div>
+          <div class="task-detail">src/core/tools/executors.ts · all browser tool calls now correctly gate on both browser.enabled AND browser.runtime.enabled</div>
+        </div>
+      </div>
+      <div class="task-item">
+        <div class="task-check done">✓</div>
+        <div class="task-body">
+          <div class="task-name done-text">Removed redundant hasBrowserTriggerWord() call in App.tsx</div>
+          <div class="task-detail">Trigger router already sets requestedCapabilities — the || hasBrowserTriggerWord(text) fallback was dead code. Import also removed.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMPLETED PLANS -->
+  <div class="mb-24">
+    <div class="section-header mb-16">
+      <div class="section-icon" style="background: rgba(34,197,94,0.12);">✅</div>
+      <div>
+        <div class="section-title">Completed Plans</div>
+        <div class="section-subtitle">Fully delivered — all tasks implemented and verified</div>
+      </div>
+      <span class="section-badge badge done">4 plans</span>
+    </div>
+
+    <div class="completed-grid">
+      <div class="completed-card">
+        <div class="completed-name">Accounts + LMX Integration</div>
+        <div class="completed-detail">Token refresh · SettingsOverlay account page · /whoami + /logout · /lmx status + reconnect · heartbeat · doctor account check</div>
+        <div style="font-size:10px;color:var(--neon-green);margin-top:6px;font-weight:600;">Sessions #S433, #S437, #S439</div>
+      </div>
+      <div class="completed-card">
+        <div class="completed-name">OnboardingOverlay + Settings</div>
+        <div class="completed-detail">9-step first-run wizard (OnboardingOverlay.tsx) · 6-page settings browser (SettingsOverlay.tsx) · account page, Ctrl+Shift+S binding</div>
+        <div style="font-size:10px;color:var(--neon-green);margin-top:6px;font-weight:600;">2026-02-26 plan</div>
+      </div>
+      <div class="completed-card">
+        <div class="completed-name">Known Gaps — All 6 Closed</div>
+        <div class="completed-detail">Browser E2E · Provider tests · Menu monolith refactor · Zero-config · CI pipeline · OS Keychain</div>
+        <div style="font-size:10px;color:var(--neon-green);margin-top:6px;font-weight:600;">1,527 → 1,698 tests (+171)</div>
+      </div>
+      <div class="completed-card">
+        <div class="completed-name">Autonomous Session Resilience</div>
+        <div class="completed-detail">R1 LMX watchdog · R2 headless circuit breaker · R3 crash recovery (.opta/recovery/) · Model swap resilience</div>
+        <div style="font-size:10px;color:var(--neon-green);margin-top:6px;font-weight:600;">Commit cf1a60e1</div>
+      </div>
+      <div class="completed-card">
+        <div class="completed-name">Browser AI Integration Layer</div>
+        <div class="completed-detail">Peekaboo MCP · AgentQL semantic fallback · P1 persist debounce · async visual diff · 125/125 browser tests</div>
+        <div style="font-size:10px;color:var(--neon-green);margin-top:6px;font-weight:600;">Worktree agent-aa4376c3</div>
+      </div>
+      <div class="completed-card">
+        <div class="completed-name">Agent Swarm Visualisation</div>
+        <div class="completed-detail">AgentSwarmRail + AgentSwarmCard · sub-agent lifecycle callbacks · event bridge · delegation progress visualization</div>
+        <div style="font-size:10px;color:var(--neon-green);margin-top:6px;font-weight:600;">Commit 76aa8980</div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="neon-divider">
+
+  <!-- ARCHIVED / SUPERSEDED PLANS -->
+  <div class="mb-24">
+    <div class="section-header mb-16">
+      <div class="section-icon" style="background: rgba(99,102,241,0.1);">📁</div>
+      <div>
+        <div class="section-title">Archived Plans</div>
+        <div class="section-subtitle">Earlier planning docs — superseded or fully implemented by later sessions</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;">
+      <div class="glass-subtle" style="padding:12px 16px;border-radius:10px;">
+        <div style="font-size:12px;font-weight:600;color:var(--text-muted);">v1 Design Doc</div>
+        <div style="font-size:11px;color:var(--text-muted);opacity:0.7;margin-top:2px;">2026-02-12 · original scope</div>
+        <div style="font-size:10px;color:var(--primary);margin-top:4px;">Superseded by v1 impl plan</div>
+      </div>
+      <div class="glass-subtle" style="padding:12px 16px;border-radius:10px;">
+        <div style="font-size:12px;font-weight:600;color:var(--text-muted);">v2 Features Design</div>
+        <div style="font-size:11px;color:var(--text-muted);opacity:0.7;margin-top:2px;">2026-02-15–16 · 5 phase docs</div>
+        <div style="font-size:10px;color:var(--neon-green);margin-top:4px;">Largely implemented (OPIS, Git, MCP)</div>
+      </div>
+      <div class="glass-subtle" style="padding:12px 16px;border-radius:10px;">
+        <div style="font-size:12px;font-weight:600;color:var(--text-muted);">v3 Features Plan</div>
+        <div style="font-size:11px;color:var(--text-muted);opacity:0.7;margin-top:2px;">2026-02-16 · LSP, Hooks, Sub-agents</div>
+        <div style="font-size:10px;color:var(--neon-green);margin-top:4px;">All three modules in src/</div>
+      </div>
+      <div class="glass-subtle" style="padding:12px 16px;border-radius:10px;">
+        <div style="font-size:12px;font-weight:600;color:var(--text-muted);">OpenCode UX Parity</div>
+        <div style="font-size:11px;color:var(--text-muted);opacity:0.7;margin-top:2px;">2026-02-17 · 4 phase docs</div>
+        <div style="font-size:10px;color:var(--neon-green);margin-top:4px;">Ink/React TUI delivered</div>
+      </div>
+      <div class="glass-subtle" style="padding:12px 16px;border-radius:10px;">
+        <div style="font-size:12px;font-weight:600;color:var(--text-muted);">Daemon Program Plan</div>
+        <div style="font-size:11px;color:var(--text-muted);opacity:0.7;margin-top:2px;">2026-02-20 · Level 3</div>
+        <div style="font-size:10px;color:var(--neon-green);margin-top:4px;">Daemon fully operational</div>
+      </div>
+      <div class="glass-subtle" style="padding:12px 16px;border-radius:10px;">
+        <div style="font-size:12px;font-weight:600;color:var(--text-muted);">Antigravity Browser Plan</div>
+        <div style="font-size:11px;color:var(--text-muted);opacity:0.7;margin-top:2px;">2026-02-23 · Playwright runtime</div>
+        <div style="font-size:10px;color:var(--neon-green);margin-top:4px;">Runtime + policy + quality gates done</div>
+      </div>
+      <div class="glass-subtle" style="padding:12px 16px;border-radius:10px;">
+        <div style="font-size:12px;font-weight:600;color:var(--text-muted);">Codex Desktop Parity</div>
+        <div style="font-size:11px;color:var(--text-muted);opacity:0.7;margin-top:2px;">2026-02-23</div>
+        <div style="font-size:10px;color:var(--neon-amber);margin-top:4px;">Partial — TUI quality still open</div>
+      </div>
+      <div class="glass-subtle" style="padding:12px 16px;border-radius:10px;">
+        <div style="font-size:12px;font-weight:600;color:var(--text-muted);">Code Review Fixes</div>
+        <div style="font-size:11px;color:var(--text-muted);opacity:0.7;margin-top:2px;">2026-02-25</div>
+        <div style="font-size:10px;color:var(--neon-green);margin-top:4px;">Delivered</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RECOMMENDED NEXT SESSION -->
+  <div class="glass plan-card" style="border: 1px solid rgba(139,92,246,0.2);">
+    <div class="section-header mb-16">
+      <div class="section-icon" style="background: rgba(139,92,246,0.12);">🎯</div>
+      <div>
+        <div class="section-title">Recommended Next Sessions</div>
+        <div class="section-subtitle">Priority order for reaching v1.0 tag</div>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--primary);margin-bottom:10px;letter-spacing:0.08em;text-transform:uppercase;">v1 Blockers (clear first)</div>
+        <div class="callout violet" style="margin-bottom:10px;padding:14px 18px;">
+          <div class="callout-title" style="color:var(--primary);font-size:12px;">Session A — Integration Tests + Doctor (~3h)</div>
+          <div class="callout-body" style="font-size:11px;">
+            1. Create <code>tests/integration/chat-session-full-flow.test.ts</code><br>
+            2. Create <code>tests/integration/daemon-multi-client.test.ts</code><br>
+            3. Add <code>checkPlaywright()</code> to doctor.ts<br>
+            4. Add <code>checkDaemon()</code> to doctor.ts
+          </div>
+        </div>
+        <div class="callout amber" style="padding:14px 18px;">
+          <div class="callout-title" style="color:var(--neon-amber);font-size:12px;">Session B — Security + README (~2h)</div>
+          <div class="callout-body" style="font-size:11px;">
+            1. Read policy-engine.ts defaults<br>
+            2. Write <code>tests/security/browser-policy.test.ts</code><br>
+            3. Harden any open credential access rules<br>
+            4. Write public <code>README.md</code>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--neon-amber);margin-bottom:10px;letter-spacing:0.08em;text-transform:uppercase;">TUI Quality (critical UX)</div>
+        <div class="callout amber" style="padding:14px 18px;margin-bottom:10px;">
+          <div class="callout-title" style="color:var(--neon-amber);font-size:12px;">Session C — TUI Tasks 1–3 (~5h)</div>
+          <div class="callout-body" style="font-size:11px;">
+            1. Task 1: Add height prop to OptaMenuOverlay Box + fix itemViewportRows<br>
+            2. Task 2: Create layout.ts + update all consumers<br>
+            3. Task 3: Create ErrorBoundary.tsx + wrap App + overlays
+          </div>
+        </div>
+        <div class="callout violet" style="padding:14px 18px;">
+          <div class="callout-title" style="color:var(--primary);font-size:12px;">Session D — TUI Tasks 4–7 (~4.5h)</div>
+          <div class="callout-body" style="font-size:11px;">
+            4. Create animations.ts + update OptaMenuOverlay + App<br>
+            5. Add GuidedFlowState.error field + validation feedback UI<br>
+            6. Fix InputBox useRef initializer + unmount guard<br>
+            7. Add success color for low-risk approval in StatusBar
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:20px;padding:16px 20px;background:rgba(34,197,94,0.05);border:1px solid rgba(34,197,94,0.12);border-radius:10px;">
+      <div style="font-size:13px;font-weight:700;color:var(--neon-green);margin-bottom:6px;">v1.0 Gate Criteria</div>
+      <div style="font-size:12px;color:var(--text-secondary);line-height:1.8;">
+        Sessions A + B complete ✓ &nbsp;·&nbsp; Sessions C + D complete ✓ &nbsp;·&nbsp; TUI performance test green ✓ &nbsp;·&nbsp;
+        <code style="font-family:monospace;background:rgba(255,255,255,0.07);padding:1px 6px;border-radius:4px;color:var(--primary-glow);">npm test</code> green ✓ &nbsp;·&nbsp;
+        <code style="font-family:monospace;background:rgba(255,255,255,0.07);padding:1px 6px;border-radius:4px;color:var(--primary-glow);">npm run typecheck</code> clean ✓ &nbsp;→&nbsp;
+        <strong style="color:var(--neon-green);">git tag v1.0.0</strong>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // Animate progress bars on load
+  document.addEventListener('DOMContentLoaded', () => {
+    const fills = document.querySelectorAll('.progress-fill');
+    fills.forEach(fill => {
+      const target = fill.style.width;
+      fill.style.width = '0%';
+      setTimeout(() => { fill.style.width = target; }, 100);
+    });
+  });
+</script>
+</body>
+</html>

@@ -4,15 +4,15 @@ on:
   push:
     branches: [main]
     paths:
-      - '1-Apps/1J-Optamize-MacOS/**'
+      - '1-Apps/optamize/1J-Optamize-MacOS/**'
   pull_request:
     branches: [main]
     paths:
-      - '1-Apps/1J-Optamize-MacOS/**'
+      - '1-Apps/optamize/1J-Optamize-MacOS/**'
 
 defaults:
   run:
-    working-directory: 1-Apps/1J-Optamize-MacOS
+    working-directory: 1-Apps/optamize/1J-Optamize-MacOS
 
 jobs:
   build:

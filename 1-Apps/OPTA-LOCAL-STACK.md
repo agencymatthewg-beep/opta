@@ -1,142 +1,67 @@
-# Opta Local Stack — Organization
+# Opta Local Stack
 
-**Last updated:** 2026-02-19
+**Last updated:** 2026-02-20
 
----
+## Components
 
-## Overview
+| Component | Path | Role |
+|---|---|---|
+| Opta CLI | `1D-Opta-CLI-TS/` | TUI + daemon runtime (`opta chat`, `opta do`, `opta daemon`) |
+| Opta LMX | `1M-Opta-LMX/` | Local inference server (`/v1/chat/completions`, `/v1/chat/stream`) |
+| Opta Local Web | `1L-Opta-Local/web/` | Browser client + dashboard, now with daemon connector support |
 
-The Opta local stack consists of 3 main components:
+## Current Architecture (Level 3)
 
-| Component | Location | Purpose |
-|-----------|----------|---------|
-| **Opta CLI** | `1D-Opta-CLI-TS/` | Agentic AI coding CLI |
-| **Opta LMX** | `1M-Opta-LMX/` | Local inference server |
-| **optalocal.com** | `projects/optalocal-dashboard/` | Web dashboard |
-
----
-
-## 1. Opta CLI
-
-**Path:** `~/Synced/Opta/1-Apps/1D-Opta-CLI-TS/`
-
-**Purpose:** Local-first agentic AI coding assistant
-
-**Tech Stack:**
-- Node.js + TypeScript
-- Ink (React TUI)
-- Connects to LMX for inference
-
-**Commands:**
-- `opta chat` — Interactive chat
-- `opta do <task>` — One-shot tasks
-- `opta models` — Model management
-- `opta status` — LMX status
-
-**Status:** 
-- ✅ TypeScript 0 errors
-- ✅ Tests 896/896 passing
-- ✅ Build clean
-
----
-
-## 2. Opta LMX
-
-**Path:** `~/Synced/Opta/1-Apps/1M-Opta-LMX/`
-
-**Purpose:** Private AI inference engine for Apple Silicon
-
-**Tech Stack:**
-- Python (mlx_lm)
-- FastAPI
-- macOS LaunchAgent
-
-**Features:**
-- Local model serving
-- OpenAI-compatible API
-- Model management
-- Memory monitoring
-
-**Status:**
-- ✅ Running on Mono512
-- ✅ Model loaded: MiniMax-M2.5-5bit
-
----
-
-## 3. optalocal.com
-
-**Path:** `~/Synced/Opta/1-Apps/1L-Opta-Local/web/`
-
-**Purpose:** Web dashboard for LMX management
-
-**Tech Stack:**
-- Next.js 15
-- Supabase Auth
-- Tailwind CSS
-
-**Features:**
-- User authentication (Google, Apple, Email)
-- Cloud sync
-- Setup wizard
-- Per-user config
-
-**Status:**
-- 🔄 In development
-
----
-
-## Dependencies
-
-```
-Opta CLI ──→ Opta LMX (via API)
-     │
-     └─→ Local Models (MLX, GGUF)
-
-optalocal.com ──→ Opta LMX (via API)
-              │
-              └─→ Supabase (Auth + DB)
+```text
+opta tui / opta do / opta chat
+        │
+        ▼
+opta daemon (127.0.0.1:<dynamic>, token-auth)
+        │
+        ├─ /v3/* HTTP control plane
+        ├─ /v3/ws WebSocket event plane
+        └─ /v1/chat compatibility shim
+                │
+                ▼
+Opta LMX (192.168.188.11:1234 default)
+  ├─ /v1/chat/stream (WS, bidirectional + cancel)
+  └─ /v1/chat/completions (SSE/JSON)
 ```
 
----
+## Integration Notes
 
-## Running Services
+- CLI daemon owns session orchestration, queueing, permissions, and event persistence.
+- LMX remains the inference backend; daemon now prefers WS streaming where available.
+- Web app now includes daemon client transport scaffold at:
+  - `1L-Opta-Local/web/src/lib/opta-daemon-client.ts`
 
-| Service | Host | Port | Status |
-|---------|------|------|--------|
-| LMX Server | Mono512 | 1234 | ✅ Running |
-| optalocal.com | Vercel | — | 🔄 Dev |
+## Runtime Defaults
 
----
+- Daemon bind target: `127.0.0.1:9999` preferred.
+- Port fallback window: `10000-10020` when 9999 is unavailable.
+- Auth: per-daemon local session token.
+- LMX default endpoint: `http://192.168.188.11:1234`.
 
-## Quick Commands
+## Operational Commands
 
 ```bash
-# CLI
-cd ~/Synced/Opta/1-Apps/1D-Opta-CLI-TS
-npm run dev -- chat
+# CLI / daemon
+cd ~/Synced/Opta/1-Apps/optalocal/1D-Opta-CLI-TS
+npm run dev -- daemon start
+npm run dev -- daemon status
+npm run dev -- chat --tui
 
-# Check LMX
-curl http://192.168.188.11:1234/v1/models
+# LMX
+cd ~/Synced/Opta/1-Apps/optalocal/1M-Opta-LMX
+python -m opta_lmx
 
-# Dashboard
-cd ~/Synced/Opta/1-Apps/1L-Opta-Local/web
+# Web
+cd ~/Synced/Opta/1-Apps/optalocal/1L-Opta-Local/web
 npm run dev
 ```
 
----
+## Focus Areas
 
-## Known Issues
-
-- [ ] Model auto-load on startup (presets have auto_load: false)
-- [ ] Response truncation detection (finish_reason: 'length')
-- [ ] Thinking shake (resolved)
-
----
-
-## Future Plans
-
-1. Load Qwen 2.5 Coder 32B for best coding performance
-2. Implement model warming at startup
-3. Add truncation warning to CLI
-4. Deploy optalocal.com to production
-
+1. Full daemon stability under long-running streaming/tool workloads.
+2. Strict compatibility lock for existing CLI automation.
+3. Shared terminal + web session attach with deterministic multi-writer semantics.

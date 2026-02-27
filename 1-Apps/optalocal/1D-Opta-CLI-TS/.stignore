@@ -1,0 +1,10 @@
+// Syncthing ignore rules for opta-cli
+// Build artifacts — rebuilt locally from source, not synced
+dist/
+
+// Dependencies — installed locally via npm
+node_modules/
+
+// Temp / test artifacts
+tmp/
+*.sync-conflict-*

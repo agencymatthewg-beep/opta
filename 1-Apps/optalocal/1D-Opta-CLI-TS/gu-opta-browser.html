@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Opta CLI — Browser Optimisation & Tool Assessment</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --void:#09090b;--surface:#18181b;--elevated:#27272a;--border:#3f3f46;
+  --text-primary:#fafafa;--text-secondary:#a1a1aa;--text-muted:#52525b;
+  --primary:#8b5cf6;--primary-glow:#a855f7;
+  --neon-blue:#3b82f6;--neon-green:#22c55e;--neon-amber:#f59e0b;--neon-red:#ef4444;--neon-cyan:#06b6d4;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--void);color:var(--text-primary);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;min-height:100vh;overflow-x:hidden;line-height:1.6;}
+#particle-canvas{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;opacity:.3;}
+.page-wrapper{position:relative;z-index:1;max-width:1260px;margin:0 auto;padding:48px 32px 100px;}
+h1,h2,h3,h4{font-family:'Sora',sans-serif;}
+.moonlight{background:linear-gradient(135deg,#ffffff 0%,#c4b5fd 40%,#818cf8 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.glass{background:rgba(24,24,27,.72);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.08);border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.06);position:relative;overflow:hidden;}
+.glass::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(139,92,246,.5),transparent);}
+.glass-sub{background:rgba(18,18,20,.55);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.05);border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.3);}
+.glass-hi{background:rgba(39,39,42,.85);backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,.12);border-radius:16px;box-shadow:0 16px 48px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.08);}
+@keyframes breathe{0%,100%{box-shadow:0 0 20px rgba(139,92,246,.12),0 8px 32px rgba(0,0,0,.4);}50%{box-shadow:0 0 40px rgba(139,92,246,.2),0 12px 48px rgba(0,0,0,.5);}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);}}
+.reveal{animation:fadeUp .5s ease forwards;opacity:0;}
+.d1{animation-delay:.1s}.d2{animation-delay:.2s}.d3{animation-delay:.3s}.d4{animation-delay:.4s}.d5{animation-delay:.5s}
+
+/* ── Hero ── */
+.hero{text-align:center;padding:60px 48px 48px;margin-bottom:40px;animation:breathe 5s ease-in-out infinite;}
+.eyebrow{font-size:11px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:var(--primary);margin-bottom:16px;}
+.hero-title{font-size:52px;font-weight:700;line-height:1.1;margin-bottom:20px;}
+.hero-sub{font-size:17px;color:var(--text-secondary);max-width:680px;margin:0 auto 32px;}
+.badges{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:5px 13px;border-radius:100px;font-size:11.5px;font-weight:500;border:1px solid;}
+.bv{background:rgba(139,92,246,.12);border-color:rgba(139,92,246,.3);color:#c4b5fd;}
+.bg{background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.25);color:#86efac;}
+.ba{background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.25);color:#fcd34d;}
+.br{background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.25);color:#fca5a5;}
+.bb{background:rgba(59,130,246,.1);border-color:rgba(59,130,246,.25);color:#93c5fd;}
+
+/* ── Section ── */
+.section{margin-bottom:44px;}
+.section>.glass{padding:32px;}
+.sh{display:flex;align-items:center;gap:14px;margin-bottom:22px;}
+.sn{width:34px;height:34px;border-radius:9px;background:rgba(139,92,246,.15);border:1px solid rgba(139,92,246,.3);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--primary);font-family:'Sora',sans-serif;flex-shrink:0;}
+.st{font-size:22px;font-weight:600;}
+.neon-div{height:1px;background:linear-gradient(90deg,rgba(139,92,246,.6),rgba(59,130,246,.3),transparent);box-shadow:0 0 8px rgba(139,92,246,.4);margin:30px 0;}
+
+/* ── Grids ── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+@media(max-width:900px){.g3,.g4{grid-template-columns:1fr 1fr;}.g2{grid-template-columns:1fr;}}
+
+/* ── Info boxes ── */
+.ib{padding:14px 18px;border-radius:10px;display:flex;gap:12px;align-items:flex-start;margin-bottom:12px;}
+.ib-icon{font-size:17px;flex-shrink:0;margin-top:1px;}
+.ib-body{flex:1;}
+.ib-title{font-size:13px;font-weight:600;margin-bottom:4px;}
+.ib-text{font-size:12.5px;color:var(--text-secondary);line-height:1.6;}
+.box-v{background:rgba(139,92,246,.1);border:1px solid rgba(139,92,246,.2);}
+.box-a{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);}
+.box-r{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);}
+.box-g{background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);}
+.box-b{background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);}
+
+/* ── Code ── */
+.code{background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:18px 22px;font-family:'SFMono-Regular',Consolas,Monaco,monospace;font-size:12.5px;line-height:1.75;color:#d4d4d8;overflow-x:auto;}
+.ck{color:#c084fc;}.cs{color:#86efac;}.ct{color:#67e8f9;}.cf{color:#fcd34d;}.cm{color:#52525b;}.cn{color:#fb923c;}
+
+/* ── Diff view ── */
+.diff-block{background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.06);border-radius:10px;overflow:hidden;margin-bottom:20px;}
+.diff-header{display:flex;align-items:center;gap:10px;padding:10px 16px;background:rgba(0,0,0,.3);border-bottom:1px solid rgba(255,255,255,.06);font-size:12px;font-weight:600;letter-spacing:.5px;color:var(--text-muted);text-transform:uppercase;}
+.diff-file{color:var(--primary-glow);font-family:monospace;}
+.diff-line{font-family:'SFMono-Regular',Consolas,monospace;font-size:12px;line-height:1.65;padding:2px 16px;}
+.dl-r{background:rgba(239,68,68,.07);color:#fca5a5;border-left:2px solid rgba(239,68,68,.4);}
+.dl-g{background:rgba(34,197,94,.07);color:#86efac;border-left:2px solid rgba(34,197,94,.4);}
+.dl-n{color:var(--text-muted);}
+
+/* ── Tool cards ── */
+.tool-card{padding:22px;transition:transform .2s ease,box-shadow .2s ease;}
+.tool-card:hover{transform:translateY(-3px);box-shadow:0 14px 40px rgba(0,0,0,.5),0 0 0 1px rgba(139,92,246,.15);}
+.tool-name{font-family:'Sora',sans-serif;font-size:15px;font-weight:600;margin-bottom:4px;}
+.tool-maker{font-size:11px;color:var(--text-muted);margin-bottom:10px;font-family:monospace;}
+.tool-desc{font-size:13px;color:var(--text-secondary);line-height:1.6;margin-bottom:10px;}
+.tool-tags{display:flex;flex-wrap:wrap;gap:6px;}
+.tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10.5px;font-weight:600;letter-spacing:.3px;text-transform:uppercase;}
+.tg{background:rgba(34,197,94,.12);color:#86efac;}
+.tv{background:rgba(139,92,246,.12);color:#c4b5fd;}
+.tb{background:rgba(59,130,246,.12);color:#93c5fd;}
+.ta{background:rgba(245,158,11,.1);color:#fcd34d;}
+.tr{background:rgba(239,68,68,.1);color:#fca5a5;}
+.tc{background:rgba(6,182,212,.1);color:#67e8f9;}
+
+/* ── Priority bar ── */
+.prow{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05);}
+.prow:last-child{border-bottom:none;}
+.plabel{flex:1;font-size:13px;color:var(--text-secondary);}
+.plabel strong{color:var(--text-primary);display:block;margin-bottom:2px;}
+.pbar-wrap{width:180px;height:5px;background:rgba(255,255,255,.06);border-radius:100px;overflow:hidden;flex-shrink:0;}
+.pbar{height:100%;border-radius:100px;transition:width .8s cubic-bezier(.4,0,.2,1);}
+.pscore{width:32px;text-align:right;font-size:13px;font-weight:600;font-family:'Sora',sans-serif;flex-shrink:0;}
+
+/* ── Metric mini ── */
+.mc{padding:20px;text-align:center;}
+.mv{font-family:'Sora',sans-serif;font-size:38px;font-weight:700;line-height:1;margin-bottom:6px;}
+.ml{font-size:11.5px;color:var(--text-secondary);}
+
+/* ── Table ── */
+.tbl{width:100%;border-collapse:collapse;font-size:13px;}
+.tbl th{text-align:left;padding:9px 14px;font-size:10.5px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);border-bottom:1px solid rgba(255,255,255,.06);}
+.tbl td{padding:11px 14px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle;}
+.tbl tr:last-child td{border-bottom:none;}
+.tbl tr:hover td{background:rgba(255,255,255,.02);}
+.mono{font-family:'SFMono-Regular',Consolas,monospace;font-size:11.5px;color:var(--primary-glow);}
+.pill{display:inline-block;padding:2px 9px;border-radius:100px;font-size:11px;font-weight:600;}
+.pill-g{background:rgba(34,197,94,.12);color:#86efac;border:1px solid rgba(34,197,94,.2);}
+.pill-r{background:rgba(239,68,68,.1);color:#fca5a5;border:1px solid rgba(239,68,68,.2);}
+.pill-a{background:rgba(245,158,11,.1);color:#fcd34d;border:1px solid rgba(245,158,11,.2);}
+.pill-v{background:rgba(139,92,246,.12);color:#c4b5fd;border:1px solid rgba(139,92,246,.2);}
+</style>
+</head>
+<body>
+<canvas id="particle-canvas"></canvas>
+<div class="page-wrapper">
+
+<!-- ══ HERO ══ -->
+<div class="glass hero reveal">
+  <div class="eyebrow">Opta CLI · Browser Subsystem</div>
+  <h1 class="hero-title"><span class="moonlight">P1 Fixes + Tool Assessment</span></h1>
+  <p class="hero-sub">Two I/O hot-path optimisations shipped. Eight AI browser automation tools assessed. Recommended integration order for Playwright, Peekaboo, AgentQL, Stagehand, Steel, and more.</p>
+  <div class="badges">
+    <span class="badge bv">181/181 Tests Pass</span>
+    <span class="badge bg">5× persist calls removed</span>
+    <span class="badge bg">Visual diff async</span>
+    <span class="badge bb">8 tools assessed</span>
+    <span class="badge ba">3 High-priority integrations</span>
+  </div>
+</div>
+
+<!-- ══ 1. FIXES ══ -->
+<div class="section reveal d1">
+  <div class="glass">
+    <div class="sh"><div class="sn">1</div><h2 class="st"><span class="moonlight">P1 Fixes Shipped</span></h2></div>
+
+    <div class="g2" style="margin-bottom:24px;">
+      <div>
+        <h3 style="font-size:14px;font-weight:600;color:var(--text-secondary);letter-spacing:1px;text-transform:uppercase;margin-bottom:12px;">Fix A — Persist only on state-changing ops</h3>
+        <div class="ib box-g" style="margin-bottom:12px;">
+          <div class="ib-icon">✅</div>
+          <div class="ib-body">
+            <div class="ib-title" style="color:#86efac;">Root cause</div>
+            <div class="ib-text"><code style="background:rgba(0,0,0,.3);padding:1px 5px;border-radius:3px;font-size:11px;">persistOpenSessions()</code> serialises the entire sessions Map to disk after every <strong>click, type, handleDialog, snapshot, screenshot</strong> — 5 operations that don't mutate session recovery state. Only <strong>openSession</strong>, <strong>closeSession</strong>, and <strong>navigate</strong> (updates currentUrl) actually need a persist checkpoint.</div>
+          </div>
+        </div>
+        <div class="diff-block">
+          <div class="diff-header"><span>runtime-daemon.ts</span></div>
+          <div class="diff-line dl-n">  async click(sessionId, input) {</div>
+          <div class="diff-line dl-r">-   const result = await this.sessionManager.click(...);</div>
+          <div class="diff-line dl-r">-   await this.persistOpenSessions();</div>
+          <div class="diff-line dl-r">-   return this.cloneActionResult(result);</div>
+          <div class="diff-line dl-g">+   const result = await this.sessionManager.click(...);</div>
+          <div class="diff-line dl-g">+   return this.cloneActionResult(result);</div>
+          <div class="diff-line dl-n">  }</div>
+          <div class="diff-line dl-n" style="color:var(--text-muted);padding-top:6px;">  // same pattern for type · handleDialog · snapshot · screenshot</div>
+        </div>
+        <div class="g4" style="gap:8px;margin-top:8px;">
+          <div class="glass-sub mc"><div class="mv" style="color:#fca5a5;font-size:28px;">5</div><div class="ml">Disk writes removed per action loop</div></div>
+          <div class="glass-sub mc"><div class="mv" style="color:#86efac;font-size:28px;">3</div><div class="ml">Persist calls kept (open/close/navigate)</div></div>
+          <div class="glass-sub mc"><div class="mv" style="color:#c4b5fd;font-size:28px;">0</div><div class="ml">State correctness impact</div></div>
+          <div class="glass-sub mc"><div class="mv" style="color:#86efac;font-size:28px;">✓</div><div class="ml">Recovery still intact</div></div>
+        </div>
+      </div>
+
+      <div>
+        <h3 style="font-size:14px;font-weight:600;color:var(--text-secondary);letter-spacing:1px;text-transform:uppercase;margin-bottom:12px;">Fix B — Visual diff as separate async chain</h3>
+        <div class="ib box-g" style="margin-bottom:12px;">
+          <div class="ib-icon">✅</div>
+          <div class="ib-body">
+            <div class="ib-title" style="color:#86efac;">Root cause</div>
+            <div class="ib-text"><code style="background:rgba(0,0,0,.3);padding:1px 5px;border-radius:3px;font-size:11px;">computeVisualDiffStatus()</code> reads two PNG files from disk and computes byte + perceptual diff — all inside the <code>timelineWrite</code> chain which was awaited before returning the action result. Diff is secondary; the step record is what must be serial.</div>
+          </div>
+        </div>
+        <div class="diff-block">
+          <div class="diff-header"><span>native-session-manager.ts</span></div>
+          <div class="diff-line dl-n">  interface ManagedSession {</div>
+          <div class="diff-line dl-g">+   visualDiffWrite: Promise&lt;void&gt;;</div>
+          <div class="diff-line dl-n">  }</div>
+          <div class="diff-line dl-n" style="padding-top:4px;">  // recordAction: two separate chains</div>
+          <div class="diff-line dl-g">+  // Critical path — awaited</div>
+          <div class="diff-line dl-g">+  managed.timelineWrite = managed.timelineWrite</div>
+          <div class="diff-line dl-g">+    .then(() =&gt; appendBrowserSessionStep + manifest);</div>
+          <div class="diff-line dl-g">+  await managed.timelineWrite;</div>
+          <div class="diff-line dl-g">+  // Visual diff — fire-and-forget</div>
+          <div class="diff-line dl-g">+  managed.visualDiffWrite = managed.visualDiffWrite</div>
+          <div class="diff-line dl-g">+    .then(() =&gt; computeVisualDiff + appendResult);</div>
+          <div class="diff-line dl-n" style="padding-top:4px;">  // closeSession: flush before persist</div>
+          <div class="diff-line dl-g">+  await managed.visualDiffWrite.catch(() =&gt; undefined);</div>
+          <div class="diff-line dl-n">   await this.persist(managed);</div>
+        </div>
+        <div class="ib box-v" style="margin-top:8px;">
+          <div class="ib-icon">💡</div>
+          <div class="ib-body">
+            <div class="ib-title" style="color:#c4b5fd;">Why tests still pass</div>
+            <div class="ib-text">Tests read visual-diff-results.jsonl <em>after</em> <code>closeSession()</code>. The flush at close ensures all diffs are written before the final metadata persist, so the test files are complete. Pure async during the session, fully serialised at the gate.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ib box-g">
+      <div class="ib-icon">🟢</div>
+      <div class="ib-body">
+        <div class="ib-title" style="color:#86efac;">181 / 181 tests pass · TypeScript: clean</div>
+        <div class="ib-text">All 18 browser and integration test files pass including the full E2E flow, concurrency serialisation, visual diff correctness, and artifact completeness gate.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="neon-div"></div>
+
+<!-- ══ 2. TOOL ASSESSMENT ══ -->
+<div class="section reveal d2">
+  <div class="glass">
+    <div class="sh"><div class="sn">2</div><h2 class="st"><span class="moonlight">AI Browser Tool Assessment</span></h2></div>
+
+    <p style="font-size:14px;color:var(--text-secondary);margin-bottom:24px;line-height:1.75;">Eight tools assessed against what Opta CLI already has: Playwright session management, policy engine, visual diff, intent routing, artifact collection, and run-corpus adaptation. The question for each is not "is it good?" but "what gap does it fill that you don't already have?"</p>
+
+    <!-- HIGH priority tools -->
+    <h3 style="font-size:13px;font-weight:600;color:var(--neon-green);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:14px;">⬆ High Priority</h3>
+    <div class="g3" style="margin-bottom:28px;">
+
+      <div class="glass-sub tool-card">
+        <div class="tool-name">🍑 Peekaboo</div>
+        <div class="tool-maker">steipete / @playwright/mcp-style MCP server</div>
+        <div class="tool-desc">macOS-native screen capture (ScreenCaptureKit, 12ms latency) + full GUI automation — clicks, hotkeys, menu traversal — on <em>any</em> macOS app window, not just browsers. Includes optional vision AI chaining. <strong>Already an MCP server by design.</strong></div>
+        <div class="tool-tags">
+          <span class="tag tg">MCP Native</span>
+          <span class="tag tv">macOS 15+</span>
+          <span class="tag tg">MIT</span>
+          <span class="tag tb">ScreenCaptureKit</span>
+        </div>
+        <div class="ib box-g" style="margin-top:12px;padding:10px 12px;">
+          <div class="ib-body"><div class="ib-title" style="color:#86efac;font-size:12px;">Integration path</div><div class="ib-text" style="font-size:12px;">Register in <code>mcp-bootstrap.ts</code>. Add a <code>NATIVE_DESKTOP_SIGNALS</code> set to <code>intent-router.ts</code> for tasks like "screenshot Optamize" or "click the menu bar item". Zero protocol work — it speaks MCP already.</div></div>
+        </div>
+      </div>
+
+      <div class="glass-sub tool-card">
+        <div class="tool-name">🤖 Playwright MCP</div>
+        <div class="tool-maker">Microsoft / @playwright/mcp · Apache 2.0</div>
+        <div class="tool-desc">Official Microsoft MCP server that exposes Playwright as MCP tools. Default mode uses the accessibility tree (no vision model required, token-efficient). Screenshot/coordinate mode also available. Integrated with GitHub Copilot's Coding Agent since early 2026.</div>
+        <div class="tool-tags">
+          <span class="tag tg">MCP Native</span>
+          <span class="tag tb">TypeScript</span>
+          <span class="tag tg">Apache 2.0</span>
+          <span class="tag tc">No vision required</span>
+        </div>
+        <div class="ib box-b" style="margin-top:12px;padding:10px 12px;">
+          <div class="ib-body"><div class="ib-title" style="color:#93c5fd;font-size:12px;">Integration path</div><div class="ib-text" style="font-size:12px;"><code>npm install @playwright/mcp</code> + register in <code>mcp-bootstrap.ts</code>. Covers the "agent inspects localhost:3000 to verify its own build output" use case with zero custom work. Your policy engine still gates which URLs it can visit.</div></div>
+        </div>
+      </div>
+
+      <div class="glass-sub tool-card">
+        <div class="tool-name">🔍 AgentQL</div>
+        <div class="tool-maker">tinyfish-io · MIT · AGENTQL_API_KEY required</div>
+        <div class="tool-desc">Semantic query language that wraps a Playwright <code>Page</code> via <code>agentql.wrap(page)</code>. Instead of brittle CSS selectors, you write <code>{'{ login_form { email_field submit_button } }'}</code> and AgentQL's cloud resolver finds the right elements — cross-site, self-healing on DOM changes.</div>
+        <div class="tool-tags">
+          <span class="tag tb">TypeScript</span>
+          <span class="tag tg">MIT</span>
+          <span class="tag ta">Cloud resolver</span>
+          <span class="tag tc">Drop-in</span>
+        </div>
+        <div class="ib box-v" style="margin-top:12px;padding:10px 12px;">
+          <div class="ib-body"><div class="ib-title" style="color:#c4b5fd;font-size:12px;">Integration path</div><div class="ib-text" style="font-size:12px;">Add <code>agentql.wrap(managed.page)</code> inside <code>control-surface.ts</code> as a fallback resolver when Playwright selectors fail. Directly reduces the adaptation penalty your <code>run-corpus.ts</code> accumulates on DOM-changing sites.</div></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- MEDIUM priority tools -->
+    <h3 style="font-size:13px;font-weight:600;color:var(--neon-amber);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:14px;">→ Medium Priority</h3>
+    <div class="g2" style="margin-bottom:28px;">
+
+      <div class="glass-sub tool-card">
+        <div class="tool-name">🎭 Stagehand v3</div>
+        <div class="tool-maker">Browserbase · MIT · TypeScript</div>
+        <div class="tool-desc">Adds LLM-driven <code>act()</code>, <code>extract()</code>, <code>observe()</code> on top of browser automation. v3 moved from Playwright dependency to direct CDP. The element cache (LLM locates once, reuses) aligns well with your run-corpus adaptation. <strong>Blocker: storage state persistence (<code>storageState()</code>) is broken in v3 as of Feb 2026 (GitHub #1250)</strong> — wait for that fix before integrating, since <code>native-session-manager.ts</code> depends on profile/cookie continuity.</div>
+        <div class="tool-tags">
+          <span class="tag tb">TypeScript</span>
+          <span class="tag tg">MIT</span>
+          <span class="tag ta">Bring your own browser</span>
+          <span class="tag tr">v3 storage bug</span>
+        </div>
+      </div>
+
+      <div class="glass-sub tool-card">
+        <div class="tool-name">🔩 Steel Browser</div>
+        <div class="tool-maker">steel-dev · MIT · Docker self-hosted</div>
+        <div class="tool-desc">Self-hosted headless browser API server (Node.js + Chrome). REST API for session lifecycle, built-in stealth fingerprinting, proxy rotation, and a live session inspection UI at <code>localhost:3000/ui</code>. The debug UI is the strongest argument for adoption — live session inspection is vastly better than inferring state from screenshot artifacts. <strong>Requires refactoring <code>runtime-daemon.ts</code> to delegate lifecycle to Steel.</strong></div>
+        <div class="tool-tags">
+          <span class="tag tg">MIT</span>
+          <span class="tag tg">Self-hosted</span>
+          <span class="tag tc">Anti-bot stealth</span>
+          <span class="tag ta">Medium refactor</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- LOW priority tools -->
+    <h3 style="font-size:13px;font-weight:600;color:var(--text-muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:14px;">↓ Low Priority / Defer</h3>
+    <div class="g3" style="margin-bottom:0;">
+
+      <div class="glass-sub tool-card" style="opacity:.75;">
+        <div class="tool-name">🦅 Skyvern</div>
+        <div class="tool-maker">Skyvern-AI · Apache 2.0 · Python + Docker</div>
+        <div class="tool-desc">Vision-first AI agent. Works on canvas-heavy pages where DOM access fails. The <strong>Planner/Actor/Validator</strong> architecture (verify each action with a screenshot diff) is relevant as inspiration for hardening <code>quality-gates.ts</code>. As a dependency: Python backend, remote service model, complex self-hosting.</div>
+        <div class="tool-tags"><span class="tag tr">Python only</span><span class="tag ta">Complex self-host</span></div>
+      </div>
+
+      <div class="glass-sub tool-card" style="opacity:.75;">
+        <div class="tool-name">🌐 browser-use</div>
+        <div class="tool-maker">browser-use · MIT · Python canonical</div>
+        <div class="tool-desc">Python agent loop combining DOM + vision. The interesting piece is the <strong>BU-30B-A3B-Preview fine-tuned model</strong> — 4× cost efficiency vs GPT-4o-class for browser tasks. If Mono512 can serve that model, your existing Playwright loop benefits without adopting the library.</div>
+        <div class="tool-tags"><span class="tag tr">Python only</span><span class="tag tv">Fine-tuned model interesting</span></div>
+      </div>
+
+      <div class="glass-sub tool-card" style="opacity:.6;">
+        <div class="tool-name">☁️ Browserbase</div>
+        <div class="tool-maker">Browserbase Inc. · Commercial SaaS · $300M valuation</div>
+        <div class="tool-desc">Managed cloud browser fleet. Anti-bot, CAPTCHA solving, SOC-2. Zero infrastructure to manage. <strong>Not compatible with local-first architecture</strong> — sessions leave your network, per-session cost, hard cloud dependency. Steel is the self-hosted equivalent for local use.</div>
+        <div class="tool-tags"><span class="tag tr">Cloud-only</span><span class="tag tr">Per-session cost</span><span class="tag tr">Not local-first</span></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="neon-div"></div>
+
+<!-- ══ 3. PRIORITY MATRIX ══ -->
+<div class="section reveal d3">
+  <div class="glass">
+    <div class="sh"><div class="sn">3</div><h2 class="st"><span class="moonlight">Integration Roadmap</span></h2></div>
+
+    <table class="tbl" style="margin-bottom:28px;">
+      <thead>
+        <tr>
+          <th>Tool</th>
+          <th>Integration Effort</th>
+          <th>Self-Hosted</th>
+          <th>TypeScript</th>
+          <th>Unique Gap Filled</th>
+          <th>Priority</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="font-weight:600;">🍑 Peekaboo</td>
+          <td><span class="pill pill-g">Low</span></td>
+          <td><span class="pill pill-g">Yes (macOS)</span></td>
+          <td><span class="pill pill-g">Yes</span></td>
+          <td style="font-size:12.5px;color:var(--text-secondary);">Native macOS UI automation + window capture</td>
+          <td><span class="pill pill-v">High</span></td>
+        </tr>
+        <tr>
+          <td style="font-weight:600;">🤖 Playwright MCP</td>
+          <td><span class="pill pill-g">Low</span></td>
+          <td><span class="pill pill-g">Yes</span></td>
+          <td><span class="pill pill-g">Yes</span></td>
+          <td style="font-size:12.5px;color:var(--text-secondary);">Agent-native browser access via MCP protocol</td>
+          <td><span class="pill pill-v">High</span></td>
+        </tr>
+        <tr>
+          <td style="font-weight:600;">🔍 AgentQL</td>
+          <td><span class="pill pill-g">Low</span></td>
+          <td><span class="pill pill-a">Cloud resolver</span></td>
+          <td><span class="pill pill-g">Yes</span></td>
+          <td style="font-size:12.5px;color:var(--text-secondary);">Cross-site self-healing semantic selectors</td>
+          <td><span class="pill pill-v">High</span></td>
+        </tr>
+        <tr>
+          <td style="font-weight:600;">🎭 Stagehand</td>
+          <td><span class="pill pill-a">Medium</span></td>
+          <td><span class="pill pill-a">Bring your own</span></td>
+          <td><span class="pill pill-g">Yes</span></td>
+          <td style="font-size:12.5px;color:var(--text-secondary);">NL act/extract layer, element caching</td>
+          <td><span class="pill pill-a">Medium*</span></td>
+        </tr>
+        <tr>
+          <td style="font-weight:600;">🔩 Steel</td>
+          <td><span class="pill pill-a">Medium</span></td>
+          <td><span class="pill pill-g">Yes (Docker)</span></td>
+          <td><span class="pill pill-g">Yes</span></td>
+          <td style="font-size:12.5px;color:var(--text-secondary);">Anti-bot stealth, live session debug UI</td>
+          <td><span class="pill pill-a">Medium</span></td>
+        </tr>
+        <tr>
+          <td style="font-weight:600;color:var(--text-muted);">🦅 Skyvern</td>
+          <td><span class="pill pill-r">High</span></td>
+          <td><span class="pill pill-a">Yes (Docker)</span></td>
+          <td><span class="pill pill-r">Python</span></td>
+          <td style="font-size:12.5px;color:var(--text-muted);">Canvas/vision-only pages</td>
+          <td><span class="pill pill-r">Low</span></td>
+        </tr>
+        <tr>
+          <td style="font-weight:600;color:var(--text-muted);">🌐 browser-use</td>
+          <td><span class="pill pill-r">High</span></td>
+          <td><span class="pill pill-g">Yes</span></td>
+          <td><span class="pill pill-r">Python</span></td>
+          <td style="font-size:12.5px;color:var(--text-muted);">Fine-tuned BU-30B model for LMX</td>
+          <td><span class="pill pill-r">Low</span></td>
+        </tr>
+        <tr>
+          <td style="font-weight:600;color:var(--text-muted);">☁️ Browserbase</td>
+          <td><span class="pill pill-a">Medium</span></td>
+          <td><span class="pill pill-r">No (cloud)</span></td>
+          <td><span class="pill pill-g">SDK</span></td>
+          <td style="font-size:12.5px;color:var(--text-muted);">Scale / fleet — overkill for single-user CLI</td>
+          <td><span class="pill pill-r">Defer</span></td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:0;">* Stagehand Medium priority — <strong>wait for v3 storage state bug (#1250) to be fixed</strong> first. Cookie/session continuity must work before integrating.</div>
+  </div>
+</div>
+
+<!-- ══ 4. IMPLEMENTATION SEQUENCE ══ -->
+<div class="section reveal d4">
+  <div class="glass-hi" style="padding:32px;">
+    <div class="sh"><div class="sn">4</div><h2 class="st"><span class="moonlight">Immediate Integration Sequence</span></h2></div>
+
+    <div class="g3">
+      <div>
+        <div class="ib box-v" style="margin-bottom:12px;">
+          <div class="ib-icon">①</div>
+          <div class="ib-body">
+            <div class="ib-title" style="color:#c4b5fd;">Playwright MCP — 1 npm install</div>
+            <div class="ib-text">
+              <code style="background:rgba(0,0,0,.3);font-size:11px;padding:1px 5px;border-radius:3px;">npm install @playwright/mcp</code>
+              <br>Register in <code>mcp-bootstrap.ts</code>. Gives the agent loop direct browser access via MCP for inspecting <code>localhost:3000</code> output. No config changes, no new session management. Your <code>policy-engine.ts</code> already gates which URLs it can visit.
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="ib box-v" style="margin-bottom:12px;">
+          <div class="ib-icon">②</div>
+          <div class="ib-body">
+            <div class="ib-title" style="color:#c4b5fd;">Peekaboo MCP — mcp-bootstrap.ts</div>
+            <div class="ib-text">
+              Clone or install <code>peekaboo</code> MCP server. Register it in <code>mcp-bootstrap.ts</code>. Add <code>NATIVE_DESKTOP_SIGNALS</code> to <code>intent-router.ts</code>: signals like "screenshot Optamize", "click menu bar", "capture window" route to Peekaboo instead of the Playwright daemon. Zero protocol work.
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="ib box-v">
+          <div class="ib-icon">③</div>
+          <div class="ib-body">
+            <div class="ib-title" style="color:#c4b5fd;">AgentQL — control-surface.ts fallback</div>
+            <div class="ib-text">
+              <code style="background:rgba(0,0,0,.3);font-size:11px;padding:1px 5px;border-radius:3px;">npm install agentql</code> + set <code>AGENTQL_API_KEY</code> in config. Wrap the Playwright page with <code>agentql.wrap(managed.page)</code> inside <code>control-surface.ts</code> — use it as a fallback when standard Playwright selectors throw. Directly reduces the adaptation penalty that accumulates in <code>run-corpus.ts</code>.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+const canvas=document.getElementById('particle-canvas');
+const ctx=canvas.getContext('2d');
+let P=[];
+function resize(){canvas.width=window.innerWidth;canvas.height=window.innerHeight;}
+class Pt{constructor(){this.reset();}reset(){this.x=Math.random()*canvas.width;this.y=Math.random()*canvas.height;this.s=Math.random()*1.4+.3;this.vx=(Math.random()-.5)*.28;this.vy=(Math.random()-.5)*.28;this.o=Math.random()*.35+.08;this.h=Math.random()>.55?262:220;}update(){this.x+=this.vx;this.y+=this.vy;if(this.x<0||this.x>canvas.width||this.y<0||this.y>canvas.height)this.reset();}draw(){ctx.save();ctx.globalAlpha=this.o;ctx.fillStyle=`hsl(${this.h},68%,65%)`;ctx.beginPath();ctx.arc(this.x,this.y,this.s,0,Math.PI*2);ctx.fill();ctx.restore();}}
+resize();window.addEventListener('resize',resize);
+for(let i=0;i<50;i++)P.push(new Pt());
+function loop(){ctx.clearRect(0,0,canvas.width,canvas.height);P.forEach(p=>{p.update();p.draw();});requestAnimationFrame(loop);}
+loop();
+</script>
+</body>
+</html>

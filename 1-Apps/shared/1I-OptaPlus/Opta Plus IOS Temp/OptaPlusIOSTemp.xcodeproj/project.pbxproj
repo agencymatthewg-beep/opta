@@ -1,0 +1,649 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		00CF8A9FC705D655D02FA91F /* BotAutomationsPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF536225CD93C5E326868AE1 /* BotAutomationsPage.swift */; };
+		090363E1A79C531D97F05AB5 /* BotListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C342CF19A6017D7C914043C0 /* BotListView.swift */; };
+		0B29620F91C837FFDE275423 /* OptaPlusIOSTempApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 149B891A9CD6F4D02639BE99 /* OptaPlusIOSTempApp.swift */; };
+		161586BA6DB3326BB44BBDCA /* CreateJobSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0B3A2BFBEA2DA8EA85EB82B /* CreateJobSheet.swift */; };
+		18E2C0723454D718E77E8885 /* BotPageHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A60CA5C1440A941D79B7480 /* BotPageHeader.swift */; };
+		1AA99FD8D8537566EBEF0A08 /* WidgetDataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 963303823F30E439346A1F8A /* WidgetDataManager.swift */; };
+		2357548F2774B1162C5C871A /* BotMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D58C5AA3D358FE3DACD8984B /* BotMapView.swift */; };
+		236B83D4FA8E37E792889DAE /* HapticManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F498775BB4536B06AEB2485 /* HapticManager.swift */; };
+		2F05EFCFFF8B6CC5CB63EC54 /* BotAvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F52E642F083762C7308B5881 /* BotAvatarView.swift */; };
+		2F995FF5FE5654F39F2661CB /* DebugView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBDD6B5EC042E650D1E827D9 /* DebugView.swift */; };
+		34404A6084DEF6ED875688EA /* JobHistorySheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D792BC00CC8D15570C111C87 /* JobHistorySheet.swift */; };
+		34B736283B5860F1E0EF089D /* LegacyAppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C6593D4BDEFEB1E310CA59E /* LegacyAppState.swift */; };
+		41ABB4125A3DD4AC1F96A12B /* DebugDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B7767C57A18E2733A731936 /* DebugDiagnostics.swift */; };
+		4A57F6D87967988B34D00700 /* TempTabRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4F5CC2D47A526F7EA6BBC14 /* TempTabRegistry.swift */; };
+		4B9F08E0CCA253BB93ED34BF /* ChatInputBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29EEEFD5584D23B3CC5BFAE8 /* ChatInputBar.swift */; };
+		4F3F21EAFE5E93FA2E01E80B /* PushNotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEA9071D108C1521E77E4BD3 /* PushNotificationManager.swift */; };
+		4F75EBBCEFB550090D978E2B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 833E05A137FB94DC62D9A86A /* Assets.xcassets */; };
+		4FA5467BACCAF0A6F676DF34 /* TempRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 759E80495332802A7836D4E3 /* TempRootView.swift */; };
+		555F8C00E399A0B3A66785A3 /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69050E9379B74A51EA83FD0C /* ChatView.swift */; };
+		635FBC0BACABE1C70A9708E5 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A84C179E7F51B000B672B9 /* OnboardingView.swift */; };
+		798C1CF592D30090B7ACAC58 /* OptaMolt in Frameworks */ = {isa = PBXBuildFile; productRef = DFF145CC573FC80DDA1381F1 /* OptaMolt */; };
+		855459EBF6FACB3D5AE54E73 /* QRScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAB734DE81A8BF96D07D155F /* QRScannerView.swift */; };
+		87880E35A04C2926A0B7F780 /* MessageBubble.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE7D788755F69BFEE0DA9A86 /* MessageBubble.swift */; };
+		91EBD04B381FC0B56813D197 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ECD7C44D25BCF0DEF50CB462 /* ContentView.swift */; };
+		9C344F652F7868A9C1E83117 /* ChatHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 145A8D353EB992E3C127F4CD /* ChatHistoryView.swift */; };
+		A389C6B6CF0B57682315CD4F /* ConnectionStatusBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97F6ECFFD5B9A333892F2657 /* ConnectionStatusBar.swift */; };
+		A625E1B3E2B328E13A5F44C2 /* BotManagementSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80AA575CA6694ED3EE8DC317 /* BotManagementSheet.swift */; };
+		BB3F8EE66B93D17F41E57B3C /* ThinkingOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20246918792D2C0F920A06E5 /* ThinkingOverlay.swift */; };
+		BB8B94C3B856A2A7CC43AE1A /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B597398188D1FCFE409124DC /* SettingsView.swift */; };
+		C60BCFCE762402397528F337 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD6FD35E06AFCBBEB3080013 /* AboutView.swift */; };
+		D513F5FD1A9255690175BF4E /* TempTabRegistryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0A06C60BBA3B5607715A0E2 /* TempTabRegistryTests.swift */; };
+		DABDE5C324C5506730CB1455 /* ChannelSwitcherSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACF31F2A113219C5B9FF6597 /* ChannelSwitcherSheet.swift */; };
+		DBA4143E9E5ED64F634FE02B /* OptaPlus in Frameworks */ = {isa = PBXBuildFile; productRef = 9D19DDDD783CE13CDA5CF3BF /* OptaPlus */; };
+		DD7BB60BAED8B8AAEFABAA83 /* ChatExportSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83945CB6A71AF63EF308588A /* ChatExportSheet.swift */; };
+		EA365BCB38ED2F65B355472F /* OptaTempTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 107F8AF0155824FD52FF485D /* OptaTempTheme.swift */; };
+		F0524B4385FF8147397336DA /* BotPagerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE0E542EF4E141E6B5BD60CA /* BotPagerView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		B46BE729F33EC57F8808C02B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 9EB6526F7F5B8CA21346D7A4 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 7142C74BB44EF251500D1F4B;
+			remoteInfo = OptaPlusIOSTemp;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		01A84C179E7F51B000B672B9 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		0B7767C57A18E2733A731936 /* DebugDiagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugDiagnostics.swift; sourceTree = "<group>"; };
+		0C3F181C36FE3DF19FCC4E86 /* 1I-OptaPlus */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "1I-OptaPlus"; path = ..; sourceTree = SOURCE_ROOT; };
+		0F498775BB4536B06AEB2485 /* HapticManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticManager.swift; sourceTree = "<group>"; };
+		107F8AF0155824FD52FF485D /* OptaTempTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptaTempTheme.swift; sourceTree = "<group>"; };
+		145A8D353EB992E3C127F4CD /* ChatHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatHistoryView.swift; sourceTree = "<group>"; };
+		149B891A9CD6F4D02639BE99 /* OptaPlusIOSTempApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptaPlusIOSTempApp.swift; sourceTree = "<group>"; };
+		1A60CA5C1440A941D79B7480 /* BotPageHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BotPageHeader.swift; sourceTree = "<group>"; };
+		20246918792D2C0F920A06E5 /* ThinkingOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThinkingOverlay.swift; sourceTree = "<group>"; };
+		29EEEFD5584D23B3CC5BFAE8 /* ChatInputBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatInputBar.swift; sourceTree = "<group>"; };
+		69050E9379B74A51EA83FD0C /* ChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatView.swift; sourceTree = "<group>"; };
+		759E80495332802A7836D4E3 /* TempRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TempRootView.swift; sourceTree = "<group>"; };
+		80AA575CA6694ED3EE8DC317 /* BotManagementSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BotManagementSheet.swift; sourceTree = "<group>"; };
+		833E05A137FB94DC62D9A86A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Assets.xcassets; path = OptaPlusIOSTemp/Imported/Assets.xcassets; sourceTree = SOURCE_ROOT; };
+		83945CB6A71AF63EF308588A /* ChatExportSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatExportSheet.swift; sourceTree = "<group>"; };
+		963303823F30E439346A1F8A /* WidgetDataManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetDataManager.swift; sourceTree = "<group>"; };
+		97F6ECFFD5B9A333892F2657 /* ConnectionStatusBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionStatusBar.swift; sourceTree = "<group>"; };
+		9C6593D4BDEFEB1E310CA59E /* LegacyAppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyAppState.swift; sourceTree = "<group>"; };
+		AAB734DE81A8BF96D07D155F /* QRScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRScannerView.swift; sourceTree = "<group>"; };
+		ACF31F2A113219C5B9FF6597 /* ChannelSwitcherSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChannelSwitcherSheet.swift; sourceTree = "<group>"; };
+		AE7D788755F69BFEE0DA9A86 /* MessageBubble.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageBubble.swift; sourceTree = "<group>"; };
+		B597398188D1FCFE409124DC /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		BE0E542EF4E141E6B5BD60CA /* BotPagerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BotPagerView.swift; sourceTree = "<group>"; };
+		BF536225CD93C5E326868AE1 /* BotAutomationsPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BotAutomationsPage.swift; sourceTree = "<group>"; };
+		C0A06C60BBA3B5607715A0E2 /* TempTabRegistryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TempTabRegistryTests.swift; sourceTree = "<group>"; };
+		C342CF19A6017D7C914043C0 /* BotListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BotListView.swift; sourceTree = "<group>"; };
+		CEA9071D108C1521E77E4BD3 /* PushNotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushNotificationManager.swift; sourceTree = "<group>"; };
+		D0B3A2BFBEA2DA8EA85EB82B /* CreateJobSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateJobSheet.swift; sourceTree = "<group>"; };
+		D2587372D81C02941096A736 /* OptaPlusIOSTempTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = OptaPlusIOSTempTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		D58C5AA3D358FE3DACD8984B /* BotMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BotMapView.swift; sourceTree = "<group>"; };
+		D792BC00CC8D15570C111C87 /* JobHistorySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobHistorySheet.swift; sourceTree = "<group>"; };
+		DBDD6B5EC042E650D1E827D9 /* DebugView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugView.swift; sourceTree = "<group>"; };
+		ECD7C44D25BCF0DEF50CB462 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		F4F5CC2D47A526F7EA6BBC14 /* TempTabRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TempTabRegistry.swift; sourceTree = "<group>"; };
+		F52E642F083762C7308B5881 /* BotAvatarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BotAvatarView.swift; sourceTree = "<group>"; };
+		FBA36763162D10C230CB873C /* OptaPlusIOSTemp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = OptaPlusIOSTemp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		FD6FD35E06AFCBBEB3080013 /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		6B5864ECD9734C37BD6AE565 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DBA4143E9E5ED64F634FE02B /* OptaPlus in Frameworks */,
+				798C1CF592D30090B7ACAC58 /* OptaMolt in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		1EC9636362D42867158F25F0 /* Saturday */ = {
+			isa = PBXGroup;
+			children = (
+				759E80495332802A7836D4E3 /* TempRootView.swift */,
+			);
+			name = Saturday;
+			path = OptaPlusIOSTemp/Features/Saturday;
+			sourceTree = "<group>";
+		};
+		6647728CEB30BFDDB72940AC /* Widgets */ = {
+			isa = PBXGroup;
+			children = (
+				963303823F30E439346A1F8A /* WidgetDataManager.swift */,
+			);
+			name = Widgets;
+			path = OptaPlusIOSTemp/Imported/Widgets;
+			sourceTree = "<group>";
+		};
+		9D45D5FB3BBEA22C73F01EA9 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				FD6FD35E06AFCBBEB3080013 /* AboutView.swift */,
+				BF536225CD93C5E326868AE1 /* BotAutomationsPage.swift */,
+				F52E642F083762C7308B5881 /* BotAvatarView.swift */,
+				C342CF19A6017D7C914043C0 /* BotListView.swift */,
+				80AA575CA6694ED3EE8DC317 /* BotManagementSheet.swift */,
+				D58C5AA3D358FE3DACD8984B /* BotMapView.swift */,
+				1A60CA5C1440A941D79B7480 /* BotPageHeader.swift */,
+				BE0E542EF4E141E6B5BD60CA /* BotPagerView.swift */,
+				ACF31F2A113219C5B9FF6597 /* ChannelSwitcherSheet.swift */,
+				83945CB6A71AF63EF308588A /* ChatExportSheet.swift */,
+				145A8D353EB992E3C127F4CD /* ChatHistoryView.swift */,
+				29EEEFD5584D23B3CC5BFAE8 /* ChatInputBar.swift */,
+				69050E9379B74A51EA83FD0C /* ChatView.swift */,
+				97F6ECFFD5B9A333892F2657 /* ConnectionStatusBar.swift */,
+				D0B3A2BFBEA2DA8EA85EB82B /* CreateJobSheet.swift */,
+				0B7767C57A18E2733A731936 /* DebugDiagnostics.swift */,
+				DBDD6B5EC042E650D1E827D9 /* DebugView.swift */,
+				D792BC00CC8D15570C111C87 /* JobHistorySheet.swift */,
+				AE7D788755F69BFEE0DA9A86 /* MessageBubble.swift */,
+				01A84C179E7F51B000B672B9 /* OnboardingView.swift */,
+				AAB734DE81A8BF96D07D155F /* QRScannerView.swift */,
+				B597398188D1FCFE409124DC /* SettingsView.swift */,
+				20246918792D2C0F920A06E5 /* ThinkingOverlay.swift */,
+			);
+			name = Views;
+			path = OptaPlusIOSTemp/Imported/Views;
+			sourceTree = "<group>";
+		};
+		AC5E39AC499A6DEB247FC216 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				149B891A9CD6F4D02639BE99 /* OptaPlusIOSTempApp.swift */,
+			);
+			name = App;
+			path = OptaPlusIOSTemp/App;
+			sourceTree = "<group>";
+		};
+		B0782F01DF256CE0FD383811 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				107F8AF0155824FD52FF485D /* OptaTempTheme.swift */,
+				F4F5CC2D47A526F7EA6BBC14 /* TempTabRegistry.swift */,
+			);
+			name = Core;
+			path = OptaPlusIOSTemp/Core;
+			sourceTree = "<group>";
+		};
+		BC2AAE67D9B99365A0F1E816 /* Legacy */ = {
+			isa = PBXGroup;
+			children = (
+				9C6593D4BDEFEB1E310CA59E /* LegacyAppState.swift */,
+			);
+			name = Legacy;
+			path = OptaPlusIOSTemp/Features/Legacy;
+			sourceTree = "<group>";
+		};
+		BDF39FDA7F2684A283682022 /* OptaPlusIOSTempTests */ = {
+			isa = PBXGroup;
+			children = (
+				C0A06C60BBA3B5607715A0E2 /* TempTabRegistryTests.swift */,
+			);
+			path = OptaPlusIOSTempTests;
+			sourceTree = "<group>";
+		};
+		DFD1A72A70E23848B7409C10 /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				0C3F181C36FE3DF19FCC4E86 /* 1I-OptaPlus */,
+			);
+			name = Packages;
+			sourceTree = "<group>";
+		};
+		E2DC96F00775F41EC984A444 = {
+			isa = PBXGroup;
+			children = (
+				833E05A137FB94DC62D9A86A /* Assets.xcassets */,
+				AC5E39AC499A6DEB247FC216 /* App */,
+				B0782F01DF256CE0FD383811 /* Core */,
+				FC652803A41ED97EFBC9B467 /* Imported */,
+				BC2AAE67D9B99365A0F1E816 /* Legacy */,
+				E48FB634F19B901A0945C537 /* Managers */,
+				BDF39FDA7F2684A283682022 /* OptaPlusIOSTempTests */,
+				DFD1A72A70E23848B7409C10 /* Packages */,
+				1EC9636362D42867158F25F0 /* Saturday */,
+				9D45D5FB3BBEA22C73F01EA9 /* Views */,
+				6647728CEB30BFDDB72940AC /* Widgets */,
+				FFF1DBCD227C3A7DE4E14A34 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		E48FB634F19B901A0945C537 /* Managers */ = {
+			isa = PBXGroup;
+			children = (
+				0F498775BB4536B06AEB2485 /* HapticManager.swift */,
+				CEA9071D108C1521E77E4BD3 /* PushNotificationManager.swift */,
+			);
+			name = Managers;
+			path = OptaPlusIOSTemp/Imported/Managers;
+			sourceTree = "<group>";
+		};
+		FC652803A41ED97EFBC9B467 /* Imported */ = {
+			isa = PBXGroup;
+			children = (
+				ECD7C44D25BCF0DEF50CB462 /* ContentView.swift */,
+			);
+			name = Imported;
+			path = OptaPlusIOSTemp/Imported;
+			sourceTree = "<group>";
+		};
+		FFF1DBCD227C3A7DE4E14A34 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				FBA36763162D10C230CB873C /* OptaPlusIOSTemp.app */,
+				D2587372D81C02941096A736 /* OptaPlusIOSTempTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		675C3EDB275E5EAEDCC788E2 /* OptaPlusIOSTempTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 930660645D6A4026EC3B504C /* Build configuration list for PBXNativeTarget "OptaPlusIOSTempTests" */;
+			buildPhases = (
+				06F6129DEFB93C56AC30CA4D /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				777454C62B3A5D1E33D19188 /* PBXTargetDependency */,
+			);
+			name = OptaPlusIOSTempTests;
+			packageProductDependencies = (
+			);
+			productName = OptaPlusIOSTempTests;
+			productReference = D2587372D81C02941096A736 /* OptaPlusIOSTempTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		7142C74BB44EF251500D1F4B /* OptaPlusIOSTemp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2045DB4D5B8F2FAB4942EEEF /* Build configuration list for PBXNativeTarget "OptaPlusIOSTemp" */;
+			buildPhases = (
+				2DE8271C952775E4B80A61BD /* Sources */,
+				5C55BA97886AA48FFE3F2D77 /* Resources */,
+				6B5864ECD9734C37BD6AE565 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = OptaPlusIOSTemp;
+			packageProductDependencies = (
+				9D19DDDD783CE13CDA5CF3BF /* OptaPlus */,
+				DFF145CC573FC80DDA1381F1 /* OptaMolt */,
+			);
+			productName = OptaPlusIOSTemp;
+			productReference = FBA36763162D10C230CB873C /* OptaPlusIOSTemp.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		9EB6526F7F5B8CA21346D7A4 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					675C3EDB275E5EAEDCC788E2 = {
+						DevelopmentTeam = NM9ZUH276T;
+					};
+					7142C74BB44EF251500D1F4B = {
+						DevelopmentTeam = NM9ZUH276T;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = C7734B3A54A5F20E7560AC51 /* Build configuration list for PBXProject "OptaPlusIOSTemp" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = E2DC96F00775F41EC984A444;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				922E224B82E350412758E750 /* XCLocalSwiftPackageReference ".." */,
+			);
+			preferredProjectObjectVersion = 77;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				7142C74BB44EF251500D1F4B /* OptaPlusIOSTemp */,
+				675C3EDB275E5EAEDCC788E2 /* OptaPlusIOSTempTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		5C55BA97886AA48FFE3F2D77 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4F75EBBCEFB550090D978E2B /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		06F6129DEFB93C56AC30CA4D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D513F5FD1A9255690175BF4E /* TempTabRegistryTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2DE8271C952775E4B80A61BD /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C60BCFCE762402397528F337 /* AboutView.swift in Sources */,
+				00CF8A9FC705D655D02FA91F /* BotAutomationsPage.swift in Sources */,
+				2F05EFCFFF8B6CC5CB63EC54 /* BotAvatarView.swift in Sources */,
+				090363E1A79C531D97F05AB5 /* BotListView.swift in Sources */,
+				A625E1B3E2B328E13A5F44C2 /* BotManagementSheet.swift in Sources */,
+				2357548F2774B1162C5C871A /* BotMapView.swift in Sources */,
+				18E2C0723454D718E77E8885 /* BotPageHeader.swift in Sources */,
+				F0524B4385FF8147397336DA /* BotPagerView.swift in Sources */,
+				DABDE5C324C5506730CB1455 /* ChannelSwitcherSheet.swift in Sources */,
+				DD7BB60BAED8B8AAEFABAA83 /* ChatExportSheet.swift in Sources */,
+				9C344F652F7868A9C1E83117 /* ChatHistoryView.swift in Sources */,
+				4B9F08E0CCA253BB93ED34BF /* ChatInputBar.swift in Sources */,
+				555F8C00E399A0B3A66785A3 /* ChatView.swift in Sources */,
+				A389C6B6CF0B57682315CD4F /* ConnectionStatusBar.swift in Sources */,
+				91EBD04B381FC0B56813D197 /* ContentView.swift in Sources */,
+				161586BA6DB3326BB44BBDCA /* CreateJobSheet.swift in Sources */,
+				41ABB4125A3DD4AC1F96A12B /* DebugDiagnostics.swift in Sources */,
+				2F995FF5FE5654F39F2661CB /* DebugView.swift in Sources */,
+				236B83D4FA8E37E792889DAE /* HapticManager.swift in Sources */,
+				34404A6084DEF6ED875688EA /* JobHistorySheet.swift in Sources */,
+				34B736283B5860F1E0EF089D /* LegacyAppState.swift in Sources */,
+				87880E35A04C2926A0B7F780 /* MessageBubble.swift in Sources */,
+				635FBC0BACABE1C70A9708E5 /* OnboardingView.swift in Sources */,
+				0B29620F91C837FFDE275423 /* OptaPlusIOSTempApp.swift in Sources */,
+				EA365BCB38ED2F65B355472F /* OptaTempTheme.swift in Sources */,
+				4F3F21EAFE5E93FA2E01E80B /* PushNotificationManager.swift in Sources */,
+				855459EBF6FACB3D5AE54E73 /* QRScannerView.swift in Sources */,
+				BB8B94C3B856A2A7CC43AE1A /* SettingsView.swift in Sources */,
+				4FA5467BACCAF0A6F676DF34 /* TempRootView.swift in Sources */,
+				4A57F6D87967988B34D00700 /* TempTabRegistry.swift in Sources */,
+				BB3F8EE66B93D17F41E57B3C /* ThinkingOverlay.swift in Sources */,
+				1AA99FD8D8537566EBEF0A08 /* WidgetDataManager.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		777454C62B3A5D1E33D19188 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 7142C74BB44EF251500D1F4B /* OptaPlusIOSTemp */;
+			targetProxy = B46BE729F33EC57F8808C02B /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		3955E99D5484D348E44F5670 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				INFOPLIST_FILE = OptaPlusIOSTemp/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = "0.1.0-temp";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		6F8D2007DD3D7AFD9530DB0C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = NM9ZUH276T;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.optamolt.ios.temp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		990288663E9C9BBB669D484E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/OptaPlusIOSTemp.app/OptaPlusIOSTemp";
+			};
+			name = Debug;
+		};
+		9D79B023CC1673B2FAC64AD7 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = NM9ZUH276T;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.optamolt.ios.temp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		B43E3908E12D9E7DE7408A30 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/OptaPlusIOSTemp.app/OptaPlusIOSTemp";
+			};
+			name = Release;
+		};
+		EEDE4AD5E6F6B8829E3B7C9F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				INFOPLIST_FILE = OptaPlusIOSTemp/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = "0.1.0-temp";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		2045DB4D5B8F2FAB4942EEEF /* Build configuration list for PBXNativeTarget "OptaPlusIOSTemp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				EEDE4AD5E6F6B8829E3B7C9F /* Debug */,
+				3955E99D5484D348E44F5670 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		930660645D6A4026EC3B504C /* Build configuration list for PBXNativeTarget "OptaPlusIOSTempTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				990288663E9C9BBB669D484E /* Debug */,
+				B43E3908E12D9E7DE7408A30 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		C7734B3A54A5F20E7560AC51 /* Build configuration list for PBXProject "OptaPlusIOSTemp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6F8D2007DD3D7AFD9530DB0C /* Debug */,
+				9D79B023CC1673B2FAC64AD7 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		922E224B82E350412758E750 /* XCLocalSwiftPackageReference ".." */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ..;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		9D19DDDD783CE13CDA5CF3BF /* OptaPlus */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = OptaPlus;
+		};
+		DFF145CC573FC80DDA1381F1 /* OptaMolt */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = OptaMolt;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 9EB6526F7F5B8CA21346D7A4 /* Project object */;
+}

@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-02-27T09:58:03.191Z",
+  "windowHours": 168,
+  "assessedSessionCount": 2,
+  "regressionSessionCount": 0,
+  "investigateSessionCount": 0,
+  "meanRegressionScore": 0,
+  "maxRegressionScore": 0,
+  "entries": [
+    {
+      "sessionId": "sess-int-03",
+      "runId": "sess-int-03",
+      "status": "closed",
+      "runtime": "playwright",
+      "updatedAt": "2026-02-27T09:57:46.178Z",
+      "actionCount": 1217,
+      "artifactCount": 0,
+      "failureCount": 686,
+      "regressionScore": 0,
+      "regressionSignal": "none",
+      "regressionPairCount": 0
+    },
+    {
+      "sessionId": "sess-int-02",
+      "runId": "sess-int-02",
+      "status": "closed",
+      "runtime": "playwright",
+      "updatedAt": "2026-02-27T09:57:45.060Z",
+      "actionCount": 1776,
+      "artifactCount": 0,
+      "failureCount": 826,
+      "regressionScore": 0,
+      "regressionSignal": "none",
+      "regressionPairCount": 0
+    }
+  ]
+}

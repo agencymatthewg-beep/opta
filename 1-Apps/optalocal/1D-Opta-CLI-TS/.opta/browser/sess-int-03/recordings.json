@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "sessionId": "sess-int-03",
+  "runId": "sess-int-03",
+  "createdAt": "2026-02-27T10:18:07.862Z",
+  "updatedAt": "2026-02-27T10:18:09.445Z",
+  "recordings": [
+    {
+      "sequence": 1,
+      "sessionId": "sess-int-03",
+      "runId": "sess-int-03",
+      "actionId": "action-000001",
+      "actionType": "openSession",
+      "timestamp": "2026-02-27T10:18:07.998Z",
+      "ok": true,
+      "artifactIds": [],
+      "artifactPaths": []
+    },
+    {
+      "sequence": 2,
+      "sessionId": "sess-int-03",
+      "runId": "sess-int-03",
+      "actionId": "action-000002",
+      "actionType": "navigate",
+      "timestamp": "2026-02-27T10:18:09.400Z",
+      "ok": true,
+      "artifactIds": [],
+      "artifactPaths": []
+    },
+    {
+      "sequence": 3,
+      "sessionId": "sess-int-03",
+      "runId": "sess-int-03",
+      "actionId": "action-000003",
+      "actionType": "closeSession",
+      "timestamp": "2026-02-27T10:18:09.445Z",
+      "ok": true,
+      "artifactIds": [],
+      "artifactPaths": []
+    }
+  ]
+}

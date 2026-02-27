@@ -1,3 +1,5 @@
+> **Canonical source moved (2026-02-23):** The authoritative cloud accounts docs now live at `/Users/matthewbyrden/Synced/Opta/1-Apps/1N-Opta-Cloud-Accounts` (under `1-Apps`, not `Documents`). This file is retained for legacy reference.
+
 # Opta Cloud — Account & Data Sync Architecture
 
 **Purpose:** Central reference for all Opta apps to understand iCloud, Supabase, and Google Sign-In setup.
@@ -291,4 +293,3 @@ SUPABASE_SERVICE_ROLE_KEY=eyJ...
 - **Issues:** Check `~/Documents/Opta/OptaCloud/docs/`
 - **Credentials:** `~/Synced/AI26/1-SOT/1C-Accounts/`
 - **Shared libs:** `~/Documents/Opta/OptaCloud/shared-libs/`
-

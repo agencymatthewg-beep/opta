@@ -1,0 +1,62 @@
+name: OptaPlusIOSTemp
+options:
+  minimumXcodeGenVersion: 2.37.0
+  deploymentTarget:
+    iOS: "17.0"
+settings:
+  base:
+    PRODUCT_BUNDLE_IDENTIFIER: com.optamolt.ios.temp
+    DEVELOPMENT_TEAM: NM9ZUH276T
+targets:
+  OptaPlusIOSTemp:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: OptaPlusIOSTemp/App
+      - path: OptaPlusIOSTemp/Core
+      - path: OptaPlusIOSTemp/Features/Saturday
+      - path: OptaPlusIOSTemp/Features/Legacy
+      - path: OptaPlusIOSTemp/Imported/ContentView.swift
+      - path: OptaPlusIOSTemp/Imported/Views
+        excludes:
+          - README.md
+      - path: OptaPlusIOSTemp/Imported/Managers
+      - path: OptaPlusIOSTemp/Imported/Widgets/WidgetDataManager.swift
+      - path: OptaPlusIOSTemp/Imported/Assets.xcassets
+        type: folder
+    dependencies:
+      - package: OptaPlus
+        product: OptaPlus
+      - package: OptaPlus
+        product: OptaMolt
+    settings:
+      base:
+        INFOPLIST_FILE: OptaPlusIOSTemp/Info.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        CODE_SIGN_STYLE: Automatic
+        CURRENT_PROJECT_VERSION: 1
+        MARKETING_VERSION: 0.1.0-temp
+  OptaPlusIOSTempTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: OptaPlusIOSTempTests
+    dependencies:
+      - target: OptaPlusIOSTemp
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+packages:
+  OptaPlus:
+    path: ..
+schemes:
+  OptaPlusIOSTemp:
+    build:
+      targets:
+        OptaPlusIOSTemp: all
+        OptaPlusIOSTempTests: [test]
+    test:
+      targets:
+        - OptaPlusIOSTempTests

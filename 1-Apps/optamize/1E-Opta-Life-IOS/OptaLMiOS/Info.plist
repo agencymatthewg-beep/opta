@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleDisplayName</key>
+	<string>Opta Life</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>Opta Life</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UIApplicationSupportsMultipleScenes</key>
+		<true/>
+	</dict>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
+	<key>UILaunchScreen</key>
+	<dict>
+		<key>UIColorName</key>
+		<string>LaunchScreenBackground</string>
+	</dict>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>Google Sign-In</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>$(GOOGLE_REVERSED_CLIENT_ID)</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.opta.lm.ios</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>opta</string>
+				<string>optalm</string>
+			</array>
+		</dict>
+	</array>
+	<key>GIDClientID</key>
+	<string>$(GOOGLE_CLIENT_ID)</string>
+	<key>SUPABASE_URL</key>
+	<string>$(SUPABASE_URL)</string>
+	<key>SUPABASE_ANON_KEY</key>
+	<string>$(SUPABASE_ANON_KEY)</string>
+	<key>TODOIST_CLIENT_ID</key>
+	<string>$(TODOIST_CLIENT_ID)</string>
+	<key>TODOIST_CLIENT_SECRET</key>
+	<string>$(TODOIST_CLIENT_SECRET)</string>
+	<key>NSUserNotificationsUsageDescription</key>
+	<string>Opta LM uses notifications to remind you about tasks and events, deliver your daily briefing, share AI insights, and celebrate your goal achievements. You can customize which notifications you receive in Settings.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Opta LM uses your location to provide weather updates and alerts for extreme conditions in your area.</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>Opta uses your sleep and activity data to provide productivity insights and help you optimize your schedule. All analysis is done on-device and your health data never leaves your iPhone.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Opta does not write to your health data. We only read sleep and activity information to provide personalized insights.</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>Opta LM syncs your calendar events to provide a unified view alongside your tasks and goals.</string>
+	<key>NSRemindersUsageDescription</key>
+	<string>Opta LM syncs your reminders to keep your tasks up-to-date across all your apps.</string>
+</dict>
+</plist>

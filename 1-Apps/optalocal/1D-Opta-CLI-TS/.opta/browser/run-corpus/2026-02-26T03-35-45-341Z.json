@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-02-26T03:35:45.341Z",
+  "windowHours": 168,
+  "assessedSessionCount": 1,
+  "regressionSessionCount": 0,
+  "investigateSessionCount": 0,
+  "meanRegressionScore": 0,
+  "maxRegressionScore": 0,
+  "entries": [
+    {
+      "sessionId": "sess-int-02",
+      "runId": "sess-int-02",
+      "status": "open",
+      "runtime": "unavailable",
+      "updatedAt": "2026-02-26T03:35:44.885Z",
+      "actionCount": 1498,
+      "artifactCount": 0,
+      "failureCount": 750,
+      "regressionScore": 0,
+      "regressionSignal": "none",
+      "regressionPairCount": 0
+    }
+  ]
+}

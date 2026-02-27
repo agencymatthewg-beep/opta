@@ -1,0 +1,162 @@
+groups:
+  - name: opta-lmx-openclaw
+    interval: 30s
+    rules:
+      - alert: OptaLMXHighErrorRate
+        expr: |
+          (
+            sum(rate(lmx_errors_total[5m]))
+            /
+            clamp_min(sum(rate(lmx_requests_total[5m])), 0.001)
+          ) > 0.05
+        for: 10m
+        labels:
+          severity: warning
+          service: opta-lmx
+        annotations:
+          summary: "Opta LMX error ratio above 5%"
+          description: "Error ratio has exceeded 5% for 10m. Check model health, routing, and upstream dependencies."
+
+      - alert: OptaLMXHighP95Latency
+        expr: max(lmx_request_latency_p95_seconds) > 3.0
+        for: 10m
+        labels:
+          severity: warning
+          service: opta-lmx
+        annotations:
+          summary: "Opta LMX p95 latency above 3s"
+          description: "Rolling p95 request latency is elevated. Inspect queue depth, model load, and adaptive concurrency settings."
+
+      - alert: OptaLMXQueueSaturation
+        expr: |
+          max(lmx_queued_requests) > 0
+          and
+          max(lmx_in_flight_requests) >= max(lmx_concurrent_limit)
+        for: 5m
+        labels:
+          severity: critical
+          service: opta-lmx
+        annotations:
+          summary: "Opta LMX queue saturation"
+          description: "Requests are queuing while in-flight concurrency is at limit. Scale out, tune sharding, or increase capacity."
+
+      - alert: OptaLMXMemoryPressure
+        expr: |
+          (
+            max(lmx_memory_used_gb)
+            /
+            clamp_min(max(lmx_memory_total_gb), 1)
+          ) > 0.90
+        for: 10m
+        labels:
+          severity: warning
+          service: opta-lmx
+        annotations:
+          summary: "Opta LMX memory pressure above 90%"
+          description: "Unified memory usage is above 90% for 10m. Reduce loaded model footprint or rebalance traffic."
+
+      - alert: OptaLMXPerModelHighErrorRate
+        expr: max by (model) (lmx_model_error_rate) > 0.10
+        for: 10m
+        labels:
+          severity: warning
+          service: opta-lmx
+        annotations:
+          summary: "Opta LMX model {{ $labels.model }} error rate above 10%"
+          description: "Per-model error ratio is elevated for 10m. Check routing pressure, model health, and backend stability."
+
+      - alert: OptaLMXPerModelHighQueueWait
+        expr: max by (model) (lmx_model_queue_wait_seconds) > 1.0
+        for: 10m
+        labels:
+          severity: warning
+          service: opta-lmx
+        annotations:
+          summary: "Opta LMX model {{ $labels.model }} queue wait above 1s"
+          description: "Average queue wait remains high. Consider load-aware routing tuning, higher concurrency, or capacity expansion."
+
+      - alert: OptaLMXPerModelSlowLoad
+        expr: max by (model) (lmx_model_load_duration_seconds) > 120
+        for: 15m
+        labels:
+          severity: warning
+          service: opta-lmx
+        annotations:
+          summary: "Opta LMX model {{ $labels.model }} cold-load latency above 120s"
+          description: "Model load duration remains slow. Validate storage throughput, model size, and warm-pool strategy."
+
+      - alert: OptaLMXPerModelThroughputDrop
+        expr: |
+          (
+            lmx_model_tokens_per_second
+            and on (model) (rate(lmx_model_requests_total[10m]) > 0.01)
+          ) < 5
+        for: 15m
+        labels:
+          severity: warning
+          service: opta-lmx
+        annotations:
+          summary: "Opta LMX model {{ $labels.model }} throughput dropped below 5 tok/s"
+          description: "Active model throughput is degraded. Investigate memory pressure, backend regressions, and decode bottlenecks."
+
+      - alert: OptaLMXCanaryPendingStuck
+        expr: max by (model) (lmx_model_readiness_state{state="canary_pending"}) > 0
+        for: 20m
+        labels:
+          severity: warning
+          service: opta-lmx
+        annotations:
+          summary: "Opta LMX model {{ $labels.model }} stuck in canary_pending"
+          description: "Model readiness has remained canary_pending for 20m. Investigate canary execution, warmup path, and backend stability."
+
+      - alert: OptaLMXQuarantinedModelPresent
+        expr: max by (model) (lmx_model_readiness_state{state="quarantined"}) > 0
+        for: 2m
+        labels:
+          severity: critical
+          service: opta-lmx
+        annotations:
+          summary: "Opta LMX model {{ $labels.model }} is quarantined"
+          description: "At least one model is quarantined and non-routable. Review readiness reason and compatibility telemetry before re-admission."
+
+      - alert: OptaLMXGLMCompatibilityFailIncrease
+        expr: |
+          sum(
+            increase(
+              lmx_model_compatibility_fail_total{
+                model=~".*[Gg][Ll][Mm].*"
+              }[30m]
+            )
+          ) > 0
+        for: 5m
+        labels:
+          severity: warning
+          service: opta-lmx
+        annotations:
+          summary: "Opta LMX GLM runtime compatibility failures increasing"
+          description: "New GLM runtime compatibility failures were recorded in the last 30m. Validate backend policy fallback and runtime package versions."
+
+      - alert: OptaLMXPerModelEvictionThrash
+        expr: increase(lmx_model_evictions_total[30m]) >= 3
+        for: 10m
+        labels:
+          severity: warning
+          service: opta-lmx
+        annotations:
+          summary: "Opta LMX frequent evictions on model {{ $labels.model }}"
+          description: "Model evictions are recurring in a short window. Review warm-pool policy, TTL, and admission budgets."
+
+      - alert: OptaLMXAgentFailureRatioHigh
+        expr: |
+          (
+            sum(increase(lmx_agent_runs_total{status=~"failed|cancelled"}[15m]))
+            /
+            clamp_min(sum(increase(lmx_agent_runs_total[15m])), 1)
+          ) > 0.20
+        for: 15m
+        labels:
+          severity: warning
+          service: opta-lmx
+        annotations:
+          summary: "Opta LMX agent failure/cancel ratio above 20%"
+          description: "Recent agent runs are terminating abnormally. Investigate skill dispatch overload, model failures, or timeout budgets."

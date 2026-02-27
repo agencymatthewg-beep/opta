@@ -1,0 +1,732 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Opta Chess Benchmark</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #090712;
+      --ink: #f6f0ff;
+      --muted: #bdb0d7;
+      --edge: rgba(165, 139, 255, 0.4);
+      --panel: rgba(20, 13, 42, 0.84);
+      --panel-soft: rgba(17, 11, 34, 0.72);
+      --accent: #9570ff;
+      --danger: #ff6588;
+      --good: #34d399;
+      --board-light: #efe4d2;
+      --board-dark: #8f6b58;
+      --board-select: rgba(125, 255, 209, 0.52);
+      --board-move: rgba(149, 112, 255, 0.4);
+      --board-check: rgba(255, 101, 136, 0.55);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: 'Outfit', sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 8% 4%, rgba(149, 112, 255, 0.23), transparent 40%),
+        radial-gradient(circle at 86% 8%, rgba(89, 210, 255, 0.12), transparent 45%),
+        linear-gradient(160deg, #090612, #120a26 40%, #0b0718);
+      padding: 20px;
+    }
+
+    .layout {
+      width: min(1240px, 100%);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 330px;
+      gap: 16px;
+    }
+
+    .main {
+      border: 1px solid var(--edge);
+      border-radius: 24px;
+      background: linear-gradient(140deg, var(--panel), var(--panel-soft));
+      padding: 18px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .topbar h1 {
+      margin: 0;
+      font-size: clamp(22px, 4vw, 34px);
+      letter-spacing: -0.02em;
+    }
+
+    .topbar small {
+      color: var(--muted);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .stage {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 260px;
+      gap: 14px;
+      align-items: start;
+    }
+
+    .board-shell {
+      border: 1px solid rgba(197, 182, 255, 0.42);
+      border-radius: 20px;
+      padding: 14px;
+      background: rgba(11, 8, 24, 0.7);
+      box-shadow: inset 0 0 0 1px rgba(128, 97, 240, 0.18);
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      border-radius: 12px;
+      overflow: hidden;
+      aspect-ratio: 1;
+      border: 1px solid rgba(35, 20, 75, 0.75);
+    }
+
+    .square {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      user-select: none;
+      font-size: clamp(28px, 5.2vw, 56px);
+      cursor: pointer;
+      transition: filter 120ms ease;
+      line-height: 1;
+    }
+
+    .square:hover { filter: brightness(1.07); }
+    .square.light { background: var(--board-light); color: #3b2b22; }
+    .square.dark { background: var(--board-dark); color: #f8f0e8; }
+
+    .square.selected::after,
+    .square.target::after,
+    .square.check::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .square.selected::after { background: var(--board-select); }
+    .square.target::after { background: var(--board-move); }
+    .square.check::after { background: var(--board-check); }
+
+    .coord {
+      position: absolute;
+      font: 500 10px 'JetBrains Mono', monospace;
+      opacity: 0.75;
+    }
+
+    .coord.file { bottom: 4px; right: 5px; }
+    .coord.rank { top: 4px; left: 4px; }
+
+    .panel {
+      border: 1px solid rgba(186, 161, 255, 0.42);
+      border-radius: 16px;
+      padding: 12px;
+      background: rgba(18, 11, 36, 0.8);
+      display: grid;
+      gap: 10px;
+    }
+
+    .clock {
+      display: grid;
+      gap: 4px;
+      border: 1px solid rgba(152, 122, 255, 0.36);
+      border-radius: 12px;
+      padding: 10px;
+      background: rgba(14, 10, 30, 0.65);
+    }
+
+    .clock strong {
+      font-size: 24px;
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: 0.03em;
+    }
+
+    .clock span {
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    button, select {
+      width: 100%;
+      border: 1px solid rgba(173, 149, 255, 0.56);
+      background: rgba(35, 20, 74, 0.72);
+      color: var(--ink);
+      border-radius: 11px;
+      padding: 10px 11px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 0.03em;
+      cursor: pointer;
+    }
+
+    button:hover, select:hover { border-color: rgba(196, 179, 255, 0.8); }
+
+    .status {
+      border: 1px solid rgba(139, 227, 193, 0.45);
+      background: rgba(11, 61, 42, 0.3);
+      color: #d8fff1;
+      border-radius: 12px;
+      padding: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      min-height: 44px;
+      line-height: 1.5;
+    }
+
+    .right {
+      border: 1px solid var(--edge);
+      border-radius: 24px;
+      background: linear-gradient(140deg, var(--panel), var(--panel-soft));
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+      align-content: start;
+      min-height: 0;
+    }
+
+    .list {
+      border: 1px solid rgba(170, 146, 255, 0.42);
+      border-radius: 14px;
+      background: rgba(14, 10, 29, 0.72);
+      padding: 10px;
+      min-height: 180px;
+      max-height: 42vh;
+      overflow: auto;
+      font: 500 12px 'JetBrains Mono', monospace;
+      color: #d6cbef;
+      white-space: pre-wrap;
+      line-height: 1.45;
+    }
+
+    .captured {
+      display: grid;
+      gap: 7px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .captured-row {
+      border: 1px solid rgba(176, 156, 255, 0.35);
+      border-radius: 11px;
+      padding: 8px;
+      min-height: 40px;
+      background: rgba(16, 10, 33, 0.72);
+      font-size: 22px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      color: #f5ecff;
+    }
+
+    .footer {
+      color: #9b8bbf;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    @media (max-width: 1080px) {
+      .layout { grid-template-columns: 1fr; }
+      .stage { grid-template-columns: 1fr; }
+      .right { min-height: unset; }
+      .list { max-height: 280px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="layout">
+    <section class="main">
+      <header class="topbar">
+        <div>
+          <h1>Opta Premium Chess Arena</h1>
+          <small>Chess benchmark • generated 2/25/2026, 1:28:18 PM</small>
+        </div>
+        <small><a href="../index.html" style="color:#d4c8ff;text-decoration:none;">Back to suite</a></small>
+      </header>
+
+      <div class="stage">
+        <div class="board-shell">
+          <div id="board" class="board" aria-label="Chess board"></div>
+        </div>
+
+        <aside class="panel">
+          <div class="clock">
+            <span>Black</span>
+            <strong id="black-clock">10:00</strong>
+          </div>
+          <div class="clock">
+            <span>White</span>
+            <strong id="white-clock">10:00</strong>
+          </div>
+
+          <label style="font:500 11px 'JetBrains Mono', monospace; color: var(--muted); text-transform: uppercase; letter-spacing:0.06em;">AI Style
+            <select id="ai-style">
+              <option value="greedy">Club (greedy)</option>
+              <option value="random">Story (random)</option>
+              <option value="thinky">Pro (lookahead)</option>
+            </select>
+          </label>
+
+          <div class="controls">
+            <button id="new-game">New Game</button>
+            <button id="undo">Undo</button>
+            <button id="flip">Flip Board</button>
+            <button id="toggle-ai">AI: On</button>
+          </div>
+
+          <div id="status" class="status">Loading board...</div>
+        </aside>
+      </div>
+    </section>
+
+    <aside class="right">
+      <h2 style="margin:0;font-size:22px;">Game Log</h2>
+      <div id="moves" class="list"></div>
+
+      <div class="captured">
+        <span>Captured by White</span>
+        <div id="captured-by-white" class="captured-row"></div>
+        <span>Captured by Black</span>
+        <div id="captured-by-black" class="captured-row"></div>
+      </div>
+
+      <p class="footer">Board powered by chess.js • UX benchmark surface</p>
+    </aside>
+  </main>
+
+  <script type="module">
+    import { Chess } from 'https://esm.sh/chess.js@1.0.0';
+
+    const boardEl = document.getElementById('board');
+    const statusEl = document.getElementById('status');
+    const movesEl = document.getElementById('moves');
+    const whiteClockEl = document.getElementById('white-clock');
+    const blackClockEl = document.getElementById('black-clock');
+    const capturedWhiteEl = document.getElementById('captured-by-white');
+    const capturedBlackEl = document.getElementById('captured-by-black');
+
+    const pieceGlyph = {
+      wp: '♙', wn: '♘', wb: '♗', wr: '♖', wq: '♕', wk: '♔',
+      bp: '♟', bn: '♞', bb: '♝', br: '♜', bq: '♛', bk: '♚'
+    };
+
+    const fileList = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+    const pieceValue = { p: 100, n: 320, b: 330, r: 500, q: 900, k: 0 };
+
+    let chess = new Chess();
+    let selectedSquare = null;
+    let legalTargets = [];
+    let flipped = false;
+    let aiEnabled = true;
+    let aiStyle = 'greedy';
+    let timers = { w: 600, b: 600 };
+    let activeTimer = 'w';
+    let timerHandle = null;
+    let timeExpired = false;
+
+    const controls = {
+      newGame: document.getElementById('new-game'),
+      undo: document.getElementById('undo'),
+      flip: document.getElementById('flip'),
+      toggleAi: document.getElementById('toggle-ai'),
+      aiStyle: document.getElementById('ai-style')
+    };
+
+    function boardSquares() {
+      const squares = [];
+      const rankOrder = flipped ? [1,2,3,4,5,6,7,8] : [8,7,6,5,4,3,2,1];
+      const fileOrder = flipped ? [...fileList].reverse() : fileList;
+      for (const rank of rankOrder) {
+        for (const file of fileOrder) {
+          squares.push(file + rank);
+        }
+      }
+      return squares;
+    }
+
+    function squareColor(square) {
+      const fileCode = square.charCodeAt(0) - 96;
+      const rank = Number(square[1]);
+      return (fileCode + rank) % 2 === 0 ? 'dark' : 'light';
+    }
+
+    function formatTime(value) {
+      const safe = Math.max(0, value);
+      const mins = String(Math.floor(safe / 60)).padStart(2, '0');
+      const secs = String(safe % 60).padStart(2, '0');
+      return mins + ':' + secs;
+    }
+
+    function renderClocks() {
+      whiteClockEl.textContent = formatTime(timers.w);
+      blackClockEl.textContent = formatTime(timers.b);
+      whiteClockEl.style.color = activeTimer === 'w' ? '#f6f0ff' : '#a697c8';
+      blackClockEl.style.color = activeTimer === 'b' ? '#f6f0ff' : '#a697c8';
+    }
+
+    function collectCapturedPieces() {
+      const start = { p: 8, n: 2, b: 2, r: 2, q: 1, k: 1 };
+      const current = {
+        w: { p: 0, n: 0, b: 0, r: 0, q: 0, k: 0 },
+        b: { p: 0, n: 0, b: 0, r: 0, q: 0, k: 0 }
+      };
+      const board = chess.board();
+      for (const row of board) {
+        for (const piece of row) {
+          if (!piece) continue;
+          current[piece.color][piece.type] += 1;
+        }
+      }
+
+      const capturedByWhite = [];
+      const capturedByBlack = [];
+
+      for (const type of Object.keys(start)) {
+        const lostBlack = start[type] - current.b[type];
+        const lostWhite = start[type] - current.w[type];
+        for (let i = 0; i < lostBlack; i += 1) capturedByWhite.push(pieceGlyph['b' + type]);
+        for (let i = 0; i < lostWhite; i += 1) capturedByBlack.push(pieceGlyph['w' + type]);
+      }
+
+      capturedWhiteEl.textContent = capturedByWhite.join(' ');
+      capturedBlackEl.textContent = capturedByBlack.join(' ');
+    }
+
+    function renderMoves() {
+      const history = chess.history();
+      if (history.length === 0) {
+        movesEl.textContent = 'No moves yet.';
+        return;
+      }
+
+      const lines = [];
+      for (let i = 0; i < history.length; i += 2) {
+        const moveNo = Math.floor(i / 2) + 1;
+        const white = history[i] || '';
+        const black = history[i + 1] || '';
+        lines.push(String(moveNo).padStart(2, ' ') + '. ' + white.padEnd(8, ' ') + black);
+      }
+
+      movesEl.textContent = lines.join('\n');
+      movesEl.scrollTop = movesEl.scrollHeight;
+    }
+
+    function setStatus(message, tone) {
+      statusEl.textContent = message;
+      if (tone === 'danger') {
+        statusEl.style.borderColor = 'rgba(255,101,136,0.55)';
+        statusEl.style.background = 'rgba(77, 23, 42, 0.45)';
+        statusEl.style.color = '#ffdbe5';
+      } else if (tone === 'ok') {
+        statusEl.style.borderColor = 'rgba(139,227,193,0.45)';
+        statusEl.style.background = 'rgba(11,61,42,0.3)';
+        statusEl.style.color = '#d8fff1';
+      } else {
+        statusEl.style.borderColor = 'rgba(172,152,255,0.52)';
+        statusEl.style.background = 'rgba(31, 19, 64, 0.36)';
+        statusEl.style.color = '#ede6ff';
+      }
+    }
+
+    function currentTurnLabel() {
+      return chess.turn() === 'w' ? 'White to move' : 'Black to move';
+    }
+
+    function isPromotionMove(from, to) {
+      const piece = chess.get(from);
+      if (!piece || piece.type !== 'p') return false;
+      return to[1] === '8' || to[1] === '1';
+    }
+
+    function updateStatusFromGame() {
+      if (chess.isGameOver()) {
+        if (chess.isCheckmate()) {
+          const winner = chess.turn() === 'w' ? 'Black' : 'White';
+          setStatus('Checkmate. ' + winner + ' wins.', 'danger');
+        } else if (chess.isDraw()) {
+          setStatus('Draw detected (' + chess.pgn({ maxWidth: 50 }).split('\n').pop() + ').', 'neutral');
+        } else {
+          setStatus('Game over.', 'neutral');
+        }
+        return;
+      }
+
+      if (chess.isCheck()) {
+        const side = chess.turn() === 'w' ? 'White' : 'Black';
+        setStatus(side + ' is in check. ' + currentTurnLabel() + '.', 'danger');
+      } else {
+        setStatus(currentTurnLabel(), 'ok');
+      }
+    }
+
+    function squareHasFriendlyPiece(square) {
+      const piece = chess.get(square);
+      return Boolean(piece && piece.color === chess.turn());
+    }
+
+    function renderBoard() {
+      boardEl.innerHTML = '';
+      const squares = boardSquares();
+      const checkSquare = (() => {
+        if (!chess.isCheck()) return null;
+        const kingColor = chess.turn();
+        const board = chess.board();
+        for (let r = 0; r < board.length; r += 1) {
+          for (let c = 0; c < board[r].length; c += 1) {
+            const piece = board[r][c];
+            if (piece && piece.type === 'k' && piece.color === kingColor) {
+              return fileList[c] + (8 - r);
+            }
+          }
+        }
+        return null;
+      })();
+
+      for (const square of squares) {
+        const piece = chess.get(square);
+        const tile = document.createElement('button');
+        tile.className = 'square ' + squareColor(square);
+        tile.type = 'button';
+        tile.dataset.square = square;
+
+        if (selectedSquare === square) tile.classList.add('selected');
+        if (legalTargets.includes(square)) tile.classList.add('target');
+        if (checkSquare === square) tile.classList.add('check');
+
+        if (piece) {
+          tile.textContent = pieceGlyph[piece.color + piece.type] || '';
+        }
+
+        if (square[1] === (flipped ? '8' : '1')) {
+          const fileTag = document.createElement('span');
+          fileTag.className = 'coord file';
+          fileTag.textContent = square[0];
+          tile.appendChild(fileTag);
+        }
+
+        if (square[0] === (flipped ? 'h' : 'a')) {
+          const rankTag = document.createElement('span');
+          rankTag.className = 'coord rank';
+          rankTag.textContent = square[1];
+          tile.appendChild(rankTag);
+        }
+
+        tile.addEventListener('click', () => onSquareClick(square));
+        boardEl.appendChild(tile);
+      }
+
+      renderMoves();
+      collectCapturedPieces();
+      renderClocks();
+      updateStatusFromGame();
+    }
+
+    function resetSelection() {
+      selectedSquare = null;
+      legalTargets = [];
+    }
+
+    function onSquareClick(square) {
+      if (chess.isGameOver()) return;
+      if (timeExpired) return;
+      if (aiEnabled && chess.turn() === 'b') return;
+
+      if (!selectedSquare) {
+        if (!squareHasFriendlyPiece(square)) return;
+        selectedSquare = square;
+        legalTargets = chess.moves({ square, verbose: true }).map((move) => move.to);
+        renderBoard();
+        return;
+      }
+
+      if (selectedSquare === square) {
+        resetSelection();
+        renderBoard();
+        return;
+      }
+
+      if (squareHasFriendlyPiece(square)) {
+        selectedSquare = square;
+        legalTargets = chess.moves({ square, verbose: true }).map((move) => move.to);
+        renderBoard();
+        return;
+      }
+
+      const move = chess.move({
+        from: selectedSquare,
+        to: square,
+        promotion: isPromotionMove(selectedSquare, square) ? 'q' : undefined
+      });
+
+      if (!move) {
+        setStatus('Illegal move. Try another square.', 'danger');
+        return;
+      }
+
+      activeTimer = chess.turn();
+      resetSelection();
+      renderBoard();
+
+      if (aiEnabled && !chess.isGameOver() && chess.turn() === 'b') {
+        window.setTimeout(playAiMove, 260);
+      }
+    }
+
+    function evaluateBoardPosition(tempChess) {
+      const board = tempChess.board();
+      let score = 0;
+      for (const row of board) {
+        for (const piece of row) {
+          if (!piece) continue;
+          const value = pieceValue[piece.type] || 0;
+          score += piece.color === 'w' ? value : -value;
+        }
+      }
+      return score;
+    }
+
+    function evaluateMove(move, style) {
+      const temp = new Chess(chess.fen());
+      temp.move(move);
+      let score = evaluateBoardPosition(temp);
+
+      if (style === 'random') {
+        return Math.random() * 100;
+      }
+
+      if (temp.isCheck()) score += 35;
+      if (move.captured) score += pieceValue[move.captured] || 0;
+      if (move.promotion) score += 400;
+
+      if (style === 'thinky') {
+        const replies = temp.moves({ verbose: true });
+        let bestReply = Infinity;
+        for (const reply of replies) {
+          const deeper = new Chess(temp.fen());
+          deeper.move(reply);
+          const replyScore = evaluateBoardPosition(deeper);
+          if (replyScore < bestReply) bestReply = replyScore;
+        }
+        if (Number.isFinite(bestReply)) score = score * 0.7 + bestReply * 0.3;
+      }
+
+      return -score;
+    }
+
+    function playAiMove() {
+      if (timeExpired) return;
+      const moves = chess.moves({ verbose: true });
+      if (moves.length === 0) return;
+
+      let best = moves[0];
+      let bestScore = -Infinity;
+
+      for (const move of moves) {
+        const score = evaluateMove(move, aiStyle);
+        if (score > bestScore) {
+          bestScore = score;
+          best = move;
+        }
+      }
+
+      chess.move(best);
+      activeTimer = chess.turn();
+      renderBoard();
+    }
+
+    function startClock() {
+      if (timerHandle) window.clearInterval(timerHandle);
+      timerHandle = window.setInterval(() => {
+        if (chess.isGameOver()) return;
+        timers[activeTimer] -= 1;
+        if (timers[activeTimer] <= 0) {
+          timers[activeTimer] = 0;
+          timeExpired = true;
+          setStatus((activeTimer === 'w' ? 'White' : 'Black') + ' flagged on time.', 'danger');
+          if (timerHandle) window.clearInterval(timerHandle);
+        }
+        renderClocks();
+      }, 1000);
+    }
+
+    function resetGame() {
+      chess = new Chess();
+      timers = { w: 600, b: 600 };
+      activeTimer = 'w';
+      timeExpired = false;
+      resetSelection();
+      renderBoard();
+      startClock();
+    }
+
+    controls.newGame.addEventListener('click', resetGame);
+
+    controls.undo.addEventListener('click', () => {
+      if (chess.history().length === 0) return;
+      chess.undo();
+      if (aiEnabled && chess.turn() === 'w' && chess.history().length > 0) {
+        chess.undo();
+      }
+      resetSelection();
+      activeTimer = chess.turn();
+      renderBoard();
+    });
+
+    controls.flip.addEventListener('click', () => {
+      flipped = !flipped;
+      renderBoard();
+    });
+
+    controls.toggleAi.addEventListener('click', () => {
+      aiEnabled = !aiEnabled;
+      controls.toggleAi.textContent = 'AI: ' + (aiEnabled ? 'On' : 'Off');
+      setStatus(aiEnabled ? 'AI opponent enabled.' : 'AI opponent disabled.', 'neutral');
+      if (aiEnabled && !chess.isGameOver() && chess.turn() === 'b') {
+        window.setTimeout(playAiMove, 220);
+      }
+    });
+
+    controls.aiStyle.addEventListener('change', () => {
+      aiStyle = controls.aiStyle.value;
+      setStatus('AI style switched to ' + aiStyle + '.', 'neutral');
+    });
+
+    renderBoard();
+    startClock();
+  </script>
+</body>
+</html>

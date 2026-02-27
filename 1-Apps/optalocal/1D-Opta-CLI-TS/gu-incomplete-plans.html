@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Opta CLI — Incomplete Plans Audit</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap');
+
+  :root {
+    --void: #09090b;
+    --surface: #18181b;
+    --elevated: #27272a;
+    --border: #3f3f46;
+    --text-primary: #fafafa;
+    --text-secondary: #a1a1aa;
+    --text-muted: #52525b;
+    --primary: #8b5cf6;
+    --primary-glow: #a855f7;
+    --neon-blue: #3b82f6;
+    --neon-green: #22c55e;
+    --neon-amber: #f59e0b;
+    --neon-red: #ef4444;
+    --neon-cyan: #22d3ee;
+    --neon-rose: #f43f5e;
+    --neon-emerald: #10b981;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--void);
+    color: var(--text-primary);
+    font-family: 'Sora', -apple-system, BlinkMacSystemFont, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Ambient radials */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 800px 600px at 20% 10%, rgba(139,92,246,0.06) 0%, transparent 70%),
+      radial-gradient(ellipse 600px 400px at 80% 80%, rgba(59,130,246,0.04) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Noise overlay */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Hero */
+  .hero {
+    text-align: center;
+    padding: 60px 0 40px;
+    position: relative;
+  }
+
+  .hero::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 200px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--primary), transparent);
+    box-shadow: 0 0 20px var(--primary-glow);
+  }
+
+  .hero-badge {
+    display: inline-block;
+    padding: 6px 16px;
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--primary);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 20px;
+    background: rgba(139, 92, 246, 0.06);
+  }
+
+  h1 {
+    font-size: 42px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #fafafa 0%, #a78bfa 50%, #818cf8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.2;
+    margin-bottom: 16px;
+  }
+
+  .hero-sub {
+    color: var(--text-secondary);
+    font-size: 16px;
+    font-weight: 300;
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  /* Summary stats */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin: 48px 0 40px;
+  }
+
+  .stat-card {
+    background: rgba(255,255,255,0.03);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 16px;
+    padding: 24px;
+    text-align: center;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+  }
+
+  .stat-card:hover {
+    border-color: rgba(255,255,255,0.12);
+    transform: translateY(-2px);
+  }
+
+  .stat-value {
+    font-size: 36px;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+
+  .stat-label {
+    font-size: 13px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .stat-red { color: var(--neon-red); }
+  .stat-amber { color: var(--neon-amber); }
+  .stat-green { color: var(--neon-green); }
+  .stat-blue { color: var(--neon-blue); }
+
+  /* Section headers */
+  .section-header {
+    margin: 48px 0 24px;
+    position: relative;
+    padding-bottom: 16px;
+  }
+
+  .section-header::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, var(--primary), transparent 60%);
+    box-shadow: 0 0 8px rgba(139, 92, 246, 0.3);
+  }
+
+  .section-tag {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 10px;
+  }
+
+  .tag-critical { background: rgba(239,68,68,0.15); color: var(--neon-red); border: 1px solid rgba(239,68,68,0.25); }
+  .tag-significant { background: rgba(245,158,11,0.15); color: var(--neon-amber); border: 1px solid rgba(245,158,11,0.25); }
+  .tag-superseded { background: rgba(59,130,246,0.15); color: var(--neon-blue); border: 1px solid rgba(59,130,246,0.25); }
+  .tag-complete { background: rgba(34,197,94,0.15); color: var(--neon-green); border: 1px solid rgba(34,197,94,0.25); }
+
+  h2 {
+    font-size: 26px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .section-desc {
+    color: var(--text-secondary);
+    font-size: 14px;
+    margin-top: 6px;
+  }
+
+  /* Plan cards */
+  .plan-card {
+    background: rgba(255,255,255,0.03);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 16px;
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .plan-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent 10%, rgba(255,255,255,0.12) 50%, transparent 90%);
+  }
+
+  .plan-card:hover {
+    border-color: rgba(255,255,255,0.15);
+    transform: translateY(-1px);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+  }
+
+  .plan-card.critical { border-left: 3px solid var(--neon-red); }
+  .plan-card.significant { border-left: 3px solid var(--neon-amber); }
+  .plan-card.superseded { border-left: 3px solid var(--neon-blue); }
+  .plan-card.complete { border-left: 3px solid var(--neon-green); }
+
+  .plan-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 12px;
+  }
+
+  .plan-title {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1.3;
+  }
+
+  .plan-date {
+    font-size: 12px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    padding: 4px 10px;
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 6px;
+    background: rgba(255,255,255,0.02);
+  }
+
+  .plan-file {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    margin-bottom: 12px;
+  }
+
+  .plan-desc {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 16px;
+  }
+
+  /* Progress bar */
+  .progress-bar-container { margin: 16px 0; }
+
+  .progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    margin-bottom: 6px;
+  }
+
+  .progress-label-text { color: var(--text-secondary); }
+  .progress-label-value { color: var(--text-primary); font-weight: 600; }
+
+  .progress-track {
+    height: 6px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .progress-fill.red { background: linear-gradient(90deg, var(--neon-red), #fb7185); }
+  .progress-fill.amber { background: linear-gradient(90deg, var(--neon-amber), #fbbf24); }
+  .progress-fill.green { background: linear-gradient(90deg, var(--neon-green), #34d399); }
+  .progress-fill.blue { background: linear-gradient(90deg, var(--neon-blue), #60a5fa); }
+
+  /* Checklist */
+  .checklist { list-style: none; margin-top: 12px; }
+
+  .checklist li {
+    font-size: 13px;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .checklist li:last-child { border-bottom: none; }
+
+  .check-icon {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 10px;
+  }
+
+  .check-pending { border: 1.5px solid var(--text-muted); color: var(--text-muted); }
+  .check-done { background: rgba(34,197,94,0.2); border: 1.5px solid var(--neon-green); color: var(--neon-green); }
+
+  .check-text { color: var(--text-secondary); }
+  .check-text.done { color: var(--text-muted); text-decoration: line-through; }
+
+  /* Tags */
+  .tag-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+
+  .tag {
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+  }
+
+  .tag-stability { background: rgba(239,68,68,0.12); color: #fca5a5; }
+  .tag-security { background: rgba(244,63,94,0.12); color: #fda4af; }
+  .tag-install { background: rgba(34,211,238,0.12); color: #67e8f9; }
+  .tag-docs { background: rgba(59,130,246,0.12); color: #93c5fd; }
+  .tag-tests { background: rgba(139,92,246,0.12); color: #c4b5fd; }
+  .tag-tui { background: rgba(245,158,11,0.12); color: #fcd34d; }
+  .tag-refactor { background: rgba(16,185,129,0.12); color: #6ee7b7; }
+  .tag-ci { background: rgba(34,211,238,0.12); color: #67e8f9; }
+  .tag-logging { background: rgba(168,85,247,0.12); color: #d8b4fe; }
+
+  /* Superseded note */
+  .superseded-note {
+    background: rgba(59,130,246,0.08);
+    border: 1px solid rgba(59,130,246,0.2);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--neon-blue);
+    margin-top: 12px;
+    line-height: 1.5;
+  }
+
+  /* Completed grid */
+  .completed-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 12px;
+  }
+
+  .completed-card {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 12px;
+    padding: 16px 20px;
+    border-left: 3px solid var(--neon-green);
+    transition: all 0.3s ease;
+  }
+
+  .completed-card:hover { border-color: rgba(255,255,255,0.1); }
+
+  .completed-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+  }
+
+  .completed-meta {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding: 40px 0 20px;
+    color: var(--text-muted);
+    font-size: 12px;
+    border-top: 1px solid rgba(255,255,255,0.04);
+    margin-top: 60px;
+  }
+
+  .footer span { color: var(--primary); }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    h1 { font-size: 30px; }
+    .completed-grid { grid-template-columns: 1fr; }
+  }
+
+  /* Critical pulse */
+  @keyframes criticalPulse {
+    0%, 100% { border-left-color: var(--neon-red); }
+    50% { border-left-color: #fb7185; }
+  }
+
+  .plan-card.critical { animation: criticalPulse 3s ease-in-out infinite; }
+
+  /* Action items panel */
+  .action-panel {
+    background: rgba(139,92,246,0.06);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(139,92,246,0.2);
+    border-radius: 16px;
+    padding: 28px;
+    margin: 40px 0;
+    position: relative;
+  }
+
+  .action-panel::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--primary), transparent);
+    border-radius: 16px 16px 0 0;
+  }
+
+  .action-panel h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    background: linear-gradient(135deg, #fafafa, #a78bfa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .action-list { list-style: none; counter-reset: action-counter; }
+
+  .action-list li {
+    counter-increment: action-counter;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    font-size: 14px;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    line-height: 1.5;
+  }
+
+  .action-list li:last-child { border-bottom: none; }
+
+  .action-list li::before {
+    content: counter(action-counter);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    background: rgba(139,92,246,0.15);
+    color: var(--primary);
+    font-size: 12px;
+    font-weight: 600;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .action-list strong { color: var(--text-primary); }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-badge">Plan Audit Report</div>
+    <h1>Opta CLI Incomplete Plans</h1>
+    <p class="hero-sub">
+      33 implementation plans audited and verified against the codebase.<br>
+      Status snapshot: 27 February 2026 — post-verification update.
+    </p>
+  </div>
+
+  <!-- Summary Stats -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-value stat-red">3</div>
+      <div class="stat-label">Critical / Blocking</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value stat-amber">4</div>
+      <div class="stat-label">Significant Gaps</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value stat-blue">8</div>
+      <div class="stat-label">Superseded</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value stat-green">18</div>
+      <div class="stat-label">Complete</div>
+    </div>
+  </div>
+
+  <!-- ═══════════ Recommended Actions ═══════════ -->
+
+  <div class="action-panel">
+    <h3>Recommended Next Actions</h3>
+    <ol class="action-list">
+      <li><strong>Close remaining 7 v1.0 quality gates</strong> &mdash; 7 of 14 gates verified. Remaining: 24h soak test, flake rate measurement, browser policy defaults, autonomy floor destructive-tool override, onboarding timing, GUARDRAILS.md update, user-facing README.</li>
+      <li><strong>Complete Codex P0 sign-off</strong> &mdash; P1 scenarios verified, but 4 P0 gaps remain: alternate buffer assertions, 5 visual snapshots, daemon reconnect E2E, permission stress test.</li>
+      <li><strong>Close 5 remaining V2 acceptance items</strong> &mdash; 22/27 now verified. Remaining: .gitignore respect (uses hardcoded list), mode auto-detection, 10-question init (only 3 exist), scaffold generation, MCP suggestions from KNOWLEDGE.md.</li>
+      <li><strong>Decide on YJS session logs</strong> &mdash; either implement the plan (new module, ~2 days) or formally defer it to post-v1.0.</li>
+      <li><strong>Close 2 open UX gaps</strong> &mdash; G10 (paste detection) and G32 (Tab navigation) remain open. 5 gaps are partially closed.</li>
+    </ol>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- CRITICAL -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+
+  <div class="section-header">
+    <div class="section-tag tag-critical">Critical</div>
+    <h2>Release-Blocking Plans</h2>
+    <p class="section-desc">Plans containing unchecked quality gates that must pass before v1.0 can be tagged.</p>
+  </div>
+
+  <!-- 1. v1.0 Definition of Done -->
+  <div class="plan-card critical">
+    <div class="plan-header">
+      <div class="plan-title">v0.5 &rarr; v1.0 Milestone Definition</div>
+      <div class="plan-date">Feb 26</div>
+    </div>
+    <div class="plan-file">docs/plans/2026-02-26-v05-milestone-definition.md</div>
+    <div class="plan-desc">
+      The master v1.0 quality gate document. <strong>7 of 14 gates verified</strong> against the codebase. Remaining 7 require soak testing, flake measurement, policy/autonomy hardening, onboarding timing, and documentation updates.
+    </div>
+
+    <div class="progress-bar-container">
+      <div class="progress-label">
+        <span class="progress-label-text">Quality Gates Passed</span>
+        <span class="progress-label-value">7 / 14</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill amber" style="width: 50%"></div>
+      </div>
+    </div>
+
+    <ul class="checklist">
+      <li><span class="check-icon check-pending"></span><span class="check-text"><strong>Stability:</strong> Browser daemon survives 24h continuous use — needs soak test</span></li>
+      <li><span class="check-icon check-done">&#10003;</span><span class="check-text done"><strong>Stability:</strong> Daemon handles disconnect + reconnect gracefully — ws-server.ts reconnect + heartbeat</span></li>
+      <li><span class="check-icon check-done">&#10003;</span><span class="check-text done"><strong>Stability:</strong> Agent loop has no known hang conditions on network timeout — 15s abort + LMX watchdog</span></li>
+      <li><span class="check-icon check-pending"></span><span class="check-text"><strong>Stability:</strong> All npm test passing with &lt;0.5% flake rate — needs measurement run</span></li>
+      <li><span class="check-icon check-done">&#10003;</span><span class="check-text done"><strong>Security:</strong> Shell injection formal review — parseShellCommand in background-manager.ts</span></li>
+      <li><span class="check-icon check-done">&#10003;</span><span class="check-text done"><strong>Security:</strong> API key storage uses OS keychain — src/keychain/ (33 tests)</span></li>
+      <li><span class="check-icon check-pending"></span><span class="check-text"><strong>Security:</strong> Browser policy blocks cross-origin credential access — default too permissive</span></li>
+      <li><span class="check-icon check-pending"></span><span class="check-text"><strong>Security:</strong> Autonomy floor cannot be overridden for destructive tools — overridable via config</span></li>
+      <li><span class="check-icon check-pending"></span><span class="check-text"><strong>Install:</strong> npm install + opta onboard completes in &lt;2 minutes — needs timing</span></li>
+      <li><span class="check-icon check-done">&#10003;</span><span class="check-text done"><strong>Install:</strong> opta doctor identifies all problems — 9 checks including account</span></li>
+      <li><span class="check-icon check-done">&#10003;</span><span class="check-text done"><strong>Install:</strong> Zero-config local mode without LMX — probeProvider() auto-selects Anthropic</span></li>
+      <li><span class="check-icon check-pending"></span><span class="check-text"><strong>Docs:</strong> GUARDRAILS.md updated for browser + daemon threat model — outdated</span></li>
+      <li><span class="check-icon check-pending"></span><span class="check-text"><strong>Docs:</strong> User-facing README with install + quick start — developer-focused only</span></li>
+      <li><span class="check-icon check-done">&#10003;</span><span class="check-text done"><strong>Tests:</strong> Integration tests for chat, browser, daemon — 3 integration test files added</span></li>
+    </ul>
+
+    <div class="tag-row">
+      <span class="tag tag-stability">stability</span>
+      <span class="tag tag-security">security</span>
+      <span class="tag tag-install">install</span>
+      <span class="tag tag-docs">docs</span>
+      <span class="tag tag-tests">tests</span>
+    </div>
+  </div>
+
+  <!-- 2. Codex Desktop Parity -->
+  <div class="plan-card critical">
+    <div class="plan-header">
+      <div class="plan-title">Codex Desktop Parity Spec (macOS Enforcement)</div>
+      <div class="plan-date">Feb 23</div>
+    </div>
+    <div class="plan-file">docs/plans/2026-02-23-codex-desktop-parity-spec.md</div>
+    <div class="plan-desc">
+      CI enforcement spec for TUI parity against Codex. <strong>All 6 P1 scenarios verified</strong> with test file evidence. P0 scenarios have underlying tests but 4 gaps remain: alternate buffer assertions, visual snapshots, daemon reconnect E2E, permission stress test.
+    </div>
+
+    <div class="progress-bar-container">
+      <div class="progress-label">
+        <span class="progress-label-text">Sign-off Checklist</span>
+        <span class="progress-label-value">7 / 16</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill amber" style="width: 44%"></div>
+      </div>
+    </div>
+
+    <ul class="checklist">
+      <li><span class="check-icon check-pending"></span><span class="check-text">P0-01..P0-10 — partially verified, 4 gaps remain (alt buffer, snapshots, reconnect E2E, stress test)</span></li>
+      <li><span class="check-icon check-pending"></span><span class="check-text">parity-macos-codex.yml — CI job not yet wired</span></li>
+      <li><span class="check-icon check-pending"></span><span class="check-text">No unresolved visual snapshot diffs — 5 snapshots still needed</span></li>
+      <li><span class="check-icon check-pending"></span><span class="check-text">Reconnect + permission-race suites — reconnect E2E TODO</span></li>
+      <li><span class="check-icon check-pending"></span><span class="check-text">Strict parity gate job — not yet configured</span></li>
+      <li><span class="check-icon check-done">&#10003;</span><span class="check-text done">P0 no-live-network dependency — verified (mocks throughout)</span></li>
+      <li><span class="check-icon check-done">&#10003;</span><span class="check-text done">P1-01..P1-06 validated — tool cards, thinking, theme, keybinds, fuzz, server all have test coverage</span></li>
+    </ul>
+
+    <div class="tag-row">
+      <span class="tag tag-ci">ci</span>
+      <span class="tag tag-tui">tui parity</span>
+      <span class="tag tag-tests">testing</span>
+    </div>
+  </div>
+
+  <!-- 3. V2 Features Design acceptance criteria -->
+  <div class="plan-card critical">
+    <div class="plan-header">
+      <div class="plan-title">V2 Features Design &mdash; Unchecked Acceptance Criteria</div>
+      <div class="plan-date">Feb 15</div>
+    </div>
+    <div class="plan-file">docs/plans/2026-02-15-v2-features-design.md</div>
+    <div class="plan-desc">
+      The V2 design spec acceptance criteria have been verified: <strong>22 of 27 items confirmed done</strong> with file-level evidence. Remaining 5 items are genuine gaps (not paperwork).
+    </div>
+
+    <div class="progress-bar-container">
+      <div class="progress-label">
+        <span class="progress-label-text">Acceptance Criteria Verified</span>
+        <span class="progress-label-value">22 / 27</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill green" style="width: 81%"></div>
+      </div>
+    </div>
+
+    <ul class="checklist">
+      <li><span class="check-icon check-done">&#10003;</span><span class="check-text done">OPIS: all 8 items verified — buildSystemPrompt, read_project_docs, fallback, suggestion</span></li>
+      <li><span class="check-icon check-done">&#10003;</span><span class="check-text done">Git: all 6 items verified — checkpoints, /undo, auto-commit, --no-commit, dirty-tree, non-git</span></li>
+      <li><span class="check-icon check-done">&#10003;</span><span class="check-text done">MCP: all 5 items verified — stdio transport, tool routing, failure isolation, opta mcp list</span></li>
+      <li><span class="check-icon check-pending"></span><span class="check-text"><strong>Export map:</strong> 3/5 done — .gitignore respect uses hardcoded list (not .gitignore), 2 items unchecked</span></li>
+      <li><span class="check-icon check-pending"></span><span class="check-text"><strong>opta init:</strong> 0/3 remaining — only 3 prompts (not 10), no scaffold generation, no MCP suggestions</span></li>
+    </ul>
+
+    <div class="tag-row">
+      <span class="tag tag-tests">verification</span>
+      <span class="tag tag-docs">sign-off debt</span>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- SIGNIFICANT -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+
+  <div class="section-header">
+    <div class="section-tag tag-significant">Significant</div>
+    <h2>Meaningful Incomplete Work</h2>
+    <p class="section-desc">Plans with genuine remaining work that adds value but does not strictly block v1.0.</p>
+  </div>
+
+  <!-- YJS Session Logs -->
+  <div class="plan-card significant">
+    <div class="plan-header">
+      <div class="plan-title">YJS Session + Update Log System</div>
+      <div class="plan-date">Feb 23</div>
+    </div>
+    <div class="plan-file">docs/plans/2026-02-23-yjs-session-update-log-system-plan.md</div>
+    <div class="plan-desc">
+      Adopts YJS-style session logging into Opta CLI: markdown session logs in <code>12-Session-Logs/</code>, numbered update logs in <code>updates/</code>, config block, and lifecycle integration. <strong>Entirely unimplemented</strong> &mdash; zero source files created. Note: <code>src/journal/</code> module exists but doesn't implement this spec.
+    </div>
+
+    <div class="progress-bar-container">
+      <div class="progress-label">
+        <span class="progress-label-text">Implementation</span>
+        <span class="progress-label-value">0 / 6 sections</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill amber" style="width: 0%"></div>
+      </div>
+    </div>
+
+    <ul class="checklist">
+      <li><span class="check-icon check-pending"></span><span class="check-text">Config block for journal settings</span></li>
+      <li><span class="check-icon check-pending"></span><span class="check-text">src/journal/session-log.ts &mdash; YJS markdown writer</span></li>
+      <li><span class="check-icon check-pending"></span><span class="check-text">src/journal/update-log.ts &mdash; numbered update writer</span></li>
+      <li><span class="check-icon check-pending"></span><span class="check-text">Integration in chat lifecycle (on exit)</span></li>
+      <li><span class="check-icon check-pending"></span><span class="check-text">Integration in opta do (--session-log flag)</span></li>
+      <li><span class="check-icon check-pending"></span><span class="check-text">Integration in opta update</span></li>
+    </ul>
+
+    <div class="tag-row">
+      <span class="tag tag-logging">logging</span>
+      <span class="tag tag-refactor">new module</span>
+    </div>
+  </div>
+
+  <!-- Developer Velocity -->
+  <div class="plan-card significant">
+    <div class="plan-header">
+      <div class="plan-title">Developer Velocity Improvements</div>
+      <div class="plan-date">Feb 18</div>
+    </div>
+    <div class="plan-file">docs/plans/2026-02-18-developer-velocity-improvements.md</div>
+    <div class="plan-desc">
+      18 refactoring tasks verified against the codebase. <strong>16 of 18 done</strong>. Remaining: Task 12 (shared model scan service — not implemented), Task 14 (replace process.exit — 1 instance remains in chat.ts).
+    </div>
+
+    <div class="progress-bar-container">
+      <div class="progress-label">
+        <span class="progress-label-text">Tasks Completed</span>
+        <span class="progress-label-value">16 / 18</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill green" style="width: 89%"></div>
+      </div>
+    </div>
+
+    <div class="tag-row">
+      <span class="tag tag-refactor">refactoring</span>
+      <span class="tag tag-tests">guardrails</span>
+    </div>
+  </div>
+
+  <!-- Optimization Audit -->
+  <div class="plan-card significant">
+    <div class="plan-header">
+      <div class="plan-title">Optimization Audit &amp; Action Plan</div>
+      <div class="plan-date">Feb 17</div>
+    </div>
+    <div class="plan-file">docs/plans/2026-02-17-optimization-audit.md</div>
+    <div class="plan-desc">
+      Consolidated audit from 4 parallel review agents (62 files, ~60K LOC). <strong>46 of 50 items verified as resolved.</strong> 4 items partial: unsafe JSON.parse casts, loose DEFAULT_PERMISSIONS type, "No model" error not unified in commands, one process.exit remains.
+    </div>
+
+    <div class="progress-bar-container">
+      <div class="progress-label">
+        <span class="progress-label-text">Issues Resolved</span>
+        <span class="progress-label-value">46 / 50</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill green" style="width: 92%"></div>
+      </div>
+    </div>
+
+    <div class="tag-row">
+      <span class="tag tag-security">security</span>
+      <span class="tag tag-stability">bugs</span>
+    </div>
+  </div>
+
+  <!-- OpenCode UX Parity -->
+  <div class="plan-card significant">
+    <div class="plan-header">
+      <div class="plan-title">OpenCode UX Parity &mdash; Master Roadmap</div>
+      <div class="plan-date">Feb 17</div>
+    </div>
+    <div class="plan-file">docs/plans/2026-02-17-opencode-ux-parity-master.md</div>
+    <div class="plan-desc">
+      33 UX gaps verified against the codebase: <strong>22 CLOSED, 5 PARTIALLY CLOSED, 2 OPEN</strong> (G10 paste detection, G32 Tab navigation). Plan fully updated with Status + Evidence columns.
+    </div>
+
+    <div class="progress-bar-container">
+      <div class="progress-label">
+        <span class="progress-label-text">Gaps Closed</span>
+        <span class="progress-label-value">22 / 33 (+ 5 partial)</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill green" style="width: 75%"></div>
+      </div>
+    </div>
+
+    <div class="tag-row">
+      <span class="tag tag-tui">ux parity</span>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- SUPERSEDED -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+
+  <div class="section-header">
+    <div class="section-tag tag-superseded">Superseded</div>
+    <h2>Goals Achieved Differently</h2>
+    <p class="section-desc">Plans whose objectives were fulfilled through alternative implementation paths. No remaining action needed.</p>
+  </div>
+
+  <div class="plan-card superseded">
+    <div class="plan-header">
+      <div class="plan-title">UX Phase 1A: Input Editor (Commander.js stack)</div>
+      <div class="plan-date">Feb 17</div>
+    </div>
+    <div class="plan-file">docs/plans/2026-02-17-ux-phase1a-input-editor.md</div>
+    <div class="superseded-note">Superseded by Ink/React TUI migration. Multiline input, shell mode, @ autocomplete, and escape handling now implemented natively in src/tui/InputBox.tsx.</div>
+  </div>
+
+  <div class="plan-card superseded">
+    <div class="plan-header">
+      <div class="plan-title">UX Phase 1B: Rendering &amp; Display</div>
+      <div class="plan-date">Feb 17</div>
+    </div>
+    <div class="plan-file">docs/plans/2026-02-17-ux-phase1b-rendering.md</div>
+    <div class="superseded-note">Superseded by Ink TUI. Thinking blocks, tool cards, diff viewer, and syntax highlighting implemented as React components in src/tui/.</div>
+  </div>
+
+  <div class="plan-card superseded">
+    <div class="plan-header">
+      <div class="plan-title">UX Phase 1C: Session &amp; Workflow</div>
+      <div class="plan-date">Feb 17</div>
+    </div>
+    <div class="plan-file">docs/plans/2026-02-17-ux-phase1c-session-workflow.md</div>
+    <div class="superseded-note">Superseded by Ink TUI + daemon. StatusBar, session export, and token display implemented as dedicated TUI components.</div>
+  </div>
+
+  <div class="plan-card superseded">
+    <div class="plan-header">
+      <div class="plan-title">UX Phase 2: Ink Migration</div>
+      <div class="plan-date">Feb 17</div>
+    </div>
+    <div class="plan-file">docs/plans/2026-02-17-ux-phase2-ink-migration.md</div>
+    <div class="superseded-note">Migration completed. Full-screen Ink/React TUI live with 25+ components. Plan tasks not formally checked but goals achieved.</div>
+  </div>
+
+  <div class="plan-card superseded">
+    <div class="plan-header">
+      <div class="plan-title">UX Phase 3: Advanced TUI (Split Panes, Focus, Keybindings)</div>
+      <div class="plan-date">Feb 17</div>
+    </div>
+    <div class="plan-file">docs/plans/2026-02-17-ux-phase3-advanced-tui.md</div>
+    <div class="superseded-note">Split panes implemented as BrowserManagerRail sidebar. Focus via useKeyboard hook. Keybindings in .opta/keybindings.json. Achieved through different architecture.</div>
+  </div>
+
+  <div class="plan-card superseded">
+    <div class="plan-header">
+      <div class="plan-title">V3 Roadmap &mdash; Closing the Gap</div>
+      <div class="plan-date">Feb 16</div>
+    </div>
+    <div class="plan-file">docs/plans/2026-02-16-v3-roadmap.md</div>
+    <div class="superseded-note">All 6 V3 gaps closed: sub-agents, background shell, LSP, hooks, repo map. Composite score target 86 exceeded. Features shipped through individual V3 phase plans.</div>
+  </div>
+
+  <div class="plan-card superseded">
+    <div class="plan-header">
+      <div class="plan-title">V3 Master Execution + Level 3 Daemon Plan</div>
+      <div class="plan-date">Feb 16 / Feb 20</div>
+    </div>
+    <div class="plan-file">docs/plans/2026-02-16-v3-master-execution.md + 2026-02-20-level3-daemon-program-plan.md</div>
+    <div class="superseded-note">Both plans fully executed. Daemon architecture (HTTP + WS, worker pool, multi-client) is production. Direct L3 migration complete. All 4 agent tracks shipped.</div>
+  </div>
+
+  <div class="plan-card superseded">
+    <div class="plan-header">
+      <div class="plan-title">V2 Implementation Plans (Phase 1-3)</div>
+      <div class="plan-date">Feb 16</div>
+    </div>
+    <div class="plan-file">docs/plans/2026-02-16-v2-phase{1,2,3}-*.md</div>
+    <div class="superseded-note">All three phases completed: OPIS + export map (Phase 1), git integration (Phase 2), MCP integration (Phase 3). Features live in src/context/, src/git/, src/mcp/.</div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- COMPLETE -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+
+  <div class="section-header">
+    <div class="section-tag tag-complete">Complete</div>
+    <h2>Fully Completed Plans</h2>
+    <p class="section-desc">Plans that are done with all tasks verified. 18 plans fully shipped.</p>
+  </div>
+
+  <div class="completed-grid">
+    <div class="completed-card">
+      <div class="completed-title">v1.0 Implementation Plan</div>
+      <div class="completed-meta">Feb 26 &middot; 10/10 tasks &middot; Zero-config, daemon stability, CI, doctor</div>
+    </div>
+    <div class="completed-card">
+      <div class="completed-title">TUI Quality Improvement Plan</div>
+      <div class="completed-meta">Feb 26 &middot; 7/7 tasks &middot; Menu resize, error boundary, layout unification</div>
+    </div>
+    <div class="completed-card">
+      <div class="completed-title">Code Review Fixes (Wave 1 + 2)</div>
+      <div class="completed-meta">Feb 25 &middot; 21/21 tasks &middot; App.tsx decomposition 2928&rarr;786 lines</div>
+    </div>
+    <div class="completed-card">
+      <div class="completed-title">Accounts + LMX Integration</div>
+      <div class="completed-meta">Feb 26 &middot; 5 agents &middot; /whoami, /lmx status, heartbeat, StatusBar</div>
+    </div>
+    <div class="completed-card">
+      <div class="completed-title">Onboarding &amp; Settings Overlays</div>
+      <div class="completed-meta">Feb 26 &middot; 7 tasks &middot; 9-step wizard, 6-page settings browser</div>
+    </div>
+    <div class="completed-card">
+      <div class="completed-title">AI Capability Implementation</div>
+      <div class="completed-meta">Feb 22 &middot; Verified &middot; Research, browser, learning modules</div>
+    </div>
+    <div class="completed-card">
+      <div class="completed-title">Antigravity Browser Runtime</div>
+      <div class="completed-meta">Feb 23 &middot; M1-M4 + hardening &middot; 99 tests passing</div>
+    </div>
+    <div class="completed-card">
+      <div class="completed-title">V1 Design Document</div>
+      <div class="completed-meta">Feb 12 &middot; Approved &middot; Original architecture specification</div>
+    </div>
+    <div class="completed-card">
+      <div class="completed-title">V2 Phase 1: OPIS + Export Map</div>
+      <div class="completed-meta">Feb 16 &middot; Complete &middot; Context intelligence, export map</div>
+    </div>
+    <div class="completed-card">
+      <div class="completed-title">V2 Phase 2: Git Integration</div>
+      <div class="completed-meta">Feb 16 &middot; Complete &middot; Checkpoints, auto-commit, /undo</div>
+    </div>
+    <div class="completed-card">
+      <div class="completed-title">V2 Phase 3: MCP Integration</div>
+      <div class="completed-meta">Feb 16 &middot; Complete &middot; stdio + HTTP transport, tool routing</div>
+    </div>
+    <div class="completed-card">
+      <div class="completed-title">V3: Background Shell</div>
+      <div class="completed-meta">Feb 16 &middot; Complete &middot; bg_start, bg_status, bg_output, bg_kill</div>
+    </div>
+    <div class="completed-card">
+      <div class="completed-title">V3: Hooks System</div>
+      <div class="completed-meta">Feb 16 &middot; Complete &middot; Pre/post tool execution hooks</div>
+    </div>
+    <div class="completed-card">
+      <div class="completed-title">V3: LSP Integration</div>
+      <div class="completed-meta">Feb 16 &middot; Complete &middot; Client + server lifecycle management</div>
+    </div>
+    <div class="completed-card">
+      <div class="completed-title">V3: Sub-Agents</div>
+      <div class="completed-meta">Feb 16 &middot; Complete &middot; Parallel child agent spawning</div>
+    </div>
+    <div class="completed-card">
+      <div class="completed-title">Mac Studio Startup Stability Report</div>
+      <div class="completed-meta">Feb 23 &middot; Report &middot; Model discovery and lifecycle analysis</div>
+    </div>
+    <div class="completed-card">
+      <div class="completed-title">AI Capability Research Plan</div>
+      <div class="completed-meta">Feb 22 &middot; Complete &middot; 5 search providers, Playwright, ledger</div>
+    </div>
+    <div class="completed-card">
+      <div class="completed-title">V2 Features Design Spec</div>
+      <div class="completed-meta">Feb 15 &middot; Approved design &middot; Implementation shipped (acceptance unchecked)</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    Generated by <span>Opta</span> &middot; 27 Feb 2026 &middot; 33 plans audited &amp; verified across docs/plans/ &middot; All status headers updated
+  </div>
+
+</div>
+
+</body>
+</html>

@@ -1,6 +1,7 @@
 # Opta Ecosystem
 
 > One platform. Every device. Built by Matthew Byrden @ Opta Operations.
+*Last updated: 2026-02-28*
 
 ---
 
@@ -8,66 +9,57 @@
 
 ```
 ~/Synced/Opta/
-├── 1-Apps/          # All applications (canonical — see below)
+├── 1-Apps/
+│   ├── optamize/    # optamize.biz products (1E 1F 1G 1H 1J)
+│   ├── optalocal/   # optalocal.com products (1D 1L 1M 1O 1P)
+│   └── shared/      # cross-domain elements, design, infra (1A 1I 1N)
 ├── 2-Docs/          # Shared documentation (auth, infra, design)
 ├── 3-Services/      # Deployed services (Vercel, launchd)
-├── docs/            # Monorepo-level docs (APP-MD-SYSTEM, etc.)
-├── personal/        # Hardware, goals, calendar
-├── research/        # Gemini Deep Research outputs
-├── ideas/           # Brainstorms and concepts
-└── scripts/         # Repo-level tooling
+├── 6-Packages/      # Shared npm packages (@opta/*)
+├── docs/            # Monorepo-level docs (APP-MD-SYSTEM, OPIS, etc.)
+├── 4-Ideas/         # Brainstorms and concepts
+└── updates/         # Automated update logs
 ```
 
 ---
 
 ## Apps (`1-Apps/`)
 
-| Prefix | App | Platform | Status |
-|--------|-----|----------|--------|
-| **1A** | AI Components Web | Web | Scaffold |
-| **1B** | AICompare Web | Web | Active |
-| **1C** | MonoUsage | macOS + Node | Active |
-| **1D** | Opta CLI TS | CLI / TUI | Beta v0.5 |
-| **1E** | Opta Life iOS | iOS | Active |
-| **1F** | Opta Life Web | Web | Deployed → lm.optamize.biz |
-| **1G** | Opta Mini macOS | macOS | Active |
-| **1H** | Opta Scan iOS | iOS | Active |
-| **1I** | OptaPlus | iOS + macOS + Web | 9/13 phases |
-| **1J** | Optamize macOS | macOS (Tauri + Rust) | Active |
-| **1K** | Optamize Web | Web | Marketing |
-| **1L** | Opta Local | Web + iOS | In Dev → optalocal.com |
-| **1M** | Opta LMX | macOS service (Python + MLX) | ~80% · Live on Mono512 |
-| **—** | kimi-proxy | Local service (Python) | Running · port 4999 |
+### optamize/ — optamize.biz
+| ID | App | Platform | Status |
+|----|-----|----------|--------|
+| 1E | Opta Life iOS | iOS (SwiftUI + Firebase) | Active |
+| 1F | Opta Life Web | Web (Next.js 15) | Deployed → lm.optamize.biz |
+| 1G | Opta Mini macOS | macOS (SwiftUI menubar) | Active |
+| 1H | Opta Scan iOS | iOS (SwiftUI + Claude Vision) | Active |
+| 1J | Optamize macOS | macOS (Tauri v2 + React + Rust) | Active — flagship |
+
+### optalocal/ — optalocal.com
+| ID | App | Platform | Status |
+|----|-----|----------|--------|
+| 1D | Opta CLI | CLI/TUI (TypeScript) | Beta v0.5 |
+| 1L | Opta Local | Web + iOS (Next.js 16) | In dev → optalocal.com |
+| 1M | Opta LMX | macOS service (Python + MLX) | Live on Mono512:1234 |
+| 1O | Opta Init | Web (Next.js 15) | Live → init.optalocal.com |
+| 1P | Opta Code Desktop | Electron/Vite (TypeScript) | Emerging |
+
+### shared/ — cross-domain
+| ID | App | Platform | Status |
+|----|-----|----------|--------|
+| 1A | AI Components | Web (Next.js 16) | Scaffold (merged from 1A + 1B) |
+| 1I | OptaPlus | iOS + macOS (SwiftUI) | 9/13 phases — design system |
+| 1N | Opta Cloud Accounts | Auth spec + iOS/Web | 85% complete |
 
 ---
 
 ## Services (`3-Services/`)
-
 | Service | Description | Deployed |
 |---------|-------------|----------|
-| 3A-Opta-Gateway | AI provider routing API | ✅ Vercel |
-
----
-
-## Docs (`2-Docs/`)
-
-| Folder | Contents |
-|--------|----------|
-| `OptaCloud/` | Shared auth, Supabase schema, Swift/TS libs |
-| `design/` | Opta+ design system tokens |
-
----
-
-## Rules
-
-- **All work lives in `~/Synced/`** — never `~/Documents/`, never `~/Desktop/`
-- `~/Synced/` syncs via Syncthing to Opta48 (MacBook), Mono512 (Mac Studio), Windows PC
-- Canonical project root: `~/Synced/Opta/1-Apps/`
+| 3A-Opta-Gateway | AI provider routing API | lm.optamize.biz (Vercel) |
 
 ---
 
 ## Tech Stack
-
 | Layer | Tech |
 |-------|------|
 | macOS native | Swift, SwiftUI, Tauri v2, Rust |
@@ -80,15 +72,10 @@
 ---
 
 ## Key Paths
-
 | Resource | Path |
 |----------|------|
 | Apps index | `APPS-INDEX.md` |
-| Migration history | `MIGRATION-FROM-DOCUMENTS.md` |
-| APP.md system docs | `docs/APP-MD-SYSTEM.md` |
+| Full index | `INDEX.md` |
 | Local stack overview | `1-Apps/OPTA-LOCAL-STACK.md` |
-| OptaCloud docs | `2-Docs/OptaCloud/` |
-
----
-
-*Last updated: 2026-02-19*
+| OptaCloud auth spec | `1-Apps/shared/1N-Opta-Cloud-Accounts/` |
+| APP.md system docs | `docs/APP-MD-SYSTEM.md` |

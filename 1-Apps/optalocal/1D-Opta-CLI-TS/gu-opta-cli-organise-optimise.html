@@ -1,0 +1,1292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Opta CLI — Organisation &amp; Optimisation Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --void: #09090b;
+    --surface: #18181b;
+    --elevated: #27272a;
+    --border: #3f3f46;
+    --text-primary: #fafafa;
+    --text-secondary: #a1a1aa;
+    --text-muted: #52525b;
+    --primary: #8b5cf6;
+    --primary-glow: #a855f7;
+    --neon-blue: #3b82f6;
+    --neon-green: #22c55e;
+    --neon-amber: #f59e0b;
+    --neon-red: #ef4444;
+    --neon-cyan: #22d3ee;
+    --neon-pink: #f472b6;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--void);
+    color: var(--text-primary);
+    font-family: 'Sora', -apple-system, BlinkMacSystemFont, sans-serif;
+    line-height: 1.6;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Noise overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    opacity: 0.015;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* Particle dots */
+  body::after {
+    content: '';
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background:
+      radial-gradient(1.5px 1.5px at 20% 15%, rgba(139,92,246,0.2) 50%, transparent 100%),
+      radial-gradient(1px 1px at 60% 25%, rgba(59,130,246,0.15) 50%, transparent 100%),
+      radial-gradient(1.2px 1.2px at 80% 60%, rgba(34,211,238,0.12) 50%, transparent 100%),
+      radial-gradient(1px 1px at 35% 80%, rgba(168,85,247,0.1) 50%, transparent 100%),
+      radial-gradient(1.5px 1.5px at 90% 90%, rgba(139,92,246,0.15) 50%, transparent 100%);
+    pointer-events: none;
+    z-index: 0;
+    animation: drift 30s ease-in-out infinite alternate;
+  }
+
+  @keyframes drift {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(-15px, -10px); }
+  }
+
+  @keyframes breathe {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes glowPulse {
+    0%, 100% { box-shadow: 0 0 20px rgba(139,92,246,0.15); }
+    50% { box-shadow: 0 0 30px rgba(139,92,246,0.25); }
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Glass panels */
+  .glass {
+    background: rgba(24,24,27,0.6);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .glass::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+  }
+
+  .glass-subtle {
+    background: rgba(24,24,27,0.35);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 12px;
+  }
+
+  .glass-strong {
+    background: rgba(24,24,27,0.85);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 16px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+  }
+
+  /* Header */
+  .hero {
+    text-align: center;
+    padding: 60px 32px;
+    margin-bottom: 40px;
+    animation: slideIn 0.8s ease-out;
+  }
+
+  .hero-badge {
+    display: inline-block;
+    padding: 6px 16px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    background: rgba(139,92,246,0.15);
+    color: var(--primary);
+    border: 1px solid rgba(139,92,246,0.3);
+    margin-bottom: 20px;
+  }
+
+  .hero h1 {
+    font-size: 2.8rem;
+    font-weight: 700;
+    line-height: 1.15;
+    background: linear-gradient(135deg, #fafafa 30%, #a78bfa 60%, #6366f1 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 16px;
+  }
+
+  .hero .subtitle {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  /* Stats bar */
+  .stats-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    padding: 20px;
+    margin-bottom: 40px;
+    animation: slideIn 0.8s ease-out 0.15s both;
+  }
+
+  .stat-card {
+    padding: 16px 20px;
+    text-align: center;
+  }
+
+  .stat-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    line-height: 1.2;
+  }
+
+  .stat-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-top: 4px;
+  }
+
+  /* Section dividers */
+  .neon-divider {
+    height: 1px;
+    margin: 48px 0;
+    background: linear-gradient(90deg, transparent, var(--primary), transparent);
+    box-shadow: 0 0 12px rgba(139,92,246,0.3);
+    opacity: 0.6;
+  }
+
+  /* Section headers */
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+    animation: slideIn 0.6s ease-out;
+  }
+
+  .section-number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: rgba(139,92,246,0.15);
+    border: 1px solid rgba(139,92,246,0.3);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--primary);
+    flex-shrink: 0;
+  }
+
+  .section-header h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    background: linear-gradient(135deg, #fafafa 40%, #a1a1aa 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .section-header .section-tag {
+    font-size: 0.7rem;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .tag-critical { background: rgba(239,68,68,0.15); color: var(--neon-red); border: 1px solid rgba(239,68,68,0.3); }
+  .tag-high { background: rgba(245,158,11,0.15); color: var(--neon-amber); border: 1px solid rgba(245,158,11,0.3); }
+  .tag-medium { background: rgba(59,130,246,0.15); color: var(--neon-blue); border: 1px solid rgba(59,130,246,0.3); }
+  .tag-low { background: rgba(34,197,94,0.15); color: var(--neon-green); border: 1px solid rgba(34,197,94,0.3); }
+  .tag-done { background: rgba(139,92,246,0.15); color: var(--primary); border: 1px solid rgba(139,92,246,0.3); }
+
+  /* Cards grid */
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .card {
+    padding: 20px 24px;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(139,92,246,0.25);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+    gap: 12px;
+  }
+
+  .card-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .card-lines {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    padding: 3px 8px;
+    border-radius: 6px;
+    white-space: nowrap;
+  }
+
+  .lines-critical { background: rgba(239,68,68,0.12); color: var(--neon-red); }
+  .lines-high { background: rgba(245,158,11,0.12); color: var(--neon-amber); }
+  .lines-medium { background: rgba(59,130,246,0.12); color: var(--neon-blue); }
+  .lines-ok { background: rgba(34,197,94,0.1); color: var(--neon-green); }
+
+  .card-path {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+
+  .card-desc {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  .card-action {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    font-size: 0.78rem;
+    color: var(--primary);
+    font-weight: 500;
+  }
+
+  /* Tables */
+  .data-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin: 16px 0;
+    font-size: 0.82rem;
+  }
+
+  .data-table thead th {
+    padding: 10px 16px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    position: sticky;
+    top: 0;
+    background: rgba(24,24,27,0.9);
+    backdrop-filter: blur(8px);
+  }
+
+  .data-table tbody td {
+    padding: 10px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    color: var(--text-secondary);
+    vertical-align: top;
+  }
+
+  .data-table tbody tr:hover td {
+    background: rgba(139,92,246,0.04);
+  }
+
+  .data-table .mono {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--neon-cyan);
+  }
+
+  /* Priority badges */
+  .priority {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 6px;
+    white-space: nowrap;
+  }
+
+  .p-critical { background: rgba(239,68,68,0.15); color: var(--neon-red); }
+  .p-high { background: rgba(245,158,11,0.15); color: var(--neon-amber); }
+  .p-medium { background: rgba(59,130,246,0.15); color: var(--neon-blue); }
+  .p-low { background: rgba(34,197,94,0.15); color: var(--neon-green); }
+  .p-done { background: rgba(139,92,246,0.15); color: var(--primary); }
+
+  /* Architecture diagram */
+  .arch-diagram {
+    padding: 32px;
+    margin: 20px 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    line-height: 1.8;
+    color: var(--text-secondary);
+    overflow-x: auto;
+  }
+
+  .arch-diagram .layer {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 4px 0;
+  }
+
+  .arch-diagram .layer-box {
+    display: inline-block;
+    padding: 6px 16px;
+    border-radius: 8px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    white-space: nowrap;
+    transition: all 0.3s ease;
+  }
+
+  .arch-diagram .layer-box:hover {
+    transform: scale(1.02);
+  }
+
+  .layer-entry { background: rgba(59,130,246,0.12); color: var(--neon-blue); border: 1px solid rgba(59,130,246,0.2); }
+  .layer-command { background: rgba(139,92,246,0.12); color: var(--primary); border: 1px solid rgba(139,92,246,0.2); }
+  .layer-core { background: rgba(245,158,11,0.12); color: var(--neon-amber); border: 1px solid rgba(245,158,11,0.2); }
+  .layer-tool { background: rgba(34,211,238,0.12); color: var(--neon-cyan); border: 1px solid rgba(34,211,238,0.2); }
+  .layer-infra { background: rgba(34,197,94,0.12); color: var(--neon-green); border: 1px solid rgba(34,197,94,0.2); }
+  .layer-ui { background: rgba(244,114,182,0.12); color: var(--neon-pink); border: 1px solid rgba(244,114,182,0.2); }
+
+  .arch-arrow {
+    color: var(--text-muted);
+    text-align: center;
+    font-size: 0.8rem;
+    padding: 2px 0;
+  }
+
+  /* Module map grid */
+  .module-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+    margin: 16px 0;
+  }
+
+  .module-chip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 0.78rem;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .module-chip:hover {
+    transform: translateY(-1px);
+    border-color: rgba(255,255,255,0.12);
+  }
+
+  .module-chip .name {
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .module-chip .count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+  }
+
+  /* Checklist */
+  .checklist {
+    list-style: none;
+    margin: 16px 0;
+  }
+
+  .checklist li {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+  }
+
+  .checklist li:last-child { border-bottom: none; }
+
+  .check-icon {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 700;
+    margin-top: 1px;
+  }
+
+  .check-pass { background: rgba(34,197,94,0.15); color: var(--neon-green); }
+  .check-warn { background: rgba(245,158,11,0.15); color: var(--neon-amber); }
+  .check-fail { background: rgba(239,68,68,0.15); color: var(--neon-red); }
+  .check-info { background: rgba(59,130,246,0.15); color: var(--neon-blue); }
+
+  /* Metric bars */
+  .metric-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 6px 0;
+  }
+
+  .metric-bar .label {
+    width: 140px;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+
+  .metric-bar .bar-track {
+    flex: 1;
+    height: 8px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .metric-bar .bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .metric-bar .value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    width: 60px;
+    text-align: right;
+  }
+
+  /* Roadmap timeline */
+  .timeline {
+    position: relative;
+    padding-left: 32px;
+    margin: 20px 0;
+  }
+
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 12px;
+    top: 8px;
+    bottom: 8px;
+    width: 2px;
+    background: linear-gradient(to bottom, var(--primary), var(--neon-blue), var(--neon-green));
+    opacity: 0.4;
+    border-radius: 1px;
+  }
+
+  .timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+    padding: 16px 20px;
+  }
+
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -26px;
+    top: 20px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid;
+  }
+
+  .timeline-item.phase-1::before { border-color: var(--neon-red); background: rgba(239,68,68,0.3); }
+  .timeline-item.phase-2::before { border-color: var(--neon-amber); background: rgba(245,158,11,0.3); }
+  .timeline-item.phase-3::before { border-color: var(--neon-blue); background: rgba(59,130,246,0.3); }
+  .timeline-item.phase-4::before { border-color: var(--neon-green); background: rgba(34,197,94,0.3); }
+
+  .timeline-item .phase-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 6px;
+  }
+
+  .timeline-item .phase-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+  }
+
+  .timeline-item .phase-desc {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding: 32px;
+    margin-top: 48px;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+
+  .footer .opta-glyph {
+    font-size: 1.2rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--primary), var(--neon-blue));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .hero h1 { font-size: 2rem; }
+    .cards-grid { grid-template-columns: 1fr; }
+    .module-grid { grid-template-columns: repeat(2, 1fr); }
+    .container { padding: 20px 16px 60px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- HERO -->
+  <div class="hero glass-strong">
+    <div class="hero-badge">Codebase Intelligence Report</div>
+    <h1>Opta CLI — Organisation &amp; Optimisation</h1>
+    <p class="subtitle">Comprehensive audit of 240+ files, 71K lines across 18 modules. Actionable findings organised by priority with a phased execution roadmap.</p>
+  </div>
+
+  <!-- STATS BAR -->
+  <div class="stats-bar glass">
+    <div class="stat-card glass-subtle">
+      <div class="stat-value" style="color: var(--primary);">240+</div>
+      <div class="stat-label">Source Files</div>
+    </div>
+    <div class="stat-card glass-subtle">
+      <div class="stat-value" style="color: var(--neon-cyan);">70,978</div>
+      <div class="stat-label">Lines of Code</div>
+    </div>
+    <div class="stat-card glass-subtle">
+      <div class="stat-value" style="color: var(--neon-green);">1,763</div>
+      <div class="stat-label">Passing Tests</div>
+    </div>
+    <div class="stat-card glass-subtle">
+      <div class="stat-value" style="color: var(--neon-amber);">0</div>
+      <div class="stat-label">TS Errors</div>
+    </div>
+    <div class="stat-card glass-subtle">
+      <div class="stat-value" style="color: var(--neon-green);">0</div>
+      <div class="stat-label">Circular Deps</div>
+    </div>
+    <div class="stat-card glass-subtle">
+      <div class="stat-value" style="color: var(--neon-red);">8</div>
+      <div class="stat-label">Dead Files</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ SECTION 1: ARCHITECTURE ═══════════════ -->
+  <div class="neon-divider"></div>
+
+  <div class="section-header">
+    <div class="section-number">01</div>
+    <h2>Architecture Layer Map</h2>
+    <span class="section-tag tag-done">Healthy</span>
+  </div>
+
+  <div class="arch-diagram glass">
+    <div class="layer">
+      <span class="layer-box layer-entry">src/index.ts</span>
+      <span style="color: var(--text-muted);">CLI entry — lazy loads all commands (&lt;50ms)</span>
+    </div>
+    <div class="arch-arrow">↓ &nbsp;dynamic import()</div>
+    <div class="layer">
+      <span class="layer-box layer-command">src/commands/*</span>
+      <span class="layer-box layer-command">src/commands/slash/*</span>
+      <span style="color: var(--text-muted);">25 commands + 12 slash handlers</span>
+    </div>
+    <div class="arch-arrow">↓ &nbsp;loadConfig → getProvider</div>
+    <div class="layer">
+      <span class="layer-box layer-core">src/core/config.ts</span>
+      <span class="layer-box layer-core">src/core/agent.ts</span>
+      <span class="layer-box layer-core">src/providers/*</span>
+      <span style="color: var(--text-muted);">Config hub (32 importers), agent loop, LMX/Anthropic</span>
+    </div>
+    <div class="arch-arrow">↓ &nbsp;tool dispatch + permission gates</div>
+    <div class="layer">
+      <span class="layer-box layer-tool">src/core/tools/*</span>
+      <span class="layer-box layer-tool">src/browser/*</span>
+      <span class="layer-box layer-tool">src/research/*</span>
+      <span style="color: var(--text-muted);">8 tools, Playwright browser, web search</span>
+    </div>
+    <div class="arch-arrow">↓ &nbsp;IPC + persistence</div>
+    <div class="layer">
+      <span class="layer-box layer-infra">src/daemon/*</span>
+      <span class="layer-box layer-infra">src/memory/*</span>
+      <span class="layer-box layer-infra">src/lmx/*</span>
+      <span style="color: var(--text-muted);">HTTP/WS daemon, sessions, LMX client</span>
+    </div>
+    <div class="arch-arrow">↓ &nbsp;Ink/React rendering</div>
+    <div class="layer">
+      <span class="layer-box layer-ui">src/tui/* (51 files)</span>
+      <span class="layer-box layer-ui">src/ui/* (20 files)</span>
+      <span style="color: var(--text-muted);">Full-screen TUI + CLI output formatting</span>
+    </div>
+  </div>
+
+  <!-- Module map -->
+  <div style="padding: 0 4px;">
+    <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 12px;">Module Inventory</h3>
+    <div class="module-grid">
+      <div class="module-chip glass-subtle"><span class="name" style="color: var(--neon-pink);">tui/</span><span class="count">51 files · 11.2K</span></div>
+      <div class="module-chip glass-subtle"><span class="name" style="color: var(--primary);">commands/</span><span class="count">25 files · 11.6K</span></div>
+      <div class="module-chip glass-subtle"><span class="name" style="color: var(--neon-amber);">core/</span><span class="count">26 files · 6.6K</span></div>
+      <div class="module-chip glass-subtle"><span class="name" style="color: var(--neon-green);">browser/</span><span class="count">19 files · 6.3K</span></div>
+      <div class="module-chip glass-subtle"><span class="name" style="color: var(--neon-cyan);">lmx/</span><span class="count">7 files · 3.4K</span></div>
+      <div class="module-chip glass-subtle"><span class="name" style="color: var(--neon-blue);">ui/</span><span class="count">20 files · 3.3K</span></div>
+      <div class="module-chip glass-subtle"><span class="name" style="color: var(--neon-green);">daemon/</span><span class="count">13 files · 2.8K</span></div>
+      <div class="module-chip glass-subtle"><span class="name" style="color: var(--neon-amber);">providers/</span><span class="count">6 files · 2.1K</span></div>
+      <div class="module-chip glass-subtle"><span class="name" style="color: var(--text-secondary);">research/</span><span class="count">8 files · 1.8K</span></div>
+      <div class="module-chip glass-subtle"><span class="name" style="color: var(--text-secondary);">accounts/</span><span class="count">5 files · 1.2K</span></div>
+      <div class="module-chip glass-subtle"><span class="name" style="color: var(--text-secondary);">protocol/v3/</span><span class="count">4 files · 283</span></div>
+      <div class="module-chip glass-subtle"><span class="name" style="color: var(--text-secondary);">6 others</span><span class="count">~39 files</span></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ SECTION 2: MONOLITHS ═══════════════ -->
+  <div class="neon-divider"></div>
+
+  <div class="section-header">
+    <div class="section-number">02</div>
+    <h2>Monolithic Files — Decomposition Targets</h2>
+    <span class="section-tag tag-critical">Action Required</span>
+  </div>
+
+  <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 20px;">
+    35 files exceed 500 lines. Three exceed 2,000 lines and are the highest-priority refactoring targets. Each monolith is shown with its current size, module coupling, and recommended split strategy.
+  </p>
+
+  <!-- Tier 1 -->
+  <h3 style="font-size: 0.85rem; color: var(--neon-red); font-weight: 600; margin: 20px 0 12px; text-transform: uppercase; letter-spacing: 0.05em;">Tier 1 — Extreme (&gt;2,000 lines)</h3>
+
+  <div class="cards-grid">
+    <div class="card glass">
+      <div class="card-header">
+        <span class="card-title">models.ts</span>
+        <span class="card-lines lines-critical">4,193 lines</span>
+      </div>
+      <div class="card-path">src/commands/models.ts</div>
+      <div class="card-desc">
+        God file handling model browser, inventory, aliases, downloads, history, and lifecycle. Contains 9 interfaces, colour formatting, UI rendering, model ranking — all in one file.
+      </div>
+      <div class="card-action">Split → models/{browser.ts, inventory.ts, lifecycle.ts, aliases.ts}</div>
+    </div>
+    <div class="card glass">
+      <div class="card-header">
+        <span class="card-title">slash/lmx.ts</span>
+        <span class="card-lines lines-critical">2,632 lines</span>
+      </div>
+      <div class="card-path">src/commands/slash/lmx.ts</div>
+      <div class="card-desc">
+        Handles /lmx status, reconnect, unload, model switching, health checks, presets, and role management. 60+ exported functions and types in a single file.
+      </div>
+      <div class="card-action">Split → lmx/{status.ts, lifecycle.ts, health.ts, config.ts}</div>
+    </div>
+    <div class="card glass">
+      <div class="card-header">
+        <span class="card-title">lmx/client.ts</span>
+        <span class="card-lines lines-critical">1,915 lines</span>
+      </div>
+      <div class="card-path">src/lmx/client.ts</div>
+      <div class="card-desc">
+        LmxClient class with 15 API methods, all type definitions, connection logic, and error handling. Heavy coupling to config, errors, and connection.
+      </div>
+      <div class="card-action">Split → client/{core.ts, models.ts, admin.ts, types.ts}</div>
+    </div>
+  </div>
+
+  <!-- Tier 2 -->
+  <h3 style="font-size: 0.85rem; color: var(--neon-amber); font-weight: 600; margin: 20px 0 12px; text-transform: uppercase; letter-spacing: 0.05em;">Tier 2 — Very Large (800–1,500 lines)</h3>
+
+  <div class="cards-grid">
+    <div class="card glass">
+      <div class="card-header">
+        <span class="card-title">benchmark/pages.ts</span>
+        <span class="card-lines lines-high">1,853</span>
+      </div>
+      <div class="card-path">src/benchmark/pages.ts</div>
+      <div class="card-desc">HTML render functions for 4 benchmark page types. Can extract per-page renderers.</div>
+      <div class="card-action">Split → render/{home, landing, chess, news}.ts</div>
+    </div>
+    <div class="card glass">
+      <div class="card-header">
+        <span class="card-title">tools/executors.ts</span>
+        <span class="card-lines lines-high">1,411</span>
+      </div>
+      <div class="card-path">src/core/tools/executors.ts</div>
+      <div class="card-desc">8 tool implementations (read, write, edit, run, ask, list, search, find). Each is self-contained.</div>
+      <div class="card-action">Split → tools/{file-ops, shell, search, ask}.ts</div>
+    </div>
+    <div class="card glass">
+      <div class="card-header">
+        <span class="card-title">slash/manage.ts</span>
+        <span class="card-lines lines-high">1,282</span>
+      </div>
+      <div class="card-path">src/commands/slash/manage.ts</div>
+      <div class="card-desc">Session management, context, focus, and cache operations in a single file.</div>
+      <div class="card-action">Split → manage/{sessions, context, cache}.ts</div>
+    </div>
+    <div class="card glass">
+      <div class="card-header">
+        <span class="card-title">OptaMenuOverlay.tsx</span>
+        <span class="card-lines lines-high">1,105</span>
+      </div>
+      <div class="card-path">src/tui/OptaMenuOverlay.tsx</div>
+      <div class="card-desc">Opta Menu + shortcuts + log navigation. Three sections that could be independent components.</div>
+      <div class="card-action">Extract menu items + shortcuts to menu/ subdir</div>
+    </div>
+    <div class="card glass">
+      <div class="card-header">
+        <span class="card-title">update.ts</span>
+        <span class="card-lines lines-high">1,084</span>
+      </div>
+      <div class="card-path">src/commands/update.ts</div>
+      <div class="card-desc">Update orchestration for CLI, LMX, and Plus components with SSH helpers and staging.</div>
+      <div class="card-action">Split → update/{cli, lmx, plus, journal}.ts</div>
+    </div>
+    <div class="card glass">
+      <div class="card-header">
+        <span class="card-title">agent.ts</span>
+        <span class="card-lines lines-medium">907</span>
+      </div>
+      <div class="card-path">src/core/agent.ts</div>
+      <div class="card-desc">Central agent loop. Already well-structured — orchestrates setup, streaming, permissions, tools.</div>
+      <div class="card-action">Monitor — borderline, acceptable complexity</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ SECTION 3: DEAD CODE ═══════════════ -->
+  <div class="neon-divider"></div>
+
+  <div class="section-header">
+    <div class="section-number">03</div>
+    <h2>Dead Code &amp; Unused Files</h2>
+    <span class="section-tag tag-high">~850 lines removable</span>
+  </div>
+
+  <div class="glass" style="padding: 24px; overflow-x: auto;">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>File</th>
+          <th>Lines</th>
+          <th>Status</th>
+          <th>Evidence</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="mono">src/commands/embed.ts</td>
+          <td>80</td>
+          <td><span class="priority p-critical">DEAD</span></td>
+          <td>Zero imports found anywhere in codebase</td>
+        </tr>
+        <tr>
+          <td class="mono">src/commands/rerank.ts</td>
+          <td>123</td>
+          <td><span class="priority p-critical">DEAD</span></td>
+          <td>Zero imports found anywhere in codebase</td>
+        </tr>
+        <tr>
+          <td class="mono">src/tui/StreamingIndicator.tsx</td>
+          <td>133</td>
+          <td><span class="priority p-critical">DEAD</span></td>
+          <td>Component never referenced by any TSX file</td>
+        </tr>
+        <tr>
+          <td class="mono">src/tui/AgentSwarmCard.tsx</td>
+          <td>137</td>
+          <td><span class="priority p-critical">DEAD</span></td>
+          <td>Component never referenced by any TSX file</td>
+        </tr>
+        <tr>
+          <td class="mono">src/core/model-recommend.ts</td>
+          <td>180</td>
+          <td><span class="priority p-critical">DEAD</span></td>
+          <td>Functions exported but never called</td>
+        </tr>
+        <tr>
+          <td class="mono">src/core/agent-execution.ts</td>
+          <td>234</td>
+          <td><span class="priority p-critical">DEAD</span></td>
+          <td>v0 feature — agent execution planning, never integrated</td>
+        </tr>
+        <tr>
+          <td class="mono">src/commands/onboard.ts</td>
+          <td>101</td>
+          <td><span class="priority p-high">LIKELY DEAD</span></td>
+          <td>Unclear if lazy-loaded — needs manual verification</td>
+        </tr>
+        <tr>
+          <td class="mono">src/skills/</td>
+          <td>—</td>
+          <td><span class="priority p-medium">PLACEHOLDER</span></td>
+          <td>Empty directory with only README.md</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ═══════════════ SECTION 4: PERFORMANCE ═══════════════ -->
+  <div class="neon-divider"></div>
+
+  <div class="section-header">
+    <div class="section-number">04</div>
+    <h2>Performance &amp; Memory Issues</h2>
+    <span class="section-tag tag-critical">3 Critical</span>
+  </div>
+
+  <div class="cards-grid">
+    <div class="card glass" style="border-color: rgba(239,68,68,0.2);">
+      <div class="card-header">
+        <span class="card-title">setTimeout without clearTimeout</span>
+        <span class="priority p-critical">CRITICAL</span>
+      </div>
+      <div class="card-path">src/commands/doctor.ts:309</div>
+      <div class="card-desc">
+        MCP connection timeout in <code>Promise.race()</code> — if the connection succeeds, the 5s timeout still fires and holds memory. No <code>clearTimeout()</code> on race winner.
+      </div>
+      <div class="card-action">Fix: Use AbortController + AbortSignal in Promise.race</div>
+    </div>
+    <div class="card glass" style="border-color: rgba(239,68,68,0.2);">
+      <div class="card-header">
+        <span class="card-title">Daemon reconnect timer leak</span>
+        <span class="priority p-critical">CRITICAL</span>
+      </div>
+      <div class="card-path">src/commands/chat.ts:480</div>
+      <div class="card-desc">
+        <code>setTimeout(reconnect, delay)</code> in WebSocket disconnect handler. No stored timer ID — if connection cycles, multiple timers accumulate.
+      </div>
+      <div class="card-action">Fix: Store timer ID, clearTimeout on connection success</div>
+    </div>
+    <div class="card glass" style="border-color: rgba(239,68,68,0.2);">
+      <div class="card-header">
+        <span class="card-title">Slash command barrel eager loading</span>
+        <span class="priority p-critical">CRITICAL</span>
+      </div>
+      <div class="card-path">src/commands/slash/index.ts</div>
+      <div class="card-desc">
+        All 12 slash command modules imported upfront into the registry. Used by TUI on every keystroke. Defeats the lazy-loading strategy.
+      </div>
+      <div class="card-action">Fix: Lazy-load handlers per command name, build registry dynamically</div>
+    </div>
+    <div class="card glass" style="border-color: rgba(245,158,11,0.2);">
+      <div class="card-header">
+        <span class="card-title">Config cache 1s TTL</span>
+        <span class="priority p-high">HIGH</span>
+      </div>
+      <div class="card-path">src/core/config.ts:491</div>
+      <div class="card-desc">
+        Config is fully re-parsed on every <code>loadConfig()</code> call if &gt;1s elapsed. Agent turns trigger this frequently. <code>stableStringify()</code> re-hashes entire object each time.
+      </div>
+      <div class="card-action">Fix: Extend TTL to 5-10s, or switch to file-watch invalidation</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ SECTION 5: CODE QUALITY ═══════════════ -->
+  <div class="neon-divider"></div>
+
+  <div class="section-header">
+    <div class="section-number">05</div>
+    <h2>Code Quality Scorecard</h2>
+    <span class="section-tag tag-done">Strong Overall</span>
+  </div>
+
+  <div class="glass" style="padding: 24px;">
+    <div class="metric-bar">
+      <span class="label">TypeScript Strict</span>
+      <div class="bar-track"><div class="bar-fill" style="width: 100%; background: var(--neon-green);"></div></div>
+      <span class="value" style="color: var(--neon-green);">0 errors</span>
+    </div>
+    <div class="metric-bar">
+      <span class="label">Circular Deps</span>
+      <div class="bar-track"><div class="bar-fill" style="width: 100%; background: var(--neon-green);"></div></div>
+      <span class="value" style="color: var(--neon-green);">0 found</span>
+    </div>
+    <div class="metric-bar">
+      <span class="label">`any` Usage</span>
+      <div class="bar-track"><div class="bar-fill" style="width: 98%; background: var(--neon-green);"></div></div>
+      <span class="value" style="color: var(--neon-green);">3 total</span>
+    </div>
+    <div class="metric-bar">
+      <span class="label">Test Coverage</span>
+      <div class="bar-track"><div class="bar-fill" style="width: 85%; background: var(--neon-blue);"></div></div>
+      <span class="value">165 files</span>
+    </div>
+    <div class="metric-bar">
+      <span class="label">Lazy Loading</span>
+      <div class="bar-track"><div class="bar-fill" style="width: 90%; background: var(--neon-blue);"></div></div>
+      <span class="value">All cmds</span>
+    </div>
+    <div class="metric-bar">
+      <span class="label">Error Consistency</span>
+      <div class="bar-track"><div class="bar-fill" style="width: 65%; background: var(--neon-amber);"></div></div>
+      <span class="value" style="color: var(--neon-amber);">3 patterns</span>
+    </div>
+    <div class="metric-bar">
+      <span class="label">AbortController</span>
+      <div class="bar-track"><div class="bar-fill" style="width: 35%; background: var(--neon-amber);"></div></div>
+      <span class="value" style="color: var(--neon-amber);">7/266</span>
+    </div>
+    <div class="metric-bar">
+      <span class="label">File Granularity</span>
+      <div class="bar-track"><div class="bar-fill" style="width: 55%; background: var(--neon-amber);"></div></div>
+      <span class="value" style="color: var(--neon-amber);">35 &gt;500L</span>
+    </div>
+  </div>
+
+  <div style="margin-top: 20px;">
+    <h3 style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 600; margin-bottom: 12px;">Health Checks</h3>
+    <div class="glass" style="padding: 20px;">
+      <ul class="checklist">
+        <li><span class="check-icon check-pass">✓</span> All 1,763 tests passing across 165 files</li>
+        <li><span class="check-icon check-pass">✓</span> Zero TypeScript errors in strict mode</li>
+        <li><span class="check-icon check-pass">✓</span> No circular dependencies detected</li>
+        <li><span class="check-icon check-pass">✓</span> ESM-only with .js extensions enforced</li>
+        <li><span class="check-icon check-pass">✓</span> Shell injection prevention via parseShellCommand</li>
+        <li><span class="check-icon check-pass">✓</span> Autonomy uses Math.floor (never rounds up)</li>
+        <li><span class="check-icon check-warn">!</span> 3 competing error handling patterns across modules</li>
+        <li><span class="check-icon check-warn">!</span> Only 7 of 266 files use AbortController for cancellation</li>
+        <li><span class="check-icon check-fail">✗</span> 2 setTimeout leaks in doctor.ts and chat.ts</li>
+        <li><span class="check-icon check-fail">✗</span> Slash command barrel defeats lazy-loading strategy</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ═══════════════ SECTION 6: DUPLICATION & CONSISTENCY ═══════════════ -->
+  <div class="neon-divider"></div>
+
+  <div class="section-header">
+    <div class="section-number">06</div>
+    <h2>Duplication &amp; Consistency</h2>
+    <span class="section-tag tag-low">Minimal Issues</span>
+  </div>
+
+  <div class="glass" style="padding: 24px;">
+    <ul class="checklist">
+      <li>
+        <span class="check-icon check-warn">!</span>
+        <div>
+          <strong style="color: var(--text-primary);">Duplicate: computeMessageLayoutWidths()</strong><br>
+          <span style="font-size: 0.8rem;">Defined in both <code style="color: var(--neon-cyan);">tui/MessageList.tsx</code> and <code style="color: var(--neon-cyan);">tui/layout.ts</code>. ~50 lines each. Keep in layout.ts, import in MessageList.</span>
+        </div>
+      </li>
+      <li>
+        <span class="check-icon check-info">i</span>
+        <div>
+          <strong style="color: var(--text-primary);">20 files define *Config types</strong><br>
+          <span style="font-size: 0.8rem;">Not duplication — each module has domain-specific config contracts. Normal modular pattern.</span>
+        </div>
+      </li>
+      <li>
+        <span class="check-icon check-warn">!</span>
+        <div>
+          <strong style="color: var(--text-primary);">Tools directory split</strong><br>
+          <span style="font-size: 0.8rem;"><code style="color: var(--neon-cyan);">src/tools/custom.ts</code> is isolated while other tools live in <code style="color: var(--neon-cyan);">src/core/tools/</code>. Consolidate under one location.</span>
+        </div>
+      </li>
+      <li>
+        <span class="check-icon check-pass">✓</span>
+        <div>
+          <strong style="color: var(--text-primary);">No true circular imports</strong><br>
+          <span style="font-size: 0.8rem;">All imports flow acyclic. config.ts does NOT import agent.ts. Clean dependency graph.</span>
+        </div>
+      </li>
+    </ul>
+  </div>
+
+  <!-- ═══════════════ SECTION 7: PRIORITY MATRIX ═══════════════ -->
+  <div class="neon-divider"></div>
+
+  <div class="section-header">
+    <div class="section-number">07</div>
+    <h2>Optimisation Priority Matrix</h2>
+    <span class="section-tag tag-critical">14 Actions</span>
+  </div>
+
+  <div class="glass" style="padding: 24px; overflow-x: auto;">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Priority</th>
+          <th>Action</th>
+          <th>Impact</th>
+          <th>Effort</th>
+          <th>LOC Change</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="priority p-critical">P0</span></td>
+          <td>Fix setTimeout leaks in doctor.ts + chat.ts</td>
+          <td>Memory safety</td>
+          <td>15 min</td>
+          <td>+20</td>
+        </tr>
+        <tr>
+          <td><span class="priority p-critical">P0</span></td>
+          <td>Lazy-load slash command barrel (slash/index.ts)</td>
+          <td>Startup perf</td>
+          <td>1 hour</td>
+          <td>+60 / -30</td>
+        </tr>
+        <tr>
+          <td><span class="priority p-critical">P1</span></td>
+          <td>Split models.ts (4,193L → 4 files)</td>
+          <td>Maintainability</td>
+          <td>2–3 hours</td>
+          <td>0 net</td>
+        </tr>
+        <tr>
+          <td><span class="priority p-critical">P1</span></td>
+          <td>Split slash/lmx.ts (2,632L → 4 files)</td>
+          <td>Maintainability</td>
+          <td>2 hours</td>
+          <td>0 net</td>
+        </tr>
+        <tr>
+          <td><span class="priority p-high">P2</span></td>
+          <td>Remove 8 dead code files (~850 lines)</td>
+          <td>Clarity</td>
+          <td>30 min</td>
+          <td>-850</td>
+        </tr>
+        <tr>
+          <td><span class="priority p-high">P2</span></td>
+          <td>Extend config cache TTL (1s → 5-10s)</td>
+          <td>Agent loop perf</td>
+          <td>15 min</td>
+          <td>+5</td>
+        </tr>
+        <tr>
+          <td><span class="priority p-high">P2</span></td>
+          <td>Split lmx/client.ts (1,915L → 4 files)</td>
+          <td>Maintainability</td>
+          <td>1.5 hours</td>
+          <td>0 net</td>
+        </tr>
+        <tr>
+          <td><span class="priority p-high">P2</span></td>
+          <td>Consolidate tools/ + core/tools/ directories</td>
+          <td>Consistency</td>
+          <td>30 min</td>
+          <td>+20</td>
+        </tr>
+        <tr>
+          <td><span class="priority p-medium">P3</span></td>
+          <td>Split tools/executors.ts (1,411L → 4 files)</td>
+          <td>Maintainability</td>
+          <td>1.5 hours</td>
+          <td>0 net</td>
+        </tr>
+        <tr>
+          <td><span class="priority p-medium">P3</span></td>
+          <td>Fix duplicate computeMessageLayoutWidths()</td>
+          <td>Clarity</td>
+          <td>10 min</td>
+          <td>-50</td>
+        </tr>
+        <tr>
+          <td><span class="priority p-medium">P3</span></td>
+          <td>Standardise error handling patterns per module</td>
+          <td>Reliability</td>
+          <td>2 hours</td>
+          <td>+100</td>
+        </tr>
+        <tr>
+          <td><span class="priority p-medium">P3</span></td>
+          <td>Add AbortController to streaming retries</td>
+          <td>Cancellation</td>
+          <td>1 hour</td>
+          <td>+40</td>
+        </tr>
+        <tr>
+          <td><span class="priority p-low">P4</span></td>
+          <td>Lazy-load benchmark/pages.ts rendering</td>
+          <td>Bundle size</td>
+          <td>30 min</td>
+          <td>+15</td>
+        </tr>
+        <tr>
+          <td><span class="priority p-low">P4</span></td>
+          <td>Document or remove src/skills/ placeholder</td>
+          <td>Clarity</td>
+          <td>5 min</td>
+          <td>0</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ═══════════════ SECTION 8: EXECUTION ROADMAP ═══════════════ -->
+  <div class="neon-divider"></div>
+
+  <div class="section-header">
+    <div class="section-number">08</div>
+    <h2>Execution Roadmap</h2>
+  </div>
+
+  <div class="timeline">
+    <div class="timeline-item phase-1 glass-subtle">
+      <div class="phase-label" style="color: var(--neon-red);">Phase 1 — Quick Wins (1 session)</div>
+      <div class="phase-title">Memory Safety &amp; Dead Code</div>
+      <div class="phase-desc">
+        Fix 2 setTimeout leaks (doctor.ts, chat.ts). Remove 8 dead files (~850 lines). Fix duplicate computeMessageLayoutWidths(). Document/remove skills/ placeholder. Extend config cache TTL.
+        <br><strong style="color: var(--text-muted); font-size: 0.75rem;">Estimated: 1-2 hours · Net: -880 lines</strong>
+      </div>
+    </div>
+    <div class="timeline-item phase-2 glass-subtle">
+      <div class="phase-label" style="color: var(--neon-amber);">Phase 2 — Monolith Splits (2-3 sessions)</div>
+      <div class="phase-title">Break Down the Big Three</div>
+      <div class="phase-desc">
+        Split models.ts (4,193L → 4 files). Split slash/lmx.ts (2,632L → 4 files). Split lmx/client.ts (1,915L → 4 files). Consolidate tools directories. Each split keeps tests passing via re-exports.
+        <br><strong style="color: var(--text-muted); font-size: 0.75rem;">Estimated: 6-8 hours · 0 net lines (reorganisation)</strong>
+      </div>
+    </div>
+    <div class="timeline-item phase-3 glass-subtle">
+      <div class="phase-label" style="color: var(--neon-blue);">Phase 3 — Performance (1-2 sessions)</div>
+      <div class="phase-title">Lazy Loading &amp; Cancellation</div>
+      <div class="phase-desc">
+        Lazy-load slash command barrel. Add AbortController to streaming retries and browser sessions. Lazy-load benchmark page renderers. Review all setInterval calls for .unref() compliance.
+        <br><strong style="color: var(--text-muted); font-size: 0.75rem;">Estimated: 3-4 hours · +120 lines</strong>
+      </div>
+    </div>
+    <div class="timeline-item phase-4 glass-subtle">
+      <div class="phase-label" style="color: var(--neon-green);">Phase 4 — Polish (ongoing)</div>
+      <div class="phase-title">Error Patterns &amp; Module Boundaries</div>
+      <div class="phase-desc">
+        Standardise error handling per module layer. Split remaining Tier 2 files (executors.ts, manage.ts, update.ts). Continue test coverage for browser adaptation and approval-log modules.
+        <br><strong style="color: var(--text-muted); font-size: 0.75rem;">Estimated: 4-6 hours · +150 lines (error contracts)</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ SECTION 9: WHAT'S ALREADY GREAT ═══════════════ -->
+  <div class="neon-divider"></div>
+
+  <div class="section-header">
+    <div class="section-number">09</div>
+    <h2>What's Already Excellent</h2>
+    <span class="section-tag tag-done">Strengths</span>
+  </div>
+
+  <div class="glass" style="padding: 24px;">
+    <ul class="checklist">
+      <li><span class="check-icon check-pass">✓</span> <strong>App.tsx decomposition</strong> — Reduced from 2,928 → 786 lines via 10 custom hooks. Exemplary refactoring.</li>
+      <li><span class="check-icon check-pass">✓</span> <strong>Lazy command loading</strong> — All 25 commands use dynamic import(). opta --help stays under 50ms.</li>
+      <li><span class="check-icon check-pass">✓</span> <strong>Zero circular dependencies</strong> — Clean acyclic import graph across 240+ files.</li>
+      <li><span class="check-icon check-pass">✓</span> <strong>Shell injection prevention</strong> — parseShellCommand tokeniser avoids sh -c. Proper security posture.</li>
+      <li><span class="check-icon check-pass">✓</span> <strong>Test-to-source ratio 0.69</strong> — 165 test files covering all major modules. Integration tests for browser, daemon, and chat flows.</li>
+      <li><span class="check-icon check-pass">✓</span> <strong>Type safety</strong> — Only 3 instances of `any` in 240+ files. Zod validation on config. Typed protocol contracts.</li>
+      <li><span class="check-icon check-pass">✓</span> <strong>ESM discipline</strong> — Consistent .js extensions, no require(), proper module boundaries.</li>
+      <li><span class="check-icon check-pass">✓</span> <strong>TUI architecture</strong> — Clean hook extraction, Ink/React components, keybinding centralisation.</li>
+      <li><span class="check-icon check-pass">✓</span> <strong>Protocol contracts</strong> — Typed v3 HTTP + WS message contracts shared between daemon and clients.</li>
+      <li><span class="check-icon check-pass">✓</span> <strong>Autonomy safety</strong> — Math.floor prevents accidental level escalation. CI mode denies all `ask` permissions.</li>
+    </ul>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div class="opta-glyph">OPTA</div>
+    <p>Generated 2026-02-27 · Opta CLI v0.5.0-alpha.1 · 240+ files · 70,978 lines</p>
+    <p style="margin-top: 4px;">Codebase intelligence by Claude Opus 4.6</p>
+  </div>
+
+</div>
+
+</body>
+</html>

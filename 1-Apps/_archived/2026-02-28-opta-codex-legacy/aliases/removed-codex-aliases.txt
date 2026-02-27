@@ -1,0 +1,3 @@
+/Users/matthewbyrden/Synced/Opta/1-Apps/1P-Opta-Codex-App -> ./optalocal/1P-Opta-Code-Desktop
+/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1P-Opta-Codex-App -> ./1P-Opta-Code-Desktop
+/Users/matthewbyrden/Synced/Opta/1-Apps/1D-Opta-CLI-TS/apps/opta-codex-desktop -> [non-symlink removed]

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.opta.phone-bridge</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/opt/homebrew/bin/bun</string>
+    <string>run</string>
+    <string>/Users/matthewbyrden/Synced/Opta/1-Apps/opta-phone-bridge/src/index.ts</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>ANTHROPIC_API_KEY</key>
+    <string>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</string>
+    <key>PORT</key>
+    <string>3333</string>
+    <key>MODEL</key>
+    <string>claude-sonnet-4-6</string>
+    <key>MAX_TOKENS</key>
+    <string>1024</string>
+  </dict>
+  <key>WorkingDirectory</key>
+  <string>/Users/matthewbyrden/Synced/Opta/1-Apps/opta-phone-bridge</string>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>StandardOutPath</key>
+  <string>/tmp/opta-phone-bridge.log</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/opta-phone-bridge.err</string>
+</dict>
+</plist>

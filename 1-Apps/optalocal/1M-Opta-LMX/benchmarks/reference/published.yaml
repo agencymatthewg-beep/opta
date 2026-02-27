@@ -1,0 +1,40 @@
+# benchmarks/reference/published.yaml
+# Published performance benchmarks from community sources.
+# Hardware: M3 Ultra 512GB unless noted.
+# Add entries as each model is tested on LMX.
+#
+# Format:
+# <huggingface-model-id>:
+#   opta_lmx:
+#     toks_per_sec: <float>
+#     ttft_sec: <float>
+#     source: "<url or description>"
+#     hardware: "<hardware string>"
+#   lm_studio:
+#     toks_per_sec: <float>
+#     ttft_sec: <float>
+#     source: "<url or description>"
+#     hardware: "<hardware string>"
+
+inferencerlabs/MiniMax-M2.5-MLX-6.5bit:
+  opta_lmx:
+    toks_per_sec: 30.0
+    ttft_sec: 3.391
+    source: "Opta512 local benchmark, 2026-02-26, 5 runs (1 cold excluded)"
+    hardware: "Apple M3 Ultra, 512GB unified memory"
+    notes: "TTFT includes think-mode CoT; warm steady-state ~30.2 tok/s"
+
+mlx-community/MiniMax-M2.5-4bit:
+  opta_lmx:
+    toks_per_sec: null
+    ttft_sec: null
+    source: "pending — not yet benchmarked on LMX"
+    hardware: "Apple M3 Ultra, 512GB unified memory"
+
+mlx-community/Kimi-K2.5-3bit:
+  opta_lmx:
+    toks_per_sec: N/A
+    ttft_sec: 
+    source: "Opta512 local benchmark, 2026-02-26, 5 runs (1 cold excluded)"
+    hardware: "Apple M3 Ultra, 512GB unified memory"
+    notes: "1T MoE model, 32B active params. Will auto-benchmark on completion."

@@ -1,0 +1,93 @@
+name: Opta LMX CI
+
+on:
+  pull_request:
+    paths:
+      - '1-Apps/optalocal/1M-Opta-LMX/**'
+      - '.github/workflows/opta-lmx-ci.yml'
+      - '1-Apps/optalocal/1M-Opta-LMX/requirements-ci-lock.txt'
+  push:
+    branches:
+      - main
+    paths:
+      - '1-Apps/optalocal/1M-Opta-LMX/**'
+      - '.github/workflows/opta-lmx-ci.yml'
+      - '1-Apps/optalocal/1M-Opta-LMX/requirements-ci-lock.txt'
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: 1-Apps/optalocal/1M-Opta-LMX
+
+jobs:
+  quality:
+    name: Ruff, Mypy, Pytest
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: 1-Apps/optalocal/1M-Opta-LMX/requirements-ci-lock.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-ci-lock.txt
+
+      - name: Ruff
+        run: ruff check src tests
+
+      - name: Mypy
+        run: mypy src
+
+      - name: Pytest
+        run: PYTHONPATH=src pytest -q
+
+      - name: OpenClaw Compatibility Contracts
+        run: PYTHONPATH=src pytest -q tests/test_openclaw_compat.py
+
+      - name: OpenClaw Load Profile
+        run: PYTHONPATH=src pytest -q tests/test_openclaw_load_profile.py
+
+      - name: Performance Regression Gate
+        env:
+          LMX_PERF_GATE_MAX_P95_SEC: "0.60"
+          LMX_PERF_GATE_MIN_THROUGHPUT_RPS: "20.0"
+        run: PYTHONPATH=src pytest -q tests/test_perf_gate.py
+
+  mlx-apple-smoke:
+    name: Apple Silicon MLX Smoke
+    runs-on: macos-14
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    env:
+      LMX_RUN_REAL_MLX_SMOKE: "1"
+      LMX_MLX_SMOKE_MODEL: "mlx-community/SmolLM2-360M-Instruct-4bit"
+      LMX_MLX_SMOKE_TIMEOUT_SEC: "1800"
+      HF_HUB_DISABLE_TELEMETRY: "1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: 1-Apps/optalocal/1M-Opta-LMX/requirements-ci-lock.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r 1-Apps/optalocal/1M-Opta-LMX/requirements-ci-lock.txt
+
+      - name: Run Real MLX Smoke Test
+        run: PYTHONPATH=1-Apps/optalocal/1M-Opta-LMX/src pytest -q 1-Apps/optalocal/1M-Opta-LMX/tests/test_mlx_real_smoke.py

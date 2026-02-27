@@ -20,7 +20,7 @@ When this command is invoked, open all Opta projects:
 ### VS Code Projects
 3. **Optamize** (Tauri desktop app)
    ```bash
-   code ~/Synced/Opta/1-Apps/1J-Optamize-MacOS
+   code ~/Synced/Opta/1-Apps/optamize/1J-Optamize-MacOS
    ```
 
 4. **AICompare** (Next.js web app)
@@ -34,7 +34,7 @@ Run all open commands in parallel to launch quickly:
 
 ```bash
 open ~/Synced/Opta/1-Apps/1G-Opta-Mini-MacOS/OptaMini.xcodeproj &
-code ~/Synced/Opta/1-Apps/1J-Optamize-MacOS &
+code ~/Synced/Opta/1-Apps/optamize/1J-Optamize-MacOS &
 code ~/Synced/Opta/1-Apps/1B-AICompare-Web &
 wait
 ```

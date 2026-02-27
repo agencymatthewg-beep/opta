@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.opta.lmx</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/bin/caffeinate</string>
+        <string>-i</string>
+        <string>/Users/opta/venvs/mlx/bin/python</string>
+        <string>-m</string>
+        <string>opta_lmx.main</string>
+        <string>--config</string>
+        <string>/Users/Shared/312/Opta/1-Apps/1M-Opta-LMX/config/mono512-current.yaml</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/Shared/312/Opta/1-Apps/1M-Opta-LMX</string>
+
+    <key>UserName</key>
+    <string>opta</string>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/var/log/opta-lmx/opta-lmx.stdout.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/var/log/opta-lmx/opta-lmx.stderr.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/Users/opta/venvs/mlx/bin:/usr/local/bin:/usr/bin:/bin</string>
+        <key>HOME</key>
+        <string>/Users/opta</string>
+        <key>PYTHONUNBUFFERED</key>
+        <string>1</string>
+        <key>PYTHONPATH</key>
+        <string>/Users/Shared/312/Opta/1-Apps/1M-Opta-LMX/src</string>
+    </dict>
+
+    <key>SoftResourceLimits</key>
+    <dict>
+        <key>NumberOfFiles</key>
+        <integer>65536</integer>
+    </dict>
+
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+
+    <key>ProcessType</key>
+    <string>Standard</string>
+
+    <key>ExitTimeOut</key>
+    <integer>120</integer>
+
+    <key>AbandonProcessGroup</key>
+    <false/>
+</dict>
+</plist>

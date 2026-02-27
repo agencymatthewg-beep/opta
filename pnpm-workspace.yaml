@@ -1,7 +1,11 @@
 packages:
   - "6-Packages/*"
-  - "1-Apps/1A-AI-Components-Web"
-  - "1-Apps/1B-AICompare-Web"
-  - "1-Apps/1F-Opta-Life-Web"
-  - "1-Apps/1K-Optamize-Web"
-  - "1-Apps/1L-Opta-Local/web"
+  # optamize domain
+  - "1-Apps/optamize/1F-Opta-Life-Web"
+  # optalocal domain
+  - "1-Apps/optalocal/1L-Opta-Local/web"
+  - "1-Apps/optalocal/1D-Opta-CLI-TS"
+  - "1-Apps/optalocal/1O-Opta-Init"
+  # shared
+  - "1-Apps/shared/1A-AI-Components/components-web"
+  - "1-Apps/shared/1A-AI-Components/aicompare-web"

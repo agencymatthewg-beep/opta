@@ -1,0 +1,25 @@
+{
+    "model_id": "inferencerlabs/MiniMax-M2.5-MLX-6.5bit",
+    "backend": "MLXLMBackend",
+    "timestamp": "2026-02-26T00:27:00+00:00",
+    "status": "ok",
+    "hardware": "Apple M3 Ultra (512GB)",
+    "lmx_version": "0.1.0",
+    "prompt": "Explain the theory of relativity in simple terms.",
+    "runs": 5,
+    "cold_run_excluded": true,
+    "results": {
+        "run1_cold": {"toks_per_sec": 18.84, "ttft_ms": 5520.88},
+        "run2": {"toks_per_sec": 30.85, "ttft_ms": 3403.67},
+        "run3": {"toks_per_sec": 29.36, "ttft_ms": 3405.38},
+        "run4": {"toks_per_sec": 30.60, "ttft_ms": 3365.62},
+        "run5": {"toks_per_sec": 29.20, "ttft_ms": 3390.42}
+    },
+    "summary": {
+        "warm_avg_toks_per_sec": 30.0,
+        "warm_p50_toks_per_sec": 30.22,
+        "warm_avg_ttft_ms": 3391.3,
+        "overall_avg_toks_per_sec": 27.77,
+        "notes": "TTFT includes think-mode CoT latency (model uses extended reasoning). Cold run 1 discarded."
+    }
+}

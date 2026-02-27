@@ -26,12 +26,14 @@ Matthew's business. All Opta apps and services.
 
 | Folder | Description |
 |--------|-------------|
+| `2-Docs/` | All documentation (consolidated) |
+| `3-Services/` | Infrastructure (gateway) |
+| `4-Ideas/` | Ideas and brainstorms |
 | `6-Packages/` | Shared npm packages (`@opta/*`) |
 | `7-Personal/` | Personal notes |
 | `8-Project/` | Project management docs |
 | `8-Project/8B-Shared-Assets/` | Cross-app design assets, logos |
-| `2-Docs/` | Documentation |
-| `4-Ideas/` | Ideas and brainstorms |
+| `12-Session-Logs/` | Session logs and updates |
 
 ## Dev Setup
 ```bash

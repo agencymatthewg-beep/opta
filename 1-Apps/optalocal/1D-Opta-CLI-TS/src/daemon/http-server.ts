@@ -1,0 +1,455 @@
+import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
+import websocket from '@fastify/websocket';
+import { VERSION } from '../core/version.js';
+import {
+  BackgroundKillHttpSchema,
+  BackgroundListQuerySchema,
+  BackgroundOutputQuerySchema,
+  BackgroundProcessParamsSchema,
+  BackgroundStartHttpSchema,
+  BackgroundStatusQuerySchema,
+  CreateSessionHttpSchema,
+  EventsQuerySchema,
+  PermissionDecisionHttpSchema,
+  PermissionParamsSchema,
+  SessionParamsSchema,
+  SubmitTurnHttpSchema,
+} from '../protocol/v3/http.js';
+import type { V3Envelope } from '../protocol/v3/types.js';
+import type { SessionManager } from './session-manager.js';
+import { registerWsServer } from './ws-server.js';
+import { writeDaemonState, type DaemonState } from './lifecycle.js';
+import { daemonLogsPath } from './telemetry.js';
+import { isStorageRelatedError } from '../utils/disk.js';
+
+export interface HttpServerOptions {
+  daemonId: string;
+  host: string;
+  port: number;
+  token: string;
+  sessionManager: SessionManager;
+}
+
+export interface RunningHttpServer {
+  app: FastifyInstance;
+  host: string;
+  port: number;
+  close: () => Promise<void>;
+}
+
+function readBearer(req: FastifyRequest): string | null {
+  const auth = req.headers.authorization;
+  if (!auth) return null;
+  const trimmed = auth.trim();
+  if (!trimmed.toLowerCase().startsWith('bearer ')) return null;
+  return trimmed.slice(7).trim() || null;
+}
+
+function isAuthorized(req: FastifyRequest, expectedToken: string): boolean {
+  const fromHeader = readBearer(req);
+  if (fromHeader === expectedToken) return true;
+  const query = req.query as { token?: string } | undefined;
+  return query?.token === expectedToken;
+}
+
+function rejectUnauthorized(reply: FastifyReply): FastifyReply {
+  return reply.status(401).send({ error: 'Unauthorized' });
+}
+
+function mapMutationError(err: unknown): { status: number; message: string } {
+  const message = err instanceof Error ? err.message : String(err);
+  if (/Session not found/i.test(message)) {
+    return { status: 404, message };
+  }
+  if (isStorageRelatedError(err)) {
+    return { status: 507, message };
+  }
+  return { status: 500, message };
+}
+
+async function waitForTurnDone(
+  sessionManager: SessionManager,
+  sessionId: string,
+  turnId: string,
+  timeoutMs = 600_000
+): Promise<{ stats: unknown; message: string }> {
+  return new Promise((resolve, reject) => {
+    let done = false;
+    const timeout = setTimeout(() => {
+      if (done) return;
+      done = true;
+      unsubscribe();
+      reject(new Error(`Timed out waiting for turn ${turnId}`));
+    }, timeoutMs);
+    timeout.unref();
+
+    const unsubscribe = sessionManager.subscribe(sessionId, (event) => {
+      if (done) return;
+      if (event.event === 'turn.done') {
+        const payload = event.payload as { turnId?: string; stats?: unknown };
+        if (payload.turnId !== turnId) return;
+        done = true;
+        clearTimeout(timeout);
+        unsubscribe();
+        void sessionManager.getSessionMessages(sessionId).then((messages) => {
+          const assistantMsgs = (messages ?? []).filter(m => m.role === 'assistant');
+          const last = assistantMsgs[assistantMsgs.length - 1];
+          const text = typeof last?.content === 'string' ? last.content : '';
+          resolve({ stats: payload.stats, message: text });
+        }).catch(reject);
+      }
+      if (event.event === 'turn.error') {
+        const payload = event.payload as { turnId?: string; message?: string };
+        if (payload.turnId !== turnId) return;
+        done = true;
+        clearTimeout(timeout);
+        unsubscribe();
+        reject(new Error(payload.message ?? 'Turn failed'));
+      }
+    });
+  });
+}
+
+async function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions): Promise<void> {
+  app.get('/health', async () => ({
+    status: 'ok',
+    version: VERSION,
+    daemon: true,
+  }));
+
+  app.get('/v3/health', async () => ({
+    status: 'ok',
+    version: VERSION,
+    daemonId: opts.daemonId,
+    runtime: opts.sessionManager.getRuntimeStats(),
+  }));
+
+  app.get('/v3/metrics', async (req, reply) => {
+    if (!isAuthorized(req, opts.token)) return rejectUnauthorized(reply);
+    const runtime = opts.sessionManager.getRuntimeStats();
+    return {
+      daemonId: opts.daemonId,
+      runtime,
+      ts: new Date().toISOString(),
+    };
+  });
+
+  app.post('/v3/sessions', async (req, reply) => {
+    if (!isAuthorized(req, opts.token)) return rejectUnauthorized(reply);
+    const parsed = CreateSessionHttpSchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      return reply.status(400).send({ error: 'Invalid request body', details: parsed.error.issues });
+    }
+    const snapshot = await opts.sessionManager.createSession(parsed.data);
+    return reply.status(201).send(snapshot);
+  });
+
+  app.get('/v3/sessions/:sessionId', async (req, reply) => {
+    if (!isAuthorized(req, opts.token)) return rejectUnauthorized(reply);
+    const parsed = SessionParamsSchema.safeParse(req.params);
+    if (!parsed.success) return reply.status(400).send({ error: 'Invalid session id' });
+
+    const snapshot = await opts.sessionManager.getSession(parsed.data.sessionId);
+    if (!snapshot) return reply.status(404).send({ error: 'Session not found' });
+    const messages = await opts.sessionManager.getSessionMessages(parsed.data.sessionId);
+    return { ...snapshot, messages: messages ?? [] };
+  });
+
+  app.post('/v3/sessions/:sessionId/turns', async (req, reply) => {
+    if (!isAuthorized(req, opts.token)) return rejectUnauthorized(reply);
+    const params = SessionParamsSchema.safeParse(req.params);
+    if (!params.success) return reply.status(400).send({ error: 'Invalid session id' });
+    const body = SubmitTurnHttpSchema.safeParse(req.body ?? {});
+    if (!body.success) {
+      return reply.status(400).send({ error: 'Invalid request body', details: body.error.issues });
+    }
+
+    try {
+      const queued = await opts.sessionManager.submitTurn(params.data.sessionId, body.data);
+      return reply.status(202).send(queued);
+    } catch (err) {
+      const mapped = mapMutationError(err);
+      return reply.status(mapped.status).send({ error: mapped.message });
+    }
+  });
+
+  app.post('/v3/sessions/:sessionId/cancel', async (req, reply) => {
+    if (!isAuthorized(req, opts.token)) return rejectUnauthorized(reply);
+    const params = SessionParamsSchema.safeParse(req.params);
+    if (!params.success) return reply.status(400).send({ error: 'Invalid session id' });
+    const body = req.body as { turnId?: string; writerId?: string } | undefined;
+    const cancelled = await opts.sessionManager.cancelSessionTurns(params.data.sessionId, {
+      turnId: body?.turnId,
+      writerId: body?.writerId,
+    });
+    return { cancelled };
+  });
+
+  app.post('/v3/sessions/:sessionId/permissions/:requestId', async (req, reply) => {
+    if (!isAuthorized(req, opts.token)) return rejectUnauthorized(reply);
+    const params = PermissionParamsSchema.safeParse(req.params);
+    if (!params.success) return reply.status(400).send({ error: 'Invalid params' });
+    const body = PermissionDecisionHttpSchema.safeParse(req.body ?? {});
+    if (!body.success) return reply.status(400).send({ error: 'Invalid body', details: body.error.issues });
+
+    const result = opts.sessionManager.resolvePermission(params.data.sessionId, body.data);
+    if (!result.ok && result.conflict) {
+      return reply.status(409).send(result);
+    }
+    if (!result.ok) {
+      return reply.status(404).send(result);
+    }
+    return result;
+  });
+
+  app.get('/v3/sessions/:sessionId/events', async (req, reply) => {
+    if (!isAuthorized(req, opts.token)) return rejectUnauthorized(reply);
+    const params = SessionParamsSchema.safeParse(req.params);
+    if (!params.success) return reply.status(400).send({ error: 'Invalid session id' });
+    const query = EventsQuerySchema.safeParse(req.query ?? {});
+    if (!query.success) return reply.status(400).send({ error: 'Invalid query' });
+    const events = await opts.sessionManager.getEventsAfter(params.data.sessionId, query.data.afterSeq);
+    return { events };
+  });
+
+  app.get('/v3/background', async (req, reply) => {
+    if (!isAuthorized(req, opts.token)) return rejectUnauthorized(reply);
+    const query = BackgroundListQuerySchema.safeParse(req.query ?? {});
+    if (!query.success) return reply.status(400).send({ error: 'Invalid query', details: query.error.issues });
+
+    try {
+      const processes = await opts.sessionManager.listBackgroundProcesses(query.data.sessionId);
+      return { processes };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (/Session not found/i.test(message)) {
+        return reply.status(404).send({ error: message });
+      }
+      return reply.status(500).send({ error: message });
+    }
+  });
+
+  app.post('/v3/background/start', async (req, reply) => {
+    if (!isAuthorized(req, opts.token)) return rejectUnauthorized(reply);
+    const body = BackgroundStartHttpSchema.safeParse(req.body ?? {});
+    if (!body.success) return reply.status(400).send({ error: 'Invalid body', details: body.error.issues });
+
+    try {
+      const process = await opts.sessionManager.startBackgroundProcess(body.data);
+      return reply.status(201).send({ process });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (/Session not found/i.test(message)) {
+        return reply.status(404).send({ error: message });
+      }
+      if (/Max concurrent processes/i.test(message)) {
+        return reply.status(409).send({ error: message });
+      }
+      return reply.status(500).send({ error: message });
+    }
+  });
+
+  app.get('/v3/background/:processId/status', async (req, reply) => {
+    if (!isAuthorized(req, opts.token)) return rejectUnauthorized(reply);
+    const params = BackgroundProcessParamsSchema.safeParse(req.params);
+    if (!params.success) return reply.status(400).send({ error: 'Invalid process id' });
+    const query = BackgroundStatusQuerySchema.safeParse(req.query ?? {});
+    if (!query.success) return reply.status(400).send({ error: 'Invalid query', details: query.error.issues });
+
+    const process = opts.sessionManager.getBackgroundStatus(params.data.processId);
+    if (!process) return reply.status(404).send({ error: 'Background process not found' });
+    if (query.data.sessionId && process.sessionId !== query.data.sessionId) {
+      return reply.status(404).send({ error: 'Background process not found' });
+    }
+    return { process };
+  });
+
+  app.get('/v3/background/:processId/output', async (req, reply) => {
+    if (!isAuthorized(req, opts.token)) return rejectUnauthorized(reply);
+    const params = BackgroundProcessParamsSchema.safeParse(req.params);
+    if (!params.success) return reply.status(400).send({ error: 'Invalid process id' });
+    const query = BackgroundOutputQuerySchema.safeParse(req.query ?? {});
+    if (!query.success) return reply.status(400).send({ error: 'Invalid query', details: query.error.issues });
+
+    const output = opts.sessionManager.getBackgroundOutput(params.data.processId, query.data);
+    if (!output) return reply.status(404).send({ error: 'Background process not found' });
+    return output;
+  });
+
+  app.post('/v3/background/:processId/kill', async (req, reply) => {
+    if (!isAuthorized(req, opts.token)) return rejectUnauthorized(reply);
+    const params = BackgroundProcessParamsSchema.safeParse(req.params);
+    if (!params.success) return reply.status(400).send({ error: 'Invalid process id' });
+    const body = BackgroundKillHttpSchema.safeParse(req.body ?? {});
+    if (!body.success) return reply.status(400).send({ error: 'Invalid body', details: body.error.issues });
+
+    const result = await opts.sessionManager.killBackgroundProcess(
+      params.data.processId,
+      body.data.signal
+    );
+    if (!result) return reply.status(404).send({ error: 'Background process not found' });
+    return result;
+  });
+
+  app.get('/v3/sse/events', async (req, reply) => {
+    if (!isAuthorized(req, opts.token)) return rejectUnauthorized(reply);
+    const query = req.query as { sessionId?: string; afterSeq?: string };
+    const sessionId = query.sessionId;
+    if (!sessionId) {
+      return reply.status(400).send({ error: 'Missing sessionId query param' });
+    }
+    const afterSeq = Number.parseInt(query.afterSeq ?? '0', 10);
+    const safeAfter = Number.isFinite(afterSeq) ? afterSeq : 0;
+
+    reply.raw.setHeader('Content-Type', 'text/event-stream');
+    reply.raw.setHeader('Cache-Control', 'no-cache, no-transform');
+    reply.raw.setHeader('Connection', 'keep-alive');
+    reply.raw.write(': connected\n\n');
+
+    let cursorSeq = safeAfter;
+    let replaying = true;
+    const bufferedLive: V3Envelope[] = [];
+
+    const writeEvent = (event: V3Envelope) => {
+      reply.raw.write(`data: ${JSON.stringify(event)}\n\n`);
+    };
+
+    const flushBufferedLive = () => {
+      if (bufferedLive.length === 0) return;
+      bufferedLive.sort((a, b) => a.seq - b.seq);
+      for (const event of bufferedLive) {
+        if (event.seq <= cursorSeq) continue;
+        cursorSeq = event.seq;
+        writeEvent(event);
+      }
+      bufferedLive.length = 0;
+    };
+
+    const unsubscribe = opts.sessionManager.subscribe(sessionId, (event) => {
+      if (event.seq <= cursorSeq) return;
+      if (replaying) {
+        bufferedLive.push(event);
+        return;
+      }
+      cursorSeq = event.seq;
+      writeEvent(event);
+    });
+
+    try {
+      const history = await opts.sessionManager.getEventsAfter(sessionId, safeAfter);
+      history.sort((a, b) => a.seq - b.seq);
+      for (const event of history) {
+        if (event.seq <= cursorSeq) continue;
+        cursorSeq = event.seq;
+        writeEvent(event);
+      }
+    } finally {
+      replaying = false;
+      flushBufferedLive();
+    }
+
+    const heartbeat = setInterval(() => {
+      if (!reply.raw.writable || reply.raw.destroyed) {
+        clearInterval(heartbeat);
+        return;
+      }
+      try {
+        reply.raw.write(': ping\n\n');
+      } catch {
+        clearInterval(heartbeat);
+        unsubscribe();
+      }
+    }, 15_000);
+    heartbeat.unref();
+
+    req.raw.on('close', () => {
+      clearInterval(heartbeat);
+      unsubscribe();
+      reply.raw.end();
+    });
+  });
+
+  // Legacy compatibility endpoint for existing scripts.
+  app.post('/v1/chat', async (req, reply) => {
+    const body = req.body as { message?: unknown; session_id?: unknown } | undefined;
+    if (!body || typeof body.message !== 'string' || !body.message.trim()) {
+      return reply.status(400).send({ error: 'Missing required field: message (string)' });
+    }
+
+    try {
+      const requestedId = typeof body.session_id === 'string' ? body.session_id : undefined;
+      const session = await opts.sessionManager.createSession({
+        sessionId: requestedId,
+      });
+      const queued = await opts.sessionManager.submitTurn(session.sessionId, {
+        clientId: 'legacy-http',
+        writerId: 'legacy-http',
+        content: body.message,
+        mode: 'do',
+      });
+      const done = await waitForTurnDone(opts.sessionManager, session.sessionId, queued.turnId);
+      return {
+        session_id: session.sessionId,
+        response: done.message,
+        stats: done.stats,
+        model: session.model,
+      };
+    } catch (err) {
+      const mapped = mapMutationError(err);
+      return reply.status(mapped.status).send({
+        error: mapped.message,
+      });
+    }
+  });
+}
+
+async function listenWithPortFallback(app: FastifyInstance, host: string, preferredPort: number): Promise<number> {
+  const candidates = [preferredPort, ...Array.from({ length: 21 }, (_, idx) => 10_000 + idx)];
+  const occupied: number[] = [];
+  for (const candidate of candidates) {
+    try {
+      await app.listen({ host, port: candidate });
+      return candidate;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (!/EADDRINUSE/i.test(msg)) throw err;
+      occupied.push(candidate);
+    }
+  }
+  throw new Error(`No available daemon port found (occupied: ${occupied.join(', ')})`);
+}
+
+export async function startHttpServer(opts: HttpServerOptions): Promise<RunningHttpServer> {
+  const app = Fastify({
+    logger: false,
+    bodyLimit: 10 * 1024 * 1024,
+  });
+
+  await app.register(websocket);
+  await registerHttpRoutes(app, opts);
+  await registerWsServer(app, {
+    sessionManager: opts.sessionManager,
+    token: opts.token,
+  });
+
+  const boundPort = await listenWithPortFallback(app, opts.host, opts.port);
+  const state: DaemonState = {
+    pid: process.pid,
+    daemonId: opts.daemonId,
+    host: opts.host,
+    port: boundPort,
+    token: opts.token,
+    startedAt: new Date().toISOString(),
+    logsPath: daemonLogsPath(),
+  };
+  await writeDaemonState(state);
+
+  return {
+    app,
+    host: opts.host,
+    port: boundPort,
+    close: async () => {
+      await app.close();
+    },
+  };
+}

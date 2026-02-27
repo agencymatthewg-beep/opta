@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "fingerprint": "darwin:arm64:16:51539607552",
+  "createdAt": "2026-02-23T17:27:10.968Z",
+  "updatedAt": "2026-02-23T17:27:10.968Z",
+  "thresholds": {
+    "cpuHighPct": 90,
+    "memoryHighPct": 92,
+    "eventLoopLagMs": 205,
+    "diskWriteKbPerSec": 65000
+  }
+}

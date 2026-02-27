@@ -1,0 +1,31 @@
+# Opta-LMX Default Configuration
+# Copy to ~/.opta-lmx/config.yaml and customize
+
+server:
+  host: "127.0.0.1"
+  port: 1234
+  workers: 1
+  timeout_sec: 300
+
+models:
+  default_model: null
+  # models_directory: "~/.opta-lmx/models"  # Defaults to ~/.opta-lmx/models; override here if needed
+  auto_load: []
+  use_batching: true
+  max_concurrent_requests: 4   # Limits parallel inference to prevent OOM
+  inference_timeout_sec: 300   # Max seconds per inference request
+  warmup_on_load: true         # Prime JIT/Metal shaders after model load
+
+memory:
+  max_memory_percent: 90
+  auto_evict_lru: true
+
+logging:
+  level: "INFO"
+  format: "structured"
+  file: null
+  max_file_bytes: 52428800   # 50MB
+  backup_count: 5
+
+security:
+  admin_key: null  # Set to a string to require X-Admin-Key header on /admin/* endpoints

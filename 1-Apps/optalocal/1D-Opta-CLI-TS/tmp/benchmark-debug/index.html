@@ -1,0 +1,535 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Opta Benchmark Suite</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #06030f;
+      --panel: rgba(16, 10, 37, 0.82);
+      --panel-soft: rgba(24, 15, 53, 0.62);
+      --ink: #f2ecff;
+      --muted: #b6a8da;
+      --accent: #8f6bff;
+      --accent-2: #15e4ff;
+      --good: #29d8a1;
+      --border: rgba(162, 133, 255, 0.35);
+      --shadow: 0 24px 70px rgba(4, 2, 11, 0.66);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: 'Bricolage Grotesque', sans-serif;
+      background:
+        radial-gradient(circle at 12% 8%, rgba(143, 107, 255, 0.25), transparent 38%),
+        radial-gradient(circle at 85% 15%, rgba(21, 228, 255, 0.13), transparent 38%),
+        radial-gradient(circle at 45% 95%, rgba(133, 89, 255, 0.22), transparent 40%),
+        linear-gradient(140deg, #070212, #120929 45%, #05040d);
+      color: var(--ink);
+      min-height: 100vh;
+      padding: 40px 18px 56px;
+    }
+
+    .shell {
+      width: min(1080px, 100%);
+      margin: 0 auto;
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      background: linear-gradient(130deg, rgba(21, 12, 51, 0.88), rgba(10, 8, 23, 0.92));
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      overflow: hidden;
+    }
+
+    .hero {
+      padding: 34px 34px 26px;
+      border-bottom: 1px solid rgba(162, 133, 255, 0.28);
+      display: grid;
+      gap: 18px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      width: fit-content;
+      background: rgba(143, 107, 255, 0.17);
+      border: 1px solid rgba(160, 132, 255, 0.45);
+      color: #f8f4ff;
+      border-radius: 999px;
+      padding: 7px 13px;
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-family: 'IBM Plex Mono', monospace;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(30px, 6vw, 58px);
+      line-height: 1;
+      letter-spacing: -0.02em;
+      max-width: 15ch;
+    }
+
+    .hero p {
+      margin: 0;
+      color: var(--muted);
+      max-width: 75ch;
+      font-size: 17px;
+      line-height: 1.6;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .meta span {
+      border-radius: 999px;
+      padding: 6px 12px;
+      border: 1px solid rgba(121, 208, 255, 0.5);
+      color: #d9f7ff;
+      background: rgba(18, 68, 98, 0.24);
+      font: 500 12px 'IBM Plex Mono', monospace;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 14px;
+      padding: 22px;
+    }
+
+    .card {
+      border: 1px solid rgba(163, 134, 255, 0.28);
+      border-radius: 20px;
+      padding: 20px;
+      display: grid;
+      gap: 14px;
+      background: linear-gradient(140deg, var(--panel), var(--panel-soft));
+      transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .card.active {
+      border-color: rgba(205, 184, 255, 0.9);
+      box-shadow: 0 0 0 1px rgba(182, 157, 255, 0.65), 0 16px 42px rgba(10, 7, 23, 0.58);
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(183, 161, 255, 0.62);
+      box-shadow: 0 14px 35px rgba(9, 6, 21, 0.5);
+    }
+
+    .card h2 {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1.15;
+    }
+
+    .card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 15px;
+    }
+
+    .card-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .run-one,
+    .run-suite,
+    .open-link {
+      appearance: none;
+      border: 1px solid rgba(179, 157, 255, 0.55);
+      border-radius: 999px;
+      padding: 8px 13px;
+      font: 500 12px 'IBM Plex Mono', monospace;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      text-decoration: none;
+      color: var(--ink);
+      background: rgba(40, 24, 88, 0.58);
+      cursor: pointer;
+      transition: border-color 140ms ease, transform 140ms ease, background 140ms ease;
+    }
+
+    .run-one:hover,
+    .run-suite:hover,
+    .open-link:hover {
+      border-color: rgba(209, 195, 255, 0.95);
+      background: rgba(59, 34, 124, 0.7);
+      transform: translateY(-1px);
+    }
+
+    .run-suite[disabled] {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .metric {
+      font: 500 12px 'IBM Plex Mono', monospace;
+      color: #d7fff5;
+      border: 1px solid rgba(41, 216, 161, 0.48);
+      background: rgba(14, 60, 43, 0.32);
+      width: fit-content;
+      border-radius: 999px;
+      padding: 6px 12px;
+      letter-spacing: 0.03em;
+    }
+
+    .prompt-panel,
+    .runner {
+      margin: 0 22px 14px;
+      border: 1px solid rgba(163, 134, 255, 0.32);
+      border-radius: 18px;
+      background: linear-gradient(140deg, rgba(16, 10, 37, 0.8), rgba(13, 9, 27, 0.86));
+      padding: 14px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .prompt-panel h3,
+    .runner h3 {
+      margin: 0;
+      font-size: 16px;
+      letter-spacing: -0.01em;
+    }
+
+    .prompt-panel p {
+      margin: 0;
+      color: #ded2ff;
+      line-height: 1.58;
+      font-size: 14px;
+      font-family: 'IBM Plex Mono', monospace;
+    }
+
+    .runner-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .runner-meta {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .runner-state {
+      font: 500 12px 'IBM Plex Mono', monospace;
+      color: #d6f7ff;
+      border: 1px solid rgba(21, 228, 255, 0.42);
+      background: rgba(20, 72, 95, 0.28);
+      border-radius: 999px;
+      padding: 6px 11px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .frame-shell {
+      border: 1px solid rgba(173, 147, 255, 0.48);
+      border-radius: 12px;
+      overflow: hidden;
+      min-height: 420px;
+      background: #090613;
+    }
+
+    .frame-shell iframe {
+      border: 0;
+      width: 100%;
+      min-height: 420px;
+      display: block;
+      background: #0b0717;
+    }
+
+    .benchmarking-banner {
+      position: sticky;
+      top: 8px;
+      z-index: 100;
+      width: min(1080px, 100%);
+      margin: 0 auto 8px;
+      border: 1px solid rgba(55, 231, 179, 0.45);
+      background: linear-gradient(120deg, rgba(13, 69, 52, 0.86), rgba(11, 64, 83, 0.8));
+      border-radius: 14px;
+      padding: 10px 14px;
+      color: #e9fff9;
+      font: 600 12px 'IBM Plex Mono', monospace;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      display: none;
+    }
+
+    .benchmarking-banner.active {
+      display: block;
+    }
+
+    .footer {
+      padding: 0 22px 22px;
+      color: #9b8bbb;
+      font: 500 12px 'IBM Plex Mono', monospace;
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    @media (max-width: 760px) {
+      .frame-shell,
+      .frame-shell iframe {
+        min-height: 320px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="benchmarking-banner" class="benchmarking-banner" aria-live="polite">Benchmarking</div>
+  <main class="shell">
+    <section class="hero">
+      <span class="eyebrow">Opta Benchmarking System</span>
+      <h1>Interactive capability benchmark for Opta CLI</h1>
+      <p>This suite demonstrates product storytelling, premium interaction design, and research synthesis in one repeatable flow. Each app is generated by <strong>opta benchmark</strong> to exercise creation, polish, and insight-generation capabilities.</p>
+      <div class="meta">
+        <span>Generated: 2/25/2026, 1:28:18 PM</span>
+        <span>AI News Words: 569</span>
+        <span>Fallback mode</span>
+      </div>
+    </section>
+
+    <section class="grid">
+      <article
+        class="card active"
+        data-benchmark-card
+        data-id="landing"
+        data-path="./landing/index.html"
+        data-title="Opta Landing Experience"
+        data-prompt="Create an Opta-branded landing page with premium typography, motion-rich section reveals, clear value messaging, and conversion-ready CTA flow."
+        title="Create an Opta-branded landing page with premium typography, motion-rich section reveals, clear value messaging, and conversion-ready CTA flow."
+        tabindex="0"
+        role="button"
+        aria-label="Load Opta Landing Experience benchmark"
+      >
+        <span class="metric">01 · Brand Surface</span>
+        <h2>Opta Landing Experience</h2>
+        <p>High-end landing narrative with animated visual hierarchy, product framing, and clear conversion pathways built around the Opta aesthetic language.</p>
+        <div class="card-actions">
+          <button class="run-one" type="button" data-run-one="landing">Run Benchmark</button>
+          <a class="open-link" href="./landing/index.html" target="_blank" rel="noreferrer">Open standalone</a>
+        </div>
+      </article>
+<article
+        class="card"
+        data-benchmark-card
+        data-id="chess"
+        data-path="./chess/index.html"
+        data-title="Premium Chess Arena"
+        data-prompt="Build a premium chess web app inspired by chess.com with tactile board interactions, polished controls, move history, timer UX, and strong mobile responsiveness."
+        title="Build a premium chess web app inspired by chess.com with tactile board interactions, polished controls, move history, timer UX, and strong mobile responsiveness."
+        tabindex="0"
+        role="button"
+        aria-label="Load Premium Chess Arena benchmark"
+      >
+        <span class="metric">02 · Interaction Depth</span>
+        <h2>Premium Chess Arena</h2>
+        <p>Chess.com-inspired board experience with modern visual treatment, intelligent move handling, polished controls, and UX tuned for both desktop and mobile.</p>
+        <div class="card-actions">
+          <button class="run-one" type="button" data-run-one="chess">Run Benchmark</button>
+          <a class="open-link" href="./chess/index.html" target="_blank" rel="noreferrer">Open standalone</a>
+        </div>
+      </article>
+<article
+        class="card"
+        data-benchmark-card
+        data-id="ai-news"
+        data-path="./ai-news/index.html"
+        data-title="Live AI News Briefing"
+        data-prompt="Produce a 500+ word strategic summary of the most recent AI news with source citations, clear sectioning, and educational framing for product and engineering teams."
+        title="Produce a 500+ word strategic summary of the most recent AI news with source citations, clear sectioning, and educational framing for product and engineering teams."
+        tabindex="0"
+        role="button"
+        aria-label="Load Live AI News Briefing benchmark"
+      >
+        <span class="metric">03 · Research Intelligence</span>
+        <h2>Live AI News Briefing</h2>
+        <p>In-depth 500+ word report generated from the Opta research stack, with citation tracking and a structure designed for educational and strategic use.</p>
+        <div class="card-actions">
+          <button class="run-one" type="button" data-run-one="ai-news">Run Benchmark</button>
+          <a class="open-link" href="./ai-news/index.html" target="_blank" rel="noreferrer">Open standalone</a>
+        </div>
+      </article>
+    </section>
+
+    <section class="prompt-panel" aria-live="polite">
+      <h3>Prompt Preview (hover a benchmark card)</h3>
+      <p id="prompt-preview">Create an Opta-branded landing page with premium typography, motion-rich section reveals, clear value messaging, and conversion-ready CTA flow.</p>
+    </section>
+
+    <section class="runner">
+      <div class="runner-head">
+        <h3>Benchmark Runner</h3>
+        <div class="runner-meta">
+          <button id="run-suite" class="run-suite" type="button">Run Suite</button>
+          <span id="runner-state" class="runner-state">Viewing: Opta Landing Experience</span>
+        </div>
+      </div>
+      <div class="frame-shell">
+        <iframe id="benchmark-frame" src="./landing/index.html" title="Benchmark viewer"></iframe>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <span>Use <strong>opta benchmark --serve</strong> to launch locally.</span>
+      <span>Built for capability demonstration, learning, and repeatable evaluation.</span>
+    </footer>
+  </main>
+
+  <script>
+    (function () {
+      const benchmarkData = [{"id":"landing","metric":"01 · Brand Surface","title":"Opta Landing Experience","description":"High-end landing narrative with animated visual hierarchy, product framing, and clear conversion pathways built around the Opta aesthetic language.","path":"./landing/index.html","prompt":"Create an Opta-branded landing page with premium typography, motion-rich section reveals, clear value messaging, and conversion-ready CTA flow."},{"id":"chess","metric":"02 · Interaction Depth","title":"Premium Chess Arena","description":"Chess.com-inspired board experience with modern visual treatment, intelligent move handling, polished controls, and UX tuned for both desktop and mobile.","path":"./chess/index.html","prompt":"Build a premium chess web app inspired by chess.com with tactile board interactions, polished controls, move history, timer UX, and strong mobile responsiveness."},{"id":"ai-news","metric":"03 · Research Intelligence","title":"Live AI News Briefing","description":"In-depth 500+ word report generated from the Opta research stack, with citation tracking and a structure designed for educational and strategic use.","path":"./ai-news/index.html","prompt":"Produce a 500+ word strategic summary of the most recent AI news with source citations, clear sectioning, and educational framing for product and engineering teams."}];
+      const benchmarkMap = new Map(benchmarkData.map((item) => [item.id, item]));
+      const benchmarkOrder = benchmarkData.map((item) => item.id);
+      const cards = Array.from(document.querySelectorAll('[data-benchmark-card]'));
+      const runButtons = Array.from(document.querySelectorAll('[data-run-one]'));
+      const frame = document.getElementById('benchmark-frame');
+      const promptPreview = document.getElementById('prompt-preview');
+      const runSuiteButton = document.getElementById('run-suite');
+      const runnerState = document.getElementById('runner-state');
+      const banner = document.getElementById('benchmarking-banner');
+
+      let suiteRunning = false;
+
+      function waitForFrameLoad() {
+        return new Promise((resolve) => {
+          let settled = false;
+          const done = () => {
+            if (settled) return;
+            settled = true;
+            resolve();
+          };
+
+          const timeout = window.setTimeout(done, 1700);
+          frame.addEventListener('load', () => {
+            window.clearTimeout(timeout);
+            done();
+          }, { once: true });
+        });
+      }
+
+      function pause(ms) {
+        return new Promise((resolve) => window.setTimeout(resolve, ms));
+      }
+
+      function setPrompt(id) {
+        const target = benchmarkMap.get(id);
+        if (!target) return;
+        promptPreview.textContent = target.prompt;
+      }
+
+      function setActiveCard(id) {
+        for (const card of cards) {
+          card.classList.toggle('active', card.dataset.id === id);
+        }
+      }
+
+      function loadBenchmark(id) {
+        const target = benchmarkMap.get(id);
+        if (!target) return;
+        setActiveCard(id);
+        setPrompt(id);
+        runnerState.textContent = 'Viewing: ' + target.title;
+        frame.src = target.path;
+      }
+
+      async function runSingleBenchmark(id) {
+        if (suiteRunning) return;
+        const target = benchmarkMap.get(id);
+        if (!target) return;
+        banner.classList.add('active');
+        runnerState.textContent = 'Benchmarking: ' + target.title;
+        frame.src = target.path;
+        setActiveCard(id);
+        setPrompt(id);
+        await waitForFrameLoad();
+        runnerState.textContent = 'Viewing: ' + target.title;
+        banner.classList.remove('active');
+      }
+
+      async function runSuite() {
+        if (suiteRunning) return;
+        suiteRunning = true;
+        runSuiteButton.disabled = true;
+        banner.classList.add('active');
+
+        try {
+          for (let index = 0; index < benchmarkOrder.length; index += 1) {
+            const id = benchmarkOrder[index];
+            const target = benchmarkMap.get(id);
+            if (!target) continue;
+            runnerState.textContent = 'Benchmarking ' + (index + 1) + '/' + benchmarkOrder.length + ': ' + target.title;
+            frame.src = target.path;
+            setActiveCard(id);
+            setPrompt(id);
+            await waitForFrameLoad();
+            await pause(1400);
+          }
+          runnerState.textContent = 'Suite complete';
+        } finally {
+          banner.classList.remove('active');
+          runSuiteButton.disabled = false;
+          suiteRunning = false;
+        }
+      }
+
+      for (const card of cards) {
+        const id = card.dataset.id;
+        if (!id) continue;
+
+        card.addEventListener('mouseenter', () => setPrompt(id));
+        card.addEventListener('focus', () => setPrompt(id));
+        card.addEventListener('click', (event) => {
+          const target = event.target instanceof Element ? event.target : null;
+          if (target && target.closest('.run-one, .open-link')) return;
+          loadBenchmark(id);
+        });
+        card.addEventListener('keydown', (event) => {
+          if (event.key !== 'Enter' && event.key !== ' ') return;
+          event.preventDefault();
+          loadBenchmark(id);
+        });
+      }
+
+      for (const button of runButtons) {
+        const id = button.dataset.runOne;
+        if (!id) continue;
+        button.addEventListener('click', (event) => {
+          event.stopPropagation();
+          void runSingleBenchmark(id);
+        });
+      }
+
+      runSuiteButton.addEventListener('click', () => {
+        void runSuite();
+      });
+    })();
+  </script>
+</body>
+</html>

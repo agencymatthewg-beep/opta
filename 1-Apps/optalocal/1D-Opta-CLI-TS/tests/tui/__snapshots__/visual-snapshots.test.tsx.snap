@@ -1,0 +1,584 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`InputBox visual snapshots > renders default prompt in normal mode > inputbox-normal 1`] = `" > █"`;
+
+exports[`InputBox visual snapshots > renders loading state with custom label > inputbox-loading-custom 1`] = `" ⠋ running edit_file..."`;
+
+exports[`InputBox visual snapshots > renders loading state with default label > inputbox-loading 1`] = `" ⠋ thinking..."`;
+
+exports[`InputBox visual snapshots > renders plan workflow mode badge > inputbox-plan-mode 1`] = `" [Plan] > █"`;
+
+exports[`InputBox visual snapshots > renders research workflow mode badge > inputbox-research-mode 1`] = `" [Research] > █"`;
+
+exports[`InputBox visual snapshots > renders with bypass permissions indicator and red border > inputbox-bypass 1`] = `
+"┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ [Code] ! > █                                                                                     │
+└──────────────────────────────────────────────────────────────────────────────────────────────────┘"
+`;
+
+exports[`InputBox visual snapshots > renders with typed text > inputbox-with-text 1`] = `" > hello world█"`;
+
+exports[`MessageList visual snapshots > renders multi-turn conversation with separators > messages-multi-turn 1`] = `
+" ╭────────────────────────────────────────────────────────────────────────────────────────────────╮
+ │ ◆ Opta                                                                                         │
+ │                                                                                       08:03 pm │
+ │                                                                                                │
+ │  Follow-up answer.                                                                             │
+ ╰────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+"
+`;
+
+exports[`MessageList visual snapshots > renders system messages with preformatted content > messages-system-preformatted 1`] = `
+"   ┌────────────┐
+   │ model scan │
+   └────────────┘
+   Loaded: 3 models on 192.168.188.11:1234
+
+
+
+"
+`;
+
+exports[`MessageList visual snapshots > renders thinking blocks in assistant messages > messages-with-thinking 1`] = `
+" ╭────────────────────────────────────────────────────────────────────────────────────────────────╮
+ │ ◆ Opta · thinking 245                                                                          │
+ │                                                                                       07:00 pm │
+ │                                                                                                │
+ │  After careful analysis, the approach is correct.                                              │
+ ╰────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+"
+`;
+
+exports[`MessageList visual snapshots > renders tool call messages > messages-with-tool-call 1`] = `
+" ╭────────────────────────────────────────────────────────────────────────────────────────────────╮
+ │ ◆ Opta                                                                                         │
+ │                                                                                       06:01 pm │
+ │                                                                                                │
+ │  The config file shows host 192.168.188.11 on port 1234.                                       │
+ ╰────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+"
+`;
+
+exports[`MessageList visual snapshots > renders user and assistant messages > messages-user-assistant 1`] = `
+" ╭────────────────────────────────────────────────────────────────────────────────────────────────╮
+ │ ◆ Opta · 3 tool calls                                                                          │
+ │                                                                                       05:01 pm │
+ │                                                                                                │
+ │  Tools are functions the agent can call during execution.                                      │
+ │  - **read_file** reads a file                                                                  │
+ │  - **edit_file** modifies a file                                                               │
+ │  - **run_command** executes shell commands                                                     │
+ ╰────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+"
+`;
+
+exports[`MessageList visual snapshots > renders welcome screen when no messages exist > messages-welcome-screen 1`] = `
+"
+
+
+                                             ◆ Opta CLI
+
+   ● Connected to Qwen2.5-72B
+   ◌ Context: 125K tokens available
+   ◌ Tools: 8 registered
+
+   Quick Start:
+     Type a message                                                                Start chatting
+     /help                                                                      Command reference
+     /model                                                                         Switch models
+     @file.ts                                                                 Attach file context
+     !command                                                                   Run shell command
+
+   Keybindings:
+     Ctrl+/                                                                  Show all keybindings
+     Shift+Space                                                                   Open Opta menu
+     Ctrl+S                                                                         Open settings
+     Ctrl+E                                                                        Action history
+     Ctrl+B                                                                        Toggle sidebar
+     Ctrl+K                                                  Open command palette (Ctrl+O legacy)
+     Ctrl+N                                                                 Toggle safe rendering
+     Ctrl+T                                                                       Expand thinking
+     Ctrl+L                                                                        Clear messages
+
+
+"
+`;
+
+exports[`OptaMenuOverlay visual snapshots > renders benchmark page with page tabs and action items > menu-benchmark-page 1`] = `
+"╭──────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                          │
+│  Opta Menu                                                                    Esc close  │
+│                                                                                          │
+│  Model: mlx-community/Qwen2.5-72B-4bit · mode normal                                     │
+│  Autonomy: [■■□□□] L2/5 · profile execution                                              │
+│  LMX: 192.168.188.11:1234 · Studio SSH reachable                                         │
+│                                                                                          │
+│  Left/Right switch page · Up/Down navigate · Enter select · 1-9 pages                    │
+│  i or ? toggle info panel · Shift+I run learn-more · Enter keeps menu open · b jump      │
+│  Benchmark                                                                               │
+│                                                                                          │
+│  [x] 1.     [ ] 2.   [ ] 3.    [ ]    [ ]     [ ]     [ ] 7.     [ ] 8.     [ ] 9.       │
+│  Benchmark  Operatio Connect   4. Mo  5.      6. Ru   Simple     Config     Advanced     │
+│  + Info     ns       ivity     dels   LMX     ntime   Settings   Curation   Autist       │
+│                                       Ops                                                │
+│                                                                                          │
+│  Benchmark + Info                                                                        │
+│  ▶ Benchmark Suite                  [i [I  Generate all 3 benchmark apps and host them   │
+│    (Serve)             (recommended)     locally                                         │
+│   Generate Benchmark Only [i] [I]  Create or refresh benchmark artifacts without         │
+│                                  hosting                                                 │
+│    Benchmark Smoke (JSON) [i] [I]  Run a fast benchmark smoke check with JSON output     │
+│    Inspect Benchmark Files [i] [I]  List generated benchmark suite files                 │
+│    Benchmark Manifest [i] [I]  Inspect generated manifest and quality metadata           │
+│   Benchmark Validation Pass [i] [I]  Run benchmark with stable defaults and JSON         │
+│                                    summary                                               │
+│    Educational Help Browser [i]  Open structured help topics and command education       │
+│    Slash Command Lessons [i]  Browse slash commands with examples and categories         │
+│    Back to Chat [i]  Close menu                                                          │
+│                                                                                          │
+│  ╭────────────────────────────────────────────────────────────────────────────────────╮  │
+│  │ Info: Launch the full benchmark experience                                         │  │
+│  │ This runs the integrated benchmark flow: Opta landing page, premium chess UX, and  │  │
+│  │ the AI news research app in one reproducible suite.                                │  │
+│  │ Shift+I runs: !opta benchmark --serve --force                                      │  │
+│  ╰────────────────────────────────────────────────────────────────────────────────────╯  │
+│                                                                                          │
+╰──────────────────────────────────────────────────────────────────────────────────────────╯"
+`;
+
+exports[`OptaMenuOverlay visual snapshots > renders opening animation phase > menu-opening-animation 1`] = `
+"╭─────────────────────────────────────────────────────────────╮
+│                                                             │
+│  Opta Menu · ◔                                         30%  │
+│                                                             │
+│  ◔ Opening Opta Menu...                                     │
+│                                                             │
+│  Model: mlx-community/Qwen2.5-72B-4bit · mode normal        │
+│  Autonomy: [■■□□□] L2/5 · profile execution                 │
+│  LMX: 192.168.188.11:1234 · Studio SSH reachable            │
+│                                                             │
+│  Left/Right switch page · Up/Down navigate · Enter select   │
+│  · 1-9 pages                                                │
+│  i or ? toggle info panel · Shift+I run learn-more · Enter  │
+│   keeps menu open · b jump Benchmark                        │
+│                                                             │
+│  [x]    [ ]   [ ]    [ ]  [ ]  [ ]  [ ]     [ ]    [ ]      │
+│  1.     2.    3.     4.   5.   6.   7. Si   8. Co  9.       │
+│  Bench  Opera Conn   Mode LMX  Runt mple    nfig   Advan    │
+│  mark   tions ecti   ls   Ops  ime  Setti   Curat  ced A    │
+│  +            vity                  ngs     ion    utist    │
+│  Info                                                       │
+│                                                             │
+│  Benchmark + Info                                           │
+│                                                             │
+│  ◔ Loading actions list...                                  │
+│                                                             │
+│  ╭───────────────────────────────────────────────────────╮  │
+│  │ Compact viewport: info panel auto-collapsed to keep   │  │
+│  │ navigation visible.                                   │  │
+│  ╰───────────────────────────────────────────────────────╯  │
+│                                                             │
+╰─────────────────────────────────────────────────────────────╯"
+`;
+
+exports[`OptaMenuOverlay visual snapshots > renders operations page after navigation > menu-operations-page 1`] = `
+"╭──────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                          │
+│  Opta Menu                                                                    Esc close  │
+│                                                                                          │
+│  Model: mlx-community/Qwen2.5-72B-4bit · mode normal                                     │
+│  Autonomy: [■■□□□] L2/5 · profile execution                                              │
+│  LMX: 192.168.188.11:1234 · Studio SSH reachable                                         │
+│                                                                                          │
+│  Left/Right switch page · Up/Down navigate · Enter select · 1-9 pages                    │
+│  i or ? toggle info panel · Shift+I run learn-more · Enter keeps menu open · b jump      │
+│  Benchmark                                                                               │
+│                                                                                          │
+│  [ ] 1.     [x] 2.   [ ] 3.    [ ]    [ ]     [ ]     [ ] 7.     [ ] 8.     [ ] 9.       │
+│  Benchmark  Operatio Connect   4. Mo  5.      6. Ru   Simple     Config     Advanced     │
+│  + Info     ns       ivity     dels   LMX     ntime   Settings   Curation   Autist       │
+│                                       Ops                                                │
+│                                                                                          │
+│  Operations                                                                              │
+│  ▶  Status Check [i] [I]  Run /status for 192.168.188.11:1234                            │
+│    Doctor Check [i] [I]  Run diagnostics and quick fixes                                 │
+│    LMX Scan [i] [I]  Refresh model inventory, aliases, and loaded state                  │
+│    Update Local [i] [I]  Update local CLI/build only                                     │
+│    Settings [i]  Edit connection, model, safety, paths and advanced config               │
+│    Close Menu [i]  Return to chat                                                        │
+│                                                                                          │
+│                                                                                          │
+│                                                                                          │
+│                                                                                          │
+│                                                                                          │
+│  ╭────────────────────────────────────────────────────────────────────────────────────╮  │
+│  │ Info: Check system baseline                                                        │  │
+│  │ Status check confirms model/runtime connectivity before deeper operations. Start   │  │
+│  │ here when behavior feels unclear.                                                  │  │
+│  │ Shift+I runs: /status                                                              │  │
+│  ╰────────────────────────────────────────────────────────────────────────────────────╯  │
+│                                                                                          │
+╰──────────────────────────────────────────────────────────────────────────────────────────╯"
+`;
+
+exports[`OptaMenuOverlay visual snapshots > renders studio unreachable with local recovery focus > menu-studio-unreachable 1`] = `
+"╭──────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                          │
+│  Opta Menu                                                                    Esc close  │
+│                                                                                          │
+│  Model: mlx-community/Qwen2.5-72B-4bit · mode normal                                     │
+│  Autonomy: [■■□□□] L2/5 · profile execution                                              │
+│  LMX: 192.168.188.11:1234 · Studio SSH unreachable                                       │
+│                                                                                          │
+│  Left/Right switch page · Up/Down navigate · Enter select · 1-9 pages                    │
+│  i or ? toggle info panel · Shift+I run learn-more · Enter keeps menu open · b jump      │
+│  Benchmark                                                                               │
+│  Studio SSH unavailable: prioritizing local recovery actions.                            │
+│                                                                                          │
+│  [x] 1.     [ ] 2.   [ ] 3.    [ ]    [ ]     [ ]     [ ] 7.     [ ] 8.     [ ] 9.       │
+│  Benchmark  Operatio Connect   4. Mo  5.      6. Ru   Simple     Config     Advanced     │
+│  + Info     ns       ivity     dels   LMX     ntime   Settings   Curation   Autist       │
+│                                       Ops                                                │
+│                                                                                          │
+│  Benchmark + Info                                                                        │
+│  ▶ Benchmark Suite                  [i [I  Generate all 3 benchmark apps and host them   │
+│    (Serve)             (recommended)     locally                                         │
+│   Generate Benchmark Only [i] [I]  Create or refresh benchmark artifacts without         │
+│                                  hosting                                                 │
+│    Benchmark Smoke (JSON) [i] [I]  Run a fast benchmark smoke check with JSON output     │
+│    Inspect Benchmark Files [i] [I]  List generated benchmark suite files                 │
+│    Benchmark Manifest [i] [I]  Inspect generated manifest and quality metadata           │
+│   Benchmark Validation Pass [i] [I]  Run benchmark with stable defaults and JSON         │
+│                                    summary                                               │
+│    Educational Help Browser [i]  Open structured help topics and command education       │
+│    Slash Command Lessons [i]  Browse slash commands with examples and categories         │
+│    Back to Chat [i]  Close menu                                                          │
+│                                                                                          │
+│  ╭────────────────────────────────────────────────────────────────────────────────────╮  │
+│  │ Info: Launch the full benchmark experience                                         │  │
+│  │ This runs the integrated benchmark flow: Opta landing page, premium chess UX, and  │  │
+│  │ the AI news research app in one reproducible suite.                                │  │
+│  │ Shift+I runs: !opta benchmark --serve --force                                      │  │
+│  ╰────────────────────────────────────────────────────────────────────────────────────╯  │
+│                                                                                          │
+╰──────────────────────────────────────────────────────────────────────────────────────────╯"
+`;
+
+exports[`OptaMenuOverlay visual snapshots > renders with autonomy level and CEO mode > menu-autonomy-ceo 1`] = `
+"╭──────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                          │
+│  Opta Menu                                                                    Esc close  │
+│                                                                                          │
+│  Model: mlx-community/Qwen2.5-72B-4bit · mode normal                                     │
+│  Autonomy: [■■■■□] L4/5 · profile ceo                                                    │
+│  LMX: 192.168.188.11:1234 · Studio SSH reachable                                         │
+│                                                                                          │
+│  Left/Right switch page · Up/Down navigate · Enter select · 1-9 pages                    │
+│  i or ? toggle info panel · Shift+I run learn-more · Enter keeps menu open · b jump      │
+│  Benchmark                                                                               │
+│                                                                                          │
+│  [x] 1.     [ ] 2.   [ ] 3.    [ ]    [ ]     [ ]     [ ] 7.     [ ] 8.     [ ] 9.       │
+│  Benchmark  Operatio Connect   4. Mo  5.      6. Ru   Simple     Config     Advanced     │
+│  + Info     ns       ivity     dels   LMX     ntime   Settings   Curation   Autist       │
+│                                       Ops                                                │
+│                                                                                          │
+│  Benchmark + Info                                                                        │
+│  ▶ Benchmark Suite                  [i [I  Generate all 3 benchmark apps and host them   │
+│    (Serve)             (recommended)     locally                                         │
+│   Generate Benchmark Only [i] [I]  Create or refresh benchmark artifacts without         │
+│                                  hosting                                                 │
+│    Benchmark Smoke (JSON) [i] [I]  Run a fast benchmark smoke check with JSON output     │
+│    Inspect Benchmark Files [i] [I]  List generated benchmark suite files                 │
+│    Benchmark Manifest [i] [I]  Inspect generated manifest and quality metadata           │
+│   Benchmark Validation Pass [i] [I]  Run benchmark with stable defaults and JSON         │
+│                                    summary                                               │
+│    Educational Help Browser [i]  Open structured help topics and command education       │
+│    Slash Command Lessons [i]  Browse slash commands with examples and categories         │
+│    Back to Chat [i]  Close menu                                                          │
+│                                                                                          │
+│  ╭────────────────────────────────────────────────────────────────────────────────────╮  │
+│  │ Info: Launch the full benchmark experience                                         │  │
+│  │ This runs the integrated benchmark flow: Opta landing page, premium chess UX, and  │  │
+│  │ the AI news research app in one reproducible suite.                                │  │
+│  │ Shift+I runs: !opta benchmark --serve --force                                      │  │
+│  ╰────────────────────────────────────────────────────────────────────────────────────╯  │
+│                                                                                          │
+╰──────────────────────────────────────────────────────────────────────────────────────────╯"
+`;
+
+exports[`OptaMenuOverlay visual snapshots > renders with menu result entries > menu-with-results 1`] = `
+"╭──────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                          │
+│  Opta Menu                                                                    Esc close  │
+│                                                                                          │
+│  Model: mlx-community/Qwen2.5-72B-4bit · mode normal                                     │
+│  Autonomy: [■■□□□] L2/5 · profile execution                                              │
+│  LMX: 192.168.188.11:1234 · Studio SSH reachable                                         │
+│                                                                                          │
+│  Left/Right switch page · Up/Down navigate · Enter select · 1-9 pages                    │
+│  i or ? toggle info panel · Shift+I run learn-more · Enter keeps menu open · b jump      │
+│  Benchmark                                                                               │
+│                                                                                          │
+│  [x] 1.     [ ] 2.   [ ] 3.    [ ]    [ ]     [ ]     [ ] 7.     [ ] 8.     [ ] 9.       │
+│  Benchmark  Operatio Connect   4. Mo  5.      6. Ru   Simple     Config     Advanced     │
+│  + Info     ns       ivity     dels   LMX     ntime   Settings   Curation   Autist       │
+│                                       Ops                                                │
+│                                                                                          │
+│  Benchmark + Info                                                                        │
+│  ▶ Benchmark Suite                  [i [I  Generate all 3 benchmark apps and host them   │
+│    (Serve)             (recommended)     locally                                         │
+│   Generate Benchmark Only [i] [I]  Create or refresh benchmark artifacts without         │
+│                                  hosting                                                 │
+│    Benchmark Smoke (JSON) [i] [I]  Run a fast benchmark smoke check with JSON output     │
+│    Inspect Benchmark Files [i] [I]  List generated benchmark suite files                 │
+│    Benchmark Manifest [i] [I]  Inspect generated manifest and quality metadata           │
+│   Benchmark Validation Pass [i] [I]  Run benchmark with stable defaults and JSON         │
+│                                    summary                                               │
+│    Educational Help Browser [i]  Open structured help topics and command education       │
+│    Slash Command Lessons [i]  Browse slash commands with examples and categories         │
+│    Back to Chat [i]  Close menu                                                          │
+│                                                                                          │
+│  ╭────────────────────────────────────────────────────────────────────────────────────╮  │
+│  │ Info: Launch the full benchmark experience                                         │  │
+│  │ This runs the integrated benchmark flow: Opta landing page, premium chess UX, and  │  │
+│  │ the AI news research app in one reproducible suite.                                │  │
+│  │ Shift+I runs: !opta benchmark --serve --force                                      │  │
+│  │                                                                                    │  │
+│  │ Latest Result: Benchmark suite generated successfully                              │  │
+│  │ Generated 3 apps at apps/opta-benchmark-suite                                      │  │
+│  │                                                                                    │  │
+│  │ Recent Scans + Benchmarks                                                          │  │
+│  │ ● Benchmark suite generated successfully                                           │  │
+│  ╰────────────────────────────────────────────────────────────────────────────────────╯  │
+│                                                                                          │
+╰──────────────────────────────────────────────────────────────────────────────────────────╯"
+`;
+
+exports[`Sidebar visual snapshots > renders disconnected state > sidebar-disconnected 1`] = `
+"Connection
+
+Status  ○ Disconnected
+Model   test-model
+
+Session
+
+Session disc1234
+Mode    normal
+
+Tokens
+Prompt  0
+Reply   0
+Total   0
+
+Stats
+Tools   0
+Cost    $0.00
+
+Live Thinking
+
+State   Idle
+Tokens  0
+Awaiting model thoughts...
+Ctrl+T expand"
+`;
+
+exports[`Sidebar visual snapshots > renders full session info with tokens and cost > sidebar-full-session 1`] = `
+"Connection
+
+Status  ● Connected
+Model   Qwen2.5-72B-4bit
+
+Session
+
+Session a1b2c3d4
+Mode    normal
+
+Tokens
+Prompt  3.2K
+Reply   1.8K
+Total   5.0K
+
+Stats
+Tools   7
+Cost    $0.04
+Time    45.2s
+Speed   38 t/s
+
+Live Thinking
+
+State   Idle
+Tokens  0
+Awaiting model thoughts...
+Ctrl+T expand"
+`;
+
+exports[`Sidebar visual snapshots > renders plan mode indicator > sidebar-plan-mode 1`] = `
+"Connection
+
+Status  ● Connected
+Model   test-model
+
+Session
+
+Session plan1234
+Mode    plan
+
+Tokens
+Prompt  500
+Reply   200
+Total   700
+
+Stats
+Tools   2
+Cost    $0.01
+Time    8.3s
+
+Live Thinking
+
+State   Idle
+Tokens  0
+Awaiting model thoughts...
+Ctrl+T expand"
+`;
+
+exports[`Sidebar visual snapshots > renders with active live thinking > sidebar-live-thinking 1`] = `
+"Connection
+
+Status  ● Connected
+Model   test-model
+
+Session
+
+Session think123
+Mode    normal
+
+Tokens
+Prompt  1.0K
+Reply   400
+Total   1.4K
+
+Stats
+Tools   3
+Cost    $0.02
+Time    15.7s
+
+Live Thinking
+
+State   Live
+Tokens  87
+Analyzing the codebas…
+Ctrl+T collapse"
+`;
+
+exports[`Sidebar visual snapshots > renders with context usage bar > sidebar-with-context 1`] = `
+"Connection
+
+Status  ● Connected
+Model   Qwen2.5-72B
+
+Session
+
+Session deadbeef
+Mode    auto
+
+Tokens
+Prompt  40.0K
+Reply   8.0K
+Total   48.0K
+Context ▰▰▰▰▰▰▰▰▱▱ 75%
+
+Stats
+Tools   12
+Cost    $0.22
+Time    120.5s
+Speed   42 t/s
+
+Live Thinking
+
+State   Idle
+Tokens  0
+Awaiting model thoughts...
+Ctrl+T expand"
+`;
+
+exports[`Sidebar visual snapshots > renders with session title > sidebar-with-title 1`] = `
+"Connection
+
+Status  ● Connected
+Model   GLM-5-4.8B
+
+Session
+
+Session titled12
+Title   Refactor StatusBar
+Mode    normal
+
+Tokens
+Prompt  2.0K
+Reply   800
+Total   2.8K
+
+Stats
+Tools   4
+Cost    $0.03
+Time    22.1s
+
+Live Thinking
+
+State   Idle
+Tokens  0
+Awaiting model thoughts...
+Ctrl+T expand"
+`;
+
+exports[`StatusBar visual snapshots > renders active streaming phase with context bar > statusbar-streaming-with-context 1`] = `
+"┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ ● Qwen2.5-72B    Wri · next refi · out 512 … CTX ▰▰▰▰▱▱▱▱▱▱ 35% │ 6.0K→2.0K tok │ 35 t/s │ $0.06 │
+│                🟣                                                                                │
+│                                                                                                  │
+└──────────────────────────────────────────────────────────────────────────────────────────────────┘"
+`;
+
+exports[`StatusBar visual snapshots > renders compact mode with minimal stats > statusbar-compact 1`] = `
+"┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ ● GLM-5-4.8B          ◌ 🟣 Idle · Shift+Space menu · Ctrl+S settings · 0 logs           ~500 tok │
+└──────────────────────────────────────────────────────────────────────────────────────────────────┘"
+`;
+
+exports[`StatusBar visual snapshots > renders connected state with model name and account email > statusbar-connected 1`] = `
+"┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ ● Qwen2.5-72B-4bit │ ◎ matt@optamize.biz  🟣 Id · Shift+Space menu ·… ~4.2K tok │ 42 t/s │ $0.03 │
+│                                                                                                  │
+└──────────────────────────────────────────────────────────────────────────────────────────────────┘"
+`;
+
+exports[`StatusBar visual snapshots > renders disconnected state with fallback indicator > statusbar-disconnected-fallback 1`] = `
+"┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ ○ Qwen2.5-72B-4bit (fallback)  🟣 Idl · Shift+Space menu · Ctrl+S settings · … ~1.2K tok │ $0.01 │
+│                                                                                                  │
+└──────────────────────────────────────────────────────────────────────────────────────────────────┘"
+`;
+
+exports[`StatusBar visual snapshots > renders pending browser approvals with risk levels > statusbar-pending-approvals 1`] = `
+"┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ ● test-model  🟣 Idl · Shift+Space menu · Ctrl+S settings · 3 logs ·… ~2.0K tok │ 25 t/s │ $0.02 │
+│                                                                                                  │
+└──────────────────────────────────────────────────────────────────────────────────────────────────┘"
+`;
+
+exports[`StatusBar visual snapshots > renders safe mode and bypass permissions indicators > statusbar-safe-bypass 1`] = `
+"● test-model ⚠ BYPASS  SAFE  ⚙  Running edit_fil · Shift+Space menu · Ctrl+S settings · 7… ~1.0K tok
+"
+`;

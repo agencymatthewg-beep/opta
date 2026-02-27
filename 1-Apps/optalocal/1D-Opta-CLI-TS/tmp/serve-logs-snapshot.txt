@@ -1,0 +1,104 @@
+=== /tmp/opta-lmx.log ===
+  File "/Users/Shared/312/Opta/1-Apps/1M-Opta-LMX/src/opta_lmx/api/middleware.py", line 82, in __call__
+    await self.app(scope, receive, send_wrapper)
+  File "/Users/Shared/312/Opta/1-Apps/1M-Opta-LMX/src/opta_lmx/api/middleware.py", line 121, in __call__
+    await self.app(scope, receive, send_wrapper)
+  File "/Users/Shared/312/Opta/1-Apps/1M-Opta-LMX/src/opta_lmx/api/middleware.py", line 241, in __call__
+    await self.app(scope, receive, send)
+  File "/Users/Shared/312/Opta/1-Apps/1M-Opta-LMX/src/opta_lmx/api/load_shedding.py", line 35, in __call__
+    await self.app(scope, receive, send)
+  File "/Users/Shared/312/Opta/1-Apps/1M-Opta-LMX/.venv/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/Users/Shared/312/Opta/1-Apps/1M-Opta-LMX/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/Shared/312/Opta/1-Apps/1M-Opta-LMX/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/Shared/312/Opta/1-Apps/1M-Opta-LMX/.venv/lib/python3.12/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/Users/Shared/312/Opta/1-Apps/1M-Opta-LMX/.venv/lib/python3.12/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/Shared/312/Opta/1-Apps/1M-Opta-LMX/.venv/lib/python3.12/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/Users/Shared/312/Opta/1-Apps/1M-Opta-LMX/.venv/lib/python3.12/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/Users/Shared/312/Opta/1-Apps/1M-Opta-LMX/.venv/lib/python3.12/site-packages/fastapi/routing.py", line 119, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/Users/Shared/312/Opta/1-Apps/1M-Opta-LMX/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/Shared/312/Opta/1-Apps/1M-Opta-LMX/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/Shared/312/Opta/1-Apps/1M-Opta-LMX/.venv/lib/python3.12/site-packages/fastapi/routing.py", line 105, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/Users/Shared/312/Opta/1-Apps/1M-Opta-LMX/.venv/lib/python3.12/site-packages/fastapi/routing.py", line 424, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/Shared/312/Opta/1-Apps/1M-Opta-LMX/.venv/lib/python3.12/site-packages/fastapi/routing.py", line 312, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/Shared/312/Opta/1-Apps/1M-Opta-LMX/src/opta_lmx/api/admin.py", line 541, in load_model
+    info = await engine.load_model(
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/Shared/312/Opta/1-Apps/1M-Opta-LMX/src/opta_lmx/inference/engine.py", line 920, in load_model
+    return await self._do_load(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/Shared/312/Opta/1-Apps/1M-Opta-LMX/src/opta_lmx/inference/engine.py", line 1273, in _do_load
+    await self.unload_model(model_id, reason="canary_failed")
+  File "/Users/Shared/312/Opta/1-Apps/1M-Opta-LMX/src/opta_lmx/inference/engine.py", line 1748, in unload_model
+    raise KeyError(f"Model {model_id} is not loaded")
+KeyError: 'Model inferencerlabs/MiniMax-M2.5-MLX-6.5bit is not loaded'
+INFO:     192.168.188.9:59598 - "GET /healthz HTTP/1.1" 200 OK
+INFO:     192.168.188.9:59599 - "GET /admin/status HTTP/1.1" 200 OK
+
+=== /tmp/opta-lmx-service.log ===
+{"event": "http_request", "request_id": "req-Qy7MqV53eFiDo-_T", "level": "info", "logger": "opta_lmx.api.middleware", "timestamp": "2026-02-25T14:44:51.655870Z", "method": "GET", "path": "/admin/models", "status": 200, "latency_ms": 1.5}
+{"event": "http_request", "request_id": "req-L3APlvs8JYh3aTZp", "level": "info", "logger": "opta_lmx.api.middleware", "timestamp": "2026-02-25T14:44:51.691921Z", "method": "GET", "path": "/admin/models/available", "status": 200, "latency_ms": 35.7}
+{"event": "http_request", "request_id": "req-K3cl-wFGsqMXORF_", "level": "info", "logger": "opta_lmx.api.middleware", "timestamp": "2026-02-25T14:45:12.313059Z", "method": "GET", "path": "/admin/models", "status": 200, "latency_ms": 3.2}
+{"event": "http_request", "request_id": "req-13Eras0E15cb1OkN", "level": "info", "logger": "opta_lmx.api.middleware", "timestamp": "2026-02-25T14:45:12.355250Z", "method": "GET", "path": "/admin/models/available", "status": 200, "latency_ms": 44.2}
+{"event": "http_request", "request_id": "req-ABHxLPix-T8GQ5JI", "level": "info", "logger": "opta_lmx.api.middleware", "timestamp": "2026-02-25T14:45:56.880009Z", "method": "GET", "path": "/admin/models", "status": 200, "latency_ms": 2.3}
+{"event": "http_request", "request_id": "req--9dENcTBDkVEhjJH", "level": "info", "logger": "opta_lmx.api.middleware", "timestamp": "2026-02-25T14:45:56.914268Z", "method": "GET", "path": "/admin/models/available", "status": 200, "latency_ms": 36.1}
+{"event": "http_request", "request_id": "req-pRcYIfQbpH5QeGQi", "level": "info", "logger": "opta_lmx.api.middleware", "timestamp": "2026-02-25T14:50:10.310225Z", "method": "GET", "path": "/admin/status", "status": 200, "latency_ms": 1.8}
+{"event": "http_request", "request_id": "req-7jzKqSMU5oXuuChP", "level": "info", "logger": "opta_lmx.api.middleware", "timestamp": "2026-02-25T14:50:43.312635Z", "method": "GET", "path": "/admin/memory", "status": 200, "latency_ms": 1.8}
+{"event": "http_request", "request_id": "req-fACcsFZYCyVNP32M", "level": "info", "logger": "opta_lmx.api.middleware", "timestamp": "2026-02-25T14:50:43.329943Z", "method": "GET", "path": "/admin/models", "status": 200, "latency_ms": 2.7}
+{"event": "http_request", "request_id": "req-uo6dvi3--4lhb0HX", "level": "info", "logger": "opta_lmx.api.middleware", "timestamp": "2026-02-25T14:50:43.366662Z", "method": "GET", "path": "/admin/models/available", "status": 200, "latency_ms": 38.2}
+{"event": "model_source_resolved_local", "request_id": "req-xYX9bI9p-nPgcnfG", "level": "info", "logger": "opta_lmx.inference.engine", "timestamp": "2026-02-25T14:50:43.496999Z", "model_id": "inferencerlabs/MiniMax-M2.5-MLX-6.5bit", "resolved_model_name": "/Users/opta/.cache/huggingface/hub/models--inferencerlabs--MiniMax-M2.5-MLX-6.5bit/snapshots/e5cfc8af342c8ae7b260ab629dc88b5664559694"}
+{"event": "performance_overrides_applied", "request_id": "req-xYX9bI9p-nPgcnfG", "level": "info", "logger": "opta_lmx.inference.engine", "timestamp": "2026-02-25T14:50:43.497078Z", "model_id": "inferencerlabs/MiniMax-M2.5-MLX-6.5bit", "overrides": {"backend": "mlx-lm", "kv_bits": 4, "prefix_cache": false}}
+{"event": "Patched mlx-lm for MambaCache batching support", "request_id": "req-xYX9bI9p-nPgcnfG", "level": "info", "logger": "vllm_mlx.utils.mamba_cache", "timestamp": "2026-02-25T14:50:46.547996Z"}
+{"event": "engine_optional_kwargs_unsupported", "request_id": "req-xYX9bI9p-nPgcnfG", "level": "warning", "logger": "opta_lmx.inference.engine", "timestamp": "2026-02-25T14:50:46.549865Z", "model_id": "inferencerlabs/MiniMax-M2.5-MLX-6.5bit", "engine": "BatchedEngine", "unsupported_kwargs": ["kv_bits", "kv_group_size"], "supported_params": ["force_mllm", "model_name", "scheduler_config", "stream_interval", "trust_remote_code"]}
+{"event": "Metal memory limits set: allocation_limit=226.5GB (90% of 251.7GB), cache_limit=32GB", "request_id": "req-xYX9bI9p-nPgcnfG", "level": "info", "logger": "vllm_mlx.engine.batched", "timestamp": "2026-02-25T14:51:14.535595Z"}
+{"event": "Engine started", "request_id": "req-xYX9bI9p-nPgcnfG", "level": "info", "logger": "vllm_mlx.engine_core", "timestamp": "2026-02-25T14:51:14.535753Z"}
+{"event": "BatchedEngine loaded: /Users/opta/.cache/huggingface/hub/models--inferencerlabs--MiniMax-M2.5-MLX-6.5bit/snapshots/e5cfc8af342c8ae7b260ab629dc88b5664559694 (mllm=False)", "request_id": "req-xYX9bI9p-nPgcnfG", "level": "info", "logger": "vllm_mlx.engine.batched", "timestamp": "2026-02-25T14:51:14.535798Z"}
+{"event": "model_loaded", "request_id": "req-xYX9bI9p-nPgcnfG", "level": "info", "logger": "opta_lmx.inference.engine", "timestamp": "2026-02-25T14:51:14.536221Z", "model_id": "inferencerlabs/MiniMax-M2.5-MLX-6.5bit", "format": "mlx", "duration_sec": 31.04, "memory_used_gb": 198.11, "batching": true, "speculative_active": false, "speculative_requested": false, "speculative_reason": "not_requested"}
+{"event": "[schedule] request=5a4cc48f-145 uid=0 prompt_tokens=39 tokens_to_prefill=39 max_tokens=16 running=1 waiting=0", "level": "info", "logger": "vllm_mlx.scheduler", "timestamp": "2026-02-25T14:51:14.549530Z"}
+{"event": "http_request", "request_id": "req-grjo8g5zejWQG6fy", "level": "info", "logger": "opta_lmx.api.middleware", "timestamp": "2026-02-25T14:51:14.554154Z", "method": "GET", "path": "/admin/models", "status": 200, "latency_ms": 0.6}
+{"event": "http_request", "request_id": "req-rMb-z_KmUPft52tD", "level": "info", "logger": "opta_lmx.api.middleware", "timestamp": "2026-02-25T14:51:14.554479Z", "method": "POST", "path": "/admin/models/load", "status": 200, "latency_ms": 1.2}
+{"event": "http_request", "request_id": "req--82kv99zXTIJW5eM", "level": "info", "logger": "opta_lmx.api.middleware", "timestamp": "2026-02-25T14:51:14.588263Z", "method": "GET", "path": "/admin/models", "status": 200, "latency_ms": 0.5}
+{"event": "http_request", "request_id": "req-unQs__JKKO4MsPQH", "level": "info", "logger": "opta_lmx.api.middleware", "timestamp": "2026-02-25T14:51:14.596271Z", "method": "GET", "path": "/admin/memory", "status": 200, "latency_ms": 0.4}
+{"event": "http_request", "request_id": "req-IqcFu1v8sW_sdrio", "level": "info", "logger": "opta_lmx.api.middleware", "timestamp": "2026-02-25T14:51:14.604612Z", "method": "GET", "path": "/admin/models", "status": 200, "latency_ms": 0.3}
+{"event": "model_unloaded", "request_id": "req-07AMMVN23WCETXEs", "level": "info", "logger": "opta_lmx.inference.engine", "timestamp": "2026-02-25T14:51:14.665525Z", "model_id": "inferencerlabs/MiniMax-M2.5-MLX-6.5bit", "memory_freed_gb": 0}
+{"event": "http_request", "request_id": "req-07AMMVN23WCETXEs", "level": "info", "logger": "opta_lmx.api.middleware", "timestamp": "2026-02-25T14:51:14.666514Z", "method": "POST", "path": "/admin/models/unload", "status": 200, "latency_ms": 55.7}
+{"event": "http_request", "request_id": "req-Dl5jczirPX3_u9Vz", "level": "info", "logger": "opta_lmx.api.middleware", "timestamp": "2026-02-25T14:51:14.671428Z", "method": "GET", "path": "/admin/models", "status": 200, "latency_ms": 0.4}
+{"event": "http_request", "request_id": "req-vBbEbdqk3HyBGnb5", "level": "info", "logger": "opta_lmx.api.middleware", "timestamp": "2026-02-25T14:51:14.675460Z", "method": "GET", "path": "/admin/memory", "status": 200, "latency_ms": 0.4}
+{"event": "http_request", "request_id": "req-eKeYRjR5N9PtMFw6", "level": "info", "logger": "opta_lmx.api.middleware", "timestamp": "2026-02-25T14:51:14.680024Z", "method": "GET", "path": "/admin/models", "status": 200, "latency_ms": 0.2}
+{"event": "http_request", "request_id": "req-asZGytxV9H3jtPXm", "level": "info", "logger": "opta_lmx.api.middleware", "timestamp": "2026-02-25T14:51:14.696656Z", "method": "GET", "path": "/admin/models/available", "status": 200, "latency_ms": 12.0}
+{"event": "internal_error", "request_id": "req-H_KOHIrJPI9p8vo-", "level": "error", "logger": "opta_lmx.api.errors", "timestamp": "2026-02-25T14:51:14.713380Z", "detail": "Model 'inferencerlabs/MiniMax-M2.5-MLX-6.5bit' is already being loaded by another request"}
+{"event": "http_request", "request_id": "req-H_KOHIrJPI9p8vo-", "level": "info", "logger": "opta_lmx.api.middleware", "timestamp": "2026-02-25T14:51:14.713515Z", "method": "POST", "path": "/admin/models/load", "status": 500, "latency_ms": 11.1}
+{"event": "internal_error", "request_id": "req-fFolqA6KxNZJytmK", "level": "error", "logger": "opta_lmx.api.errors", "timestamp": "2026-02-25T14:51:14.739358Z", "detail": "Model 'inferencerlabs/MiniMax-M2.5-MLX-6.5bit' is already being loaded by another request"}
+{"event": "http_request", "request_id": "req-fFolqA6KxNZJytmK", "level": "info", "logger": "opta_lmx.api.middleware", "timestamp": "2026-02-25T14:51:14.739478Z", "method": "POST", "path": "/admin/models/load", "status": 500, "latency_ms": 11.0}
+{"event": "http_request", "request_id": "req-sv-z1gyrLMdUsRSs", "level": "info", "logger": "opta_lmx.api.middleware", "timestamp": "2026-02-25T14:51:14.744807Z", "method": "GET", "path": "/admin/memory", "status": 200, "latency_ms": 0.4}
+{"event": "http_request", "request_id": "req-R26V0RdVEX3hxh3Q", "level": "info", "logger": "opta_lmx.api.middleware", "timestamp": "2026-02-25T14:51:14.749762Z", "method": "GET", "path": "/admin/models", "status": 200, "latency_ms": 0.3}
+{"event": "http_request", "request_id": "req-E6M6apTONrNK58D5", "level": "info", "logger": "opta_lmx.api.middleware", "timestamp": "2026-02-25T14:51:14.754108Z", "method": "GET", "path": "/admin/memory", "status": 200, "latency_ms": 0.3}
+{"event": "http_request", "request_id": "req-nJJin-IjTPnQPWYd", "level": "info", "logger": "opta_lmx.api.middleware", "timestamp": "2026-02-25T14:51:14.761130Z", "method": "POST", "path": "/admin/models/autotune", "status": 409, "latency_ms": 1.6}
+{"event": "http_request", "request_id": "req-g7sfEYcVCrsTuJU7", "level": "info", "logger": "opta_lmx.api.middleware", "timestamp": "2026-02-25T14:51:14.767279Z", "method": "GET", "path": "/admin/models/inferencerlabs/MiniMax-M2.5-MLX-6.5bit/autotune", "status": 200, "latency_ms": 1.1}
+{"event": "http_request", "request_id": "req-K8UmomO3ekk7F43f", "level": "info", "logger": "opta_lmx.api.middleware", "timestamp": "2026-02-25T14:51:14.772594Z", "method": "GET", "path": "/admin/models", "status": 200, "latency_ms": 0.3}
+{"event": "http_request", "request_id": "req-xwznhgJDOGh2crF9", "level": "info", "logger": "opta_lmx.api.middleware", "timestamp": "2026-02-25T14:51:14.774563Z", "method": "GET", "path": "/admin/models/available", "status": 200, "latency_ms": 0.3}
+{"event": "internal_error", "request_id": "req-86eHk7iEoCl5VP__", "level": "error", "logger": "opta_lmx.api.errors", "timestamp": "2026-02-25T14:51:14.790378Z", "detail": "Model 'inferencerlabs/MiniMax-M2.5-MLX-6.5bit' is already being loaded by another request"}
+{"event": "http_request", "request_id": "req-86eHk7iEoCl5VP__", "level": "info", "logger": "opta_lmx.api.middleware", "timestamp": "2026-02-25T14:51:14.790482Z", "method": "POST", "path": "/admin/models/load", "status": 500, "latency_ms": 10.7}
+{"event": "internal_error", "request_id": "req-HIP-sHyFrYwtxybs", "level": "error", "logger": "opta_lmx.api.errors", "timestamp": "2026-02-25T14:51:14.805547Z", "detail": "Model 'inferencerlabs/MiniMax-M2.5-MLX-6.5bit' is already being loaded by another request"}
+{"event": "http_request", "request_id": "req-HIP-sHyFrYwtxybs", "level": "info", "logger": "opta_lmx.api.middleware", "timestamp": "2026-02-25T14:51:14.805649Z", "method": "POST", "path": "/admin/models/load", "status": 500, "latency_ms": 10.7}
+{"event": "http_request", "request_id": "req-Zg3WGzPGfmY7ooT0", "level": "info", "logger": "opta_lmx.api.middleware", "timestamp": "2026-02-25T14:51:14.814833Z", "method": "GET", "path": "/admin/memory", "status": 200, "latency_ms": 0.4}
+{"event": "[prefill] request=5a4cc48f-145 tokens=38/39", "level": "info", "logger": "vllm_mlx.scheduler", "timestamp": "2026-02-25T14:51:15.843897Z"}
+{"event": "model_warmup_complete", "request_id": "req-xYX9bI9p-nPgcnfG", "level": "info", "logger": "opta_lmx.inference.engine", "timestamp": "2026-02-25T14:51:16.302239Z", "model_id": "inferencerlabs/MiniMax-M2.5-MLX-6.5bit", "warmup_ms": 1765.9}
+{"event": "http_request", "request_id": "req-xYX9bI9p-nPgcnfG", "level": "info", "logger": "opta_lmx.api.middleware", "timestamp": "2026-02-25T14:51:16.303525Z", "method": "POST", "path": "/admin/models/load", "status": null, "latency_ms": 32929.5}
+{"event": "http_request", "request_id": "req-QtnNrz4qdf1_Q552", "level": "info", "logger": "opta_lmx.api.middleware", "timestamp": "2026-02-25T14:51:25.966512Z", "method": "GET", "path": "/admin/status", "status": 200, "latency_ms": 2.5}
+

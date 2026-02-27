@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "sessionId": "sess-int-03",
+  "runId": "sess-int-03",
+  "mode": "isolated",
+  "status": "closed",
+  "runtime": "playwright",
+  "createdAt": "2026-02-27T10:18:07.862Z",
+  "updatedAt": "2026-02-27T10:18:09.445Z",
+  "currentUrl": "https://example.com/home",
+  "artifacts": [],
+  "actions": [
+    {
+      "action": {
+        "id": "action-000001",
+        "sessionId": "sess-int-03",
+        "type": "openSession",
+        "createdAt": "2026-02-27T10:18:07.862Z",
+        "input": {
+          "runId": "sess-int-03",
+          "mode": "isolated",
+          "wsEndpoint": "",
+          "headless": true,
+          "profileDir": ""
+        }
+      },
+      "ok": true,
+      "artifactIds": []
+    },
+    {
+      "action": {
+        "id": "action-000002",
+        "sessionId": "sess-int-03",
+        "type": "navigate",
+        "createdAt": "2026-02-27T10:18:08.002Z",
+        "input": {
+          "url": "https://example.com/home"
+        }
+      },
+      "ok": true,
+      "artifactIds": []
+    },
+    {
+      "action": {
+        "id": "action-000003",
+        "sessionId": "sess-int-03",
+        "type": "closeSession",
+        "createdAt": "2026-02-27T10:18:09.408Z",
+        "input": {}
+      },
+      "ok": true,
+      "artifactIds": []
+    }
+  ]
+}

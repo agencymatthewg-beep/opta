@@ -1,0 +1,212 @@
+:root {
+  color-scheme: light;
+  --bg: #f5f7f8;
+  --surface: #ffffff;
+  --surface-muted: #eef2f4;
+  --border: #d4dde2;
+  --text-primary: #12212b;
+  --text-secondary: #405463;
+  --text-muted: #5f7483;
+  --accent: #0f766e;
+  --accent-strong: #0a5f58;
+  --danger: #b42318;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: radial-gradient(circle at top right, #e9f8f6, var(--bg) 40%);
+  color: var(--text-primary);
+  font-family:
+    'SF Pro Text',
+    'IBM Plex Sans',
+    'Avenir Next',
+    'Segoe UI',
+    sans-serif;
+}
+
+a {
+  color: inherit;
+}
+
+.text-text-primary {
+  color: var(--text-primary);
+}
+
+.text-text-secondary {
+  color: var(--text-secondary);
+}
+
+.text-text-muted {
+  color: var(--text-muted);
+}
+
+.border-opta-border {
+  border-color: var(--border);
+}
+
+.bg-opta-surface\/20 {
+  background: color-mix(in oklab, var(--surface) 90%, transparent);
+}
+
+.bg-opta-surface\/30 {
+  background: color-mix(in oklab, var(--surface-muted) 84%, transparent);
+}
+
+.codex-shell {
+  margin: 0 auto;
+  width: min(1120px, 100%);
+  padding: 16px;
+}
+
+.codex-surface {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  padding: 12px;
+}
+
+.codex-surface + .codex-surface {
+  margin-top: 12px;
+}
+
+.codex-surface-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.codex-surface-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.codex-surface-subtitle {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.codex-surface-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.codex-surface-body {
+  display: grid;
+  gap: 8px;
+}
+
+.codex-kv-row {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  align-items: center;
+  gap: 8px;
+}
+
+.codex-kv-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.codex-kv-value-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.codex-kv-value {
+  font-size: 12px;
+  color: var(--text-primary);
+  word-break: break-all;
+}
+
+.codex-kv-mono {
+  font-family: 'IBM Plex Mono', 'SF Mono', Menlo, monospace;
+}
+
+.codex-copy-btn {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface-muted);
+  color: var(--text-secondary);
+  font-size: 11px;
+  padding: 3px 7px;
+  cursor: pointer;
+}
+
+.codex-copy-btn:hover {
+  color: var(--text-primary);
+}
+
+.codex-action-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.codex-primary-btn,
+.codex-secondary-btn {
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.2;
+  padding: 7px 10px;
+  cursor: pointer;
+}
+
+.codex-primary-btn {
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: #f3fffd;
+}
+
+.codex-primary-btn:hover {
+  background: var(--accent-strong);
+}
+
+.codex-primary-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.codex-secondary-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.codex-secondary-btn {
+  border: 1px solid var(--border);
+  background: var(--surface-muted);
+  color: var(--text-secondary);
+}
+
+.codex-secondary-btn:hover {
+  color: var(--text-primary);
+}
+
+.codex-grid-2 {
+  display: grid;
+  gap: 12px;
+}
+
+@media (min-width: 960px) {
+  .codex-grid-2 {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+

@@ -1,0 +1,418 @@
+{
+  "timestamp_utc": "2026-02-23T02:33:38.184811+00:00",
+  "duration_sec": 6.74,
+  "environment": {
+    "python": "3.12.12",
+    "platform": "macOS-26.1-arm64-arm-64bit",
+    "machine": "arm64",
+    "processor": "arm",
+    "vllm_mlx": "0.2.6",
+    "mlx_lm": "0.30.7",
+    "mlx": "0.30.6",
+    "opta_lmx_cwd": "/Users/matthewbyrden/Synced/Opta/1-Apps/1M-Opta-LMX"
+  },
+  "matrix": {
+    "model": "mlx-community/Qwen2.5-0.5B-Instruct-4bit",
+    "draft_model": "mlx-community/Qwen2.5-0.5B-Instruct-4bit",
+    "runs": 3,
+    "max_tokens": 96
+  },
+  "results": [
+    {
+      "name": "interactive_spec_off",
+      "use_batching": false,
+      "speculative_on": false,
+      "status": "ok",
+      "load_time_sec": 1.8325642090003385,
+      "error": null,
+      "serial": {
+        "short": {
+          "samples": [
+            {
+              "tokens": 93,
+              "ttft_ms": 73.23362499937502,
+              "total_ms": 268.57454199944186,
+              "tokens_per_sec": 346.27258156207995,
+              "speculative_telemetry": {
+                "requested": false,
+                "active": false,
+                "reason": "not_requested",
+                "draft_model": null,
+                "num_tokens": null,
+                "accepted_tokens": 0,
+                "rejected_tokens": 0,
+                "ignored_tokens": 0,
+                "acceptance_ratio": null,
+                "telemetry": "not_requested"
+              }
+            },
+            {
+              "tokens": 75,
+              "ttft_ms": 69.55766700048116,
+              "total_ms": 213.89470899976004,
+              "tokens_per_sec": 350.6398094217662,
+              "speculative_telemetry": {
+                "requested": false,
+                "active": false,
+                "reason": "not_requested",
+                "draft_model": null,
+                "num_tokens": null,
+                "accepted_tokens": 0,
+                "rejected_tokens": 0,
+                "ignored_tokens": 0,
+                "acceptance_ratio": null,
+                "telemetry": "not_requested"
+              }
+            },
+            {
+              "tokens": 96,
+              "ttft_ms": 74.42670799991902,
+              "total_ms": 257.8146249998099,
+              "tokens_per_sec": 372.36056721014484,
+              "speculative_telemetry": {
+                "requested": false,
+                "active": false,
+                "reason": "not_requested",
+                "draft_model": null,
+                "num_tokens": null,
+                "accepted_tokens": 0,
+                "rejected_tokens": 0,
+                "ignored_tokens": 0,
+                "acceptance_ratio": null,
+                "telemetry": "not_requested"
+              }
+            }
+          ],
+          "summary": {
+            "runs": 3,
+            "tokens_avg": 88,
+            "ttft_ms_avg": 72.40599999992507,
+            "ttft_ms_p95": 74.30739969986462,
+            "total_ms_avg": 246.7612919996706,
+            "tokens_per_sec_avg": 356.424319397997,
+            "tokens_per_sec_p95": 370.188491431307,
+            "speculative": {
+              "accepted_tokens": 0,
+              "rejected_tokens": 0,
+              "ignored_tokens": 0,
+              "acceptance_ratio": null,
+              "telemetry_modes": [
+                "not_requested"
+              ]
+            }
+          }
+        },
+        "long": {
+          "samples": [
+            {
+              "tokens": 95,
+              "ttft_ms": 106.15033300018695,
+              "total_ms": 290.5918330006898,
+              "tokens_per_sec": 326.91902941324054,
+              "speculative_telemetry": {
+                "requested": false,
+                "active": false,
+                "reason": "not_requested",
+                "draft_model": null,
+                "num_tokens": null,
+                "accepted_tokens": 0,
+                "rejected_tokens": 0,
+                "ignored_tokens": 0,
+                "acceptance_ratio": null,
+                "telemetry": "not_requested"
+              }
+            },
+            {
+              "tokens": 96,
+              "ttft_ms": 71.53250000010303,
+              "total_ms": 260.039499999948,
+              "tokens_per_sec": 369.17468307706787,
+              "speculative_telemetry": {
+                "requested": false,
+                "active": false,
+                "reason": "not_requested",
+                "draft_model": null,
+                "num_tokens": null,
+                "accepted_tokens": 0,
+                "rejected_tokens": 0,
+                "ignored_tokens": 0,
+                "acceptance_ratio": null,
+                "telemetry": "not_requested"
+              }
+            },
+            {
+              "tokens": 96,
+              "ttft_ms": 77.68674999988434,
+              "total_ms": 260.8104170003571,
+              "tokens_per_sec": 368.08345734084907,
+              "speculative_telemetry": {
+                "requested": false,
+                "active": false,
+                "reason": "not_requested",
+                "draft_model": null,
+                "num_tokens": null,
+                "accepted_tokens": 0,
+                "rejected_tokens": 0,
+                "ignored_tokens": 0,
+                "acceptance_ratio": null,
+                "telemetry": "not_requested"
+              }
+            }
+          ],
+          "summary": {
+            "runs": 3,
+            "tokens_avg": 95.66666666666667,
+            "ttft_ms_avg": 85.12319433339144,
+            "ttft_ms_p95": 103.30397470015669,
+            "total_ms_avg": 270.480583333665,
+            "tokens_per_sec_avg": 354.7257232770525,
+            "tokens_per_sec_p95": 369.06556050344597,
+            "speculative": {
+              "accepted_tokens": 0,
+              "rejected_tokens": 0,
+              "ignored_tokens": 0,
+              "acceptance_ratio": null,
+              "telemetry_modes": [
+                "not_requested"
+              ]
+            }
+          }
+        }
+      },
+      "parallel": [
+        {
+          "concurrency": 1,
+          "elapsed_sec": 0.19627166700047383,
+          "success_count": 1,
+          "error_count": 0,
+          "errors": [],
+          "aggregate_tokens": 64,
+          "aggregate_tokens_per_sec": 326.07864893635156,
+          "ttft_ms_p50": 72.95895899915195,
+          "ttft_ms_p95": 72.95895899915195,
+          "total_ms_p50": 196.12370899994858,
+          "total_ms_p95": 196.12370899994858
+        },
+        {
+          "concurrency": 2,
+          "elapsed_sec": 0.3824079999994865,
+          "success_count": 2,
+          "error_count": 0,
+          "errors": [],
+          "aggregate_tokens": 128,
+          "aggregate_tokens_per_sec": 334.7210309412248,
+          "ttft_ms_p50": 67.56016700001055,
+          "ttft_ms_p95": 68.92636700004005,
+          "total_ms_p50": 191.14172950003194,
+          "total_ms_p95": 191.75153575019976
+        }
+      ]
+    },
+    {
+      "name": "interactive_spec_on",
+      "use_batching": false,
+      "speculative_on": true,
+      "status": "failed",
+      "load_time_sec": null,
+      "error": "Failed to load model mlx-community/Qwen2.5-0.5B-Instruct-4bit: Speculative decoding requested but SimpleEngine does not support required constructor kwargs in this vllm-mlx version: ['speculative_model', 'num_speculative_tokens']. Disable speculative settings or update vllm-mlx."
+    },
+    {
+      "name": "throughput_spec_off",
+      "use_batching": true,
+      "speculative_on": false,
+      "status": "ok",
+      "load_time_sec": 0.35447404199931043,
+      "error": null,
+      "serial": {
+        "short": {
+          "samples": [
+            {
+              "tokens": 49,
+              "ttft_ms": 17.809584000133327,
+              "total_ms": 121.28904200017132,
+              "tokens_per_sec": 403.9936270576759,
+              "speculative_telemetry": {
+                "requested": false,
+                "active": false,
+                "reason": "not_requested",
+                "draft_model": null,
+                "num_tokens": null,
+                "accepted_tokens": 0,
+                "rejected_tokens": 0,
+                "ignored_tokens": 0,
+                "acceptance_ratio": null,
+                "telemetry": "not_requested"
+              }
+            },
+            {
+              "tokens": 96,
+              "ttft_ms": 10.068666999359266,
+              "total_ms": 203.48179199936567,
+              "tokens_per_sec": 471.7866844828026,
+              "speculative_telemetry": {
+                "requested": false,
+                "active": false,
+                "reason": "not_requested",
+                "draft_model": null,
+                "num_tokens": null,
+                "accepted_tokens": 0,
+                "rejected_tokens": 0,
+                "ignored_tokens": 0,
+                "acceptance_ratio": null,
+                "telemetry": "not_requested"
+              }
+            },
+            {
+              "tokens": 95,
+              "ttft_ms": 11.279332999947655,
+              "total_ms": 211.51333299985708,
+              "tokens_per_sec": 449.14426269319006,
+              "speculative_telemetry": {
+                "requested": false,
+                "active": false,
+                "reason": "not_requested",
+                "draft_model": null,
+                "num_tokens": null,
+                "accepted_tokens": 0,
+                "rejected_tokens": 0,
+                "ignored_tokens": 0,
+                "acceptance_ratio": null,
+                "telemetry": "not_requested"
+              }
+            }
+          ],
+          "summary": {
+            "runs": 3,
+            "tokens_avg": 80,
+            "ttft_ms_avg": 13.052527999813416,
+            "ttft_ms_p95": 17.15655890011476,
+            "total_ms_avg": 178.76138899979802,
+            "tokens_per_sec_avg": 441.6415247445562,
+            "tokens_per_sec_p95": 469.5224423038414,
+            "speculative": {
+              "accepted_tokens": 0,
+              "rejected_tokens": 0,
+              "ignored_tokens": 0,
+              "acceptance_ratio": null,
+              "telemetry_modes": [
+                "not_requested"
+              ]
+            }
+          }
+        },
+        "long": {
+          "samples": [
+            {
+              "tokens": 96,
+              "ttft_ms": 19.258667000030982,
+              "total_ms": 215.4758340002445,
+              "tokens_per_sec": 445.525598939745,
+              "speculative_telemetry": {
+                "requested": false,
+                "active": false,
+                "reason": "not_requested",
+                "draft_model": null,
+                "num_tokens": null,
+                "accepted_tokens": 0,
+                "rejected_tokens": 0,
+                "ignored_tokens": 0,
+                "acceptance_ratio": null,
+                "telemetry": "not_requested"
+              }
+            },
+            {
+              "tokens": 96,
+              "ttft_ms": 9.218832999977167,
+              "total_ms": 205.35095800005365,
+              "tokens_per_sec": 467.49234060049974,
+              "speculative_telemetry": {
+                "requested": false,
+                "active": false,
+                "reason": "not_requested",
+                "draft_model": null,
+                "num_tokens": null,
+                "accepted_tokens": 0,
+                "rejected_tokens": 0,
+                "ignored_tokens": 0,
+                "acceptance_ratio": null,
+                "telemetry": "not_requested"
+              }
+            },
+            {
+              "tokens": 96,
+              "ttft_ms": 8.418583999628027,
+              "total_ms": 207.14537499952712,
+              "tokens_per_sec": 463.44264263790177,
+              "speculative_telemetry": {
+                "requested": false,
+                "active": false,
+                "reason": "not_requested",
+                "draft_model": null,
+                "num_tokens": null,
+                "accepted_tokens": 0,
+                "rejected_tokens": 0,
+                "ignored_tokens": 0,
+                "acceptance_ratio": null,
+                "telemetry": "not_requested"
+              }
+            }
+          ],
+          "summary": {
+            "runs": 3,
+            "tokens_avg": 96,
+            "ttft_ms_avg": 12.298694666545392,
+            "ttft_ms_p95": 18.2546836000256,
+            "total_ms_avg": 209.32405566660842,
+            "tokens_per_sec_avg": 458.8201940593822,
+            "tokens_per_sec_p95": 467.0873708042399,
+            "speculative": {
+              "accepted_tokens": 0,
+              "rejected_tokens": 0,
+              "ignored_tokens": 0,
+              "acceptance_ratio": null,
+              "telemetry_modes": [
+                "not_requested"
+              ]
+            }
+          }
+        }
+      },
+      "parallel": [
+        {
+          "concurrency": 1,
+          "elapsed_sec": 0.14177066699994612,
+          "success_count": 1,
+          "error_count": 0,
+          "errors": [],
+          "aggregate_tokens": 64,
+          "aggregate_tokens_per_sec": 451.433299668572,
+          "ttft_ms_p50": 10.205000000496511,
+          "ttft_ms_p95": 10.205000000496511,
+          "total_ms_p50": 141.68666600016877,
+          "total_ms_p95": 141.68666600016877
+        },
+        {
+          "concurrency": 4,
+          "elapsed_sec": 0.4181025829993814,
+          "success_count": 4,
+          "error_count": 0,
+          "errors": [],
+          "aggregate_tokens": 251,
+          "aggregate_tokens_per_sec": 600.33113930887,
+          "ttft_ms_p50": 39.68039549999958,
+          "ttft_ms_p95": 228.42959010004046,
+          "total_ms_p50": 283.1773959997008,
+          "total_ms_p95": 397.3643463998541
+        }
+      ]
+    },
+    {
+      "name": "throughput_spec_on",
+      "use_batching": true,
+      "speculative_on": true,
+      "status": "failed",
+      "load_time_sec": null,
+      "error": "Failed to load model mlx-community/Qwen2.5-0.5B-Instruct-4bit: Speculative decoding requested but BatchedEngine does not support required constructor kwargs in this vllm-mlx version: ['speculative_model', 'num_speculative_tokens']. Disable speculative settings or update vllm-mlx."
+    }
+  ]
+}

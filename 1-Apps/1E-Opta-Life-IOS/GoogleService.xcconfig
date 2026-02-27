@@ -1,9 +1,0 @@
-// Google Sign-In Configuration
-// Configured: 2026-02-17 by Opta512
-// Project: Opta Ecosystem (Supabase)
-
-// Google OAuth Client ID — iOS type (created 2026-02-18)
-GOOGLE_CLIENT_ID = 88000480710-896gupqd8m7dc81me2mbjtma1262gigl.apps.googleusercontent.com
-
-// Reversed Client ID for URL Scheme
-GOOGLE_REVERSED_CLIENT_ID = com.googleusercontent.apps.88000480710-896gupqd8m7dc81me2mbjtma1262gigl

@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "sessionId": "sess-int-02",
+  "runId": "sess-int-02",
+  "mode": "isolated",
+  "status": "closed",
+  "runtime": "playwright",
+  "createdAt": "2026-02-27T10:18:07.014Z",
+  "updatedAt": "2026-02-27T10:18:07.822Z",
+  "artifacts": [],
+  "actions": [
+    {
+      "action": {
+        "id": "action-000001",
+        "sessionId": "sess-int-02",
+        "type": "openSession",
+        "createdAt": "2026-02-27T10:18:07.014Z",
+        "input": {
+          "runId": "sess-int-02",
+          "mode": "isolated",
+          "wsEndpoint": "",
+          "headless": true,
+          "profileDir": ""
+        }
+      },
+      "ok": true,
+      "artifactIds": []
+    },
+    {
+      "action": {
+        "id": "action-000002",
+        "sessionId": "sess-int-02",
+        "type": "closeSession",
+        "createdAt": "2026-02-27T10:18:07.789Z",
+        "input": {}
+      },
+      "ok": true,
+      "artifactIds": []
+    }
+  ]
+}

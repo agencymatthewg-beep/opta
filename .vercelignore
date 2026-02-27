@@ -1,0 +1,32 @@
+# Ignore everything by default
+/*
+
+# Root manifests needed for pnpm workspace install
+!/package.json
+!/pnpm-lock.yaml
+!/pnpm-workspace.yaml
+
+# Include app + shared package used by 1L build
+!/1-Apps
+/1-Apps/*
+!/1-Apps/optalocal
+/1-Apps/optalocal/*
+!/1-Apps/optalocal/1L-Opta-Local
+/1-Apps/optalocal/1L-Opta-Local/*
+!/1-Apps/optalocal/1L-Opta-Local/web
+
+!/6-Packages
+/6-Packages/*
+!/6-Packages/6D-UI
+
+# Exclude bulky/generated stuff within allowed tree
+**/node_modules
+**/.next
+**/.vercel
+**/dist
+**/build
+**/.turbo
+**/coverage
+**/playwright-report
+**/test-results
+**/.DS_Store

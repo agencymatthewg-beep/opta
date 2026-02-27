@@ -1,0 +1,2 @@
+{"data": {"duration_sec": 22.9, "format": "mlx", "memory_gb": 119.86, "model_id": "mlx-community/MiniMax-M2.5-4bit"}, "event_type": "model_loaded", "timestamp": "2026-02-24T03:26:25.956521+11:00", "timestamp_unix": 1771863985.956521}
+{"data": {"memory_freed_gb": 0, "model_id": "mlx-community/MiniMax-M2.5-4bit", "reason": "manual"}, "event_type": "model_unloaded", "timestamp": "2026-02-24T04:00:00.678524+11:00", "timestamp_unix": 1771866000.678524}

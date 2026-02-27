@@ -1,0 +1,2 @@
+{"data": {"duration_sec": 30.52, "format": "mlx", "memory_gb": 173.15, "model_id": "inferencerlabs/MiniMax-M2.5-MLX-6.5bit"}, "event_type": "model_loaded", "timestamp": "2026-02-23T15:30:45.726667+11:00", "timestamp_unix": 1771821045.726667}
+{"data": {"memory_freed_gb": 0, "model_id": "inferencerlabs/MiniMax-M2.5-MLX-6.5bit", "reason": "manual"}, "event_type": "model_unloaded", "timestamp": "2026-02-23T16:00:22.861827+11:00", "timestamp_unix": 1771822822.8618271}

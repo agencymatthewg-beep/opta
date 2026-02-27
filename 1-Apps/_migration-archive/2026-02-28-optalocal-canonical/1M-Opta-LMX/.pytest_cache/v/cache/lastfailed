@@ -1,0 +1,8 @@
+{
+  "tests/test_chunker.py::TestChunkText::test_overlap_creates_shared_content": true,
+  "tests/test_performance_profiles.py::TestAutotuneLoadTimePrecedence::test_tuned_profile_applied_at_load_time": true,
+  "tests/test_performance_profiles.py::TestAutotuneLoadTimePrecedence::test_tuned_prefix_cache_applied": true,
+  "tests/test_performance_profiles.py::TestAutotuneLoadTimePrecedence::test_explicit_override_wins_partial_over_tuned": true,
+  "tests/test_gguf.py::test_detect_runtime_incompatibility_for_glm_signature": true,
+  "tests/test_journal_retention.py::test_read_session_log_endpoint": true
+}

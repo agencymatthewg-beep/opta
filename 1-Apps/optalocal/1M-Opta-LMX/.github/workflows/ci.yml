@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    # vllm-mlx and mlx require Apple Silicon — standard x86 runners won't work
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        python-version: ["3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          pip install hatch
+          pip install -e ".[dev]"
+
+      - name: Lint (ruff)
+        run: ruff check src/
+
+      - name: Type check (mypy)
+        run: mypy src/opta_lmx/ --ignore-missing-imports
+
+      - name: Run tests
+        run: pytest tests/ -x --timeout=60 -k "not (perf or benchmark or slo or load_shedding)"
+        env:
+          LMX_SERVER__HOST: "127.0.0.1"
+          LMX_SERVER__PORT: "19234"

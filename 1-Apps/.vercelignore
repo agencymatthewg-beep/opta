@@ -1,0 +1,13 @@
+# Exclusions to make monorepo deploy robust
+**/1M-Opta-LMX/.ruff_cache
+**/1M-Opta-LMX/.venv
+**/1M-Opta-LMX/.pyenv
+**/1M-Opta-LMX/__pycache__
+**/.venv
+**/.next
+**/.turbo
+**/node_modules
+**/output
+**/dist
+**/.git
+**/tmp

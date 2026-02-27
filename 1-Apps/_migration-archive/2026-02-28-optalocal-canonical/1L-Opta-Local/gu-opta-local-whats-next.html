@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Opta Local — What's Next</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap');
+
+  :root {
+    --void: #09090b;
+    --surface: #18181b;
+    --elevated: #27272a;
+    --border: #3f3f46;
+    --text-primary: #fafafa;
+    --text-secondary: #a1a1aa;
+    --text-muted: #52525b;
+    --primary: #8b5cf6;
+    --primary-glow: #a855f7;
+    --neon-blue: #3b82f6;
+    --neon-green: #22c55e;
+    --neon-amber: #f59e0b;
+    --neon-red: #ef4444;
+    --neon-cyan: #06b6d4;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--void);
+    color: var(--text-primary);
+    font-family: 'Sora', -apple-system, BlinkMacSystemFont, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Ambient particles */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background:
+      radial-gradient(1.5px 1.5px at 20% 15%, rgba(139,92,246,0.15) 50%, transparent 50%),
+      radial-gradient(1px 1px at 80% 25%, rgba(59,130,246,0.1) 50%, transparent 50%),
+      radial-gradient(1.5px 1.5px at 60% 80%, rgba(139,92,246,0.12) 50%, transparent 50%),
+      radial-gradient(1px 1px at 10% 70%, rgba(34,197,94,0.08) 50%, transparent 50%),
+      radial-gradient(1px 1px at 45% 50%, rgba(168,85,247,0.1) 50%, transparent 50%),
+      radial-gradient(1.5px 1.5px at 90% 60%, rgba(59,130,246,0.08) 50%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+    animation: drift 30s ease-in-out infinite alternate;
+  }
+
+  @keyframes drift {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(-15px, -10px); }
+  }
+
+  @keyframes breathe {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes pulseGlow {
+    0%, 100% { box-shadow: 0 0 20px rgba(139,92,246,0.15); }
+    50% { box-shadow: 0 0 35px rgba(139,92,246,0.25); }
+  }
+
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 48px 32px 80px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  .hero {
+    text-align: center;
+    margin-bottom: 56px;
+    animation: slideUp 0.6s ease-out;
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 16px;
+    border-radius: 100px;
+    background: rgba(139,92,246,0.1);
+    border: 1px solid rgba(139,92,246,0.25);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--primary-glow);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+
+  .hero-badge::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--neon-green);
+    box-shadow: 0 0 8px var(--neon-green);
+    animation: breathe 2s ease-in-out infinite;
+  }
+
+  .hero h1 {
+    font-size: 42px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #fafafa 0%, #c4b5fd 50%, #818cf8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.2;
+    margin-bottom: 12px;
+  }
+
+  .hero p {
+    font-size: 16px;
+    color: var(--text-secondary);
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  /* Glass panel base */
+  .glass {
+    background: rgba(24,24,27,0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .glass::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+  }
+
+  /* Section headers */
+  .section-label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+    animation: slideUp 0.6s ease-out;
+  }
+
+  .section-label h2 {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+  }
+
+  .section-label .line {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, var(--border), transparent);
+  }
+
+  .section-label .icon {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+  }
+
+  /* Blocker section */
+  .blocker-section {
+    margin-bottom: 48px;
+  }
+
+  .blocker-section .section-label .icon {
+    background: rgba(239,68,68,0.15);
+    border: 1px solid rgba(239,68,68,0.3);
+  }
+
+  .blocker-card {
+    padding: 28px;
+    margin-bottom: 16px;
+    animation: slideUp 0.7s ease-out;
+    border-left: 3px solid var(--neon-red);
+    animation: pulseGlow 3s ease-in-out infinite;
+  }
+
+  .blocker-card .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+  }
+
+  .tag-blocker {
+    background: rgba(239,68,68,0.15);
+    color: var(--neon-red);
+    border: 1px solid rgba(239,68,68,0.3);
+  }
+
+  .tag-blocker::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--neon-red);
+    box-shadow: 0 0 6px var(--neon-red);
+    animation: breathe 1.5s ease-in-out infinite;
+  }
+
+  .blocker-card h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  .blocker-card p {
+    color: var(--text-secondary);
+    font-size: 14px;
+    line-height: 1.6;
+    margin-bottom: 16px;
+  }
+
+  .file-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+
+  .file-chip {
+    padding: 4px 10px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    font-size: 12px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    color: var(--text-secondary);
+  }
+
+  .stat-row {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  .stat {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+
+  .stat-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--neon-red);
+  }
+
+  .stat-label {
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  /* Priority section */
+  .priority-section {
+    margin-bottom: 48px;
+  }
+
+  .priority-section .section-label .icon {
+    background: rgba(139,92,246,0.15);
+    border: 1px solid rgba(139,92,246,0.3);
+  }
+
+  .priority-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  @media (max-width: 768px) {
+    .priority-grid { grid-template-columns: 1fr; }
+  }
+
+  .priority-card {
+    padding: 24px;
+    animation: slideUp 0.8s ease-out;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .priority-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+  }
+
+  .priority-card .number {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+  }
+
+  .priority-card h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text-primary);
+  }
+
+  .priority-card p {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  .priority-card .time-est {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 12px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    background: rgba(139,92,246,0.08);
+    border: 1px solid rgba(139,92,246,0.2);
+    font-size: 12px;
+    color: var(--primary-glow);
+  }
+
+  .priority-card.span-full {
+    grid-column: 1 / -1;
+  }
+
+  /* Checklist */
+  .checklist-section {
+    margin-bottom: 48px;
+  }
+
+  .checklist-section .section-label .icon {
+    background: rgba(34,197,94,0.15);
+    border: 1px solid rgba(34,197,94,0.3);
+  }
+
+  .checklist {
+    padding: 28px;
+  }
+
+  .check-group-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--primary-glow);
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .check-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+
+  .check-item:last-child { border-bottom: none; }
+
+  .check-box {
+    width: 20px; height: 20px;
+    border-radius: 6px;
+    border: 2px solid var(--border);
+    flex-shrink: 0;
+    margin-top: 1px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+  }
+
+  .check-box.done {
+    background: rgba(34,197,94,0.15);
+    border-color: var(--neon-green);
+    color: var(--neon-green);
+  }
+
+  .check-box.done::after { content: '✓'; }
+
+  .check-text {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  .check-text strong {
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+
+  .check-text.done-text {
+    text-decoration: line-through;
+    opacity: 0.5;
+  }
+
+  .check-group { margin-bottom: 24px; }
+  .check-group:last-child { margin-bottom: 0; }
+
+  /* Status board */
+  .status-section {
+    margin-bottom: 48px;
+  }
+
+  .status-section .section-label .icon {
+    background: rgba(59,130,246,0.15);
+    border: 1px solid rgba(59,130,246,0.3);
+  }
+
+  .status-board {
+    padding: 28px;
+  }
+
+  .status-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  @media (max-width: 768px) {
+    .status-grid { grid-template-columns: 1fr; }
+  }
+
+  .status-meter {
+    text-align: center;
+    padding: 20px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .meter-ring {
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    margin: 0 auto 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    font-weight: 700;
+    position: relative;
+  }
+
+  .meter-ring::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 3px solid rgba(255,255,255,0.06);
+  }
+
+  .meter-ring.green {
+    color: var(--neon-green);
+    background: rgba(34,197,94,0.08);
+  }
+  .meter-ring.green::before { border-color: rgba(34,197,94,0.3); }
+
+  .meter-ring.amber {
+    color: var(--neon-amber);
+    background: rgba(245,158,11,0.08);
+  }
+  .meter-ring.amber::before { border-color: rgba(245,158,11,0.3); }
+
+  .meter-ring.red {
+    color: var(--neon-red);
+    background: rgba(239,68,68,0.08);
+  }
+  .meter-ring.red::before { border-color: rgba(239,68,68,0.3); }
+
+  .meter-label {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  .meter-sub {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  /* Phase timeline */
+  .timeline-section {
+    margin-bottom: 48px;
+  }
+
+  .timeline-section .section-label .icon {
+    background: rgba(6,182,212,0.15);
+    border: 1px solid rgba(6,182,212,0.3);
+  }
+
+  .timeline {
+    padding: 28px;
+  }
+
+  .phase-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    padding: 16px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .phase-row:last-child { border-bottom: none; }
+
+  .phase-indicator {
+    width: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .phase-dot {
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    border: 2px solid;
+  }
+
+  .phase-dot.complete {
+    background: var(--neon-green);
+    border-color: var(--neon-green);
+    box-shadow: 0 0 8px rgba(34,197,94,0.4);
+  }
+
+  .phase-dot.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    box-shadow: 0 0 8px rgba(139,92,246,0.4);
+    animation: breathe 2s ease-in-out infinite;
+  }
+
+  .phase-dot.pending {
+    background: transparent;
+    border-color: var(--border);
+  }
+
+  .phase-line {
+    width: 2px;
+    height: 20px;
+    background: rgba(255,255,255,0.06);
+  }
+
+  .phase-content h4 {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .phase-content p {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  .phase-content .phase-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+
+  .phase-tag.shipped {
+    background: rgba(34,197,94,0.12);
+    color: var(--neon-green);
+  }
+
+  .phase-tag.current {
+    background: rgba(139,92,246,0.12);
+    color: var(--primary-glow);
+  }
+
+  .phase-tag.backlog {
+    background: rgba(255,255,255,0.05);
+    color: var(--text-muted);
+  }
+
+  /* Neon divider */
+  .neon-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--primary), transparent);
+    margin: 48px 0;
+    box-shadow: 0 0 8px rgba(139,92,246,0.3);
+  }
+
+  /* Architecture snapshot */
+  .arch-section {
+    margin-bottom: 48px;
+  }
+
+  .arch-section .section-label .icon {
+    background: rgba(245,158,11,0.15);
+    border: 1px solid rgba(245,158,11,0.3);
+  }
+
+  .arch-card {
+    padding: 28px;
+  }
+
+  .arch-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 500px;
+    margin: 0 auto;
+  }
+
+  .arch-layer {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 20px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    transition: border-color 0.3s;
+  }
+
+  .arch-layer:hover {
+    border-color: rgba(139,92,246,0.3);
+  }
+
+  .arch-layer .layer-icon {
+    font-size: 20px;
+    width: 36px;
+    text-align: center;
+  }
+
+  .arch-layer .layer-info {
+    flex: 1;
+  }
+
+  .arch-layer .layer-name {
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .arch-layer .layer-detail {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .arch-layer .layer-status {
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+  }
+
+  .layer-status.ok {
+    background: rgba(34,197,94,0.12);
+    color: var(--neon-green);
+  }
+
+  .layer-status.warn {
+    background: rgba(245,158,11,0.12);
+    color: var(--neon-amber);
+  }
+
+  .layer-status.error {
+    background: rgba(239,68,68,0.12);
+    color: var(--neon-red);
+  }
+
+  .arch-connector {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 14px;
+  }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding-top: 32px;
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+
+  .footer .timestamp {
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-badge">Phase 5 — Stabilization</div>
+    <h1>Opta Local — What's Next</h1>
+    <p>Current state, blockers, and the path to ship-ready. 61 staged files await commit. Cloud sync setup is 25 minutes away.</p>
+  </div>
+
+  <!-- BLOCKER -->
+  <div class="blocker-section">
+    <div class="section-label">
+      <div class="icon">🚨</div>
+      <h2>Blocker — Deploy Is Broken</h2>
+      <div class="line"></div>
+    </div>
+
+    <div class="glass blocker-card">
+      <div class="tag tag-blocker">Production Blocker</div>
+      <h3>61 Staged Files Never Committed</h3>
+      <p>The last session staged all missing files that caused Vercel build failures (CommandPalette.tsx, OptaPrimitives.tsx, auth-utils.ts + 58 others), but the commit was never created. Vercel auto-deploy is now working — but the last deployment failed with 12 module resolution errors because these files aren't in the repository.</p>
+
+      <div class="file-list">
+        <span class="file-chip">CommandPalette.tsx</span>
+        <span class="file-chip">OptaPrimitives.tsx</span>
+        <span class="file-chip">auth-utils.ts</span>
+        <span class="file-chip">daemon-admin.ts</span>
+        <span class="file-chip">opta-daemon-client.ts</span>
+        <span class="file-chip">proxy.ts</span>
+        <span class="file-chip">vitest.config.ts</span>
+        <span class="file-chip">playwright.config.ts</span>
+        <span class="file-chip">+ 53 more</span>
+      </div>
+
+      <div class="stat-row">
+        <div class="stat">
+          <span class="stat-value">61</span>
+          <span class="stat-label">files staged</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">20</span>
+          <span class="stat-label">new files</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">0</span>
+          <span class="stat-label">committed</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="neon-divider"></div>
+
+  <!-- HIGH PRIORITY -->
+  <div class="priority-section">
+    <div class="section-label">
+      <div class="icon">⚡</div>
+      <h2>Immediate Priorities</h2>
+      <div class="line"></div>
+    </div>
+
+    <div class="priority-grid">
+      <div class="glass priority-card">
+        <div class="number">Priority 1</div>
+        <h3>Commit + Push Staged Files</h3>
+        <p>Create the commit for all 61 staged files, push to GitHub, and verify the Vercel auto-deploy succeeds. This unblocks everything.</p>
+        <div class="time-est">⏱ ~2 minutes</div>
+      </div>
+
+      <div class="glass priority-card">
+        <div class="number">Priority 2</div>
+        <h3>Verify Vercel Build Passes</h3>
+        <p>After push, confirm the auto-triggered deployment completes without errors. The 12 "Module not found" errors should be resolved once files are in the repo.</p>
+        <div class="time-est">⏱ ~3 minutes (wait for build)</div>
+      </div>
+
+      <div class="glass priority-card">
+        <div class="number">Priority 3</div>
+        <h3>Cloud Sync Setup</h3>
+        <p>Complete the 4-step checklist: add Supabase redirect URL, verify migration tables, start Cloudflare Tunnel on Mono512, run end-to-end test.</p>
+        <div class="time-est">⏱ 25–37 minutes</div>
+      </div>
+
+      <div class="glass priority-card">
+        <div class="number">Priority 4</div>
+        <h3>Quality Gate Lockdown</h3>
+        <p>Run the full quality gate: <code style="color:var(--primary-glow);font-size:12px">npm run check</code> (lint + typecheck + unit tests + build). Fix any failures before proceeding to features.</p>
+        <div class="time-est">⏱ ~5 minutes</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="neon-divider"></div>
+
+  <!-- CLOUD SYNC CHECKLIST -->
+  <div class="checklist-section">
+    <div class="section-label">
+      <div class="icon">☁️</div>
+      <h2>Cloud Sync Checklist</h2>
+      <div class="line"></div>
+    </div>
+
+    <div class="glass checklist">
+      <div class="check-group">
+        <div class="check-group-title">Infrastructure (Already Done)</div>
+        <div class="check-item">
+          <div class="check-box done"></div>
+          <span class="check-text done-text"><strong>Supabase project configured</strong> — cytjsmezydytbmjrolyz.supabase.co</span>
+        </div>
+        <div class="check-item">
+          <div class="check-box done"></div>
+          <span class="check-text done-text"><strong>Cloud tables created</strong> — devices, cloud_sessions, cloud_messages (REST 200)</span>
+        </div>
+        <div class="check-item">
+          <div class="check-box done"></div>
+          <span class="check-text done-text"><strong>RLS policies applied</strong> — user_id = auth.uid() on all tables</span>
+        </div>
+        <div class="check-item">
+          <div class="check-box done"></div>
+          <span class="check-text done-text"><strong>App code uses cloud tables</strong> — devices, pair, cloud-sync hooks wired</span>
+        </div>
+        <div class="check-item">
+          <div class="check-box done"></div>
+          <span class="check-text done-text"><strong>Auth-first architecture</strong> — SignInOverlay, AppShell, mandatory session</span>
+        </div>
+        <div class="check-item">
+          <div class="check-box done"></div>
+          <span class="check-text done-text"><strong>Vercel auto-deploy restored</strong> — GitHub integration reconnected</span>
+        </div>
+      </div>
+
+      <div class="check-group">
+        <div class="check-group-title">Remaining Steps</div>
+        <div class="check-item">
+          <div class="check-box"></div>
+          <span class="check-text"><strong>Commit & push 61 staged files</strong> — resolves Vercel build failure</span>
+        </div>
+        <div class="check-item">
+          <div class="check-box"></div>
+          <span class="check-text"><strong>Add Supabase redirect URL</strong> — <code style="font-size:12px;color:var(--text-muted)">https://lmx.optalocal.com/**</code> in Auth URL config</span>
+        </div>
+        <div class="check-item">
+          <div class="check-box"></div>
+          <span class="check-text"><strong>Start Cloudflare Tunnel</strong> — <code style="font-size:12px;color:var(--text-muted)">cloudflared tunnel --url http://192.168.188.11:1234</code> on Mono512</span>
+        </div>
+        <div class="check-item">
+          <div class="check-box"></div>
+          <span class="check-text"><strong>End-to-end test</strong> — sign in, create chat, verify cloud_sessions + cloud_messages populate</span>
+        </div>
+        <div class="check-item">
+          <div class="check-box"></div>
+          <span class="check-text"><strong>Update WORKFLOWS.md</strong> — sync with current web scripts and commands</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="neon-divider"></div>
+
+  <!-- DEPLOYMENT STATUS -->
+  <div class="status-section">
+    <div class="section-label">
+      <div class="icon">📡</div>
+      <h2>Current Status</h2>
+      <div class="line"></div>
+    </div>
+
+    <div class="glass status-board">
+      <div class="status-grid">
+        <div class="status-meter">
+          <div class="meter-ring green">12</div>
+          <div class="meter-label">Features Shipped</div>
+          <div class="meter-sub">Phases 1–4 complete</div>
+        </div>
+        <div class="status-meter">
+          <div class="meter-ring red">✗</div>
+          <div class="meter-label">Vercel Deploy</div>
+          <div class="meter-sub">Build failed — missing files</div>
+        </div>
+        <div class="status-meter">
+          <div class="meter-ring amber">5</div>
+          <div class="meter-label">Remaining Steps</div>
+          <div class="meter-sub">~35 min total effort</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="neon-divider"></div>
+
+  <!-- ARCHITECTURE -->
+  <div class="arch-section">
+    <div class="section-label">
+      <div class="icon">🏗</div>
+      <h2>Local Stack</h2>
+      <div class="line"></div>
+    </div>
+
+    <div class="glass arch-card">
+      <div class="arch-stack">
+        <div class="arch-layer">
+          <div class="layer-icon">🌐</div>
+          <div class="layer-info">
+            <div class="layer-name">Opta Local Web</div>
+            <div class="layer-detail">Next.js 16 · React 19 · localhost:3004</div>
+          </div>
+          <div class="layer-status error">BUILD FAIL</div>
+        </div>
+        <div class="arch-connector">↕ Direct HTTP (no backend)</div>
+        <div class="arch-layer">
+          <div class="layer-icon">🔌</div>
+          <div class="layer-info">
+            <div class="layer-name">Opta CLI Daemon</div>
+            <div class="layer-detail">REST + WS · 127.0.0.1:9999</div>
+          </div>
+          <div class="layer-status ok">Running</div>
+        </div>
+        <div class="arch-connector">↕ OpenAI-compatible API</div>
+        <div class="arch-layer">
+          <div class="layer-icon">🧠</div>
+          <div class="layer-info">
+            <div class="layer-name">Opta LMX</div>
+            <div class="layer-detail">MLX · Mac Studio · 192.168.188.11:1234</div>
+          </div>
+          <div class="layer-status ok">Running</div>
+        </div>
+        <div class="arch-connector">↕ Cloudflare Tunnel (not started)</div>
+        <div class="arch-layer">
+          <div class="layer-icon">☁️</div>
+          <div class="layer-info">
+            <div class="layer-name">Supabase Cloud</div>
+            <div class="layer-detail">Auth + Sync · cytjsmezydytbmjrolyz</div>
+          </div>
+          <div class="layer-status warn">Partial</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="neon-divider"></div>
+
+  <!-- PHASE TIMELINE -->
+  <div class="timeline-section">
+    <div class="section-label">
+      <div class="icon">🗺</div>
+      <h2>Roadmap Timeline</h2>
+      <div class="line"></div>
+    </div>
+
+    <div class="glass timeline">
+      <div class="phase-row">
+        <div class="phase-indicator">
+          <div class="phase-dot complete"></div>
+          <div class="phase-line"></div>
+        </div>
+        <div class="phase-content">
+          <h4>Phase 1 — Core Chat <span class="phase-tag shipped">Shipped</span></h4>
+          <p>Manual connection, streaming chat, model picker, chat history persistence</p>
+        </div>
+      </div>
+
+      <div class="phase-row">
+        <div class="phase-indicator">
+          <div class="phase-dot complete"></div>
+          <div class="phase-line"></div>
+        </div>
+        <div class="phase-content">
+          <h4>Phase 2 — Dashboard <span class="phase-tag shipped">Shipped</span></h4>
+          <p>VRAM gauge, model load/unload, throughput chart, temperature monitoring, SSE events</p>
+        </div>
+      </div>
+
+      <div class="phase-row">
+        <div class="phase-indicator">
+          <div class="phase-dot complete"></div>
+          <div class="phase-line"></div>
+        </div>
+        <div class="phase-content">
+          <h4>Phase 3 — Tunnel + Sessions <span class="phase-tag shipped">Shipped</span></h4>
+          <p>WAN access via tunnel, connection type indicator, session list from CLI daemon</p>
+        </div>
+      </div>
+
+      <div class="phase-row">
+        <div class="phase-indicator">
+          <div class="phase-dot complete"></div>
+          <div class="phase-line"></div>
+        </div>
+        <div class="phase-content">
+          <h4>Phase 4 — Session Resume <span class="phase-tag shipped">Shipped</span></h4>
+          <p>Resume CLI sessions in browser, session branching, multi-device support</p>
+        </div>
+      </div>
+
+      <div class="phase-row">
+        <div class="phase-indicator">
+          <div class="phase-dot active"></div>
+          <div class="phase-line"></div>
+        </div>
+        <div class="phase-content">
+          <h4>Phase 5 — Stabilization <span class="phase-tag current">Current</span></h4>
+          <p>CI hardening, security headers, auth-first refactor, Vercel auto-deploy, cloud sync setup, documentation alignment</p>
+        </div>
+      </div>
+
+      <div class="phase-row">
+        <div class="phase-indicator">
+          <div class="phase-dot pending"></div>
+          <div class="phase-line"></div>
+        </div>
+        <div class="phase-content">
+          <h4>Backlog — RAG Studio <span class="phase-tag backlog">Next</span></h4>
+          <p>Document chunking preview, embedding visualization, collection management</p>
+        </div>
+      </div>
+
+      <div class="phase-row">
+        <div class="phase-indicator">
+          <div class="phase-dot pending"></div>
+          <div class="phase-line"></div>
+        </div>
+        <div class="phase-content">
+          <h4>Backlog — Multi-Server Fleet <span class="phase-tag backlog">Planned</span></h4>
+          <p>Device registry, multi-LMX routing, model fleet dashboard</p>
+        </div>
+      </div>
+
+      <div class="phase-row">
+        <div class="phase-indicator">
+          <div class="phase-dot pending"></div>
+        </div>
+        <div class="phase-content">
+          <h4>Backlog — Benchmark Suite <span class="phase-tag backlog">Planned</span></h4>
+          <p>Automated benchmarking, model comparison, performance history</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="neon-divider"></div>
+
+  <!-- NEXT SESSION ACTION -->
+  <div class="priority-section">
+    <div class="section-label">
+      <div class="icon">🎯</div>
+      <h2>Recommended Next Action</h2>
+      <div class="line"></div>
+    </div>
+
+    <div class="priority-grid">
+      <div class="glass priority-card span-full" style="border-left: 3px solid var(--primary);">
+        <div class="number">Start Here</div>
+        <h3 style="font-size: 20px;">Commit, push, verify deploy — then complete cloud sync</h3>
+        <p style="font-size: 15px; max-width: 700px;">
+          The single most impactful action is committing the 61 staged files and pushing to GitHub. This immediately unblocks Vercel deployment.
+          Once the build passes, the cloud sync checklist (adding redirect URL, starting tunnel, e2e test) takes ~30 minutes and completes Phase 5.
+          After that, Opta Local is ship-ready with full LAN + Cloud functionality.
+        </p>
+        <div class="time-est" style="font-size: 14px; padding: 6px 14px;">⏱ Total: ~40 minutes to Phase 5 complete</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <div class="timestamp">Generated 28 Feb 2026 · Opta Local Web (1L-Opta-Local)</div>
+    <div>Phase 5 Stabilization — 12 features shipped · 5 steps remaining</div>
+  </div>
+
+</div>
+
+</body>
+</html>

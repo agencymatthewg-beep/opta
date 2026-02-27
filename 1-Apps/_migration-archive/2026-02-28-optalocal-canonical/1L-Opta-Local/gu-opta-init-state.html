@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Opta Init — State of the Project</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --void: #09090b;
+    --surface: #18181b;
+    --elevated: #27272a;
+    --border: #3f3f46;
+    --text-primary: #fafafa;
+    --text-secondary: #a1a1aa;
+    --text-muted: #52525b;
+    --primary: #8b5cf6;
+    --primary-glow: #a855f7;
+    --neon-blue: #3b82f6;
+    --neon-green: #22c55e;
+    --neon-amber: #f59e0b;
+    --neon-red: #ef4444;
+    --glass-bg: rgba(109,40,217,0.08);
+    --glass-border: rgba(139,92,246,0.25);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--void);
+    color: var(--text-primary);
+    font-family: 'Sora', -apple-system, BlinkMacSystemFont, sans-serif;
+    line-height: 1.6;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Noise overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.4;
+  }
+
+  /* Ambient glow */
+  body::after {
+    content: '';
+    position: fixed;
+    top: -200px;
+    right: -200px;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(139,92,246,0.08) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    margin-bottom: 56px;
+    padding-top: 20px;
+  }
+
+  .header-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 16px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--primary);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 24px;
+    backdrop-filter: blur(12px);
+  }
+
+  .header-badge .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--neon-amber);
+    box-shadow: 0 0 8px var(--neon-amber);
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  h1 {
+    font-size: 42px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #ffffff 0%, #c4b5fd 50%, #8b5cf6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 12px;
+    letter-spacing: -0.5px;
+  }
+
+  .subtitle {
+    font-size: 18px;
+    color: var(--text-secondary);
+    font-weight: 300;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  /* Section divider */
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--primary), transparent);
+    margin: 48px 0;
+    opacity: 0.3;
+    box-shadow: 0 0 12px rgba(139,92,246,0.15);
+  }
+
+  /* Section titles */
+  h2 {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  h2 .icon {
+    font-size: 20px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+  }
+
+  h3 {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+  }
+
+  /* Glass panel */
+  .glass {
+    background: linear-gradient(135deg, rgba(24,24,27,0.8), rgba(24,24,27,0.5));
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 28px;
+    backdrop-filter: blur(20px);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .glass:hover {
+    border-color: rgba(139,92,246,0.2);
+  }
+
+  .glass-subtle {
+    background: rgba(24,24,27,0.4);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 12px;
+    padding: 20px;
+    backdrop-filter: blur(12px);
+  }
+
+  /* Status banner */
+  .status-banner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 20px 28px;
+    background: linear-gradient(135deg, rgba(245,158,11,0.08), rgba(245,158,11,0.03));
+    border: 1px solid rgba(245,158,11,0.25);
+    border-radius: 16px;
+    margin-bottom: 40px;
+    backdrop-filter: blur(12px);
+  }
+
+  .status-banner .status-icon {
+    font-size: 28px;
+  }
+
+  .status-banner .status-text {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--neon-amber);
+  }
+
+  .status-banner .status-detail {
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  /* Identity card */
+  .identity-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .identity-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .identity-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+  }
+
+  .identity-value {
+    font-size: 15px;
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+
+  .identity-value.accent { color: var(--primary); }
+  .identity-value.amber { color: var(--neon-amber); }
+  .identity-value.mono {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+  }
+
+  /* Purpose section */
+  .purpose-text {
+    font-size: 16px;
+    color: var(--text-secondary);
+    line-height: 1.8;
+    margin-bottom: 20px;
+  }
+
+  .purpose-text strong {
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+
+  .funnel-flow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    justify-content: center;
+    margin: 28px 0;
+    flex-wrap: wrap;
+  }
+
+  .funnel-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 16px 20px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    min-width: 130px;
+  }
+
+  .funnel-step .step-num {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--primary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .funnel-step .step-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .funnel-step .step-detail {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  .funnel-arrow {
+    font-size: 20px;
+    color: var(--primary);
+    padding: 0 8px;
+    opacity: 0.6;
+  }
+
+  /* Stack & architecture */
+  .tech-stack {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 16px 0;
+  }
+
+  .tech-tag {
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .tech-tag.primary { background: rgba(139,92,246,0.12); color: #c4b5fd; border: 1px solid rgba(139,92,246,0.25); }
+  .tech-tag.blue { background: rgba(59,130,246,0.1); color: #93c5fd; border: 1px solid rgba(59,130,246,0.2); }
+  .tech-tag.green { background: rgba(34,197,94,0.1); color: #86efac; border: 1px solid rgba(34,197,94,0.2); }
+  .tech-tag.amber { background: rgba(245,158,11,0.1); color: #fcd34d; border: 1px solid rgba(245,158,11,0.2); }
+
+  /* Ecosystem diagram */
+  .ecosystem-diagram {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.8;
+    color: var(--text-secondary);
+    padding: 24px;
+    background: rgba(9,9,11,0.8);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+    overflow-x: auto;
+  }
+
+  .ecosystem-diagram .highlight { color: var(--primary); font-weight: 600; }
+  .ecosystem-diagram .active { color: var(--neon-amber); font-weight: 600; }
+  .ecosystem-diagram .dim { color: var(--text-muted); }
+
+  /* Roadmap */
+  .phase-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .phase-card {
+    background: linear-gradient(135deg, rgba(24,24,27,0.6), rgba(24,24,27,0.3));
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 14px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .phase-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+  }
+
+  .phase-card.pending::before { background: var(--text-muted); }
+  .phase-card.future::before { background: var(--border); }
+
+  .phase-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+
+  .phase-name {
+    font-size: 16px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .phase-badge {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .phase-badge.pending {
+    background: rgba(113,113,122,0.15);
+    color: var(--text-muted);
+    border: 1px solid rgba(113,113,122,0.25);
+  }
+
+  .phase-badge.future {
+    background: rgba(63,63,70,0.15);
+    color: var(--border);
+    border: 1px solid rgba(63,63,70,0.25);
+  }
+
+  .phase-tasks {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .task-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    padding: 6px 0;
+  }
+
+  .task-checkbox {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    border: 1.5px solid var(--border);
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .task-checkbox.done {
+    background: var(--neon-green);
+    border-color: var(--neon-green);
+    position: relative;
+  }
+
+  .task-checkbox.done::after {
+    content: '✓';
+    position: absolute;
+    top: -2px;
+    left: 2px;
+    font-size: 11px;
+    color: var(--void);
+    font-weight: 700;
+  }
+
+  /* Decision log */
+  .decisions-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .decision-item {
+    display: flex;
+    gap: 14px;
+    padding: 16px;
+    background: rgba(24,24,27,0.3);
+    border: 1px solid rgba(255,255,255,0.04);
+    border-radius: 10px;
+    align-items: flex-start;
+  }
+
+  .decision-id {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--primary);
+    background: rgba(139,92,246,0.1);
+    padding: 3px 8px;
+    border-radius: 5px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .decision-body {
+    flex: 1;
+  }
+
+  .decision-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+  }
+
+  .decision-reason {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  .decision-lock {
+    font-size: 11px;
+    color: var(--neon-green);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+    margin-top: 3px;
+  }
+
+  /* Guardrails */
+  .guardrails-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .guardrail-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px 16px;
+    background: rgba(239,68,68,0.04);
+    border: 1px solid rgba(239,68,68,0.12);
+    border-radius: 10px;
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .guardrail-icon {
+    color: var(--neon-red);
+    font-weight: 700;
+    flex-shrink: 0;
+    font-size: 14px;
+  }
+
+  /* Open questions */
+  .questions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .question-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px 16px;
+    background: rgba(59,130,246,0.05);
+    border: 1px solid rgba(59,130,246,0.15);
+    border-radius: 10px;
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .question-icon {
+    color: var(--neon-blue);
+    font-weight: 700;
+    flex-shrink: 0;
+    font-size: 16px;
+  }
+
+  /* Stats bar */
+  .stats-bar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 40px;
+  }
+
+  .stat-card {
+    text-align: center;
+    padding: 20px 16px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 14px;
+    backdrop-filter: blur(12px);
+  }
+
+  .stat-value {
+    font-size: 28px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    margin-bottom: 4px;
+  }
+
+  .stat-value.amber { color: var(--neon-amber); }
+  .stat-value.green { color: var(--neon-green); }
+  .stat-value.blue { color: var(--neon-blue); }
+  .stat-value.primary { color: var(--primary); }
+
+  .stat-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    font-weight: 600;
+  }
+
+  /* File inventory */
+  .file-tree {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 2;
+    padding: 20px;
+    background: rgba(9,9,11,0.6);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 10px;
+  }
+
+  .file-tree .dir { color: var(--neon-blue); }
+  .file-tree .file { color: var(--text-secondary); }
+  .file-tree .key { color: var(--primary); }
+  .file-tree .missing { color: var(--neon-red); opacity: 0.5; }
+
+  /* Bottom CTA */
+  .bottom-cta {
+    text-align: center;
+    margin-top: 48px;
+    padding: 36px;
+    background: linear-gradient(135deg, rgba(139,92,246,0.06), rgba(139,92,246,0.02));
+    border: 1px solid rgba(139,92,246,0.15);
+    border-radius: 20px;
+  }
+
+  .bottom-cta h3 {
+    font-size: 18px;
+    color: var(--text-primary);
+    text-transform: none;
+    letter-spacing: 0;
+    margin-bottom: 8px;
+    font-weight: 600;
+  }
+
+  .bottom-cta p {
+    color: var(--text-muted);
+    font-size: 14px;
+    line-height: 1.7;
+    max-width: 560px;
+    margin: 0 auto;
+  }
+
+  .bottom-cta code {
+    font-family: 'JetBrains Mono', monospace;
+    background: rgba(139,92,246,0.12);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 13px;
+    color: #c4b5fd;
+  }
+
+  /* Two column layout */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+
+  /* Timestamp */
+  .timestamp {
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 48px;
+    letter-spacing: 0.5px;
+  }
+
+  @media (max-width: 768px) {
+    .identity-grid, .guardrails-list, .stats-bar, .two-col { grid-template-columns: 1fr; }
+    .funnel-flow { flex-direction: column; }
+    .funnel-arrow { transform: rotate(90deg); }
+    h1 { font-size: 30px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-badge">
+      <span class="dot"></span>
+      Planning Phase
+    </div>
+    <h1>Opta Init</h1>
+    <div class="subtitle">Your local AI stack, ready in minutes &mdash; the front door to the Opta Local ecosystem</div>
+  </div>
+
+  <!-- Status Banner -->
+  <div class="status-banner">
+    <span class="status-icon">&#x1F4D0;</span>
+    <div>
+      <div class="status-text">Status: Documentation Only &mdash; No Code Written</div>
+      <div class="status-detail">OPIS scaffold created Feb 27, 2026. All 10 documentation files established. Zero source files, zero dependencies installed.</div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-bar">
+    <div class="stat-card">
+      <div class="stat-value amber">0%</div>
+      <div class="stat-label">Code Progress</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value green">10</div>
+      <div class="stat-label">Doc Files</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value blue">6</div>
+      <div class="stat-label">Locked Decisions</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value primary">4</div>
+      <div class="stat-label">Phases Planned</div>
+    </div>
+  </div>
+
+  <!-- Identity -->
+  <div class="glass" style="margin-bottom: 32px;">
+    <h2><span class="icon">&#x1F3AF;</span> Identity</h2>
+    <div class="identity-grid">
+      <div class="identity-item">
+        <span class="identity-label">Full Name</span>
+        <span class="identity-value">Opta Initializer</span>
+      </div>
+      <div class="identity-item">
+        <span class="identity-label">Type</span>
+        <span class="identity-value">Static Marketing + Onboarding Site</span>
+      </div>
+      <div class="identity-item">
+        <span class="identity-label">Domain</span>
+        <span class="identity-value accent mono">init.optalocal.com</span>
+      </div>
+      <div class="identity-item">
+        <span class="identity-label">Status</span>
+        <span class="identity-value amber">Planning (v0.1)</span>
+      </div>
+      <div class="identity-item">
+        <span class="identity-label">Location</span>
+        <span class="identity-value mono">1-Apps/1O-Opta-Init/</span>
+      </div>
+      <div class="identity-item">
+        <span class="identity-label">Dev Port</span>
+        <span class="identity-value mono">localhost:3005</span>
+      </div>
+      <div class="identity-item">
+        <span class="identity-label">Deploy Target</span>
+        <span class="identity-value">Vercel CDN (static export)</span>
+      </div>
+      <div class="identity-item">
+        <span class="identity-label">Owner</span>
+        <span class="identity-value">Matthew Byrden / Opta Operations</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Purpose & Funnel -->
+  <h2><span class="icon">&#x1F680;</span> Purpose</h2>
+  <div class="glass" style="margin-bottom: 32px;">
+    <p class="purpose-text">
+      Opta Init is the <strong>front door</strong> to the Opta Local stack. The Opta Local ecosystem currently has no public onboarding surface &mdash; discovery happens through repos and word-of-mouth. Init creates the <strong>definitive first-touch experience</strong>: a polished, premium static site that gets any user downloaded, set up, and productive with their local AI stack in minutes.
+    </p>
+    <p class="purpose-text" style="margin-bottom: 0;">
+      Not a dashboard. Not a docs site. <strong>Exactly one job</strong>: get users started.
+    </p>
+  </div>
+
+  <h3>User Funnel</h3>
+  <div class="funnel-flow">
+    <div class="funnel-step">
+      <span class="step-num">Step 1</span>
+      <span class="step-label">Discover</span>
+      <span class="step-detail">Lands on init.optalocal.com</span>
+    </div>
+    <span class="funnel-arrow">&rarr;</span>
+    <div class="funnel-step">
+      <span class="step-num">Step 2</span>
+      <span class="step-label">Download</span>
+      <span class="step-detail">Opta CLI + Opta LMX</span>
+    </div>
+    <span class="funnel-arrow">&rarr;</span>
+    <div class="funnel-step">
+      <span class="step-num">Step 3</span>
+      <span class="step-label">Set Up</span>
+      <span class="step-detail">Step-by-step guides</span>
+    </div>
+    <span class="funnel-arrow">&rarr;</span>
+    <div class="funnel-step">
+      <span class="step-num">Step 4</span>
+      <span class="step-label">Use</span>
+      <span class="step-detail">Tips &amp; optimal workflows</span>
+    </div>
+    <span class="funnel-arrow">&rarr;</span>
+    <div class="funnel-step">
+      <span class="step-num">Step 5</span>
+      <span class="step-label">Dashboard</span>
+      <span class="step-detail">lmx.optalocal.com</span>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Tech Stack & Architecture -->
+  <div class="two-col">
+    <div>
+      <h2><span class="icon">&#x2699;</span> Tech Stack</h2>
+      <div class="glass-subtle">
+        <div class="tech-stack">
+          <span class="tech-tag primary">Next.js 15</span>
+          <span class="tech-tag primary">TypeScript Strict</span>
+          <span class="tech-tag blue">Tailwind v4</span>
+          <span class="tech-tag blue">Framer Motion</span>
+          <span class="tech-tag green">Sora Font</span>
+          <span class="tech-tag green">JetBrains Mono</span>
+          <span class="tech-tag amber">Static Export</span>
+        </div>
+        <div style="margin-top: 16px; font-size: 13px; color: var(--text-muted);">
+          <strong style="color: var(--text-secondary);">JS Budget:</strong> &lt; 150KB gzip initial load<br>
+          <strong style="color: var(--text-secondary);">Rendering:</strong> Build-time SSG, no client data fetching<br>
+          <strong style="color: var(--text-secondary);">Client JS:</strong> Only for Framer Motion animations
+        </div>
+      </div>
+    </div>
+    <div>
+      <h2><span class="icon">&#x1F310;</span> Architecture</h2>
+      <div class="glass-subtle">
+        <div class="ecosystem-diagram">
+<span class="dim">Browser</span> &rarr; <span class="highlight">init.optalocal.com</span>
+       <span class="dim">|</span>
+  <span class="dim">Cloudflare DNS</span> &rarr; <span class="dim">Vercel CDN</span>
+       <span class="dim">|</span>
+  <span class="highlight">Static HTML/CSS/JS</span> <span class="dim">(no hydration)</span>
+       <span class="dim">|</span>
+  <span class="dim">Framer Motion mounts client-side</span>
+       <span class="dim">|</span>
+  <span class="dim">Click Download</span> &rarr; <span class="active">GitHub Releases</span>
+  <span class="dim">Click Dashboard</span> &rarr; <span class="active">lmx.optalocal.com</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Ecosystem -->
+  <h2><span class="icon">&#x1F30D;</span> Ecosystem Position</h2>
+  <div class="glass" style="margin-bottom: 32px;">
+    <div class="ecosystem-diagram" style="font-size: 14px;">
+<span class="dim">optalocal.com</span> <span class="dim">&mdash; platform root</span>
+<span class="dim"> ├──</span> <span class="active">init.optalocal.com</span>    <span class="dim">&larr; THIS APP (onboarding + downloads)</span>
+<span class="dim"> ├──</span> <span class="highlight">lmx.optalocal.com</span>     <span class="dim">&larr; Opta Local dashboard (1L)</span>
+<span class="dim"> └──</span> <span class="dim">[future subdomains]</span>
+
+<span class="dim">Downloads served:</span>
+<span class="dim"> ├──</span> <span class="highlight">Opta CLI</span>  <span class="dim">(1D-Opta-CLI-TS)</span> &mdash; Agentic coding CLI
+<span class="dim"> └──</span> <span class="highlight">Opta LMX</span>  <span class="dim">(1M-Opta-LMX)</span>    &mdash; Local inference daemon
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Page Structure -->
+  <h2><span class="icon">&#x1F4C4;</span> Planned Page Structure</h2>
+  <div class="glass" style="margin-bottom: 32px;">
+    <div class="ecosystem-diagram">
+<span class="highlight">/</span> <span class="dim">(page.tsx &mdash; single page, anchor nav)</span>
+<span class="dim">  ├──</span> <span class="highlight">&lt;Header /&gt;</span>         <span class="dim">&mdash; Logo (Opta wordmark), nav anchors</span>
+<span class="dim">  ├──</span> <span class="highlight">&lt;Hero /&gt;</span>           <span class="dim">&mdash; Tagline, sub-copy, primary Download CTA</span>
+<span class="dim">  ├──</span> <span class="highlight">&lt;Downloads /&gt;</span>      <span class="dim">&mdash; App cards (CLI, LMX), macOS + Windows buttons</span>
+<span class="dim">  ├──</span> <span class="highlight">&lt;SetupGuide /&gt;</span>     <span class="dim">&mdash; Tabbed: CLI / LMX / Opta Local tabs</span>
+<span class="dim">  ├──</span> <span class="highlight">&lt;OptimalUsage /&gt;</span>   <span class="dim">&mdash; Tips, key commands, recommended workflows</span>
+<span class="dim">  ├──</span> <span class="highlight">&lt;DashboardCTA /&gt;</span>   <span class="dim">&mdash; "Open Dashboard" &rarr; lmx.optalocal.com</span>
+<span class="dim">  └──</span> <span class="highlight">&lt;Footer /&gt;</span>         <span class="dim">&mdash; Links, legal, brand</span>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Roadmap -->
+  <h2><span class="icon">&#x1F5FA;</span> Roadmap (v1.0)</h2>
+  <div class="phase-list">
+
+    <!-- Phase 1 -->
+    <div class="phase-card pending">
+      <div class="phase-header">
+        <span class="phase-name">Phase 1: Scaffold</span>
+        <span class="phase-badge pending">Not Started</span>
+      </div>
+      <div class="phase-tasks">
+        <div class="task-item"><div class="task-checkbox"></div><span>create-next-app with TypeScript, Tailwind, app router</span></div>
+        <div class="task-item"><div class="task-checkbox"></div><span>output: 'export' configured</span></div>
+        <div class="task-item"><div class="task-checkbox"></div><span>Sora + JetBrains Mono loaded via next/font</span></div>
+        <div class="task-item"><div class="task-checkbox"></div><span>--opta-* CSS variables in globals.css</span></div>
+        <div class="task-item"><div class="task-checkbox"></div><span>Framer Motion installed</span></div>
+        <div class="task-item"><div class="task-checkbox"></div><span>cn() utility + constants.ts</span></div>
+      </div>
+    </div>
+
+    <!-- Phase 2 -->
+    <div class="phase-card pending">
+      <div class="phase-header">
+        <span class="phase-name">Phase 2: Sections</span>
+        <span class="phase-badge pending">Not Started</span>
+      </div>
+      <div class="phase-tasks">
+        <div class="task-item"><div class="task-checkbox"></div><span>Header &mdash; Opta wordmark + anchor nav</span></div>
+        <div class="task-item"><div class="task-checkbox"></div><span>Hero &mdash; tagline, sub-copy, download CTA with spring</span></div>
+        <div class="task-item"><div class="task-checkbox"></div><span>Downloads &mdash; CLI + LMX cards, macOS / Windows buttons</span></div>
+        <div class="task-item"><div class="task-checkbox"></div><span>Setup Guide &mdash; tabbed, sequential steps, copy-pasteable</span></div>
+        <div class="task-item"><div class="task-checkbox"></div><span>Optimal Usage &mdash; tips + key commands per app</span></div>
+        <div class="task-item"><div class="task-checkbox"></div><span>Dashboard CTA + Footer</span></div>
+      </div>
+    </div>
+
+    <!-- Phase 3 -->
+    <div class="phase-card pending">
+      <div class="phase-header">
+        <span class="phase-name">Phase 3: Polish</span>
+        <span class="phase-badge pending">Not Started</span>
+      </div>
+      <div class="phase-tasks">
+        <div class="task-item"><div class="task-checkbox"></div><span>Scroll-triggered blur-in reveals + stagger on all sections</span></div>
+        <div class="task-item"><div class="task-checkbox"></div><span>Micro-interactions on all interactive elements</span></div>
+        <div class="task-item"><div class="task-checkbox"></div><span>Film grain overlay + hero glassmorphism mesh</span></div>
+        <div class="task-item"><div class="task-checkbox"></div><span>Mobile responsive (375px+)</span></div>
+      </div>
+    </div>
+
+    <!-- Phase 4 -->
+    <div class="phase-card pending">
+      <div class="phase-header">
+        <span class="phase-name">Phase 4: QA + Deploy</span>
+        <span class="phase-badge pending">Not Started</span>
+      </div>
+      <div class="phase-tasks">
+        <div class="task-item"><div class="task-checkbox"></div><span>Lighthouse &ge; 95 Perf, 100 A11y, 100 SEO</span></div>
+        <div class="task-item"><div class="task-checkbox"></div><span>All download links verified</span></div>
+        <div class="task-item"><div class="task-checkbox"></div><span>Vercel project + init.optalocal.com CNAME</span></div>
+        <div class="task-item"><div class="task-checkbox"></div><span>Live and resolving</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Locked Decisions -->
+  <h2><span class="icon">&#x1F512;</span> Locked Decisions</h2>
+  <div class="glass" style="margin-bottom: 32px;">
+    <div class="decisions-grid">
+      <div class="decision-item">
+        <span class="decision-id">D01</span>
+        <div class="decision-body">
+          <div class="decision-title">Static export over SSR</div>
+          <div class="decision-reason">Content never changes at runtime. Zero server cost. Perfect CDN caching. No runtime failure modes.</div>
+        </div>
+        <span class="decision-lock">Locked</span>
+      </div>
+      <div class="decision-item">
+        <span class="decision-id">D02</span>
+        <div class="decision-body">
+          <div class="decision-title">Next.js over plain HTML</div>
+          <div class="decision-reason">Ecosystem consistency with 1L, 1F, 1B. TypeScript, next/font, Framer Motion integration. Extensible for v2.</div>
+        </div>
+        <span class="decision-lock">Locked</span>
+      </div>
+      <div class="decision-item">
+        <span class="decision-id">D03</span>
+        <div class="decision-body">
+          <div class="decision-title">Framer Motion spring physics only</div>
+          <div class="decision-reason">Spring physics = higher perceived quality. CSS ease-out detectable as "cheap." Interruptible by default.</div>
+        </div>
+        <span class="decision-lock">Locked</span>
+      </div>
+      <div class="decision-item">
+        <span class="decision-id">D04</span>
+        <div class="decision-body">
+          <div class="decision-title">Single page with anchor nav</div>
+          <div class="decision-reason">Onboarding page UX, not a docs site. Scroll-through is the correct experience. No navigation overhead.</div>
+        </div>
+        <span class="decision-lock">Locked</span>
+      </div>
+      <div class="decision-item">
+        <span class="decision-id">D05</span>
+        <div class="decision-body">
+          <div class="decision-title">Dark mode only at v1</div>
+          <div class="decision-reason">Opta is a dark brand. Quality light mode is significant effort with diminishing returns at v1.</div>
+        </div>
+        <span class="decision-lock">Locked v1</span>
+      </div>
+      <div class="decision-item">
+        <span class="decision-id">D06</span>
+        <div class="decision-body">
+          <div class="decision-title">Domain: init.optalocal.com</div>
+          <div class="decision-reason">Matthew's directive. "Init" as in initialize your stack &mdash; more meaningful than "get" or "download."</div>
+        </div>
+        <span class="decision-lock">Locked</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Two column: Guardrails + File Inventory -->
+  <div class="two-col" style="margin-bottom: 32px;">
+    <div>
+      <h2><span class="icon">&#x1F6D1;</span> Guardrails</h2>
+      <div class="guardrails-list" style="grid-template-columns: 1fr;">
+        <div class="guardrail-item"><span class="guardrail-icon">&#x2718;</span> No auth &mdash; zero login flows or user accounts</div>
+        <div class="guardrail-item"><span class="guardrail-icon">&#x2718;</span> No server &mdash; static export only, no API routes</div>
+        <div class="guardrail-item"><span class="guardrail-icon">&#x2718;</span> No dashboard &mdash; never duplicate lmx.optalocal.com</div>
+        <div class="guardrail-item"><span class="guardrail-icon">&#x2718;</span> No CSS animations &mdash; Framer Motion spring only</div>
+        <div class="guardrail-item"><span class="guardrail-icon">&#x2718;</span> No pure black (#000) &mdash; always #09090b minimum</div>
+        <div class="guardrail-item"><span class="guardrail-icon">&#x2718;</span> No light mode default &mdash; dark is canonical</div>
+        <div class="guardrail-item"><span class="guardrail-icon">&#x2718;</span> No heavy deps &mdash; &lt; 150KB gzip JS budget</div>
+        <div class="guardrail-item"><span class="guardrail-icon">&#x2718;</span> No content duplication from other optalocal sites</div>
+      </div>
+    </div>
+    <div>
+      <h2><span class="icon">&#x1F4C2;</span> File Inventory</h2>
+      <div class="file-tree">
+<span class="dir">1O-Opta-Init/</span>
+  <span class="key">APP.md</span>           <span class="dim">&mdash; identity &amp; purpose</span>
+  <span class="key">CLAUDE.md</span>        <span class="dim">&mdash; AI coding rules</span>
+  <span class="key">ARCHITECTURE.md</span>  <span class="dim">&mdash; system design</span>
+  <span class="dir">docs/</span>
+    <span class="file">INDEX.md</span>       <span class="dim">&mdash; read order</span>
+    <span class="file">ROADMAP.md</span>     <span class="dim">&mdash; 4-phase plan</span>
+    <span class="file">GUARDRAILS.md</span>  <span class="dim">&mdash; hard rules</span>
+    <span class="file">ECOSYSTEM.md</span>   <span class="dim">&mdash; platform context</span>
+    <span class="file">KNOWLEDGE.md</span>   <span class="dim">&mdash; research refs</span>
+    <span class="file">WORKFLOWS.md</span>   <span class="dim">&mdash; dev &amp; deploy</span>
+    <span class="file">DECISIONS.md</span>   <span class="dim">&mdash; 6 locked decisions</span>
+    <span class="file">CHANGELOG.md</span>   <span class="dim">&mdash; version history</span>
+  <span class="missing">src/</span>             <span class="dim">&mdash; DOES NOT EXIST YET</span>
+  <span class="missing">package.json</span>     <span class="dim">&mdash; DOES NOT EXIST YET</span>
+  <span class="missing">next.config.ts</span>   <span class="dim">&mdash; DOES NOT EXIST YET</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Open Questions -->
+  <h2><span class="icon">&#x2753;</span> Open Questions</h2>
+  <div class="glass" style="margin-bottom: 32px;">
+    <div class="questions-list">
+      <div class="question-item">
+        <span class="question-icon">?</span>
+        <span>Are Opta CLI and Opta LMX releases on GitHub Releases? This determines the actual download URLs in constants.ts.</span>
+      </div>
+      <div class="question-item">
+        <span class="question-icon">?</span>
+        <span>Does optalocal.com root need its own landing page first, or can init.optalocal.com ship independently?</span>
+      </div>
+      <div class="question-item">
+        <span class="question-icon">?</span>
+        <span>Should Windows builds exist at v1 or go macOS-only for initial launch?</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary CTA -->
+  <div class="bottom-cta">
+    <h3>Ready to Build</h3>
+    <p>
+      The OPIS scaffold is complete with 10 documentation files covering identity, architecture, roadmap, decisions, guardrails, ecosystem context, and workflows. The project is fully specified and ready for Phase 1: Scaffold. Run <code>npx create-next-app</code> in <code>1O-Opta-Init/</code> to begin.
+    </p>
+  </div>
+
+  <div class="timestamp">Generated 2026-02-28 &bull; Opta Init v0.1 &bull; 1O-Opta-Init</div>
+
+</div>
+
+</body>
+</html>

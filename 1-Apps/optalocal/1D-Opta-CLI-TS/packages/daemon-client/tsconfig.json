@@ -1,0 +1,28 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "../..",
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@opta/protocol-shared": [
+        "../protocol-shared/src/index.ts"
+      ],
+      "@opta/protocol-shared/*": [
+        "../protocol-shared/src/*"
+      ]
+    },
+    "types": [
+      "node"
+    ]
+  },
+  "include": [
+    "src/**/*.ts",
+    "../protocol-shared/src/**/*.ts",
+    "../../src/protocol/v3/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}

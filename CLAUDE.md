@@ -32,11 +32,11 @@ pnpm dev:ai-components          # AI Components Web (Next.js 16)
 
 ### Optamize MacOS (flagship desktop app)
 
-**Location:** `1-Apps/1J-Optamize-MacOS/`
+**Location:** `1-Apps/optamize/1J-Optamize-MacOS/`
 **Stack:** Tauri v2 + React 19 + Vite 7 + TypeScript + Rust + Tailwind CSS 3
 
 ```bash
-cd 1-Apps/1J-Optamize-MacOS
+cd 1-Apps/optamize/1J-Optamize-MacOS
 npm install
 npm run dev                     # Vite dev server (frontend only)
 npm run tauri dev               # Full Tauri app (frontend + Rust backend)
@@ -55,7 +55,7 @@ npm run build:app               # Build .app bundle (aarch64)
 
 ### Opta Scan iOS
 
-**Location:** `1-Apps/1H-Opta-Scan-IOS/`
+**Location:** `1-Apps/optamize/1H-Opta-Scan-IOS/`
 **Stack:** SwiftUI + Claude Vision API + Turborepo (for shared packages)
 
 ```bash
@@ -69,7 +69,7 @@ pnpm dev                        # Turborepo dev (shared packages)
 
 ### Opta Life iOS
 
-**Location:** `1-Apps/1E-Opta-Life-IOS/`
+**Location:** `1-Apps/optamize/1E-Opta-Life-IOS/`
 **Stack:** SwiftUI + Firebase
 
 ```bash
@@ -79,7 +79,7 @@ open OptaLMiOS.xcodeproj
 
 ### Opta Life Web
 
-**Location:** `1-Apps/1F-Opta-Life-Web/`
+**Location:** `1-Apps/optamize/1F-Opta-Life-Web/`
 **Stack:** Next.js 15 + React 18 + NextAuth + Google APIs + Tailwind CSS 4
 
 ```bash
@@ -90,7 +90,7 @@ npm run build                   # Production build
 
 ### Opta CLI (TypeScript)
 
-**Location:** `1-Apps/1D-Opta-CLI-TS/`
+**Location:** `1-Apps/optalocal/1D-Opta-CLI-TS/`
 **Stack:** TypeScript + Commander + Ink + tsup + vitest
 
 ```bash
@@ -134,7 +134,7 @@ Referenced as `workspace:*` dependencies. pnpm workspace config maps `packages/*
 
 ### Design System Rules (Optamize MacOS)
 
-When working in the desktop app, these are **mandatory** (enforced via `1-Apps/1J-Optamize-MacOS/DESIGN_SYSTEM.md`):
+When working in the desktop app, these are **mandatory** (enforced via `1-Apps/optamize/1J-Optamize-MacOS/DESIGN_SYSTEM.md`):
 - Animations: Framer Motion only
 - Icons: Lucide React only
 - Glass effects: `.glass`, `.glass-subtle`, `.glass-strong` classes
@@ -154,7 +154,7 @@ When working in the desktop app, these are **mandatory** (enforced via `1-Apps/1
 | Path | Purpose |
 |------|---------|
 | `1-Apps/` | All applications (flat A–K list) |
-| `1-Apps/1I-OptaPlus/` | Cross-platform SwiftUI design system package (iOS + macOS) |
+| `1-Apps/shared/1I-OptaPlus/` | Cross-platform SwiftUI design system package (iOS + macOS) |
 | `6-Packages/` | Shared npm packages (`@opta/*`) |
 | `7-Personal/` | Personal context (calendar, hardware, goals) |
 | `8-Project/` | Cross-project planning, vision, roadmap |

@@ -1,0 +1,35 @@
+# Opta-LMX User Configuration
+# Copy this file to ~/.opta-lmx/config.yaml and customize.
+#
+# Quick start:
+#   mkdir -p ~/.opta-lmx
+#   cp config.yaml.template ~/.opta-lmx/config.yaml
+#   opta-lmx          # starts on localhost:1234
+
+server:
+  host: "127.0.0.1"   # Use "0.0.0.0" to expose on LAN
+  port: 1234           # Drop-in replacement for LM Studio
+  workers: 1
+  timeout_sec: 300
+
+models:
+  # HuggingFace model ID to load on startup (must be an MLX-format model)
+  default_model: null   # e.g. "mlx-community/Llama-3.2-3B-Instruct-4bit"
+  # models_directory: "~/.opta-lmx/models"   # Optional: override model storage
+  auto_load: []         # Models to load at startup, e.g. ["mlx-community/Llama-3.2-3B-Instruct-4bit"]
+  max_concurrent_requests: 4
+  inference_timeout_sec: 300
+  warmup_on_load: true
+
+memory:
+  max_memory_percent: 85   # % of total RAM before LRU eviction
+  auto_evict_lru: true
+
+logging:
+  level: "INFO"   # DEBUG, INFO, WARNING, ERROR
+  format: "structured"
+  file: null   # Set to a path for file logging, e.g. "/tmp/opta-lmx.log"
+
+security:
+  admin_key: null   # Set to a secret string to protect /admin/* endpoints
+  # inference_api_key: null   # Set to require API key on /v1/* endpoints

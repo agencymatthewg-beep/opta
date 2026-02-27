@@ -1,0 +1,333 @@
+/**
+ * LMX server management slash commands barrel.
+ *
+ * Re-exports all handlers and assembles the lmxCommands array for the slash command registry.
+ */
+
+import type { SlashCommandDef } from '../types.js';
+
+// Re-export all handlers from submodules
+export {
+  lmxStatusHandler,
+  diagnoseHandler,
+  memoryHandler,
+  metricsHandler,
+  eventsHandler,
+  predictorHandler,
+  helpersHandler,
+} from './status.js';
+
+export {
+  scanHandler,
+  loadHandler,
+  unloadHandler,
+  serveHandler,
+  lmxReconnectHandler,
+  lmxCommandHandler,
+} from './lifecycle.js';
+
+export {
+  modelsHandler,
+  benchmarkHandler,
+  embedHandler,
+  rerankHandler,
+  agentsHandler,
+  skillsHandler,
+  ragHandler,
+} from './models.js';
+
+export {
+  presetHandler,
+  presetsHandler,
+  probeHandler,
+  compatibilityHandler,
+  autotuneHandler,
+  autotuneStatusHandler,
+  quantizeHandler,
+} from './config.js';
+
+// Re-export shared utilities and types
+export {
+  STABLE_MODEL_LOAD_TIMEOUT_MS,
+  FAST_SLASH_REQUEST_OPTS,
+  fmtTag,
+  parseSlashArgs,
+  parseBooleanLiteral,
+  renderJson,
+  asObject,
+  readString,
+  readNumber,
+  readBoolean,
+  readArray,
+  classifyOutcome,
+  adminEndpointUrl,
+  fetchAdminText,
+} from './types.js';
+
+// Import handlers for command definitions
+import {
+  diagnoseHandler,
+  memoryHandler,
+  metricsHandler,
+  eventsHandler,
+  predictorHandler,
+  helpersHandler,
+} from './status.js';
+
+import {
+  scanHandler,
+  loadHandler,
+  unloadHandler,
+  serveHandler,
+  lmxCommandHandler,
+} from './lifecycle.js';
+
+import {
+  modelsHandler,
+  benchmarkHandler,
+  embedHandler,
+  rerankHandler,
+  agentsHandler,
+  skillsHandler,
+  ragHandler,
+} from './models.js';
+
+import {
+  presetHandler,
+  presetsHandler,
+  probeHandler,
+  compatibilityHandler,
+  autotuneHandler,
+  autotuneStatusHandler,
+  quantizeHandler,
+} from './config.js';
+
+export const lmxCommands: SlashCommandDef[] = [
+  {
+    command: 'models',
+    description: 'Full models manager (use/load/swap/scan/browse/library)',
+    handler: modelsHandler,
+    category: 'server',
+    usage: '/models [action] [args] [--json]',
+    examples: ['/models', '/models use minimax', '/models swap current replacement', '/models browse-library'],
+  },
+  {
+    command: 'scan',
+    aliases: ['model-scan'],
+    description: 'Scan all available models',
+    handler: scanHandler,
+    category: 'server',
+    usage: '/scan',
+    examples: ['/scan'],
+  },
+  {
+    command: 'load',
+    description: 'Load model into LMX memory',
+    handler: loadHandler,
+    category: 'server',
+    usage: '/load <model-id> [--backend <name>] [--auto-download] [--keep-alive <sec>] [--allow-unsupported]',
+    examples: [
+      '/load mlx-community/Llama-3-8B-Instruct-4bit',
+      '/load inferencelabs/GLM-5-MLX-4.8bit --backend mlx-lm --kv-bits 4 --prefix-cache true',
+    ],
+  },
+  {
+    command: 'unload',
+    description: 'Unload model (free memory)',
+    handler: unloadHandler,
+    category: 'server',
+    usage: '/unload <model-id>',
+    examples: ['/unload mlx-community/Llama-3-8B-Instruct-4bit'],
+  },
+  {
+    command: 'serve',
+    description: 'LMX server start/stop/status',
+    handler: serveHandler,
+    category: 'server',
+    usage: '/serve [start|stop|restart|reload|logs] [--json]',
+    examples: ['/serve', '/serve --json', '/serve start', '/serve reload', '/serve logs'],
+  },
+  {
+    command: 'lmx',
+    description: 'LMX runtime control: status, reconnect, start/stop/restart/reload/logs',
+    handler: lmxCommandHandler,
+    category: 'server',
+    usage: '/lmx [status|reconnect|start|stop|restart|reload|logs] [--json]',
+    examples: ['/lmx status', '/lmx reconnect', '/lmx start', '/lmx reload'],
+  },
+  {
+    command: 'memory',
+    aliases: ['mem'],
+    description: 'LMX memory breakdown',
+    handler: memoryHandler,
+    category: 'server',
+    usage: '/memory',
+    examples: ['/memory'],
+  },
+  {
+    command: 'diagnose',
+    aliases: ['diag'],
+    description: 'Run LMX provider diagnostics',
+    handler: diagnoseHandler,
+    category: 'server',
+    usage: '/diagnose',
+    examples: ['/diagnose'],
+  },
+  {
+    command: 'metrics',
+    aliases: ['stats'],
+    description: 'LMX request metrics summary',
+    handler: metricsHandler,
+    category: 'server',
+    usage: '/metrics [--prom|--json]',
+    examples: ['/metrics', '/metrics --prom', '/metrics --json'],
+  },
+  {
+    command: 'events',
+    aliases: ['stream'],
+    description: 'Tail recent admin SSE events',
+    handler: eventsHandler,
+    category: 'server',
+    usage: '/events [--limit <n>] [--timeout <sec>] [--json]',
+    examples: ['/events', '/events --limit 30 --timeout 45', '/events --json'],
+  },
+  {
+    command: 'benchmark',
+    aliases: ['bench'],
+    description: 'Benchmark loaded model or view benchmark results',
+    handler: benchmarkHandler,
+    category: 'server',
+    usage: '/benchmark [model-id|results [--json]]',
+    examples: ['/benchmark', '/benchmark mlx-community/MiniMax-M2.5-4bit', '/benchmark results --json'],
+  },
+  {
+    command: 'embed',
+    description: 'Create embeddings for input text',
+    handler: embedHandler,
+    category: 'server',
+    usage: '/embed <text> [--model <id>] [--json]',
+    examples: ['/embed "hello world"', '/embed "semantic search query" --model snowflake/arctic-embed-m-v2.0'],
+  },
+  {
+    command: 'rerank',
+    description: 'Rerank documents against a query',
+    handler: rerankHandler,
+    category: 'server',
+    usage: '/rerank <query> --documents <doc1|doc2|...> [--model <id>] [--top-k <n>] [--json]',
+    examples: ['/rerank "what changed?" --documents "release notes|commit log|meeting notes" --top-k 2'],
+  },
+  {
+    command: 'predictor',
+    description: 'Show model-predictor usage stats and next-model prediction',
+    handler: predictorHandler,
+    category: 'server',
+    usage: '/predictor [--json]',
+    examples: ['/predictor', '/predictor --json'],
+  },
+  {
+    command: 'helpers',
+    description: 'Show helper-node health (embedding/reranking)',
+    handler: helpersHandler,
+    category: 'server',
+    usage: '/helpers [--json]',
+    examples: ['/helpers', '/helpers --json'],
+  },
+  {
+    command: 'quantize',
+    aliases: ['qz'],
+    description: 'Start/list/check LMX quantization jobs',
+    handler: quantizeHandler,
+    category: 'server',
+    usage: '/quantize [list|status <job-id>|start <model-id> [--bits 4|8] [--group-size <n>] [--mode affine|symmetric] [--output <path>]]',
+    examples: ['/quantize', '/quantize status job_abc123', '/quantize start mistralai/Mistral-7B-Instruct-v0.3 --bits 4'],
+  },
+  {
+    command: 'agents',
+    description: 'Inspect and control LMX agent runs',
+    handler: agentsHandler,
+    category: 'server',
+    usage: '/agents [list|start|status <run-id>|events <run-id>|cancel <run-id>] [--limit <n>] [--offset <n>] [--status <state>] [--json]',
+    examples: [
+      '/agents',
+      '/agents start --prompt "Draft incident triage" --roles planner,executor',
+      '/agents events run_abc123 --timeout 30',
+      '/agents cancel run_abc123',
+    ],
+  },
+  {
+    command: 'lmx-skills',
+    aliases: ['skill-registry'],
+    description: 'Inspect skill registry and MCP tool catalog',
+    handler: skillsHandler,
+    category: 'server',
+    usage: '/lmx-skills [list|show <skill-name>|tools|run <skill-name>|mcp-call <tool-name>|openclaw <tool-name>] [--all] [--json]',
+    examples: [
+      '/lmx-skills',
+      '/lmx-skills run ai26-3c-productivity-writing-plans --args "{\"topic\":\"routing\"}"',
+      '/lmx-skills mcp-call linear.search_issues --args "{\"query\":\"status:in_progress\"}"',
+    ],
+  },
+  {
+    command: 'rag',
+    description: 'Query and manage RAG collections',
+    handler: ragHandler,
+    category: 'server',
+    usage: '/rag [collections|delete <collection>|query <collection> "<query>" [--top-k <n>] [--min-score <n>] [--mode vector|keyword|hybrid] [--rerank]|ingest <collection> (--file <path>|--text "<content>"|--stdin)|context "<query>" --collections <c1,c2>] [--json]',
+    examples: [
+      '/rag',
+      '/rag ingest docs --file ./README.md --chunking markdown_headers',
+      '/rag context "what changed?" --collections docs,notes --rerank',
+      '/rag delete scratch',
+    ],
+  },
+  {
+    command: 'preset',
+    description: 'Show full details for one preset',
+    handler: presetHandler,
+    category: 'server',
+    usage: '/preset <name>',
+    examples: ['/preset coder-fast'],
+  },
+  {
+    command: 'presets',
+    description: 'List presets or reload presets from disk',
+    handler: presetsHandler,
+    category: 'server',
+    usage: '/presets [list|reload|<name>]',
+    examples: ['/presets', '/presets reload', '/presets coder-fast'],
+  },
+  {
+    command: 'probe',
+    description: 'Probe model backend compatibility before loading',
+    handler: probeHandler,
+    category: 'server',
+    usage: '/probe <model-id> [--timeout <sec>] [--allow-unsupported]',
+    examples: ['/probe inferencelabs/GLM-5-MLX-4.8bit', '/probe model --timeout 120 --allow-unsupported'],
+  },
+  {
+    command: 'compatibility',
+    aliases: ['compat'],
+    description: 'Show model compatibility ledger and optional summary',
+    handler: compatibilityHandler,
+    category: 'server',
+    usage: '/compatibility [--model <id>] [--backend <name>] [--outcome <value>] [--since <ts>] [--limit <n>] [--summary]',
+    examples: ['/compatibility --summary', '/compatibility --model inferencelabs/GLM-5-MLX-4.8bit --limit 30'],
+  },
+  {
+    command: 'autotune',
+    description: 'Benchmark candidate performance profiles and persist best settings',
+    handler: autotuneHandler,
+    category: 'server',
+    usage: '/autotune <model-id> [--prompt "..."] [--max-tokens <n>] [--temperature <n>] [--runs <n>] [--profiles-json <json>] [--allow-unsupported]',
+    examples: ['/autotune inferencelabs/GLM-5-MLX-4.8bit', '/autotune model --runs 3 --profiles-json "[{\\"kv_bits\\":4}]"'],
+  },
+  {
+    command: 'autotune-status',
+    aliases: ['tuned'],
+    description: 'Show stored autotune profile for a model/backend',
+    handler: autotuneStatusHandler,
+    category: 'server',
+    usage: '/autotune-status <model-id> [--backend <name>] [--backend-version <version>]',
+    examples: ['/autotune-status inferencelabs/GLM-5-MLX-4.8bit', '/tuned model --backend mlx-lm'],
+  },
+];

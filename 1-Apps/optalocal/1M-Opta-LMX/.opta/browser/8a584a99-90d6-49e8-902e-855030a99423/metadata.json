@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "sessionId": "8a584a99-90d6-49e8-902e-855030a99423",
+  "runId": "8a584a99-90d6-49e8-902e-855030a99423",
+  "mode": "isolated",
+  "status": "open",
+  "runtime": "unavailable",
+  "createdAt": "2026-02-27T02:03:58.305Z",
+  "updatedAt": "2026-02-27T02:03:58.306Z",
+  "lastError": {
+    "code": "PLAYWRIGHT_UNAVAILABLE",
+    "message": "Playwright runtime is unavailable. Install \"playwright\" to enable native browser sessions.",
+    "retryable": false,
+    "retryCategory": "runtime-unavailable",
+    "retryHint": "Install Playwright or enable browser runtime before retrying."
+  },
+  "artifacts": [],
+  "actions": [
+    {
+      "action": {
+        "id": "action-000001",
+        "sessionId": "8a584a99-90d6-49e8-902e-855030a99423",
+        "type": "openSession",
+        "createdAt": "2026-02-27T02:03:58.305Z",
+        "input": {
+          "runId": "8a584a99-90d6-49e8-902e-855030a99423",
+          "mode": "isolated",
+          "wsEndpoint": "",
+          "headless": false,
+          "profileDir": ""
+        }
+      },
+      "ok": false,
+      "error": {
+        "code": "PLAYWRIGHT_UNAVAILABLE",
+        "message": "Playwright runtime is unavailable. Install \"playwright\" to enable native browser sessions.",
+        "retryable": false,
+        "retryCategory": "runtime-unavailable",
+        "retryHint": "Install Playwright or enable browser runtime before retrying."
+      },
+      "artifactIds": []
+    }
+  ]
+}

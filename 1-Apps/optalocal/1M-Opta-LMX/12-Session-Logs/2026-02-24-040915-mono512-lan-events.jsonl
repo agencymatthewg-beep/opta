@@ -1,0 +1,3 @@
+{"data": {"duration_sec": 29.38, "format": "mlx", "memory_gb": 174.87, "model_id": "inferencerlabs/MiniMax-M2.5-MLX-6.5bit"}, "event_type": "model_loaded", "timestamp": "2026-02-24T04:10:20.221722+11:00", "timestamp_unix": 1771866620.2217221}
+{"data": {"memory_freed_gb": 0, "model_id": "inferencerlabs/MiniMax-M2.5-MLX-6.5bit", "reason": "manual"}, "event_type": "model_unloaded", "timestamp": "2026-02-24T08:16:24.244799+11:00", "timestamp_unix": 1771881384.244799}
+{"data": {"duration_sec": 0.0, "format": "mlx", "memory_gb": 0, "model_id": "inferencerlabs/GLM-5-MLX-4.8bit"}, "event_type": "model_loaded", "timestamp": "2026-02-24T08:17:29.966927+11:00", "timestamp_unix": 1771881449.966927}

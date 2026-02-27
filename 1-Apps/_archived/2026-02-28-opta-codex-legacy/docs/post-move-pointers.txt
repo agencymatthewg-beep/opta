@@ -1,0 +1,4 @@
+Canonical: /Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1P-Opta-Code-Desktop
+lrwxr-xr-x   1 matthewbyrden  staff   32 Feb 28 10:28 /Users/matthewbyrden/Synced/Opta/1-Apps/1P-Opta-Code-Desktop -> ./optalocal/1P-Opta-Code-Desktop
+drwxr-xr-x  12 matthewbyrden  staff  384 Feb 28 10:32 /Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1P-Opta-Code-Desktop
+drwxr-xr-x  12 matthewbyrden  staff  384 Feb 28 10:32 /Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1P-Opta-Code-Desktop

@@ -1,0 +1,1 @@
+{"data": {"duration_sec": 74.69, "format": "mlx", "memory_gb": 199.07, "model_id": "inferencerlabs/GLM-5-MLX-4.8bit"}, "event_type": "model_loaded", "timestamp": "2026-02-23T21:43:33.087536+11:00", "timestamp_unix": 1771843413.087536}

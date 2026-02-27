@@ -17,7 +17,9 @@
 | 1K | Optamize Web | Web | HTML | Marketing | — |
 | 1L | Opta Local | Web + iOS | Next.js 15, SwiftUI | In dev → optalocal.com | 3004 |
 | 1M | Opta LMX | macOS service | Python, MLX, FastAPI | ~80% — Live on Mono512 | 1234 |
-| — | kimi-proxy | Local service | Python, FastAPI | ✅ Running | 4999 |
+| 1N | Opta Cloud Accounts | Spec | Auth contracts (no buildable app) | Reference | — |
+| 1P | Opta Accounts | Web | Next.js 16, SSO portal | In dev | — |
+| 1Q | Opta Other | Utilities | kimi-proxy, pa-messenger, phone-bridge | Mixed | 4999 |
 
 ## Services (`3-Services/`)
 

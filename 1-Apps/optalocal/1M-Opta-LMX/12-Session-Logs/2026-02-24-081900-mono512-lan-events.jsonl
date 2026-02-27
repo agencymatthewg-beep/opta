@@ -1,0 +1,4 @@
+{"data": {"duration_sec": 0.0, "format": "mlx", "memory_gb": 0, "model_id": "inferencerlabs/GLM-5-MLX-4.8bit"}, "event_type": "model_loaded", "timestamp": "2026-02-24T08:21:44.350860+11:00", "timestamp_unix": 1771881704.35086}
+{"data": {"memory_freed_gb": 0, "model_id": "inferencerlabs/GLM-5-MLX-4.8bit", "reason": "canary_failed"}, "event_type": "model_unloaded", "timestamp": "2026-02-24T08:23:05.760823+11:00", "timestamp_unix": 1771881785.760823}
+{"data": {"duration_sec": 29.16, "format": "mlx", "memory_gb": 40.2, "model_id": "inferencerlabs/MiniMax-M2.5-MLX-6.5bit"}, "event_type": "model_loaded", "timestamp": "2026-02-24T08:38:33.063991+11:00", "timestamp_unix": 1771882713.063991}
+{"data": {"duration_sec": 20.85, "format": "mlx", "memory_gb": 0, "model_id": "mlx-community/MiniMax-M2.5-4bit"}, "event_type": "model_loaded", "timestamp": "2026-02-24T09:33:27.547463+11:00", "timestamp_unix": 1771886007.547463}
