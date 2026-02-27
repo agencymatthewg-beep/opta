@@ -59,7 +59,7 @@ npm run build:app               # Build .app bundle (aarch64)
 **Stack:** SwiftUI + Claude Vision API + Turborepo (for shared packages)
 
 ```bash
-cd 1-Apps/1H-Opta-Scan-IOS
+cd 1-Apps/optamize/1H-Opta-Scan-IOS
 open "Opta Scan.xcodeproj"     # Open in Xcode
 pnpm install                    # For shared TS packages
 pnpm dev                        # Turborepo dev (shared packages)
@@ -73,7 +73,7 @@ pnpm dev                        # Turborepo dev (shared packages)
 **Stack:** SwiftUI + Firebase
 
 ```bash
-cd 1-Apps/1E-Opta-Life-IOS
+cd 1-Apps/optamize/1E-Opta-Life-IOS
 open OptaLMiOS.xcodeproj
 ```
 
@@ -83,7 +83,7 @@ open OptaLMiOS.xcodeproj
 **Stack:** Next.js 15 + React 18 + NextAuth + Google APIs + Tailwind CSS 4
 
 ```bash
-cd 1-Apps/1F-Opta-Life-Web
+cd 1-Apps/optamize/1F-Opta-Life-Web
 npm run dev                     # Next.js dev server
 npm run build                   # Production build
 ```
@@ -94,7 +94,7 @@ npm run build                   # Production build
 **Stack:** TypeScript + Commander + Ink + tsup + vitest
 
 ```bash
-cd 1-Apps/1D-Opta-CLI-TS
+cd 1-Apps/optalocal/1D-Opta-CLI-TS
 npm run dev                     # tsx watch mode
 npm run build                   # tsup build
 npm run test                    # vitest
@@ -153,7 +153,7 @@ When working in the desktop app, these are **mandatory** (enforced via `1-Apps/o
 
 | Path | Purpose |
 |------|---------|
-| `1-Apps/` | All applications (flat A–K list) |
+| `1-Apps/` | All applications — grouped by domain (`optamize/`, `optalocal/`, `shared/`) |
 | `1-Apps/shared/1I-OptaPlus/` | Cross-platform SwiftUI design system package (iOS + macOS) |
 | `6-Packages/` | Shared npm packages (`@opta/*`) |
 | `7-Personal/` | Personal context (calendar, hardware, goals) |
@@ -166,7 +166,7 @@ When working in the desktop app, these are **mandatory** (enforced via `1-Apps/o
 ## Important Notes
 
 - **Numbered directories**: The codebase uses numbered prefixes (1-Apps, 6-Packages, etc.) for organization. Always use actual directory names, not the friendly names from README.
-- **Flat app structure**: All apps live directly in `1-Apps/` with prefixes 1A through 1K. No platform subfolders.
+- **Domain app structure**: Apps are grouped under `1-Apps/optamize/`, `1-Apps/optalocal/`, and `1-Apps/shared/`. Top-level `1-Apps/1X-*` symlinks exist for backward compat but canonical paths are under domain folders. See `1-Apps/PATH-CONTRACT.md`.
 - **pnpm workspace**: Root `pnpm-workspace.yaml` lists web apps individually. Use `pnpm --filter <package-name>` to target specific packages.
 - **Syncthing-synced**: This repo syncs between devices via Syncthing. `.stignore` excludes build artifacts.
 - **Per-app CLAUDE.md files**: Optamize MacOS and Opta Scan iOS have their own CLAUDE.md with app-specific rules. Always read them before working in those apps.

@@ -4,25 +4,41 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Directory Map
 
-All Opta apps live here with numbered prefixes. **Each app with a `CLAUDE.md` has its own rules — always read it before working in that app.**
+Apps are organized into three domain folders. **Each app with a `CLAUDE.md` has its own rules — always read it before working in that app.** Canonical paths are under domain folders; top-level `1X-*` entries are symlinks for backward compat only (see `PATH-CONTRACT.md`).
+
+### optamize/ — optamize.biz products
+
+| Prefix | App | Canonical Path | Platform | Has own CLAUDE.md |
+|--------|-----|----------------|----------|-------------------|
+| 1E | Opta Life iOS | `optamize/1E-Opta-Life-IOS` | iOS (SwiftUI + Firebase) | ✓ |
+| 1F | Opta Life Web | `optamize/1F-Opta-Life-Web` | Web (Next.js 15) | ✓ |
+| 1G | Opta Mini macOS | `optamize/1G-Opta-Mini-MacOS` | macOS (SwiftUI menubar) | ✓ |
+| 1H | Opta Scan iOS | `optamize/1H-Opta-Scan-IOS` | iOS (SwiftUI + Claude Vision) | ✓ |
+| 1J | Optamize macOS | `optamize/1J-Optamize-MacOS` | macOS (Tauri v2 + React 19 + Rust) | ✓ (design system enforced) |
+
+### optalocal/ — optalocal.com products
+
+| Prefix | App | Canonical Path | Platform | Has own CLAUDE.md |
+|--------|-----|----------------|----------|-------------------|
+| 1D | Opta CLI TS | `optalocal/1D-Opta-CLI-TS` | CLI/TUI/Daemon | ✓ (comprehensive) |
+| 1L | Opta Local | `optalocal/1L-Opta-Local` | Web + iOS (LMX dashboard/chat) | ✓ |
+| 1M | Opta LMX | `optalocal/1M-Opta-LMX` | Python (MLX inference server) | ✓ |
+| 1O | Opta Init | `optalocal/1O-Opta-Init` | Web (Next.js 15, download/setup landing) | ✓ |
+| 1P | Opta Code Desktop | `optalocal/1P-Opta-Code-Desktop` | Electron/Vite (TypeScript) | ✓ |
+
+### shared/ — cross-domain
+
+| Prefix | App | Canonical Path | Platform | Has own CLAUDE.md |
+|--------|-----|----------------|----------|-------------------|
+| 1A | AI Components + AICompare | `shared/1A-AI-Components` | Web (Next.js 16) | — |
+| 1I | OptaPlus | `shared/1I-OptaPlus` | iOS + macOS SwiftUI design system | ✓ |
+| 1N | Opta Cloud Accounts | `shared/1N-Opta-Cloud-Accounts` | Canonical auth spec (no buildable app) | — |
+
+### Root-level (not domain-grouped)
 
 | Prefix | App | Platform | Has own CLAUDE.md |
 |--------|-----|----------|-------------------|
-| 1A | AI Components Web | Web (Next.js 16) | — |
-| 1B | AICompare Web | Web (Next.js 16) | ✓ |
-| 1D | Opta CLI TS | CLI/TUI/Daemon | ✓ (comprehensive) |
-| 1E | Opta Life iOS | iOS (SwiftUI + Firebase) | ✓ |
-| 1F | Opta Life Web | Web (Next.js 15) | ✓ |
-| 1G | Opta Mini macOS | macOS (SwiftUI menubar) | ✓ |
-| 1H | Opta Scan iOS | iOS (SwiftUI + Claude Vision) | ✓ |
-| 1I | OptaPlus | iOS + macOS SwiftUI design system | ✓ |
-| 1J | Optamize macOS | macOS (Tauri v2 + React 19 + Rust) | ✓ (design system enforced) |
-| 1K | Optamize Web | Web (marketing landing page) | — |
-| 1L | Opta Local | Web + iOS (LMX dashboard/chat) | ✓ |
-| 1M | Opta LMX | Python (MLX inference server) | ✓ |
-| 1N | Opta Cloud Accounts | Canonical auth spec (no buildable app) | — |
 | 1P | Opta Accounts | Web (Next.js 16, SSO portal) | ✓ |
-| 1P-Opta-Code-Desktop (alias) | Opta Code Desktop | Electron/Vite (TypeScript) | ✓ (source: 1P-Opta-Code-Desktop) |
 | 1Q | Opta Other | Utility apps (kimi-proxy, pa-messenger, phone-bridge) | — |
 
 ---
@@ -48,23 +64,23 @@ Opta Local Web  localhost:3004         (1L-Opta-Local/web/)
 Operational commands:
 ```bash
 # CLI daemon
-cd 1D-Opta-CLI-TS && npm run dev -- daemon start
+cd optalocal/1D-Opta-CLI-TS && npm run dev -- daemon start
 
 # LMX inference server
-cd 1M-Opta-LMX && python -m opta_lmx
+cd optalocal/1M-Opta-LMX && python -m opta_lmx
 
 # Web dashboard
-cd 1L-Opta-Local/web && npm run dev        # http://localhost:3004
+cd optalocal/1L-Opta-Local/web && npm run dev   # http://localhost:3004
 ```
 
 ---
 
 ## Shared Auth Spec (1N-Opta-Cloud-Accounts)
 
-`1N-Opta-Cloud-Accounts/` is **not a buildable app** — it is the canonical specification for Supabase auth across all Opta apps. Before adding or changing auth in any app, read:
-- `1N-Opta-Cloud-Accounts/AUTH-METHODS.md` — four allowed Supabase-native auth methods
-- `1N-Opta-Cloud-Accounts/contracts/` — session and data contracts each app must satisfy
-- `1N-Opta-Cloud-Accounts/ENV-MATRIX.md` — which env vars apply per app
+`shared/1N-Opta-Cloud-Accounts/` is **not a buildable app** — it is the canonical specification for Supabase auth across all Opta apps. Before adding or changing auth in any app, read:
+- `shared/1N-Opta-Cloud-Accounts/AUTH-METHODS.md` — four allowed Supabase-native auth methods
+- `shared/1N-Opta-Cloud-Accounts/contracts/` — session and data contracts each app must satisfy
+- `shared/1N-Opta-Cloud-Accounts/ENV-MATRIX.md` — which env vars apply per app
 
 All apps share one Supabase project. The Supabase SSR pattern (client/server/middleware split) is used in all Next.js apps.
 
