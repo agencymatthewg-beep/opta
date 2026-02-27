@@ -128,6 +128,16 @@ function ProviderButton({
 }
 
 // ---------------------------------------------------------------------------
+// Shared styles
+// ---------------------------------------------------------------------------
+
+const INPUT_CLASS = cn(
+  'w-full rounded-lg border border-opta-border bg-opta-surface/25 px-3 py-2 text-sm text-text-primary',
+  'placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/60',
+  'disabled:cursor-not-allowed disabled:opacity-60',
+);
+
+// ---------------------------------------------------------------------------
 // Sign-in card (glass panel with auth form)
 // ---------------------------------------------------------------------------
 
@@ -332,11 +342,7 @@ function SignInCard() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 disabled={isAuthActionPending}
-                className={cn(
-                  'w-full rounded-lg border border-opta-border bg-opta-surface/25 px-3 py-2 text-sm text-text-primary',
-                  'placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/60',
-                  'disabled:cursor-not-allowed disabled:opacity-60',
-                )}
+                className={INPUT_CLASS}
               />
             </div>
           )}
@@ -435,6 +441,7 @@ export function SignInOverlay() {
       {isVisible && (
         <motion.div
           key="sign-in-scrim"
+          aria-hidden="true"
           className="fixed inset-0 z-[60] backdrop-blur-xl bg-black/80"
           initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -451,6 +458,9 @@ export function SignInOverlay() {
       {isVisible && (
         <motion.div
           key="sign-in-content"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Sign in to Opta Local"
           className="fixed inset-0 z-[70] flex flex-col items-center justify-center px-4 overflow-y-auto"
           initial={
             shouldReduceMotion
@@ -466,7 +476,7 @@ export function SignInOverlay() {
           transition={
             shouldReduceMotion
               ? { duration: 0.15 }
-              : { type: 'spring', stiffness: 260, damping: 26 }
+              : { type: 'spring', stiffness: 240, damping: 26 }
           }
         >
           {/* Opta ring — breathe animation */}

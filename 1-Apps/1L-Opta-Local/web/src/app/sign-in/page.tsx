@@ -7,7 +7,6 @@
 
 'use client';
 
-import Link from 'next/link';
 import { Suspense, useCallback, useMemo, useState, type FormEvent } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, useReducedMotion } from 'framer-motion';
@@ -257,10 +256,6 @@ function SignInForm() {
     },
     [authMode, identifier, name, nextPath, password, pendingProvider, router, setNextIntent],
   );
-
-  const clearNextIntent = useCallback(() => {
-    window.sessionStorage.removeItem(POST_SIGN_IN_NEXT_KEY);
-  }, []);
 
   return (
     <motion.div

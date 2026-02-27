@@ -59,7 +59,6 @@ const CHART_FLUSH_INTERVAL_MS = 1000;
 // Dashboard page
 // ---------------------------------------------------------------------------
 
-
 // Card entrance animation variants
 const cardVariants = {
   hidden: { opacity: 0, y: 16 },

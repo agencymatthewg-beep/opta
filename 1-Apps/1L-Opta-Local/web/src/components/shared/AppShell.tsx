@@ -347,6 +347,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                       : 'text-text-secondary hover:bg-opta-surface/50 hover:text-text-primary',
                   )}
                   aria-expanded={moreMenuOpen}
+                  aria-haspopup="menu"
                   aria-label="More navigation options"
                 >
                   <MoreHorizontal className="h-3.5 w-3.5" />
@@ -354,7 +355,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 </button>
 
                 {moreMenuOpen && (
-                  <div className="absolute top-full mt-1 left-0 glass-strong rounded-xl p-1.5 min-w-[160px] shadow-xl z-50">
+                  <div role="menu" className="absolute top-full mt-1 left-0 glass-strong rounded-xl p-1.5 min-w-[160px] shadow-xl z-50">
                     {secondaryNav.map((item) => {
                       const isActive = isActiveRoute(pathname, item.href);
                       const Icon = item.icon;
@@ -362,6 +363,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                         <Link
                           key={item.href}
                           href={item.href}
+                          role="menuitem"
                           className={cn(
                             'flex items-center gap-2 px-3 py-2 text-xs rounded-lg transition-colors',
                             isActive
@@ -459,11 +461,11 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="pt-11 pb-7">{children}</div>
       </ConnectionProvider>
 
-      {/* Command palette — global Cmd+K */}
-      <CommandPalette isOpen={paletteOpen} onClose={() => setPaletteOpen(false)} />
+        {/* Command palette — global Cmd+K */}
+        <CommandPalette isOpen={paletteOpen} onClose={() => setPaletteOpen(false)} />
 
-      {/* Status strip — persistent bottom bar */}
-      <StatusStrip />
+        {/* Status strip — persistent bottom bar */}
+        <StatusStrip />
       </AuthBlurWrapper>
     </AuthProvider>
   );

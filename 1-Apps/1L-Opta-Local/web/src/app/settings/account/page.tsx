@@ -78,7 +78,7 @@ export default function AccountSettingsPage() {
           {/* Avatar */}
           <div
             className={cn(
-              'flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full',
+              'flex h-12 w-12 shrink-0 items-center justify-center rounded-full',
               'bg-primary/20 text-primary text-lg font-semibold',
               'border border-primary/30 shadow-[0_0_12px_rgba(168,85,247,0.2)]',
             )}
@@ -106,7 +106,7 @@ export default function AccountSettingsPage() {
 
         {/* Sync status */}
         <div className="flex items-center gap-2 rounded-lg border border-neon-green/20 bg-neon-green/5 px-3 py-2">
-          <CheckCircle2 className="h-3.5 w-3.5 flex-shrink-0 text-neon-green" />
+          <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-neon-green" />
           <p className="text-xs text-text-secondary">
             Cloud sync is <span className="font-medium text-neon-green">active</span>.
             Sessions and device presence sync automatically.
@@ -125,7 +125,7 @@ export default function AccountSettingsPage() {
               {user.id}
             </p>
           </div>
-          <User className="h-4 w-4 flex-shrink-0 text-text-muted" />
+          <User className="h-4 w-4 shrink-0 text-text-muted" />
         </div>
       </OptaSurface>
 
@@ -137,7 +137,7 @@ export default function AccountSettingsPage() {
             animate={{ opacity: 1, height: 'auto' }}
             className="flex items-center gap-2 rounded-lg border border-neon-red/20 bg-neon-red/10 px-3 py-2"
           >
-            <AlertCircle className="h-3.5 w-3.5 flex-shrink-0 text-neon-red" />
+            <AlertCircle className="h-3.5 w-3.5 shrink-0 text-neon-red" />
             <p className="text-xs text-neon-red">{signOutError}</p>
           </motion.div>
         )}

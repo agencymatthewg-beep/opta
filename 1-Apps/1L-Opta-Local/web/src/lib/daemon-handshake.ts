@@ -16,8 +16,8 @@
 export interface DaemonConfig {
   lmx_host: string;
   lmx_port: number;
-  admin_key: string;
-  tunnel_url: string;
+  admin_key?: string;
+  tunnel_url?: string;
 }
 
 // ---------------------------------------------------------------------------
