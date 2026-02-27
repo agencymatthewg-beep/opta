@@ -1,0 +1,196 @@
+@import "tailwindcss";
+
+@theme {
+  /* The Void (Backgrounds) - OLED Optimized */
+  --color-void: #09090b;
+  --color-surface: #0c0c12;
+  --color-elevated: #1a1a24;
+  --color-border: rgba(255, 255, 255, 0.05);
+
+  /* Text Hierarchy */
+  --color-text-primary: #fafafa;
+  --color-text-secondary: #a1a1aa;
+  --color-text-muted: #52525b;
+
+  /* The Energy (Primary Brand) */
+  --color-primary: #a855f7; /* Electric Violet */
+  --color-secondary: #3b1d5a; /* Dormant Violet */
+
+  /* Neon accents - active states only */
+  --color-neon-purple: #8b5cf6;
+  --color-neon-blue: #3b82f6;
+  --color-neon-green: #22c55e;
+  --color-neon-amber: #f59e0b;
+  --color-neon-red: #ef4444;
+  --color-neon-cyan: #06b6d4;
+
+  /* Glass Effects */
+  --color-glass-bg: rgba(12, 12, 18, 0.6);
+  --color-glass-bg-subtle: rgba(9, 9, 11, 0.4);
+  --color-glass-border: rgba(255, 255, 255, 0.15);
+  --color-glass-border-subtle: rgba(255, 255, 255, 0.1);
+
+  /* Font */
+  --font-sans: "Sora", system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Code", monospace;
+}
+
+/* Base resets */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-void);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* Moonlight Gradient (Headings) */
+.text-moonlight {
+  background: linear-gradient(
+    135deg,
+    #ffffff 0%,
+    #ffffff 50%,
+    rgba(168, 85, 247, 0.5) 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Glass panel utilities - 3 Level System */
+.glass-subtle {
+  background: var(--color-glass-bg-subtle);
+  border: 1px solid var(--color-glass-border-subtle);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.glass {
+  background: var(--color-glass-bg);
+  border: 1px solid var(--color-glass-border);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.glass-strong {
+  background: rgba(12, 12, 18, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* The Obsidian System */
+.obsidian {
+  background: rgba(5, 3, 10, 0.8);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+}
+
+.obsidian-interactive {
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.obsidian-interactive:hover {
+  border-color: rgba(168, 85, 247, 0.4);
+  background: rgba(10, 5, 20, 0.9);
+  box-shadow:
+    inset 0 0 20px rgba(168, 85, 247, 0.1),
+    0 0 15px rgba(168, 85, 247, 0.3);
+}
+
+.obsidian-active {
+  border-color: rgba(168, 85, 247, 0.5);
+  background: rgba(10, 5, 20, 0.95);
+  box-shadow:
+    inset 0 0 30px rgba(168, 85, 247, 0.15),
+    0 0 25px rgba(168, 85, 247, 0.4);
+}
+
+/* Film grain noise overlay */
+.film-grain::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.02'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 1;
+  opacity: 1;
+  mix-blend-mode: overlay;
+}
+
+/* Momentum Border */
+.momentum-border {
+  position: relative;
+  overflow: hidden;
+}
+
+.momentum-border::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--color-primary) 50%,
+    transparent 100%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  animation: momentum-travel 3s linear infinite;
+}
+
+@keyframes momentum-travel {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-void);
+}
+::-webkit-scrollbar-thumb {
+  background: #3f3f46;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #52525b;
+}
+
+/* Selection */
+::selection {
+  background-color: rgba(139, 92, 246, 0.3);
+  color: #fafafa;
+}
+
+/* Focus ring — accessible, on-brand */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
