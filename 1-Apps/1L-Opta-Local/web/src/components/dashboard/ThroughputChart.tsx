@@ -8,13 +8,13 @@
  * Line component to prevent re-render storms on live streaming data
  * (see 03-RESEARCH.md Pitfall 3).
  *
- * Wrapped in @opta/ui Card glass variant. Shows empty state when no data.
+ * Wrapped in @opta/ui Card glass variant. Shows ghost sparkline when idle.
  * Optional average TPS reference line (dashed violet).
  */
 
 import {
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   Tooltip,
@@ -24,6 +24,18 @@ import {
 import { Card, CardHeader, CardTitle, CardContent } from '@opta/ui';
 import { Activity } from 'lucide-react';
 import type { ThroughputPoint } from '@/lib/circular-buffer';
+
+// ---------------------------------------------------------------------------
+// Ghost data generator
+// ---------------------------------------------------------------------------
+
+function makeGhostData(): ThroughputPoint[] {
+  const now = Date.now();
+  return Array.from({ length: 30 }, (_, i) => ({
+    timestamp: now - (29 - i) * 1000,
+    tokensPerSecond: 0,
+  }));
+}
 
 // ---------------------------------------------------------------------------
 // Props
@@ -91,6 +103,9 @@ function formatYAxis(value: number): string {
 // ---------------------------------------------------------------------------
 
 export function ThroughputChart({ data, averageTps }: ThroughputChartProps) {
+  const isIdle = data.length === 0;
+  const chartData = isIdle ? makeGhostData() : data;
+
   return (
     <Card variant="glass">
       <CardHeader>
@@ -100,58 +115,72 @@ export function ThroughputChart({ data, averageTps }: ThroughputChartProps) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {data.length === 0 ? (
-          <div className="flex h-[80px] items-center justify-center">
-            <p className="text-sm text-text-muted">Waiting for throughput data&hellip;</p>
-          </div>
-        ) : (
-          <ResponsiveContainer width="100%" height={240}>
-            <LineChart
-              data={data}
-              margin={{ top: 8, right: 16, bottom: 8, left: 16 }}
+        <div className="relative">
+          <ResponsiveContainer width="100%" height={80}>
+            <AreaChart
+              data={chartData}
+              margin={{ top: 4, right: 8, bottom: 4, left: 8 }}
             >
-              <XAxis
-                dataKey="timestamp"
-                tickFormatter={formatTime}
-                stroke="var(--color-chart-axis)"
-                tick={{ fontSize: 11, fill: 'var(--color-chart-tick)' }}
-                tickLine={false}
-                axisLine={false}
-              />
-              <YAxis
-                stroke="var(--color-chart-axis)"
-                tick={{ fontSize: 11, fill: 'var(--color-chart-tick)' }}
-                tickFormatter={formatYAxis}
-                tickLine={false}
-                axisLine={false}
-                width={56}
-              />
-              <Tooltip content={<ChartTooltip />} />
-              {averageTps != null && averageTps > 0 && (
-                <ReferenceLine
-                  y={averageTps}
-                  stroke="var(--color-chart-ref-stroke)"
-                  strokeDasharray="4 4"
-                  label={{
-                    value: `avg ${averageTps.toFixed(0)}`,
-                    fill: 'var(--color-chart-ref-label)',
-                    fontSize: 11,
-                    position: 'insideTopRight',
-                  }}
-                />
+              <defs>
+                <linearGradient id="tpsGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="var(--color-neon-purple)" stopOpacity={isIdle ? 0.03 : 0.35} />
+                  <stop offset="95%" stopColor="var(--color-neon-purple)" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              {!isIdle && (
+                <>
+                  <XAxis
+                    dataKey="timestamp"
+                    tickFormatter={formatTime}
+                    stroke="var(--color-chart-axis)"
+                    tick={{ fontSize: 11, fill: 'var(--color-chart-tick)' }}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis
+                    stroke="var(--color-chart-axis)"
+                    tick={{ fontSize: 11, fill: 'var(--color-chart-tick)' }}
+                    tickFormatter={formatYAxis}
+                    tickLine={false}
+                    axisLine={false}
+                    width={56}
+                  />
+                  <Tooltip content={<ChartTooltip />} cursor={{ stroke: 'var(--color-chart-axis)', strokeWidth: 1, strokeDasharray: '4 4' }} />
+                  {averageTps != null && averageTps > 0 && (
+                    <ReferenceLine
+                      y={averageTps}
+                      stroke="var(--color-chart-ref-stroke)"
+                      strokeDasharray="4 4"
+                      label={{
+                        value: `avg ${averageTps.toFixed(0)}`,
+                        fill: 'var(--color-chart-ref-label)',
+                        fontSize: 11,
+                        position: 'insideTopRight',
+                      }}
+                    />
+                  )}
+                </>
               )}
-              <Line
+              <Area
                 type="monotone"
                 dataKey="tokensPerSecond"
                 stroke="var(--color-neon-purple)"
                 strokeWidth={2}
-                dot={false}
+                strokeOpacity={isIdle ? 0.12 : 1}
+                fillOpacity={1}
+                fill="url(#tpsGradient)"
+                activeDot={isIdle ? false : { r: 4, fill: 'var(--color-neon-purple)', strokeWidth: 0, style: { filter: 'drop-shadow(0 0 4px var(--color-neon-purple))' } }}
                 isAnimationActive={false}
                 animationDuration={0}
               />
-            </LineChart>
+            </AreaChart>
           </ResponsiveContainer>
-        )}
+          {isIdle && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <p className="text-xs text-text-muted/60 italic">Inference activity will appear here</p>
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );

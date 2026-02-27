@@ -14,7 +14,6 @@ import type { LMXClient } from '@/lib/lmx-client';
 import type {
   AgentWorkflow,
   PipelineStep,
-  StepExecution,
   WorkflowExecution,
 } from '@/types/agent';
 import { saveExecution } from '@/lib/agent-store';

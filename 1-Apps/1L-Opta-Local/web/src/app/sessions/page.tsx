@@ -9,15 +9,14 @@
  * Clicking a session navigates to /chat/[id] for resumption.
  */
 
-import { useEffect, useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import { cn, Button } from '@opta/ui';
 
+import { useConnectionContextSafe } from '@/components/shared/ConnectionProvider';
 import { useSessions } from '@/hooks/useSessions';
-import { createClient, getConnectionSettings } from '@/lib/connection';
-import type { LMXClient } from '@/lib/lmx-client';
 import { SessionSearch } from '@/components/sessions/SessionSearch';
 import { SessionList } from '@/components/sessions/SessionList';
 
@@ -27,31 +26,8 @@ import { SessionList } from '@/components/sessions/SessionList';
 
 export default function SessionsPage() {
   const router = useRouter();
-  const [client, setClient] = useState<LMXClient | null>(null);
-  const [settingsError, setSettingsError] = useState(false);
-
-  // Initialize LMX client from saved connection settings
-  useEffect(() => {
-    let cancelled = false;
-
-    async function init() {
-      try {
-        const settings = await getConnectionSettings();
-        if (!cancelled) {
-          setClient(createClient(settings));
-        }
-      } catch {
-        if (!cancelled) {
-          setSettingsError(true);
-        }
-      }
-    }
-
-    void init();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const connection = useConnectionContextSafe();
+  const client = connection?.client ?? null;
 
   // Session data + search + filters
   const {
@@ -86,28 +62,6 @@ export default function SessionsPage() {
     },
     [deleteSession],
   );
-
-  // Settings error state
-  if (settingsError) {
-    return (
-      <main className="flex min-h-screen items-center justify-center p-8">
-        <div className="glass-subtle max-w-sm rounded-xl p-8 text-center">
-          <p className="mb-2 text-lg font-semibold text-text-primary">
-            Settings Error
-          </p>
-          <p className="mb-4 text-sm text-text-secondary">
-            Could not load connection settings. Please configure your server
-            connection.
-          </p>
-          <Link href="/settings">
-            <Button variant="primary" size="md">
-              Go to Settings
-            </Button>
-          </Link>
-        </div>
-      </main>
-    );
-  }
 
   return (
     <main className="flex flex-col h-screen">

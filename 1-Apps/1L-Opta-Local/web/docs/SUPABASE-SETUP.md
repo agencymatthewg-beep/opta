@@ -6,14 +6,34 @@ Create `.env.local`:
 
 ```bash
 # Supabase
-NEXT_PUBLIC_SUPABASE_URL=https://cytjsmezyldytbmjrolyz.supabase.co
+NEXT_PUBLIC_SUPABASE_URL=https://cytjsmezydytbmjrolyz.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN5dGpzbWV6eWR5dGJtanJvbHl6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5OTcyNDUsImV4cCI6MjA4NjU3MzI0NX0.DuYyYixsjdl9R5Uq4hIL4TQMGvCCssw_1wNo-J7De6Q
-SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN5dGpzbWV6eWx5dGJtanJvbHl6Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MDk5NzI0NSwiZXhwIjoyMDg2NTczMjQ1fQ.XLpqeLBcPTGNFE4SHhfcxS6YL3YD-ngb0fbHoq6c2CA
+SUPABASE_SERVICE_ROLE_KEY=<your-supabase-service-role-key>
+NEXT_PUBLIC_SITE_URL=https://optalocal.com
 
 # Auth Providers (configure in Supabase Dashboard)
 NEXT_PUBLIC_ENABLE_APPLE=true
 NEXT_PUBLIC_ENABLE_GOOGLE=true
 ```
+
+> Security warning: Never commit or share `SUPABASE_SERVICE_ROLE_KEY`. Keep it only in private server-side environment variables.
+
+Configure Supabase Authentication providers to match app behavior:
+- `Google` OAuth provider
+- `Apple` OAuth provider
+- `Email` (password auth enabled)
+- `Phone` (password auth enabled)
+
+## Supported Web Auth Actions
+
+Source: `web/src/lib/supabase/auth-actions.ts`
+
+| Method | Type | Behavior |
+|--------|------|----------|
+| `signInWithGoogle()` | OAuth | Starts Google OAuth and redirects to Supabase URL |
+| `signInWithApple()` | OAuth | Starts Apple OAuth and redirects to Supabase URL |
+| `signInWithPasswordIdentifier(identifier, password)` | Password | Uses Supabase `signInWithPassword` with email-or-phone routing; returns `{ ok, error? }` |
+| `signUpWithPasswordIdentifier(identifier, password, name?)` | Password | Uses Supabase `signUp` with email-or-phone routing and optional profile metadata; returns `{ ok, error? }` |
 
 ## Supabase SQL Schema
 
@@ -103,7 +123,11 @@ CREATE TRIGGER on_auth_user_created
 ```
 1. User visits optalocal.com
 2. Not authenticated → Show landing page with "Sign In" button
-3. User clicks "Sign In" → Supabase Auth (Apple/Google/Email)
+3. User signs in on /sign-in using one of four methods:
+   - Continue with Google
+   - Continue with Apple
+   - Email + password
+   - Phone + password
 4. Supabase returns session → Check if profile.setup_complete
 5. IF setup_complete = FALSE:
    → Redirect to /setup wizard
@@ -117,8 +141,7 @@ CREATE TRIGGER on_auth_user_created
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/api/auth/callback` | GET | Supabase auth callback |
-| `/api/auth/signout` | POST | Sign out |
+| `/auth/callback` | GET | Supabase OAuth callback (code exchange) |
 | `/api/config` | GET/POST | Get/Update user config |
 | `/api/keys` | GET/POST/DELETE | Manage API keys |
 | `/api/lmx/status` | GET | Check LMX server status |
@@ -130,4 +153,3 @@ CREATE TRIGGER on_auth_user_created
 - API keys encrypted with Supabase Vault or user-specific key
 - LMX server token stored encrypted
 - Rate limiting via Vercel
-

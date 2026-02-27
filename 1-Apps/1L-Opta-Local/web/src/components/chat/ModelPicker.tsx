@@ -81,7 +81,7 @@ export function ModelPicker({
         <Select.Portal>
           <Select.Content
             className={cn(
-              'glass rounded-xl p-1 shadow-2xl border border-opta-border',
+              'glass rounded-xl p-1 shadow-2xl border border-transparent',
               'z-50 min-w-[260px] max-w-[360px]',
               'animate-in fade-in-0 zoom-in-95',
             )}

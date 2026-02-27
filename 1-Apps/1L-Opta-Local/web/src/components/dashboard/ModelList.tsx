@@ -66,12 +66,19 @@ export function ModelList({
               layout
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, x: -20 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              whileHover={{
+                scale: 1.01,
+                backgroundColor: 'rgba(139, 92, 246, 0.05)',
+                transition: { duration: 0.2 }
+              }}
+              whileTap={{ scale: 0.99 }}
               transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-              className="flex items-center justify-between border-b border-white/5 py-3 last:border-0"
+              className="flex items-center justify-between border-b border-white/5 py-3 px-2 rounded-lg last:border-0"
             >
               <div className="flex items-center gap-3 min-w-0">
-                <Badge variant="success" size="sm">
+                <Badge variant="success" size="sm" className="relative">
+                  <span className="absolute inset-0 rounded-full animate-ping opacity-20 bg-neon-green" />
                   ready
                 </Badge>
                 <div className="min-w-0">
@@ -104,8 +111,14 @@ export function ModelList({
         </AnimatePresence>
 
         {models.length === 0 && (
-          <div className="flex flex-col items-center gap-3 py-8">
-            <p className="text-sm text-text-muted">No models loaded</p>
+          <div className="flex flex-col items-center gap-4 py-10">
+            <div className="opta-ring-wrap">
+              <div className="opta-ring opta-ring-64" />
+            </div>
+            <div className="text-center space-y-1">
+              <p className="text-sm text-text-secondary font-medium">No models loaded</p>
+              <p className="text-xs text-text-muted">Press ⌘K to browse models</p>
+            </div>
             {onLoad && (
               <Button variant="glass" size="sm" onClick={onLoad}>
                 <Plus className="mr-1.5 h-3.5 w-3.5" />

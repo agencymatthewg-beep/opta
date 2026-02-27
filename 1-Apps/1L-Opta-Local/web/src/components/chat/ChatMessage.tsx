@@ -11,6 +11,19 @@ import { ForkButton } from './ForkButton';
 const optaCode = createCodePlugin({
   themes: ['github-dark-default', 'github-dark-default'],
 });
+const allowedLinkProtocols = new Set(['http:', 'https:', 'mailto:', 'tel:']);
+
+function isAllowedMarkdownUrl(url: string): boolean {
+  try {
+    return allowedLinkProtocols.has(new URL(url, 'https://opta.local').protocol);
+  } catch {
+    return false;
+  }
+}
+
+function sanitizeMarkdownUrl(url: string): string | null {
+  return isAllowedMarkdownUrl(url) ? url : null;
+}
 
 interface ChatMessageProps {
   content: string;
@@ -68,9 +81,11 @@ export const ChatMessage = memo(function ChatMessage({
         {content ? (
           <Streamdown
             plugins={{ code: optaCode }}
+            urlTransform={sanitizeMarkdownUrl}
+            linkSafety={{ enabled: true, onLinkCheck: isAllowedMarkdownUrl }}
             caret={isStreaming ? 'block' : undefined}
             isAnimating={isStreaming}
-            className="text-sm leading-relaxed text-text-primary [&_pre]:glass-subtle [&_pre]:rounded-lg [&_pre]:p-4 [&_pre]:my-3 [&_code:not(pre_code)]:glass-subtle [&_code:not(pre_code)]:rounded [&_code:not(pre_code)]:px-1.5 [&_code:not(pre_code)]:py-0.5 [&_code:not(pre_code)]:text-primary-glow [&_code:not(pre_code)]:text-xs [&_a]:text-primary [&_a]:underline [&_a:hover]:text-primary-glow [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-1 [&_h1]:text-xl [&_h1]:font-semibold [&_h1]:mt-4 [&_h1]:mb-2 [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:mt-3 [&_h2]:mb-2 [&_h3]:text-base [&_h3]:font-semibold [&_h3]:mt-2 [&_h3]:mb-1 [&_p]:my-2 [&_blockquote]:border-l-2 [&_blockquote]:border-primary [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-text-secondary [&_table]:w-full [&_th]:text-left [&_th]:p-2 [&_th]:border-b [&_th]:border-opta-border [&_td]:p-2 [&_td]:border-b [&_td]:border-opta-border/50 [&_hr]:border-opta-border [&_hr]:my-4"
+            className="text-sm leading-relaxed text-text-primary [&_pre]:glass-subtle [&_pre]:rounded-lg [&_pre]:p-4 [&_pre]:my-3 [&_code:not(pre_code)]:glass-subtle [&_code:not(pre_code)]:rounded [&_code:not(pre_code)]:px-1.5 [&_code:not(pre_code)]:py-0.5 [&_code:not(pre_code)]:text-primary-glow [&_code:not(pre_code)]:text-xs [&_a]:text-primary [&_a]:underline [&_a:hover]:text-primary-glow [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-1 [&_h1]:text-xl [&_h1]:font-semibold [&_h1]:mt-4 [&_h1]:mb-2 [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:mt-3 [&_h2]:mb-2 [&_h3]:text-base [&_h3]:font-semibold [&_h3]:mt-2 [&_h3]:mb-1 [&_p]:my-2 [&_blockquote]:border-l-2 [&_blockquote]:border-primary [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-text-secondary [&_table]:w-full [&_th]:text-left [&_th]:p-2 [&_th]:border-b [&_th]:border-opta-border [&_td]:p-2 [&_td]:border-b [&_td]:border-opta-border/50 [&_hr]:border-opta-border [&_hr]:my-4 [&_think]:block [&_think]:border-l-2 [&_think]:border-primary/50 [&_think]:bg-primary/5 [&_think]:p-3 [&_think]:my-3 [&_think]:rounded-r-lg [&_think]:text-text-muted [&_think]:italic [&_think]:text-xs [&_think]:relative before:[&_think]:content-['Reasoning'] before:[&_think]:block before:[&_think]:text-[10px] before:[&_think]:uppercase before:[&_think]:tracking-widest before:[&_think]:opacity-50 before:[&_think]:mb-1"
           >
             {content}
           </Streamdown>

@@ -23,8 +23,8 @@ import {
 } from 'lucide-react';
 import { cn, Button } from '@opta/ui';
 
-import { createClient, getConnectionSettings } from '@/lib/connection';
-import type { LMXClient } from '@/lib/lmx-client';
+import { useConnectionContextSafe } from '@/components/shared/ConnectionProvider';
+import { OptaStatusPill, OptaSurface } from '@/components/shared/OptaPrimitives';
 import { useModels } from '@/hooks/useModels';
 import { useAgentWorkflow } from '@/hooks/useAgentWorkflow';
 import type {
@@ -47,7 +47,8 @@ import { ExecutionLog } from '@/components/agents/ExecutionLog';
 // ---------------------------------------------------------------------------
 
 export default function AgentsPage() {
-  const [client, setClient] = useState<LMXClient | null>(null);
+  const connection = useConnectionContextSafe();
+  const client = connection?.client ?? null;
   const { models } = useModels(client);
   const { execution, isRunning, execute, cancel, reset } =
     useAgentWorkflow(client);
@@ -65,23 +66,6 @@ export default function AgentsPage() {
     () => models[0]?.id ?? '',
     [models],
   );
-
-  // Initialize client
-  useEffect(() => {
-    let cancelled = false;
-    async function init() {
-      try {
-        const settings = await getConnectionSettings();
-        if (!cancelled) setClient(createClient(settings));
-      } catch {
-        // Settings not configured
-      }
-    }
-    void init();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   // Load saved workflows
   useEffect(() => {
@@ -203,28 +187,32 @@ export default function AgentsPage() {
                   <button
                     key={template.id}
                     onClick={() => handleSelectTemplate(template)}
-                    className={cn(
-                      'glass-subtle rounded-xl p-5 text-left transition-all',
-                      'hover:border-primary/30 group',
-                    )}
+                    className="w-full text-left group"
                   >
-                    <div className="flex items-center gap-2 mb-2">
-                      <Zap className="w-4 h-4 text-primary" />
-                      <h3 className="text-sm font-semibold text-text-primary group-hover:text-primary transition-colors">
-                        {template.name}
-                      </h3>
-                    </div>
-                    <p className="text-xs text-text-secondary mb-3">
-                      {template.description}
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-medium text-text-muted uppercase tracking-wider bg-opta-surface px-2 py-0.5 rounded-full">
-                        {template.category}
-                      </span>
-                      <span className="text-[10px] text-text-muted">
-                        {template.steps.length} steps
-                      </span>
-                    </div>
+                    <OptaSurface
+                      hierarchy="raised"
+                      className="rounded-xl p-5 transition-all group-hover:border-primary/30"
+                    >
+                      <div className="flex items-center gap-2 mb-2">
+                        <Zap className="w-4 h-4 text-primary" />
+                        <h3 className="text-sm font-semibold text-text-primary group-hover:text-primary transition-colors">
+                          {template.name}
+                        </h3>
+                      </div>
+                      <p className="text-xs text-text-secondary mb-3">
+                        {template.description}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <OptaStatusPill
+                          label={template.category}
+                          status="info"
+                          className="text-[10px] uppercase tracking-wider"
+                        />
+                        <span className="text-[10px] text-text-muted">
+                          {template.steps.length} steps
+                        </span>
+                      </div>
+                    </OptaSurface>
                   </button>
                 ))}
               </div>
@@ -238,9 +226,11 @@ export default function AgentsPage() {
                 </h2>
                 <div className="space-y-3">
                   {workflows.map((wf) => (
-                    <div
+                    <OptaSurface
                       key={wf.id}
-                      className="glass-subtle rounded-xl p-4 flex items-center gap-4"
+                      hierarchy="raised"
+                      padding="md"
+                      className="rounded-xl flex items-center gap-4"
                     >
                       <button
                         onClick={() => handleSelectWorkflow(wf)}
@@ -261,7 +251,7 @@ export default function AgentsPage() {
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
-                    </div>
+                    </OptaSurface>
                   ))}
                 </div>
               </section>
@@ -290,9 +280,13 @@ export default function AgentsPage() {
                   <h1 className="text-lg font-semibold text-text-primary">
                     {activeWorkflow?.name ?? 'New Workflow'}
                   </h1>
-                  <p className="text-xs text-text-muted">
-                    {activeWorkflow?.steps.length ?? 0} steps
-                  </p>
+                  <div className="mt-1">
+                    <OptaStatusPill
+                      label={`${activeWorkflow?.steps.length ?? 0} steps`}
+                      status="neutral"
+                      className="text-[10px]"
+                    />
+                  </div>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -360,7 +354,11 @@ export default function AgentsPage() {
                 })}
 
                 {/* Input area */}
-                <div className="mt-6 space-y-3">
+                <OptaSurface
+                  hierarchy="base"
+                  padding="md"
+                  className="mt-6 rounded-xl space-y-3"
+                >
                   <h2 className="text-xs font-semibold text-text-muted uppercase tracking-widest">
                     Input
                   </h2>
@@ -371,9 +369,9 @@ export default function AgentsPage() {
                     disabled={isRunning}
                     rows={4}
                     className={cn(
-                      'w-full glass-subtle rounded-xl px-4 py-3',
-                      'bg-transparent text-sm text-text-primary',
-                      'placeholder:text-text-muted outline-none resize-none',
+                      'w-full rounded-xl px-4 py-3',
+                      'bg-opta-surface text-sm text-text-primary',
+                      'placeholder:text-text-muted outline-none resize-none border border-opta-border',
                       'disabled:opacity-50',
                     )}
                   />
@@ -413,7 +411,7 @@ export default function AgentsPage() {
                       </Button>
                     )}
                   </div>
-                </div>
+                </OptaSurface>
               </div>
 
               {/* Right: Execution log */}
@@ -426,15 +424,19 @@ export default function AgentsPage() {
                     <ExecutionLog execution={execution} />
                   </div>
                 ) : (
-                  <div className="glass-subtle rounded-xl p-8 text-center">
+                  <OptaSurface
+                    hierarchy="raised"
+                    padding="lg"
+                    className="rounded-xl p-8 text-center"
+                  >
                     <Workflow className="w-10 h-10 text-text-muted mx-auto mb-3" />
-                    <p className="text-sm text-text-secondary mb-1">
-                      Ready to execute
-                    </p>
+                    <div className="mb-2 inline-flex">
+                      <OptaStatusPill label="Ready to execute" status="info" />
+                    </div>
                     <p className="text-xs text-text-muted">
                       Enter input and click Execute to run the pipeline
                     </p>
-                  </div>
+                  </OptaSurface>
                 )}
               </div>
             </div>

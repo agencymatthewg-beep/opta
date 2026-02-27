@@ -8,7 +8,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Session, ChatMessage } from '@/types/lmx';
-import type { CloudSession, CloudMessage } from '@/types/cloud';
+import type { CloudMessage } from '@/types/cloud';
 import {
   saveChatSession,
   getChatSession,

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Server, Eye, EyeOff, RefreshCw, Check, X, Loader2 } from 'lucide-react';
 import { cn, Button } from '@opta/ui';
+import { OptaStatusPill, OptaSurface } from '@/components/shared/OptaPrimitives';
 import {
   type ConnectionSettings,
   DEFAULT_SETTINGS,
@@ -116,7 +117,7 @@ export default function GeneralSettingsPage() {
       </div>
 
       {/* Server connection section */}
-      <section className="glass-subtle rounded-xl p-6 space-y-6">
+      <OptaSurface hierarchy="raised" padding="lg" className="space-y-6">
         <div className="flex items-center gap-3">
           <Server className="w-5 h-5 text-neon-cyan" />
           <h3 className="text-base font-semibold text-text-primary">
@@ -198,7 +199,7 @@ export default function GeneralSettingsPage() {
             Stored encrypted using Web Crypto API (AES-GCM)
           </p>
         </div>
-      </section>
+      </OptaSurface>
 
       {/* Actions */}
       <div className="flex items-center gap-3 flex-wrap">
@@ -252,14 +253,17 @@ export default function GeneralSettingsPage() {
 
         {/* Test result message */}
         {testMessage && (
-          <span
-            className={cn(
-              'text-sm',
-              testStatus === 'success' ? 'text-neon-green' : 'text-neon-red',
-            )}
-          >
-            {testMessage}
-          </span>
+          <OptaStatusPill
+            status={testStatus === 'success' ? 'success' : 'danger'}
+            label={testMessage}
+            icon={
+              testStatus === 'success' ? (
+                <Check className="w-3.5 h-3.5" />
+              ) : (
+                <X className="w-3.5 h-3.5" />
+              )
+            }
+          />
         )}
       </div>
     </div>

@@ -19,6 +19,7 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "Opta Local",
   description: "Chat with your local AI from anywhere",
+  referrer: "strict-origin-when-cross-origin",
 };
 
 export default function RootLayout({

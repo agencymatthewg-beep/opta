@@ -1,111 +1,108 @@
 # Opta Local Web — Roadmap
 
-> Web platform development phases.
+> Web platform delivery plan. iOS is currently deferred while web is stabilized.
 
 ---
 
-## Current Phase: Phase 0 — Project Setup
+## Current Phase: Phase 5 — Stabilization + Ship Readiness
 
 ---
 
 ## Phases
 
-### Phase 0: Project Setup (Current)
-**Goal:** Scaffold Next.js 16 project with Opta design system integration
-**Status:** Not Started
+### Phase 0: Project Setup
+**Goal:** Scaffold Next.js app and core design system
+**Status:** Complete
 
 | # | Task | Status | Acceptance Criteria |
 |---|------|--------|-------------------|
-| 1 | Initialize Next.js 16 project | Not Started | `npm run dev` serves app at localhost:3004 |
-| 2 | Configure @opta/ui integration | Not Started | Glass panels render with correct styling |
-| 3 | Set up LMX client library | Not Started | Can fetch `/admin/status` from LMX server |
-| 4 | Set up Tailwind + design tokens | Not Started | All SHARED.md color tokens available as CSS vars |
-
-**Phase complete when:** App runs, connects to LMX, renders a glass panel with server status.
+| 1 | Initialize Next.js app | Done | `npm run dev` serves app at localhost:3004 |
+| 2 | Configure @opta/ui integration | Done | Glass panels render with consistent styling |
+| 3 | Set up LMX client library | Done | Can fetch core LMX endpoints |
+| 4 | Set up Tailwind + design tokens | Done | Shared color tokens available via CSS vars |
 
 ---
 
 ### Phase 1: Foundation — Chat + Connection
-**Goal:** Working streaming chat with manual server connection
-**Status:** Not Started
-**Depends on:** Phase 0
+**Goal:** Working streaming chat with manual connection
+**Status:** Complete
 
 | # | Task | Status | Acceptance Criteria |
 |---|------|--------|-------------------|
-| 1 | Connection settings page | Not Started | Enter IP/port/key, persist to localStorage |
-| 2 | Streaming chat UI | Not Started | Tokens stream in real-time, markdown rendered |
-| 3 | Model picker | Not Started | Select from `/v1/models` list before chatting |
-| 4 | Chat history | Not Started | Messages persist in localStorage, scrollable |
-
-**Phase complete when:** Can chat with local model via browser with streaming.
+| 1 | Connection settings page | Done | Enter host/port/key, persist in browser storage |
+| 2 | Streaming chat UI | Done | Tokens stream in real-time with markdown rendering |
+| 3 | Model picker | Done | Select model from `/v1/models` |
+| 4 | Chat history | Done | Message history persists across refreshes |
 
 ---
 
 ### Phase 2: Dashboard
 **Goal:** Real-time server monitoring
-**Status:** Not Started
-**Depends on:** Phase 1
+**Status:** Complete
 
 | # | Task | Status | Acceptance Criteria |
 |---|------|--------|-------------------|
-| 1 | SSE connection to /admin/events | Not Started | Auto-connects, auto-reconnects on drop |
-| 2 | VRAM gauge component | Not Started | Animated fill, shows used/total GB |
-| 3 | Loaded models list | Not Started | Shows model name, VRAM, loaded time, unload button |
-| 4 | Model load flow | Not Started | Browse available models, VRAM estimate, one-click load |
-| 5 | Throughput chart | Not Started | Tokens/sec over last 60 seconds |
-
-**Phase complete when:** Dashboard shows live VRAM, models, throughput. Can load/unload models.
+| 1 | SSE connection to `/admin/events` | Done | Auto-connect and reconnect behavior in place |
+| 2 | VRAM gauge component | Done | Animated gauge with used/total display |
+| 3 | Loaded models list | Done | Displays loaded models with unload action |
+| 4 | Model load flow | Done | One-click load path with config options |
+| 5 | Throughput chart | Done | Tokens/sec history chart rendered |
 
 ---
 
 ### Phase 3: Anywhere (WAN Access)
-**Goal:** Connect to LMX from outside the LAN
-**Status:** Not Started
-**Depends on:** Phase 1
+**Goal:** Connect to LMX from outside LAN
+**Status:** Complete
 
 | # | Task | Status | Acceptance Criteria |
 |---|------|--------|-------------------|
-| 1 | Tunnel URL configuration | Not Started | Enter Cloudflare Tunnel URL in settings |
-| 2 | Connection type indicator | Not Started | Green (LAN) / Amber (WAN) / Red (offline) |
-| 3 | Auto-failover | Not Started | Falls back to WAN if LAN unreachable |
-
-**Phase complete when:** Can chat and view dashboard via Cloudflare Tunnel URL.
+| 1 | Tunnel URL configuration | Done | Tunnel URL saved in settings |
+| 2 | Connection type indicator | Done | LAN/WAN/offline status visualized |
+| 3 | Auto-failover | Done | LAN-first probing with WAN fallback |
 
 ---
 
 ### Phase 4: Sessions
 **Goal:** Resume CLI sessions in browser
-**Status:** Not Started
-**Depends on:** Phase 1
+**Status:** Complete
 
 | # | Task | Status | Acceptance Criteria |
 |---|------|--------|-------------------|
-| 1 | Session list page | Not Started | Shows all sessions from LMX Session API |
-| 2 | Session resume | Not Started | Load full message history, continue chatting |
-| 3 | Session search | Not Started | Filter by title, model, date |
+| 1 | Session list page | Done | Fetch and display sessions from LMX Session API |
+| 2 | Session resume | Done | Load full session history and continue chat |
+| 3 | Session search | Done | Filter by title/model/tag |
 
-**Phase complete when:** Can browse and resume CLI sessions in the browser.
+---
+
+### Phase 5: Stabilization + Ship Readiness (Current)
+**Goal:** Harden reliability and deployment readiness
+**Status:** In Progress
+
+| # | Task | Status | Acceptance Criteria |
+|---|------|--------|-------------------|
+| 1 | Restore quality gates | Done | `npm run lint`, `npm run typecheck`, and `npm run build` pass |
+| 2 | Next.js proxy migration | Done | Deprecated `middleware` convention removed |
+| 3 | Connection settings reactivity | Done | Saving settings refreshes live connection context |
+| 4 | Streaming robustness | Done | Stream cancellation signal wired to fetch |
+| 5 | Web-only doc sync | In Progress | Feature/roadmap/workflow docs reflect current implementation |
 
 ---
 
 ### Later (Backlog)
-- [ ] RAG Studio — Visual document ingestion and querying
-- [ ] Multi-model router — Drag-to-assign models to tasks
-- [ ] Image/Vision chat — Drag-and-drop image analysis
-- [ ] Multi-server fleet view — Manage multiple LMX servers
-- [ ] Shared conversations — Real-time collaborative chat
-- [ ] Automation scheduler — Cron-like recurring AI tasks
-- [ ] Benchmark suite — Performance comparison charts
+- [ ] RAG Studio hardening and UX polish
+- [ ] Multi-model router
+- [ ] Image/Vision chat
+- [ ] Multi-server fleet expansion
+- [ ] Shared conversations
+- [ ] Automation scheduler
+- [ ] Benchmark suite refinement
 - [ ] Context window visualizer
 
 ### Never (Anti-Features)
-- Full IDE in browser — that's Optamize MacOS's job
-- Cloud API proxying — local models only
-- User account system — single-user in v1
-- Light theme — dark mode only
+- Full IDE in browser
+- Cloud API proxying (local models only)
+- Heavy multi-tenant account model for v1 local mode
 
 ---
 
-*Update weekly. This file changes often — that's expected.*
-
-*Generated by OPIS v2.0 — 2026-02-18*
+*Updated: 2026-02-20*

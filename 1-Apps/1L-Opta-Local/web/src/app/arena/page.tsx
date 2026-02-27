@@ -15,12 +15,11 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn, Button } from '@opta/ui';
+import { useConnectionContextSafe } from '@/components/shared/ConnectionProvider';
 import { useModels } from '@/hooks/useModels';
 import { useArenaStream } from '@/hooks/useArenaStream';
-import { createClient, getConnectionSettings } from '@/lib/connection';
 import { saveVote, getVoteStats } from '@/lib/arena-store';
 import type { ArenaVote, ModelWinStats } from '@/lib/arena-store';
-import type { LMXClient } from '@/lib/lmx-client';
 import { ArenaPanel } from '@/components/arena/ArenaPanel';
 import { ArenaRating } from '@/components/arena/ArenaRating';
 
@@ -30,7 +29,8 @@ import { ArenaRating } from '@/components/arena/ArenaRating';
 
 export default function ArenaPage() {
   // ---- Connection ----
-  const [client, setClient] = useState<LMXClient | null>(null);
+  const connection = useConnectionContextSafe();
+  const client = connection?.client ?? null;
   const { models, isLoading: modelsLoading } = useModels(client);
 
   // ---- Model selection ----
@@ -60,27 +60,6 @@ export default function ArenaPage() {
   const allFinished =
     channels.length > 0 && channels.every((ch) => !ch.isStreaming);
   const hasChannels = channels.length > 0;
-
-  // ---- Initialize client ----
-  useEffect(() => {
-    let cancelled = false;
-
-    async function init() {
-      try {
-        const settings = await getConnectionSettings();
-        if (!cancelled) {
-          setClient(createClient(settings));
-        }
-      } catch {
-        // Connection errors are visible in the empty model list
-      }
-    }
-
-    void init();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   // ---- Auto-select first 2 models when available ----
   useEffect(() => {

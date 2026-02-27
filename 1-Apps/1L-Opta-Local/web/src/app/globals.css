@@ -120,6 +120,7 @@
   --color-chart-tick: var(--opta-chart-tick);
   --color-chart-ref-stroke: var(--opta-chart-ref-stroke);
   --color-chart-ref-label: var(--opta-chart-ref-label);
+
 }
 
 @layer base {
@@ -145,6 +146,7 @@
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
+
 }
 
 @layer utilities {
@@ -173,7 +175,8 @@
     border-color: rgba(139, 92, 246, 0.15);
     box-shadow:
       inset 0 1px 0 0 rgba(255, 255, 255, 0.08),
-      0 8px 32px -8px rgba(0, 0, 0, 0.3);
+      0 8px 32px -8px rgba(0, 0, 0, 0.3),
+      0 0 0 1px rgba(139, 92, 246, 0.08);
     transform: translateY(-1px);
   }
 
@@ -352,6 +355,7 @@
     outline-offset: 2px;
     box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.2);
   }
+
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -364,6 +368,7 @@
 @keyframes opta-spin {
   from { transform: perspective(600px) rotateX(32deg) rotateY(-10deg) rotate(0deg); }
   to   { transform: perspective(600px) rotateX(32deg) rotateY(-10deg) rotate(360deg); }
+
 }
 
 @keyframes opta-breathe {
@@ -381,11 +386,13 @@
       0 0 200px rgba(88,  28, 135, 0.18),
       0 8px 28px rgba(0,   0,   0,   0.75);
   }
+
 }
 
 @keyframes opta-ambient {
   0%, 100% { opacity: 0.45; transform: scale(1); }
   50%       { opacity: 0.90; transform: scale(1.2); }
+
 }
 
 @layer utilities {
@@ -529,7 +536,43 @@
     background: linear-gradient(90deg, transparent, #8b5cf6, transparent);
     box-shadow: 0 0 16px rgba(139, 92, 246, 0.7);
   }
+
 }
+
+  /* ─── Live indicator pulse ──────────────────────────────────────── */
+  @keyframes opta-live-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6); }
+    50% { box-shadow: 0 0 0 5px rgba(34, 197, 94, 0); }
+  }
+
+  .opta-live-dot {
+    animation: opta-live-pulse 2s ease-in-out infinite;
+  }
+
+  /* ─── Keyboard shortcut badge ───────────────────────────────────── */
+  .opta-kbd {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--opta-text-secondary);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-bottom-width: 2px;
+    border-radius: 4px;
+    padding: 1px 5px;
+    min-width: 18px;
+    line-height: 1.4;
+  }
+
+  /* ─── Command palette selected item ────────────────────────────── */
+  .opta-palette-item-selected {
+    background: rgba(139, 92, 246, 0.12);
+    color: var(--opta-primary);
+  }
 
 /* Reduced Motion Support */
 @media (prefers-reduced-motion: reduce) {
@@ -541,4 +584,5 @@
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+
 }

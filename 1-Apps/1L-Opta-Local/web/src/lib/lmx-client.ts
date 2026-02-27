@@ -181,12 +181,14 @@ export class LMXClient {
       temperature?: number;
       max_tokens?: number;
       top_p?: number;
+      signal?: AbortSignal;
     },
   ): AsyncGenerator<string, void, undefined> {
     const url = `${this.baseUrl}/v1/chat/completions`;
     const response = await fetch(url, {
       method: 'POST',
       headers: this.headers(),
+      signal: options?.signal,
       body: JSON.stringify({
         model,
         messages,

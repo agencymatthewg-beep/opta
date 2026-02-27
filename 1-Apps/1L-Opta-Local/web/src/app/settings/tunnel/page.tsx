@@ -15,7 +15,6 @@ import { cn, Button } from '@opta/ui';
 import {
   type ConnectionSettings,
   type ConnectionType,
-  DEFAULT_SETTINGS,
   getConnectionSettings,
   saveConnectionSettings,
   getOptimalBaseUrl,

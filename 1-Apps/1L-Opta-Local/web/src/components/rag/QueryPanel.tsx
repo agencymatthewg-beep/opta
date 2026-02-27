@@ -61,8 +61,7 @@ function scoreBarColor(score: number): string {
 }
 
 function scoreBadgeVariant(score: number): 'default' | 'purple' {
-  // Both variants work; we use the color via className override
-  return 'default';
+  return score >= 0.8 ? 'purple' : 'default';
 }
 
 // truncate imported from @/lib/format

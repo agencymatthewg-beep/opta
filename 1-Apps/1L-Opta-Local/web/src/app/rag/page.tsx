@@ -7,8 +7,8 @@
  * - Left sidebar: collection list (collapsible on mobile)
  * - Main area: tabbed interface (Ingest / Query)
  *
- * Initializes its own LMXClient from connection settings, same pattern
- * as ChatPage and SessionsPage.
+ * Reads the active LMXClient from ConnectionProvider so settings updates
+ * propagate automatically without page-level client initialization.
  */
 
 import { useEffect, useState, useCallback } from 'react';
@@ -21,10 +21,9 @@ import {
   PanelLeft,
 } from 'lucide-react';
 import Link from 'next/link';
-import { cn, Button } from '@opta/ui';
+import { cn } from '@opta/ui';
 
-import { createClient, getConnectionSettings } from '@/lib/connection';
-import type { LMXClient } from '@/lib/lmx-client';
+import { useConnectionContextSafe } from '@/components/shared/ConnectionProvider';
 import { useRAG } from '@/hooks/useRAG';
 import { CollectionList } from '@/components/rag/CollectionList';
 import { IngestPanel } from '@/components/rag/IngestPanel';
@@ -41,31 +40,8 @@ type ActiveTab = 'ingest' | 'query';
 // ---------------------------------------------------------------------------
 
 export default function RAGPage() {
-  // Client initialization
-  const [client, setClient] = useState<LMXClient | null>(null);
-  const [settingsError, setSettingsError] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function init() {
-      try {
-        const settings = await getConnectionSettings();
-        if (!cancelled) {
-          setClient(createClient(settings));
-        }
-      } catch {
-        if (!cancelled) {
-          setSettingsError(true);
-        }
-      }
-    }
-
-    void init();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const connection = useConnectionContextSafe();
+  const client = connection?.client ?? null;
 
   // RAG hook
   const {
@@ -119,28 +95,6 @@ export default function RAGPage() {
     },
     [deleteCollection],
   );
-
-  // Settings error state
-  if (settingsError) {
-    return (
-      <main className="flex min-h-screen items-center justify-center p-8">
-        <div className="glass-subtle max-w-sm rounded-xl p-8 text-center">
-          <p className="mb-2 text-lg font-semibold text-text-primary">
-            Settings Error
-          </p>
-          <p className="mb-4 text-sm text-text-secondary">
-            Could not load connection settings. Please configure your server
-            connection.
-          </p>
-          <Link href="/settings">
-            <Button variant="primary" size="md">
-              Go to Settings
-            </Button>
-          </Link>
-        </div>
-      </main>
-    );
-  }
 
   return (
     <main className="flex flex-col h-screen">

@@ -1,41 +1,18 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ArrowLeft } from 'lucide-react';
-import Link from 'next/link';
-import { cn } from '@opta/ui';
 import { ChatContainer } from '@/components/chat/ChatContainer';
 import { ModelPicker } from '@/components/chat/ModelPicker';
+import { useConnectionContextSafe } from '@/components/shared/ConnectionProvider';
+import { OptaSurface } from '@/components/shared/OptaPrimitives';
 import { useModels } from '@/hooks/useModels';
-import { createClient, getConnectionSettings } from '@/lib/connection';
-import type { LMXClient } from '@/lib/lmx-client';
 
 export default function ChatPage() {
-  const [client, setClient] = useState<LMXClient | null>(null);
+  const connection = useConnectionContextSafe();
+  const client = connection?.client ?? null;
   const [selectedModel, setSelectedModel] = useState('');
 
   const { models, isLoading: modelsLoading } = useModels(client);
-
-  // Initialize client for the model picker
-  useEffect(() => {
-    let cancelled = false;
-
-    async function init() {
-      try {
-        const settings = await getConnectionSettings();
-        if (!cancelled) {
-          setClient(createClient(settings));
-        }
-      } catch {
-        // Client init errors are handled by ChatContainer
-      }
-    }
-
-    void init();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   // Auto-select first loaded model if none selected
   useEffect(() => {
@@ -47,31 +24,23 @@ export default function ChatPage() {
   return (
     <main className="flex flex-col h-screen">
       {/* Header with nav and model picker */}
-      <header className="glass border-b border-opta-border px-6 py-3 flex items-center gap-4 flex-shrink-0">
-        <Link
-          href="/"
-          className={cn(
-            'p-1.5 rounded-lg transition-colors',
-            'text-text-secondary hover:text-text-primary hover:bg-primary/10',
-          )}
-          aria-label="Back to dashboard"
+      <header className="border-b border-opta-border flex-shrink-0">
+        <OptaSurface
+          hierarchy="overlay"
+          padding="none"
+          className="rounded-none border-0 px-6 py-3 flex items-center justify-end"
         >
-          <ArrowLeft className="w-5 h-5" />
-        </Link>
 
-        <h1 className="text-lg font-semibold text-text-primary">
-          Chat
-        </h1>
-
-        <div className="ml-auto">
-          <ModelPicker
-            models={models}
-            selectedModel={selectedModel}
-            onModelChange={setSelectedModel}
-            isLoading={modelsLoading}
-            disabled={false}
-          />
-        </div>
+          <div className="ml-auto">
+            <ModelPicker
+              models={models}
+              selectedModel={selectedModel}
+              onModelChange={setSelectedModel}
+              isLoading={modelsLoading}
+              disabled={false}
+            />
+          </div>
+        </OptaSurface>
       </header>
 
       {/* Chat area fills remaining space */}

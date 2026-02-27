@@ -24,6 +24,7 @@ interface ChatInputProps {
  */
 export function ChatInput({ onSend, onStop, isStreaming, disabled }: ChatInputProps) {
   const [value, setValue] = useState('');
+  const [isFocused, setIsFocused] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Clipboard content detection for smart suggestions
@@ -88,7 +89,7 @@ export function ChatInput({ onSend, onStop, isStreaming, disabled }: ChatInputPr
   const canSend = value.trim().length > 0 && !isStreaming && !disabled;
 
   return (
-    <div className="border-t border-opta-border px-4 py-3">
+    <div className="px-4 py-3">
       {/* Clipboard suggestion panel — floats above input */}
       <AnimatePresence>
         {detectedType && pastedContent && icon && label && (
@@ -104,12 +105,20 @@ export function ChatInput({ onSend, onStop, isStreaming, disabled }: ChatInputPr
         )}
       </AnimatePresence>
 
-      <div className="glass-subtle rounded-xl flex items-end gap-2 px-4 py-2 max-w-4xl mx-auto">
+      <div
+        className={cn(
+          "glass-subtle rounded-xl flex items-end gap-2 px-4 py-2 max-w-4xl mx-auto transition-all duration-300",
+          isFocused ? "border-primary/50 shadow-[0_0_15px_rgba(139,92,246,0.3)] bg-primary/5" : "border-transparent",
+          isStreaming && "border-neon-cyan/50 shadow-[0_0_20px_rgba(6,182,212,0.2)] bg-neon-cyan/5",
+        )}
+      >
         <textarea
           ref={textareaRef}
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={handleKeyDown}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
           placeholder="Message your AI..."
           disabled={isStreaming || disabled}
           rows={1}
@@ -125,11 +134,11 @@ export function ChatInput({ onSend, onStop, isStreaming, disabled }: ChatInputPr
             onClick={onStop}
             className={cn(
               'flex-shrink-0 p-2 rounded-lg transition-colors',
-              'text-neon-red hover:text-neon-red/80 hover:bg-neon-red/10',
+              'text-neon-cyan hover:text-neon-cyan hover:bg-neon-cyan/10 drop-shadow-[0_0_8px_rgba(6,182,212,0.5)]',
             )}
             aria-label="Stop generating"
           >
-            <Square className="w-5 h-5" />
+            <Square className="w-5 h-5 fill-current" />
           </button>
         ) : (
           <button

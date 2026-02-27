@@ -1,15 +1,15 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, GitBranch, MessageSquare, Sparkles } from 'lucide-react';
 import { cn } from '@opta/ui';
-import { useChatStream } from '@/hooks/useChatStream';
+import { useConnectionContextSafe } from '@/components/shared/ConnectionProvider';
+import { useChatStream, type PermissionRequestPayload } from '@/hooks/useChatStream';
 import { useScrollAnchor } from '@/hooks/useScrollAnchor';
 import { useSessionPersist } from '@/hooks/useSessionPersist';
 import { useTokenCost } from '@/hooks/useTokenCost';
-import { createClient, getConnectionSettings } from '@/lib/connection';
 import {
   forkSession,
   getBranches,
@@ -17,8 +17,8 @@ import {
   getBranchableSession,
   renameBranch,
 } from '@/lib/branch-store';
+import { OptaDaemonClient } from '@/lib/opta-daemon-client';
 import type { BranchableSession, BranchNode } from '@/lib/branch-store';
-import type { LMXClient } from '@/lib/lmx-client';
 import type { ChatMessage as ChatMessageType } from '@/types/lmx';
 import { BranchIndicator } from './BranchIndicator';
 import { BranchTree } from './BranchTree';
@@ -36,6 +36,10 @@ interface ChatContainerProps {
   initialMessages?: ChatMessageType[];
 }
 
+interface PermissionQueueItem extends PermissionRequestPayload {
+  resolve: (decision: 'allow' | 'deny') => void;
+}
+
 const PROMPT_SUGGESTIONS = [
   'Explain quantum computing in simple terms',
   'Write a Python function to sort a list',
@@ -47,14 +51,22 @@ const PROMPT_SUGGESTIONS = [
  * Main chat container integrating streaming, scroll behavior, session
  * persistence, and message UI.
  *
- * Creates an LMXClient from saved ConnectionSettings, manages the streaming
+ * Uses the active LMXClient from ConnectionProvider, manages the streaming
  * chat flow via useChatStream, auto-saves sessions to IndexedDB via
  * useSessionPersist, and handles auto-scroll via useScrollAnchor.
  */
 export function ChatContainer({ model, sessionId: initialSessionId, initialMessages }: ChatContainerProps) {
   const router = useRouter();
-  const [client, setClient] = useState<LMXClient | null>(null);
+  const connection = useConnectionContextSafe();
+  const client = connection?.client ?? null;
+  const daemonClient = useMemo(() => {
+    const baseUrl = process.env.NEXT_PUBLIC_OPTA_DAEMON_URL;
+    const token = process.env.NEXT_PUBLIC_OPTA_DAEMON_TOKEN;
+    if (!baseUrl || !token) return null;
+    return new OptaDaemonClient({ baseUrl, token });
+  }, []);
   const [error, setError] = useState<string | null>(null);
+  const [permissionQueue, setPermissionQueue] = useState<PermissionQueueItem[]>([]);
   const [sessionId, setSessionId] = useState<string>(
     initialSessionId ?? '',
   );
@@ -69,8 +81,45 @@ export function ChatContainer({ model, sessionId: initialSessionId, initialMessa
   const [showBranchTree, setShowBranchTree] = useState(false);
   const [hasBranches, setHasBranches] = useState(false);
 
-  const { messages, setMessages, isStreaming, sendMessage, stop } = useChatStream({
+  const currentPermission = permissionQueue[0] ?? null;
+  const activeClient = daemonClient ?? client;
+
+  const handlePermissionRequest = useCallback((request: PermissionRequestPayload) => {
+    return new Promise<'allow' | 'deny'>((resolve) => {
+      setPermissionQueue((prev) => [...prev, { ...request, resolve }]);
+    });
+  }, []);
+
+  const resolvePermission = useCallback((decision: 'allow' | 'deny') => {
+    setPermissionQueue((prev) => {
+      const [head, ...rest] = prev;
+      if (head) {
+        try {
+          head.resolve(decision);
+        } catch {
+          // Ignore resolution failures for unmounted listeners.
+        }
+      }
+      return rest;
+    });
+  }, []);
+
+  const clearPermissionQueue = useCallback((decision: 'allow' | 'deny' = 'deny') => {
+    setPermissionQueue((prev) => {
+      for (const item of prev) {
+        try {
+          item.resolve(decision);
+        } catch {
+          // Ignore resolution failures for unmounted listeners.
+        }
+      }
+      return [];
+    });
+  }, []);
+
+  const { messages, setMessages, toolEvents, isStreaming, sendMessage, stop } = useChatStream({
     onError: (err) => setError(err.message),
+    onPermissionRequest: handlePermissionRequest,
   });
 
   // Token cost estimation
@@ -92,29 +141,6 @@ export function ChatContainer({ model, sessionId: initialSessionId, initialMessa
     model,
     isStreaming,
   );
-
-  // Initialize client from saved connection settings
-  useEffect(() => {
-    let cancelled = false;
-
-    async function initClient() {
-      try {
-        const settings = await getConnectionSettings();
-        if (!cancelled) {
-          setClient(createClient(settings));
-        }
-      } catch {
-        if (!cancelled) {
-          setError('Failed to load connection settings');
-        }
-      }
-    }
-
-    void initClient();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   // Hydrate initial messages from CLI session resume (takes priority over IndexedDB restore)
   useEffect(() => {
@@ -225,20 +251,23 @@ export function ChatContainer({ model, sessionId: initialSessionId, initialMessa
 
   const handleSend = useCallback(
     (content: string) => {
-      if (!client) {
+      if (!activeClient) {
         setError('Not connected. Check your connection settings.');
         return;
       }
 
       // Generate session ID on first message if not already set
-      if (!sessionId) {
-        setSessionId(crypto.randomUUID());
-      }
+      const nextSessionId = sessionId || crypto.randomUUID();
+      if (!sessionId) setSessionId(nextSessionId);
 
       setError(null);
-      void sendMessage(client, model, content);
+      clearPermissionQueue('deny');
+      void sendMessage(activeClient, model, content, {
+        sessionId: nextSessionId,
+        onSessionId: setSessionId,
+      });
     },
-    [client, model, sendMessage, sessionId],
+    [activeClient, clearPermissionQueue, model, sendMessage, sessionId],
   );
 
   const handlePromptSuggestion = useCallback(
@@ -246,6 +275,96 @@ export function ChatContainer({ model, sessionId: initialSessionId, initialMessa
       handleSend(prompt);
     },
     [handleSend],
+  );
+
+  const toolResultsByAssistantIndex = useMemo(() => {
+    const results = new Map<number, Map<string, string>>();
+    let activeAssistantIndex: number | null = null;
+
+    // Tool messages are emitted immediately after the assistant tool-call message.
+    // Tracking the active assistant index avoids rescanning forward for each row.
+    for (let i = 0; i < messages.length; i++) {
+      const message = messages[i]!;
+
+      if (message.role === 'assistant') {
+        if (message.tool_calls?.length) {
+          activeAssistantIndex = i;
+          results.set(i, new Map<string, string>());
+        } else {
+          activeAssistantIndex = null;
+        }
+        continue;
+      }
+
+      if (message.role === 'tool') {
+        if (activeAssistantIndex != null && message.tool_call_id) {
+          results
+            .get(activeAssistantIndex)
+            ?.set(message.tool_call_id, message.content);
+        }
+        continue;
+      }
+
+      activeAssistantIndex = null;
+    }
+
+    return results;
+  }, [messages]);
+
+  const renderedMessages = useMemo(
+    () => messages.map((msg, index) => {
+      // Skip tool-role messages — their content is rendered inline
+      // with the preceding assistant message's ToolCallBlock
+      if (msg.role === 'tool') {
+        return null;
+      }
+
+      // Assistant messages with tool_calls: render tool call blocks then content
+      if (msg.role === 'assistant' && msg.tool_calls?.length) {
+        const toolResults = toolResultsByAssistantIndex.get(index);
+
+        return (
+          <div key={msg.id} className="space-y-3">
+            {msg.tool_calls.map((tc) => (
+              <ToolCallBlock
+                key={tc.id}
+                toolCalls={[tc]}
+                toolResult={toolResults?.get(tc.id)}
+              />
+            ))}
+            {msg.content && (
+              <ChatMessage
+                content={msg.content}
+                role="assistant"
+                isStreaming={
+                  isStreaming &&
+                  index === messages.length - 1
+                }
+                messageIndex={index}
+                onFork={handleFork}
+              />
+            )}
+          </div>
+        );
+      }
+
+      // Regular user/assistant messages
+      return (
+        <ChatMessage
+          key={msg.id}
+          content={msg.content}
+          role={msg.role as 'user' | 'assistant'}
+          isStreaming={
+            isStreaming &&
+            index === messages.length - 1 &&
+            msg.role === 'assistant'
+          }
+          messageIndex={index}
+          onFork={handleFork}
+        />
+      );
+    }),
+    [messages, toolResultsByAssistantIndex, isStreaming, handleFork],
   );
 
   const hasMessages = messages.length > 0;
@@ -265,7 +384,7 @@ export function ChatContainer({ model, sessionId: initialSessionId, initialMessa
             branchPoint={branchMeta.branchPoint}
             siblings={siblings}
             currentBranchLabel={branchMeta.branchLabel}
-            onLabelChange={(label) => void handleBranchLabelChange(label)}
+            onLabelChange={handleBranchLabelChange}
             onNavigate={handleBranchNavigate}
           />
         )}
@@ -302,67 +421,43 @@ export function ChatContainer({ model, sessionId: initialSessionId, initialMessa
 
         {hasMessages ? (
           <div className="px-4 py-6 space-y-6 max-w-4xl mx-auto">
-            {messages.map((msg, index) => {
-              // Skip tool-role messages — their content is rendered inline
-              // with the preceding assistant message's ToolCallBlock
-              if (msg.role === 'tool') {
-                return null;
-              }
-
-              // Assistant messages with tool_calls: render tool call blocks then content
-              if (msg.role === 'assistant' && msg.tool_calls?.length) {
-                // Collect tool results from subsequent tool-role messages
-                const toolResults = new Map<string, string>();
-                for (let j = index + 1; j < messages.length; j++) {
-                  const next = messages[j]!;
-                  if (next.role === 'tool' && next.tool_call_id) {
-                    toolResults.set(next.tool_call_id, next.content);
-                  } else if (next.role !== 'tool') {
-                    break;
-                  }
-                }
-
-                return (
-                  <div key={msg.id} className="space-y-3">
-                    {msg.tool_calls.map((tc) => (
-                      <ToolCallBlock
-                        key={tc.id}
-                        toolCalls={[tc]}
-                        toolResult={toolResults.get(tc.id)}
-                      />
-                    ))}
-                    {msg.content && (
-                      <ChatMessage
-                        content={msg.content}
-                        role="assistant"
-                        isStreaming={
-                          isStreaming &&
-                          index === messages.length - 1
-                        }
-                        messageIndex={index}
-                        onFork={(i) => void handleFork(i)}
-                      />
+            {renderedMessages}
+            {toolEvents.length > 0 && (
+              <div className="space-y-2">
+                {toolEvents.map((event) => (
+                  <div
+                    key={event.id}
+                    className={cn(
+                      'rounded-xl border px-3 py-2 text-xs',
+                      event.status === 'error'
+                        ? 'border-neon-red/30 bg-neon-red/10'
+                        : event.status === 'done'
+                          ? 'border-neon-green/25 bg-neon-green/10'
+                          : 'border-primary/25 bg-primary/10',
+                    )}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="font-medium text-text-primary">
+                        Tool · {event.toolName}
+                      </span>
+                      <span className="text-[11px] uppercase tracking-wide text-text-secondary">
+                        {event.status}
+                      </span>
+                    </div>
+                    {event.args && (
+                      <pre className="mt-2 whitespace-pre-wrap break-words font-mono text-[11px] text-text-secondary">
+                        {event.args}
+                      </pre>
+                    )}
+                    {event.detail && (
+                      <pre className="mt-2 whitespace-pre-wrap break-words font-mono text-[11px] text-text-primary">
+                        {event.detail}
+                      </pre>
                     )}
                   </div>
-                );
-              }
-
-              // Regular user/assistant messages
-              return (
-                <ChatMessage
-                  key={msg.id}
-                  content={msg.content}
-                  role={msg.role as 'user' | 'assistant'}
-                  isStreaming={
-                    isStreaming &&
-                    index === messages.length - 1 &&
-                    msg.role === 'assistant'
-                  }
-                  messageIndex={index}
-                  onFork={(i) => void handleFork(i)}
-                />
-              );
-            })}
+                ))}
+              </div>
+            )}
           </div>
         ) : (
           /* Empty state — welcome + prompt suggestions */
@@ -388,7 +483,7 @@ export function ChatContainer({ model, sessionId: initialSessionId, initialMessa
                   <button
                     key={prompt}
                     onClick={() => handlePromptSuggestion(prompt)}
-                    disabled={!client}
+                    disabled={!activeClient}
                     className={cn(
                       'glass-subtle rounded-xl px-4 py-3 text-left text-sm',
                       'text-text-secondary hover:text-text-primary',
@@ -445,22 +540,67 @@ export function ChatContainer({ model, sessionId: initialSessionId, initialMessa
         )}
       </AnimatePresence>
 
-      {/* Token cost estimator */}
-      <TokenCostBar
-        promptTokens={promptTokens}
-        completionTokens={completionTokens}
-        totalTokens={totalTokens}
-        estimatedCosts={estimatedCosts}
-        isStreaming={isStreaming}
-      />
+      {/* Permission prompt */}
+      <AnimatePresence>
+        {currentPermission && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="border-t border-primary/20 bg-primary/10 px-4 py-3"
+          >
+            <div className="mx-auto max-w-4xl space-y-2">
+              <div className="text-sm font-medium text-text-primary">
+                Permission request: {currentPermission.toolName}
+              </div>
+              <pre className="max-h-40 overflow-auto rounded-lg bg-bg/60 p-2 text-xs text-text-secondary">
+                {JSON.stringify(currentPermission.args, null, 2)}
+              </pre>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => resolvePermission('deny')}
+                  className="rounded-lg border border-neon-red/30 bg-neon-red/10 px-3 py-1.5 text-xs text-neon-red hover:bg-neon-red/20"
+                >
+                  Deny
+                </button>
+                <button
+                  type="button"
+                  onClick={() => resolvePermission('allow')}
+                  className="rounded-lg border border-neon-green/30 bg-neon-green/10 px-3 py-1.5 text-xs text-neon-green hover:bg-neon-green/20"
+                >
+                  Allow
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Input */}
-      <ChatInput
-        onSend={handleSend}
-        onStop={stop}
-        isStreaming={isStreaming}
-        disabled={!client}
-      />
+      {/* Bottom docking area with gradient fade */}
+      <div className="relative pt-6 pb-2 shrink-0">
+        {/* Gradient fade to seamlessly blend messages behind the input area */}
+        <div className="absolute inset-0 bg-gradient-to-t from-opta-bg via-opta-bg/90 to-transparent pointer-events-none -z-10" />
+
+        {/* Token cost estimator */}
+        <div className="mb-3">
+          <TokenCostBar
+            promptTokens={promptTokens}
+            completionTokens={completionTokens}
+            totalTokens={totalTokens}
+            estimatedCosts={estimatedCosts}
+            isStreaming={isStreaming}
+          />
+        </div>
+
+        {/* Input */}
+        <ChatInput
+          onSend={handleSend}
+          onStop={stop}
+          isStreaming={isStreaming}
+          disabled={!activeClient}
+        />
+      </div>
     </div>
   );
 }

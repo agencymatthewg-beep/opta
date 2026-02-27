@@ -2,8 +2,9 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Settings, Globe, ArrowLeft } from 'lucide-react';
+import { Settings, Globe, ArrowLeft, User, Boxes } from 'lucide-react';
 import { cn } from '@opta/ui';
+import { OptaSurface } from '@/components/shared/OptaPrimitives';
 
 const navItems = [
   {
@@ -15,6 +16,16 @@ const navItems = [
     label: 'Tunnel',
     href: '/settings/tunnel',
     icon: Globe,
+  },
+  {
+    label: 'Services',
+    href: '/settings/services',
+    icon: Boxes,
+  },
+  {
+    label: 'Account',
+    href: '/settings/account',
+    icon: User,
   },
 ] as const;
 
@@ -28,48 +39,60 @@ export default function SettingsLayout({
   return (
     <div className="flex flex-col min-h-screen">
       {/* Header */}
-      <header className="glass border-b border-opta-border px-6 py-3 flex items-center gap-4 flex-shrink-0">
-        <Link
-          href="/"
-          className="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-colors"
+      <header className="border-b border-opta-border flex-shrink-0">
+        <OptaSurface
+          hierarchy="overlay"
+          padding="none"
+          className="rounded-none border-0 px-6 py-3 flex items-center gap-4"
         >
-          <ArrowLeft className="w-4 h-4" />
-          <span className="text-sm">Back</span>
-        </Link>
-        <div className="w-px h-5 bg-opta-border" />
-        <h1 className="text-lg font-semibold text-text-primary">Settings</h1>
+          <Link
+            href="/"
+            className="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span className="text-sm">Back</span>
+          </Link>
+          <div className="w-px h-5 bg-opta-border" />
+          <h1 className="text-lg font-semibold text-text-primary">Settings</h1>
+        </OptaSurface>
       </header>
 
       {/* Content area: sidebar + main */}
       <div className="flex flex-1 flex-col md:flex-row">
         {/* Sidebar navigation */}
-        <nav className="glass-subtle border-b md:border-b-0 md:border-r border-opta-border md:w-56 flex-shrink-0 p-3 md:p-4">
-          <ul className="flex md:flex-col gap-1">
-            {navItems.map((item) => {
-              const isActive =
-                item.href === '/settings'
-                  ? pathname === '/settings'
-                  : pathname.startsWith(item.href);
-              const Icon = item.icon;
+        <nav className="border-b md:border-b-0 md:border-r border-opta-border md:w-56 flex-shrink-0">
+          <OptaSurface
+            hierarchy="base"
+            padding="none"
+            className="rounded-none border-0 h-full p-3 md:p-4"
+          >
+            <ul className="flex md:flex-col gap-1">
+              {navItems.map((item) => {
+                const isActive =
+                  item.href === '/settings'
+                    ? pathname === '/settings'
+                    : pathname.startsWith(item.href);
+                const Icon = item.icon;
 
-              return (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    className={cn(
-                      'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-                      isActive
-                        ? 'bg-primary/15 text-primary border border-primary/30'
-                        : 'text-text-secondary hover:text-text-primary hover:bg-opta-surface',
-                    )}
-                  >
-                    <Icon className="w-4 h-4 flex-shrink-0" />
-                    <span>{item.label}</span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      className={cn(
+                        'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                        isActive
+                          ? 'bg-primary/15 text-primary border border-primary/30'
+                          : 'text-text-secondary hover:text-text-primary hover:bg-opta-surface',
+                      )}
+                    >
+                      <Icon className="w-4 h-4 flex-shrink-0" />
+                      <span>{item.label}</span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </OptaSurface>
         </nav>
 
         {/* Page content */}

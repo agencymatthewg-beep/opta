@@ -30,6 +30,8 @@ const FUSE_OPTIONS: IFuseOptions<SessionSummary> = {
   includeScore: true,
 };
 
+const EMPTY_SESSIONS: SessionSummary[] = [];
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -92,12 +94,24 @@ export function useSessions(client: LMXClient | null): UseSessionsReturn {
     },
   );
 
-  const sessions = data?.sessions ?? [];
+  const sessions = data?.sessions ?? EMPTY_SESSIONS;
   const total = data?.total ?? 0;
+
+  const trimmedSearchQuery = useMemo(
+    () => searchQuery.trim(),
+    [searchQuery],
+  );
+  const normalizedModelFilter = useMemo(
+    () => modelFilter.toLowerCase(),
+    [modelFilter],
+  );
+  const hasSearchQuery = trimmedSearchQuery !== '';
+  const hasModelFilter = modelFilter !== '';
+  const hasTagFilter = tagFilter !== '';
 
   // Build Fuse.js index when sessions change
   const fuse = useMemo(
-    () => new Fuse(sessions, FUSE_OPTIONS),
+    () => (sessions.length > 0 ? new Fuse(sessions, FUSE_OPTIONS) : null),
     [sessions],
   );
 
@@ -122,31 +136,39 @@ export function useSessions(client: LMXClient | null): UseSessionsReturn {
 
   // Apply search + filters
   const filteredSessions = useMemo(() => {
-    let result = sessions;
-
-    // Fuzzy search via Fuse.js
-    if (searchQuery.trim()) {
-      result = fuse.search(searchQuery).map((r) => r.item);
+    if (!hasSearchQuery && !hasModelFilter && !hasTagFilter) {
+      return sessions;
     }
 
+    let result = hasSearchQuery && fuse
+      ? fuse.search(searchQuery).map((r) => r.item)
+      : sessions;
+
     // Model filter (case-insensitive substring)
-    if (modelFilter) {
-      const lower = modelFilter.toLowerCase();
+    if (hasModelFilter) {
       result = result.filter((s) =>
-        s.model.toLowerCase().includes(lower),
+        s.model.toLowerCase().includes(normalizedModelFilter),
       );
     }
 
     // Tag filter (exact match)
-    if (tagFilter) {
+    if (hasTagFilter) {
       result = result.filter((s) => s.tags.includes(tagFilter));
     }
 
     return result;
-  }, [sessions, searchQuery, fuse, modelFilter, tagFilter]);
+  }, [
+    sessions,
+    hasSearchQuery,
+    hasModelFilter,
+    hasTagFilter,
+    fuse,
+    searchQuery,
+    normalizedModelFilter,
+    tagFilter,
+  ]);
 
-  const hasActiveFilters =
-    searchQuery.trim() !== '' || modelFilter !== '' || tagFilter !== '';
+  const hasActiveFilters = hasSearchQuery || hasModelFilter || hasTagFilter;
 
   const clearFilters = useCallback(() => {
     setSearchQuery('');
