@@ -40,6 +40,47 @@ function getGaugeColor(percentage: number): string {
 // ---------------------------------------------------------------------------
 
 export function VRAMGauge({ usedGB, totalGB, size = 200 }: VRAMGaugeProps) {
+  // Idle state when no model loaded
+  if (totalGB === 0) {
+    return (
+      <Card variant="glass">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Cpu className="h-4 w-4 text-neon-cyan" />
+            VRAM Usage
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex items-center justify-center pb-6">
+          <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
+            <motion.svg width={size} height={size} className="-rotate-90">
+              <circle
+                cx={size / 2} cy={size / 2} r={(size - 20) / 2}
+                fill="none"
+                stroke="var(--color-chart-track)"
+                strokeWidth={10}
+              />
+              <motion.circle
+                cx={size / 2} cy={size / 2} r={(size - 20) / 2}
+                fill="none"
+                stroke="var(--color-primary)"
+                strokeWidth={10}
+                strokeOpacity={0.35}
+                strokeDasharray={2 * Math.PI * ((size - 20) / 2)}
+                strokeDashoffset={0}
+                animate={{ opacity: [0.3, 0.65, 0.3] }}
+                transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+              />
+            </motion.svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
+              <span className="text-xl font-bold text-text-secondary">Ready</span>
+              <span className="text-sm text-text-muted">512 GB</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   const percentage = totalGB > 0 ? Math.min(usedGB / totalGB, 1) : 0;
   const strokeWidth = 10;
   const radius = (size - strokeWidth * 2) / 2;
@@ -61,11 +102,23 @@ export function VRAMGauge({ usedGB, totalGB, size = 200 }: VRAMGaugeProps) {
           style={{ width: size, height: size }}
         >
           {/* SVG rotated -90deg so fill starts from 12 o'clock */}
-          <svg
+          <motion.svg
             width={size}
             height={size}
             className="-rotate-90"
             aria-label={`VRAM usage: ${usedGB.toFixed(1)} of ${totalGB.toFixed(0)} GB`}
+            animate={{
+              filter: percentage >= 0.8
+                ? ['drop-shadow(0 0 2px var(--color-neon-red))', 'drop-shadow(0 0 12px var(--color-neon-red))', 'drop-shadow(0 0 2px var(--color-neon-red))']
+                : 'none'
+            }}
+            transition={percentage >= 0.8 ? {
+              duration: 2,
+              repeat: Infinity,
+              ease: "easeInOut"
+            } : {
+              duration: 0.3,
+            }}
           >
             {/* Background track */}
             <circle
@@ -90,7 +143,7 @@ export function VRAMGauge({ usedGB, totalGB, size = 200 }: VRAMGaugeProps) {
               animate={{ strokeDashoffset: offset }}
               transition={{ type: 'spring', stiffness: 60, damping: 15 }}
             />
-          </svg>
+          </motion.svg>
 
           {/* Center text overlay */}
           <div className="absolute inset-0 flex flex-col items-center justify-center">

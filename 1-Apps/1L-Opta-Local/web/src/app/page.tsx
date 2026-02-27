@@ -17,16 +17,18 @@
 
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { RefreshCw, Plus, AlertCircle, WifiOff, AlertTriangle } from 'lucide-react';
+import { RefreshCw, Plus, AlertCircle, WifiOff, AlertTriangle, Cloud } from 'lucide-react';
 import { Button } from '@opta/ui';
 
 import { useSSE } from '@/hooks/useSSE';
 import { useBufferedState } from '@/hooks/useBufferedState';
 import { useHeartbeat } from '@/hooks/useHeartbeat';
 import { useConnectionContextSafe } from '@/components/shared/ConnectionProvider';
+import { useAuthSafe } from '@/components/shared/AuthProvider';
 import type { ServerStatus } from '@/types/lmx';
 import { CircularBuffer } from '@/lib/circular-buffer';
 import type { ThroughputPoint } from '@/lib/circular-buffer';
+import { publishLiveStatus, clearLiveStatus } from '@/lib/status-store';
 
 import { VRAMGauge } from '@/components/dashboard/VRAMGauge';
 import { ModelList } from '@/components/dashboard/ModelList';
@@ -57,7 +59,19 @@ const CHART_FLUSH_INTERVAL_MS = 1000;
 // Dashboard page
 // ---------------------------------------------------------------------------
 
+
+// Card entrance animation variants
+const cardVariants = {
+  hidden: { opacity: 0, y: 16 },
+  visible: (i: number) => ({
+    opacity: 1, y: 0,
+    transition: { delay: i * 0.07, duration: 0.4, ease: [0.22, 1, 0.36, 1] as const }
+  }),
+};
 export default function DashboardPage() {
+  // ---- Auth context (optional — only present in cloud mode) ----
+  const auth = useAuthSafe();
+
   // ---- Connection from global provider (null while settings load) ----
   const connection = useConnectionContextSafe();
   const baseUrl = connection?.baseUrl ?? '';
@@ -90,11 +104,15 @@ export default function DashboardPage() {
     new CircularBuffer<ThroughputPoint>(THROUGHPUT_BUFFER_CAPACITY),
   );
   const [chartData, setChartData] = useState<ThroughputPoint[]>([]);
+  const chartDirtyRef = useRef(false);
 
-  // Flush throughput buffer to React state on 1-second interval
+  // Flush throughput buffer to React state on 1-second interval — only when new data arrived
   useEffect(() => {
     const id = setInterval(() => {
-      setChartData(throughputBufferRef.current.toArray());
+      if (chartDirtyRef.current) {
+        chartDirtyRef.current = false;
+        setChartData(throughputBufferRef.current.toArray());
+      }
     }, CHART_FLUSH_INTERVAL_MS);
     return () => clearInterval(id);
   }, []);
@@ -113,9 +131,11 @@ export default function DashboardPage() {
         case 'status':
         case 'model_change':
           pushStatus(() => event.data as ServerStatus);
+          publishLiveStatus(event.data as ServerStatus);
           break;
         case 'throughput':
           throughputBufferRef.current.push(event.data as ThroughputPoint);
+          chartDirtyRef.current = true;
           break;
       }
     },
@@ -137,6 +157,11 @@ export default function DashboardPage() {
     enabled: isConnected,
   });
 
+  // ---- Clear live status store on unmount ----
+  useEffect(() => {
+    return () => clearLiveStatus();
+  }, []);
+
   // ---- Synthesize throughput from status TPS ----
   // If the server sends status events with tokens_per_second but no
   // dedicated throughput events, create synthetic throughput points.
@@ -150,6 +175,7 @@ export default function DashboardPage() {
           timestamp: Date.now(),
           tokensPerSecond: tps,
         });
+        chartDirtyRef.current = true;
       }
     }
   }, [status]);
@@ -206,10 +232,35 @@ export default function DashboardPage() {
   // ---- Dashboard render ----
   return (
     <main className="min-h-screen p-6">
-      {/* Page header — flat flex row so opta-section-line can grow */}
-      <header className="mb-6 flex items-center gap-3">
-        <h1 className="opta-section-title shrink-0">Dashboard</h1>
-        <div className="opta-section-line flex-1" />
+      {/* Reactive cyan ambient glow during active inference */}
+      <motion.div
+        className="fixed bottom-[8%] right-[4%] w-[35vw] h-[35vw] -z-10 pointer-events-none rounded-full blur-[140px] mix-blend-screen"
+        style={{ background: "var(--color-neon-cyan)" }}
+        animate={{ opacity: averageTps != null && averageTps > 0 ? Math.min((averageTps ?? 0) / 40, 0.5) : 0 }}
+        transition={{ duration: 1.5, ease: "easeOut" }}
+      />
+      {/* Page title row */}
+      <div className="mb-5">
+        <div className="opta-section-header mb-1">
+          <h1 className="opta-section-title">Dashboard</h1>
+          <div className="opta-section-line" />
+        </div>
+        {/* User context strip — shown when signed in */}
+        {auth?.user && (
+          <p className="text-xs text-text-muted flex items-center gap-1.5 mt-1">
+            <Cloud className="h-3 w-3" />
+            <span>
+              Signed in as{' '}
+              <span className="text-text-secondary">
+                {auth.user.user_metadata?.full_name ?? auth.user.email ?? 'unknown'}
+              </span>
+            </span>
+          </p>
+        )}
+      </div>
+
+      {/* Page header actions */}
+      <header className="mb-6 flex items-center justify-end gap-3">
         {/* Heartbeat health indicator */}
         {isConnected && (
           <HeartbeatIndicator
@@ -332,38 +383,41 @@ export default function DashboardPage() {
       {/* Dashboard grid: 3 -> 2 -> 1 columns */}
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
         {/* VRAM Gauge */}
-        <VRAMGauge
-          usedGB={status?.vram_used_gb ?? 0}
-          totalGB={status?.vram_total_gb ?? 0}
-        />
+        <motion.div variants={cardVariants} initial="hidden" animate="visible" custom={0}>
+          <VRAMGauge
+            usedGB={status?.vram_used_gb ?? 0}
+            totalGB={status?.vram_total_gb ?? 0}
+          />
+        </motion.div>
 
         {/* Loaded Models */}
-        <div className="md:col-span-1 xl:col-span-2">
+        <motion.div className="md:col-span-1 xl:col-span-2" variants={cardVariants} initial="hidden" animate="visible" custom={1}>
           <ModelList
             models={status?.loaded_models ?? []}
             onUnload={handleUnload}
             isUnloading={unloadingId}
             onLoad={() => setIsLoadOpen(true)}
           />
-        </div>
+        </motion.div>
 
         {/* Throughput Chart -- full width */}
-        <div className="col-span-full">
+        <motion.div className="col-span-full" variants={cardVariants} initial="hidden" animate="visible" custom={2}>
           <ThroughputChart data={chartData} averageTps={averageTps} />
-        </div>
+        </motion.div>
 
         {/* Server Stats */}
-        <div className="glass-subtle col-span-full rounded-xl p-6">
+        <motion.div className="glass-subtle col-span-full rounded-xl p-6" variants={cardVariants} initial="hidden" animate="visible" custom={3}>
           <div className="opta-section-header mb-5">
             <h2 className="shrink-0 text-xs font-semibold uppercase tracking-[0.2em] text-text-muted">
               Server Info
             </h2>
             <div className="opta-section-line opacity-30" />
           </div>
-          <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-5">
             <StatItem
               label="Active Requests"
               value={status?.active_requests ?? 0}
+              accent={(status?.active_requests ?? 0) > 0 ? 'var(--color-neon-cyan)' : undefined}
             />
             <StatItem
               label="Tokens/sec"
@@ -372,13 +426,19 @@ export default function DashboardPage() {
             <StatItem
               label="Temperature"
               value={status?.temperature_celsius != null ? `${status.temperature_celsius.toFixed(0)}\u00B0C` : '\u2014'}
+              accent={getTempAccent(status?.temperature_celsius ?? null)}
             />
             <StatItem
               label="Uptime"
               value={formatUptime(status?.uptime_seconds ?? 0)}
             />
+            <StatItem
+              label="Ping"
+              value={lastPingMs !== null ? `${lastPingMs}ms` : '\u2014'}
+              accent={getPingAccent(lastPingMs)}
+            />
           </div>
-        </div>
+        </motion.div>
       </div>
     </main>
   );
@@ -391,16 +451,22 @@ export default function DashboardPage() {
 function StatItem({
   label,
   value,
+  accent,
 }: {
   label: string;
   value: string | number;
+  /** Optional CSS color string — overrides default text-primary */
+  accent?: string;
 }) {
   return (
     <div className="space-y-2">
       <p className="text-[11px] font-medium uppercase tracking-[0.15em] text-text-muted">
         {label}
       </p>
-      <p className="text-2xl font-bold leading-none tabular-nums text-text-primary">
+      <p
+        className="text-2xl font-bold leading-none tabular-nums"
+        style={{ color: accent ?? 'var(--color-text-primary)' }}
+      >
         {value}
       </p>
     </div>
@@ -410,6 +476,22 @@ function StatItem({
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/** Returns a CSS color accent for temperature (amber >70°C, red >85°C). */
+function getTempAccent(celsius: number | null): string | undefined {
+  if (celsius == null) return undefined;
+  if (celsius >= 85) return 'var(--color-neon-red)';
+  if (celsius >= 70) return 'var(--color-neon-amber)';
+  return undefined;
+}
+
+/** Returns a CSS color accent for ping latency (green <10ms, amber >50ms). */
+function getPingAccent(ms: number | null): string | undefined {
+  if (ms == null) return undefined;
+  if (ms < 10) return 'var(--color-neon-green)';
+  if (ms > 50) return 'var(--color-neon-amber)';
+  return undefined;
+}
 
 function formatUptime(seconds: number): string {
   if (seconds <= 0) return '\u2014';

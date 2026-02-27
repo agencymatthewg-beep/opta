@@ -31,16 +31,21 @@ export function useBufferedState<T>(
 ): readonly [T, (updater: (prev: T) => T) => void] {
   const [state, setState] = useState<T>(initialState);
   const bufferRef = useRef<T>(initialState);
+  const dirtyRef = useRef(false);
 
   // Update buffer without triggering a re-render
   const push = useCallback((updater: (prev: T) => T) => {
     bufferRef.current = updater(bufferRef.current);
+    dirtyRef.current = true;
   }, []);
 
-  // Flush buffer to state on a fixed interval
+  // Flush buffer to state on a fixed interval — only when new data arrived
   useEffect(() => {
     const id = setInterval(() => {
-      setState(bufferRef.current);
+      if (dirtyRef.current) {
+        dirtyRef.current = false;
+        setState(bufferRef.current);
+      }
     }, intervalMs);
     return () => clearInterval(id);
   }, [intervalMs]);
