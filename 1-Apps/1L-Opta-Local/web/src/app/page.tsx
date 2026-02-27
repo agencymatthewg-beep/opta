@@ -24,7 +24,7 @@ import { useSSE } from '@/hooks/useSSE';
 import { useBufferedState } from '@/hooks/useBufferedState';
 import { useHeartbeat } from '@/hooks/useHeartbeat';
 import { useConnectionContextSafe } from '@/components/shared/ConnectionProvider';
-import { useAuthSafe } from '@/components/shared/AuthProvider';
+import { useAuth } from '@/components/shared/AuthProvider';
 import type { ServerStatus } from '@/types/lmx';
 import { CircularBuffer } from '@/lib/circular-buffer';
 import type { ThroughputPoint } from '@/lib/circular-buffer';
@@ -69,8 +69,8 @@ const cardVariants = {
   }),
 };
 export default function DashboardPage() {
-  // ---- Auth context (optional — only present in cloud mode) ----
-  const auth = useAuthSafe();
+  // ---- Auth context ----
+  const auth = useAuth();
 
   // ---- Connection from global provider (null while settings load) ----
   const connection = useConnectionContextSafe();

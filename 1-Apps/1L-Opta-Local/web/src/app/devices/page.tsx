@@ -9,20 +9,22 @@
  */
 
 import { useState, useCallback } from 'react';
+import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
+  AlertTriangle,
+  CheckCircle2,
+  Info,
   Plus,
   RefreshCw,
   Cloud,
-  CloudOff,
-  Terminal,
   History,
 } from 'lucide-react';
 import { Button } from '@opta/ui';
 import { cn } from '@opta/ui';
 
 import { useDevices } from '@/hooks/useDevices';
-import { useAuthSafe } from '@/components/shared/AuthProvider';
+import { useAuth } from '@/components/shared/AuthProvider';
 import { useCloudSync } from '@/hooks/useCloudSync';
 import { DeviceCard } from '@/components/devices/DeviceCard';
 
@@ -31,11 +33,15 @@ import { DeviceCard } from '@/components/devices/DeviceCard';
 // ---------------------------------------------------------------------------
 
 export default function DevicesPage() {
-  const auth = useAuthSafe();
+  const auth = useAuth();
   const { devices, isLoading, error, refetch } = useDevices();
   const { hasSynced, isSyncing, lastImportCount, hasMigrated, migrateLocalToCloud } =
     useCloudSync();
   const [showPairGuide, setShowPairGuide] = useState(false);
+  const [migrationFeedback, setMigrationFeedback] = useState<{
+    tone: 'success' | 'error';
+    message: string;
+  } | null>(null);
 
   const handleToggleHelper = useCallback(
     async (deviceId: string, enabled: boolean) => {
@@ -49,9 +55,30 @@ export default function DevicesPage() {
   );
 
   const handleMigrate = useCallback(async () => {
+    if (!auth?.user) return;
+    setMigrationFeedback(null);
+
     const hostDevice = devices.find((d) => d.role === 'llm_host');
-    await migrateLocalToCloud(hostDevice?.id ?? null);
-  }, [devices, migrateLocalToCloud]);
+    const uploadedCount = await migrateLocalToCloud(hostDevice?.id ?? null);
+    const migrationKey = `opta-local:cloud-migration-done:${auth.user.id}`;
+    const migrationCompleted = localStorage.getItem(migrationKey) === 'true';
+
+    if (migrationCompleted) {
+      setMigrationFeedback({
+        tone: 'success',
+        message:
+          uploadedCount > 0
+            ? `Uploaded ${uploadedCount} local session${uploadedCount !== 1 ? 's' : ''} to cloud.`
+            : 'Migration complete. No unsynced local sessions were found.',
+      });
+      return;
+    }
+
+    setMigrationFeedback({
+      tone: 'error',
+      message: 'Could not upload local sessions. Try again in a moment.',
+    });
+  }, [auth?.user, devices, migrateLocalToCloud]);
 
   // Not signed in
   if (!auth?.user) {
@@ -71,8 +98,8 @@ export default function DevicesPage() {
             Connect your Opta account to see all your devices, sync sessions
             across machines, and manage your inference network.
           </p>
-          <a
-            href="/sign-in"
+          <Link
+            href="/sign-in?next=%2Fdevices"
             className={cn(
               'inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium',
               'bg-primary/20 text-primary border border-primary/40',
@@ -81,7 +108,7 @@ export default function DevicesPage() {
           >
             <Cloud className="h-4 w-4" />
             Sign In with Opta
-          </a>
+          </Link>
         </div>
       </main>
     );
@@ -89,6 +116,7 @@ export default function DevicesPage() {
 
   const hosts = devices.filter((d) => d.role === 'llm_host');
   const workstations = devices.filter((d) => d.role === 'workstation');
+  const onlineCount = devices.filter((d) => d.is_online).length;
 
   return (
     <main className="min-h-screen p-6">
@@ -100,9 +128,9 @@ export default function DevicesPage() {
             <div className="opta-section-line" />
           </div>
           <p className="text-xs text-text-muted tracking-wider">
-            {devices.length} device{devices.length !== 1 ? 's' : ''} registered
-            {' \u00b7 '}
-            {devices.filter((d) => d.is_online).length} online
+            {isLoading && devices.length === 0
+              ? 'Loading device registry...'
+              : `${devices.length} device${devices.length !== 1 ? 's' : ''} registered \u00b7 ${onlineCount} online`}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -157,13 +185,53 @@ export default function DevicesPage() {
       </AnimatePresence>
 
       {/* Sync status */}
-      {hasSynced && lastImportCount > 0 && (
-        <p className="text-xs text-neon-green mb-4 flex items-center gap-1.5">
-          <History className="h-3 w-3" />
-          Imported {lastImportCount} session{lastImportCount !== 1 ? 's' : ''}{' '}
-          from cloud
-        </p>
-      )}
+      <div className="mb-4 space-y-2">
+        {isSyncing && (
+          <p className="text-xs text-text-muted flex items-center gap-1.5">
+            <RefreshCw className="h-3 w-3 animate-spin" />
+            Syncing cloud state...
+          </p>
+        )}
+        {hasSynced && lastImportCount > 0 && (
+          <p className="text-xs text-neon-green flex items-center gap-1.5">
+            <History className="h-3 w-3" />
+            Imported {lastImportCount} session{lastImportCount !== 1 ? 's' : ''}{' '}
+            from cloud
+          </p>
+        )}
+        {hasSynced && !isSyncing && lastImportCount === 0 && (
+          <p className="text-xs text-text-muted flex items-center gap-1.5">
+            <Info className="h-3 w-3" />
+            Cloud sync is up to date. No new remote sessions found.
+          </p>
+        )}
+        {migrationFeedback && (
+          <div
+            className={cn(
+              'glass-subtle rounded-lg p-3 border',
+              migrationFeedback.tone === 'success'
+                ? 'border-neon-green/20'
+                : 'border-neon-red/20',
+            )}
+          >
+            <p
+              className={cn(
+                'text-xs flex items-center gap-1.5',
+                migrationFeedback.tone === 'success'
+                  ? 'text-neon-green'
+                  : 'text-neon-red',
+              )}
+            >
+              {migrationFeedback.tone === 'success' ? (
+                <CheckCircle2 className="h-3.5 w-3.5" />
+              ) : (
+                <AlertTriangle className="h-3.5 w-3.5" />
+              )}
+              {migrationFeedback.message}
+            </p>
+          </div>
+        )}
+      </div>
 
       {/* Pairing guide */}
       <AnimatePresence>
@@ -177,21 +245,29 @@ export default function DevicesPage() {
             <h2 className="text-sm font-semibold text-text-primary mb-3">
               Register a device
             </h2>
+            <p className="text-xs text-text-muted mb-4">
+              Run the command that matches this machine, then finish pairing in
+              the browser tab that opens.
+            </p>
             <div className="space-y-3">
               <PairStep
                 step={1}
                 title="On your LMX Host (Mac Studio)"
                 command="opta lmx register"
+                detail="Use this on the machine that runs your host model service."
               />
               <PairStep
                 step={2}
                 title="On a Workstation (MacBook, PC)"
                 command="opta register"
+                detail="Use this on any client machine that connects to your host."
               />
-              <p className="text-xs text-text-muted">
-                Both commands open a browser to sign in and claim the device to
-                your account.
-              </p>
+              <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
+                <p className="text-xs text-text-secondary">
+                  Pairing failed? Re-run the same command. Existing devices are
+                  updated safely without creating duplicates.
+                </p>
+              </div>
             </div>
           </motion.div>
         )}
@@ -200,25 +276,46 @@ export default function DevicesPage() {
       {/* Error state */}
       {error && (
         <div className="mb-4 glass-subtle rounded-xl p-4 border border-neon-red/20">
-          <p className="text-sm text-neon-red">{error}</p>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-sm text-neon-red flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4" />
+                Could not load devices
+              </p>
+              <p className="text-xs text-text-muted mt-1">{error}</p>
+            </div>
+            <Button variant="ghost" size="sm" onClick={refetch} disabled={isLoading}>
+              Retry
+            </Button>
+          </div>
         </div>
       )}
 
       {/* Loading state */}
       {isLoading && devices.length === 0 && (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {[1, 2].map((i) => (
-            <div
-              key={i}
-              className="glass-subtle rounded-xl p-5 h-40 animate-pulse"
-            />
-          ))}
-        </div>
+        <>
+          <div className="glass-subtle rounded-xl p-4 border border-opta-border mb-4">
+            <p className="text-sm text-text-secondary">
+              Loading registered devices and presence data...
+            </p>
+            <p className="text-xs text-text-muted mt-1">
+              This can take a few seconds after signing in or waking a machine.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {[1, 2].map((i) => (
+              <div
+                key={i}
+                className="glass-subtle rounded-xl p-5 h-40 animate-pulse"
+              />
+            ))}
+          </div>
+        </>
       )}
 
       {/* Empty state */}
       {!isLoading && devices.length === 0 && (
-        <div className="text-center mt-16">
+        <div className="text-center mt-12">
           <div className="flex justify-center mb-6">
             <div className="opta-ring-wrap">
               <div className="opta-ring opta-ring-64" style={{ animationPlayState: 'paused', opacity: 0.5 }} />
@@ -227,16 +324,32 @@ export default function DevicesPage() {
           <h2 className="text-base font-semibold text-text-secondary uppercase tracking-[0.15em] mb-2">
             No Devices Registered
           </h2>
-          <p className="text-sm text-text-muted mb-5">
-            Register your first device to start syncing.
+          <p className="text-sm text-text-muted mb-5 max-w-xl mx-auto">
+            Pair your first host or workstation to enable cloud sync and
+            multi-device routing.
           </p>
+          <div className="mx-auto mb-6 max-w-md text-left glass-subtle rounded-xl p-4 border border-opta-border space-y-3">
+            <p className="text-xs uppercase tracking-[0.12em] text-text-muted">
+              Quick Start
+            </p>
+            <PairStep
+              step={1}
+              title="Run on host machine"
+              command="opta lmx register"
+            />
+            <PairStep
+              step={2}
+              title="Run on workstation"
+              command="opta register"
+            />
+          </div>
           <Button
             variant="glass"
             size="sm"
             onClick={() => setShowPairGuide(true)}
           >
             <Plus className="mr-1.5 h-4 w-4" />
-            Register Device
+            View Full Pairing Guide
           </Button>
         </div>
       )}
@@ -292,10 +405,12 @@ function PairStep({
   step,
   title,
   command,
+  detail,
 }: {
   step: number;
   title: string;
   command: string;
+  detail?: string;
 }) {
   return (
     <div className="flex items-start gap-3">
@@ -307,6 +422,7 @@ function PairStep({
         <code className="text-xs text-primary font-mono bg-opta-surface/50 px-2 py-0.5 rounded mt-0.5 inline-block">
           {command}
         </code>
+        {detail && <p className="text-xs text-text-muted mt-1">{detail}</p>}
       </div>
     </div>
   );

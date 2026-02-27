@@ -4,12 +4,11 @@
  * AuthProvider — Global authentication context.
  *
  * Wraps the app in a Supabase auth listener that tracks sign-in/sign-out
- * state. Exposes the current user, session, loading flag, and whether the
- * app is running in cloud mode (HTTPS) vs LAN mode (HTTP).
+ * state. Always provides context to descendants (even when Supabase is
+ * not configured — supabase will be null in that case).
  *
- * Three hooks are provided:
- * - useAuth()     — throws if used outside provider (strict)
- * - useAuthSafe() — returns null outside provider (lenient)
+ * Auth is mandatory in the auth-first architecture. The SignInOverlay
+ * gates access when user is not signed in.
  */
 
 import {
@@ -30,8 +29,7 @@ interface AuthContextValue {
   user: User | null;
   session: Session | null;
   isLoading: boolean;
-  isCloudMode: boolean;
-  supabase: SupabaseBrowserClient;
+  supabase: SupabaseBrowserClient | null;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -45,14 +43,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isCloudMode, setIsCloudMode] = useState(false);
 
   useEffect(() => {
-    setIsCloudMode(window.location.protocol === 'https:');
-  }, []);
-
-  useEffect(() => {
-    // No Supabase client — env vars not configured (build time or LAN-only)
+    // No Supabase client — env vars not configured
     if (!supabase) {
       setIsLoading(false);
       return;
@@ -76,15 +69,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, [supabase]);
 
-  // No Supabase configured — render children without auth context
-  if (!supabase) {
-    return <>{children}</>;
-  }
-
+  // Always provide context — even when Supabase is not configured
   return (
-    <AuthContext.Provider
-      value={{ user, session, isLoading, isCloudMode, supabase }}
-    >
+    <AuthContext.Provider value={{ user, session, isLoading, supabase }}>
       {children}
     </AuthContext.Provider>
   );
@@ -99,9 +86,4 @@ export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth must be used within AuthProvider');
   return ctx;
-}
-
-/** Safe version that returns null outside provider (for components that may render in both contexts). */
-export function useAuthSafe(): AuthContextValue | null {
-  return useContext(AuthContext);
 }

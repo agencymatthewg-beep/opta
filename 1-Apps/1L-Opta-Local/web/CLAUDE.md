@@ -31,7 +31,7 @@ Single test file: `npx vitest run tests/unit/connection.test.ts`
 - **Animation:** Framer Motion only (no CSS transitions for interactive elements)
 - **Icons:** Lucide React only
 - **HTTP:** Native `fetch` with streaming; `@microsoft/fetch-event-source` for SSE with custom headers
-- **Auth:** Supabase SSR (`@supabase/ssr`) — dual-mode LAN/cloud
+- **Auth:** Supabase SSR (`@supabase/ssr`) — mandatory sign-in, SignInOverlay pattern
 
 ## Mandatory Rules
 
@@ -50,7 +50,7 @@ Single test file: `npx vitest run tests/unit/connection.test.ts`
 - Server Components by default; `'use client'` only when needed (state, effects, browser APIs)
 - No `any` types — use `unknown` + type narrowing
 - API calls wrapped in custom hooks (`useChatStream`, `useConnection`, `useModels`, etc.)
-- Auth: use `useAuthSafe()` for components that may render in LAN mode; `useAuth()` only when cloud-only
+- Auth: always use `useAuth()` — Supabase sign-in is mandatory, SignInOverlay handles unauthenticated state
 
 ### Streaming & SSE
 
@@ -145,12 +145,12 @@ const { client, connectionType, baseUrl, latencyMs } = useConnectionContext();
 // connectionType: 'probing' | 'lan' | 'wan' | 'offline'
 ```
 
-### Auth (safe — works in both LAN and cloud modes)
+### Auth (mandatory — Supabase sign-in required)
 
 ```typescript
-const auth = useAuthSafe(); // null in LAN mode
-if (auth?.user) {
-  // cloud mode, user signed in
+const { user, isLoading } = useAuth();
+if (user) {
+  // user is signed in
 }
 ```
 
@@ -184,6 +184,6 @@ const key = await getSecure('opta-local:adminKey');
 - Don't import from `@opta/ui` without checking the component exists first (it's a local workspace package)
 - Don't store admin keys in plain localStorage — `lib/storage.ts` encrypted helpers only
 - Don't poll when SSE is available
-- Don't use `useAuth()` in components that render in LAN mode — use `useAuthSafe()`
+- Don't use `useAuthSafe()` — it was removed; always use `useAuth()` (auth is mandatory)
 - Don't duplicate `POST_SIGN_IN_NEXT_KEY` or `sanitizeNextPath` — import from `lib/auth-utils.ts`
 - Don't add logic between `createServerClient` and `getUser()` in server auth code (breaks session refresh)

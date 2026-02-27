@@ -8,7 +8,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { useAuthSafe } from '@/components/shared/AuthProvider';
+import { useAuth } from '@/components/shared/AuthProvider';
 import type { Device } from '@/types/cloud';
 
 interface UseDevicesReturn {
@@ -29,7 +29,7 @@ function withOnlineStatus(device: Omit<Device, 'is_online'>): Device {
 }
 
 export function useDevices(): UseDevicesReturn {
-  const auth = useAuthSafe();
+  const auth = useAuth();
   const [devices, setDevices] = useState<Device[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -70,8 +70,9 @@ export function useDevices(): UseDevicesReturn {
   // Subscribe to Realtime changes on devices table
   useEffect(() => {
     if (!auth?.supabase || !auth.user) return;
+    const supabase = auth.supabase;
 
-    const channel = auth.supabase
+    const channel = supabase
       .channel('devices-realtime')
       .on(
         'postgres_changes',
@@ -105,7 +106,7 @@ export function useDevices(): UseDevicesReturn {
       .subscribe();
 
     return () => {
-      auth.supabase.removeChannel(channel);
+      supabase.removeChannel(channel);
     };
   }, [auth?.supabase, auth?.user]);
 

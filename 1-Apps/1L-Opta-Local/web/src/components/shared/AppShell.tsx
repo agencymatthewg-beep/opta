@@ -8,7 +8,7 @@
  * This is a client component because it uses hooks and context.
  */
 
-import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -21,9 +21,9 @@ import {
   Database,
   Workflow,
   Monitor,
-  User,
   Menu,
   X,
+  MoreHorizontal,
 } from 'lucide-react';
 import { cn } from '@opta/ui';
 
@@ -32,7 +32,10 @@ import {
   useConnectionContextSafe,
 } from '@/components/shared/ConnectionProvider';
 import { ConnectionBadge } from '@/components/shared/ConnectionBadge';
-import { AuthProvider, useAuthSafe } from '@/components/shared/AuthProvider';
+import { AuthProvider, useAuth } from '@/components/shared/AuthProvider';
+import { SignInOverlay } from '@/components/shared/SignInOverlay';
+import { CommandPalette } from '@/components/shared/CommandPalette';
+import { StatusStrip } from '@/components/shared/StatusStrip';
 import { POST_SIGN_IN_NEXT_KEY, sanitizeNextPath } from '@/lib/auth-utils';
 
 // ---------------------------------------------------------------------------
@@ -50,6 +53,10 @@ const navItems = [
   { label: 'Sessions', href: '/sessions', icon: History },
   { label: 'Settings', href: '/settings', icon: Settings },
 ] as const;
+
+const PRIMARY_HREFS = ['/', '/chat', '/models'];
+const primaryNav = navItems.filter((i) => PRIMARY_HREFS.includes(i.href));
+const secondaryNav = navItems.filter((i) => !PRIMARY_HREFS.includes(i.href));
 
 function isActiveRoute(pathname: string, href: string) {
   return href === '/' ? pathname === '/' : pathname.startsWith(href);
@@ -78,68 +85,59 @@ function HeaderConnectionBadge() {
 // Header user badge (reads auth context safely)
 // ---------------------------------------------------------------------------
 
-function HeaderUserBadge({ signInHref }: { signInHref: string }) {
-  const auth = useAuthSafe();
+function HeaderUserBadge() {
+  const { user, isLoading } = useAuth();
 
-  // No auth context yet (still loading) — render nothing
-  if (!auth) return null;
+  if (isLoading || !user) return null;
 
-  const { user, isLoading, isCloudMode } = auth;
+  const initial = (
+    user.user_metadata?.full_name ??
+    user.email ??
+    '?'
+  ).charAt(0).toUpperCase();
 
-  // Loading state — don't flash UI
-  if (isLoading) return null;
+  return (
+    <Link
+      href="/settings"
+      className={cn(
+        'flex h-7 w-7 items-center justify-center rounded-full',
+        'bg-primary/20 text-primary text-xs font-semibold',
+        'border border-transparent hover:bg-primary/30 transition-colors',
+      )}
+      aria-label="User settings"
+    >
+      {initial}
+    </Link>
+  );
+}
 
-  // Signed in — show avatar with first initial
-  if (user) {
-    const initial = (
-      user.user_metadata?.full_name ??
-      user.email ??
-      '?'
-    ).charAt(0).toUpperCase();
+// ---------------------------------------------------------------------------
+// Auth blur wrapper (applies blur when overlay is visible)
+// ---------------------------------------------------------------------------
 
-    return (
-      <Link
-        href="/settings"
-        className={cn(
-          'flex h-7 w-7 items-center justify-center rounded-full',
-          'bg-primary/20 text-primary text-xs font-semibold',
-          'border border-transparent hover:bg-primary/30 transition-colors',
-        )}
-        aria-label="User settings"
-      >
-        {initial}
-      </Link>
-    );
-  }
+function AuthBlurWrapper({ children }: { children: ReactNode }) {
+  const { user, isLoading } = useAuth();
+  const shouldBlur = !isLoading && !user;
 
-  // Cloud mode but not signed in — show sign-in link
-  if (isCloudMode) {
-    return (
-      <Link
-        href={signInHref}
-        className={cn(
-          'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1',
-          'glass-subtle text-xs font-medium',
-          'border-transparent text-text-secondary hover:text-text-primary transition-colors',
-        )}
-      >
-        <User className="h-3 w-3" />
-        <span>Sign In</span>
-      </Link>
-    );
-  }
-
-  // LAN mode, not signed in — show nothing (existing behavior)
-  return null;
+  return (
+    <div
+      className={cn(
+        'transition-[filter,transform] duration-500 ease-out',
+        shouldBlur && 'blur-[24px] scale-[1.01]',
+      )}
+    >
+      {children}
+    </div>
+  );
 }
 
 function PostSignInNextRedirect() {
-  const auth = useAuthSafe();
+  const { user, isLoading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
-    if (!auth || auth.isLoading || !auth.user) return;
+    if (isLoading || !user) return;
 
     const storedNext = sanitizeNextPath(
       typeof window === 'undefined'
@@ -161,7 +159,7 @@ function PostSignInNextRedirect() {
 
     window.sessionStorage.removeItem(POST_SIGN_IN_NEXT_KEY);
     router.replace(storedNext);
-  }, [auth, pathname, router]);
+  }, [user, isLoading, pathname, router]);
 
   return null;
 }
@@ -173,6 +171,8 @@ function PostSignInNextRedirect() {
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
 
   const closeMobileMenu = useCallback(() => {
     setMobileMenuOpen(false);
@@ -182,16 +182,22 @@ export function AppShell({ children }: { children: ReactNode }) {
     setMobileMenuOpen((prev) => !prev);
   }, []);
 
-  const signInHref = useMemo(() => {
-    if (pathname === '/sign-in') return '/sign-in';
-    const safeNext = sanitizeNextPath(pathname) ?? '/';
-
-    return `/sign-in?next=${encodeURIComponent(safeNext)}`;
-  }, [pathname]);
-
   useEffect(() => {
     closeMobileMenu();
+    setMoreMenuOpen(false);
   }, [closeMobileMenu, pathname]);
+
+  // Cmd+K / Ctrl+K opens command palette
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setPaletteOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   useEffect(() => {
     if (!mobileMenuOpen) return;
@@ -215,6 +221,10 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <AuthProvider>
+      {/* Sign-in overlay (above everything, self-determines visibility) */}
+      <SignInOverlay />
+
+      <AuthBlurWrapper>
       <ConnectionProvider>
         <PostSignInNextRedirect />
 
@@ -304,10 +314,9 @@ export function AppShell({ children }: { children: ReactNode }) {
 
             {/* Center: navigation (desktop) */}
             <nav className="hidden flex-1 items-center gap-1 sm:flex" aria-label="Primary navigation">
-              {navItems.map((item) => {
+              {primaryNav.map((item) => {
                 const isActive = isActiveRoute(pathname, item.href);
                 const Icon = item.icon;
-
                 return (
                   <Link
                     key={item.href}
@@ -325,12 +334,64 @@ export function AppShell({ children }: { children: ReactNode }) {
                   </Link>
                 );
               })}
+
+              {/* More overflow button */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setMoreMenuOpen((prev) => !prev)}
+                  className={cn(
+                    'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-200',
+                    secondaryNav.some((i) => isActiveRoute(pathname, i.href))
+                      ? 'bg-primary/15 text-primary shadow-[0_0_12px_rgba(168,85,247,0.2),inset_0_-1px_0_rgba(168,85,247,0.5)]'
+                      : 'text-text-secondary hover:bg-opta-surface/50 hover:text-text-primary',
+                  )}
+                  aria-expanded={moreMenuOpen}
+                  aria-label="More navigation options"
+                >
+                  <MoreHorizontal className="h-3.5 w-3.5" />
+                  <span>More</span>
+                </button>
+
+                {moreMenuOpen && (
+                  <div className="absolute top-full mt-1 left-0 glass-strong rounded-xl p-1.5 min-w-[160px] shadow-xl z-50">
+                    {secondaryNav.map((item) => {
+                      const isActive = isActiveRoute(pathname, item.href);
+                      const Icon = item.icon;
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          className={cn(
+                            'flex items-center gap-2 px-3 py-2 text-xs rounded-lg transition-colors',
+                            isActive
+                              ? 'bg-primary/15 text-primary'
+                              : 'text-text-secondary hover:bg-primary/10 hover:text-primary',
+                          )}
+                        >
+                          <Icon className="h-3.5 w-3.5 shrink-0" />
+                          <span>{item.label}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </nav>
 
-            {/* Right: connection badge + user */}
+            {/* Right: Cmd+K hint + connection badge + user */}
             <div className="ml-auto flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setPaletteOpen(true)}
+                className="hidden sm:flex items-center gap-1 rounded-md px-2 py-1 text-[11px] text-text-muted hover:text-text-secondary hover:bg-opta-surface/50 transition-colors"
+                aria-label="Open command palette"
+              >
+                <span className="opta-kbd">⌘</span>
+                <span className="opta-kbd ml-0.5">K</span>
+              </button>
               <HeaderConnectionBadge />
-              <HeaderUserBadge signInHref={signInHref} />
+              <HeaderUserBadge />
             </div>
           </div>
         </header>
@@ -395,8 +456,15 @@ export function AppShell({ children }: { children: ReactNode }) {
         )}
 
         {/* Content area — offset by header height */}
-        <div className="pt-11">{children}</div>
+        <div className="pt-11 pb-7">{children}</div>
       </ConnectionProvider>
+
+      {/* Command palette — global Cmd+K */}
+      <CommandPalette isOpen={paletteOpen} onClose={() => setPaletteOpen(false)} />
+
+      {/* Status strip — persistent bottom bar */}
+      <StatusStrip />
+      </AuthBlurWrapper>
     </AuthProvider>
   );
 }

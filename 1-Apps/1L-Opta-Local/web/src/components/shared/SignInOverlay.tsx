@@ -1,74 +1,43 @@
 /**
- * Sign-in page — cloud mode authentication.
+ * SignInOverlay — Frosted glass sign-in overlay with animated reveal.
  *
- * Displayed when a user accesses Opta Local over HTTPS (cloud mode)
- * without an active session.
+ * Renders a frosted scrim + Opta ring + glass sign-in card on top of
+ * the blurred dashboard. Supports Google/Apple OAuth and email/password.
+ *
+ * When authentication succeeds, AnimatePresence triggers staggered exit
+ * animations: card shrinks → ring expands → scrim fades → dashboard
+ * unblurs (CSS transition on the content wrapper in AppShell).
+ *
+ * Layer stack:
+ *   z-[60]  Frosted scrim (backdrop-blur-xl + bg-black/80)
+ *   z-[65]  Opta ring (breathe animation, centered above card)
+ *   z-[70]  Sign-in glass card (max-w-[420px], centered)
  */
 
 'use client';
 
-import Link from 'next/link';
-import { Suspense, useCallback, useMemo, useState, type FormEvent } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { motion, useReducedMotion } from 'framer-motion';
+import { useCallback, useState, type FormEvent } from 'react';
+import { useRouter } from 'next/navigation';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@opta/ui';
-import { AlertCircle, Info, Loader2 } from 'lucide-react';
+import { AlertCircle, Loader2 } from 'lucide-react';
 import {
   signInWithGoogle,
   signInWithApple,
   signInWithPasswordIdentifier,
   signUpWithPasswordIdentifier,
 } from '@/lib/supabase/auth-actions';
-import { POST_SIGN_IN_NEXT_KEY, sanitizeNextPath } from '@/lib/auth-utils';
+import { useAuth } from '@/components/shared/AuthProvider';
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 
 type Provider = 'google' | 'apple';
 type AuthMode = 'signIn' | 'signUp';
 
-const defaultContainerVariants = {
-  hidden: { opacity: 0, y: 28, scale: 0.95 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    transition: {
-      type: 'spring' as const,
-      stiffness: 240,
-      damping: 26,
-      staggerChildren: 0.09,
-    },
-  },
-};
-
-const reducedMotionContainerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      duration: 0.2,
-      staggerChildren: 0.03,
-    },
-  },
-};
-
-const defaultItemVariants = {
-  hidden: { opacity: 0, y: 14 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { type: 'spring' as const, stiffness: 300, damping: 28 },
-  },
-};
-
-const reducedMotionItemVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { duration: 0.16 },
-  },
-};
-
 // ---------------------------------------------------------------------------
-// Google icon (brand colours)
+// Icons
 // ---------------------------------------------------------------------------
 
 function GoogleIcon({ className }: { className?: string }) {
@@ -99,10 +68,6 @@ function GoogleIcon({ className }: { className?: string }) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Apple icon
-// ---------------------------------------------------------------------------
-
 function AppleIcon({ className }: { className?: string }) {
   return (
     <svg
@@ -115,6 +80,10 @@ function AppleIcon({ className }: { className?: string }) {
     </svg>
   );
 }
+
+// ---------------------------------------------------------------------------
+// Provider button
+// ---------------------------------------------------------------------------
 
 function ProviderButton({
   provider,
@@ -131,13 +100,12 @@ function ProviderButton({
 }) {
   const isPending = pendingProvider === provider;
   const isDisabled = pendingProvider !== null || disabled;
-
   const Icon = provider === 'google' ? GoogleIcon : AppleIcon;
-  const providerLabel = provider === 'google' ? 'Google' : 'Apple';
+  const label = provider === 'google' ? 'Google' : 'Apple';
 
   return (
-    <motion.button
-      variants={reducedMotion ? reducedMotionItemVariants : defaultItemVariants}
+    <button
+      type="button"
       onClick={() => onClick(provider)}
       disabled={isDisabled}
       className={cn(
@@ -154,17 +122,16 @@ function ProviderButton({
       ) : (
         <Icon className="h-5 w-5" />
       )}
-      {isPending ? `Redirecting to ${providerLabel}...` : `Continue with ${providerLabel}`}
-    </motion.button>
+      {isPending ? `Redirecting to ${label}...` : `Continue with ${label}`}
+    </button>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Sign-in form
+// Sign-in card (glass panel with auth form)
 // ---------------------------------------------------------------------------
 
-function SignInForm() {
-  const searchParams = useSearchParams();
+function SignInCard() {
   const router = useRouter();
   const shouldReduceMotion = useReducedMotion();
 
@@ -176,62 +143,36 @@ function SignInForm() {
   const [pendingPasswordAuth, setPendingPasswordAuth] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
-  const nextPath = useMemo(
-    () => sanitizeNextPath(searchParams.get('next')) ?? '/',
-    [searchParams],
-  );
-
   const isAuthActionPending = pendingProvider !== null || pendingPasswordAuth;
-
-  const callbackError = searchParams.get('error');
-  const callbackErrorMessage =
-    callbackError === 'auth'
-      ? 'Authentication did not complete. Please retry your provider sign-in.'
-      : null;
-
-  const combinedError = actionError ?? callbackErrorMessage;
-
-  const setNextIntent = useCallback(() => {
-    if (nextPath === '/') {
-      window.sessionStorage.removeItem(POST_SIGN_IN_NEXT_KEY);
-    } else {
-      window.sessionStorage.setItem(POST_SIGN_IN_NEXT_KEY, nextPath);
-    }
-  }, [nextPath]);
 
   const startSignIn = useCallback(
     async (provider: Provider) => {
       if (pendingPasswordAuth) return;
-
       setActionError(null);
       setPendingProvider(provider);
-      setNextIntent();
 
       try {
         if (provider === 'google') {
           await signInWithGoogle();
           return;
         }
-
         await signInWithApple();
       } catch {
-        setActionError('Unable to start sign-in right now. Check your connection and try again.');
+        setActionError('Unable to start sign-in. Check your connection and try again.');
       } finally {
         setPendingProvider(null);
       }
     },
-    [pendingPasswordAuth, setNextIntent],
+    [pendingPasswordAuth],
   );
 
   const submitPasswordAuth = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
-
       if (pendingProvider) return;
 
       setActionError(null);
       setPendingPasswordAuth(true);
-      setNextIntent();
 
       try {
         const result =
@@ -243,81 +184,38 @@ function SignInForm() {
           setActionError(
             result.error ??
               (authMode === 'signIn'
-                ? 'Unable to sign in right now. Please try again.'
-                : 'Unable to sign up right now. Please try again.'),
+                ? 'Unable to sign in. Please try again.'
+                : 'Unable to sign up. Please try again.'),
           );
           return;
         }
 
-        router.push(nextPath);
+        // Session established — AuthProvider will detect the change,
+        // causing the overlay to exit with its reveal animation.
         router.refresh();
       } finally {
         setPendingPasswordAuth(false);
       }
     },
-    [authMode, identifier, name, nextPath, password, pendingProvider, router, setNextIntent],
+    [authMode, identifier, name, password, pendingProvider, router],
   );
 
-  const clearNextIntent = useCallback(() => {
-    window.sessionStorage.removeItem(POST_SIGN_IN_NEXT_KEY);
-  }, []);
-
   return (
-    <motion.div
-      variants={shouldReduceMotion ? reducedMotionContainerVariants : defaultContainerVariants}
-      initial="hidden"
-      animate="visible"
-      className="glass-strong w-full max-w-sm rounded-2xl px-8 pb-8 pt-10 shadow-2xl"
-    >
-      {/* Opta Ring + branding */}
-      <motion.div
-        variants={shouldReduceMotion ? reducedMotionItemVariants : defaultItemVariants}
-        className="mb-8 text-center"
-      >
-        <div className="mb-6 flex justify-center">
-          <div className="opta-ring-wrap">
-            <div
-              className="opta-ring opta-ring-80"
-              style={
-                shouldReduceMotion
-                  ? {
-                      animationPlayState: 'paused',
-                      transform: 'scale(1)',
-                    }
-                  : undefined
-              }
-            />
-          </div>
-        </div>
-
+    <div className="glass-strong w-full max-w-[420px] rounded-2xl px-8 pb-8 pt-10 shadow-2xl">
+      {/* Branding */}
+      <div className="mb-8 text-center">
         <h1 className="opta-moonlight mb-2 text-3xl font-bold tracking-[0.12em]">
           OPTA LOCAL
         </h1>
-        <span className="opta-badge">CLOUD SYNC</span>
-
-        <p className="mt-4 text-xs font-light uppercase tracking-[0.22em] text-text-secondary">
-          Sign in to sync your devices
+        <p className="text-xs font-light uppercase tracking-[0.22em] text-text-secondary">
+          Sign in to access your dashboard
         </p>
-
         <div className="opta-accent-line mx-auto mt-5 w-32" />
-      </motion.div>
+      </div>
 
-      <motion.div
-        variants={shouldReduceMotion ? reducedMotionItemVariants : defaultItemVariants}
-        className="mb-5 rounded-lg border border-opta-border bg-opta-surface/35 px-3 py-2"
-      >
-        <p className="flex items-start gap-2 text-xs text-text-secondary">
-          <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-          <span>
-            After sign-in, you will continue to{' '}
-            <span className="font-mono text-text-primary">{nextPath}</span>.
-          </span>
-        </p>
-      </motion.div>
-
-      {combinedError && (
-        <motion.div
-          variants={shouldReduceMotion ? reducedMotionItemVariants : defaultItemVariants}
+      {/* Error */}
+      {actionError && (
+        <div
           className={cn(
             'mb-5 rounded-lg border px-4 py-3',
             'border-neon-red/20 bg-neon-red/10',
@@ -326,34 +224,30 @@ function SignInForm() {
         >
           <p className="flex items-start gap-2 text-sm text-neon-red">
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-            <span>{combinedError}</span>
+            <span>{actionError}</span>
           </p>
-          <p className="mt-2 pl-6 text-xs text-text-secondary">
-            If this persists, close any open provider tabs and try again.
-          </p>
-        </motion.div>
+        </div>
       )}
 
+      {/* Pending status */}
       {pendingProvider && (
-        <motion.p
-          variants={shouldReduceMotion ? reducedMotionItemVariants : defaultItemVariants}
+        <p
           className="mb-4 text-center text-xs uppercase tracking-[0.18em] text-text-muted"
           aria-live="polite"
         >
           Waiting for provider response
-        </motion.p>
+        </p>
       )}
-
       {pendingPasswordAuth && (
-        <motion.p
-          variants={shouldReduceMotion ? reducedMotionItemVariants : defaultItemVariants}
+        <p
           className="mb-4 text-center text-xs uppercase tracking-[0.18em] text-text-muted"
           aria-live="polite"
         >
-          {authMode === 'signIn' ? 'Signing in with password' : 'Creating account'}
-        </motion.p>
+          {authMode === 'signIn' ? 'Signing in...' : 'Creating account...'}
+        </p>
       )}
 
+      {/* OAuth providers */}
       <div className="space-y-3">
         <ProviderButton
           provider="google"
@@ -371,19 +265,15 @@ function SignInForm() {
         />
       </div>
 
-      <motion.div
-        variants={shouldReduceMotion ? reducedMotionItemVariants : defaultItemVariants}
-        className="my-6 flex items-center gap-3"
-      >
+      {/* Divider */}
+      <div className="my-6 flex items-center gap-3">
         <div className="h-px flex-1 bg-opta-border" />
         <span className="text-xs tracking-widest text-text-muted">or</span>
         <div className="h-px flex-1 bg-opta-border" />
-      </motion.div>
+      </div>
 
-      <motion.div
-        variants={shouldReduceMotion ? reducedMotionItemVariants : defaultItemVariants}
-        className="mb-6 rounded-xl border border-opta-border bg-opta-surface/20 p-4"
-      >
+      {/* Password auth */}
+      <div className="rounded-xl border border-opta-border bg-opta-surface/20 p-4">
         <h2 className="text-sm font-medium text-text-primary">Password sign-in</h2>
 
         <div className="mt-3 grid grid-cols-2 gap-2">
@@ -429,18 +319,18 @@ function SignInForm() {
           {authMode === 'signUp' && (
             <div className="space-y-1.5">
               <label
-                htmlFor="password-auth-name"
+                htmlFor="overlay-name"
                 className="text-xs uppercase tracking-[0.14em] text-text-secondary"
               >
                 Name (optional)
               </label>
               <input
-                id="password-auth-name"
+                id="overlay-name"
                 name="name"
                 type="text"
                 autoComplete="name"
                 value={name}
-                onChange={(event) => setName(event.target.value)}
+                onChange={(e) => setName(e.target.value)}
                 disabled={isAuthActionPending}
                 className={cn(
                   'w-full rounded-lg border border-opta-border bg-opta-surface/25 px-3 py-2 text-sm text-text-primary',
@@ -453,18 +343,18 @@ function SignInForm() {
 
           <div className="space-y-1.5">
             <label
-              htmlFor="password-auth-identifier"
+              htmlFor="overlay-identifier"
               className="text-xs uppercase tracking-[0.14em] text-text-secondary"
             >
               Email or phone
             </label>
             <input
-              id="password-auth-identifier"
+              id="overlay-identifier"
               name="identifier"
               type="text"
               autoComplete="username"
               value={identifier}
-              onChange={(event) => setIdentifier(event.target.value)}
+              onChange={(e) => setIdentifier(e.target.value)}
               placeholder="you@example.com or +15551234567"
               disabled={isAuthActionPending}
               className={cn(
@@ -477,18 +367,18 @@ function SignInForm() {
 
           <div className="space-y-1.5">
             <label
-              htmlFor="password-auth-password"
+              htmlFor="overlay-password"
               className="text-xs uppercase tracking-[0.14em] text-text-secondary"
             >
               Password
             </label>
             <input
-              id="password-auth-password"
+              id="overlay-password"
               name="password"
               type="password"
               autoComplete={authMode === 'signIn' ? 'current-password' : 'new-password'}
               value={password}
-              onChange={(event) => setPassword(event.target.value)}
+              onChange={(e) => setPassword(e.target.value)}
               disabled={isAuthActionPending}
               className={cn(
                 'w-full rounded-lg border border-opta-border bg-opta-surface/25 px-3 py-2 text-sm text-text-primary',
@@ -511,7 +401,9 @@ function SignInForm() {
           >
             {pendingPasswordAuth ? (
               <>
-                <Loader2 className={cn('h-4 w-4', shouldReduceMotion ? '' : 'animate-spin')} />
+                <Loader2
+                  className={cn('h-4 w-4', shouldReduceMotion ? '' : 'animate-spin')}
+                />
                 {authMode === 'signIn' ? 'Signing in...' : 'Creating account...'}
               </>
             ) : authMode === 'signIn' ? (
@@ -521,40 +413,83 @@ function SignInForm() {
             )}
           </button>
         </form>
-      </motion.div>
-
-    </motion.div>
+      </div>
+    </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Page component — atmospheric background layers
+// Overlay
 // ---------------------------------------------------------------------------
 
-export default function SignInPage() {
-  return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-opta-bg px-4">
-      <div className="pointer-events-none fixed inset-0 z-0" aria-hidden>
-        <div className="absolute left-1/2 top-0 h-[500px] w-[700px] -translate-x-1/2 rounded-full bg-purple-950/25 blur-[120px]" />
-        <div className="absolute bottom-1/4 right-1/5 h-[400px] w-[400px] rounded-full bg-violet-950/15 blur-[100px]" />
-        <div className="absolute left-1/6 top-1/3 h-[280px] w-[300px] rounded-full bg-purple-950/10 blur-[80px]" />
-      </div>
+export function SignInOverlay() {
+  const { user, isLoading } = useAuth();
+  const shouldReduceMotion = useReducedMotion();
 
-      <div className="relative z-10 flex w-full items-center justify-center">
-        <Suspense
-          fallback={
-            <div className="glass-strong w-full max-w-sm animate-pulse rounded-2xl px-8 pb-8 pt-10 motion-reduce:animate-none">
-              <div className="mb-6 flex justify-center">
-                <div className="h-20 w-20 rounded-full border-[13px] border-opta-surface" />
-              </div>
-              <div className="mx-auto mb-3 h-8 w-36 rounded bg-opta-surface" />
-              <div className="mx-auto h-4 w-24 rounded bg-opta-surface" />
-            </div>
+  // Show overlay when auth is resolved and user is not signed in.
+  const isVisible = !isLoading && !user;
+
+  return (
+    <AnimatePresence>
+      {/* Frosted scrim */}
+      {isVisible && (
+        <motion.div
+          key="sign-in-scrim"
+          className="fixed inset-0 z-[60] backdrop-blur-xl bg-black/80"
+          initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={
+            shouldReduceMotion
+              ? { duration: 0.15 }
+              : { duration: 0.4, ease: 'easeOut', delay: 0.25 }
+          }
+        />
+      )}
+
+      {/* Sign-in content: ring + card */}
+      {isVisible && (
+        <motion.div
+          key="sign-in-content"
+          className="fixed inset-0 z-[70] flex flex-col items-center justify-center px-4 overflow-y-auto"
+          initial={
+            shouldReduceMotion
+              ? { opacity: 1 }
+              : { opacity: 0, y: 28, scale: 0.95 }
+          }
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={
+            shouldReduceMotion
+              ? { opacity: 0 }
+              : { opacity: 0, scale: 0.96, y: -12 }
+          }
+          transition={
+            shouldReduceMotion
+              ? { duration: 0.15 }
+              : { type: 'spring', stiffness: 260, damping: 26 }
           }
         >
-          <SignInForm />
-        </Suspense>
-      </div>
-    </main>
+          {/* Opta ring — breathe animation */}
+          <div className="mb-8 shrink-0">
+            <div className="opta-ring-wrap">
+              <div
+                className="opta-ring opta-ring-80"
+                style={
+                  shouldReduceMotion
+                    ? { animationPlayState: 'paused', transform: 'scale(1)' }
+                    : undefined
+                }
+              />
+            </div>
+          </div>
+
+          {/* Glass sign-in card */}
+          <SignInCard />
+
+          {/* Bottom spacer for scroll */}
+          <div className="h-8 shrink-0" />
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }

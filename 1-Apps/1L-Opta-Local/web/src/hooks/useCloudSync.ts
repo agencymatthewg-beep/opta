@@ -8,7 +8,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { useAuthSafe } from '@/components/shared/AuthProvider';
+import { useAuth } from '@/components/shared/AuthProvider';
 import { pullRemoteSessions, pushAllLocalSessions } from '@/lib/cloud-sync';
 
 interface UseCloudSyncReturn {
@@ -29,7 +29,7 @@ interface UseCloudSyncReturn {
 const MIGRATION_KEY = 'opta-local:cloud-migration-done';
 
 export function useCloudSync(): UseCloudSyncReturn {
-  const auth = useAuthSafe();
+  const auth = useAuth();
   const [hasSynced, setHasSynced] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastImportCount, setLastImportCount] = useState(0);
@@ -47,12 +47,13 @@ export function useCloudSync(): UseCloudSyncReturn {
   // Initial pull on sign-in
   useEffect(() => {
     if (!auth?.supabase || !auth.user || didInitialSync.current) return;
+    const supabase = auth.supabase;
     didInitialSync.current = true;
 
     const pull = async () => {
       setIsSyncing(true);
       try {
-        const count = await pullRemoteSessions(auth.supabase);
+        const count = await pullRemoteSessions(supabase);
         setLastImportCount(count);
         setHasSynced(true);
       } catch {
