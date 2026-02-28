@@ -1,13 +1,14 @@
 ---
 title: Opta CLI Roadmap
 scope: Level 3 daemon-first delivery and stabilization
-updated: 2026-02-20
-reference: docs/plans/2026-02-20-level3-daemon-program-plan.md
+updated: 2026-02-28
+reference: docs/FEATURE-PLAN.md
+status: active
 ---
 
 # Opta CLI — Roadmap
 
-## Current Status (2026-02-20)
+## Current Status (2026-02-28)
 
 - Architecture direction is locked to **Level 3** (`opta tui` aliasing `opta chat --tui` + `opta daemon`).
 - Core daemon runtime, protocol v3 types, session queueing, and reconnect stream paths are in place.
@@ -28,9 +29,9 @@ reference: docs/plans/2026-02-20-level3-daemon-program-plan.md
 - Health/metrics/log diagnostics for daemon operations.
 
 ### Exit Criteria
-- Typecheck + test suite green.
-- No hard UI stalls in tool-heavy streaming turns.
-- Reconnect/replay recovers current session state.
+- [ ] Typecheck + test suite green.
+- [ ] No hard UI stalls in tool-heavy streaming turns.
+- [ ] Reconnect/replay recovers current session state.
 
 ## Phase B: Compatibility Lock (Next)
 
