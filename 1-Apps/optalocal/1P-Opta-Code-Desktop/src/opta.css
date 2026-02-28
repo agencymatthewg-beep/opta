@@ -1,31 +1,70 @@
 @import url("https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap");
 
 :root {
-  /* The Void (Backgrounds) - OLED Optimized */
-  --bg-0: #09090b;
-  --bg-1: #0c0c12;
-  --bg-2: #1a1a24;
+  /* ═══════════════════════════════════════════════════════════════
+     CANONICAL DESIGN TOKENS — --opta-* (unified with Opta Local Web)
+     ═══════════════════════════════════════════════════════════════ */
 
-  /* Borders and Lines */
-  --line: rgba(255, 255, 255, 0.05);
-  --line-strong: rgba(255, 255, 255, 0.15);
+  /* Foundations */
+  --opta-bg: #09090b;
+  --opta-surface: #18181b;
+  --opta-elevated: #27272a;
+  --opta-border: rgba(255, 255, 255, 0.05);
+  --opta-border-strong: rgba(255, 255, 255, 0.15);
 
-  /* Text Hierarchy */
-  --text: #fafafa;
-  --text-soft: #a1a1aa;
-  --text-muted: #52525b;
+  /* Brand */
+  --opta-primary: #8b5cf6;       /* violet-600 — base primary */
+  --opta-primary-glow: #a855f7;  /* violet-500 — glow accent */
 
-  /* The Energy (Primary Brand) */
-  --accent: #a855f7; /* Electric Violet */
-  --accent-2: #8b5cf6; /* Deeper Violet */
+  /* Status neons */
+  --opta-neon-green: #22c55e;
+  --opta-neon-amber: #f59e0b;
+  --opta-neon-red: #ef4444;
+  --opta-neon-cyan: #06b6d4;
 
-  /* Status Colors */
-  --success: #22c55e;
-  --warning: #f59e0b;
-  --danger: #ef4444;
-  --info: #06b6d4;
+  /* Text */
+  --opta-text-primary: #fafafa;
+  --opta-text-secondary: #a1a1aa;
+  --opta-text-muted: #52525b;
 
-  /* Shadows */
+  /* Glass system */
+  --opta-glass-bg: rgba(109, 40, 217, 0.15);
+  --opta-glass-border: rgba(139, 92, 246, 0.35);
+  --opta-glass-hover: rgba(139, 92, 246, 0.25);
+
+  /* Blur scales */
+  --opta-blur-sm: 8px;
+  --opta-blur-md: 12px;
+  --opta-blur-lg: 20px;
+
+  /* Glow scales */
+  --opta-glow-sm: 0 0 8px 0 rgba(168, 85, 247, 0.3);
+  --opta-glow-md: 0 0 16px 0 rgba(168, 85, 247, 0.4);
+  --opta-glow-lg: 0 0 24px 4px rgba(168, 85, 247, 0.5);
+
+  /* Motion */
+  --opta-duration-fast: 150ms;
+  --opta-duration-normal: 200ms;
+  --opta-duration-slow: 300ms;
+  --opta-ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* ═══════════════════════════════════════════════════════════════
+     LEGACY ALIASES — backward-compat (components still use these)
+     ═══════════════════════════════════════════════════════════════ */
+  --bg-0: var(--opta-bg);
+  --bg-1: var(--opta-surface);
+  --bg-2: var(--opta-elevated);
+  --line: var(--opta-border);
+  --line-strong: var(--opta-border-strong);
+  --text: var(--opta-text-primary);
+  --text-soft: var(--opta-text-secondary);
+  --text-muted: var(--opta-text-muted);
+  --accent: var(--opta-primary-glow);
+  --accent-2: var(--opta-primary);
+  --success: var(--opta-neon-green);
+  --warning: var(--opta-neon-amber);
+  --danger: var(--opta-neon-red);
+  --info: var(--opta-neon-cyan);
   --shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
   --shadow-glow: 0 0 20px rgba(168, 85, 247, 0.15);
 }
@@ -327,17 +366,62 @@ button.active,
 }
 
 .glass,
-.glass-subtle,
 .workspace-rail,
 .timeline-panel,
 .runtime-panel {
-  border: 1px solid var(--line);
+  border: 1px solid rgba(255, 255, 255, 0.04);
   border-radius: 16px;
-  background: rgba(5, 3, 10, 0.6);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: linear-gradient(
+    135deg,
+    rgba(109, 40, 217, 0.2) 0%,
+    rgba(139, 92, 246, 0.1) 50%,
+    rgba(109, 40, 217, 0.15) 100%
+  );
+  backdrop-filter: blur(var(--opta-blur-md));
+  -webkit-backdrop-filter: blur(var(--opta-blur-md));
   box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
-  transition: all 0.3s ease;
+  transition:
+    border-color var(--opta-duration-slow) var(--opta-ease-smooth),
+    box-shadow var(--opta-duration-slow) var(--opta-ease-smooth),
+    transform var(--opta-duration-slow) var(--opta-ease-smooth);
+}
+
+.glass:hover {
+  border-color: rgba(139, 92, 246, 0.15);
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.08),
+    0 8px 32px -8px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(139, 92, 246, 0.08);
+  transform: translateY(-1px);
+}
+
+.glass-subtle {
+  border: 1px solid rgba(255, 255, 255, 0.02);
+  border-radius: 16px;
+  background: linear-gradient(
+    135deg,
+    rgba(109, 40, 217, 0.12) 0%,
+    rgba(139, 92, 246, 0.06) 50%,
+    rgba(109, 40, 217, 0.08) 100%
+  );
+  backdrop-filter: blur(var(--opta-blur-sm));
+  -webkit-backdrop-filter: blur(var(--opta-blur-sm));
+}
+
+.glass-strong {
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  background: linear-gradient(
+    135deg,
+    rgba(109, 40, 217, 0.3) 0%,
+    rgba(139, 92, 246, 0.2) 50%,
+    rgba(109, 40, 217, 0.25) 100%
+  );
+  backdrop-filter: blur(var(--opta-blur-lg));
+  -webkit-backdrop-filter: blur(var(--opta-blur-lg));
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.08),
+    0 4px 24px -4px rgba(0, 0, 0, 0.3);
 }
 
 .workspace-rail,
