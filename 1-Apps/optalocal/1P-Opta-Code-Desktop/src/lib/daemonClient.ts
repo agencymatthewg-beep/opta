@@ -1,5 +1,9 @@
 import { DaemonHttpClient } from "@opta/daemon-client/http-client";
 import type {
+  DaemonBackgroundListResponse,
+  DaemonBackgroundOutputResponse,
+  DaemonBackgroundStartRequest,
+  DaemonBackgroundStatusResponse,
   DaemonListOperationsResponse,
   DaemonLmxAvailableModel,
   DaemonLmxMemoryResponse,
@@ -184,6 +188,35 @@ export const daemonClient = {
     payload?: Record<string, unknown>,
   ): Promise<DaemonRunOperationResponse> {
     return httpClient(connection).runOperation(id, payload);
+  },
+
+  async listBackground(
+    connection: DaemonConnectionOptions,
+    sessionId?: string,
+  ): Promise<DaemonBackgroundListResponse> {
+    return httpClient(connection).listBackground(sessionId);
+  },
+
+  async startBackground(
+    connection: DaemonConnectionOptions,
+    payload: DaemonBackgroundStartRequest,
+  ): Promise<DaemonBackgroundStatusResponse> {
+    return httpClient(connection).startBackground(payload);
+  },
+
+  async backgroundOutput(
+    connection: DaemonConnectionOptions,
+    processId: string,
+    options?: { afterSeq?: number; limit?: number },
+  ): Promise<DaemonBackgroundOutputResponse> {
+    return httpClient(connection).backgroundOutput(processId, options);
+  },
+
+  async killBackground(
+    connection: DaemonConnectionOptions,
+    processId: string,
+  ): Promise<unknown> {
+    return httpClient(connection).killBackground(processId);
   },
 
   async lmxStatus(

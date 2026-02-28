@@ -4,13 +4,14 @@ import { Composer } from "./components/Composer";
 import { TimelineCards } from "./components/TimelineCards";
 import { WorkspaceRail } from "./components/WorkspaceRail";
 import { ModelsPage } from "./pages/ModelsPage";
+import { BackgroundJobsPage } from "./pages/BackgroundJobsPage";
 import { OperationsPage } from "./pages/OperationsPage";
 import { useCommandPalette } from "./hooks/useCommandPalette";
 import { useDaemonSessions } from "./hooks/useDaemonSessions";
 import type { PaletteCommand } from "./types";
 import "./opta.css";
 
-type AppPage = "sessions" | "models" | "operations";
+type AppPage = "sessions" | "models" | "operations" | "jobs";
 
 function App() {
   const [showTerminal, setShowTerminal] = useState(true);
@@ -161,6 +162,13 @@ function App() {
         description: "Run any CLI command-family operation via the daemon API",
         keywords: ["operations", "doctor", "env", "mcp", "keychain", "benchmark", "embed", "rerank"],
         run: () => setActivePage("operations"),
+      },
+      {
+        id: "open-jobs",
+        title: "Open background jobs",
+        description: "View and manage daemon background processes",
+        keywords: ["jobs", "background", "processes", "kill", "output"],
+        run: () => setActivePage("jobs"),
       },
     ],
     [createSession, refreshNow, selectedWorkspace, trackSession],
@@ -315,6 +323,13 @@ function App() {
             >
               Operations
             </button>
+            <button
+              type="button"
+              className={activePage === "jobs" ? "active" : ""}
+              onClick={() => setActivePage("jobs")}
+            >
+              Jobs
+            </button>
             <button type="button" onClick={palette.open}>
               Palette (Cmd/Ctrl+K)
             </button>
@@ -334,6 +349,8 @@ function App() {
             <ModelsPage connection={connection} />
           ) : activePage === "operations" ? (
             <OperationsPage connection={connection} />
+          ) : activePage === "jobs" ? (
+            <BackgroundJobsPage connection={connection} />
           ) : (
             <>
               <WorkspaceRail
