@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type {
   DaemonConnectionOptions,
   DaemonLmxAvailableModel,
@@ -46,8 +46,6 @@ export function useModels(
   const refreshLockRef = useRef(false);
   const mountedRef = useRef(true);
   const refreshEpochRef = useRef(0);
-
-  const hasConnection = useMemo(() => Boolean(connection), [connection]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -160,11 +158,11 @@ export function useModels(
   );
 
   useEffect(() => {
-    if (!hasConnection) return;
+    if (!connection) return;
     void refreshLmx();
     const timer = window.setInterval(() => void refreshLmx(), LMX_POLL_MS);
     return () => window.clearInterval(timer);
-  }, [hasConnection, refreshLmx]);
+  }, [connection, refreshLmx]);
 
   return {
     lmxStatus,

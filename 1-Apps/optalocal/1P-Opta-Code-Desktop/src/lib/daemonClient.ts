@@ -215,8 +215,8 @@ export const daemonClient = {
   async killBackground(
     connection: DaemonConnectionOptions,
     processId: string,
-  ): Promise<unknown> {
-    return httpClient(connection).killBackground(processId);
+  ): Promise<void> {
+    await httpClient(connection).killBackground(processId);
   },
 
   async lmxStatus(

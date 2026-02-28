@@ -123,10 +123,9 @@ function ToolCard({ item }: { item: TimelineItem }) {
     <article className={`timeline-card kind-tool ${isResult ? "tool-result" : "tool-call"}`}>
       <button
         type="button"
-        className="tool-header"
+        className={`tool-header${hasBody ? "" : " tool-header--static"}`}
         onClick={() => hasBody && setExpanded((v) => !v)}
         aria-expanded={expanded}
-        style={{ cursor: hasBody ? "pointer" : "default" }}
       >
         <Terminal size={12} aria-hidden="true" className="tool-icon" />
         <span className="tool-name">{item.title}</span>

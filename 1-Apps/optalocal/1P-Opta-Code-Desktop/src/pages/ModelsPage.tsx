@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   Activity,
   Box,
@@ -60,12 +60,13 @@ export function ModelsPage({ connection }: ModelsPageProps) {
   const [downloading, setDownloading] = useState(false);
   const [downloadNotice, setDownloadNotice] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
+  const downloadNoticeTimerRef = useRef<number | null>(null);
 
   const usedPct = memory ? memPct(memory.used_gb, memory.total_unified_memory_gb) : 0;
   const memBarColor =
     usedPct > 85 ? "var(--opta-danger)" : usedPct > 65 ? "var(--opta-warning)" : "var(--opta-primary)";
 
-  const triggerDownload = async (event: React.FormEvent) => {
+  const triggerDownload = useCallback(async (event: React.FormEvent) => {
     event.preventDefault();
     const repo = downloadRepo.trim();
     if (!repo) return;
@@ -79,26 +80,27 @@ export function ModelsPage({ connection }: ModelsPageProps) {
     } else {
       setDownloadNotice("Download failed — check daemon logs");
     }
-    window.setTimeout(() => setDownloadNotice(null), 5000);
-  };
+    if (downloadNoticeTimerRef.current !== null) window.clearTimeout(downloadNoticeTimerRef.current);
+    downloadNoticeTimerRef.current = window.setTimeout(() => setDownloadNotice(null), 5000);
+  }, [downloadModel, downloadRepo]);
 
-  const doLoad = async (modelId: string) => {
+  const doLoad = useCallback(async (modelId: string) => {
     setPendingAction(modelId);
     await loadModel(modelId);
     setPendingAction(null);
-  };
+  }, [loadModel]);
 
-  const doUnload = async (modelId: string) => {
+  const doUnload = useCallback(async (modelId: string) => {
     setPendingAction(modelId);
     await unloadModel(modelId);
     setPendingAction(null);
-  };
+  }, [unloadModel]);
 
-  const doDelete = async (modelId: string) => {
+  const doDelete = useCallback(async (modelId: string) => {
     setPendingAction(modelId);
     await deleteModel(modelId);
     setPendingAction(null);
-  };
+  }, [deleteModel]);
 
   return (
     <section className="models-page">
@@ -301,7 +303,7 @@ export function ModelsPage({ connection }: ModelsPageProps) {
         <p className="download-hint">
           Enter a HuggingFace repo ID (e.g. <code>mlx-community/Qwen2.5-7B-Instruct-4bit</code>) to queue a download via the daemon.
         </p>
-        <form className="download-form" onSubmit={triggerDownload}>
+        <form className="download-form" onSubmit={(e) => void triggerDownload(e)}>
           <input
             type="text"
             className="download-input"

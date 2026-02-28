@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Copy, Search, X } from "lucide-react";
 import type { DaemonSessionSummary } from "../types";
 
@@ -21,6 +21,7 @@ export function WorkspaceRail({
 }: WorkspaceRailProps) {
   const [search, setSearch] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const copyTimerRef = useRef<number | null>(null);
 
   const workspaces = [
     "all",
@@ -43,8 +44,9 @@ export function WorkspaceRail({
   const copyId = (sessionId: string, event: React.MouseEvent) => {
     event.stopPropagation();
     void navigator.clipboard.writeText(sessionId).then(() => {
+      if (copyTimerRef.current !== null) window.clearTimeout(copyTimerRef.current);
       setCopiedId(sessionId);
-      window.setTimeout(() => setCopiedId(null), 1400);
+      copyTimerRef.current = window.setTimeout(() => setCopiedId(null), 1400);
     });
   };
 

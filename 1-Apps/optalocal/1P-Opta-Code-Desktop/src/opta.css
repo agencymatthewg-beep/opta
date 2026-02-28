@@ -13,8 +13,10 @@
   --opta-border-strong: rgba(255, 255, 255, 0.15);
 
   /* Brand */
-  --opta-primary: #8b5cf6;       /* violet-600 — base primary */
-  --opta-primary-glow: #a855f7;  /* violet-500 — glow accent */
+  --opta-primary: #8b5cf6;
+  /* violet-600 — base primary */
+  --opta-primary-glow: #a855f7;
+  /* violet-500 — glow accent */
 
   /* Status neons */
   --opta-neon-green: #22c55e;
@@ -93,11 +95,9 @@ body {
     sans-serif;
   color: var(--text);
   background-color: var(--bg-0);
-  background-image: radial-gradient(
-    800px 800px at 50% -10%,
-    rgba(139, 92, 246, 0.1),
-    transparent 70%
-  );
+  background-image: radial-gradient(800px 800px at 50% -10%,
+      rgba(139, 92, 246, 0.1),
+      transparent 70%);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -126,12 +126,10 @@ h6 {
 }
 
 .text-moonlight {
-  background: linear-gradient(
-    135deg,
-    #ffffff 0%,
-    #ffffff 50%,
-    rgba(168, 85, 247, 0.5) 100%
-  );
+  background: linear-gradient(135deg,
+      #ffffff 0%,
+      #ffffff 50%,
+      rgba(168, 85, 247, 0.5) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -188,12 +186,10 @@ h6 {
   margin: 0;
   font-size: clamp(1.1rem, 1.8vw, 1.4rem);
   font-weight: 700;
-  background: linear-gradient(
-    135deg,
-    #ffffff 0%,
-    #ffffff 50%,
-    rgba(168, 85, 247, 0.5) 100%
-  );
+  background: linear-gradient(135deg,
+      #ffffff 0%,
+      #ffffff 50%,
+      rgba(168, 85, 247, 0.5) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -216,12 +212,13 @@ h6 {
   font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  padding: 0.2rem 0.5rem;
+  padding: 0.25rem 0.65rem;
   border-radius: 99px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--line);
   color: var(--text-soft);
   font-family: "JetBrains Mono", monospace;
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.15);
 }
 
 .signal {
@@ -274,18 +271,19 @@ h6 {
 
 .connection-form {
   display: grid;
-  gap: 0.55rem;
-  grid-template-columns: repeat(3, minmax(90px, 1fr)) auto;
+  gap: 0.85rem;
+  grid-template-columns: repeat(3, minmax(110px, 1fr)) auto;
   align-items: end;
 }
 
 .connection-form label {
   font-size: 0.7rem;
-  color: var(--text-soft);
+  color: rgba(255, 255, 255, 0.65);
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
+  font-weight: 500;
   display: grid;
-  gap: 0.35rem;
+  gap: 0.5rem;
   font-family: "JetBrains Mono", monospace;
 }
 
@@ -302,7 +300,7 @@ button {
   border-radius: 8px;
   background: rgba(12, 12, 18, 0.5);
   color: var(--text);
-  padding: 0.5rem 0.75rem;
+  padding: 0.65rem 1rem;
   outline: none;
   font-family: "JetBrains Mono", monospace;
   font-size: 0.85rem;
@@ -352,8 +350,12 @@ button.active,
 .top-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.75rem;
   justify-content: flex-end;
+}
+
+.top-actions button {
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .workspace-layout {
@@ -375,12 +377,10 @@ button.active,
 .runtime-panel {
   border: 1px solid rgba(255, 255, 255, 0.04);
   border-radius: 16px;
-  background: linear-gradient(
-    135deg,
-    rgba(109, 40, 217, 0.2) 0%,
-    rgba(139, 92, 246, 0.1) 50%,
-    rgba(109, 40, 217, 0.15) 100%
-  );
+  background: linear-gradient(135deg,
+      rgba(109, 40, 217, 0.2) 0%,
+      rgba(139, 92, 246, 0.1) 50%,
+      rgba(109, 40, 217, 0.15) 100%);
   backdrop-filter: blur(var(--opta-blur-md));
   -webkit-backdrop-filter: blur(var(--opta-blur-md));
   box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
@@ -402,12 +402,10 @@ button.active,
 .glass-subtle {
   border: 1px solid rgba(255, 255, 255, 0.02);
   border-radius: 16px;
-  background: linear-gradient(
-    135deg,
-    rgba(109, 40, 217, 0.12) 0%,
-    rgba(139, 92, 246, 0.06) 50%,
-    rgba(109, 40, 217, 0.08) 100%
-  );
+  background: linear-gradient(135deg,
+      rgba(109, 40, 217, 0.12) 0%,
+      rgba(139, 92, 246, 0.06) 50%,
+      rgba(109, 40, 217, 0.08) 100%);
   backdrop-filter: blur(var(--opta-blur-sm));
   -webkit-backdrop-filter: blur(var(--opta-blur-sm));
 }
@@ -415,12 +413,10 @@ button.active,
 .glass-strong {
   border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 16px;
-  background: linear-gradient(
-    135deg,
-    rgba(109, 40, 217, 0.3) 0%,
-    rgba(139, 92, 246, 0.2) 50%,
-    rgba(109, 40, 217, 0.25) 100%
-  );
+  background: linear-gradient(135deg,
+      rgba(109, 40, 217, 0.3) 0%,
+      rgba(139, 92, 246, 0.2) 50%,
+      rgba(109, 40, 217, 0.25) 100%);
   backdrop-filter: blur(var(--opta-blur-lg));
   -webkit-backdrop-filter: blur(var(--opta-blur-lg));
   box-shadow:
@@ -431,7 +427,7 @@ button.active,
 .workspace-rail,
 .timeline-panel,
 .runtime-panel,
-.models-page > * {
+.models-page>* {
   padding: 1.25rem;
 }
 
@@ -442,15 +438,16 @@ button.active,
 .models-page h3 {
   margin: 0;
   font-size: 0.85rem;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--text-soft);
+  color: rgba(255, 255, 255, 0.85);
   font-family: "JetBrains Mono", monospace;
+  font-weight: 600;
 }
 
 .workspace-chips {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.75rem;
   flex-wrap: wrap;
   margin: 1rem 0;
 }
@@ -557,7 +554,7 @@ button.active,
 .runtime-panel dl {
   margin: 1rem 0;
   display: grid;
-  gap: 0.75rem;
+  gap: 0.5rem;
 }
 
 .runtime-panel dt {
@@ -566,10 +563,11 @@ button.active,
   text-transform: uppercase;
   letter-spacing: 0.1em;
   font-family: "JetBrains Mono", monospace;
+  margin-bottom: 0.15rem;
 }
 
 .runtime-panel dd {
-  margin: 0.25rem 0 0;
+  margin: 0 0 0.5rem 0;
   font-family: "JetBrains Mono", monospace;
   font-size: 1.1rem;
   color: var(--text);
@@ -577,15 +575,20 @@ button.active,
 
 .state-connected {
   color: var(--success);
-  text-shadow: 0 0 10px rgba(34, 197, 94, 0.4);
+  text-shadow: 0 0 6px rgba(34, 197, 94, 0.6);
+  font-weight: 700;
 }
 
 .state-connecting {
   color: var(--warning);
+  text-shadow: 0 0 6px rgba(245, 158, 11, 0.6);
+  font-weight: 700;
 }
 
 .state-disconnected {
   color: var(--danger);
+  text-shadow: 0 0 6px rgba(239, 68, 68, 0.6);
+  font-weight: 700;
 }
 
 .status-strip {
@@ -626,7 +629,7 @@ button.active,
   resize: vertical;
   background: transparent;
   border: none;
-  padding: 0.5rem;
+  padding: 0.75rem 0.5rem;
 }
 
 .composer-input:focus {
@@ -634,7 +637,7 @@ button.active,
 }
 
 .composer-actions {
-  margin-top: 0.5rem;
+  margin-top: 0.75rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -755,13 +758,14 @@ button.active,
 }
 
 .status-badge {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-family: "JetBrains Mono", monospace;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   border: 1px solid var(--line);
   border-radius: 6px;
-  padding: 0.25rem 0.5rem;
+  padding: 0.35rem 0.65rem;
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.1);
 }
 
 .status-badge.online {
@@ -828,6 +832,8 @@ button.active,
   background: rgba(239, 68, 68, 0.1);
   border: 1px solid rgba(239, 68, 68, 0.3);
   border-radius: 8px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .timeline-card pre.tool-body {
@@ -869,12 +875,14 @@ button.active,
 }
 
 @keyframes pulse-dot {
+
   0%,
   60%,
   100% {
     opacity: 0.25;
     transform: scale(0.8);
   }
+
   30% {
     opacity: 1;
     transform: scale(1);
@@ -886,8 +894,8 @@ button.active,
 .permission-queue {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  padding: 0.75rem 1rem;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
   border-bottom: 1px solid rgba(245, 158, 11, 0.2);
   background: rgba(245, 158, 11, 0.04);
 }
@@ -895,7 +903,7 @@ button.active,
 .permission-card {
   border: 1px solid rgba(245, 158, 11, 0.35);
   border-radius: 10px;
-  padding: 0.85rem 1rem;
+  padding: 1rem 1.25rem;
   background: rgba(245, 158, 11, 0.07);
   border-left: 3px solid var(--warning);
 }
@@ -921,9 +929,9 @@ button.active,
 }
 
 .permission-details {
-  margin: 0 0 0.75rem;
+  margin: 0 0 1rem;
   display: grid;
-  gap: 0.4rem;
+  gap: 0.6rem;
 }
 
 .permission-details div {
@@ -1053,13 +1061,16 @@ button.active,
   width: 6px;
   height: 6px;
 }
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
   background: var(--line-strong);
   border-radius: 3px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
 }
@@ -1074,8 +1085,8 @@ button.active,
   color: rgba(255, 255, 255, 0.9);
 }
 
-.md-text-block + .md-code-block,
-.md-code-block + .md-text-block {
+.md-text-block+.md-code-block,
+.md-code-block+.md-text-block {
   margin-top: 0.75rem;
 }
 
@@ -1164,7 +1175,7 @@ button.active,
 
 .md-code-pre {
   margin: 0;
-  padding: 0.85rem 1rem;
+  padding: 1rem 1.25rem;
   font-family: "JetBrains Mono", monospace;
   font-size: 0.83rem;
   line-height: 1.6;
@@ -1224,6 +1235,8 @@ button.active,
   text-align: left;
   color: var(--opta-text-secondary);
 }
+
+.tool-header--static { cursor: default; }
 
 .tool-icon {
   color: var(--opta-neon-amber);
@@ -1291,7 +1304,7 @@ button.active,
 .system-header {
   display: flex;
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.65rem;
 }
 
 .system-icon {
@@ -1482,6 +1495,8 @@ button.active,
   font-size: 0.8rem;
   outline: none;
   transition: border-color 0.15s ease;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 
 .rail-search:focus {
@@ -1531,16 +1546,25 @@ button.active,
    ════════════════════════════════════════════════════════════════ */
 
 .daemon-offline-hint {
-  margin: 0.3rem 0 0;
-  font-size: 0.72rem;
-  color: var(--opta-text-muted);
+  margin: 0.5rem 0 0;
+  font-size: 0.75rem;
+  color: var(--danger);
   line-height: 1.4;
+  padding: 0.65rem 0.85rem;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 8px;
+  backdrop-filter: blur(8px);
+  display: inline-block;
 }
 
 .daemon-offline-hint code {
-  color: var(--opta-primary-glow);
+  color: var(--danger);
   font-family: "JetBrains Mono", monospace;
   font-size: 0.72rem;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 0.1rem 0.25rem;
+  border-radius: 4px;
 }
 
 /* ════════════════════════════════════════════════════════════════
@@ -1602,11 +1626,11 @@ button.active,
   position: relative;
   width: 100%;
   max-width: 520px;
-  padding: 2rem;
+  padding: 2.5rem;
   border-radius: 16px;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.75rem;
 }
 
 .onboarding-dismiss {
@@ -1656,7 +1680,7 @@ button.active,
   margin: 0;
 }
 
-.onboarding-header > p {
+.onboarding-header>p {
   font-size: 0.85rem;
   color: var(--opta-text-secondary);
   line-height: 1.6;
@@ -1708,7 +1732,7 @@ button.active,
   color: var(--opta-text-primary);
 }
 
-.step-body > p {
+.step-body>p {
   font-size: 0.8rem;
   color: var(--opta-text-secondary);
   margin: 0;
@@ -1839,7 +1863,9 @@ button.active,
    ══════════════════════════════════════════════════════════════════ */
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .spin {
@@ -1927,7 +1953,7 @@ button.active,
   cursor: pointer;
   color: var(--opta-text-muted);
   transition: color var(--opta-duration-fast) ease,
-              background var(--opta-duration-fast) ease;
+    background var(--opta-duration-fast) ease;
   position: relative;
   font-size: 0.65rem;
 }
@@ -1978,8 +2004,9 @@ button.active,
 
 .start-shell-fields {
   display: flex;
-  gap: 8px;
+  gap: 12px;
   flex-wrap: wrap;
+  align-items: center;
 }
 
 .start-shell-input {
@@ -1994,7 +2021,7 @@ button.active,
   font-size: 0.8rem;
   outline: none;
   transition: border-color var(--opta-duration-fast) ease,
-              box-shadow var(--opta-duration-fast) ease;
+    box-shadow var(--opta-duration-fast) ease;
 }
 
 .start-shell-input:focus {
@@ -2019,7 +2046,7 @@ button.active,
   font-weight: 600;
   cursor: pointer;
   transition: background var(--opta-duration-fast) ease,
-              transform var(--opta-duration-fast) ease;
+    transform var(--opta-duration-fast) ease;
   white-space: nowrap;
 }
 
@@ -2114,7 +2141,7 @@ button.active,
   display: grid;
   grid-template-columns: 80px 1fr auto;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
 }
 
 .memory-model-bar-wrap {
@@ -2158,8 +2185,9 @@ button.active,
 .model-card {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
   border-radius: 8px;
   background: rgba(0, 0, 0, 0.2);
   border: 1px solid var(--opta-border);
@@ -2247,7 +2275,8 @@ button.active,
 
 .download-form {
   display: flex;
-  gap: 8px;
+  gap: 12px;
+  align-items: center;
 }
 
 .download-input {
@@ -2261,7 +2290,7 @@ button.active,
   font-size: 0.8rem;
   outline: none;
   transition: border-color var(--opta-duration-fast) ease,
-              box-shadow var(--opta-duration-fast) ease;
+    box-shadow var(--opta-duration-fast) ease;
 }
 
 .download-input:focus {
@@ -2287,8 +2316,8 @@ button.active,
   cursor: pointer;
   white-space: nowrap;
   transition: background var(--opta-duration-fast) ease,
-              color var(--opta-duration-fast) ease,
-              transform var(--opta-duration-fast) ease;
+    color var(--opta-duration-fast) ease,
+    transform var(--opta-duration-fast) ease;
 }
 
 .download-btn:hover:not(:disabled) {
@@ -2331,6 +2360,14 @@ button.active,
 }
 
 /* ── Operation safety badge colours ───────────────────────────────────────── */
-.operation-safety-badge.safety-dangerous { color: var(--opta-danger); }
-.operation-safety-badge.safety-write     { color: var(--opta-warning); }
-.operation-safety-badge.safety-read      { color: var(--opta-neon-green); }
+.operation-safety-badge.safety-dangerous {
+  color: var(--opta-danger);
+}
+
+.operation-safety-badge.safety-write {
+  color: var(--opta-warning);
+}
+
+.operation-safety-badge.safety-read {
+  color: var(--opta-neon-green);
+}
