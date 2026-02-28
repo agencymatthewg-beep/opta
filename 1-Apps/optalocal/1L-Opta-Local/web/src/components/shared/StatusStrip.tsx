@@ -8,6 +8,7 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
+import { cn } from '@opta/ui';
 import type { ServerStatus } from '@/types/lmx';
 import { useConnectionContextSafe } from '@/components/shared/ConnectionProvider';
 
@@ -92,7 +93,7 @@ export function StatusStrip() {
   return (
     <div className="fixed bottom-0 inset-x-0 z-40 h-7 glass-subtle border-t border-white/5 flex items-center px-4">
       {/* Status dot */}
-      <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotClass}`} />
+      <div className={cn('w-1.5 h-1.5 rounded-full shrink-0', dotClass)} />
 
       {!isConnected ? (
         <span className="ml-2 text-[11px] font-mono text-text-muted">Offline</span>

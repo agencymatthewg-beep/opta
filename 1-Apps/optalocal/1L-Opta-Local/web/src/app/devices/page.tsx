@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * Devices page — Shows all registered devices in the user's Opta ecosystem.
@@ -8,9 +8,9 @@
  * CTA for adding new machines.
  */
 
-import { useState, useCallback } from 'react';
-import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useCallback } from "react";
+import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -19,14 +19,14 @@ import {
   RefreshCw,
   Cloud,
   History,
-} from 'lucide-react';
-import { Button } from '@opta/ui';
-import { cn } from '@opta/ui';
+} from "lucide-react";
+import { Button, cn } from "@opta/ui";
 
-import { useDevices } from '@/hooks/useDevices';
-import { useAuthSafe } from '@/components/shared/AuthProvider';
-import { useCloudSync } from '@/hooks/useCloudSync';
-import { DeviceCard } from '@/components/devices/DeviceCard';
+import { useDevices } from "@/hooks/useDevices";
+import { useAuthSafe } from "@/components/shared/AuthProvider";
+import { useCloudSync } from "@/hooks/useCloudSync";
+import { DeviceCard } from "@/components/devices/DeviceCard";
+import { OptaRing } from "@/components/shared/OptaRing";
 
 // ---------------------------------------------------------------------------
 // Devices page
@@ -35,11 +35,16 @@ import { DeviceCard } from '@/components/devices/DeviceCard';
 export default function DevicesPage() {
   const auth = useAuthSafe();
   const { devices, isLoading, error, refetch } = useDevices();
-  const { hasSynced, isSyncing, lastImportCount, hasMigrated, migrateLocalToCloud } =
-    useCloudSync();
+  const {
+    hasSynced,
+    isSyncing,
+    lastImportCount,
+    hasMigrated,
+    migrateLocalToCloud,
+  } = useCloudSync();
   const [showPairGuide, setShowPairGuide] = useState(false);
   const [migrationFeedback, setMigrationFeedback] = useState<{
-    tone: 'success' | 'error';
+    tone: "success" | "error";
     message: string;
   } | null>(null);
 
@@ -47,9 +52,9 @@ export default function DevicesPage() {
     async (deviceId: string, enabled: boolean) => {
       if (!auth?.supabase) return;
       await auth.supabase
-        .from('devices')
+        .from("devices")
         .update({ helper_enabled: enabled })
-        .eq('id', deviceId);
+        .eq("id", deviceId);
     },
     [auth?.supabase],
   );
@@ -58,25 +63,25 @@ export default function DevicesPage() {
     if (!auth?.user) return;
     setMigrationFeedback(null);
 
-    const hostDevice = devices.find((d) => d.role === 'llm_host');
+    const hostDevice = devices.find((d) => d.role === "llm_host");
     const uploadedCount = await migrateLocalToCloud(hostDevice?.id ?? null);
     const migrationKey = `opta-local:cloud-migration-done:${auth.user.id}`;
-    const migrationCompleted = localStorage.getItem(migrationKey) === 'true';
+    const migrationCompleted = localStorage.getItem(migrationKey) === "true";
 
     if (migrationCompleted) {
       setMigrationFeedback({
-        tone: 'success',
+        tone: "success",
         message:
           uploadedCount > 0
-            ? `Uploaded ${uploadedCount} local session${uploadedCount !== 1 ? 's' : ''} to cloud.`
-            : 'Migration complete. No unsynced local sessions were found.',
+            ? `Uploaded ${uploadedCount} local session${uploadedCount !== 1 ? "s" : ""} to cloud.`
+            : "Migration complete. No unsynced local sessions were found.",
       });
       return;
     }
 
     setMigrationFeedback({
-      tone: 'error',
-      message: 'Could not upload local sessions. Try again in a moment.',
+      tone: "error",
+      message: "Could not upload local sessions. Try again in a moment.",
     });
   }, [auth?.user, devices, migrateLocalToCloud]);
 
@@ -87,9 +92,7 @@ export default function DevicesPage() {
         <div className="max-w-sm w-full text-center">
           {/* Mini ring as visual anchor */}
           <div className="flex justify-center mb-6">
-            <div className="opta-ring-wrap">
-              <div className="opta-ring opta-ring-64" />
-            </div>
+            <OptaRing size={64} />
           </div>
           <h1 className="opta-moonlight text-2xl font-bold tracking-[0.08em] mb-3">
             DEVICE SYNC
@@ -101,9 +104,9 @@ export default function DevicesPage() {
           <Link
             href="/sign-in?next=%2Fdevices"
             className={cn(
-              'inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium',
-              'bg-primary/20 text-primary border border-primary/40',
-              'hover:bg-primary/30 hover:shadow-[0_0_20px_rgba(168,85,247,0.3)] transition-all',
+              "inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium",
+              "bg-primary/20 text-primary border border-primary/40",
+              "hover:bg-primary/30 hover:shadow-[0_0_20px_rgba(168,85,247,0.3)] transition-all",
             )}
           >
             <Cloud className="h-4 w-4" />
@@ -114,8 +117,8 @@ export default function DevicesPage() {
     );
   }
 
-  const hosts = devices.filter((d) => d.role === 'llm_host');
-  const workstations = devices.filter((d) => d.role === 'workstation');
+  const hosts = devices.filter((d) => d.role === "llm_host");
+  const workstations = devices.filter((d) => d.role === "workstation");
   const onlineCount = devices.filter((d) => d.is_online).length;
 
   return (
@@ -129,8 +132,8 @@ export default function DevicesPage() {
           </div>
           <p className="text-xs text-text-muted tracking-wider">
             {isLoading && devices.length === 0
-              ? 'Loading device registry...'
-              : `${devices.length} device${devices.length !== 1 ? 's' : ''} registered \u00b7 ${onlineCount} online`}
+              ? "Loading device registry..."
+              : `${devices.length} device${devices.length !== 1 ? "s" : ""} registered \u00b7 ${onlineCount} online`}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -140,7 +143,7 @@ export default function DevicesPage() {
             onClick={refetch}
             aria-label="Refresh devices"
           >
-            <RefreshCw className={cn('h-4 w-4', isLoading && 'animate-spin')} />
+            <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
           </Button>
           <Button
             variant="glass"
@@ -158,7 +161,7 @@ export default function DevicesPage() {
         {!hasMigrated && hasSynced && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
+            animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             className="mb-5 glass-subtle rounded-xl p-4 border border-primary/20"
           >
@@ -177,7 +180,7 @@ export default function DevicesPage() {
                 onClick={handleMigrate}
                 disabled={isSyncing}
               >
-                {isSyncing ? 'Syncing...' : 'Upload Sessions'}
+                {isSyncing ? "Syncing..." : "Upload Sessions"}
               </Button>
             </div>
           </motion.div>
@@ -195,7 +198,7 @@ export default function DevicesPage() {
         {hasSynced && lastImportCount > 0 && (
           <p className="text-xs text-neon-green flex items-center gap-1.5">
             <History className="h-3 w-3" />
-            Imported {lastImportCount} session{lastImportCount !== 1 ? 's' : ''}{' '}
+            Imported {lastImportCount} session{lastImportCount !== 1 ? "s" : ""}{" "}
             from cloud
           </p>
         )}
@@ -208,21 +211,21 @@ export default function DevicesPage() {
         {migrationFeedback && (
           <div
             className={cn(
-              'glass-subtle rounded-lg p-3 border',
-              migrationFeedback.tone === 'success'
-                ? 'border-neon-green/20'
-                : 'border-neon-red/20',
+              "glass-subtle rounded-lg p-3 border",
+              migrationFeedback.tone === "success"
+                ? "border-neon-green/20"
+                : "border-neon-red/20",
             )}
           >
             <p
               className={cn(
-                'text-xs flex items-center gap-1.5',
-                migrationFeedback.tone === 'success'
-                  ? 'text-neon-green'
-                  : 'text-neon-red',
+                "text-xs flex items-center gap-1.5",
+                migrationFeedback.tone === "success"
+                  ? "text-neon-green"
+                  : "text-neon-red",
               )}
             >
-              {migrationFeedback.tone === 'success' ? (
+              {migrationFeedback.tone === "success" ? (
                 <CheckCircle2 className="h-3.5 w-3.5" />
               ) : (
                 <AlertTriangle className="h-3.5 w-3.5" />
@@ -238,7 +241,7 @@ export default function DevicesPage() {
         {showPairGuide && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
+            animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             className="mb-5 glass-subtle rounded-xl p-5 border border-opta-border"
           >
@@ -284,7 +287,12 @@ export default function DevicesPage() {
               </p>
               <p className="text-xs text-text-muted mt-1">{error}</p>
             </div>
-            <Button variant="ghost" size="sm" onClick={refetch} disabled={isLoading}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={refetch}
+              disabled={isLoading}
+            >
               Retry
             </Button>
           </div>
@@ -317,9 +325,7 @@ export default function DevicesPage() {
       {!isLoading && devices.length === 0 && (
         <div className="text-center mt-12">
           <div className="flex justify-center mb-6">
-            <div className="opta-ring-wrap">
-              <div className="opta-ring opta-ring-64" style={{ animationPlayState: 'paused', opacity: 0.5 }} />
-            </div>
+            <OptaRing size={64} paused />
           </div>
           <h2 className="text-base font-semibold text-text-secondary uppercase tracking-[0.15em] mb-2">
             No Devices Registered

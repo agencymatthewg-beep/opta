@@ -11,6 +11,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import Fuse from 'fuse.js';
+import { cn } from '@opta/ui';
 import type { LucideIcon } from 'lucide-react';
 import {
   LayoutDashboard,
@@ -22,6 +23,7 @@ import {
   Database,
   Workflow,
   Monitor,
+  TerminalSquare,
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -52,6 +54,7 @@ const paletteItems: PaletteItem[] = [
   { id: 'arena', label: 'Arena', href: '/arena', icon: Swords, category: 'Navigate' },
   { id: 'rag', label: 'RAG', href: '/rag', icon: Database, category: 'Navigate' },
   { id: 'agents', label: 'Agents', href: '/agents', icon: Workflow, category: 'Navigate' },
+  { id: 'operations', label: 'Operations', href: '/operations', icon: TerminalSquare, category: 'Navigate' },
   { id: 'devices', label: 'Devices', href: '/devices', icon: Monitor, category: 'Navigate' },
   { id: 'sessions', label: 'Sessions', href: '/sessions', icon: History, category: 'Navigate' },
   { id: 'settings', label: 'Settings', href: '/settings', icon: Settings, category: 'Navigate' },
@@ -187,9 +190,10 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
                       <div
                         key={item.id}
                         onClick={() => handleItemClick(item)}
-                        className={`mx-1.5 flex cursor-pointer items-center gap-2.5 rounded-lg px-4 py-2 text-sm transition-colors ${
-                          isSelected ? 'opta-palette-item-selected' : 'hover:bg-primary/10 hover:text-primary'
-                        }`}
+                        className={cn(
+                          'mx-1.5 flex cursor-pointer items-center gap-2.5 rounded-lg px-4 py-2 text-sm transition-colors',
+                          isSelected ? 'opta-palette-item-selected' : 'hover:bg-primary/10 hover:text-primary',
+                        )}
                       >
                         <Icon className="h-4 w-4 shrink-0" />
                         <span>{item.label}</span>

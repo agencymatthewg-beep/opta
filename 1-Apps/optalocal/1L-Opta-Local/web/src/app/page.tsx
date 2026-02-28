@@ -474,8 +474,8 @@ export default function DashboardPage() {
             }}
           />
 
-          {/* Orb A — violet, top-left */}
-          <motion.div
+          {/* Orb A — violet, top-left (CSS-animated, no Framer Motion needed) */}
+          <div
             className="absolute rounded-full blur-[120px]"
             style={{
               width: "45vw",
@@ -488,7 +488,7 @@ export default function DashboardPage() {
             }}
           />
           {/* Orb B — cyan, bottom-right */}
-          <motion.div
+          <div
             className="absolute rounded-full blur-[100px]"
             style={{
               width: "40vw",
@@ -501,7 +501,7 @@ export default function DashboardPage() {
             }}
           />
           {/* Orb C — blue-indigo, center */}
-          <motion.div
+          <div
             className="absolute rounded-full blur-[140px]"
             style={{
               width: "30vw",
