@@ -4,16 +4,16 @@ on:
   workflow_dispatch:
   pull_request:
     paths:
-      - "optalocal/1P-Opta-Code-Desktop/**"
+      - "1-Apps/optalocal/1P-Opta-Code-Desktop/**"
   push:
     branches:
       - main
       - master
     paths:
-      - "optalocal/1P-Opta-Code-Desktop/**"
+      - "1-Apps/optalocal/1P-Opta-Code-Desktop/**"
 
 env:
-  APP_DIR: optalocal/1P-Opta-Code-Desktop
+  APP_DIR: 1-Apps/optalocal/1P-Opta-Code-Desktop
 
 jobs:
   quality-harness:
@@ -32,7 +32,7 @@ jobs:
         with:
           node-version: "20"
           cache: npm
-          cache-dependency-path: optalocal/1P-Opta-Code-Desktop/package-lock.json
+          cache-dependency-path: 1-Apps/optalocal/1P-Opta-Code-Desktop/package-lock.json
 
       - name: Install dependencies
         working-directory: ${{ env.APP_DIR }}
@@ -93,28 +93,35 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: opta-code-playwright-report
-          path: optalocal/1P-Opta-Code-Desktop/playwright-report
+          path: 1-Apps/optalocal/1P-Opta-Code-Desktop/playwright-report
           if-no-files-found: ignore
 
       - name: Aggregate strict gate
         if: always()
+        env:
+          TYPECHECK_OUTCOME: ${{ steps.typecheck.outcome }}
+          LINT_OUTCOME: ${{ steps.lint.outcome }}
+          BUILD_OUTCOME: ${{ steps.build.outcome }}
+          UNIT_OUTCOME: ${{ steps.unit.outcome }}
+          E2E_OUTCOME: ${{ steps.e2e.outcome }}
+          PW_AVAILABLE: ${{ steps.playwright.outputs.available }}
         run: |
           fail=0
 
-          echo "typecheck: ${{ steps.typecheck.outcome }}"
-          echo "lint:      ${{ steps.lint.outcome }}"
-          echo "build:     ${{ steps.build.outcome }}"
-          echo "unit:      ${{ steps.unit.outcome }}"
-          echo "e2e:       ${{ steps.e2e.outcome }}"
-          echo "pw avail:  ${{ steps.playwright.outputs.available }}"
+          echo "typecheck: ${TYPECHECK_OUTCOME}"
+          echo "lint:      ${LINT_OUTCOME}"
+          echo "build:     ${BUILD_OUTCOME}"
+          echo "unit:      ${UNIT_OUTCOME}"
+          echo "e2e:       ${E2E_OUTCOME}"
+          echo "pw avail:  ${PW_AVAILABLE}"
 
-          [ "${{ steps.typecheck.outcome }}" = "success" ] || fail=1
-          [ "${{ steps.lint.outcome }}" = "success" ] || fail=1
-          [ "${{ steps.build.outcome }}" = "success" ] || fail=1
-          [ "${{ steps.unit.outcome }}" = "success" ] || fail=1
+          [ "${TYPECHECK_OUTCOME}" = "success" ] || fail=1
+          [ "${LINT_OUTCOME}" = "success" ] || fail=1
+          [ "${BUILD_OUTCOME}" = "success" ] || fail=1
+          [ "${UNIT_OUTCOME}" = "success" ] || fail=1
 
-          if [ "${{ steps.playwright.outputs.available }}" = "true" ]; then
-            [ "${{ steps.e2e.outcome }}" = "success" ] || fail=1
+          if [ "${PW_AVAILABLE}" = "true" ]; then
+            [ "${E2E_OUTCOME}" = "success" ] || fail=1
           else
             echo "E2E gate was skipped due to unavailable browser dependencies."
           fi
