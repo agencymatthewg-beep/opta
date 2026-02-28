@@ -105,6 +105,18 @@ export class ToolWorkerPool {
     return { workers, busy, queued: this.queue.length };
   }
 
+  /**
+   * Pre-spawn idle workers so the first tool call experiences no cold-start
+   * latency from Worker thread creation (~30-80 ms each).
+   */
+  warmUp(count: number = 2): void {
+    if (this.closed) return;
+    const toCreate = Math.min(count, this.maxWorkers) - this.workers.length;
+    for (let i = 0; i < toCreate; i++) {
+      this.createWorker();
+    }
+  }
+
   private dispatch(): void {
     if (this.closed) return;
 

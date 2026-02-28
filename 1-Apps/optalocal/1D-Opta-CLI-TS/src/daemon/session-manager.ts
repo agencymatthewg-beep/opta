@@ -103,6 +103,11 @@ export class SessionManager {
     }
   }
 
+  /** Pre-spawn idle tool workers to eliminate cold-start latency on first tool call. */
+  warmUpWorkers(count: number = 2): void {
+    this.toolWorkers.warmUp(count);
+  }
+
   private sessionToSnapshot(session: ManagedSession): SessionSnapshot {
     const writers = new Set<string>();
     for (const queued of session.queue.toArray()) {

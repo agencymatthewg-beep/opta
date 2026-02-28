@@ -6,6 +6,7 @@ import { startHttpServer } from './http-server.js';
 import { clearDaemonState, createDaemonToken, defaultDaemonHost, defaultDaemonPort, writeDaemonToken } from './lifecycle.js';
 import { logDaemonEvent } from './telemetry.js';
 import { loadConfig } from '../core/config.js';
+import { resolveLmxEndpoint } from '../lmx/endpoints.js';
 import { diskHeadroomMbToBytes, ensureDiskHeadroom } from '../utils/disk.js';
 
 export interface RunDaemonOptions {
@@ -41,6 +42,18 @@ export async function runDaemon(options?: RunDaemonOptions): Promise<void> {
     };
   });
   await sessionManager.hydrateFromDisk();
+
+  // Pre-spawn 2 idle tool workers — eliminates ~30-80 ms cold-start on the first tool call.
+  sessionManager.warmUpWorkers(2);
+
+  // Prime the LMX endpoint cache so the first agent turn resolves immediately
+  // instead of waiting for the ~1.5 s probe round-trip. Fire-and-forget.
+  void resolveLmxEndpoint({
+    host: startupConfig.connection.host,
+    fallbackHosts: startupConfig.connection.fallbackHosts,
+    port: startupConfig.connection.port,
+    adminKey: startupConfig.connection.adminKey,
+  }).catch(() => undefined);
 
   const running = await startHttpServer({
     daemonId,

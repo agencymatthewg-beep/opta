@@ -17,8 +17,13 @@ export class TurnQueue {
   private readonly turns: QueuedTurn[] = [];
 
   enqueue(turn: QueuedTurn): void {
-    this.turns.push(turn);
-    this.turns.sort((a, b) => a.ingressSeq - b.ingressSeq);
+    // Scan from the tail — common case is in-order arrival (monotonic ingressSeq),
+    // so this loop exits immediately, giving O(1) amortised performance vs O(n log n) sort.
+    let i = this.turns.length;
+    while (i > 0 && (this.turns[i - 1]?.ingressSeq ?? 0) > turn.ingressSeq) {
+      i--;
+    }
+    this.turns.splice(i, 0, turn);
   }
 
   dequeue(): QueuedTurn | undefined {
