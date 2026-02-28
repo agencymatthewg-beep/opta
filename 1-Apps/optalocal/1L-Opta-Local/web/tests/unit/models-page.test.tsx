@@ -8,14 +8,18 @@ vi.mock('@/components/shared/ConnectionProvider', () => ({
 }));
 
 // Mock framer-motion to avoid animation complexity in unit tests
-vi.mock('framer-motion', () => ({
-  motion: {
-    div: ({ children, ...p }: HTMLAttributes<HTMLDivElement>) =>
-      <div {...p}>{children}</div>,
-  },
-  AnimatePresence: ({ children }: { children: ReactNode }) =>
-    <>{children}</>,
-}));
+vi.mock('framer-motion', () => {
+  type MotionDivProps = HTMLAttributes<HTMLDivElement> & Record<string, unknown>;
+  const MotionDiv = ({ children, layoutId, transition, initial, animate, exit, ...rest }: MotionDivProps) => {
+    // Extracted to prevent framer-motion-specific props reaching the DOM
+    void [layoutId, transition, initial, animate, exit];
+    return <div {...rest}>{children}</div>;
+  };
+  return {
+    motion: { div: MotionDiv },
+    AnimatePresence: ({ children }: { children: ReactNode }) => <>{children}</>,
+  };
+});
 
 import ModelsPage from '@/app/models/page';
 
