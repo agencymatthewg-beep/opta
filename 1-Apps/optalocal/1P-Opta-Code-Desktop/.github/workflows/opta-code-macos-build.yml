@@ -28,6 +28,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+      - name: Install CLI workspace dependencies (types only)
+        working-directory: 1-Apps/optalocal/1D-Opta-CLI-TS
+        run: npm install --ignore-scripts
       - name: Install daemon-client dependencies (types only)
         working-directory: 1-Apps/optalocal/1D-Opta-CLI-TS/packages/daemon-client
         run: npm install --ignore-scripts
@@ -78,6 +81,9 @@ jobs:
         uses: swatinem/rust-cache@v2
         with:
           workspaces: "1-Apps/optalocal/1P-Opta-Code-Desktop/src-tauri -> target"
+      - name: Install CLI workspace dependencies (types only)
+        working-directory: 1-Apps/optalocal/1D-Opta-CLI-TS
+        run: npm install --ignore-scripts
       - name: Install daemon-client dependencies (types only)
         working-directory: 1-Apps/optalocal/1D-Opta-CLI-TS/packages/daemon-client
         run: npm install --ignore-scripts
