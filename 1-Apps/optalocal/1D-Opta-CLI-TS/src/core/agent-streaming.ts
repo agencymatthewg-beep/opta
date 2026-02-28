@@ -31,36 +31,45 @@ export interface StreamUsage {
   completionTokens: number;
 }
 
+/** Shorthand for the chunk iterable type produced by every streaming code path. */
+type ChunkStream = AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>;
+
 // --- Streaming Retry ---
 
-/** Retryable errors: network failures, timeouts, 5xx server errors. */
+/** LMX WebSocket-specific error message substrings that warrant a retry. */
+const LMX_WS_RETRYABLE_MESSAGES = [
+  'lmx websocket stream closed unexpectedly',
+  'lmx websocket handshake timed out',
+  'lmx websocket idle timeout',
+] as const;
+
+/** Generic network error message substrings that warrant a retry. */
+const NETWORK_RETRYABLE_MESSAGES = [
+  'econnrefused',
+  'econnreset',
+  'etimedout',
+  'fetch failed',
+  'network',
+  'socket hang up',
+  'premature close',
+  'other side closed',
+] as const;
+
+/**
+ * Returns true for transient errors that are safe to retry:
+ * LMX WebSocket disconnects, network failures, and HTTP 5xx responses.
+ * Always returns false for AbortErrors (user-initiated cancellations).
+ */
 function isRetryableError(err: unknown): boolean {
   if (isAbortError(err)) return false;
   if (err instanceof Error) {
     const msg = err.message.toLowerCase();
-    if (
-      msg.includes('lmx websocket stream closed unexpectedly') ||
-      msg.includes('lmx websocket handshake timed out') ||
-      msg.includes('lmx websocket idle timeout')
-    ) {
-      return true;
-    }
-    if (
-      msg.includes('econnrefused') ||
-      msg.includes('econnreset') ||
-      msg.includes('etimedout') ||
-      msg.includes('fetch failed') ||
-      msg.includes('network') ||
-      msg.includes('socket hang up') ||
-      msg.includes('premature close') ||
-      msg.includes('other side closed')
-    ) {
-      return true;
-    }
+    if (LMX_WS_RETRYABLE_MESSAGES.some((fragment) => msg.includes(fragment))) return true;
+    if (NETWORK_RETRYABLE_MESSAGES.some((fragment) => msg.includes(fragment))) return true;
   }
   // OpenAI SDK wraps HTTP errors with a status property
   const status = (err as { status?: number }).status;
-  if (status && status >= 500) return true;
+  if (status !== undefined && status >= 500) return true;
   return false;
 }
 
@@ -81,17 +90,30 @@ export interface StreamTransportOptions {
   lmxWsUnavailable?: boolean;
 }
 
-type RetryConfig = { maxRetries: number; backoffMs: number; backoffMultiplier: number };
+/** Exponential-backoff retry parameters used by {@link createStreamWithRetry}. */
+type RetryConfig = {
+  /** Maximum number of retry attempts before surfacing the error. */
+  maxRetries: number;
+  /** Base delay in milliseconds before the first retry. */
+  backoffMs: number;
+  /** Multiplier applied to the delay on each successive attempt. */
+  backoffMultiplier: number;
+};
 
+/** Returns a human-readable description of an unknown thrown value. */
 function describeError(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
 }
 
+/**
+ * Opens an SSE-backed streaming chat completion via the OpenAI SDK.
+ * `include_usage: true` ensures the final chunk carries token-count metadata.
+ */
 async function createSdkStream(
   client: OpenAI,
   params: Parameters<OpenAI['chat']['completions']['create']>[0],
   signal?: AbortSignal
-): Promise<AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>> {
+): Promise<ChunkStream> {
   const payload = {
     ...params,
     stream: true,
@@ -100,20 +122,24 @@ async function createSdkStream(
 
   // OpenAI SDK supports passing AbortSignal via request options.
   // Call the bound method directly to preserve `this` context across providers.
-  return client.chat.completions.create(payload, signal ? { signal } : undefined) as Promise<
-    AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>
-  >;
+  return client.chat.completions.create(payload, signal ? { signal } : undefined) as Promise<ChunkStream>;
 }
 
-async function primeStream(
-  stream: AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>
-): Promise<AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>> {
+/**
+ * Eagerly reads the first chunk of a stream to verify it is live before
+ * wiring up mid-stream recovery. Returns an equivalent iterable that
+ * re-yields the consumed chunk so callers see an unmodified sequence.
+ *
+ * An immediately-done iterator (server closed before sending anything)
+ * is surfaced as an empty iterable rather than silently blocking callers.
+ */
+async function primeStream(stream: ChunkStream): Promise<ChunkStream> {
   const iterator = stream[Symbol.asyncIterator]();
   const first = await iterator.next();
   if (first.done) {
-    return (async function* (): AsyncGenerator<OpenAI.Chat.Completions.ChatCompletionChunk> {})();
+    return (async function* emptyStream(): AsyncGenerator<OpenAI.Chat.Completions.ChatCompletionChunk> {})();
   }
-  return (async function* (): AsyncGenerator<OpenAI.Chat.Completions.ChatCompletionChunk> {
+  return (async function* prependFirstChunk(): AsyncGenerator<OpenAI.Chat.Completions.ChatCompletionChunk> {
     yield first.value;
     while (true) {
       const next = await iterator.next();
@@ -123,30 +149,36 @@ async function primeStream(
   })();
 }
 
+/**
+ * Attempts to open an LMX WebSocket stream for the given request parameters.
+ *
+ * Returns `null` when the active provider is not LMX or no config is available,
+ * allowing the caller to fall back to the SSE path without special-casing.
+ * Caches the resolved host and WebSocket URL on `transport` across retries
+ * to avoid redundant endpoint-discovery round-trips.
+ */
 async function maybeCreateLmxWsStream(
   transport: StreamTransportOptions | undefined,
   params: Parameters<OpenAI['chat']['completions']['create']>[0]
-): Promise<AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk> | null> {
+): Promise<ChunkStream | null> {
   if (!transport?.config) return null;
   const providerName = transport.providerName ?? transport.config.provider.active;
   if (providerName !== 'lmx') return null;
   let endpointHost = transport.resolvedLmxHost;
   if (!endpointHost) {
-    const endpoint = await resolveLmxEndpoint(
+    const discoveredEndpoint = await resolveLmxEndpoint(
       {
         host: transport.config.connection.host,
         fallbackHosts: transport.config.connection.fallbackHosts,
         port: transport.config.connection.port,
         adminKey: transport.config.connection.adminKey,
       },
-      {
-        timeoutMs: 1_500,
-      }
+      { timeoutMs: 1_500 }
     );
-    endpointHost = endpoint.host;
+    endpointHost = discoveredEndpoint.host;
     transport.resolvedLmxHost = endpointHost;
-    if (endpoint.wsUrl) {
-      transport.resolvedLmxWsUrl = endpoint.wsUrl;
+    if (discoveredEndpoint.wsUrl) {
+      transport.resolvedLmxWsUrl = discoveredEndpoint.wsUrl;
     }
   }
   const { port, adminKey } = transport.config.connection;
@@ -175,120 +207,148 @@ async function maybeCreateLmxWsStream(
   );
 }
 
+/**
+ * Tracks which portions of a partially-emitted response have already been
+ * yielded to the caller, so that chunks received after a mid-stream reconnect
+ * can be deduplicated before re-emission.
+ */
 interface RecoveryReplayState {
+  /** Content text that has already been yielded; trimmed as matching chunks arrive. */
   remainingContentPrefix: string;
+  /** Per tool-call-index argument prefix that has already been yielded. */
   remainingToolCallArgPrefixes: Map<number, string>;
 }
 
-function trimRecoveredContentPrefix(content: string, state: RecoveryReplayState): string {
-  if (!content || !state.remainingContentPrefix) return content;
-  if (state.remainingContentPrefix.startsWith(content)) {
-    state.remainingContentPrefix = state.remainingContentPrefix.slice(content.length);
+/**
+ * Removes the already-emitted prefix from a recovered content fragment.
+ * Mutates `state.remainingContentPrefix` as matching bytes are consumed.
+ * When the recovered stream diverges from the emitted prefix, trimming stops
+ * and subsequent chunks are passed through unchanged.
+ */
+function trimRecoveredContentPrefix(contentFragment: string, state: RecoveryReplayState): string {
+  if (!contentFragment || !state.remainingContentPrefix) return contentFragment;
+  if (state.remainingContentPrefix.startsWith(contentFragment)) {
+    state.remainingContentPrefix = state.remainingContentPrefix.slice(contentFragment.length);
     return '';
   }
-  if (content.startsWith(state.remainingContentPrefix)) {
-    const trimmed = content.slice(state.remainingContentPrefix.length);
+  if (contentFragment.startsWith(state.remainingContentPrefix)) {
+    const dedupedFragment = contentFragment.slice(state.remainingContentPrefix.length);
     state.remainingContentPrefix = '';
-    return trimmed;
+    return dedupedFragment;
   }
-  // Diverged output: stop prefix trimming and continue with recovered stream as-is.
+  // Diverged output: stop prefix trimming and pass the fragment through as-is.
   state.remainingContentPrefix = '';
-  return content;
+  return contentFragment;
 }
 
+/**
+ * Removes the already-emitted argument prefix for the tool call at `index`.
+ * Mirrors {@link trimRecoveredContentPrefix} but operates on per-index Maps.
+ * Mutates `state.remainingToolCallArgPrefixes` as matching bytes are consumed.
+ */
 function trimRecoveredToolCallArgsPrefix(
   index: number,
-  args: string,
+  argsFragment: string,
   state: RecoveryReplayState
 ): string {
-  if (!args) return args;
-  const remainingPrefix = state.remainingToolCallArgPrefixes.get(index);
-  if (!remainingPrefix) return args;
+  if (!argsFragment) return argsFragment;
+  const emittedArgPrefix = state.remainingToolCallArgPrefixes.get(index);
+  if (!emittedArgPrefix) return argsFragment;
 
-  if (remainingPrefix.startsWith(args)) {
-    const nextRemainingPrefix = remainingPrefix.slice(args.length);
-    if (nextRemainingPrefix.length > 0) {
-      state.remainingToolCallArgPrefixes.set(index, nextRemainingPrefix);
+  if (emittedArgPrefix.startsWith(argsFragment)) {
+    const remainder = emittedArgPrefix.slice(argsFragment.length);
+    if (remainder.length > 0) {
+      state.remainingToolCallArgPrefixes.set(index, remainder);
     } else {
       state.remainingToolCallArgPrefixes.delete(index);
     }
     return '';
   }
-  if (args.startsWith(remainingPrefix)) {
+  if (argsFragment.startsWith(emittedArgPrefix)) {
     state.remainingToolCallArgPrefixes.delete(index);
-    return args.slice(remainingPrefix.length);
+    return argsFragment.slice(emittedArgPrefix.length);
   }
-  // Diverged output for this tool call index: stop prefix trimming and continue as-is.
+  // Diverged output for this tool call index: stop prefix trimming and pass through.
   state.remainingToolCallArgPrefixes.delete(index);
-  return args;
+  return argsFragment;
 }
 
+/**
+ * Strips already-emitted content and tool-call argument prefixes from a chunk
+ * received after a mid-stream reconnect, preventing duplicate output.
+ *
+ * Returns `null` when the entire chunk was already emitted (i.e. it carries
+ * no new content, no new tool-call args, no finish reason, and no usage data).
+ * Returns the original `chunk` reference when no deduplication was needed.
+ */
 function dedupeRecoveredChunk(
   chunk: OpenAI.Chat.Completions.ChatCompletionChunk,
   state: RecoveryReplayState
 ): OpenAI.Chat.Completions.ChatCompletionChunk | null {
+  // Fast path: nothing left to deduplicate.
   if (!state.remainingContentPrefix && state.remainingToolCallArgPrefixes.size === 0) return chunk;
+
   const choice = chunk.choices[0];
   const delta = choice?.delta;
   if (!delta) return chunk;
 
   let contentChanged = false;
-  let nextContent = delta.content;
+  let dedupedContent = delta.content;
   if (typeof delta.content === 'string' && state.remainingContentPrefix) {
     const trimmed = trimRecoveredContentPrefix(delta.content, state);
     if (trimmed !== delta.content) {
-      nextContent = trimmed;
+      dedupedContent = trimmed;
       contentChanged = true;
     }
   }
 
   let toolCallsChanged = false;
-  let nextToolCalls = delta.tool_calls;
+  let dedupedToolCalls = delta.tool_calls;
   if (
     Array.isArray(delta.tool_calls) &&
     delta.tool_calls.length > 0 &&
     state.remainingToolCallArgPrefixes.size > 0
   ) {
-    const trimmedToolCalls: typeof delta.tool_calls = [];
+    const survivingToolCalls: typeof delta.tool_calls = [];
     for (const toolCall of delta.tool_calls) {
-      const argsFragment = toolCall.function?.arguments;
-      let nextToolCall = toolCall;
+      const rawArgsFragment = toolCall.function?.arguments;
+      let dedupedToolCall = toolCall;
 
-      if (typeof argsFragment === 'string' && argsFragment.length > 0) {
+      if (typeof rawArgsFragment === 'string' && rawArgsFragment.length > 0) {
         const idx = toolCall.index ?? 0;
-        const trimmedArgsFragment = trimRecoveredToolCallArgsPrefix(idx, argsFragment, state);
-        if (trimmedArgsFragment !== argsFragment) {
+        const trimmedArgs = trimRecoveredToolCallArgsPrefix(idx, rawArgsFragment, state);
+        if (trimmedArgs !== rawArgsFragment) {
           toolCallsChanged = true;
-          nextToolCall = {
+          dedupedToolCall = {
             ...toolCall,
-            function: {
-              ...toolCall.function,
-              arguments: trimmedArgsFragment,
-            },
+            function: { ...toolCall.function, arguments: trimmedArgs },
           };
         }
       }
 
-      const isNoopToolCall =
-        !nextToolCall.id &&
-        !nextToolCall.type &&
-        !nextToolCall.function?.name &&
-        !nextToolCall.function?.arguments;
-      if (isNoopToolCall) {
+      // Drop tool-call deltas that carry nothing useful after deduplication.
+      const isNoop =
+        !dedupedToolCall.id &&
+        !dedupedToolCall.type &&
+        !dedupedToolCall.function?.name &&
+        !dedupedToolCall.function?.arguments;
+      if (isNoop) {
         toolCallsChanged = true;
         continue;
       }
-      trimmedToolCalls.push(nextToolCall);
+      survivingToolCalls.push(dedupedToolCall);
     }
 
-    if (toolCallsChanged || trimmedToolCalls.length !== delta.tool_calls.length) {
-      nextToolCalls = trimmedToolCalls;
+    if (toolCallsChanged || survivingToolCalls.length !== delta.tool_calls.length) {
+      dedupedToolCalls = survivingToolCalls;
       toolCallsChanged = true;
     }
   }
 
   if (!contentChanged && !toolCallsChanged) return chunk;
 
+  // If the entire delta is now empty and the chunk carries no terminal signal,
+  // suppress it entirely to avoid yielding zero-content chunks.
   const hasOtherDeltaFields = Object.entries(delta).some(
     ([key, value]) =>
       key !== 'content' &&
@@ -297,15 +357,9 @@ function dedupeRecoveredChunk(
       value !== null &&
       (!Array.isArray(value) || value.length > 0)
   );
-  const hasContent = typeof nextContent === 'string' && nextContent.length > 0;
-  const hasToolCalls = Array.isArray(nextToolCalls) && nextToolCalls.length > 0;
-  if (
-    !hasContent &&
-    !hasToolCalls &&
-    !hasOtherDeltaFields &&
-    choice.finish_reason === null &&
-    !chunk.usage
-  ) {
+  const hasContent = typeof dedupedContent === 'string' && dedupedContent.length > 0;
+  const hasToolCalls = Array.isArray(dedupedToolCalls) && dedupedToolCalls.length > 0;
+  if (!hasContent && !hasToolCalls && !hasOtherDeltaFields && choice.finish_reason === null && !chunk.usage) {
     return null;
   }
 
@@ -314,29 +368,34 @@ function dedupeRecoveredChunk(
     ...choice,
     delta: {
       ...delta,
-      ...(contentChanged ? { content: nextContent } : {}),
-      ...(toolCallsChanged ? { tool_calls: nextToolCalls } : {}),
+      ...(contentChanged ? { content: dedupedContent } : {}),
+      ...(toolCallsChanged ? { tool_calls: dedupedToolCalls } : {}),
     },
   };
-  return {
-    ...chunk,
-    choices,
-  };
+  return { ...chunk, choices };
 }
 
+/**
+ * Wraps a stream with automatic mid-stream reconnect logic for LMX connections.
+ *
+ * When a transient error interrupts the active stream, this generator:
+ * 1. Attempts up to `retryConfig.maxRetries` WebSocket reconnects with backoff.
+ * 2. Falls back to SSE via the OpenAI SDK if all WebSocket attempts fail.
+ * 3. Deduplicates chunks on the recovered stream so the caller never sees
+ *    content that was already yielded before the disconnect.
+ *
+ * AbortErrors and non-retryable errors propagate immediately without recovery.
+ */
 function withLmxMidStreamRecovery(
-  initialStream: AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>,
+  initialStream: ChunkStream,
   client: OpenAI,
   params: Parameters<OpenAI['chat']['completions']['create']>[0],
   retryConfig: RetryConfig,
   onStatus:
-    | ((
-        status: 'checking' | 'connected' | 'disconnected' | 'reconnecting',
-        attempt?: number
-      ) => void)
+    | ((status: 'checking' | 'connected' | 'disconnected' | 'reconnecting', attempt?: number) => void)
     | undefined,
   transport: StreamTransportOptions | undefined
-): AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk> {
+): ChunkStream {
   return (async function* recoverableStream(): AsyncGenerator<OpenAI.Chat.Completions.ChatCompletionChunk> {
     let currentStream = initialStream;
     let emittedText = '';
@@ -345,8 +404,8 @@ function withLmxMidStreamRecovery(
       remainingContentPrefix: '',
       remainingToolCallArgPrefixes: new Map<number, string>(),
     };
-    let recoveryCycles = 0;
-    const maxRecoveryCycles = Math.max(1, retryConfig.maxRetries + 1);
+    let reconnectAttempts = 0;
+    const maxReconnectCycles = Math.max(1, retryConfig.maxRetries + 1);
 
     while (true) {
       try {
@@ -375,29 +434,23 @@ function withLmxMidStreamRecovery(
       } catch (err) {
         if (isAbortError(err)) throw err;
         if (!isRetryableError(err)) throw err;
-        if (recoveryCycles >= maxRecoveryCycles) {
+        if (reconnectAttempts >= maxReconnectCycles) {
           onStatus?.('disconnected');
           throw err;
         }
 
-        recoveryCycles += 1;
-        let recoveredStream: AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk> | null =
-          null;
-        let reconnectError: unknown = err;
-        const wsRecoveryAttempts = Math.max(0, retryConfig.maxRetries);
+        reconnectAttempts += 1;
+        let recoveredStream: ChunkStream | null = null;
+        let lastWsError: unknown = err;
+        const maxWsReconnects = Math.max(0, retryConfig.maxRetries);
 
-        for (let attempt = 1; attempt <= wsRecoveryAttempts; attempt += 1) {
+        for (let attempt = 1; attempt <= maxWsReconnects; attempt += 1) {
           onStatus?.('reconnecting', attempt);
-          const delay =
-            retryConfig.backoffMs * Math.pow(retryConfig.backoffMultiplier, attempt - 1);
-          debug(
-            `LMX mid-stream recovery attempt ${attempt}/${wsRecoveryAttempts} after ${delay}ms`
-          );
+          const delay = retryConfig.backoffMs * Math.pow(retryConfig.backoffMultiplier, attempt - 1);
+          debug(`LMX mid-stream recovery attempt ${attempt}/${maxWsReconnects} after ${delay}ms`);
           await sleep(delay);
 
-          if (transport) {
-            transport.resolvedLmxHost = undefined;
-          }
+          if (transport) transport.resolvedLmxHost = undefined;
 
           try {
             const wsStream = await maybeCreateLmxWsStream(transport, params);
@@ -405,36 +458,30 @@ function withLmxMidStreamRecovery(
             recoveredStream = await primeStream(wsStream);
             onStatus?.('connected');
             break;
-          } catch (reconnectErr) {
-            if (isAbortError(reconnectErr)) throw reconnectErr;
-            reconnectError = reconnectErr;
-            if (!isRetryableError(reconnectErr)) break;
+          } catch (wsErr) {
+            if (isAbortError(wsErr)) throw wsErr;
+            lastWsError = wsErr;
+            if (!isRetryableError(wsErr)) break;
           }
         }
 
         if (!recoveredStream) {
-          if (wsRecoveryAttempts === 0) {
+          if (maxWsReconnects === 0) {
             onStatus?.('reconnecting', 1);
           }
-          debug(
-            `LMX websocket mid-stream recovery falling back to SSE: ${describeError(reconnectError)}`
-          );
-          if (transport) {
-            transport.resolvedLmxHost = undefined;
-          }
+          debug(`LMX WebSocket mid-stream recovery falling back to SSE: ${describeError(lastWsError)}`);
+          if (transport) transport.resolvedLmxHost = undefined;
           try {
             recoveredStream = await createSdkStream(client, params, transport?.signal);
-          } catch (fallbackErr) {
+          } catch (sseErr) {
             onStatus?.('disconnected');
-            throw fallbackErr;
+            throw sseErr;
           }
           onStatus?.('connected');
         }
 
         replayState.remainingContentPrefix = emittedText;
-        replayState.remainingToolCallArgPrefixes = new Map<number, string>(
-          emittedToolCallArgsByIndex
-        );
+        replayState.remainingToolCallArgPrefixes = new Map<number, string>(emittedToolCallArgsByIndex);
         currentStream = recoveredStream;
       }
     }
@@ -452,8 +499,8 @@ export async function createStreamWithRetry(
   transport?: StreamTransportOptions
 ): Promise<AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>> {
   let lastError: unknown;
-  // isLmxProvider: true whenever we're routing through Opta-LMX (regardless of WS state).
-  // shouldTryLmxWs: true only when WS hasn't already been established as unavailable.
+  // `isLmxProvider`: routing through Opta-LMX regardless of whether WS or SSE is used.
+  // `shouldTryLmxWs`: only true when WS has not been established as unavailable this session.
   const isLmxProvider = Boolean(
     transport?.config &&
       (transport.providerName ?? transport.config.provider.active) === 'lmx'
@@ -466,13 +513,13 @@ export async function createStreamWithRetry(
         onStatus?.('reconnecting', attempt);
         const delay = retryConfig.backoffMs * Math.pow(retryConfig.backoffMultiplier, attempt - 1);
         debug(`Retry attempt ${attempt}/${retryConfig.maxRetries} after ${delay}ms`);
-        await new Promise((resolve) => setTimeout(resolve, delay));
+        await sleep(delay);
       }
 
-      // Preferred path for Opta LMX: bidirectional WebSocket stream with cancel.
-      // Guard with shouldTryLmxWs so turns after a WS failure skip directly to SSE
-      // without re-attempting 3 failing WebSocket connections.
-      let stream: AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk> | null = null;
+      // Preferred path for LMX: bidirectional WebSocket stream with server-side cancel.
+      // `shouldTryLmxWs` is false once WS has been established as unavailable for this
+      // session, so subsequent turns go straight to SSE without exhausting retries.
+      let stream: ChunkStream | null = null;
       if (shouldTryLmxWs) {
         try {
           stream = await maybeCreateLmxWsStream(transport, params);
@@ -481,19 +528,17 @@ export async function createStreamWithRetry(
           }
         } catch (err) {
           if (isAbortError(err)) throw err;
-          if (transport) {
-            transport.resolvedLmxHost = undefined;
-          }
+          if (transport) transport.resolvedLmxHost = undefined;
           if (isRetryableError(err) && attempt < retryConfig.maxRetries) {
             throw err;
           }
-          debug(`LMX websocket stream unavailable, falling back to SSE: ${describeError(err)}`);
+          debug(`LMX WebSocket stream unavailable, falling back to SSE: ${describeError(err)}`);
           stream = null;
         }
       }
       if (!stream) {
-        // WS was attempted and failed (or already known unavailable) — mark it so
-        // subsequent turns in this session skip the WS path entirely.
+        // WS was attempted and failed (or was already known unavailable) — mark it so
+        // subsequent turns in this session skip WS entirely.
         if (shouldTryLmxWs && transport) {
           transport.lmxWsUnavailable = true;
         }
@@ -504,9 +549,9 @@ export async function createStreamWithRetry(
         onStatus?.('connected');
       }
 
-      // Apply mid-stream recovery for all LMX streams (WS and SSE fallback).
-      // Use isLmxProvider — not shouldTryLmxWs — so recovery remains active
-      // even after WS has fallen back to SSE (lmxWsUnavailable=true).
+      // Mid-stream recovery applies to all LMX streams, including SSE fallback.
+      // Keyed on `isLmxProvider` (not `shouldTryLmxWs`) so recovery stays active
+      // even when `lmxWsUnavailable` is true and the SSE path is in use.
       if (isLmxProvider) {
         return withLmxMidStreamRecovery(stream, client, params, retryConfig, onStatus, transport);
       }
@@ -526,8 +571,18 @@ export async function createStreamWithRetry(
 
 // --- Stream Collector ---
 
+/**
+ * Iterates a streaming chat completion, dispatching content to the caller
+ * via `onVisibleText` and accumulating the full response for return.
+ *
+ * @param stream - The chunk iterable produced by {@link createStreamWithRetry}.
+ * @param onVisibleText - Called with each non-thinking content fragment as it arrives.
+ * @param statusBar - Optional status bar to update with token-rate telemetry.
+ * @param onStream - Optional TUI streaming callbacks (onToken, onThinking).
+ * @returns Accumulated text (think-tags stripped), tool calls, usage, and finish reason.
+ */
 export async function collectStream(
-  stream: AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>,
+  stream: ChunkStream,
   onVisibleText: (chunk: string) => void,
   statusBar?: StatusBar | null,
   onStream?: OnStreamCallbacks
@@ -540,12 +595,12 @@ export async function collectStream(
 }> {
   let text = '';
   const toolCallMap = new Map<number, ToolCallAccum>();
-  const thinking = new ThinkingRenderer();
+  const thinkingRenderer = new ThinkingRenderer();
   let usage: StreamUsage | null = null;
   let finishReason: string | null = null;
 
   for await (const chunk of stream) {
-    // Capture usage from the final chunk (sent when stream_options.include_usage is true)
+    // Usage is reported on the final chunk when stream_options.include_usage is true.
     if (chunk.usage) {
       usage = {
         promptTokens: chunk.usage.prompt_tokens,
@@ -553,7 +608,7 @@ export async function collectStream(
       };
     }
 
-    // Capture finish_reason from the final chunk (truncation detection)
+    // finish_reason signals truncation ('length') or tool dispatch ('tool_calls').
     const choiceFinishReason = chunk.choices[0]?.finish_reason;
     if (choiceFinishReason) {
       finishReason = choiceFinishReason;
@@ -562,62 +617,60 @@ export async function collectStream(
     const delta = chunk.choices[0]?.delta;
     if (!delta) continue;
 
-    if (delta.content) {
+    if (delta.content && delta.content.length > 0) {
       const safeDelta = sanitizeTerminalText(delta.content);
       text += safeDelta;
       statusBar?.markStart();
 
-      // ThinkingRenderer handles <think> display and returns non-thinking content
-      const visible = thinking.process(safeDelta);
+      // ThinkingRenderer filters <think> blocks and returns only visible content.
+      const visible = thinkingRenderer.process(safeDelta);
       if (visible) {
         onVisibleText(visible);
-        // Emit token event for TUI streaming
         onStream?.onToken?.(visible);
       }
 
-      // Emit thinking content if we're still in thinking mode
-      if (!visible && thinking.isThinking) {
+      // Forward raw thinking content to the TUI thinking panel when inside a <think> block.
+      if (!visible && thinkingRenderer.isThinking) {
         onStream?.onThinking?.(safeDelta);
       }
 
-      // Update status bar with token estimate
-      const tokenDelta = estimateTokens(safeDelta);
-      statusBar?.update(tokenDelta);
+      statusBar?.update(estimateTokens(safeDelta));
     }
 
+    // Accumulate tool-call deltas streamed across multiple chunks into complete calls.
     if (delta.tool_calls) {
-      for (const tc of delta.tool_calls) {
-        const idx = tc.index ?? 0;
+      for (const toolCallDelta of delta.tool_calls) {
+        const idx = toolCallDelta.index ?? 0;
         const existing = toolCallMap.get(idx);
         if (!existing) {
           toolCallMap.set(idx, {
-            id: tc.id ?? '',
-            name: tc.function?.name ?? '',
-            args: tc.function?.arguments ?? '',
+            id: toolCallDelta.id ?? '',
+            name: toolCallDelta.function?.name ?? '',
+            args: toolCallDelta.function?.arguments ?? '',
           });
         } else {
-          if (tc.id) existing.id = tc.id;
-          if (tc.function?.name) existing.name = tc.function.name;
-          if (tc.function?.arguments) existing.args += tc.function.arguments;
+          if (toolCallDelta.id) existing.id = toolCallDelta.id;
+          if (toolCallDelta.function?.name) existing.name = toolCallDelta.function.name;
+          if (toolCallDelta.function?.arguments) existing.args += toolCallDelta.function.arguments;
         }
       }
     }
   }
 
-  // Flush any remaining buffered text from thinking renderer
-  const remaining = thinking.flush();
-  if (remaining) {
-    onVisibleText(remaining);
-    onStream?.onToken?.(remaining);
+  // Flush any content still buffered inside the thinking renderer (e.g. unclosed <think>).
+  const remainingVisible = thinkingRenderer.flush();
+  if (remainingVisible) {
+    onVisibleText(remainingVisible);
+    onStream?.onToken?.(remainingVisible);
   }
 
-  // Strip <think> tags from the full collected text (for message history)
+  // Remove <think> tags from the full text before storing in message history.
   text = stripThinkTags(text);
 
   return {
     text,
     toolCalls: [...toolCallMap.values()],
-    thinkingRenderer: thinking,
+    thinkingRenderer,
     usage,
     finishReason,
   };

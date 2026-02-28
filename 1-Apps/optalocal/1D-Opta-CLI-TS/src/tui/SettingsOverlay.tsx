@@ -3,6 +3,7 @@ import { Box, Text, useInput, useStdout } from 'ink';
 import TextInput from 'ink-text-input';
 import type { AccountState } from '../accounts/types.js';
 import { InlineSelect, InlineSlider, type SelectOption } from './InlineSelect.js';
+import { OPTA_BRAND_GLYPH, OPTA_BRAND_NAME } from '../ui/brand.js';
 
 // --- TYPES ---
 
@@ -16,9 +17,10 @@ interface SettingsItem {
   description: string;
   configKey: string;
   defaultValue: string;
-  sensitive?: boolean;      // Mask value with ***
-  validate?: (v: string) => string | null; // Return error string or null
-  hint?: string;            // Extra help below input
+  sensitive?: boolean;      // Mask displayed value with ●●●●●
+  /** Validates the typed value; returns an error message string, or null when valid. */
+  validate?: (v: string) => string | null;
+  hint?: string;            // Extra help text shown below the input field
   /** Input type: 'text' (default), 'select' for fixed options, 'toggle' for bool, 'slider' for range, 'action' for one-shot callbacks */
   inputType?: 'text' | 'select' | 'toggle' | 'slider' | 'action';
   /** Options for select-type items */
@@ -33,11 +35,16 @@ interface SettingsItem {
 }
 
 export interface SettingsOverlayProps {
+  /** Current phase of the open/close animation. Defaults to `'open'`. */
   animationPhase?: 'opening' | 'open' | 'closing';
+  /** Normalized progress of the animation (0–1). Defaults to `1` (fully open). */
   animationProgress?: number;
+  /** Maximum terminal columns the overlay may occupy. */
   maxWidth?: number;
+  /** Maximum terminal rows the overlay may occupy. */
   maxHeight?: number;
-  config?: Record<string, unknown>; // Flat dot-notation config snapshot
+  /** Flat dot-notation config snapshot (e.g. `{ 'connection.host': 'localhost' }`). */
+  config?: Record<string, unknown>;
   onClose: () => void;
   onSave: (changes: Record<string, unknown>) => void;
 }
@@ -53,10 +60,12 @@ const PAGES: SettingsPage[] = [
   { id: 'account',    label: 'Account',     color: '#f472b6' },
 ];
 
-const PAGE_INDEX = PAGES.reduce<Record<SettingsPageId, number>>((acc, p, i) => {
-  acc[p.id] = i; return acc;
-}, { connection: 0, models: 1, safety: 2, paths: 3, advanced: 4, account: 5 });
+const PAGE_INDEX = PAGES.reduce<Record<SettingsPageId, number>>(
+  (acc, p, i) => { acc[p.id] = i; return acc; },
+  {} as Record<SettingsPageId, number>
+);
 
+/** Ordered cycle of display profiles (Shift+Tab advances through this list). */
 const SETTINGS_DISPLAY_PROFILES: SettingsDisplayProfile[] = ['compact', 'opta', 'advanced'];
 const SETTINGS_DISPLAY_PROFILE_LABEL: Record<SettingsDisplayProfile, string> = {
   compact: 'Compact',
@@ -91,15 +100,20 @@ const ADVANCED_PROFILE_ONLY_KEYS = new Set<string>([
   'research.providers.gemini.apiKey',
 ]);
 
-/** Open a URL in the OS default browser (cross-platform, fire-and-forget). */
+/** Platform-specific command used to open a URL in the default browser. */
+const BROWSER_OPEN_CMD: Partial<Record<NodeJS.Platform, string>> = {
+  darwin: 'open',
+  win32: 'start',
+};
+
+/** Opens a URL in the OS default browser (cross-platform, fire-and-forget). */
 function openInBrowser(url: string): void {
-  const cmd =
-    process.platform === 'darwin' ? 'open' :
-    process.platform === 'win32'  ? 'start' :
-    'xdg-open';
+  const cmd = BROWSER_OPEN_CMD[process.platform] ?? 'xdg-open';
   import('node:child_process').then(({ spawn }) => {
     spawn(cmd, [url], { detached: true, stdio: 'ignore' }).unref();
-  }).catch(() => { /* ignore — browser open is best-effort */ });
+  }).catch(() => {
+    // Best-effort: silently ignore failures (user may open the URL manually).
+  });
 }
 
 const PAGE_ITEMS: Record<SettingsPageId, SettingsItem[]> = {
@@ -229,8 +243,22 @@ const PAGE_ITEMS: Record<SettingsPageId, SettingsItem[]> = {
   ],
 };
 
+// --- COLORS ---
+
+/** Semantic color tokens reused across the settings overlay UI. */
+const COLOR = {
+  success: '#10b981',
+  warning: '#f59e0b',
+  error:   '#ef4444',
+  muted:   '#4b5563',
+} as const;
+
 // --- HELPERS ---
 
+/**
+ * Reads a flat dot-notation key from the config snapshot, coercing to string.
+ * Returns `defaultVal` when config is absent or the key is unset.
+ */
 function getConfigValue(config: Record<string, unknown> | undefined, key: string, defaultVal: string): string {
   if (!config) return defaultVal;
   const val = config[key];
@@ -238,43 +266,67 @@ function getConfigValue(config: Record<string, unknown> | undefined, key: string
   return String(val);
 }
 
+/**
+ * Returns the Unicode glyph that reflects whether a config field has been set.
+ * Sensitive fields use a warning glyph when still at the default (likely empty).
+ */
 function statusGlyph(value: string, defaultVal: string, sensitive?: boolean): string {
   if (!value || value === defaultVal) return sensitive ? '⚠' : '○';
   return '✓';
 }
 
+/**
+ * Returns the color that reflects whether a config field has been set.
+ * Sensitive fields use a warning color when still at the default (likely empty).
+ */
 function statusColor(value: string, defaultVal: string, sensitive?: boolean): string {
-  if (!value || value === defaultVal) return sensitive ? '#f59e0b' : '#4b5563';
-  return '#10b981';
+  if (!value || value === defaultVal) return sensitive ? COLOR.warning : COLOR.muted;
+  return COLOR.success;
 }
 
+const SECS_PER_HOUR = 3_600;
+const SECS_PER_DAY  = 86_400;
+
+/**
+ * Converts a Unix timestamp (seconds) into a human-readable expiry label and
+ * a color indicating whether the token is still valid or has expired.
+ */
 function formatTokenExpiry(expiresAt: number | undefined): { label: string; color: string } {
-  if (expiresAt === undefined) return { label: 'unknown', color: '#4b5563' };
+  if (expiresAt === undefined) return { label: 'unknown', color: COLOR.muted };
   const nowSecs = Math.floor(Date.now() / 1000);
   const diffSecs = expiresAt - nowSecs;
   const absSecs = Math.abs(diffSecs);
-  const h = Math.floor(absSecs / 3600);
-  const m = Math.floor((absSecs % 3600) / 60);
+  const h = Math.floor(absSecs / SECS_PER_HOUR);
+  const m = Math.floor((absSecs % SECS_PER_HOUR) / 60);
   const parts: string[] = [];
   if (h > 0) parts.push(`${h}h`);
   if (m > 0 || h === 0) parts.push(`${m}m`);
   const humanTime = parts.join(' ');
   if (diffSecs > 0) {
-    return { label: `in ${humanTime}`, color: '#10b981' };
+    return { label: `in ${humanTime}`, color: COLOR.success };
   }
-  const daysAgo = Math.floor(absSecs / 86400);
+  const daysAgo = Math.floor(absSecs / SECS_PER_DAY);
   if (daysAgo >= 1) {
-    return { label: `expired ${daysAgo} day${daysAgo !== 1 ? 's' : ''} ago`, color: '#ef4444' };
+    return { label: `expired ${daysAgo} day${daysAgo !== 1 ? 's' : ''} ago`, color: COLOR.error };
   }
-  return { label: `expired ${humanTime} ago`, color: '#ef4444' };
+  return { label: `expired ${humanTime} ago`, color: COLOR.error };
 }
 
+/**
+ * Returns the display profile that follows `current` in the cycle order,
+ * wrapping back to the first profile after the last.
+ */
 function nextSettingsDisplayProfile(current: SettingsDisplayProfile): SettingsDisplayProfile {
-  const currentIndex = SETTINGS_DISPLAY_PROFILES.indexOf(current);
-  const safeIndex = currentIndex >= 0 ? currentIndex : 0;
-  return SETTINGS_DISPLAY_PROFILES[(safeIndex + 1) % SETTINGS_DISPLAY_PROFILES.length]!;
+  const currentIdx = SETTINGS_DISPLAY_PROFILES.indexOf(current);
+  const safeIdx = currentIdx >= 0 ? currentIdx : 0;
+  return SETTINGS_DISPLAY_PROFILES[(safeIdx + 1) % SETTINGS_DISPLAY_PROFILES.length]!;
 }
 
+/**
+ * Parses a CSI-u extended key event escape sequence (Kitty protocol subset).
+ * Returns the codepoint and modifier flags, or `null` for non-matching input.
+ * Modifier encoding: bit 0 = Shift, bit 1 = Meta/Alt, bit 2 = Ctrl.
+ */
 function parseCsiUKeyEvent(input: string): { codepoint: number; ctrl: boolean; shift: boolean; meta: boolean } | null {
   const match = input.match(/^\x1B\[(\d+);(\d+)u$/i);
   if (!match) return null;
@@ -285,33 +337,39 @@ function parseCsiUKeyEvent(input: string): { codepoint: number; ctrl: boolean; s
   return {
     codepoint,
     shift: (modifierMask & 1) !== 0,
-    meta: (modifierMask & 2) !== 0,
-    ctrl: (modifierMask & 4) !== 0,
+    meta:  (modifierMask & 2) !== 0,
+    ctrl:  (modifierMask & 4) !== 0,
   };
 }
 
-function isCtrlSShortcut(
-  input: string,
-  key: { ctrl?: boolean; meta?: boolean },
-): boolean {
+/**
+ * Returns true when the key event represents Ctrl+S (without Meta/Alt).
+ * Handles both the legacy `\x13` byte and the CSI-u extended key protocol
+ * so the shortcut works across terminals that emit different sequences.
+ */
+function isCtrlSShortcut(input: string, key: { ctrl?: boolean; meta?: boolean }): boolean {
   const csiU = parseCsiUKeyEvent(input);
-  const ctrlPressed = Boolean(key.ctrl) || Boolean(csiU?.ctrl);
-  const metaPressed = Boolean(key.meta) || Boolean(csiU?.meta);
+  const ctrlPressed = (key.ctrl ?? false) || (csiU?.ctrl ?? false);
+  const metaPressed = (key.meta ?? false) || (csiU?.meta ?? false);
   if (!ctrlPressed || metaPressed) return false;
   if (input === '\x13') return true;
   const normalized = csiU ? String.fromCodePoint(csiU.codepoint) : input;
   return normalized.toLowerCase() === 's';
 }
 
+/**
+ * Filters a page's settings items to those appropriate for the active display profile.
+ * - `advanced`: all items shown.
+ * - `compact`: only the curated subset in {@link COMPACT_PROFILE_KEYS}.
+ * - `opta` (default): everything except deep expert options in {@link ADVANCED_PROFILE_ONLY_KEYS}.
+ */
 function filterItemsForDisplayProfile(
   items: SettingsItem[],
   profile: SettingsDisplayProfile,
 ): SettingsItem[] {
   if (profile === 'advanced') return items;
-  if (profile === 'compact') {
-    return items.filter((item) => COMPACT_PROFILE_KEYS.has(item.configKey));
-  }
-  // "Opta" profile = default curated settings, excluding deep expert options.
+  if (profile === 'compact') return items.filter((item) => COMPACT_PROFILE_KEYS.has(item.configKey));
+  // 'opta' profile: curated defaults — omit deep expert keys.
   return items.filter((item) => !ADVANCED_PROFILE_ONLY_KEYS.has(item.configKey));
 }
 
@@ -332,7 +390,7 @@ function AccountPageContent({ accountState, pageColor }: AccountPageContentProps
   }
 
   const supabaseUrl = process.env['OPTA_SUPABASE_URL'];
-  const supabaseConfigured = Boolean(supabaseUrl && supabaseUrl.trim().length > 0);
+  const supabaseConfigured = Boolean(supabaseUrl?.trim());
 
   const user = accountState?.user ?? null;
   const session = accountState?.session ?? null;
@@ -344,16 +402,16 @@ function AccountPageContent({ accountState, pageColor }: AccountPageContentProps
 
   let tokenStatus: { label: string; color: string };
   if (!session) {
-    tokenStatus = { label: 'None', color: '#4b5563' };
+    tokenStatus = { label: 'None', color: COLOR.muted };
   } else {
     const expiresAt = session.expires_at;
     if (expiresAt !== undefined) {
       const nowSecs = Math.floor(Date.now() / 1000);
       tokenStatus = expiresAt > nowSecs
-        ? { label: 'Valid', color: '#10b981' }
-        : { label: 'Expired', color: '#ef4444' };
+        ? { label: 'Valid', color: COLOR.success }
+        : { label: 'Expired', color: COLOR.error };
     } else {
-      tokenStatus = { label: 'Valid', color: '#10b981' };
+      tokenStatus = { label: 'Valid', color: COLOR.success };
     }
   }
 
@@ -364,7 +422,7 @@ function AccountPageContent({ accountState, pageColor }: AccountPageContentProps
       {/* User row */}
       <Box>
         <Text dimColor>  User     </Text>
-        <Text color={user ? pageColor : '#4b5563'} bold={Boolean(user)}>
+        <Text color={user ? pageColor : COLOR.muted} bold={Boolean(user)}>
           {userIdentity}
         </Text>
       </Box>
@@ -396,14 +454,27 @@ function AccountPageContent({ accountState, pageColor }: AccountPageContentProps
       <Box marginTop={1}>
         <Text dimColor>  Config   </Text>
         {supabaseConfigured
-          ? <Text color="#10b981">Supabase configured</Text>
-          : <Text color="#f59e0b">{'⚠ OPTA_SUPABASE_URL not set'}</Text>
+          ? <Text color={COLOR.success}>Supabase configured</Text>
+          : <Text color={COLOR.warning}>{'⚠ OPTA_SUPABASE_URL not set'}</Text>
         }
       </Box>
 
     </Box>
   );
 }
+
+// --- ANIMATION THRESHOLDS ---
+
+/** Progress fraction at which the header and hint text become visible. */
+const ANIM_SHOW_CONTENT_AT  = 0.28;
+/** Progress fraction at which the items list becomes visible. */
+const ANIM_SHOW_ITEMS_AT    = 0.55;
+/** Progress fraction below which the overlay is considered still animating. */
+const ANIM_TRANSITION_AT    = 0.95;
+/** Width scale: minimum fraction of full width during open animation. */
+const ANIM_WIDTH_BASE       = 0.55;
+/** Height scale: minimum fraction of full height during open animation. */
+const ANIM_HEIGHT_BASE      = 0.45;
 
 // --- COMPONENT ---
 
@@ -425,12 +496,13 @@ export function SettingsOverlay({
   const hardMax = Math.max(24, Math.min(columns - 4, maxWidth ?? columns - 8));
   const preferred = Math.max(70, Math.min(120, columns - 8));
   const width = Math.min(preferred, hardMax);
-  const animatedWidth = Math.max(40, Math.floor(width * (0.55 + (0.45 * normalizedProgress))));
-  const visualRows = Math.max(10, Math.floor(rows * (0.45 + (0.55 * normalizedProgress))));
+  const animatedWidth = Math.max(40, Math.floor(width * (ANIM_WIDTH_BASE + ((1 - ANIM_WIDTH_BASE) * normalizedProgress))));
+  const visualRows = Math.max(10, Math.floor(rows * (ANIM_HEIGHT_BASE + ((1 - ANIM_HEIGHT_BASE) * normalizedProgress))));
 
-  const transitionActive = animationPhase !== 'open' || normalizedProgress < 0.95;
-  const showContent = normalizedProgress >= 0.28;
-  const showItems = normalizedProgress >= 0.55;
+  // Reserved for future CSS-class gating during open/close transitions.
+  const _transitionActive = animationPhase !== 'open' || normalizedProgress < ANIM_TRANSITION_AT;
+  const showContent = normalizedProgress >= ANIM_SHOW_CONTENT_AT;
+  const showItems = normalizedProgress >= ANIM_SHOW_ITEMS_AT;
 
   const [selectedPage, setSelectedPage] = useState<SettingsPageId>('connection');
   const [displayProfile, setDisplayProfile] = useState<SettingsDisplayProfile>('opta');
@@ -465,15 +537,18 @@ export function SettingsOverlay({
   const itemViewportRows = Math.max(4, Math.min(items.length, visualRows - 18));
   const itemWindow = useMemo(() => {
     if (items.length <= itemViewportRows) return { start: 0, end: items.length };
-    const half = Math.floor(itemViewportRows / 2);
-    let start = Math.max(0, selectedIndex - half);
+    const halfViewport = Math.floor(itemViewportRows / 2);
+    let start = Math.max(0, selectedIndex - halfViewport);
     let end = start + itemViewportRows;
     if (end > items.length) { end = items.length; start = Math.max(0, end - itemViewportRows); }
     return { start, end };
   }, [itemViewportRows, items.length, selectedIndex]);
 
+  /** Navigates to a settings page, resetting item selection and any in-progress edit. */
   const setPage = useCallback((id: SettingsPageId) => {
-    setSelectedPage(id); setSelectedIndex(0); setEditingKey(null);
+    setSelectedPage(id);
+    setSelectedIndex(0);
+    setEditingKey(null);
   }, []);
 
   const currentValue = useCallback((item: SettingsItem): string => {
@@ -493,7 +568,7 @@ export function SettingsOverlay({
     () => editingKey ? items.find(i => i.configKey === editingKey) ?? null : null,
     [editingKey, items],
   );
-  const editingInputType = editingItem?.inputType ?? 'text';
+  const editingInputType: NonNullable<SettingsItem['inputType']> = editingItem?.inputType ?? 'text';
 
   // Callbacks for InlineSelect and InlineSlider
   const handleSelectConfirm = useCallback((value: string) => {
@@ -508,15 +583,15 @@ export function SettingsOverlay({
     setEditingKey(null);
   }, [editingKey]);
 
+  /** Discards any in-progress inline edit and returns to the item list. */
   const handleEditCancel = useCallback(() => {
     setEditingKey(null);
   }, []);
 
-  // For toggle items, Enter on the item list immediately cycles the value
-  const handleToggleQuick = useCallback((item: SettingsItem) => {
-    const cur = currentValue(item);
-    const next = cur === 'true' ? 'false' : 'true';
-    setChanges(prev => ({ ...prev, [item.configKey]: next }));
+  /** Immediately flips a boolean toggle without opening the inline editor. */
+  const handleToggleQuick = useCallback((toggleItem: SettingsItem) => {
+    const next = currentValue(toggleItem) === 'true' ? 'false' : 'true';
+    setChanges(prev => ({ ...prev, [toggleItem.configKey]: next }));
   }, [currentValue]);
 
   useInput((input, key) => {
@@ -524,10 +599,11 @@ export function SettingsOverlay({
     if (editingKey && editingInputType !== 'text') {
       return;
     }
-    // If editing a text field, only handle Enter/Esc
+    // If editing a text field, only Enter (commit) and Esc (cancel) are handled here;
+    // all other keys are forwarded to the TextInput child component.
     if (editingKey) {
       if (key.return) { commitEdit(); return; }
-      if (key.escape) { setEditingKey(null); return; }
+      if (key.escape) { setEditingKey(null); }
       return;
     }
 
@@ -568,26 +644,8 @@ export function SettingsOverlay({
       onSave(changes); onClose(); return;
     }
 
-    // Enter = activate action / quick-toggle / open inline editor
-    if (key.return) {
-      const item = items[selectedIndex];
-      if (!item) return;
-      if (item.inputType === 'action') {
-        item.action?.();
-        return;
-      }
-      // Toggle items cycle directly without opening an editor
-      if (item.inputType === 'toggle') {
-        handleToggleQuick(item);
-        return;
-      }
-      setEditingKey(item.configKey);
-      setEditValue(currentValue(item));
-      return;
-    }
-
-    // Space = same as Enter for activating / opening editor / toggling
-    if (input === ' ') {
+    // Enter / Space = activate action, quick-toggle, or open inline editor.
+    if (key.return || input === ' ') {
       const item = items[selectedIndex];
       if (!item) return;
       if (item.inputType === 'action') {
@@ -600,7 +658,6 @@ export function SettingsOverlay({
       }
       setEditingKey(item.configKey);
       setEditValue(currentValue(item));
-      return;
     }
   });
 
@@ -619,7 +676,7 @@ export function SettingsOverlay({
       {/* HEADER */}
       <Box justifyContent="space-between">
         <Text color={pageColor} bold>
-          Opta Settings{unsavedCount > 0 ? ` (${unsavedCount} unsaved)` : ''}
+          {OPTA_BRAND_GLYPH} {OPTA_BRAND_NAME} Settings{unsavedCount > 0 ? ` (${unsavedCount} unsaved)` : ''}
         </Text>
         <Text dimColor>Shift+Tab view · Ctrl+S save · Esc close</Text>
       </Box>
@@ -707,47 +764,47 @@ export function SettingsOverlay({
             <>
               {itemWindow.start > 0 && <Text dimColor>… {itemWindow.start} above …</Text>}
               {items.slice(itemWindow.start, itemWindow.end).map((item, idx) => {
-                const abs = itemWindow.start + idx;
-                const active = abs === selectedIndex;
-                const val = currentValue(item);
-                const isAction = item.inputType === 'action';
-                // For selectable items, show the label instead of raw value
+                const absoluteIdx = itemWindow.start + idx;
+                const isSelected = absoluteIdx === selectedIndex;
+                const configVal = currentValue(item);
+                const isActionItem = item.inputType === 'action';
+                // Resolve the human-readable label for select/toggle items.
                 const selectLabel = (item.inputType === 'select' || item.inputType === 'toggle')
-                  ? item.options?.find(o => o.value === val)?.label ?? val
+                  ? item.options?.find(o => o.value === configVal)?.label ?? configVal
                   : null;
-                const displayVal = isAction
+                const displayVal = isActionItem
                   ? (item.hint ?? '')
-                  : item.sensitive && val && val !== item.defaultValue
+                  : item.sensitive && configVal && configVal !== item.defaultValue
                     ? '●●●●●'
                     : item.inputType === 'toggle'
-                      ? (val === 'true' ? '[x]' : '[ ]') + ' ' + (selectLabel ?? val)
+                      ? (configVal === 'true' ? '[x]' : '[ ]') + ' ' + (selectLabel ?? configVal)
                       : item.inputType === 'slider' && item.sliderLabels
-                        ? `${val} — ${item.sliderLabels[parseInt(val, 10)] ?? ''}`
-                        : selectLabel ?? (val || '(not set)');
-                const glyph = isAction ? '→' : statusGlyph(val, item.defaultValue, item.sensitive);
-                const glyphColor = isAction ? pageColor : statusColor(val, item.defaultValue, item.sensitive);
-                const changed = !isAction && changes[item.configKey] !== undefined;
-                // Show interaction hint for active selectable/action items
-                const interactionHint = active && isAction
+                        ? `${configVal} — ${item.sliderLabels[parseInt(configVal, 10)] ?? ''}`
+                        : selectLabel ?? (configVal || '(not set)');
+                const glyph = isActionItem ? '→' : statusGlyph(configVal, item.defaultValue, item.sensitive);
+                const glyphColor = isActionItem ? pageColor : statusColor(configVal, item.defaultValue, item.sensitive);
+                const isChanged = !isActionItem && changes[item.configKey] !== undefined;
+                // Keyboard hint shown next to the active item based on its input type.
+                const interactionHint = isSelected && isActionItem
                   ? 'Enter to open'
-                  : active && item.inputType === 'toggle'
+                  : isSelected && item.inputType === 'toggle'
                     ? 'Enter/Space toggle'
-                    : active && (item.inputType === 'select' || item.inputType === 'slider')
+                    : isSelected && (item.inputType === 'select' || item.inputType === 'slider')
                       ? 'Enter to choose'
                       : null;
 
                 return (
                   <Box key={item.configKey} flexDirection="column">
                     <Box>
-                      <Text color={active ? pageColor : undefined}>{active ? '▶ ' : '  '}</Text>
-                      <Text color={active ? pageColor : undefined} bold={active}>{item.label}</Text>
+                      <Text color={isSelected ? pageColor : undefined}>{isSelected ? '▶ ' : '  '}</Text>
+                      <Text color={isSelected ? pageColor : undefined} bold={isSelected}>{item.label}</Text>
                       <Text color={glyphColor}> {glyph}</Text>
-                      {changed && <Text color="#f59e0b"> *</Text>}
+                      {isChanged && <Text color={COLOR.warning}> *</Text>}
                       <Text dimColor>  {displayVal}</Text>
-                      {active && displayProfile !== 'compact' && <Text dimColor>  — {item.description}</Text>}
+                      {isSelected && displayProfile !== 'compact' && <Text dimColor>  — {item.description}</Text>}
                       {interactionHint && <Text dimColor>  ({interactionHint})</Text>}
                     </Box>
-                    {active && displayProfile === 'advanced' && (
+                    {isSelected && displayProfile === 'advanced' && (
                       <Box paddingLeft={3}>
                         <Text dimColor>{item.configKey}</Text>
                         {item.hint ? <Text dimColor>  ·  {item.hint}</Text> : null}
