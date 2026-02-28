@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { AlertTriangle, ChevronDown, ChevronRight } from "lucide-react";
 import type { PermissionRequest, TimelineItem } from "../types";
 
 interface TimelineCardsProps {
@@ -108,7 +109,7 @@ function PermissionCard({
   return (
     <div className="permission-card" role="alert">
       <div className="permission-header">
-        <span className="permission-icon">⚠</span>
+        <AlertTriangle className="permission-icon" size={16} aria-hidden="true" />
         <strong>Permission Required</strong>
       </div>
       <dl className="permission-details">
@@ -157,7 +158,9 @@ function ThinkingCard({ item }: { item: TimelineItem }) {
         onClick={() => setExpanded((v) => !v)}
         aria-expanded={expanded}
       >
-        <span>{expanded ? "▼" : "▶"}</span>
+        {expanded
+          ? <ChevronDown size={14} aria-hidden="true" />
+          : <ChevronRight size={14} aria-hidden="true" />}
         <span>Thinking...</span>
         <span>
           {item.createdAt ? new Date(item.createdAt).toLocaleTimeString() : ""}
