@@ -32,7 +32,7 @@ jobs:
         with:
           node-version: "22"
           cache: "npm"
-          cache-dependency-path: 1-Apps/optalocal/1P-Opta-Code-Desktop/package-lock.json
+          cache-dependency-path: package-lock.json
       - name: Install dependencies
         run: npm ci
       - name: Type-check
@@ -51,7 +51,7 @@ jobs:
         with:
           node-version: "22"
           cache: "npm"
-          cache-dependency-path: 1-Apps/optalocal/1P-Opta-Code-Desktop/package-lock.json
+          cache-dependency-path: package-lock.json
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -196,6 +196,7 @@ jobs:
     needs: [unit-tests, windows-build, windows-smoke, windows-installer-smoke]
     if: always()
     steps:
+      - uses: actions/checkout@v4
       - name: Publish readiness summary
         env:
           UNIT_RESULT: ${{ needs.unit-tests.result }}
