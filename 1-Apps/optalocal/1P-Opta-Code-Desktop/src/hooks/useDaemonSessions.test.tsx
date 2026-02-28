@@ -131,6 +131,9 @@ describe("useDaemonSessions secure connection persistence", () => {
     });
 
     const { result } = renderHook(() => useDaemonSessions());
+    await waitFor(() =>
+      expect(daemonClient.health).toHaveBeenCalledTimes(1),
+    );
     expect(result.current.connection.token).toBe("local-token");
 
     act(() => {
