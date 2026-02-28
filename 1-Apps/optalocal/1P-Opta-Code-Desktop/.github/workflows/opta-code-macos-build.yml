@@ -28,13 +28,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-          cache: "npm"
-          cache-dependency-path: 1-Apps/optalocal/1P-Opta-Code-Desktop/package-lock.json
       - name: Install CLI workspace dependencies
         working-directory: 1-Apps/optalocal/1D-Opta-CLI-TS
         run: npm install
       - name: Install dependencies
-        run: npm ci
+        run: npm install
       - name: Type-check
         run: npm run typecheck
       - name: Run vitest
@@ -72,8 +70,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-          cache: "npm"
-          cache-dependency-path: 1-Apps/optalocal/1P-Opta-Code-Desktop/package-lock.json
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -86,7 +82,7 @@ jobs:
         working-directory: 1-Apps/optalocal/1D-Opta-CLI-TS
         run: npm install
       - name: Install Node dependencies
-        run: npm ci
+        run: npm install
 
       # Enforce signing secrets on release tag builds
       - name: Require signing secrets on release tags
@@ -174,6 +170,7 @@ jobs:
     needs: [unit-tests, macos-build, macos-smoke]
     if: always()
     steps:
+      - uses: actions/checkout@v4
       - name: Publish readiness summary
         env:
           UNIT_RESULT: ${{ needs.unit-tests.result }}
