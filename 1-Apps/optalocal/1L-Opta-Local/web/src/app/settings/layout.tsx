@@ -1,35 +1,42 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import { Settings, Globe, ArrowLeft, User } from 'lucide-react';
 import { cn } from '@opta/ui';
 import { OptaSurface } from '@/components/shared/OptaPrimitives';
 
 const navItems = [
-  {
-    label: 'General',
-    href: '/settings',
-    icon: Settings,
-  },
-  {
-    label: 'Tunnel',
-    href: '/settings/tunnel',
-    icon: Globe,
-  },
-  {
-    label: 'Account',
-    href: '/settings/account',
-    icon: User,
-  },
+  { label: 'General', href: '/settings',         icon: Settings, key: '1' },
+  { label: 'Tunnel',  href: '/settings/tunnel',  icon: Globe,    key: '2' },
+  { label: 'Account', href: '/settings/account', icon: User,     key: '3' },
 ] as const;
 
 export default function SettingsLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: Readonly<{ children: React.ReactNode }>) {
   const pathname = usePathname();
+  const router   = useRouter();
+
+  // Keyboard navigation: 1/2/3 to switch tabs, Esc to go back
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      // Don't hijack while user is typing
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement
+      ) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+      if (e.key === '1') router.push('/settings');
+      else if (e.key === '2') router.push('/settings/tunnel');
+      else if (e.key === '3') router.push('/settings/account');
+      else if (e.key === 'Escape') router.push('/');
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [router]);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -49,6 +56,9 @@ export default function SettingsLayout({
           </Link>
           <div className="w-px h-5 bg-opta-border" />
           <h1 className="text-lg font-semibold text-text-primary">Settings</h1>
+          <span className="ml-auto text-[10px] text-text-muted hidden md:block">
+            1 · 2 · 3 to switch tabs &nbsp;·&nbsp; Esc to go back
+          </span>
         </OptaSurface>
       </header>
 
@@ -81,7 +91,17 @@ export default function SettingsLayout({
                       )}
                     >
                       <Icon className="w-4 h-4 flex-shrink-0" />
-                      <span>{item.label}</span>
+                      <span className="flex-1">{item.label}</span>
+                      <span
+                        className={cn(
+                          'hidden md:inline-flex items-center justify-center w-5 h-5 rounded text-[10px] font-bold border transition-colors',
+                          isActive
+                            ? 'border-primary/40 bg-primary/20 text-primary'
+                            : 'border-opta-border bg-opta-surface text-text-muted',
+                        )}
+                      >
+                        {item.key}
+                      </span>
                     </Link>
                   </li>
                 );
