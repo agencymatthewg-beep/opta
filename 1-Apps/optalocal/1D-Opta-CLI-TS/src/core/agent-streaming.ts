@@ -38,14 +38,23 @@ function isRetryableError(err: unknown): boolean {
   if (isAbortError(err)) return false;
   if (err instanceof Error) {
     const msg = err.message.toLowerCase();
-    if (msg.includes('lmx websocket stream closed unexpectedly') ||
-        msg.includes('lmx websocket handshake timed out') ||
-        msg.includes('lmx websocket idle timeout')) {
+    if (
+      msg.includes('lmx websocket stream closed unexpectedly') ||
+      msg.includes('lmx websocket handshake timed out') ||
+      msg.includes('lmx websocket idle timeout')
+    ) {
       return true;
     }
-    if (msg.includes('econnrefused') || msg.includes('econnreset') || msg.includes('etimedout') ||
-        msg.includes('fetch failed') || msg.includes('network') || msg.includes('socket hang up') ||
-        msg.includes('premature close') || msg.includes('other side closed')) {
+    if (
+      msg.includes('econnrefused') ||
+      msg.includes('econnreset') ||
+      msg.includes('etimedout') ||
+      msg.includes('fetch failed') ||
+      msg.includes('network') ||
+      msg.includes('socket hang up') ||
+      msg.includes('premature close') ||
+      msg.includes('other side closed')
+    ) {
       return true;
     }
   }
@@ -62,6 +71,8 @@ interface StreamTransportOptions {
   signal?: AbortSignal;
   /** Resolved LMX host cached across retries within a turn. */
   resolvedLmxHost?: string;
+  /** Canonical WebSocket URL from server discovery, cached across retries. */
+  resolvedLmxWsUrl?: string;
 }
 
 type RetryConfig = { maxRetries: number; backoffMs: number; backoffMultiplier: number };
@@ -73,7 +84,7 @@ function describeError(err: unknown): string {
 async function createSdkStream(
   client: OpenAI,
   params: Parameters<OpenAI['chat']['completions']['create']>[0],
-  signal?: AbortSignal,
+  signal?: AbortSignal
 ): Promise<AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>> {
   const payload = {
     ...params,
@@ -83,14 +94,13 @@ async function createSdkStream(
 
   // OpenAI SDK supports passing AbortSignal via request options.
   // Call the bound method directly to preserve `this` context across providers.
-  return client.chat.completions.create(
-    payload,
-    signal ? { signal } : undefined,
-  ) as Promise<AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>>;
+  return client.chat.completions.create(payload, signal ? { signal } : undefined) as Promise<
+    AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>
+  >;
 }
 
 async function primeStream(
-  stream: AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>,
+  stream: AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>
 ): Promise<AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>> {
   const iterator = stream[Symbol.asyncIterator]();
   const first = await iterator.next();
@@ -109,41 +119,54 @@ async function primeStream(
 
 async function maybeCreateLmxWsStream(
   transport: StreamTransportOptions | undefined,
-  params: Parameters<OpenAI['chat']['completions']['create']>[0],
+  params: Parameters<OpenAI['chat']['completions']['create']>[0]
 ): Promise<AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk> | null> {
   if (!transport?.config) return null;
   const providerName = transport.providerName ?? transport.config.provider.active;
   if (providerName !== 'lmx') return null;
   let endpointHost = transport.resolvedLmxHost;
   if (!endpointHost) {
-    const endpoint = await resolveLmxEndpoint({
-      host: transport.config.connection.host,
-      fallbackHosts: transport.config.connection.fallbackHosts,
-      port: transport.config.connection.port,
-      adminKey: transport.config.connection.adminKey,
-    }, {
-      timeoutMs: 1_500,
-    });
+    const endpoint = await resolveLmxEndpoint(
+      {
+        host: transport.config.connection.host,
+        fallbackHosts: transport.config.connection.fallbackHosts,
+        port: transport.config.connection.port,
+        adminKey: transport.config.connection.adminKey,
+      },
+      {
+        timeoutMs: 1_500,
+      }
+    );
     endpointHost = endpoint.host;
     transport.resolvedLmxHost = endpointHost;
+    if (endpoint.wsUrl) {
+      transport.resolvedLmxWsUrl = endpoint.wsUrl;
+    }
   }
   const { port, adminKey } = transport.config.connection;
-  return streamLmxChatWebSocket(endpointHost, port, {
-    model: params.model,
-    messages: params.messages ?? [],
-    temperature: params.temperature,
-    max_tokens: params.max_tokens,
-    top_p: params.top_p,
-    stop: params.stop,
-    tools: params.tools,
-    tool_choice: params.tool_choice,
-    response_format: params.response_format,
-    frequency_penalty: params.frequency_penalty,
-    presence_penalty: params.presence_penalty,
-  }, {
-    adminKey,
-    signal: transport.signal,
-  });
+  return streamLmxChatWebSocket(
+    endpointHost,
+    port,
+    {
+      model: params.model,
+      messages: params.messages ?? [],
+      temperature: params.temperature,
+      // eslint-disable-next-line @typescript-eslint/no-deprecated
+      max_tokens: params.max_tokens,
+      top_p: params.top_p,
+      stop: params.stop,
+      tools: params.tools,
+      tool_choice: params.tool_choice,
+      response_format: params.response_format,
+      frequency_penalty: params.frequency_penalty,
+      presence_penalty: params.presence_penalty,
+    },
+    {
+      adminKey,
+      signal: transport.signal,
+      wsUrl: transport.resolvedLmxWsUrl,
+    }
+  );
 }
 
 interface RecoveryReplayState {
@@ -167,7 +190,11 @@ function trimRecoveredContentPrefix(content: string, state: RecoveryReplayState)
   return content;
 }
 
-function trimRecoveredToolCallArgsPrefix(index: number, args: string, state: RecoveryReplayState): string {
+function trimRecoveredToolCallArgsPrefix(
+  index: number,
+  args: string,
+  state: RecoveryReplayState
+): string {
   if (!args) return args;
   const remainingPrefix = state.remainingToolCallArgPrefixes.get(index);
   if (!remainingPrefix) return args;
@@ -192,7 +219,7 @@ function trimRecoveredToolCallArgsPrefix(index: number, args: string, state: Rec
 
 function dedupeRecoveredChunk(
   chunk: OpenAI.Chat.Completions.ChatCompletionChunk,
-  state: RecoveryReplayState,
+  state: RecoveryReplayState
 ): OpenAI.Chat.Completions.ChatCompletionChunk | null {
   if (!state.remainingContentPrefix && state.remainingToolCallArgPrefixes.size === 0) return chunk;
   const choice = chunk.choices[0];
@@ -211,7 +238,11 @@ function dedupeRecoveredChunk(
 
   let toolCallsChanged = false;
   let nextToolCalls = delta.tool_calls;
-  if (Array.isArray(delta.tool_calls) && delta.tool_calls.length > 0 && state.remainingToolCallArgPrefixes.size > 0) {
+  if (
+    Array.isArray(delta.tool_calls) &&
+    delta.tool_calls.length > 0 &&
+    state.remainingToolCallArgPrefixes.size > 0
+  ) {
     const trimmedToolCalls: typeof delta.tool_calls = [];
     for (const toolCall of delta.tool_calls) {
       const argsFragment = toolCall.function?.arguments;
@@ -232,7 +263,8 @@ function dedupeRecoveredChunk(
         }
       }
 
-      const isNoopToolCall = !nextToolCall.id &&
+      const isNoopToolCall =
+        !nextToolCall.id &&
         !nextToolCall.type &&
         !nextToolCall.function?.name &&
         !nextToolCall.function?.arguments;
@@ -251,16 +283,23 @@ function dedupeRecoveredChunk(
 
   if (!contentChanged && !toolCallsChanged) return chunk;
 
-  const hasOtherDeltaFields = Object.entries(delta).some(([key, value]) =>
-    key !== 'content' &&
-    key !== 'tool_calls' &&
-    value !== undefined &&
-    value !== null &&
-    (!Array.isArray(value) || value.length > 0),
+  const hasOtherDeltaFields = Object.entries(delta).some(
+    ([key, value]) =>
+      key !== 'content' &&
+      key !== 'tool_calls' &&
+      value !== undefined &&
+      value !== null &&
+      (!Array.isArray(value) || value.length > 0)
   );
   const hasContent = typeof nextContent === 'string' && nextContent.length > 0;
   const hasToolCalls = Array.isArray(nextToolCalls) && nextToolCalls.length > 0;
-  if (!hasContent && !hasToolCalls && !hasOtherDeltaFields && choice.finish_reason === null && !chunk.usage) {
+  if (
+    !hasContent &&
+    !hasToolCalls &&
+    !hasOtherDeltaFields &&
+    choice.finish_reason === null &&
+    !chunk.usage
+  ) {
     return null;
   }
 
@@ -284,8 +323,13 @@ function withLmxMidStreamRecovery(
   client: OpenAI,
   params: Parameters<OpenAI['chat']['completions']['create']>[0],
   retryConfig: RetryConfig,
-  onStatus: ((status: 'checking' | 'connected' | 'disconnected' | 'reconnecting', attempt?: number) => void) | undefined,
-  transport: StreamTransportOptions | undefined,
+  onStatus:
+    | ((
+        status: 'checking' | 'connected' | 'disconnected' | 'reconnecting',
+        attempt?: number
+      ) => void)
+    | undefined,
+  transport: StreamTransportOptions | undefined
 ): AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk> {
   return (async function* recoverableStream(): AsyncGenerator<OpenAI.Chat.Completions.ChatCompletionChunk> {
     let currentStream = initialStream;
@@ -313,7 +357,10 @@ function withLmxMidStreamRecovery(
               const argsFragment = toolCall.function?.arguments;
               if (typeof argsFragment !== 'string' || argsFragment.length === 0) continue;
               const idx = toolCall.index ?? 0;
-              emittedToolCallArgsByIndex.set(idx, (emittedToolCallArgsByIndex.get(idx) ?? '') + argsFragment);
+              emittedToolCallArgsByIndex.set(
+                idx,
+                (emittedToolCallArgsByIndex.get(idx) ?? '') + argsFragment
+              );
             }
           }
           yield chunk;
@@ -328,14 +375,18 @@ function withLmxMidStreamRecovery(
         }
 
         recoveryCycles += 1;
-        let recoveredStream: AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk> | null = null;
+        let recoveredStream: AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk> | null =
+          null;
         let reconnectError: unknown = err;
         const wsRecoveryAttempts = Math.max(0, retryConfig.maxRetries);
 
         for (let attempt = 1; attempt <= wsRecoveryAttempts; attempt += 1) {
           onStatus?.('reconnecting', attempt);
-          const delay = retryConfig.backoffMs * Math.pow(retryConfig.backoffMultiplier, attempt - 1);
-          debug(`LMX mid-stream recovery attempt ${attempt}/${wsRecoveryAttempts} after ${delay}ms`);
+          const delay =
+            retryConfig.backoffMs * Math.pow(retryConfig.backoffMultiplier, attempt - 1);
+          debug(
+            `LMX mid-stream recovery attempt ${attempt}/${wsRecoveryAttempts} after ${delay}ms`
+          );
           await sleep(delay);
 
           if (transport) {
@@ -359,7 +410,9 @@ function withLmxMidStreamRecovery(
           if (wsRecoveryAttempts === 0) {
             onStatus?.('reconnecting', 1);
           }
-          debug(`LMX websocket mid-stream recovery falling back to SSE: ${describeError(reconnectError)}`);
+          debug(
+            `LMX websocket mid-stream recovery falling back to SSE: ${describeError(reconnectError)}`
+          );
           if (transport) {
             transport.resolvedLmxHost = undefined;
           }
@@ -373,7 +426,9 @@ function withLmxMidStreamRecovery(
         }
 
         replayState.remainingContentPrefix = emittedText;
-        replayState.remainingToolCallArgPrefixes = new Map<number, string>(emittedToolCallArgsByIndex);
+        replayState.remainingToolCallArgPrefixes = new Map<number, string>(
+          emittedToolCallArgsByIndex
+        );
         currentStream = recoveredStream;
       }
     }
@@ -384,13 +439,15 @@ export async function createStreamWithRetry(
   client: OpenAI,
   params: Parameters<OpenAI['chat']['completions']['create']>[0],
   retryConfig: RetryConfig,
-  onStatus?: (status: 'checking' | 'connected' | 'disconnected' | 'reconnecting', attempt?: number) => void,
-  transport?: StreamTransportOptions,
+  onStatus?: (
+    status: 'checking' | 'connected' | 'disconnected' | 'reconnecting',
+    attempt?: number
+  ) => void,
+  transport?: StreamTransportOptions
 ): Promise<AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>> {
   let lastError: unknown;
   const shouldTryLmxWs = Boolean(
-    transport?.config &&
-    (transport.providerName ?? transport.config.provider.active) === 'lmx',
+    transport?.config && (transport.providerName ?? transport.config.provider.active) === 'lmx'
   );
 
   for (let attempt = 0; attempt <= retryConfig.maxRetries; attempt++) {
@@ -399,7 +456,7 @@ export async function createStreamWithRetry(
         onStatus?.('reconnecting', attempt);
         const delay = retryConfig.backoffMs * Math.pow(retryConfig.backoffMultiplier, attempt - 1);
         debug(`Retry attempt ${attempt}/${retryConfig.maxRetries} after ${delay}ms`);
-        await new Promise(resolve => setTimeout(resolve, delay));
+        await new Promise((resolve) => setTimeout(resolve, delay));
       }
 
       // Preferred path for Opta LMX: bidirectional WebSocket stream with cancel.
@@ -456,7 +513,13 @@ export async function collectStream(
   onVisibleText: (chunk: string) => void,
   statusBar?: StatusBar | null,
   onStream?: OnStreamCallbacks
-): Promise<{ text: string; toolCalls: ToolCallAccum[]; thinkingRenderer: ThinkingRenderer; usage: StreamUsage | null; finishReason: string | null }> {
+): Promise<{
+  text: string;
+  toolCalls: ToolCallAccum[];
+  thinkingRenderer: ThinkingRenderer;
+  usage: StreamUsage | null;
+  finishReason: string | null;
+}> {
   let text = '';
   const toolCallMap = new Map<number, ToolCallAccum>();
   const thinking = new ThinkingRenderer();

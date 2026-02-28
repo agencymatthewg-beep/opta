@@ -13,6 +13,8 @@ export interface ResolvedLmxEndpoint {
   port: number;
   source: 'primary' | 'fallback';
   state: LmxConnectionState | 'unknown';
+  /** Canonical WebSocket URL from server discovery, if available. */
+  wsUrl?: string;
 }
 
 interface ResolveEndpointOptions {
@@ -39,6 +41,7 @@ interface ProbeOutcome {
   source: 'primary' | 'fallback';
   state: LmxConnectionState;
   completionOrder: number;
+  wsUrl?: string;
 }
 
 function normalizeHost(host: string): string {
@@ -137,7 +140,7 @@ export async function resolveLmxEndpoint(
   const primaryIndex = candidates.findIndex((host) => host.toLowerCase() === primaryHost.toLowerCase());
   const signal = options?.signal;
 
-  return await new Promise<ResolvedLmxEndpoint>((resolve, reject) => {
+  return new Promise<ResolvedLmxEndpoint>((resolve, reject) => {
     let settled = false;
     let remaining = candidates.length;
     let completionOrder = 0;
@@ -178,6 +181,7 @@ export async function resolveLmxEndpoint(
         port: config.port,
         source: outcome.source,
         state: outcome.state,
+        wsUrl: outcome.wsUrl,
       });
     };
 
@@ -305,6 +309,7 @@ export async function resolveLmxEndpoint(
           source,
           state: probe.state,
           completionOrder: completionOrder++,
+          wsUrl: probe.discovery?.endpoints.websocket_url,
         });
       }).catch(() => {
         handleOutcome({
