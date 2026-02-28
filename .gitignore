@@ -160,6 +160,13 @@ __pycache__/
 # Syncthing
 .stfolder/
 .stversions/
+.syncthing.*.tmp
 .aider*
 .build
 .vercel
+
+# Claude Code
+.worktrees/
+
+# Session / local logs
+12-Session-Logs/
