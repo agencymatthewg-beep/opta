@@ -904,7 +904,7 @@ export async function shutdownProcessManager(): Promise<void> {
 
 export function forceKillAllProcesses(): void {
   if (_processManager) {
-    _processManager.killAll().catch(() => {});
+    _processManager.killAll();
     _processManager = null;
   }
 }

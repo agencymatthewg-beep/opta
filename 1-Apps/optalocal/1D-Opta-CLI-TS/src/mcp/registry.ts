@@ -61,11 +61,12 @@ function normalizeStringList(values: string[] | undefined): string[] {
 }
 
 function resolvePlaywrightAllowedHosts(browser: OptaConfig['browser']): string[] {
+  const legacy = browser as typeof browser & { globalAllowedHosts?: string[] };
   const policyHosts = normalizeStringList(browser.policy?.allowedHosts);
   const hasPolicyOverride = policyHosts.some((host) => host !== '*');
   const sourceHosts = hasPolicyOverride
     ? policyHosts
-    : normalizeStringList(browser.globalAllowedHosts);
+    : normalizeStringList(legacy.globalAllowedHosts);
 
   // Preserve previous behavior: wildcard means unrestricted, so omit the flag.
   if (sourceHosts.includes('*')) return [];
@@ -73,9 +74,10 @@ function resolvePlaywrightAllowedHosts(browser: OptaConfig['browser']): string[]
 }
 
 function resolvePlaywrightBlockedOrigins(browser: OptaConfig['browser']): string[] {
+  const legacy = browser as typeof browser & { blockedOrigins?: string[] };
   const policyBlocked = normalizeStringList(browser.policy?.blockedOrigins);
   if (policyBlocked.length > 0) return policyBlocked;
-  return normalizeStringList(browser.blockedOrigins);
+  return normalizeStringList(legacy.blockedOrigins);
 }
 
 export async function buildToolRegistry(
