@@ -221,6 +221,12 @@ function eventsToTimelineItems(
   return items;
 }
 
+// ── WS handle kept per session in a stable ref map ─────────────────────────
+interface WsHandle {
+  close: () => void;
+  send: (msg: object) => void;
+}
+
 export function useDaemonSessions() {
   const [connection, setConnectionRaw] =
     useState<DaemonConnectionOptions>(loadStoredConnection);
@@ -280,6 +286,7 @@ export function useDaemonSessions() {
         });
     }
   }, []);
+
   const [sessions, setSessions] = useState<DaemonSessionSummary[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [timelineBySession, setTimelineBySession] = useState<
@@ -292,12 +299,14 @@ export function useDaemonSessions() {
   const [initialCheckDone, setInitialCheckDone] = useState(false);
   const [runtimeOverride, setRuntimeOverride] =
     useState<RuntimeSnapshot | null>(null);
-  const [streamingSessionId, setStreamingSessionId] = useState<string | null>(
-    null,
-  );
-  const [pendingPermissions, setPendingPermissions] = useState<
-    PermissionRequest[]
-  >([]);
+
+  // Per-session streaming and permission state — supports N concurrent sessions
+  const [streamingBySession, setStreamingBySession] = useState<
+    Record<string, boolean>
+  >({});
+  const [pendingPermissionsBySession, setPendingPermissionsBySession] = useState<
+    Record<string, PermissionRequest[]>
+  >({});
 
   const mountedRef = useRef(true);
   // Per-session event sequence cursor — advances as events arrive over WS
@@ -306,6 +315,9 @@ export function useDaemonSessions() {
   const clientIdRef = useRef<string>(
     `opta-code-desktop-${crypto.randomUUID().slice(0, 8)}`,
   );
+  // One WS handle per session — fan-out subscriptions
+  const wsHandlesRef = useRef<Map<string, WsHandle>>(new Map());
+
   connectionRef.current = connection;
 
   useEffect(() => {
@@ -349,155 +361,193 @@ export function useDaemonSessions() {
     };
   }, [connection.host, connection.port]);
 
-  // ── WebSocket session subscription ─────────────────────────────────────────
+  // ── Multi-session WebSocket fan-out ────────────────────────────────────────
+  // Keyed on a stable string of all session IDs + connection endpoint so the
+  // effect only re-runs when sessions are added/removed or the endpoint changes.
+  const sessionIdsKey = sessions.map((s) => s.sessionId).join(",");
+
   useEffect(() => {
-    if (!activeSessionId) {
-      setPendingPermissions([]);
-      return;
+    // Snapshot the connection once; this effect owns its own conn reference
+    const conn = connectionRef.current;
+    const currentSessionIds = new Set(sessionIdsKey ? sessionIdsKey.split(",") : []);
+
+    // ── Close WS for sessions no longer tracked ──
+    for (const [id, handle] of wsHandlesRef.current) {
+      if (!currentSessionIds.has(id)) {
+        handle.close();
+        // wsHandlesRef.current is mutated inside handle.close() via the
+        // internal close callback, but we force-delete here as well.
+        wsHandlesRef.current.delete(id);
+        setStreamingBySession((prev) => {
+          if (!(id in prev)) return prev;
+          const next = { ...prev };
+          delete next[id];
+          return next;
+        });
+        setPendingPermissionsBySession((prev) => {
+          if (!(id in prev)) return prev;
+          const next = { ...prev };
+          delete next[id];
+          return next;
+        });
+      }
     }
 
-    const sessionId = activeSessionId;
-    const conn = connection;
-    let closed = false;
-    let reconnectTimer: number | null = null;
-    let attempts = 0;
-    let wsHandle: { close: () => void; send: (msg: object) => void } | null =
-      null;
+    // ── Open WS for newly-tracked sessions ──
+    for (const sessionId of currentSessionIds) {
+      if (wsHandlesRef.current.has(sessionId)) continue; // already subscribed
 
-    // Cursor carries forward across reconnects so history is never re-sent
-    const cursor = { seq: seqCursorRef.current[sessionId] ?? 0 };
+      let reconnectTimer: number | null = null;
+      let attempts = 0;
+      let innerHandle: ReturnType<typeof daemonClient.connectWebSocket> | null = null;
+      const cursor = { seq: seqCursorRef.current[sessionId] ?? 0 };
 
-    // Clear stale permissions from a previous session
-    setPendingPermissions([]);
+      const handleEnvelope = (envelope: V3Envelope) => {
+        if (!mountedRef.current) return;
+        if (typeof envelope.seq === "number") {
+          cursor.seq = envelope.seq;
+          seqCursorRef.current[sessionId] = envelope.seq;
+        }
 
-    const handleEnvelope = (envelope: V3Envelope) => {
-      if (typeof envelope.seq === "number") {
-        cursor.seq = envelope.seq;
-        seqCursorRef.current[sessionId] = envelope.seq;
-      }
+        const kind = String(envelope.event ?? "");
+        const payload = (envelope.payload ?? {}) as Record<string, unknown>;
 
-      const kind = String(envelope.event ?? "");
-      const payload = (envelope.payload ?? {}) as Record<string, unknown>;
+        // ── Permission state management ─────────────────────────────────
+        if (kind === "permission.request") {
+          const requestId = String(payload.requestId ?? payload.request_id ?? "");
+          const toolName = String(
+            payload.toolName ?? payload.tool_name ?? payload.name ?? "",
+          );
+          const args = (payload.args ?? payload.input ?? {}) as Record<string, unknown>;
+          if (requestId) {
+            setPendingPermissionsBySession((prev) => {
+              const existing = prev[sessionId] ?? [];
+              if (existing.some((p) => p.requestId === requestId)) return prev;
+              return {
+                ...prev,
+                [sessionId]: [...existing, { requestId, toolName, args, sessionId }],
+              };
+            });
+          }
+          return;
+        }
 
-      // ── Permission state management ───────────────────────────────────────
-      if (kind === "permission.request") {
-        const requestId = String(payload.requestId ?? payload.request_id ?? "");
-        const toolName = String(
-          payload.toolName ?? payload.tool_name ?? payload.name ?? "",
-        );
-        const args = (payload.args ?? payload.input ?? {}) as Record<
-          string,
-          unknown
-        >;
-        if (requestId) {
-          setPendingPermissions((prev) => {
-            if (prev.some((p) => p.requestId === requestId)) return prev;
-            return [...prev, { requestId, toolName, args, sessionId }];
+        if (kind === "permission.resolved") {
+          const requestId = String(payload.requestId ?? payload.request_id ?? "");
+          if (requestId) {
+            setPendingPermissionsBySession((prev) => {
+              const existing = prev[sessionId];
+              if (!existing) return prev;
+              return {
+                ...prev,
+                [sessionId]: existing.filter((p) => p.requestId !== requestId),
+              };
+            });
+          }
+          return;
+        }
+
+        // ── Streaming indicator (per-session) ───────────────────────────
+        if (kind === "turn.start") {
+          setStreamingBySession((prev) => ({ ...prev, [sessionId]: true }));
+        } else if (STOP_EVENT_KINDS.has(kind)) {
+          setStreamingBySession((prev) => {
+            if (!prev[sessionId]) return prev;
+            return { ...prev, [sessionId]: false };
           });
         }
-        return;
-      }
 
-      if (kind === "permission.resolved") {
-        const requestId = String(payload.requestId ?? payload.request_id ?? "");
-        if (requestId) {
-          setPendingPermissions((prev) =>
-            prev.filter((p) => p.requestId !== requestId),
-          );
-        }
-        return;
-      }
+        // ── Timeline update ──────────────────────────────────────────────
+        const newItems = eventsToTimelineItems([envelope], sessionId);
+        if (newItems.length === 0) return;
 
-      // ── Streaming indicator ───────────────────────────────────────────────
-      if (kind === "turn.start") {
-        setStreamingSessionId(sessionId);
-      } else if (STOP_EVENT_KINDS.has(kind)) {
-        setStreamingSessionId((prev) => (prev === sessionId ? null : prev));
-      }
+        setTimelineBySession((prev) => {
+          const existing = prev[sessionId] ?? [];
 
-      // ── Timeline update ───────────────────────────────────────────────────
-      const newItems = eventsToTimelineItems([envelope], sessionId);
-      if (newItems.length === 0) return;
-
-      setTimelineBySession((prev) => {
-        const existing = prev[sessionId] ?? [];
-
-        // Merge adjacent assistant tokens for smooth in-place streaming
-        if (
-          newItems.length === 1 &&
-          newItems[0].kind === "assistant" &&
-          existing.length > 0 &&
-          existing[existing.length - 1].kind === "assistant"
-        ) {
-          const last = existing[existing.length - 1];
-          const merged = {
-            ...last,
-            body: (last.body ?? "") + (newItems[0].body ?? ""),
-          };
-          return {
-            ...prev,
-            [sessionId]: [...existing.slice(0, -1), merged],
-          };
-        }
-
-        return { ...prev, [sessionId]: [...existing, ...newItems] };
-      });
-    };
-
-    const open = () => {
-      if (closed || !mountedRef.current) return;
-
-      wsHandle = daemonClient.connectWebSocket(conn, sessionId, cursor.seq, {
-        onOpen: () => {
-          if (closed || !mountedRef.current) return;
-          attempts = 0;
-          setConnectionState("connected");
-          setConnectionError(null);
-        },
-        onEvent: (envelope) => {
-          if (closed || !mountedRef.current) return;
-          handleEnvelope(envelope);
-        },
-        onClose: (code) => {
-          wsHandle = null;
-          if (closed || !mountedRef.current) return;
-          if (code !== 1000) {
-            // Exponential backoff: 1s, 2s, 4s, 8s, capped at 10s
-            const delay = Math.min(1000 * Math.pow(2, attempts), 10_000);
-            attempts = Math.min(attempts + 1, 10);
-            setConnectionState("connecting");
-            reconnectTimer = window.setTimeout(open, delay);
+          // Merge adjacent assistant tokens for smooth in-place streaming
+          if (
+            newItems.length === 1 &&
+            newItems[0].kind === "assistant" &&
+            existing.length > 0 &&
+            existing[existing.length - 1].kind === "assistant"
+          ) {
+            const last = existing[existing.length - 1];
+            const merged = {
+              ...last,
+              body: (last.body ?? "") + (newItems[0].body ?? ""),
+            };
+            return {
+              ...prev,
+              [sessionId]: [...existing.slice(0, -1), merged],
+            };
           }
-        },
-        onError: () => {
-          // WebSocket errors are always followed by an onClose event
-        },
-      });
-    };
 
-    setConnectionState("connecting");
-    open();
+          return { ...prev, [sessionId]: [...existing, ...newItems] };
+        });
+      };
 
+      const open = () => {
+        if (!mountedRef.current || !wsHandlesRef.current.has(sessionId)) return;
+
+        innerHandle = daemonClient.connectWebSocket(conn, sessionId, cursor.seq, {
+          onOpen: () => {
+            attempts = 0;
+          },
+          onEvent: (envelope) => {
+            if (!mountedRef.current) return;
+            handleEnvelope(envelope);
+          },
+          onClose: (code) => {
+            innerHandle = null;
+            if (!mountedRef.current || !wsHandlesRef.current.has(sessionId)) return;
+            if (code !== 1000) {
+              // Exponential backoff: 1s, 2s, 4s, 8s, capped at 10s
+              const delay = Math.min(1000 * Math.pow(2, attempts), 10_000);
+              attempts = Math.min(attempts + 1, 10);
+              reconnectTimer = window.setTimeout(open, delay);
+            }
+          },
+          onError: () => {
+            // WebSocket errors are always followed by an onClose event
+          },
+        });
+      };
+
+      const handle: WsHandle = {
+        close: () => {
+          if (reconnectTimer !== null) window.clearTimeout(reconnectTimer);
+          innerHandle?.close();
+          innerHandle = null;
+          wsHandlesRef.current.delete(sessionId);
+        },
+        send: (msg) => innerHandle?.send(msg),
+      };
+
+      wsHandlesRef.current.set(sessionId, handle);
+      open();
+    }
+
+    // Full teardown when the connection endpoint changes or on unmount
     return () => {
-      closed = true;
-      if (reconnectTimer !== null) window.clearTimeout(reconnectTimer);
-      wsHandle?.close();
-      wsHandle = null;
+      for (const handle of wsHandlesRef.current.values()) {
+        handle.close();
+      }
+      wsHandlesRef.current.clear();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeSessionId, connection]);
+  }, [sessionIdsKey, connection]);
 
   // ── Runtime metrics poll (4s) ───────────────────────────────────────────────
   const runtime = useMemo<RuntimeSnapshot>(() => {
     if (runtimeOverride) return runtimeOverride;
-    const activeTurnCount = activeSessionId ? 1 : 0;
+    const streamingCount = Object.values(streamingBySession).filter(Boolean).length;
     return {
       sessionCount: sessions.length,
-      activeTurnCount,
-      queuedTurnCount: Math.max(0, sessions.length - activeTurnCount),
-      subscriberCount: activeSessionId ? 1 : 0,
+      activeTurnCount: streamingCount,
+      queuedTurnCount: Math.max(0, sessions.length - streamingCount),
+      subscriberCount: sessions.length,
     };
-  }, [activeSessionId, runtimeOverride, sessions.length]);
+  }, [runtimeOverride, sessions.length, streamingBySession]);
 
   const refreshNow = useCallback(async () => {
     setConnectionState("connecting");
@@ -666,8 +716,8 @@ export function useDaemonSessions() {
         });
         setConnectionState("connected");
         setConnectionError(null);
-        // Show streaming indicator — the WS will clear it on turn.done/turn.error
-        setStreamingSessionId(activeSessionId);
+        // Optimistically mark streaming — WS will clear on turn.done/turn.error
+        setStreamingBySession((prev) => ({ ...prev, [activeSessionId]: true }));
       } catch (error) {
         setTimelineBySession((prev) => {
           const existing = prev[activeSessionId] ?? [];
@@ -697,9 +747,14 @@ export function useDaemonSessions() {
       if (!activeSessionId) return;
       // Optimistically remove from pending — the 'permission.resolved' WS event
       // will also remove it if it arrives, but this keeps the UI snappy
-      setPendingPermissions((prev) =>
-        prev.filter((p) => p.requestId !== requestId),
-      );
+      setPendingPermissionsBySession((prev) => {
+        const existing = prev[activeSessionId];
+        if (!existing) return prev;
+        return {
+          ...prev,
+          [activeSessionId]: existing.filter((p) => p.requestId !== requestId),
+        };
+      });
       try {
         await daemonClient.resolvePermission(
           connectionRef.current,
@@ -726,8 +781,16 @@ export function useDaemonSessions() {
     }
   }, [activeSessionId]);
 
+  // Derived values — backward-compatible surface for consumers that only care
+  // about the currently-active session
   const isStreaming =
-    streamingSessionId !== null && streamingSessionId === activeSessionId;
+    activeSessionId !== null &&
+    (streamingBySession[activeSessionId] ?? false);
+
+  const pendingPermissions =
+    activeSessionId !== null
+      ? (pendingPermissionsBySession[activeSessionId] ?? [])
+      : [];
 
   /** Remove a session from local tracking. Does not delete it from the daemon. */
   const removeSession = useCallback(
@@ -751,6 +814,9 @@ export function useDaemonSessions() {
     connectionState,
     isStreaming,
     pendingPermissions,
+    // Per-session state — enables multi-session UI (badges, parallel views)
+    streamingBySession,
+    pendingPermissionsBySession,
     refreshNow,
     removeSession,
     resolvePermission,

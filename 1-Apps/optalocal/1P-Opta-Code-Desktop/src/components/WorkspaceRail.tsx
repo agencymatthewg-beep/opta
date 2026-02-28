@@ -1,11 +1,13 @@
 import { useRef, useState } from "react";
-import { Copy, Search, X } from "lucide-react";
+import { AlertTriangle, Copy, Search, X } from "lucide-react";
 import type { DaemonSessionSummary } from "../types";
 
 interface WorkspaceRailProps {
   sessions: DaemonSessionSummary[];
   activeSessionId: string | null;
   selectedWorkspace: string;
+  streamingBySession?: Record<string, boolean>;
+  pendingPermissionsBySession?: Record<string, unknown[]>;
   onSelectWorkspace: (workspace: string) => void;
   onSelectSession: (sessionId: string) => void;
   onRemoveSession?: (sessionId: string) => void;
@@ -15,6 +17,8 @@ export function WorkspaceRail({
   sessions,
   activeSessionId,
   selectedWorkspace,
+  streamingBySession = {},
+  pendingPermissionsBySession = {},
   onSelectWorkspace,
   onSelectSession,
   onRemoveSession,
@@ -87,60 +91,84 @@ export function WorkspaceRail({
             {search ? "No sessions match." : "No sessions in this workspace."}
           </p>
         ) : (
-          visible.map((session) => (
-            <div
-              key={session.sessionId}
-              className={`session-row ${session.sessionId === activeSessionId ? "active" : ""}`}
-            >
-              <button
-                type="button"
-                className="session-main"
-                onClick={() => onSelectSession(session.sessionId)}
-              >
-                <strong>{session.title}</strong>
-                <span className="session-id-tag">
-                  {session.sessionId.slice(0, 12)}
-                </span>
-                {session.updatedAt ? (
-                  <span className="session-time">
-                    {new Date(session.updatedAt).toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </span>
-                ) : null}
-              </button>
+          visible.map((session) => {
+            const isSessionStreaming = streamingBySession[session.sessionId] ?? false;
+            const pendingCount = pendingPermissionsBySession[session.sessionId]?.length ?? 0;
 
-              <div className="session-actions">
+            return (
+              <div
+                key={session.sessionId}
+                className={`session-row${session.sessionId === activeSessionId ? " active" : ""}${isSessionStreaming ? " session-row--streaming" : ""}`}
+              >
                 <button
                   type="button"
-                  className="session-action-btn"
-                  title="Copy session ID"
-                  aria-label="Copy session ID"
-                  onClick={(e) => copyId(session.sessionId, e)}
+                  className="session-main"
+                  onClick={() => onSelectSession(session.sessionId)}
                 >
-                  <Copy size={11} aria-hidden="true" />
-                  {copiedId === session.sessionId ? (
-                    <span className="copy-flash">✓</span>
+                  <span className="session-title-row">
+                    <strong>{session.title}</strong>
+                    {isSessionStreaming && (
+                      <span
+                        className="session-streaming-dot"
+                        aria-label="Agent is working"
+                        title="Agent is working"
+                      />
+                    )}
+                    {pendingCount > 0 && (
+                      <span
+                        className="session-permission-badge"
+                        aria-label={`${pendingCount} pending permission${pendingCount !== 1 ? "s" : ""}`}
+                        title="Permission required"
+                      >
+                        <AlertTriangle size={10} aria-hidden="true" />
+                        {pendingCount}
+                      </span>
+                    )}
+                  </span>
+                  <span className="session-id-tag">
+                    {session.sessionId.slice(0, 12)}
+                  </span>
+                  {session.updatedAt ? (
+                    <span className="session-time">
+                      {new Date(session.updatedAt).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
                   ) : null}
                 </button>
-                {onRemoveSession ? (
+
+                <div className="session-actions">
                   <button
                     type="button"
-                    className="session-action-btn session-remove-btn"
-                    title="Remove from rail"
-                    aria-label="Remove session from rail"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onRemoveSession(session.sessionId);
-                    }}
+                    className="session-action-btn"
+                    title="Copy session ID"
+                    aria-label="Copy session ID"
+                    onClick={(e) => copyId(session.sessionId, e)}
                   >
-                    <X size={11} aria-hidden="true" />
+                    <Copy size={11} aria-hidden="true" />
+                    {copiedId === session.sessionId ? (
+                      <span className="copy-flash">✓</span>
+                    ) : null}
                   </button>
-                ) : null}
+                  {onRemoveSession ? (
+                    <button
+                      type="button"
+                      className="session-action-btn session-remove-btn"
+                      title="Remove from rail"
+                      aria-label="Remove session from rail"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onRemoveSession(session.sessionId);
+                      }}
+                    >
+                      <X size={11} aria-hidden="true" />
+                    </button>
+                  ) : null}
+                </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </aside>

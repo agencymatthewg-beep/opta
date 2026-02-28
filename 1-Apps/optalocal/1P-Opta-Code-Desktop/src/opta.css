@@ -141,8 +141,8 @@ h6 {
   border: 1px solid var(--line);
   border-radius: 20px;
   background: rgba(12, 12, 18, 0.6);
-  backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
   box-shadow: var(--shadow);
   position: relative;
   overflow: hidden;
@@ -177,8 +177,8 @@ h6 {
   border-radius: 16px;
   padding: 1rem;
   background: rgba(5, 3, 10, 0.6);
-  backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
   box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
 }
 
@@ -381,8 +381,8 @@ button.active,
       rgba(109, 40, 217, 0.2) 0%,
       rgba(139, 92, 246, 0.1) 50%,
       rgba(109, 40, 217, 0.15) 100%);
-  backdrop-filter: blur(var(--opta-blur-md));
   -webkit-backdrop-filter: blur(var(--opta-blur-md));
+  backdrop-filter: blur(var(--opta-blur-md));
   box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
   transition:
     border-color var(--opta-duration-slow) var(--opta-ease-smooth),
@@ -406,8 +406,8 @@ button.active,
       rgba(109, 40, 217, 0.12) 0%,
       rgba(139, 92, 246, 0.06) 50%,
       rgba(109, 40, 217, 0.08) 100%);
-  backdrop-filter: blur(var(--opta-blur-sm));
   -webkit-backdrop-filter: blur(var(--opta-blur-sm));
+  backdrop-filter: blur(var(--opta-blur-sm));
 }
 
 .glass-strong {
@@ -417,8 +417,8 @@ button.active,
       rgba(109, 40, 217, 0.3) 0%,
       rgba(139, 92, 246, 0.2) 50%,
       rgba(109, 40, 217, 0.25) 100%);
-  backdrop-filter: blur(var(--opta-blur-lg));
   -webkit-backdrop-filter: blur(var(--opta-blur-lg));
+  backdrop-filter: blur(var(--opta-blur-lg));
   box-shadow:
     inset 0 1px 0 0 rgba(255, 255, 255, 0.08),
     0 4px 24px -4px rgba(0, 0, 0, 0.3);
@@ -600,6 +600,7 @@ button.active,
   gap: 1.5rem;
   align-items: center;
   background: rgba(5, 3, 10, 0.8);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
 }
 
@@ -613,6 +614,7 @@ button.active,
   border-radius: 16px;
   padding: 0.75rem;
   background: rgba(5, 3, 10, 0.8);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   position: relative;
   transition: all 0.3s ease;
@@ -680,6 +682,7 @@ button.active,
   place-items: start center;
   padding-top: 15vh;
   background: rgba(9, 9, 11, 0.8);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
 }
 
@@ -832,8 +835,8 @@ button.active,
   background: rgba(239, 68, 68, 0.1);
   border: 1px solid rgba(239, 68, 68, 0.3);
   border-radius: 8px;
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
 }
 
 .timeline-card pre.tool-body {
@@ -1497,8 +1500,8 @@ button.active,
   font-size: 0.8rem;
   outline: none;
   transition: border-color 0.15s ease;
-  backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
 }
 
 .rail-search:focus {
@@ -1556,6 +1559,7 @@ button.active,
   background: rgba(239, 68, 68, 0.1);
   border: 1px solid rgba(239, 68, 68, 0.25);
   border-radius: 8px;
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   display: inline-block;
 }
@@ -1589,6 +1593,7 @@ button.active,
   position: relative;
   display: flex;
   align-items: stretch;
+  width: 100%;
 }
 
 .token-input-wrap input {
@@ -1628,8 +1633,8 @@ button.active,
   inset: 0;
   z-index: 200;
   background: rgba(9, 9, 11, 0.88);
-  backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2469,8 +2474,8 @@ button.active,
   background: rgba(0, 0, 0, 0.2);
   border: 1px solid var(--opta-border);
   border-radius: 12px;
-  backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
 }
 
 .operations-page-header h2 {
@@ -2671,6 +2676,16 @@ button.active,
   color: var(--opta-text-muted);
   font-size: 0.85rem;
   padding: 20px 0;
+}
+
+.daemon-offline-hint-error {
+  margin-top: 4px;
+  color: var(--opta-danger);
+}
+
+.runtime-error-detail {
+  margin: 0.4rem 0 0;
+  color: rgba(239, 68, 68, 0.9);
 }
 
 /* ══════════════════════════════════════════════════════════════════
@@ -2887,4 +2902,77 @@ button.active,
   height: 100%;
   color: var(--opta-text-muted);
   font-size: 0.85rem;
+}
+/* ── Multi-session activity indicators ──────────────────────────────────── */
+
+.session-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.session-title-row strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Pulsing dot shown next to session title when that session's agent is working */
+.session-streaming-dot {
+  flex-shrink: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--opta-primary);
+  box-shadow: 0 0 6px var(--opta-primary);
+  animation: session-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes session-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.45; transform: scale(0.75); }
+}
+
+/* Amber badge showing number of pending permissions on a session row */
+.session-permission-badge {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 5px;
+  border-radius: 10px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  background: rgba(245, 158, 11, 0.18);
+  color: var(--opta-warning, #f59e0b);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  line-height: 1;
+}
+
+/* Streaming row gets a subtle left accent */
+.session-row--streaming {
+  border-left: 2px solid var(--opta-primary);
+}
+
+/* Global header pills for cross-session activity */
+.pill-active-agents {
+  background: rgba(139, 92, 246, 0.2);
+  color: var(--opta-primary);
+  border: 1px solid rgba(139, 92, 246, 0.4);
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  animation: session-pulse 1.4s ease-in-out infinite;
+}
+
+.pill-pending-perms {
+  background: rgba(245, 158, 11, 0.18);
+  color: var(--opta-warning, #f59e0b);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  font-weight: 600;
 }

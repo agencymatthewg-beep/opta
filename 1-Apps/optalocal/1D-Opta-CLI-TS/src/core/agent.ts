@@ -59,9 +59,15 @@ export interface OnStreamCallbacks {
    * The callback must return a Promise that resolves to true (allow) or false (deny).
    * If 'always' is chosen, the caller should persist the permission and return true.
    */
-  onPermissionRequest?: (toolName: string, args: Record<string, unknown>) => Promise<'allow' | 'deny' | 'always'>;
+  onPermissionRequest?: (
+    toolName: string,
+    args: Record<string, unknown>
+  ) => Promise<'allow' | 'deny' | 'always'>;
   /** Called when connection status changes during streaming (reconnection attempts). */
-  onConnectionStatus?: (status: 'checking' | 'connected' | 'disconnected' | 'reconnecting', attempt?: number) => void;
+  onConnectionStatus?: (
+    status: 'checking' | 'connected' | 'disconnected' | 'reconnecting',
+    attempt?: number
+  ) => void;
   /** Called with inference observability insights (performance, context, tool selection). */
   onInsight?: (insight: import('./insights.js').Insight) => void;
   /** Called when the API returns token usage data (from final streaming chunk). */
@@ -107,13 +113,9 @@ export interface FinalReassessmentDecisionInput {
   alreadyForcedFinalPass: boolean;
 }
 
-export function shouldForceFinalReassessmentPass(
-  input: FinalReassessmentDecisionInput,
-): boolean {
+export function shouldForceFinalReassessmentPass(input: FinalReassessmentDecisionInput): boolean {
   return (
-    input.autonomyLevel >= 3
-    && input.objectiveReassessmentEnabled
-    && !input.alreadyForcedFinalPass
+    input.autonomyLevel >= 3 && input.objectiveReassessmentEnabled && !input.alreadyForcedFinalPass
   );
 }
 
@@ -125,7 +127,7 @@ function makeAbortError(message = 'Turn cancelled'): Error {
 
 function queueLearningCapture(
   config: OptaConfig,
-  event: import('../learning/hooks.js').CaptureLearningEventInput,
+  event: import('../learning/hooks.js').CaptureLearningEventInput
 ): void {
   if (!config.learning.enabled) return;
   void import('../learning/hooks.js')
@@ -135,7 +137,7 @@ function queueLearningCapture(
 
 async function buildLearningRetrievalBlock(
   task: string,
-  config: OptaConfig,
+  config: OptaConfig
 ): Promise<string | null> {
   if (!config.learning.enabled) return null;
 
@@ -188,14 +190,19 @@ export async function agentLoop(
   let effectiveConfig: OptaConfig;
   if (isSubAgent) {
     const { deriveChildConfig } = await import('./subagent.js');
-    effectiveConfig = deriveChildConfig(profiledConfig, options?.mode, options?.subAgentContext?.budget);
+    effectiveConfig = deriveChildConfig(
+      profiledConfig,
+      options?.mode,
+      options?.subAgentContext?.budget
+    );
   } else {
     effectiveConfig = profiledConfig;
   }
 
   const client = await getOrCreateClient(effectiveConfig);
-  const transportProviderName = (client as import('openai').default & { __optaProviderName?: string }).__optaProviderName
-    ?? effectiveConfig.provider.active;
+  const transportProviderName =
+    (client as import('openai').default & { __optaProviderName?: string }).__optaProviderName ??
+    effectiveConfig.provider.active;
 
   const model = effectiveConfig.model.default;
   ensureModel(model);
@@ -210,18 +217,23 @@ export async function agentLoop(
     allImages.push(...options.images);
   }
 
-  const userMessage: AgentMessage = allImages.length > 0
-    ? {
-        role: 'user',
-        content: [
-          { type: 'text', text: task },
-          ...allImages.map(img => ({
-            type: 'image_url' as const,
-            image_url: { url: img.base64.startsWith('data:') ? img.base64 : `data:${img.mimeType};base64,${img.base64}` },
-          })),
-        ],
-      }
-    : { role: 'user', content: task };
+  const userMessage: AgentMessage =
+    allImages.length > 0
+      ? {
+          role: 'user',
+          content: [
+            { type: 'text', text: task },
+            ...allImages.map((img) => ({
+              type: 'image_url' as const,
+              image_url: {
+                url: img.base64.startsWith('data:')
+                  ? img.base64
+                  : `data:${img.mimeType};base64,${img.base64}`,
+              },
+            })),
+          ],
+        }
+      : { role: 'user', content: task };
 
   let systemPrompt: string;
   if (isSubAgent) {
@@ -245,10 +257,7 @@ export async function agentLoop(
 
   const messages: AgentMessage[] = options?.existingMessages
     ? [...options.existingMessages, userMessage]
-    : [
-        { role: 'system', content: systemPrompt },
-        userMessage,
-      ];
+    : [{ role: 'system', content: systemPrompt }, userMessage];
 
   let toolCallCount = 0;
   let toolCallTurns = 0;
@@ -261,16 +270,23 @@ export async function agentLoop(
   let completionStatus: AutonomyRunCompletionStatus = 'stopped';
   // Sub-agents are always silent
   const silent = isSubAgent || (options?.silent ?? false);
-  const noopSpinner: Spinner = { start: () => {}, stop: () => {}, succeed: () => {}, fail: () => {} };
+  const noopSpinner: Spinner = {
+    start: () => {},
+    stop: () => {},
+    succeed: () => {},
+    fail: () => {},
+  };
   const spinner = silent ? noopSpinner : await createSpinner();
   const sessionId = options?.sessionId ?? 'unknown';
 
   // Status bar for real-time stats
-  const statusBar = silent ? null : new StatusBar({
-    model,
-    sessionId,
-    provider: effectiveConfig.provider.active,
-  });
+  const statusBar = silent
+    ? null
+    : new StatusBar({
+        model,
+        sessionId,
+        provider: effectiveConfig.provider.active,
+      });
   let checkpointCount = 0;
   let pseudoToolProtocolRetryCount = 0;
   let lastThinkingRenderer: ThinkingRenderer | undefined;
@@ -311,10 +327,12 @@ export async function agentLoop(
     const activeProfile = getAgentProfile(options.profile);
     if (activeProfile?.tools && activeProfile.tools.length > 0) {
       const allowedTools = new Set(activeProfile.tools);
-      activeSchemas = activeSchemas.filter(
-        (s: { function: { name: string } }) => allowedTools.has(s.function.name)
+      activeSchemas = activeSchemas.filter((s: { function: { name: string } }) =>
+        allowedTools.has(s.function.name)
       );
-      debug(`Profile "${options.profile}" filtered tools: ${activeSchemas.length}/${registry.schemas.length}`);
+      debug(
+        `Profile "${options.profile}" filtered tools: ${activeSchemas.length}/${registry.schemas.length}`
+      );
     }
   }
 
@@ -333,7 +351,9 @@ export async function agentLoop(
       profile: options?.profile,
     });
 
-    let systemMessage = messages.find((message) => message.role === 'system' && typeof message.content === 'string');
+    let systemMessage = messages.find(
+      (message) => message.role === 'system' && typeof message.content === 'string'
+    );
     if (systemMessage && typeof systemMessage.content === 'string') {
       systemMessage.content = injectCapabilityManifest(systemMessage.content, manifest);
     } else if (!options?.existingMessages) {
@@ -354,10 +374,8 @@ export async function agentLoop(
       systemMessage.content = `${systemMessage.content}\n\n${learningBlock}`;
     }
 
-    const {
-      readToolCompatibilityEntry,
-      buildToolCompatibilityInstruction,
-    } = await import('./tool-compatibility.js');
+    const { readToolCompatibilityEntry, buildToolCompatibilityInstruction } =
+      await import('./tool-compatibility.js');
     const compatibilityEntry = await readToolCompatibilityEntry(process.cwd(), {
       model,
       provider: transportProviderName,
@@ -372,32 +390,17 @@ export async function agentLoop(
       systemMessage.content = `${systemMessage.content}\n\n${compatibilityInstruction}`;
     }
 
-    if (effectiveConfig.browser.enabled && effectiveConfig.browser.autoInvoke) {
-      const [
-        { routeBrowserIntent, buildBrowserRoutingInstruction },
-        { loadBrowserRunCorpusAdaptationHint },
-      ] = await Promise.all([
-        import('../browser/intent-router.js'),
-        import('../browser/adaptation.js'),
-      ]);
-      const adaptationHint = effectiveConfig.browser.adaptation.enabled
-        ? await loadBrowserRunCorpusAdaptationHint(process.cwd(), effectiveConfig.browser.adaptation)
-            .catch(() => null)
-        : null;
-      const routingDecision = routeBrowserIntent(task, {
-        adaptationHint: adaptationHint?.intent,
-      });
-
-      if (routingDecision.shouldRoute) {
-        const routingInstruction = buildBrowserRoutingInstruction(routingDecision);
-        if (
-          routingInstruction &&
-          systemMessage &&
-          typeof systemMessage.content === 'string' &&
-          !systemMessage.content.includes('### Browser Auto-Routing')
-        ) {
-          systemMessage.content = `${systemMessage.content}\n\n${routingInstruction}`;
-        }
+    if (effectiveConfig.browser.enabled) {
+      const { buildBrowserAvailabilityInstruction } = await import('../browser/intent-router.js');
+      const explicitRequest = task.toLowerCase().includes('browser');
+      const browserInstruction = buildBrowserAvailabilityInstruction(explicitRequest);
+      if (
+        browserInstruction &&
+        systemMessage &&
+        typeof systemMessage.content === 'string' &&
+        !systemMessage.content.includes('### Browser Tools Available')
+      ) {
+        systemMessage.content = `${systemMessage.content}\n\n${browserInstruction}`;
       }
     }
   }
@@ -418,7 +421,8 @@ export async function agentLoop(
   const gitUtilsMod = await import('../git/utils.js');
   const gitCheckpointsMod = await import('../git/checkpoints.js');
   const gitCommitMod = await import('../git/commit.js');
-  const { detectPseudoToolMarkup, buildPseudoToolCorrectionMessage } = await import('./tool-protocol.js');
+  const { detectPseudoToolMarkup, buildPseudoToolCorrectionMessage } =
+    await import('./tool-protocol.js');
   const { recordToolCompatibilityEvent } = await import('./tool-compatibility.js');
   const loopStartedAtMs = Date.now();
 
@@ -441,14 +445,24 @@ export async function agentLoop(
       if (!silent) {
         console.log(
           chalk.yellow(
-            '\n  Warning: LMX unreachable — provider may degrade. Run `opta doctor` if this persists.',
-          ),
+            '\n  Warning: LMX unreachable — provider may degrade. Run `opta doctor` if this persists.'
+          )
         );
       }
     });
     wd.start(15_000);
     watchdog = wd;
   }
+
+  // Persistent transport options shared across all turns.
+  // Mutations (e.g. lmxWsUnavailable) carry forward so a WS failure on turn 1
+  // prevents repeated WebSocket attempts on turns 2–N, eliminating the noisy
+  // 3-attempt reconnect overhead when LMX has no WebSocket endpoint.
+  const streamTransport: import('./agent-streaming.js').StreamTransportOptions = {
+    config: effectiveConfig,
+    providerName: transportProviderName,
+    signal: options?.signal,
+  };
 
   try {
     while (true) {
@@ -463,7 +477,11 @@ export async function agentLoop(
           const elapsedMinutes = (elapsedMs / 60_000).toFixed(1);
           const budgetMinutes = (maxDurationMs / 60_000).toFixed(1);
           if (!silent) {
-            console.log(chalk.yellow(`\n  Autonomous runtime budget reached (${elapsedMinutes}/${budgetMinutes} min). Stopping turn.`));
+            console.log(
+              chalk.yellow(
+                `\n  Autonomous runtime budget reached (${elapsedMinutes}/${budgetMinutes} min). Stopping turn.`
+              )
+            );
           }
           completionStatus = 'runtime_budget_reached';
           messages.push({
@@ -487,7 +505,12 @@ export async function agentLoop(
         debug(`Token estimate ${tokenEstimate} exceeds threshold ${threshold}`);
         spinner.start('Compacting conversation history...');
         const preCompactCount = messages.length;
-        const compacted = await compactHistory(messages, client, model, effectiveConfig.model.contextLimit);
+        const compacted = await compactHistory(
+          messages,
+          client,
+          model,
+          effectiveConfig.model.contextLimit
+        );
         const recoveredTokens = tokenEstimate - estimateMessageTokens(compacted);
         messages.splice(0, messages.length, ...compacted);
         spinner.succeed('Context compacted');
@@ -514,21 +537,30 @@ export async function agentLoop(
       spinner.start('Thinking...');
 
       // Reconnection status handler: use TUI callback if available, otherwise log to console
-      const reconnectHandler = streamCallbacks?.onConnectionStatus ?? (
-        silent ? undefined : (status: 'checking' | 'connected' | 'disconnected' | 'reconnecting', attempt?: number) => {
-          if (status === 'reconnecting') {
-            spinner.stop();
-            console.log(chalk.dim(`  Connection interrupted, reconnecting... (attempt ${attempt ?? '?'}/${effectiveConfig.connection.retry.maxRetries})`));
-            spinner.start('Reconnecting...');
-          } else if (status === 'connected') {
-            spinner.stop();
-            console.log(chalk.green('  \u2713') + chalk.dim(' Reconnected'));
-            spinner.start('Thinking...');
-          } else if (status === 'disconnected') {
-            spinner.stop();
-          }
-        }
-      );
+      const reconnectHandler =
+        streamCallbacks?.onConnectionStatus ??
+        (silent
+          ? undefined
+          : (
+              status: 'checking' | 'connected' | 'disconnected' | 'reconnecting',
+              attempt?: number
+            ) => {
+              if (status === 'reconnecting') {
+                spinner.stop();
+                console.log(
+                  chalk.dim(
+                    `  Connection interrupted, reconnecting... (attempt ${attempt ?? '?'}/${effectiveConfig.connection.retry.maxRetries})`
+                  )
+                );
+                spinner.start('Reconnecting...');
+              } else if (status === 'connected') {
+                spinner.stop();
+                console.log(chalk.green('  \u2713') + chalk.dim(' Reconnected'));
+                spinner.start('Thinking...');
+              } else if (status === 'disconnected') {
+                spinner.stop();
+              }
+            });
 
       const stream = await createStreamWithRetry(
         client,
@@ -540,11 +572,7 @@ export async function agentLoop(
         },
         effectiveConfig.connection.retry,
         reconnectHandler,
-        {
-          config: effectiveConfig,
-          providerName: transportProviderName,
-          signal: options?.signal,
-        },
+        streamTransport
       );
 
       spinner.stop();
@@ -553,16 +581,27 @@ export async function agentLoop(
       statusBar?.newTurn();
       let firstText = true;
       const streamStartTime = Date.now();
-      const { text, toolCalls, thinkingRenderer: lastThinking, usage, finishReason } = await collectStream(stream, (chunk) => {
-        if (silent) return;
-        if (firstText) {
-          console.log(); // blank line before response
-          firstText = false;
-          // Fire first-token insight for REPL mode
-          insightEngine?.firstToken(Date.now() - streamStartTime);
-        }
-        process.stdout.write(chunk);
-      }, statusBar, streamCallbacks);
+      const {
+        text,
+        toolCalls,
+        thinkingRenderer: lastThinking,
+        usage,
+        finishReason,
+      } = await collectStream(
+        stream,
+        (chunk) => {
+          if (silent) return;
+          if (firstText) {
+            console.log(); // blank line before response
+            firstText = false;
+            // Fire first-token insight for REPL mode
+            insightEngine?.firstToken(Date.now() - streamStartTime);
+          }
+          process.stdout.write(chunk);
+        },
+        statusBar,
+        streamCallbacks
+      );
 
       // Track last thinking renderer for expand/collapse toggle
       lastThinkingRenderer = lastThinking;
@@ -611,10 +650,14 @@ export async function agentLoop(
             pseudoToolProtocolRetryCount += 1;
             const correction = buildPseudoToolCorrectionMessage(
               detection,
-              effectiveConfig.browser.enabled,
+              effectiveConfig.browser.enabled
             );
             if (!silent) {
-              console.log(chalk.yellow('  ⚠ Invalid pseudo tool markup detected; retrying with protocol correction.'));
+              console.log(
+                chalk.yellow(
+                  '  ⚠ Invalid pseudo tool markup detected; retrying with protocol correction.'
+                )
+              );
             }
             messages.push({
               role: 'system',
@@ -662,15 +705,21 @@ export async function agentLoop(
           firstTokenLatencyMs: null,
         });
 
-        if (shouldForceFinalReassessmentPass({
-          autonomyLevel: effectiveConfig.autonomy.level,
-          objectiveReassessmentEnabled,
-          alreadyForcedFinalPass: forcedFinalReassessmentTriggered,
-        })) {
+        if (
+          shouldForceFinalReassessmentPass({
+            autonomyLevel: effectiveConfig.autonomy.level,
+            objectiveReassessmentEnabled,
+            alreadyForcedFinalPass: forcedFinalReassessmentTriggered,
+          })
+        ) {
           forcedFinalReassessmentTriggered = true;
           pendingFinalReassessmentPass = true;
           if (!silent) {
-            console.log(chalk.dim('  Autonomy checkpoint: forcing final review/reassessment pass before completion.'));
+            console.log(
+              chalk.dim(
+                '  Autonomy checkpoint: forcing final review/reassessment pass before completion.'
+              )
+            );
           }
           statusBar?.clear();
           continue;
@@ -729,19 +778,25 @@ export async function agentLoop(
         sessionCtx,
       });
 
-      const execResult = await executeToolCalls(decisions, messages, {
-        config: effectiveConfig,
-        spinner,
-        silent,
-        isSubAgent,
-        sessionId,
-        streamCallbacks,
-        insightEngine,
-        hooks,
-        sessionCtx,
-        registry,
-        signal: options?.signal,
-      }, toolCallCount, checkpointCount);
+      const execResult = await executeToolCalls(
+        decisions,
+        messages,
+        {
+          config: effectiveConfig,
+          spinner,
+          silent,
+          isSubAgent,
+          sessionId,
+          streamCallbacks,
+          insightEngine,
+          hooks,
+          sessionCtx,
+          registry,
+          signal: options?.signal,
+        },
+        toolCallCount,
+        checkpointCount
+      );
 
       toolCallCount += execResult.toolCallsDelta;
       checkpointCount = execResult.checkpointCount;
@@ -766,7 +821,9 @@ export async function agentLoop(
           // Headless continue: log a checkpoint and keep running without user prompt
           if (!silent) {
             console.log(
-              chalk.dim(`\n  ⟳ Headless checkpoint at ${toolCallCount} tool calls — continuing autonomously`),
+              chalk.dim(
+                `\n  ⟳ Headless checkpoint at ${toolCallCount} tool calls — continuing autonomously`
+              )
             );
           }
           queueLearningCapture(effectiveConfig, {
@@ -823,9 +880,10 @@ export async function agentLoop(
 
     if (!isSubAgent && effectiveConfig.autonomy.mode === 'ceo') {
       try {
-        const reportCheckpoint = autonomyTurnCount > 0
-          ? buildAutonomyCycleCheckpoint(autonomyTurnCount - 1)
-          : lastAutonomyCheckpoint;
+        const reportCheckpoint =
+          autonomyTurnCount > 0
+            ? buildAutonomyCycleCheckpoint(autonomyTurnCount - 1)
+            : lastAutonomyCheckpoint;
         const reportStage = forcedFinalReassessmentTriggered
           ? 'reassessment'
           : reportCheckpoint.stage;
@@ -866,7 +924,11 @@ export async function agentLoop(
           const modifiedFiles = await gitUtilsMod.getModifiedFiles(process.cwd());
           if (modifiedFiles.length > 0) {
             const commitMsg = await gitCommitMod.generateCommitMessage(messages, client, model);
-            const committed = await gitCommitMod.commitSessionChanges(process.cwd(), modifiedFiles, commitMsg);
+            const committed = await gitCommitMod.commitSessionChanges(
+              process.cwd(),
+              modifiedFiles,
+              commitMsg
+            );
             if (committed && !silent) {
               console.log(chalk.green('\u2713') + chalk.dim(` Committed: ${commitMsg}`));
             }
@@ -894,7 +956,7 @@ export async function agentLoop(
 
     // Shutdown background processes (skip for sub-agents to avoid killing parent's)
     if (!isSubAgent) {
-      await shutdownProcessManager();
+      shutdownProcessManager();
     }
 
     // Fire session end hook

@@ -33,6 +33,8 @@ function App() {
     connectionState,
     isStreaming,
     pendingPermissions,
+    streamingBySession,
+    pendingPermissionsBySession,
     refreshNow,
     resolvePermission,
     runtime,
@@ -65,6 +67,20 @@ function App() {
     () =>
       sessions.find((session) => session.sessionId === activeSessionId) ?? null,
     [activeSessionId, sessions],
+  );
+
+  const activeStreamCount = useMemo(
+    () => Object.values(streamingBySession).filter(Boolean).length,
+    [streamingBySession],
+  );
+
+  const totalPendingPermissions = useMemo(
+    () =>
+      Object.values(pendingPermissionsBySession).reduce(
+        (sum, arr) => sum + arr.length,
+        0,
+      ),
+    [pendingPermissionsBySession],
   );
 
   const timelineItems = activeSessionId
@@ -236,7 +252,7 @@ function App() {
       <div
         ref={shellBodyRef}
         className="app-shell-body"
-        aria-hidden={palette.isOpen}
+        aria-hidden={palette.isOpen ? "true" : undefined}
       >
         <header className="app-topbar">
           <div className="identity">
@@ -254,10 +270,20 @@ function App() {
                     : "Offline"}
               </span>
               <span>{sessionCount} tracked sessions</span>
+              {activeStreamCount > 0 && (
+                <span className="pill-active-agents">
+                  {activeStreamCount} agent{activeStreamCount !== 1 ? "s" : ""} working
+                </span>
+              )}
+              {totalPendingPermissions > 0 && (
+                <span className="pill-pending-perms">
+                  {totalPendingPermissions} permission{totalPendingPermissions !== 1 ? "s" : ""} waiting
+                </span>
+              )}
               <span className={`mode-pill mode-pill-${submissionMode}`}>
-            {submissionMode === "do" ? "Do mode" : "Chat mode"}
-          </span>
-          <span>{showTerminal ? "Runtime visible" : "Runtime hidden"}</span>
+                {submissionMode === "do" ? "Do mode" : "Chat mode"}
+              </span>
+              <span>{showTerminal ? "Runtime visible" : "Runtime hidden"}</span>
             </div>
             {connectionState === "disconnected" && (
               <div className="daemon-offline-hint">
@@ -390,6 +416,8 @@ function App() {
                 sessions={sessions}
                 activeSessionId={activeSessionId}
                 selectedWorkspace={selectedWorkspace}
+                streamingBySession={streamingBySession}
+                pendingPermissionsBySession={pendingPermissionsBySession}
                 onSelectWorkspace={setSelectedWorkspace}
                 onSelectSession={(sessionId) => {
                   setActiveSessionId(sessionId);

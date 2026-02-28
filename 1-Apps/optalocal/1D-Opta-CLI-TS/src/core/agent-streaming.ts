@@ -64,7 +64,7 @@ function isRetryableError(err: unknown): boolean {
   return false;
 }
 
-interface StreamTransportOptions {
+export interface StreamTransportOptions {
   config?: OptaConfig;
   /** Runtime provider identifier (e.g. lmx, anthropic, lmx+fallback). */
   providerName?: string;
@@ -73,6 +73,12 @@ interface StreamTransportOptions {
   resolvedLmxHost?: string;
   /** Canonical WebSocket URL from server discovery, cached across retries. */
   resolvedLmxWsUrl?: string;
+  /**
+   * Set to true after a WebSocket connection failure that fell through to SSE.
+   * Shared across all turns in the same agent session so subsequent turns skip
+   * WS attempts entirely instead of repeating 3 failing connection attempts.
+   */
+  lmxWsUnavailable?: boolean;
 }
 
 type RetryConfig = { maxRetries: number; backoffMs: number; backoffMultiplier: number };
@@ -447,7 +453,9 @@ export async function createStreamWithRetry(
 ): Promise<AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>> {
   let lastError: unknown;
   const shouldTryLmxWs = Boolean(
-    transport?.config && (transport.providerName ?? transport.config.provider.active) === 'lmx'
+    transport?.config &&
+      (transport.providerName ?? transport.config.provider.active) === 'lmx' &&
+      !transport.lmxWsUnavailable
   );
 
   for (let attempt = 0; attempt <= retryConfig.maxRetries; attempt++) {
@@ -479,6 +487,11 @@ export async function createStreamWithRetry(
         stream = null;
       }
       if (!stream) {
+        // WS was attempted but failed — remember this for subsequent turns so we
+        // skip the 3-attempt WS retry overhead and go directly to SSE.
+        if (shouldTryLmxWs && transport) {
+          transport.lmxWsUnavailable = true;
+        }
         stream = await createSdkStream(client, params, transport?.signal);
       }
 
