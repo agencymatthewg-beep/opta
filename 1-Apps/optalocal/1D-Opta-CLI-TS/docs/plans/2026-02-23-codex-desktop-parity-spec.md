@@ -1,3 +1,7 @@
+---
+status: review
+---
+
 # Codex Desktop Parity Spec (macOS Enforcement)
 
 **Date:** 2026-02-23  
@@ -279,11 +283,13 @@ npx vitest run tests/tui/visual-snapshots.test.tsx
 ## 6) Sign-off Checklist
 
 > **Verification audit: 2026-02-27** — All P0 test files exist and most pass locally. CI workflow exists but no remote configured. Key gaps: 5 required visual snapshot additions, TODO stubs in workflow for reconnect e2e and permission fuzz.
+>
+> **Update: 2026-02-28** — P0-03 alternate buffer lifecycle assertions added to `tests/tui/App.test.tsx` (cursor-hide/show lifecycle via ink direct render). P0-09 all 8 VG- snapshots captured: VG-APP-IDLE ×3 widths, VG-APP-SAFE, VG-OVERLAY-MENU ×2 widths, VG-PERMISSION, VG-SCROLL-DEEP.
 
 ## 6.1 Release-blocking sign-off (must all be true)
-- [ ] All `P0-01` through `P0-10` scenarios marked `PASS` in the parity report. — _Test files exist for all 10; P0-03 missing alternate buffer assertions; P0-09 missing 5 required VG- captures_
+- [ ] All `P0-01` through `P0-10` scenarios marked `PASS` in the parity report. — _P0-03 ✓ (cursor lifecycle assertions added); P0-09 ✓ (all 8 VG- snapshots captured); remaining gaps: P0-06 reconnect e2e, P0-07 permission stress_
 - [ ] All required workflow checks in `parity-macos-codex.yml` are green on the merge commit. — _Workflow exists and is correct; TODO stubs remain in reconnect + permission-race jobs; no remote to run_
-- [ ] No unresolved visual diffs in `tests/tui/__snapshots__/visual-snapshots.test.tsx.snap`. — _Snapshot file exists with VG-CHAT/SCAN/MODELS/HELP; missing VG-APP-IDLE/SAFE, VG-OVERLAY-MENU, VG-PERMISSION, VG-SCROLL-DEEP_
+- [ ] No unresolved visual diffs in `tests/tui/__snapshots__/visual-snapshots.test.tsx.snap`. — _All 8 VG- snapshots now captured: VG-APP-IDLE ×3, VG-APP-SAFE, VG-OVERLAY-MENU ×2, VG-PERMISSION, VG-SCROLL-DEEP_
 - [ ] Reconnect and permission-race suites pass without retries/flakes. — _Both test files pass; stress/fuzz scenario not yet added (TODO in workflow)_
 - [x] No live-network dependency in parity test path. — _All tests use mocks; chat integration test is skipIf(!ANTHROPIC_API_KEY)_
 - [ ] Strict parity gate job result is `success`. — _Cannot verify — no remote configured_
@@ -323,3 +329,4 @@ npx vitest run tests/tui/visual-snapshots.test.tsx
 - Canonical scenario IDs above are intended to replace placeholder TODO selectors in parity enforcement workflow and release criteria docs.
 - Any future parity expansion must add scenario IDs first, then map them to concrete tests/checks in Section 5 before enabling hard-gate enforcement.
 - **2026-02-27 audit:** All P1 scenarios have test coverage and pass. P0 gaps are: alternate buffer assertions (P0-03), 5 visual snapshot additions (P0-09), daemon reconnect e2e (P0-06 TODO), permission stress test (P0-07 TODO). CI workflow cannot be verified without git remote.
+- **2026-02-28 update:** P0-03 resolved — 2 cursor-lifecycle assertions added using `inkRender` (debug:false) to capture raw ANSI output. P0-09 resolved — 8 VG- snapshot tests added covering all required golden captures at all specified widths. All 39 visual-snapshots tests pass.

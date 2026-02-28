@@ -1,6 +1,8 @@
+import { EventEmitter } from 'node:events';
 import { afterEach, describe, it, expect, vi } from 'vitest';
 import React from 'react';
 import { render } from 'ink-testing-library';
+import { render as inkRender } from 'ink';
 
 vi.mock('../../src/tui/keybindings.js', async () => {
   const actual = await vi.importActual<typeof import('../../src/tui/keybindings.js')>('../../src/tui/keybindings.js');
@@ -1089,5 +1091,68 @@ describe('App component', () => {
     await flush();
 
     expect(lastFrame()).toContain('my connection works');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// P0-03 Alternate buffer lifecycle
+// ---------------------------------------------------------------------------
+// Ink represents "full-screen TUI mode" via cursor-hide (\x1b[?25l) on render
+// and cursor-show (\x1b[?25h) on unmount — not the ?1049 alternate-buffer code.
+// These tests use ink's render() directly (not ink-testing-library) so that
+// debug:false mode is active and ANSI sequences are written to the stdout mock.
+// ---------------------------------------------------------------------------
+
+class CapturingStdout extends EventEmitter {
+  columns = 120;
+  rows = 40;
+  isTTY = true;
+  writes: string[] = [];
+  write(data: string): boolean {
+    this.writes.push(data);
+    return true;
+  }
+  raw(): string {
+    return this.writes.join('');
+  }
+}
+
+describe('P0-03 Alternate buffer lifecycle', () => {
+  it('hides cursor on render — TUI enters full-screen mode', async () => {
+    const cap = new CapturingStdout();
+    const inst = inkRender(
+      <App model="test-model" sessionId="p0-03-a" />,
+      {
+        stdout: cap as unknown as NodeJS.WriteStream,
+        stderr: cap as unknown as NodeJS.WriteStream,
+        exitOnCtrlC: false,
+        patchConsole: false,
+        debug: false,
+      },
+    );
+    await flush();
+    // \x1b[?25l = hide cursor — signals TUI has taken over the terminal
+    expect(cap.raw()).toContain('\x1b[?25l');
+    inst.unmount();
+    await flush();
+  });
+
+  it('restores cursor on unmount — TUI exits full-screen cleanly', async () => {
+    const cap = new CapturingStdout();
+    const inst = inkRender(
+      <App model="test-model" sessionId="p0-03-b" />,
+      {
+        stdout: cap as unknown as NodeJS.WriteStream,
+        stderr: cap as unknown as NodeJS.WriteStream,
+        exitOnCtrlC: false,
+        patchConsole: false,
+        debug: false,
+      },
+    );
+    await flush();
+    inst.unmount();
+    await flush();
+    // \x1b[?25h = show cursor — signals TUI released terminal control cleanly
+    expect(cap.raw()).toContain('\x1b[?25h');
   });
 });

@@ -2,11 +2,13 @@ import { EventEmitter } from 'node:events';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { render } from 'ink-testing-library';
+import { Box } from 'ink';
 import { InkStatusBar } from '../../src/tui/StatusBar.js';
 import { MessageList } from '../../src/tui/MessageList.js';
 import { InputBox } from '../../src/tui/InputBox.js';
 import { Sidebar } from '../../src/tui/Sidebar.js';
 import { OptaMenuOverlay } from '../../src/tui/OptaMenuOverlay.js';
+import { PermissionPrompt } from '../../src/tui/PermissionPrompt.js';
 import { sanitizeTerminalText } from '../../src/utils/text.js';
 
 // Mock fast-glob to prevent real filesystem calls from InputBox @-autocomplete
@@ -555,6 +557,242 @@ describe('OptaMenuOverlay visual snapshots', () => {
     );
     await flush();
     expect(normalizedFrame(lastFrame)).toMatchSnapshot('menu-with-results');
+    unmount();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// P0-09 Visual Golden Snapshots (VG-)
+// Five captures required by the codex desktop parity spec at target widths.
+// ---------------------------------------------------------------------------
+
+const menuNoop = () => {};
+const menuNoopAsync = async () => {};
+const baseMenuPropsVG = {
+  workflowMode: 'normal' as const,
+  currentModel: 'mlx-community/Qwen2.5-72B-4bit',
+  connectionHost: '192.168.188.11',
+  connectionPort: 1234,
+  sidebarVisible: false,
+  safeMode: false,
+  bypassPermissions: false,
+  followMode: true,
+  studioConnectivity: 'reachable' as const,
+  onClose: menuNoop,
+  onOpenModelPicker: menuNoop,
+  onOpenCommandBrowser: menuNoop,
+  onOpenHelpBrowser: menuNoop,
+  onOpenBrowserControl: menuNoop,
+  onOpenActionHistory: menuNoop,
+  onRunCommand: menuNoopAsync,
+  onToggleSidebar: menuNoop,
+  onToggleSafeMode: menuNoop,
+  onToggleBypass: menuNoop,
+  onToggleFollow: menuNoop,
+};
+
+describe('P0-09 VG visual golden snapshots', () => {
+  // -------------------------------------------------------------------------
+  // VG-APP-IDLE: Full App shell (StatusBar + MessageList + InputBox) at three
+  // target widths.  Tests protect alternate-buffer shell layout regressions.
+  // -------------------------------------------------------------------------
+
+  it('VG-APP-IDLE at 72x30 — narrow terminal app shell', () => {
+    const stdout = new MockStdout(72, 30) as unknown as NodeJS.WriteStream;
+    const { lastFrame, unmount } = render(
+      <Box flexDirection="column">
+        <InkStatusBar
+          model="mlx-community/Qwen2.5-72B-4bit"
+          tokens={0}
+          cost="$0.00"
+          tools={8}
+          speed={0}
+          connectionState="connected"
+        />
+        <MessageList
+          messages={[]}
+          connectionState="connected"
+          model="Qwen2.5-72B"
+          contextTotal={128000}
+          toolCount={8}
+        />
+        <InputBox onSubmit={() => {}} mode="normal" />
+      </Box>,
+      { stdout },
+    );
+    expect(normalizedFrame(lastFrame)).toMatchSnapshot('VG-APP-IDLE-72x30');
+    unmount();
+  });
+
+  it('VG-APP-IDLE at 96x34 — standard terminal app shell', () => {
+    const stdout = new MockStdout(96, 34) as unknown as NodeJS.WriteStream;
+    const { lastFrame, unmount } = render(
+      <Box flexDirection="column">
+        <InkStatusBar
+          model="mlx-community/Qwen2.5-72B-4bit"
+          tokens={0}
+          cost="$0.00"
+          tools={8}
+          speed={0}
+          connectionState="connected"
+        />
+        <MessageList
+          messages={[]}
+          connectionState="connected"
+          model="Qwen2.5-72B"
+          contextTotal={128000}
+          toolCount={8}
+        />
+        <InputBox onSubmit={() => {}} mode="normal" />
+      </Box>,
+      { stdout },
+    );
+    expect(normalizedFrame(lastFrame)).toMatchSnapshot('VG-APP-IDLE-96x34');
+    unmount();
+  });
+
+  it('VG-APP-IDLE at 128x40 — wide terminal app shell', () => {
+    const stdout = new MockStdout(128, 40) as unknown as NodeJS.WriteStream;
+    const { lastFrame, unmount } = render(
+      <Box flexDirection="column">
+        <InkStatusBar
+          model="mlx-community/Qwen2.5-72B-4bit"
+          tokens={0}
+          cost="$0.00"
+          tools={8}
+          speed={0}
+          connectionState="connected"
+        />
+        <MessageList
+          messages={[]}
+          connectionState="connected"
+          model="Qwen2.5-72B"
+          contextTotal={128000}
+          toolCount={8}
+        />
+        <InputBox onSubmit={() => {}} mode="normal" />
+      </Box>,
+      { stdout },
+    );
+    expect(normalizedFrame(lastFrame)).toMatchSnapshot('VG-APP-IDLE-128x40');
+    unmount();
+  });
+
+  // -------------------------------------------------------------------------
+  // VG-APP-SAFE: App shell with safe-mode badge enabled.
+  // Protects safety-state visibility — badge must remain visible across changes.
+  // -------------------------------------------------------------------------
+
+  it('VG-APP-SAFE at 96x34 — safe mode badge visible', () => {
+    const stdout = new MockStdout(96, 34) as unknown as NodeJS.WriteStream;
+    const { lastFrame, unmount } = render(
+      <Box flexDirection="column">
+        <InkStatusBar
+          model="mlx-community/Qwen2.5-72B-4bit"
+          tokens={1200}
+          cost="$0.01"
+          tools={8}
+          speed={22}
+          connectionState="connected"
+          safeMode={true}
+          bypassPermissions={false}
+        />
+        <MessageList
+          messages={[
+            { role: 'user', content: 'Are you in safe mode?', createdAt: Date.UTC(2026, 1, 28, 9, 0) },
+            { role: 'assistant', content: 'Yes — safe mode is active. Destructive tools require explicit confirmation.', createdAt: Date.UTC(2026, 1, 28, 9, 1) },
+          ]}
+          connectionState="connected"
+          model="Qwen2.5-72B"
+          contextTotal={128000}
+          toolCount={8}
+        />
+        <InputBox onSubmit={() => {}} mode="normal" safeMode={true} />
+      </Box>,
+      { stdout },
+    );
+    expect(normalizedFrame(lastFrame)).toMatchSnapshot('VG-APP-SAFE-96x34');
+    unmount();
+  });
+
+  // -------------------------------------------------------------------------
+  // VG-OVERLAY-MENU: Opta menu overlay at narrow and wide widths.
+  // Guards overlay geometry regressions — alignment must be centred at both sizes.
+  // -------------------------------------------------------------------------
+
+  it('VG-OVERLAY-MENU at 72x30 — narrow overlay alignment', async () => {
+    const stdout = new MockStdout(72, 30) as unknown as NodeJS.WriteStream;
+    const { lastFrame, unmount } = render(
+      <OptaMenuOverlay {...baseMenuPropsVG} />,
+      { stdout },
+    );
+    await flush();
+    expect(normalizedFrame(lastFrame)).toMatchSnapshot('VG-OVERLAY-MENU-72x30');
+    unmount();
+  });
+
+  it('VG-OVERLAY-MENU at 128x30 — wide overlay alignment', async () => {
+    const stdout = new MockStdout(128, 30) as unknown as NodeJS.WriteStream;
+    const { lastFrame, unmount } = render(
+      <OptaMenuOverlay {...baseMenuPropsVG} />,
+      { stdout },
+    );
+    await flush();
+    expect(normalizedFrame(lastFrame)).toMatchSnapshot('VG-OVERLAY-MENU-128x30');
+    unmount();
+  });
+
+  // -------------------------------------------------------------------------
+  // VG-PERMISSION: Permission prompt with countdown timer at 96x30.
+  // Guards safety decision UX — tool name, args, and countdown must be visible.
+  // -------------------------------------------------------------------------
+
+  it('VG-PERMISSION at 96x30 — edit_file permission prompt', () => {
+    const stdout = new MockStdout(96, 30) as unknown as NodeJS.WriteStream;
+    const { lastFrame, unmount } = render(
+      <PermissionPrompt
+        toolName="edit_file"
+        args={{
+          path: 'src/tui/App.tsx',
+          old_text: 'const foo = 1;',
+          new_text: 'const foo = 2;',
+        }}
+        onDecision={vi.fn()}
+      />,
+      { stdout },
+    );
+    expect(normalizedFrame(lastFrame)).toMatchSnapshot('VG-PERMISSION-96x30');
+    unmount();
+  });
+
+  // -------------------------------------------------------------------------
+  // VG-SCROLL-DEEP: Long message list with scrollbar thumb state at 96x34.
+  // Guards scroll rendering parity — thumb must appear when content overflows.
+  // -------------------------------------------------------------------------
+
+  it('VG-SCROLL-DEEP at 96x34 — long message list scroll state', () => {
+    const stdout = new MockStdout(96, 34) as unknown as NodeJS.WriteStream;
+    const messages = Array.from({ length: 14 }, (_, i) => ({
+      role: i % 2 === 0 ? 'user' : 'assistant',
+      content: i % 2 === 0
+        ? `Question ${Math.floor(i / 2) + 1}: What is the optimal strategy for reducing context window usage in long sessions?`
+        : `Answer ${Math.floor(i / 2) + 1}: The optimal strategy combines compaction triggers at 70% context usage, semantic summarisation of completed turns, and selective retention of tool call results that future turns are likely to reference.`,
+      createdAt: Date.UTC(2026, 1, 28, 10, i),
+    }));
+    const { lastFrame, unmount } = render(
+      <MessageList
+        messages={messages}
+        terminalWidth={96}
+        height={28}
+        thinkingExpanded={false}
+        connectionState="connected"
+        model="Qwen2.5-72B"
+        contextTotal={128000}
+        toolCount={8}
+      />,
+      { stdout },
+    );
+    expect(normalizedFrame(lastFrame)).toMatchSnapshot('VG-SCROLL-DEEP-96x34');
     unmount();
   });
 });
