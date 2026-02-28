@@ -120,7 +120,6 @@
   --color-chart-tick: var(--opta-chart-tick);
   --color-chart-ref-stroke: var(--opta-chart-ref-stroke);
   --color-chart-ref-label: var(--opta-chart-ref-label);
-
 }
 
 @layer base {
@@ -146,7 +145,6 @@
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
-
 }
 
 @layer utilities {
@@ -166,9 +164,10 @@
     -webkit-backdrop-filter: blur(var(--blur-md));
     border: 1px solid rgba(255, 255, 255, 0.04);
     box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
-    transition: border-color var(--duration-slow) var(--ease-smooth),
-                box-shadow var(--duration-slow) var(--ease-smooth),
-                transform var(--duration-slow) var(--ease-smooth);
+    transition:
+      border-color var(--duration-slow) var(--ease-smooth),
+      box-shadow var(--duration-slow) var(--ease-smooth),
+      transform var(--duration-slow) var(--ease-smooth);
   }
 
   .glass:hover {
@@ -215,16 +214,18 @@
     border: 1px solid rgba(139, 92, 246, 0.32);
     background:
       linear-gradient(
-        180deg,
-        rgba(9, 9, 11, 0.92) 0%,
-        rgba(24, 24, 27, 0.82) 100%
-      ) padding-box,
+          180deg,
+          rgba(9, 9, 11, 0.92) 0%,
+          rgba(24, 24, 27, 0.82) 100%
+        )
+        padding-box,
       linear-gradient(
-        135deg,
-        rgba(192, 132, 252, 0.42) 0%,
-        rgba(6, 182, 212, 0.12) 45%,
-        rgba(139, 92, 246, 0.22) 100%
-      ) border-box;
+          135deg,
+          rgba(192, 132, 252, 0.42) 0%,
+          rgba(6, 182, 212, 0.12) 45%,
+          rgba(139, 92, 246, 0.22) 100%
+        )
+        border-box;
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.05),
       0 16px 36px -24px rgba(0, 0, 0, 0.85);
@@ -355,7 +356,6 @@
     outline-offset: 2px;
     box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.2);
   }
-
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -366,112 +366,266 @@
    ═══════════════════════════════════════════════════════════════════ */
 
 @keyframes opta-spin {
-  from { transform: perspective(600px) rotateX(32deg) rotateY(-10deg) rotate(0deg); }
-  to   { transform: perspective(600px) rotateX(32deg) rotateY(-10deg) rotate(360deg); }
-
+  from {
+    transform: perspective(600px) rotateX(32deg) rotateY(-10deg) rotate(0deg);
+  }
+  to {
+    transform: perspective(600px) rotateX(32deg) rotateY(-10deg) rotate(360deg);
+  }
 }
 
 @keyframes opta-breathe {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow:
-      0 0 24px  rgba(168, 85, 247, 0.50),
-      0 0 60px  rgba(88,  28, 135, 0.22),
-      0 0 120px rgba(88,  28, 135, 0.10),
-      0 6px 20px rgba(0,   0,   0,   0.70);
+      0 0 24px rgba(168, 85, 247, 0.5),
+      0 0 60px rgba(88, 28, 135, 0.22),
+      0 0 120px rgba(88, 28, 135, 0.1),
+      0 6px 20px rgba(0, 0, 0, 0.7);
   }
   50% {
     box-shadow:
-      0 0 42px  rgba(168, 85, 247, 0.85),
-      0 0 100px rgba(88,  28, 135, 0.45),
-      0 0 200px rgba(88,  28, 135, 0.18),
-      0 8px 28px rgba(0,   0,   0,   0.75);
+      0 0 42px rgba(168, 85, 247, 0.85),
+      0 0 100px rgba(88, 28, 135, 0.45),
+      0 0 200px rgba(88, 28, 135, 0.18),
+      0 8px 28px rgba(0, 0, 0, 0.75);
   }
-
 }
 
 @keyframes opta-ambient {
-  0%, 100% { opacity: 0.45; transform: scale(1); }
-  50%       { opacity: 0.90; transform: scale(1.2); }
+  0%,
+  100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.3);
+  }
+}
 
+@keyframes opta-pulse-core {
+  from {
+    opacity: 0.75;
+    box-shadow:
+      0 0 10px 4px #c084fc,
+      0 0 24px 10px rgba(168, 85, 247, 0.55);
+  }
+  to {
+    opacity: 1;
+    box-shadow:
+      0 0 18px 7px #e9d5ff,
+      0 0 40px 16px rgba(192, 132, 252, 0.75);
+  }
+}
+
+@keyframes opta-plasma-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes opta-plasma-spin-reverse {
+  from { transform: rotate(360deg); }
+  to   { transform: rotate(0deg); }
+}
+
+/* kept for backward-compat (unused in ring, used by legacy callers) */
+@keyframes opta-calm-pull {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes opta-calm-pull-reverse {
+  from { transform: rotate(360deg); }
+  to   { transform: rotate(0deg); }
 }
 
 @layer utilities {
-  /* Wrapper — positions ambient glow behind ring */
+  /* Opta Ring — Gemini Glass Torus */
   .opta-ring-wrap {
     position: relative;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    width: var(--ring-size, 80px);
+    height: var(--ring-size, 80px);
   }
 
-  .opta-ring-wrap::before {
-    content: '';
+  .opta-ring-24  { --ring-size: 24px;  --ring-scale: 0.3; }
+  .opta-ring-48  { --ring-size: 48px;  --ring-scale: 0.6; }
+  .opta-ring-64  { --ring-size: 64px;  --ring-scale: 0.8; }
+  .opta-ring-80  { --ring-size: 80px;  --ring-scale: 1; }
+  .opta-ring-120 { --ring-size: 120px; --ring-scale: 1.5; }
+
+  /* Vivid purple bloom — matches the outer ambient glow in the Gemini renders */
+  .opta-ring-ambient {
     position: absolute;
-    inset: -55%;
+    inset: -65%;
     border-radius: 50%;
     background: radial-gradient(
-      ellipse 62% 55% at 55% 62%,
-      rgba(88, 28, 135, 0.62) 0%,
-      rgba(139, 92, 246, 0.25) 45%,
+      ellipse 60% 55% at 52% 58%,
+      rgba(109, 40, 217, 0.7) 0%,
+      rgba(139, 92, 246, 0.28) 45%,
       transparent 70%
     );
-    animation: opta-ambient 3.5s ease-in-out infinite;
+    animation: opta-ambient 4s ease-in-out infinite;
     z-index: 0;
     pointer-events: none;
   }
 
-  /* Ring body — obsidian centre + plasma border */
-  .opta-ring {
-    position: relative;
-    z-index: 1;
-    border-radius: 50%;
-    border-style: solid;
-    border-color: transparent;
-    /* Layer 1 (padding-box): fills the OLED hole so centre is opaque-black */
-    /* Layer 2 (border-box): conic plasma shows only in the border track   */
-    background:
-      linear-gradient(#09090b, #09090b) padding-box,
-      conic-gradient(
-        from 0deg,
-        #060110  0%,
-        #1A0D28  8%,
-        #3b1160 22%,
-        #A855F7 38%,
-        #C084FC 46%,
-        #f0d9ff 49%,
-        #ffffff 51%,   /* sharp specular peak */
-        #f0d9ff 53%,
-        #C084FC 58%,
-        #A855F7 68%,
-        #3b1160 84%,
-        #1A0D28 93%,
-        #060110 100%
-      ) border-box;
-    animation: opta-spin 10s linear infinite,
-               opta-breathe 3.5s ease-in-out infinite;
+  .opta-ring-wrap[data-paused="true"] .opta-ring-ambient,
+  .opta-ring-wrap[data-paused="true"] .opta-dust-1,
+  .opta-ring-wrap[data-paused="true"] .opta-dust-2,
+  .opta-ring-wrap[data-paused="true"] .opta-dust-3,
+  .opta-ring-wrap[data-paused="true"] .opta-singularity {
+    animation-play-state: paused !important;
+    opacity: 0.2;
   }
 
-  /* Specular highlight overlay — upper-left lit zone for 3D depth */
-  .opta-ring::after {
-    content: '';
+  .opta-ring-scaler {
+    position: absolute;
+    width: 80px;
+    height: 80px;
+    transform: scale(var(--ring-scale, 1));
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 5;
+  }
+
+  /* Inner plasma — conic violet gradient visible through center hole */
+  .opta-ring-core {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: conic-gradient(
+      from 0deg,
+      #3b0764,
+      #6d28d9,
+      #a855f7,
+      #c084fc,
+      #a855f7,
+      #6d28d9,
+      #4c1d95,
+      #3b0764
+    );
+    animation: opta-plasma-spin 8s linear infinite;
+    overflow: hidden;
+    box-shadow:
+      inset 0 0 28px rgba(139, 92, 246, 0.9),
+      inset 0 0 56px rgba(88, 28, 135, 0.7);
+  }
+
+  /* Bright singularity at the plasma core center */
+  .opta-singularity {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #ede9fe;
+    box-shadow:
+      0 0 10px 4px #c084fc,
+      0 0 22px 9px rgba(168, 85, 247, 0.65),
+      0 0 44px 18px rgba(109, 40, 217, 0.35);
+    animation: opta-pulse-core 3s ease-in-out infinite alternate;
+    z-index: 2;
+  }
+
+  /* Plasma swirl blobs — rotating radial glows layered inside the core */
+  .opta-dust {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+  }
+
+  .opta-dust-1 {
+    background: radial-gradient(
+      ellipse 60% 40% at 28% 32%,
+      rgba(192, 132, 252, 0.55) 0%,
+      transparent 65%
+    );
+    animation: opta-plasma-spin 10s linear infinite;
+  }
+  .opta-dust-2 {
+    background: radial-gradient(
+      ellipse 50% 55% at 72% 68%,
+      rgba(139, 92, 246, 0.5) 0%,
+      transparent 65%
+    );
+    animation: opta-plasma-spin-reverse 13s linear infinite;
+  }
+  .opta-dust-3 {
+    background: radial-gradient(
+      ellipse 45% 35% at 55% 28%,
+      rgba(221, 214, 254, 0.35) 0%,
+      transparent 60%
+    );
+    animation: opta-plasma-spin 18s linear infinite;
+    animation-delay: -6s;
+  }
+
+  /* Glass torus body — translucent dark glass with purple inner-edge bleed */
+  .opta-ring-body {
     position: absolute;
     inset: 0;
     border-radius: 50%;
     background: radial-gradient(
-      ellipse 50% 38% at 30% 20%,
-      rgba(255, 255, 255, 0.22) 0%,
-      rgba(255, 255, 255, 0.06) 45%,
-      transparent 72%
+      circle at 38% 32%,
+      rgba(109, 40, 217, 0.5) 0%,
+      rgba(50, 10, 90, 0.85) 22%,
+      rgba(10, 0, 22, 0.96) 48%,
+      rgba(3, 0, 8, 1) 100%
     );
-    pointer-events: none;
-    z-index: 2;
+    -webkit-mask: radial-gradient(circle, transparent 56%, black 56.5%);
+    mask: radial-gradient(circle, transparent 56%, black 56.5%);
+    z-index: 10;
+    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
   }
 
-  /* Size variants — proportional to the torus spec (tube ≈ 35% of major) */
-  .opta-ring-48  { width: 48px;  height: 48px;  border-width:  8px; }
-  .opta-ring-64  { width: 64px;  height: 64px;  border-width: 10px; }
-  .opta-ring-80  { width: 80px;  height: 80px;  border-width: 13px; }
-  .opta-ring-120 { width: 120px; height: 120px; border-width: 20px; }
+  /* Glass rim — specular highlight (top-left white) + inner hole glow (vivid purple) */
+  .opta-ring-rims {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    z-index: 12;
+    pointer-events: none;
+  }
+  /* Outer glass specular: bright top-left, purple bottom-right */
+  .opta-ring-rims::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: linear-gradient(
+      130deg,
+      rgba(255, 255, 255, 0.32) 0%,
+      rgba(216, 180, 254, 0.12) 18%,
+      transparent 42%,
+      transparent 75%,
+      rgba(109, 40, 217, 0.28) 100%
+    );
+    -webkit-mask:
+      radial-gradient(circle, transparent 55%, black 55.5%) padding-box,
+      linear-gradient(#fff, #fff);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+  }
+  /* Inner-rim: vivid purple glow at the center-hole edge */
+  .opta-ring-rims::after {
+    content: "";
+    position: absolute;
+    inset: 19%;
+    border-radius: 50%;
+    border: 1.5px solid rgba(168, 85, 247, 0.8);
+    box-shadow:
+      inset 0 0 12px rgba(168, 85, 247, 0.55),
+      0 0 16px rgba(139, 92, 246, 0.85),
+      0 0 32px rgba(109, 40, 217, 0.5);
+  }
 
   /* ─── Typography ────────────────────────────────────────────────── */
 
@@ -510,7 +664,11 @@
   }
 
   /* Section header — gradient title + neon accent line */
-  .opta-section-header { display: flex; align-items: center; gap: 16px; }
+  .opta-section-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
 
   .opta-section-title {
     font-size: 1.75rem;
@@ -536,43 +694,47 @@
     background: linear-gradient(90deg, transparent, #8b5cf6, transparent);
     box-shadow: 0 0 16px rgba(139, 92, 246, 0.7);
   }
-
 }
 
-  /* ─── Live indicator pulse ──────────────────────────────────────── */
-  @keyframes opta-live-pulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6); }
-    50% { box-shadow: 0 0 0 5px rgba(34, 197, 94, 0); }
+/* ─── Live indicator pulse ──────────────────────────────────────── */
+@keyframes opta-live-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6);
   }
+  50% {
+    box-shadow: 0 0 0 5px rgba(34, 197, 94, 0);
+  }
+}
 
-  .opta-live-dot {
-    animation: opta-live-pulse 2s ease-in-out infinite;
-  }
+.opta-live-dot {
+  animation: opta-live-pulse 2s ease-in-out infinite;
+}
 
-  /* ─── Keyboard shortcut badge ───────────────────────────────────── */
-  .opta-kbd {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-family: var(--font-mono);
-    font-size: 0.6rem;
-    font-weight: 500;
-    letter-spacing: 0.04em;
-    color: var(--opta-text-secondary);
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-bottom-width: 2px;
-    border-radius: 4px;
-    padding: 1px 5px;
-    min-width: 18px;
-    line-height: 1.4;
-  }
+/* ─── Keyboard shortcut badge ───────────────────────────────────── */
+.opta-kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--opta-text-secondary);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  padding: 1px 5px;
+  min-width: 18px;
+  line-height: 1.4;
+}
 
-  /* ─── Command palette selected item ────────────────────────────── */
-  .opta-palette-item-selected {
-    background: rgba(139, 92, 246, 0.12);
-    color: var(--opta-primary);
-  }
+/* ─── Command palette selected item ────────────────────────────── */
+.opta-palette-item-selected {
+  background: rgba(139, 92, 246, 0.12);
+  color: var(--opta-primary);
+}
 
 /* Reduced Motion Support */
 @media (prefers-reduced-motion: reduce) {
@@ -584,5 +746,4 @@
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
-
 }
