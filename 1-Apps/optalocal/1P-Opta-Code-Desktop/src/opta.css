@@ -568,6 +568,19 @@ button.active,
   color: white;
 }
 
+.composer-actions .btn-cancel {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--danger);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  font-weight: 600;
+}
+
+.composer-actions .btn-cancel:hover {
+  background: var(--danger);
+  color: white;
+  border-color: var(--danger);
+}
+
 .palette-backdrop {
   position: fixed;
   inset: 0;

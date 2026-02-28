@@ -23,8 +23,13 @@ export function TimelineCards({
   useEffect(() => {
     const feed = feedRef.current;
     if (!feed) return;
-    feed.scrollTo({ top: feed.scrollHeight, behavior: "smooth" });
-  }, [items.length]);
+    // Use "instant" during streaming so the viewport keeps pace with fast token flow.
+    // Use "smooth" for discrete item additions (tool cards, system events).
+    feed.scrollTo({ top: feed.scrollHeight, behavior: isStreaming ? "instant" : "smooth" });
+  // items (not items.length) so the effect re-fires on token merges which
+  // mutate the last item body without changing the array length.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, isStreaming]);
 
   return (
     <section className="timeline-panel">

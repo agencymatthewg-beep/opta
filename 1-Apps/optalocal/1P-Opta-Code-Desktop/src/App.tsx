@@ -20,6 +20,7 @@ function App() {
 
   const {
     activeSessionId,
+    cancelActiveTurn,
     connection,
     connectionError,
     connectionState,
@@ -406,6 +407,8 @@ function App() {
           value={composerDraft}
           onChange={setComposerDraft}
           onSubmit={onSubmitComposer}
+          onCancel={() => void cancelActiveTurn()}
+          isStreaming={isStreaming}
           disabled={!activeSessionId}
         />
       </div>

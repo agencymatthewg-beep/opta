@@ -11,7 +11,7 @@ import type {
 
 const DEFAULT_CONNECTION: DaemonConnectionOptions = {
   host: "127.0.0.1",
-  port: 3456,
+  port: 9999,
   token: "",
 };
 
