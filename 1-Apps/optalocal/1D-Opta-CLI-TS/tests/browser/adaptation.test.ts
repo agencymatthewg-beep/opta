@@ -381,6 +381,88 @@ describe('deriveBrowserRunCorpusAdaptationHint', () => {
   });
 });
 
+describe('MCP high-risk tool feedback weighting', () => {
+  it('elevates investigate count for sessions with high-risk MCP tools that had failures', () => {
+    const summary: BrowserRunCorpusSummary = {
+      schemaVersion: 1,
+      generatedAt: new Date().toISOString(),
+      windowHours: 168,
+      assessedSessionCount: 4,
+      regressionSessionCount: 0,
+      investigateSessionCount: 1,
+      meanRegressionScore: 0,
+      maxRegressionScore: 0,
+      entries: [
+        {
+          sessionId: 's1',
+          status: 'closed',
+          runtime: 'playwright',
+          updatedAt: new Date().toISOString(),
+          actionCount: 5,
+          artifactCount: 0,
+          failureCount: 2,
+          regressionScore: 0,
+          regressionSignal: 'none',
+          regressionPairCount: 0,
+          highRiskMcpToolsPresent: true,
+        },
+        {
+          sessionId: 's2',
+          status: 'closed',
+          runtime: 'playwright',
+          updatedAt: new Date().toISOString(),
+          actionCount: 3,
+          artifactCount: 0,
+          failureCount: 0,
+          regressionScore: 0,
+          regressionSignal: 'none',
+          regressionPairCount: 0,
+          highRiskMcpToolsPresent: false,
+        },
+        {
+          sessionId: 's3',
+          status: 'closed',
+          runtime: 'playwright',
+          updatedAt: new Date().toISOString(),
+          actionCount: 2,
+          artifactCount: 0,
+          failureCount: 0,
+          regressionScore: 0,
+          regressionSignal: 'none',
+          regressionPairCount: 0,
+        },
+        {
+          sessionId: 's4',
+          status: 'closed',
+          runtime: 'playwright',
+          updatedAt: new Date().toISOString(),
+          actionCount: 1,
+          artifactCount: 0,
+          failureCount: 0,
+          regressionScore: 0,
+          regressionSignal: 'none',
+          regressionPairCount: 0,
+        },
+      ],
+    };
+
+    const hint = deriveBrowserRunCorpusAdaptationHint(summary, {
+      enabled: true,
+      minAssessedSessions: 3,
+      regressionPressureThreshold: 0.35,
+      meanRegressionScoreThreshold: 0.9,
+      failureRateThreshold: 0.9,
+      investigateWeight: 0.5,
+      intentRoutePenalty: 2,
+      highRiskMcpWeight: 0.75,
+    });
+
+    // investigateSessionCount=1 * 0.5 = 0.5 + highRiskFailureSessions=1 * 0.75 = 0.75 → total=1.25/4=0.3125
+    expect(hint.regressionPressure).toBeGreaterThan(0.1);
+    expect(hint.regressionPressure).toBeLessThan(0.35);
+  });
+});
+
 describe('loadBrowserRunCorpusAdaptationHint', () => {
   it('reads summary from disk and derives hint', async () => {
     const { readLatestBrowserRunCorpusSummary } = await import('../../src/browser/run-corpus.js');

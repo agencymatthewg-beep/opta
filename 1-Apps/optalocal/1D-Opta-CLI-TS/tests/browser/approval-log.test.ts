@@ -9,6 +9,7 @@ import {
   appendBrowserApprovalEvent,
   readBrowserApprovalEvents,
   readRecentBrowserApprovalEvents,
+  pruneOldBrowserApprovalEvents,
   type BrowserApprovalEvent,
   type BrowserApprovalEventInput,
 } from '../../src/browser/approval-log.js';
@@ -424,5 +425,94 @@ describe('readRecentBrowserApprovalEvents', () => {
     expect(events).toHaveLength(2);
     expect(events[0]!.tool).toBe('second');
     expect(events[1]!.tool).toBe('first');
+  });
+});
+
+describe('pruneOldBrowserApprovalEvents', () => {
+  it('removes entries older than maxAgeDays', async () => {
+    const logPath = browserApprovalLogPath(testDir);
+    await mkdir(join(testDir, '.opta', 'browser'), { recursive: true });
+
+    const oldTs = new Date(Date.now() - 40 * 86_400_000).toISOString();
+    const recentTs1 = new Date(Date.now() - 10 * 86_400_000).toISOString();
+    const recentTs2 = new Date(Date.now() - 5 * 86_400_000).toISOString();
+
+    const lines = [
+      JSON.stringify({ timestamp: oldTs, tool: 'browser_click', decision: 'approved' }),
+      JSON.stringify({ timestamp: recentTs1, tool: 'browser_navigate', decision: 'approved' }),
+      JSON.stringify({ timestamp: recentTs2, tool: 'browser_type', decision: 'approved' }),
+    ].join('\n') + '\n';
+    await writeFile(logPath, lines, 'utf-8');
+
+    const result = await pruneOldBrowserApprovalEvents(testDir, { maxAgeDays: 30, maxEntries: 1000 });
+
+    expect(result.pruned).toBe(1);
+    expect(result.kept).toBe(2);
+
+    const remaining = await readBrowserApprovalEvents(testDir);
+    expect(remaining).toHaveLength(2);
+    expect(remaining.every((e) => e.tool !== 'browser_click' || new Date(e.timestamp).getTime() > Date.now() - 30 * 86_400_000)).toBe(true);
+  });
+
+  it('caps entries at maxEntries keeping the newest', async () => {
+    const logPath = browserApprovalLogPath(testDir);
+    await mkdir(join(testDir, '.opta', 'browser'), { recursive: true });
+
+    const ts1 = new Date(Date.now() - 1 * 86_400_000).toISOString();
+    const ts2 = new Date(Date.now() - 2 * 86_400_000).toISOString();
+    const ts3 = new Date(Date.now() - 3 * 86_400_000).toISOString();
+
+    const lines = [
+      JSON.stringify({ timestamp: ts1, tool: 'tool-1day', decision: 'approved' }),
+      JSON.stringify({ timestamp: ts2, tool: 'tool-2day', decision: 'approved' }),
+      JSON.stringify({ timestamp: ts3, tool: 'tool-3day', decision: 'approved' }),
+    ].join('\n') + '\n';
+    await writeFile(logPath, lines, 'utf-8');
+
+    const result = await pruneOldBrowserApprovalEvents(testDir, { maxAgeDays: 365, maxEntries: 2 });
+
+    expect(result.kept).toBe(2);
+    expect(result.pruned).toBe(1);
+
+    const remaining = await readBrowserApprovalEvents(testDir);
+    expect(remaining).toHaveLength(2);
+    // The 2 newest entries should be kept (1-day-old and 2-day-old)
+    expect(remaining.some((e) => e.tool === 'tool-3day')).toBe(false);
+  });
+
+  it('returns {pruned:0, kept:0} when log file is missing (ENOENT)', async () => {
+    const result = await pruneOldBrowserApprovalEvents(testDir, {});
+    expect(result.pruned).toBe(0);
+    expect(result.kept).toBe(0);
+  });
+
+  it('skips malformed lines and counts them as pruned', async () => {
+    const logPath = browserApprovalLogPath(testDir);
+    await mkdir(join(testDir, '.opta', 'browser'), { recursive: true });
+
+    const recentTs = new Date(Date.now() - 1 * 86_400_000).toISOString();
+    const lines = [
+      'not-valid-json',
+      JSON.stringify({ timestamp: recentTs, tool: 'browser_navigate', decision: 'approved' }),
+    ].join('\n') + '\n';
+    await writeFile(logPath, lines, 'utf-8');
+
+    const result = await pruneOldBrowserApprovalEvents(testDir, { maxAgeDays: 30, maxEntries: 1000 });
+
+    expect(result.kept).toBe(1);
+    expect(result.pruned).toBe(1);
+  });
+
+  it('uses default maxAgeDays=30 and maxEntries=1000 when options are empty', async () => {
+    const logPath = browserApprovalLogPath(testDir);
+    await mkdir(join(testDir, '.opta', 'browser'), { recursive: true });
+
+    const recentTs = new Date(Date.now() - 1 * 86_400_000).toISOString();
+    const line = JSON.stringify({ timestamp: recentTs, tool: 'browser_navigate', decision: 'approved' });
+    await writeFile(logPath, line + '\n', 'utf-8');
+
+    const result = await pruneOldBrowserApprovalEvents(testDir, {});
+    expect(result.kept).toBe(1);
+    expect(result.pruned).toBe(0);
   });
 });

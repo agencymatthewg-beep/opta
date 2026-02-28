@@ -12,6 +12,8 @@ export interface BrowserAdaptationConfig {
   failureRateThreshold: number;
   investigateWeight: number;
   intentRoutePenalty: number;
+  /** Additional pressure contribution per session that involved high-risk MCP tools and had failures. Default: 0.5 */
+  highRiskMcpWeight: number;
 }
 
 export interface BrowserPolicyAdaptationHint {
@@ -88,6 +90,7 @@ export const DEFAULT_BROWSER_ADAPTATION_CONFIG: BrowserAdaptationConfig = {
   failureRateThreshold: 0.2,
   investigateWeight: 0.5,
   intentRoutePenalty: 2,
+  highRiskMcpWeight: 0.5,
 };
 
 function normalizedRatio(value: number): number {
@@ -126,6 +129,7 @@ export function normalizeBrowserAdaptationConfig(
     failureRateThreshold: normalizedRatio(input?.failureRateThreshold ?? fallback.failureRateThreshold),
     investigateWeight: normalizedRatio(input?.investigateWeight ?? fallback.investigateWeight),
     intentRoutePenalty: Math.max(0, Math.floor(input?.intentRoutePenalty ?? fallback.intentRoutePenalty)),
+    highRiskMcpWeight: normalizedRatio(input?.highRiskMcpWeight ?? fallback.highRiskMcpWeight),
   };
 }
 
@@ -136,11 +140,15 @@ export function deriveBrowserRunCorpusAdaptationHint(
   const config = normalizeBrowserAdaptationConfig(configInput);
 
   const assessedSessionCount = summary?.assessedSessionCount ?? 0;
+  const highRiskFailureSessions = (summary?.entries ?? [])
+    .filter((e) => e.highRiskMcpToolsPresent && (e.failureCount ?? 0) > 0)
+    .length;
   const regressionPressure = assessedSessionCount > 0
     ? normalizedRatio(
       (
         (summary?.regressionSessionCount ?? 0)
         + ((summary?.investigateSessionCount ?? 0) * config.investigateWeight)
+        + (highRiskFailureSessions * config.highRiskMcpWeight)
       )
       / assessedSessionCount,
     )

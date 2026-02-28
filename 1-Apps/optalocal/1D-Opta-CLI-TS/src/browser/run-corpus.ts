@@ -6,6 +6,8 @@ import type {
   BrowserVisualDiffRegressionSignal,
 } from './types.js';
 import { summarizeBrowserReplay } from './replay.js';
+import { isMcpHighRiskTool } from './adaptation.js';
+import { readBrowserApprovalEvents } from './approval-log.js';
 
 const HOUR_MS = 60 * 60 * 1_000;
 
@@ -21,6 +23,8 @@ export interface BrowserRunCorpusEntry {
   regressionScore: number;
   regressionSignal: BrowserVisualDiffRegressionSignal;
   regressionPairCount: number;
+  /** True if any step in this session used a high-risk MCP tool (browser_evaluate, browser_file_upload). */
+  highRiskMcpToolsPresent?: boolean;
 }
 
 export interface BrowserRunCorpusSummary {
@@ -136,10 +140,25 @@ export async function buildBrowserRunCorpusSummary(
   const generatedAt = runAt.toISOString();
 
   const candidates = await listSessionMetadataInWindow(cwd, runAt, windowHours);
+
+  // Build a set of sessionIds that used high-risk MCP tools, sourced from the approval log.
+  const highRiskSessionIds = new Set<string>();
+  try {
+    const approvalEvents = await readBrowserApprovalEvents(cwd);
+    for (const event of approvalEvents) {
+      if (event.sessionId && isMcpHighRiskTool(event.tool)) {
+        highRiskSessionIds.add(event.sessionId);
+      }
+    }
+  } catch {
+    // Approval log is optional — proceed without high-risk metadata if unavailable.
+  }
+
   const entries: BrowserRunCorpusEntry[] = [];
   for (const candidate of candidates) {
     const replay = await summarizeBrowserReplay(cwd, candidate.sessionId);
     if (!replay) continue;
+    const highRiskMcpToolsPresent = highRiskSessionIds.has(replay.sessionId) || undefined;
     entries.push({
       sessionId: replay.sessionId,
       runId: replay.runId,
@@ -152,6 +171,7 @@ export async function buildBrowserRunCorpusSummary(
       regressionScore: replay.regressionScore,
       regressionSignal: replay.regressionSignal,
       regressionPairCount: replay.regressionPairCount,
+      highRiskMcpToolsPresent,
     });
   }
 

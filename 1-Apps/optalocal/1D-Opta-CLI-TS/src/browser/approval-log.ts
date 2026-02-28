@@ -1,4 +1,4 @@
-import { appendFile, mkdir, readFile } from 'node:fs/promises';
+import { appendFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import type { BrowserRiskEvidence, BrowserRiskLevel } from './policy-engine.js';
 
@@ -178,4 +178,59 @@ export async function readRecentBrowserApprovalEvents(
   const events = await readBrowserApprovalEvents(cwd);
   if (events.length === 0) return [];
   return events.slice(-normalizedLimit).reverse();
+}
+
+export interface BrowserApprovalPruneOptions {
+  /** Remove entries older than this many days. Default: 30 */
+  maxAgeDays?: number;
+  /** Keep only the newest N entries after age filtering. Default: 1000 */
+  maxEntries?: number;
+}
+
+export interface BrowserApprovalPruneResult {
+  kept: number;
+  pruned: number;
+}
+
+export async function pruneOldBrowserApprovalEvents(
+  cwd: string,
+  options: BrowserApprovalPruneOptions,
+): Promise<BrowserApprovalPruneResult> {
+  const maxAgeDays = options.maxAgeDays ?? 30;
+  const maxEntries = options.maxEntries ?? 1000;
+  const logPath = browserApprovalLogPath(cwd);
+
+  let raw: string;
+  try {
+    raw = await readFile(logPath, 'utf-8') as unknown as string;
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+      return { kept: 0, pruned: 0 };
+    }
+    throw err;
+  }
+
+  const cutoffMs = Date.now() - maxAgeDays * 86_400_000;
+  const lines = raw.split(/\r?\n/).filter(Boolean);
+
+  const validLines: { ts: number; line: string }[] = [];
+  for (const line of lines) {
+    try {
+      const entry = JSON.parse(line) as { timestamp?: string };
+      const ts = entry.timestamp ? new Date(entry.timestamp).getTime() : Date.now();
+      if (Number.isFinite(ts) && ts >= cutoffMs) {
+        validLines.push({ ts, line });
+      }
+    } catch {
+      // skip malformed lines
+    }
+  }
+
+  validLines.sort((a, b) => b.ts - a.ts);
+  const kept = validLines.slice(0, maxEntries);
+  kept.sort((a, b) => a.ts - b.ts);
+
+  await writeFile(logPath, kept.map((e) => e.line).join('\n') + (kept.length > 0 ? '\n' : ''), 'utf-8');
+
+  return { kept: kept.length, pruned: lines.length - kept.length };
 }
