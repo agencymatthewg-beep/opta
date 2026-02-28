@@ -177,7 +177,11 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
             />
 
             {/* Results */}
-            <div className="max-h-[300px] overflow-y-auto py-1.5">
+            <div
+              role="listbox"
+              aria-label="Navigation items"
+              className="max-h-[300px] overflow-y-auto py-1.5"
+            >
               {filteredItems.length > 0 ? (
                 <>
                   <div className="px-4 pb-1 pt-3 text-[10px] font-medium uppercase tracking-widest text-text-muted">
@@ -189,6 +193,8 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
                     return (
                       <div
                         key={item.id}
+                        role="option"
+                        aria-selected={isSelected}
                         onClick={() => handleItemClick(item)}
                         className={cn(
                           'mx-1.5 flex cursor-pointer items-center gap-2.5 rounded-lg px-4 py-2 text-sm transition-colors',
