@@ -452,11 +452,13 @@ export async function createStreamWithRetry(
   transport?: StreamTransportOptions
 ): Promise<AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>> {
   let lastError: unknown;
-  const shouldTryLmxWs = Boolean(
+  // isLmxProvider: true whenever we're routing through Opta-LMX (regardless of WS state).
+  // shouldTryLmxWs: true only when WS hasn't already been established as unavailable.
+  const isLmxProvider = Boolean(
     transport?.config &&
-      (transport.providerName ?? transport.config.provider.active) === 'lmx' &&
-      !transport.lmxWsUnavailable
+      (transport.providerName ?? transport.config.provider.active) === 'lmx'
   );
+  const shouldTryLmxWs = isLmxProvider && !transport?.lmxWsUnavailable;
 
   for (let attempt = 0; attempt <= retryConfig.maxRetries; attempt++) {
     try {
@@ -468,27 +470,30 @@ export async function createStreamWithRetry(
       }
 
       // Preferred path for Opta LMX: bidirectional WebSocket stream with cancel.
-      // If WS is unavailable, we transparently fall back to SDK/SSE.
+      // Guard with shouldTryLmxWs so turns after a WS failure skip directly to SSE
+      // without re-attempting 3 failing WebSocket connections.
       let stream: AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk> | null = null;
-      try {
-        stream = await maybeCreateLmxWsStream(transport, params);
-        if (stream) {
-          stream = await primeStream(stream);
+      if (shouldTryLmxWs) {
+        try {
+          stream = await maybeCreateLmxWsStream(transport, params);
+          if (stream) {
+            stream = await primeStream(stream);
+          }
+        } catch (err) {
+          if (isAbortError(err)) throw err;
+          if (transport) {
+            transport.resolvedLmxHost = undefined;
+          }
+          if (isRetryableError(err) && attempt < retryConfig.maxRetries) {
+            throw err;
+          }
+          debug(`LMX websocket stream unavailable, falling back to SSE: ${describeError(err)}`);
+          stream = null;
         }
-      } catch (err) {
-        if (isAbortError(err)) throw err;
-        if (shouldTryLmxWs && transport) {
-          transport.resolvedLmxHost = undefined;
-        }
-        if (isRetryableError(err) && attempt < retryConfig.maxRetries) {
-          throw err;
-        }
-        debug(`LMX websocket stream unavailable, falling back to SSE: ${describeError(err)}`);
-        stream = null;
       }
       if (!stream) {
-        // WS was attempted but failed — remember this for subsequent turns so we
-        // skip the 3-attempt WS retry overhead and go directly to SSE.
+        // WS was attempted and failed (or already known unavailable) — mark it so
+        // subsequent turns in this session skip the WS path entirely.
         if (shouldTryLmxWs && transport) {
           transport.lmxWsUnavailable = true;
         }
@@ -500,9 +505,9 @@ export async function createStreamWithRetry(
       }
 
       // Apply mid-stream recovery for all LMX streams (WS and SSE fallback).
-      // Without this, a "Premature close" during collectStream iteration escapes
-      // the createStreamWithRetry retry loop entirely.
-      if (shouldTryLmxWs) {
+      // Use isLmxProvider — not shouldTryLmxWs — so recovery remains active
+      // even after WS has fallen back to SSE (lmxWsUnavailable=true).
+      if (isLmxProvider) {
         return withLmxMidStreamRecovery(stream, client, params, retryConfig, onStatus, transport);
       }
       return stream;
