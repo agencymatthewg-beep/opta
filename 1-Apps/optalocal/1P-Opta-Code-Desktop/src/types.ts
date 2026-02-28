@@ -21,9 +21,16 @@ export interface DaemonSessionSummary {
   updatedAt?: string;
 }
 
+export interface PermissionRequest {
+  requestId: string;
+  toolName: string;
+  args: Record<string, unknown>;
+  sessionId: string;
+}
+
 export interface TimelineItem {
   id: string;
-  kind: "user" | "assistant" | "tool" | "system" | "event";
+  kind: "user" | "assistant" | "tool" | "system" | "event" | "permission" | "thinking";
   title: string;
   body?: string;
   createdAt?: string;

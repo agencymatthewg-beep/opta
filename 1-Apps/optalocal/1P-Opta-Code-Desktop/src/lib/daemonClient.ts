@@ -6,6 +6,15 @@ import type {
   DaemonLmxStatusResponse,
 } from "../types";
 
+export interface V3Envelope {
+  seq: number;
+  kind: string;
+  payload: Record<string, unknown>;
+  sessionId?: string;
+  turnId?: string;
+  clientId?: string;
+}
+
 interface SessionSnapshot {
   sessionId: string;
   title?: string;
@@ -79,7 +88,7 @@ export const daemonClient = {
   async submitTurn(
     connection: DaemonConnectionOptions,
     sessionId: string,
-    payload: { content: string },
+    payload: { content: string; clientId?: string; writerId?: string },
   ): Promise<{ turnId?: string }> {
     return request(
       connection,
@@ -99,6 +108,77 @@ export const daemonClient = {
     return request(
       connection,
       `/v3/sessions/${encodeURIComponent(sessionId)}/events?afterSeq=${afterSeq}`,
+    );
+  },
+
+  connectWebSocket(
+    connection: DaemonConnectionOptions,
+    sessionId: string,
+    afterSeq: number,
+    handlers: {
+      onEvent: (envelope: V3Envelope) => void;
+      onOpen?: () => void;
+      onClose?: (code: number) => void;
+      onError?: (event: Event) => void;
+    },
+  ): { close: () => void; send: (msg: object) => void } {
+    const wsProtocol =
+      (connection.protocol ?? "http") === "https" ? "wss" : "ws";
+    const url =
+      `${wsProtocol}://${connection.host}:${connection.port}/v3/ws` +
+      `?sessionId=${encodeURIComponent(sessionId)}` +
+      `&afterSeq=${afterSeq}` +
+      `&token=${encodeURIComponent(connection.token)}`;
+
+    const ws = new globalThis.WebSocket(url);
+
+    ws.onopen = () => handlers.onOpen?.();
+    ws.onerror = (event) => handlers.onError?.(event as Event);
+    ws.onclose = (event) => handlers.onClose?.(event.code);
+    ws.onmessage = (msgEvent) => {
+      try {
+        const envelope = JSON.parse(String(msgEvent.data)) as V3Envelope;
+        handlers.onEvent(envelope);
+      } catch {
+        // ignore malformed messages
+      }
+    };
+
+    return {
+      close: () => ws.close(1000),
+      send: (msg: object) => ws.send(JSON.stringify(msg)),
+    };
+  },
+
+  async resolvePermission(
+    connection: DaemonConnectionOptions,
+    sessionId: string,
+    requestId: string,
+    decision: "allow" | "deny",
+    decidedBy: string,
+  ): Promise<{ ok: boolean; conflict: boolean }> {
+    return request(
+      connection,
+      `/v3/sessions/${encodeURIComponent(sessionId)}/permissions/${encodeURIComponent(requestId)}`,
+      {
+        method: "POST",
+        body: JSON.stringify({ decision, decidedBy }),
+      },
+    );
+  },
+
+  async cancel(
+    connection: DaemonConnectionOptions,
+    sessionId: string,
+    payload: { turnId?: string; writerId?: string },
+  ): Promise<{ cancelled: number }> {
+    return request(
+      connection,
+      `/v3/sessions/${encodeURIComponent(sessionId)}/cancel`,
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
     );
   },
 

@@ -24,7 +24,9 @@ function App() {
     connectionError,
     connectionState,
     isStreaming,
+    pendingPermissions,
     refreshNow,
+    resolvePermission,
     runtime,
     sessions,
     setActiveSessionId,
@@ -335,6 +337,8 @@ function App() {
                 sessionTitle={activeSession?.title}
                 items={timelineItems}
                 isStreaming={isStreaming}
+                pendingPermissions={pendingPermissions}
+                onResolvePermission={resolvePermission}
               />
             </>
           )}

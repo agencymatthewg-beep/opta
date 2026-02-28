@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { daemonClient } from "../lib/daemonClient";
+import type { V3Envelope } from "../lib/daemonClient";
 import type {
   DaemonConnectionOptions,
   DaemonSessionSummary,
+  PermissionRequest,
   RuntimeSnapshot,
   TimelineItem,
 } from "../types";
@@ -14,12 +16,11 @@ const DEFAULT_CONNECTION: DaemonConnectionOptions = {
 };
 
 const RUNTIME_POLL_MS = 4000;
-const EVENT_POLL_MS = 500;
+
 const STOP_EVENT_KINDS = new Set([
-  "turn.end",
-  "turn.complete",
+  "turn.done",
   "turn.error",
-  "session.closed",
+  "session.cancelled",
 ]);
 
 function makeSessionId(): string {
@@ -34,10 +35,8 @@ function withFallbackTitle(index: number, title?: string): string {
   return title?.trim() || `Session ${index + 1}`;
 }
 
-type DaemonEvent = Record<string, unknown>;
-
 function eventsToTimelineItems(
-  events: DaemonEvent[],
+  events: V3Envelope[],
   sessionId: string,
 ): TimelineItem[] {
   const items: TimelineItem[] = [];
@@ -60,23 +59,31 @@ function eventsToTimelineItems(
     const payload = (event.payload ?? {}) as Record<string, unknown>;
     const seq = event.seq;
 
-    // Accumulate text deltas into a single assistant card per batch
-    if (
-      kind === "text.delta" ||
-      kind === "text.chunk" ||
-      kind === "content_block_delta"
-    ) {
-      const delta =
+    // Accumulate streaming tokens into a single assistant card per batch
+    if (kind === "turn.token") {
+      const token =
+        (payload.token as string) ||
         (payload.content as string) ||
         (payload.delta as string) ||
         (payload.text as string) ||
         "";
-      pendingText += delta;
+      pendingText += token;
       continue;
     }
 
     // Non-text event: flush any accumulated text first
     flushText();
+
+    // Permission and resolved events are handled in the WS event handler
+    if (
+      kind === "permission.request" ||
+      kind === "permission.resolved" ||
+      kind === "turn.start" ||
+      kind === "ping" ||
+      kind === "heartbeat"
+    ) {
+      continue;
+    }
 
     if (STOP_EVENT_KINDS.has(kind)) {
       items.push({
@@ -92,7 +99,18 @@ function eventsToTimelineItems(
       continue;
     }
 
-    if (kind === "tool.call" || kind === "tool_use") {
+    if (kind === "turn.thinking") {
+      items.push({
+        id: `${sessionId}-thinking-${String(seq ?? Date.now())}`,
+        kind: "thinking",
+        title: "Thinking",
+        body: String(payload.content ?? payload.thinking ?? ""),
+        createdAt: nowIso(),
+      });
+      continue;
+    }
+
+    if (kind === "tool.start") {
       items.push({
         id: `${sessionId}-tool-${String(seq ?? Date.now())}`,
         kind: "tool",
@@ -106,7 +124,7 @@ function eventsToTimelineItems(
       continue;
     }
 
-    if (kind === "tool.result" || kind === "tool_result") {
+    if (kind === "tool.end") {
       const toolContent = payload.content ?? payload.output ?? payload.result;
       items.push({
         id: `${sessionId}-result-${String(seq ?? Date.now())}`,
@@ -120,11 +138,6 @@ function eventsToTimelineItems(
               : undefined,
         createdAt: nowIso(),
       });
-      continue;
-    }
-
-    // Suppress noise
-    if (kind === "turn.start" || kind === "ping" || kind === "heartbeat") {
       continue;
     }
 
@@ -162,13 +175,18 @@ export function useDaemonSessions() {
   const [streamingSessionId, setStreamingSessionId] = useState<string | null>(
     null,
   );
+  const [pendingPermissions, setPendingPermissions] = useState<
+    PermissionRequest[]
+  >([]);
 
   const mountedRef = useRef(true);
-  // Per-session event sequence cursor — survives re-renders without triggering them
+  // Per-session event sequence cursor — advances as events arrive over WS
   const seqCursorRef = useRef<Record<string, number>>({});
-  const pollingSessionRef = useRef<string | null>(null);
-  const pollingTimerRef = useRef<number | null>(null);
-  // Mirror connection into a ref so the async polling closure always has the latest value
+  // Stable client ID for multi-writer protocol identification
+  const clientIdRef = useRef<string>(
+    `opta-code-desktop-${crypto.randomUUID().slice(0, 8)}`,
+  );
+  // Mirror connection into a ref so HTTP callbacks always use the latest settings
   const connectionRef = useRef(connection);
   connectionRef.current = connection;
 
@@ -179,85 +197,149 @@ export function useDaemonSessions() {
     };
   }, []);
 
-  const stopEventPolling = useCallback(() => {
-    if (pollingTimerRef.current !== null) {
-      window.clearInterval(pollingTimerRef.current);
-      pollingTimerRef.current = null;
-    }
-    const stoppedSession = pollingSessionRef.current;
-    pollingSessionRef.current = null;
-    if (stoppedSession) {
-      setStreamingSessionId((prev) =>
-        prev === stoppedSession ? null : prev,
-      );
-    }
-  }, []);
-
-  const startEventPolling = useCallback(
-    (sessionId: string) => {
-      // Clear any previous interval without resetting streamingSessionId to null first
-      if (pollingTimerRef.current !== null) {
-        window.clearInterval(pollingTimerRef.current);
-        pollingTimerRef.current = null;
-      }
-      pollingSessionRef.current = sessionId;
-      setStreamingSessionId(sessionId);
-
-      const poll = async () => {
-        if (!mountedRef.current || pollingSessionRef.current !== sessionId)
-          return;
-
-        const afterSeq = seqCursorRef.current[sessionId] ?? 0;
-        try {
-          const { events } = await daemonClient.sessionEvents(
-            connectionRef.current,
-            sessionId,
-            afterSeq,
-          );
-
-          if (!mountedRef.current || pollingSessionRef.current !== sessionId)
-            return;
-
-          if (events.length > 0) {
-            const lastSeq = events[events.length - 1]?.seq;
-            if (typeof lastSeq === "number") {
-              seqCursorRef.current[sessionId] = lastSeq;
-            }
-
-            const newItems = eventsToTimelineItems(events, sessionId);
-            if (newItems.length > 0) {
-              setTimelineBySession((prev) => {
-                const existing = prev[sessionId] ?? [];
-                return { ...prev, [sessionId]: [...existing, ...newItems] };
-              });
-            }
-
-            const hasTerminal = events.some((e) =>
-              STOP_EVENT_KINDS.has(String(e.kind ?? "")),
-            );
-            if (hasTerminal) {
-              stopEventPolling();
-            }
-          }
-        } catch {
-          stopEventPolling();
-        }
-      };
-
-      void poll();
-      pollingTimerRef.current = window.setInterval(() => {
-        void poll();
-      }, EVENT_POLL_MS);
-    },
-    [stopEventPolling],
-  );
-
+  // ── WebSocket session subscription ─────────────────────────────────────────
   useEffect(() => {
-    return () => {
-      stopEventPolling();
-    };
-  }, [stopEventPolling]);
+    if (!activeSessionId) {
+      setPendingPermissions([]);
+      return;
+    }
 
+    const sessionId = activeSessionId;
+    const conn = connection;
+    let closed = false;
+    let reconnectTimer: number | null = null;
+    let attempts = 0;
+    let wsHandle: { close: () => void; send: (msg: object) => void } | null =
+      null;
+
+    // Cursor carries forward across reconnects so history is never re-sent
+    const cursor = { seq: seqCursorRef.current[sessionId] ?? 0 };
+
+    // Clear stale permissions from a previous session
+    setPendingPermissions([]);
+
+    const handleEnvelope = (envelope: V3Envelope) => {
+      if (typeof envelope.seq === "number") {
+        cursor.seq = envelope.seq;
+        seqCursorRef.current[sessionId] = envelope.seq;
+      }
+
+      const kind = String(envelope.kind ?? "");
+      const payload = (envelope.payload ?? {}) as Record<string, unknown>;
+
+      // ── Permission state management ───────────────────────────────────────
+      if (kind === "permission.request") {
+        const requestId = String(
+          payload.requestId ?? payload.request_id ?? "",
+        );
+        const toolName = String(
+          payload.toolName ?? payload.tool_name ?? payload.name ?? "",
+        );
+        const args = (payload.args ?? payload.input ?? {}) as Record<
+          string,
+          unknown
+        >;
+        if (requestId) {
+          setPendingPermissions((prev) => {
+            if (prev.some((p) => p.requestId === requestId)) return prev;
+            return [...prev, { requestId, toolName, args, sessionId }];
+          });
+        }
+        return;
+      }
+
+      if (kind === "permission.resolved") {
+        const requestId = String(
+          payload.requestId ?? payload.request_id ?? "",
+        );
+        if (requestId) {
+          setPendingPermissions((prev) =>
+            prev.filter((p) => p.requestId !== requestId),
+          );
+        }
+        return;
+      }
+
+      // ── Streaming indicator ───────────────────────────────────────────────
+      if (kind === "turn.start") {
+        setStreamingSessionId(sessionId);
+      } else if (STOP_EVENT_KINDS.has(kind)) {
+        setStreamingSessionId((prev) => (prev === sessionId ? null : prev));
+      }
+
+      // ── Timeline update ───────────────────────────────────────────────────
+      const newItems = eventsToTimelineItems([envelope], sessionId);
+      if (newItems.length === 0) return;
+
+      setTimelineBySession((prev) => {
+        const existing = prev[sessionId] ?? [];
+
+        // Merge adjacent assistant tokens for smooth in-place streaming
+        if (
+          newItems.length === 1 &&
+          newItems[0].kind === "assistant" &&
+          existing.length > 0 &&
+          existing[existing.length - 1].kind === "assistant"
+        ) {
+          const last = existing[existing.length - 1];
+          const merged = {
+            ...last,
+            body: (last.body ?? "") + (newItems[0].body ?? ""),
+          };
+          return {
+            ...prev,
+            [sessionId]: [...existing.slice(0, -1), merged],
+          };
+        }
+
+        return { ...prev, [sessionId]: [...existing, ...newItems] };
+      });
+    };
+
+    const open = () => {
+      if (closed || !mountedRef.current) return;
+
+      wsHandle = daemonClient.connectWebSocket(conn, sessionId, cursor.seq, {
+        onOpen: () => {
+          if (closed || !mountedRef.current) return;
+          attempts = 0;
+          setConnectionState("connected");
+          setConnectionError(null);
+        },
+        onEvent: (envelope) => {
+          if (closed || !mountedRef.current) return;
+          handleEnvelope(envelope);
+        },
+        onClose: (code) => {
+          wsHandle = null;
+          if (closed || !mountedRef.current) return;
+          if (code !== 1000) {
+            // Exponential backoff: 1s, 2s, 4s, 8s, capped at 10s
+            const delay = Math.min(1000 * Math.pow(2, attempts), 10_000);
+            attempts = Math.min(attempts + 1, 10);
+            setConnectionState("connecting");
+            reconnectTimer = window.setTimeout(open, delay);
+          }
+        },
+        onError: () => {
+          // WebSocket errors are always followed by an onClose event
+        },
+      });
+    };
+
+    setConnectionState("connecting");
+    open();
+
+    return () => {
+      closed = true;
+      if (reconnectTimer !== null) window.clearTimeout(reconnectTimer);
+      wsHandle?.close();
+      wsHandle = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeSessionId, connection]);
+
+  // ── Runtime metrics poll (4s) ───────────────────────────────────────────────
   const runtime = useMemo<RuntimeSnapshot>(() => {
     if (runtimeOverride) return runtimeOverride;
     const activeTurnCount = activeSessionId ? 1 : 0;
@@ -430,11 +512,13 @@ export function useDaemonSessions() {
       try {
         await daemonClient.submitTurn(connection, activeSessionId, {
           content: message,
+          clientId: clientIdRef.current,
+          writerId: clientIdRef.current,
         });
         setConnectionState("connected");
         setConnectionError(null);
-        // Wire up live event streaming now that the daemon has the turn
-        startEventPolling(activeSessionId);
+        // Show streaming indicator — the WS will clear it on turn.done/turn.error
+        setStreamingSessionId(activeSessionId);
       } catch (error) {
         setTimelineBySession((prev) => {
           const existing = prev[activeSessionId] ?? [];
@@ -456,19 +540,56 @@ export function useDaemonSessions() {
         throw error;
       }
     },
-    [activeSessionId, connection, startEventPolling],
+    [activeSessionId, connection],
   );
+
+  const resolvePermission = useCallback(
+    async (requestId: string, decision: "allow" | "deny") => {
+      if (!activeSessionId) return;
+      // Optimistically remove from pending — the 'permission.resolved' WS event
+      // will also remove it if it arrives, but this keeps the UI snappy
+      setPendingPermissions((prev) =>
+        prev.filter((p) => p.requestId !== requestId),
+      );
+      try {
+        await daemonClient.resolvePermission(
+          connectionRef.current,
+          activeSessionId,
+          requestId,
+          decision,
+          clientIdRef.current,
+        );
+      } catch (error) {
+        console.error("resolvePermission failed:", error);
+      }
+    },
+    [activeSessionId],
+  );
+
+  const cancelActiveTurn = useCallback(async () => {
+    if (!activeSessionId) return;
+    try {
+      await daemonClient.cancel(connectionRef.current, activeSessionId, {
+        writerId: clientIdRef.current,
+      });
+    } catch (error) {
+      console.error("cancelActiveTurn failed:", error);
+    }
+  }, [activeSessionId]);
 
   const isStreaming =
     streamingSessionId !== null && streamingSessionId === activeSessionId;
 
   return {
     activeSessionId,
+    cancelActiveTurn,
     connection,
     connectionError,
     connectionState,
     isStreaming,
+    pendingPermissions,
     refreshNow,
+    resolvePermission,
     runtime,
     sessions,
     setActiveSessionId,
