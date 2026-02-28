@@ -30,7 +30,7 @@ jobs:
           node-version: "22"
       - name: Install CLI workspace dependencies
         working-directory: 1-Apps/optalocal/1D-Opta-CLI-TS
-        run: npm install
+        run: npm install --ignore-scripts
       - name: Install dependencies
         run: npm install
       - name: Type-check
@@ -80,7 +80,7 @@ jobs:
           workspaces: "1-Apps/optalocal/1P-Opta-Code-Desktop/src-tauri -> target"
       - name: Install CLI workspace dependencies
         working-directory: 1-Apps/optalocal/1D-Opta-CLI-TS
-        run: npm install
+        run: npm install --ignore-scripts
       - name: Install Node dependencies
         run: npm install
 

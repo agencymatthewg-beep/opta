@@ -31,9 +31,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Install shared CLI workspace dependencies
+      - name: Install CLI workspace dependencies (types only)
         working-directory: 1-Apps/optalocal/1D-Opta-CLI-TS
-        run: npm install
+        run: npm install --ignore-scripts
       - name: Install desktop dependencies
         run: npm install
       - name: Type-check
@@ -59,9 +59,9 @@ jobs:
         uses: swatinem/rust-cache@v2
         with:
           workspaces: "1-Apps/optalocal/1P-Opta-Code-Desktop/src-tauri -> target"
-      - name: Install shared CLI workspace dependencies
+      - name: Install CLI workspace dependencies (types only)
         working-directory: 1-Apps/optalocal/1D-Opta-CLI-TS
-        run: npm install
+        run: npm install --ignore-scripts
       - name: Install Node dependencies
         run: npm install
 
