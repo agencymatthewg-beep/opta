@@ -5,24 +5,31 @@
  * without an active session.
  */
 
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { Suspense, useCallback, useMemo, useState, type FormEvent } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { motion, useReducedMotion } from 'framer-motion';
-import { cn } from '@opta/ui';
-import { AlertCircle, Info, Loader2 } from 'lucide-react';
+import Link from "next/link";
+import {
+  Suspense,
+  useCallback,
+  useMemo,
+  useState,
+  type FormEvent,
+} from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { motion, useReducedMotion } from "framer-motion";
+import { cn } from "@opta/ui";
+import { AlertCircle, Info, Loader2 } from "lucide-react";
 import {
   signInWithGoogle,
   signInWithApple,
   signInWithPasswordIdentifier,
   signUpWithPasswordIdentifier,
-} from '@/lib/supabase/auth-actions';
-import { POST_SIGN_IN_NEXT_KEY, sanitizeNextPath } from '@/lib/auth-utils';
+} from "@/lib/supabase/auth-actions";
+import { POST_SIGN_IN_NEXT_KEY, sanitizeNextPath } from "@/lib/auth-utils";
+import { OptaLogo } from "@/components/shared/OptaLogo";
 
-type Provider = 'google' | 'apple';
-type AuthMode = 'signIn' | 'signUp';
+type Provider = "google" | "apple";
+type AuthMode = "signIn" | "signUp";
 
 const defaultContainerVariants = {
   hidden: { opacity: 0, y: 28, scale: 0.95 },
@@ -31,7 +38,7 @@ const defaultContainerVariants = {
     y: 0,
     scale: 1,
     transition: {
-      type: 'spring' as const,
+      type: "spring" as const,
       stiffness: 240,
       damping: 26,
       staggerChildren: 0.09,
@@ -55,7 +62,7 @@ const defaultItemVariants = {
   visible: {
     opacity: 1,
     y: 0,
-    transition: { type: 'spring' as const, stiffness: 300, damping: 28 },
+    transition: { type: "spring" as const, stiffness: 300, damping: 28 },
   },
 };
 
@@ -132,8 +139,8 @@ function ProviderButton({
   const isPending = pendingProvider === provider;
   const isDisabled = pendingProvider !== null || disabled;
 
-  const Icon = provider === 'google' ? GoogleIcon : AppleIcon;
-  const providerLabel = provider === 'google' ? 'Google' : 'Apple';
+  const Icon = provider === "google" ? GoogleIcon : AppleIcon;
+  const providerLabel = provider === "google" ? "Google" : "Apple";
 
   return (
     <motion.button
@@ -141,20 +148,24 @@ function ProviderButton({
       onClick={() => onClick(provider)}
       disabled={isDisabled}
       className={cn(
-        'glass w-full cursor-pointer rounded-xl px-4 py-3 text-sm font-medium text-text-primary',
-        'flex items-center justify-center gap-3',
-        'transition-all motion-reduce:transition-none',
-        'hover:border-primary/60 hover:shadow-[0_0_20px_rgba(139,92,246,0.25)]',
-        'disabled:cursor-not-allowed disabled:opacity-65 disabled:hover:shadow-none disabled:hover:border-opta-border',
+        "glass w-full cursor-pointer rounded-xl px-4 py-3 text-sm font-medium text-text-primary",
+        "flex items-center justify-center gap-3",
+        "transition-all motion-reduce:transition-none",
+        "hover:border-primary/60 hover:shadow-[0_0_20px_rgba(139,92,246,0.25)]",
+        "disabled:cursor-not-allowed disabled:opacity-65 disabled:hover:shadow-none disabled:hover:border-opta-border",
       )}
       aria-busy={isPending}
     >
       {isPending ? (
-        <Loader2 className={cn('h-5 w-5', reducedMotion ? '' : 'animate-spin')} />
+        <Loader2
+          className={cn("h-5 w-5", reducedMotion ? "" : "animate-spin")}
+        />
       ) : (
         <Icon className="h-5 w-5" />
       )}
-      {isPending ? `Redirecting to ${providerLabel}...` : `Continue with ${providerLabel}`}
+      {isPending
+        ? `Redirecting to ${providerLabel}...`
+        : `Continue with ${providerLabel}`}
     </motion.button>
   );
 }
@@ -168,31 +179,31 @@ function SignInForm() {
   const router = useRouter();
   const shouldReduceMotion = useReducedMotion();
 
-  const [authMode, setAuthMode] = useState<AuthMode>('signIn');
-  const [identifier, setIdentifier] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
+  const [authMode, setAuthMode] = useState<AuthMode>("signIn");
+  const [identifier, setIdentifier] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
   const [pendingProvider, setPendingProvider] = useState<Provider | null>(null);
   const [pendingPasswordAuth, setPendingPasswordAuth] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
   const nextPath = useMemo(
-    () => sanitizeNextPath(searchParams.get('next')) ?? '/',
+    () => sanitizeNextPath(searchParams.get("next")) ?? "/",
     [searchParams],
   );
 
   const isAuthActionPending = pendingProvider !== null || pendingPasswordAuth;
 
-  const callbackError = searchParams.get('error');
+  const callbackError = searchParams.get("error");
   const callbackErrorMessage =
-    callbackError === 'auth'
-      ? 'Authentication did not complete. Please retry your provider sign-in.'
+    callbackError === "auth"
+      ? "Authentication did not complete. Please retry your provider sign-in."
       : null;
 
   const combinedError = actionError ?? callbackErrorMessage;
 
   const setNextIntent = useCallback(() => {
-    if (nextPath === '/') {
+    if (nextPath === "/") {
       window.sessionStorage.removeItem(POST_SIGN_IN_NEXT_KEY);
     } else {
       window.sessionStorage.setItem(POST_SIGN_IN_NEXT_KEY, nextPath);
@@ -208,14 +219,16 @@ function SignInForm() {
       setNextIntent();
 
       try {
-        if (provider === 'google') {
+        if (provider === "google") {
           await signInWithGoogle();
           return;
         }
 
         await signInWithApple();
       } catch {
-        setActionError('Unable to start sign-in right now. Check your connection and try again.');
+        setActionError(
+          "Unable to start sign-in right now. Check your connection and try again.",
+        );
       } finally {
         setPendingProvider(null);
       }
@@ -235,16 +248,20 @@ function SignInForm() {
 
       try {
         const result =
-          authMode === 'signIn'
+          authMode === "signIn"
             ? await signInWithPasswordIdentifier(identifier, password)
-            : await signUpWithPasswordIdentifier(identifier, password, name || undefined);
+            : await signUpWithPasswordIdentifier(
+                identifier,
+                password,
+                name || undefined,
+              );
 
         if (!result.ok) {
           setActionError(
             result.error ??
-              (authMode === 'signIn'
-                ? 'Unable to sign in right now. Please try again.'
-                : 'Unable to sign up right now. Please try again.'),
+              (authMode === "signIn"
+                ? "Unable to sign in right now. Please try again."
+                : "Unable to sign up right now. Please try again."),
           );
           return;
         }
@@ -255,7 +272,16 @@ function SignInForm() {
         setPendingPasswordAuth(false);
       }
     },
-    [authMode, identifier, name, nextPath, password, pendingProvider, router, setNextIntent],
+    [
+      authMode,
+      identifier,
+      name,
+      nextPath,
+      password,
+      pendingProvider,
+      router,
+      setNextIntent,
+    ],
   );
 
   const clearNextIntent = useCallback(() => {
@@ -264,36 +290,32 @@ function SignInForm() {
 
   return (
     <motion.div
-      variants={shouldReduceMotion ? reducedMotionContainerVariants : defaultContainerVariants}
+      variants={
+        shouldReduceMotion
+          ? reducedMotionContainerVariants
+          : defaultContainerVariants
+      }
       initial="hidden"
       animate="visible"
       className="glass-strong w-full max-w-sm rounded-2xl px-8 pb-8 pt-10 shadow-2xl"
     >
-      {/* Opta Ring + branding */}
+      {/* Opta Logo + branding */}
       <motion.div
-        variants={shouldReduceMotion ? reducedMotionItemVariants : defaultItemVariants}
+        variants={
+          shouldReduceMotion ? reducedMotionItemVariants : defaultItemVariants
+        }
         className="mb-8 text-center"
       >
         <div className="mb-6 flex justify-center">
-          <div className="opta-ring-wrap">
-            <div
-              className="opta-ring opta-ring-80"
-              style={
-                shouldReduceMotion
-                  ? {
-                      animationPlayState: 'paused',
-                      transform: 'scale(1)',
-                    }
-                  : undefined
-              }
-            />
-          </div>
+          <OptaLogo
+            size={80}
+            layout="vertical"
+            suffix="LOCAL"
+            paused={Boolean(shouldReduceMotion)}
+          />
         </div>
 
-        <h1 className="opta-moonlight mb-2 text-3xl font-bold tracking-[0.12em]">
-          OPTA LOCAL
-        </h1>
-        <span className="opta-badge">CLOUD SYNC</span>
+        <span className="opta-badge mt-2">CLOUD SYNC</span>
 
         <p className="mt-4 text-xs font-light uppercase tracking-[0.22em] text-text-secondary">
           Sign in to sync your devices
@@ -303,13 +325,15 @@ function SignInForm() {
       </motion.div>
 
       <motion.div
-        variants={shouldReduceMotion ? reducedMotionItemVariants : defaultItemVariants}
+        variants={
+          shouldReduceMotion ? reducedMotionItemVariants : defaultItemVariants
+        }
         className="mb-5 rounded-lg border border-opta-border bg-opta-surface/35 px-3 py-2"
       >
         <p className="flex items-start gap-2 text-xs text-text-secondary">
           <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
           <span>
-            After sign-in, you will continue to{' '}
+            After sign-in, you will continue to{" "}
             <span className="font-mono text-text-primary">{nextPath}</span>.
           </span>
         </p>
@@ -317,10 +341,12 @@ function SignInForm() {
 
       {combinedError && (
         <motion.div
-          variants={shouldReduceMotion ? reducedMotionItemVariants : defaultItemVariants}
+          variants={
+            shouldReduceMotion ? reducedMotionItemVariants : defaultItemVariants
+          }
           className={cn(
-            'mb-5 rounded-lg border px-4 py-3',
-            'border-neon-red/20 bg-neon-red/10',
+            "mb-5 rounded-lg border px-4 py-3",
+            "border-neon-red/20 bg-neon-red/10",
           )}
           role="alert"
         >
@@ -336,7 +362,9 @@ function SignInForm() {
 
       {pendingProvider && (
         <motion.p
-          variants={shouldReduceMotion ? reducedMotionItemVariants : defaultItemVariants}
+          variants={
+            shouldReduceMotion ? reducedMotionItemVariants : defaultItemVariants
+          }
           className="mb-4 text-center text-xs uppercase tracking-[0.18em] text-text-muted"
           aria-live="polite"
         >
@@ -346,11 +374,15 @@ function SignInForm() {
 
       {pendingPasswordAuth && (
         <motion.p
-          variants={shouldReduceMotion ? reducedMotionItemVariants : defaultItemVariants}
+          variants={
+            shouldReduceMotion ? reducedMotionItemVariants : defaultItemVariants
+          }
           className="mb-4 text-center text-xs uppercase tracking-[0.18em] text-text-muted"
           aria-live="polite"
         >
-          {authMode === 'signIn' ? 'Signing in with password' : 'Creating account'}
+          {authMode === "signIn"
+            ? "Signing in with password"
+            : "Creating account"}
         </motion.p>
       )}
 
@@ -372,7 +404,9 @@ function SignInForm() {
       </div>
 
       <motion.div
-        variants={shouldReduceMotion ? reducedMotionItemVariants : defaultItemVariants}
+        variants={
+          shouldReduceMotion ? reducedMotionItemVariants : defaultItemVariants
+        }
         className="my-6 flex items-center gap-3"
       >
         <div className="h-px flex-1 bg-opta-border" />
@@ -381,26 +415,30 @@ function SignInForm() {
       </motion.div>
 
       <motion.div
-        variants={shouldReduceMotion ? reducedMotionItemVariants : defaultItemVariants}
+        variants={
+          shouldReduceMotion ? reducedMotionItemVariants : defaultItemVariants
+        }
         className="mb-6 rounded-xl border border-opta-border bg-opta-surface/20 p-4"
       >
-        <h2 className="text-sm font-medium text-text-primary">Password sign-in</h2>
+        <h2 className="text-sm font-medium text-text-primary">
+          Password sign-in
+        </h2>
 
         <div className="mt-3 grid grid-cols-2 gap-2">
           <button
             type="button"
             onClick={() => {
               setActionError(null);
-              setAuthMode('signIn');
+              setAuthMode("signIn");
             }}
             className={cn(
-              'rounded-lg border px-3 py-2 text-xs font-medium uppercase tracking-[0.12em] transition-colors',
-              authMode === 'signIn'
-                ? 'border-primary/70 bg-primary/20 text-primary'
-                : 'border-opta-border bg-opta-surface/10 text-text-secondary hover:text-text-primary',
-              'disabled:cursor-not-allowed disabled:opacity-60',
+              "rounded-lg border px-3 py-2 text-xs font-medium uppercase tracking-[0.12em] transition-colors",
+              authMode === "signIn"
+                ? "border-primary/70 bg-primary/20 text-primary"
+                : "border-opta-border bg-opta-surface/10 text-text-secondary hover:text-text-primary",
+              "disabled:cursor-not-allowed disabled:opacity-60",
             )}
-            aria-pressed={authMode === 'signIn'}
+            aria-pressed={authMode === "signIn"}
             disabled={isAuthActionPending}
           >
             Sign In
@@ -409,16 +447,16 @@ function SignInForm() {
             type="button"
             onClick={() => {
               setActionError(null);
-              setAuthMode('signUp');
+              setAuthMode("signUp");
             }}
             className={cn(
-              'rounded-lg border px-3 py-2 text-xs font-medium uppercase tracking-[0.12em] transition-colors',
-              authMode === 'signUp'
-                ? 'border-primary/70 bg-primary/20 text-primary'
-                : 'border-opta-border bg-opta-surface/10 text-text-secondary hover:text-text-primary',
-              'disabled:cursor-not-allowed disabled:opacity-60',
+              "rounded-lg border px-3 py-2 text-xs font-medium uppercase tracking-[0.12em] transition-colors",
+              authMode === "signUp"
+                ? "border-primary/70 bg-primary/20 text-primary"
+                : "border-opta-border bg-opta-surface/10 text-text-secondary hover:text-text-primary",
+              "disabled:cursor-not-allowed disabled:opacity-60",
             )}
-            aria-pressed={authMode === 'signUp'}
+            aria-pressed={authMode === "signUp"}
             disabled={isAuthActionPending}
           >
             Sign Up
@@ -426,7 +464,7 @@ function SignInForm() {
         </div>
 
         <form onSubmit={submitPasswordAuth} className="mt-4 space-y-3">
-          {authMode === 'signUp' && (
+          {authMode === "signUp" && (
             <div className="space-y-1.5">
               <label
                 htmlFor="password-auth-name"
@@ -443,9 +481,9 @@ function SignInForm() {
                 onChange={(event) => setName(event.target.value)}
                 disabled={isAuthActionPending}
                 className={cn(
-                  'w-full rounded-lg border border-opta-border bg-opta-surface/25 px-3 py-2 text-sm text-text-primary',
-                  'placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/60',
-                  'disabled:cursor-not-allowed disabled:opacity-60',
+                  "w-full rounded-lg border border-opta-border bg-opta-surface/25 px-3 py-2 text-sm text-text-primary",
+                  "placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/60",
+                  "disabled:cursor-not-allowed disabled:opacity-60",
                 )}
               />
             </div>
@@ -468,9 +506,9 @@ function SignInForm() {
               placeholder="you@example.com or +15551234567"
               disabled={isAuthActionPending}
               className={cn(
-                'w-full rounded-lg border border-opta-border bg-opta-surface/25 px-3 py-2 text-sm text-text-primary',
-                'placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/60',
-                'disabled:cursor-not-allowed disabled:opacity-60',
+                "w-full rounded-lg border border-opta-border bg-opta-surface/25 px-3 py-2 text-sm text-text-primary",
+                "placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/60",
+                "disabled:cursor-not-allowed disabled:opacity-60",
               )}
             />
           </div>
@@ -486,14 +524,16 @@ function SignInForm() {
               id="password-auth-password"
               name="password"
               type="password"
-              autoComplete={authMode === 'signIn' ? 'current-password' : 'new-password'}
+              autoComplete={
+                authMode === "signIn" ? "current-password" : "new-password"
+              }
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               disabled={isAuthActionPending}
               className={cn(
-                'w-full rounded-lg border border-opta-border bg-opta-surface/25 px-3 py-2 text-sm text-text-primary',
-                'placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/60',
-                'disabled:cursor-not-allowed disabled:opacity-60',
+                "w-full rounded-lg border border-opta-border bg-opta-surface/25 px-3 py-2 text-sm text-text-primary",
+                "placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/60",
+                "disabled:cursor-not-allowed disabled:opacity-60",
               )}
             />
           </div>
@@ -502,37 +542,46 @@ function SignInForm() {
             type="submit"
             disabled={!identifier.trim() || !password || isAuthActionPending}
             className={cn(
-              'glass w-full rounded-xl px-4 py-3 text-sm font-medium',
-              'flex items-center justify-center gap-2',
-              'transition-all motion-reduce:transition-none',
-              'hover:border-primary/60 hover:shadow-[0_0_20px_rgba(139,92,246,0.25)]',
-              'disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:shadow-none disabled:hover:border-opta-border',
+              "glass w-full rounded-xl px-4 py-3 text-sm font-medium",
+              "flex items-center justify-center gap-2",
+              "transition-all motion-reduce:transition-none",
+              "hover:border-primary/60 hover:shadow-[0_0_20px_rgba(139,92,246,0.25)]",
+              "disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:shadow-none disabled:hover:border-opta-border",
             )}
           >
             {pendingPasswordAuth ? (
               <>
-                <Loader2 className={cn('h-4 w-4', shouldReduceMotion ? '' : 'animate-spin')} />
-                {authMode === 'signIn' ? 'Signing in...' : 'Creating account...'}
+                <Loader2
+                  className={cn(
+                    "h-4 w-4",
+                    shouldReduceMotion ? "" : "animate-spin",
+                  )}
+                />
+                {authMode === "signIn"
+                  ? "Signing in..."
+                  : "Creating account..."}
               </>
-            ) : authMode === 'signIn' ? (
-              'Sign in with password'
+            ) : authMode === "signIn" ? (
+              "Sign in with password"
             ) : (
-              'Create account'
+              "Create account"
             )}
           </button>
         </form>
       </motion.div>
 
       <motion.div
-        variants={shouldReduceMotion ? reducedMotionItemVariants : defaultItemVariants}
+        variants={
+          shouldReduceMotion ? reducedMotionItemVariants : defaultItemVariants
+        }
         className="text-center"
       >
         <Link
           href={nextPath}
           onClick={clearNextIntent}
           className={cn(
-            'text-sm text-text-secondary underline underline-offset-4',
-            'transition-colors hover:text-primary',
+            "text-sm text-text-secondary underline underline-offset-4",
+            "transition-colors hover:text-primary",
           )}
         >
           Continue without account

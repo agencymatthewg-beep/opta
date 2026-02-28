@@ -437,3 +437,139 @@ export interface SessionSearchRequest {
   tags?: string[];
   limit?: number;
 }
+
+// ---------------------------------------------------------------------------
+// Agent Runs
+// ---------------------------------------------------------------------------
+
+/** Possible lifecycle states for a server-side agent run. */
+export type AgentRunStatus =
+  | 'pending'
+  | 'running'
+  | 'completed'
+  | 'failed'
+  | 'cancelled';
+
+/** A single server-side agent execution record (GET /admin/agents/runs/:id). */
+export interface AgentRun {
+  id: string;
+  status: AgentRunStatus;
+  /** User / system input that triggered the run. */
+  input?: string;
+  /** Final output produced by the agent (available when completed). */
+  output?: string;
+  /** Model used for this run. */
+  model?: string;
+  /** System prompt overrride. */
+  system_prompt?: string;
+  /** Names of skills / tools enabled for this run. */
+  tools?: string[];
+  /** Cap on the number of agentic turns. */
+  max_turns?: number;
+  created_at: string; // ISO 8601
+  updated_at?: string; // ISO 8601
+  /** Error message when status === 'failed'. */
+  error?: string;
+}
+
+/** Payload for POST /admin/agents/runs. */
+export interface AgentRunCreate {
+  input: string;
+  model?: string;
+  system_prompt?: string;
+  tools?: string[];
+  max_turns?: number;
+}
+
+// ---------------------------------------------------------------------------
+// Skills
+// ---------------------------------------------------------------------------
+
+/** JSON Schema fragment for a tool's input parameters. */
+export interface JsonSchemaProperty {
+  type: string;
+  description?: string;
+  enum?: string[];
+  items?: JsonSchemaProperty;
+  properties?: Record<string, JsonSchemaProperty>;
+}
+
+/** A single MCP tool exposed by a skill server. */
+export interface SkillMcpTool {
+  name: string;
+  description?: string;
+  /** JSON Schema for the tool's arguments (typically an object schema). */
+  input_schema?: {
+    type: 'object';
+    properties?: Record<string, JsonSchemaProperty>;
+    required?: string[];
+  };
+}
+
+/** A skill definition returned by GET /admin/skills/:name. */
+export interface Skill {
+  name: string;
+  description?: string;
+  /** MCP server URL or identifier. */
+  mcp_server?: string;
+  /** Tools exposed by this skill (may be populated on detail calls). */
+  tools?: SkillMcpTool[];
+  enabled?: boolean;
+}
+
+/** Result of POST /admin/skills/:name/execute. */
+export interface SkillExecuteResult {
+  output: string;
+  tool_calls?: Array<{
+    name: string;
+    args: Record<string, unknown>;
+    result: unknown;
+  }>;
+  error?: string;
+}
+
+// ---------------------------------------------------------------------------
+// ML — Embeddings & Rerank
+// ---------------------------------------------------------------------------
+
+/** Request body for POST /v1/embeddings. */
+export interface EmbeddingsRequest {
+  input: string | string[];
+  model?: string;
+}
+
+/** A single embedding vector with its source index. */
+export interface EmbeddingObject {
+  object: 'embedding';
+  index: number;
+  /** Dense vector (float32 values). */
+  embedding: number[];
+}
+
+/** Response from POST /v1/embeddings (OpenAI-compatible format). */
+export interface EmbeddingsResponse {
+  object: 'list';
+  data: EmbeddingObject[];
+  model: string;
+  usage: { prompt_tokens: number; total_tokens: number };
+}
+
+/** Request body for POST /v1/rerank. */
+export interface RerankRequest {
+  query: string;
+  documents: string[];
+  top_k?: number;
+}
+
+/** A single reranked result with its original index and relevance score. */
+export interface RerankResult {
+  index: number;
+  relevance_score: number;
+  document: string;
+}
+
+/** Response from POST /v1/rerank. */
+export interface RerankResponse {
+  results: RerankResult[];
+  model?: string;
+}

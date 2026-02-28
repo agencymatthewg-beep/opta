@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useState, useTransition, useCallback, useRef, useEffect } from 'react';
-import type { LMXClient } from '@/lib/lmx-client';
-import type { OptaDaemonClient } from '@/lib/opta-daemon-client';
-import type { ChatMessage } from '@/types/lmx';
+import { useState, useTransition, useCallback, useRef, useEffect } from "react";
+import type { LMXClient } from "@/lib/lmx-client";
+import type { OptaDaemonClient } from "@/lib/opta-daemon-client";
+import type { ChatMessage } from "@/types/lmx";
 
 const MAX_DAEMON_RECONNECT_ATTEMPTS = 8;
 const INITIAL_RECONNECT_DELAY_MS = 150;
@@ -22,14 +22,14 @@ export interface ToolEventEntry {
   toolName: string;
   args?: string;
   detail?: string;
-  status: 'running' | 'done' | 'error';
+  status: "running" | "done" | "error";
 }
 
 interface UseChatStreamOptions {
   onError?: (error: Error) => void;
   onPermissionRequest?: (
     request: PermissionRequestPayload,
-  ) => Promise<'allow' | 'deny'> | 'allow' | 'deny';
+  ) => Promise<"allow" | "deny"> | "allow" | "deny";
 }
 
 interface UseChatStreamReturn {
@@ -42,7 +42,7 @@ interface UseChatStreamReturn {
     client: LMXClient | OptaDaemonClient,
     model: string,
     content: string,
-    opts?: { sessionId?: string; onSessionId?: (id: string) => void }
+    opts?: { sessionId?: string; onSessionId?: (id: string) => void },
   ) => Promise<void>;
   stop: () => void;
 }
@@ -54,10 +54,14 @@ interface UseChatStreamReturn {
  * (20-100 tok/s) doesn't block user input. The hook manages messages state,
  * streaming status, and abort control.
  */
-export function useChatStream(options?: UseChatStreamOptions): UseChatStreamReturn {
+export function useChatStream(
+  options?: UseChatStreamOptions,
+): UseChatStreamReturn {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const messagesRef = useRef(messages);
-  useEffect(() => { messagesRef.current = messages; });
+  useEffect(() => {
+    messagesRef.current = messages;
+  });
   const [toolEvents, setToolEvents] = useState<ToolEventEntry[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -66,24 +70,27 @@ export function useChatStream(options?: UseChatStreamOptions): UseChatStreamRetu
   const isDaemonClient = (
     client: LMXClient | OptaDaemonClient,
   ): client is OptaDaemonClient => {
-    return 'submitTurn' in client && 'connectWebSocket' in client;
+    return "submitTurn" in client && "connectWebSocket" in client;
   };
 
-  const appendAssistantToken = useCallback((token: string) => {
-    startTransition(() => {
-      setMessages((prev) => {
-        const updated = [...prev];
-        const last = updated[updated.length - 1];
-        if (last && last.role === 'assistant') {
-          updated[updated.length - 1] = {
-            ...last,
-            content: last.content + token,
-          };
-        }
-        return updated;
+  const appendAssistantToken = useCallback(
+    (token: string) => {
+      startTransition(() => {
+        setMessages((prev) => {
+          const updated = [...prev];
+          const last = updated[updated.length - 1];
+          if (last && last.role === "assistant") {
+            updated[updated.length - 1] = {
+              ...last,
+              content: last.content + token,
+            };
+          }
+          return updated;
+        });
       });
-    });
-  }, [startTransition]);
+    },
+    [startTransition],
+  );
 
   const sendMessage = useCallback(
     async (
@@ -95,7 +102,7 @@ export function useChatStream(options?: UseChatStreamOptions): UseChatStreamRetu
       // 1. Add user message immediately (optimistic)
       const userMsg: ChatMessage = {
         id: crypto.randomUUID(),
-        role: 'user',
+        role: "user",
         content,
         created_at: new Date().toISOString(),
       };
@@ -103,8 +110,8 @@ export function useChatStream(options?: UseChatStreamOptions): UseChatStreamRetu
       // 2. Add placeholder assistant message
       const assistantMsg: ChatMessage = {
         id: crypto.randomUUID(),
-        role: 'assistant',
-        content: '',
+        role: "assistant",
+        content: "",
         model,
         created_at: new Date().toISOString(),
       };
@@ -144,7 +151,7 @@ export function useChatStream(options?: UseChatStreamOptions): UseChatStreamRetu
             let lastSeq = 0;
             let reconnectAttempt = 0;
             let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
-            let closeSocket: (() => void) | null = null;
+            let closeStream: (() => void) | null = null;
 
             const clearReconnectTimer = () => {
               if (!reconnectTimer) return;
@@ -152,211 +159,268 @@ export function useChatStream(options?: UseChatStreamOptions): UseChatStreamRetu
               reconnectTimer = null;
             };
 
-            const closeCurrentSocket = () => {
+            const closeCurrentStream = () => {
               clearReconnectTimer();
-              if (!closeSocket) return;
-              const close = closeSocket;
-              closeSocket = null;
+              if (!closeStream) return;
+              const close = closeStream;
+              closeStream = null;
               close();
             };
 
             const fail = (error: Error) => {
               if (done) return;
               done = true;
-              closeCurrentSocket();
+              closeCurrentStream();
               reject(error);
             };
+
             const finish = () => {
               if (done) return;
               done = true;
-              closeCurrentSocket();
+              closeCurrentStream();
               resolve();
             };
 
-            const connect = (afterSeq: number) => {
+            const handleDaemonEvent = (event: {
+              event: string;
+              seq: number;
+              payload?: unknown;
+            }) => {
+              lastSeq = Math.max(lastSeq, event.seq);
+              const payload = (event.payload ?? {}) as Record<string, unknown>;
+              const payloadTurnId =
+                typeof payload.turnId === "string" ? payload.turnId : undefined;
+
+              if (event.event === "permission.request") {
+                const requestId = payload.requestId;
+                if (typeof requestId === "string") {
+                  const toolName =
+                    typeof payload.toolName === "string"
+                      ? payload.toolName
+                      : "tool";
+                  const args = (
+                    payload.args && typeof payload.args === "object"
+                      ? payload.args
+                      : {}
+                  ) as Record<string, unknown>;
+                  void Promise.resolve(
+                    options?.onPermissionRequest?.({
+                      requestId,
+                      sessionId,
+                      toolName,
+                      args,
+                    }) ?? "deny",
+                  )
+                    .then((decision) => {
+                      void client.resolvePermission(sessionId, {
+                        requestId,
+                        decision,
+                        decidedBy: clientId,
+                      });
+                    })
+                    .catch(() => {
+                      void client.resolvePermission(sessionId, {
+                        requestId,
+                        decision: "deny",
+                        decidedBy: clientId,
+                      });
+                    });
+                }
+                return;
+              }
+
+              if (
+                currentTurnId &&
+                payloadTurnId &&
+                payloadTurnId !== currentTurnId
+              ) {
+                return;
+              }
+
+              if (event.event === "tool.start") {
+                const toolName =
+                  typeof payload.name === "string" ? payload.name : "tool";
+                const toolCallId =
+                  typeof payload.id === "string"
+                    ? payload.id
+                    : crypto.randomUUID();
+                const args =
+                  typeof payload.args === "string" ? payload.args : undefined;
+                setToolEvents((prev) => [
+                  ...prev,
+                  {
+                    id: crypto.randomUUID(),
+                    toolCallId,
+                    toolName,
+                    args,
+                    status: "running",
+                    detail: "Running...",
+                  },
+                ]);
+                return;
+              }
+
+              if (event.event === "tool.end") {
+                const toolCallId =
+                  typeof payload.id === "string" ? payload.id : "";
+                const result =
+                  typeof payload.result === "string" ? payload.result : "";
+                setToolEvents((prev) => {
+                  const next = [...prev];
+                  let idx = -1;
+                  for (let i = next.length - 1; i >= 0; i -= 1) {
+                    if (next[i]?.toolCallId === toolCallId) {
+                      idx = i;
+                      break;
+                    }
+                  }
+                  if (idx === -1) {
+                    next.push({
+                      id: crypto.randomUUID(),
+                      toolCallId: toolCallId || crypto.randomUUID(),
+                      toolName:
+                        typeof payload.name === "string"
+                          ? payload.name
+                          : "tool",
+                      status: "done",
+                      detail: result || "Done",
+                    });
+                    return next;
+                  }
+                  next[idx] = {
+                    ...next[idx]!,
+                    status: "done",
+                    detail: result || "Done",
+                  };
+                  return next;
+                });
+                return;
+              }
+
+              if (
+                event.event === "turn.token" &&
+                typeof payload.text === "string"
+              ) {
+                appendAssistantToken(payload.text);
+                return;
+              }
+
+              if (event.event === "turn.done") {
+                finish();
+                return;
+              }
+
+              if (event.event === "turn.error") {
+                const message =
+                  typeof payload.message === "string"
+                    ? payload.message
+                    : "Turn failed";
+                setToolEvents((prev) =>
+                  prev.map((entry) =>
+                    entry.status === "running"
+                      ? { ...entry, status: "error", detail: message }
+                      : entry,
+                  ),
+                );
+                if (cancelledByUser && /cancel/i.test(message)) {
+                  fail(makeAbortError(message));
+                  return;
+                }
+                fail(new Error(message));
+              }
+            };
+
+            const connectSse = (afterSeq: number) => {
+              const connection = client.connectSse(sessionId, afterSeq, {
+                onEvent: (event) => {
+                  if (done) return;
+                  handleDaemonEvent(event);
+                },
+                onError: () => {
+                  if (done) return;
+                  if (cancelledByUser) {
+                    fail(makeAbortError("Request cancelled"));
+                    return;
+                  }
+                  fail(new Error("Daemon SSE stream error"));
+                },
+              });
+              closeStream = connection.close;
+            };
+
+            const connectWs = (afterSeq: number) => {
               const connection = client.connectWebSocket(sessionId, afterSeq, {
                 onOpen: () => {
                   reconnectAttempt = 0;
                 },
+                onError: (error) => {
+                  if (done) return;
+                  const message =
+                    error instanceof Error
+                      ? error.message
+                      : "Daemon WebSocket error";
+                  if (/unauthorized|invalid ws payload/i.test(message)) {
+                    fail(new Error(message));
+                  }
+                },
                 onClose: () => {
                   if (done) return;
-                  closeSocket = null;
+                  closeStream = null;
                   clearReconnectTimer();
                   if (cancelledByUser) {
-                    fail(makeAbortError('Request cancelled'));
+                    fail(makeAbortError("Request cancelled"));
                     return;
                   }
+
                   reconnectAttempt += 1;
                   if (reconnectAttempt > MAX_DAEMON_RECONNECT_ATTEMPTS) {
-                    fail(new Error('Daemon stream closed after max reconnect attempts'));
+                    connectSse(lastSeq);
                     return;
                   }
+
                   const delay = Math.min(
-                    INITIAL_RECONNECT_DELAY_MS * (2 ** (reconnectAttempt - 1)),
+                    INITIAL_RECONNECT_DELAY_MS * 2 ** (reconnectAttempt - 1),
                     MAX_RECONNECT_DELAY_MS,
                   );
                   reconnectTimer = setTimeout(() => {
                     reconnectTimer = null;
-                    connect(lastSeq);
+                    connectWs(lastSeq);
                   }, delay);
                 },
                 onEvent: (event) => {
-                  lastSeq = Math.max(lastSeq, event.seq);
-                  const payload = (event.payload ?? {}) as Record<string, unknown>;
-                  const payloadTurnId =
-                    typeof payload.turnId === 'string' ? payload.turnId : undefined;
-
-                  if (event.event === 'permission.request') {
-                    const requestId = payload.requestId;
-                    if (typeof requestId === 'string') {
-                      const toolName = typeof payload.toolName === 'string'
-                        ? payload.toolName
-                        : 'tool';
-                      const args = (
-                        payload.args && typeof payload.args === 'object'
-                          ? payload.args
-                          : {}
-                      ) as Record<string, unknown>;
-                      void Promise.resolve(
-                        options?.onPermissionRequest?.({
-                          requestId,
-                          sessionId,
-                          toolName,
-                          args,
-                        }) ?? 'deny',
-                      ).then((decision) => {
-                        void client.resolvePermission(sessionId, {
-                          requestId,
-                          decision,
-                          decidedBy: clientId,
-                        });
-                      }).catch(() => {
-                        void client.resolvePermission(sessionId, {
-                          requestId,
-                          decision: 'deny',
-                          decidedBy: clientId,
-                        });
-                      });
-                    }
-                    return;
-                  }
-
-                  if (currentTurnId && payloadTurnId && payloadTurnId !== currentTurnId) {
-                    return;
-                  }
-
-                  if (event.event === 'tool.start') {
-                    const toolName = typeof payload.name === 'string'
-                      ? payload.name
-                      : 'tool';
-                    const toolCallId = typeof payload.id === 'string'
-                      ? payload.id
-                      : crypto.randomUUID();
-                    const args = typeof payload.args === 'string'
-                      ? payload.args
-                      : undefined;
-                    setToolEvents((prev) => [
-                      ...prev,
-                      {
-                        id: crypto.randomUUID(),
-                        toolCallId,
-                        toolName,
-                        args,
-                        status: 'running',
-                        detail: 'Running...',
-                      },
-                    ]);
-                    return;
-                  }
-
-                  if (event.event === 'tool.end') {
-                    const toolCallId = typeof payload.id === 'string'
-                      ? payload.id
-                      : '';
-                    const result = typeof payload.result === 'string'
-                      ? payload.result
-                      : '';
-                    setToolEvents((prev) => {
-                      const next = [...prev];
-                      let idx = -1;
-                      for (let i = next.length - 1; i >= 0; i -= 1) {
-                        if (next[i]?.toolCallId === toolCallId) {
-                          idx = i;
-                          break;
-                        }
-                      }
-                      if (idx === -1) {
-                        next.push({
-                          id: crypto.randomUUID(),
-                          toolCallId: toolCallId || crypto.randomUUID(),
-                          toolName: typeof payload.name === 'string' ? payload.name : 'tool',
-                          status: 'done',
-                          detail: result || 'Done',
-                        });
-                        return next;
-                      }
-                      next[idx] = {
-                        ...next[idx]!,
-                        status: 'done',
-                        detail: result || 'Done',
-                      };
-                      return next;
-                    });
-                    return;
-                  }
-
-                  if (event.event === 'turn.token' && typeof payload.text === 'string') {
-                    appendAssistantToken(payload.text);
-                    return;
-                  }
-
-                  if (event.event === 'turn.done') {
-                    finish();
-                    return;
-                  }
-
-                  if (event.event === 'turn.error') {
-                    const message = typeof payload.message === 'string'
-                      ? payload.message
-                      : 'Turn failed';
-                    setToolEvents((prev) => prev.map((entry) => (
-                      entry.status === 'running'
-                        ? { ...entry, status: 'error', detail: message }
-                        : entry
-                    )));
-                    if (cancelledByUser && /cancel/i.test(message)) {
-                      fail(makeAbortError(message));
-                      return;
-                    }
-                    fail(new Error(message));
-                  }
+                  if (done) return;
+                  handleDaemonEvent(event);
                 },
               });
-              closeSocket = connection.close;
+              closeStream = connection.close;
             };
 
-            connect(0);
+            connectWs(0);
 
             abortRef.current = {
               abort: () => {
                 cancelledByUser = true;
-                void client.cancel(sessionId, currentTurnId
-                  ? { turnId: currentTurnId }
-                  : { writerId });
+                void client.cancel(
+                  sessionId,
+                  currentTurnId ? { turnId: currentTurnId } : { writerId },
+                );
               },
             };
 
-            void client.submitTurn(sessionId, {
-              clientId,
-              writerId,
-              content,
-              mode: 'chat',
-            }).then((queued) => {
-              if (done) return;
-              currentTurnId = queued.turnId;
-            }).catch((error) => {
-              fail(error instanceof Error ? error : new Error(String(error)));
-            });
+            void client
+              .submitTurn(sessionId, {
+                clientId,
+                writerId,
+                content,
+                mode: "chat",
+              })
+              .then((queued) => {
+                if (done) return;
+                currentTurnId = queued.turnId;
+              })
+              .catch((error) => {
+                fail(error instanceof Error ? error : new Error(String(error)));
+              });
           });
         } else {
           // Direct LMX mode
@@ -372,9 +436,12 @@ export function useChatStream(options?: UseChatStreamOptions): UseChatStreamRetu
         }
       } catch (error) {
         // Don't report abort errors
-        if (error instanceof DOMException && error.name === 'AbortError') return;
-        if (error instanceof Error && error.name === 'AbortError') return;
-        options?.onError?.(error instanceof Error ? error : new Error(String(error)));
+        if (error instanceof DOMException && error.name === "AbortError")
+          return;
+        if (error instanceof Error && error.name === "AbortError") return;
+        options?.onError?.(
+          error instanceof Error ? error : new Error(String(error)),
+        );
       } finally {
         setIsStreaming(false);
         abortRef.current = null;
@@ -388,11 +455,19 @@ export function useChatStream(options?: UseChatStreamOptions): UseChatStreamRetu
     setIsStreaming(false);
   }, []);
 
-  return { messages, setMessages, toolEvents, isStreaming, isPending, sendMessage, stop };
+  return {
+    messages,
+    setMessages,
+    toolEvents,
+    isStreaming,
+    isPending,
+    sendMessage,
+    stop,
+  };
 }
 
-function makeAbortError(message = 'Request cancelled'): Error {
+function makeAbortError(message = "Request cancelled"): Error {
   const err = new Error(message);
-  err.name = 'AbortError';
+  err.name = "AbortError";
   return err;
 }

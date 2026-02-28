@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * ModelList — Loaded models with AnimatePresence transitions.
@@ -8,7 +8,7 @@
  * AnimatePresence with mode="popLayout" for smooth list transitions.
  */
 
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Card,
   CardHeader,
@@ -16,9 +16,10 @@ import {
   CardContent,
   Badge,
   Button,
-} from '@opta/ui';
-import { Layers, Plus, X } from 'lucide-react';
-import type { LoadedModel } from '@/types/lmx';
+} from "@opta/ui";
+import { Layers, Plus, X } from "lucide-react";
+import { OptaRing } from "@/components/shared/OptaRing";
+import type { LoadedModel } from "@/types/lmx";
 
 // ---------------------------------------------------------------------------
 // Props
@@ -69,11 +70,11 @@ export function ModelList({
               exit={{ opacity: 0, scale: 0.95 }}
               whileHover={{
                 scale: 1.01,
-                backgroundColor: 'rgba(139, 92, 246, 0.05)',
-                transition: { duration: 0.2 }
+                backgroundColor: "rgba(139, 92, 246, 0.05)",
+                transition: { duration: 0.2 },
               }}
               whileTap={{ scale: 0.99 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+              transition={{ type: "spring", stiffness: 300, damping: 25 }}
               className="flex items-center justify-between border-b border-white/5 py-3 px-2 rounded-lg last:border-0"
             >
               <div className="flex items-center gap-3 min-w-0">
@@ -86,8 +87,12 @@ export function ModelList({
                     {model.name}
                   </p>
                   <p className="text-xs text-text-secondary">
-                    {model.vram_gb != null ? `${model.vram_gb.toFixed(1)} GB` : ''}
-                    {model.quantization ? `${model.vram_gb != null ? ' \u00B7 ' : ''}${model.quantization}` : ''}
+                    {model.vram_gb != null
+                      ? `${model.vram_gb.toFixed(1)} GB`
+                      : ""}
+                    {model.quantization
+                      ? `${model.vram_gb != null ? " \u00B7 " : ""}${model.quantization}`
+                      : ""}
                   </p>
                 </div>
               </div>
@@ -112,12 +117,14 @@ export function ModelList({
 
         {models.length === 0 && (
           <div className="flex flex-col items-center gap-4 py-10">
-            <div className="opta-ring-wrap">
-              <div className="opta-ring opta-ring-64" />
-            </div>
+            <OptaRing size={64} />
             <div className="text-center space-y-1">
-              <p className="text-sm text-text-secondary font-medium">No models loaded</p>
-              <p className="text-xs text-text-muted">Press ⌘K to browse models</p>
+              <p className="text-sm text-text-secondary font-medium">
+                No models loaded
+              </p>
+              <p className="text-xs text-text-muted">
+                Press ⌘K to browse models
+              </p>
             </div>
             {onLoad && (
               <Button variant="glass" size="sm" onClick={onLoad}>
