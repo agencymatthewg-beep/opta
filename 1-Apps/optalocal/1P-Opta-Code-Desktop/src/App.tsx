@@ -43,6 +43,7 @@ function App() {
     timelineBySession,
     trackSession,
     createSession,
+    removeSession,
     initialCheckDone,
   } = useDaemonSessions();
 
@@ -228,7 +229,7 @@ function App() {
     } catch (error) {
       setNotice(error instanceof Error ? error.message : String(error));
     }
-  }, [activeSessionId, composerDraft, submitMessage]);
+  }, [activeSessionId, composerDraft, submitMessage, submissionMode]);
 
   return (
     <div className={`app-shell ${palette.isOpen ? "palette-open" : ""}`}>
@@ -397,6 +398,7 @@ function App() {
                   );
                   if (next) setSelectedWorkspace(next.workspace);
                 }}
+                onRemoveSession={removeSession}
               />
 
               <TimelineCards

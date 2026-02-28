@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Play, RefreshCw, Square, Terminal } from "lucide-react";
 import { daemonClient } from "../lib/daemonClient";
 import type { DaemonConnectionOptions } from "../types";
 
@@ -29,11 +30,18 @@ export function BackgroundJobsPage({ connection }: BackgroundJobsPageProps) {
   const [outputLoading, setOutputLoading] = useState(false);
   const [actionNotice, setActionNotice] = useState<string | null>(null);
 
+  // Start shell form state
+  const [startCmd, setStartCmd] = useState("");
+  const [startCwd, setStartCwd] = useState("");
+  const [starting, setStarting] = useState(false);
+
   const refreshTimerRef = useRef<number | null>(null);
 
+  const noticeTimerRef = useRef<number | null>(null);
   const showNotice = useCallback((msg: string) => {
+    if (noticeTimerRef.current !== null) window.clearTimeout(noticeTimerRef.current);
     setActionNotice(msg);
-    window.setTimeout(() => setActionNotice(null), 3000);
+    noticeTimerRef.current = window.setTimeout(() => setActionNotice(null), 3000);
   }, []);
 
   const refresh = useCallback(async () => {
@@ -41,9 +49,7 @@ export function BackgroundJobsPage({ connection }: BackgroundJobsPageProps) {
     setError(null);
     try {
       const response = await daemonClient.listBackground(connection);
-      setJobs(
-        (response.processes ?? []) as BackgroundJob[],
-      );
+      setJobs((response.processes ?? []) as BackgroundJob[]);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -58,13 +64,17 @@ export function BackgroundJobsPage({ connection }: BackgroundJobsPageProps) {
         const response = await daemonClient.backgroundOutput(connection, processId, {
           limit: 200,
         });
-        const chunks = (response as unknown as { chunks?: Array<{ text?: string }> }).chunks ?? [];
+        const chunks =
+          (response as unknown as { chunks?: Array<{ text?: string }> })
+            .chunks ?? [];
         const lines = chunks.map((c) => c.text ?? "").filter(Boolean);
         setOutput({ processId, lines });
       } catch (err) {
         setOutput({
           processId,
-          lines: [`Error fetching output: ${err instanceof Error ? err.message : String(err)}`],
+          lines: [
+            `Error fetching output: ${err instanceof Error ? err.message : String(err)}`,
+          ],
         });
       } finally {
         setOutputLoading(false);
@@ -84,7 +94,9 @@ export function BackgroundJobsPage({ connection }: BackgroundJobsPageProps) {
           setOutput(null);
         }
       } catch (err) {
-        showNotice(`Kill failed: ${err instanceof Error ? err.message : String(err)}`);
+        showNotice(
+          `Kill failed: ${err instanceof Error ? err.message : String(err)}`,
+        );
       }
     },
     [connection, refresh, selectedJobId, showNotice],
@@ -98,24 +110,47 @@ export function BackgroundJobsPage({ connection }: BackgroundJobsPageProps) {
     [fetchOutput],
   );
 
+  const startShell = useCallback(
+    async (event: React.FormEvent) => {
+      event.preventDefault();
+      const cmd = startCmd.trim();
+      if (!cmd) return;
+      setStarting(true);
+      try {
+        const result = await daemonClient.startBackground(connection, {
+          command: cmd,
+          cwd: startCwd.trim() || undefined,
+        } as Parameters<typeof daemonClient.startBackground>[1]);
+        const pid =
+          (result as unknown as { processId?: string }).processId ?? "?";
+        showNotice(`Started: ${pid}`);
+        setStartCmd("");
+        setStartCwd("");
+        await refresh();
+      } catch (err) {
+        showNotice(
+          `Start failed: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      } finally {
+        setStarting(false);
+      }
+    },
+    [connection, refresh, showNotice, startCmd, startCwd],
+  );
+
   useEffect(() => {
     void refresh();
     refreshTimerRef.current = window.setInterval(() => {
       void refresh();
     }, 5000);
     return () => {
-      if (refreshTimerRef.current !== null) {
-        window.clearInterval(refreshTimerRef.current);
-      }
+      if (refreshTimerRef.current !== null) window.clearInterval(refreshTimerRef.current);
+      if (noticeTimerRef.current !== null) window.clearTimeout(noticeTimerRef.current);
     };
   }, [refresh]);
 
-  useEffect(() => {
-    if (!selectedJobId) return;
-    void fetchOutput(selectedJobId);
-  }, [selectedJobId, fetchOutput]);
-
-  const selectedJob = jobs.find((job) => job.processId === selectedJobId) ?? null;
+  const selectedJob =
+    jobs.find((job) => job.processId === selectedJobId) ?? null;
 
   return (
     <div className="background-jobs-page">
@@ -123,8 +158,10 @@ export function BackgroundJobsPage({ connection }: BackgroundJobsPageProps) {
         <div>
           <h2>Background Jobs</h2>
           <p>
-            Daemon-managed background processes. {jobs.length} job
-            {jobs.length !== 1 ? "s" : ""}.
+            Daemon-managed background processes.{" "}
+            <span className="jobs-count">
+              {jobs.length} job{jobs.length !== 1 ? "s" : ""}
+            </span>
           </p>
         </div>
         <button
@@ -134,9 +171,45 @@ export function BackgroundJobsPage({ connection }: BackgroundJobsPageProps) {
           disabled={loading}
           aria-label="Refresh background jobs"
         >
+          <RefreshCw size={13} className={loading ? "spin" : ""} aria-hidden="true" />
           {loading ? "Loading…" : "Refresh"}
         </button>
       </header>
+
+      {/* Start Shell Form */}
+      <form className="start-shell-form glass-subtle" onSubmit={startShell}>
+        <h3 className="start-shell-label">
+          <Terminal size={13} aria-hidden="true" />
+          Launch background shell
+        </h3>
+        <div className="start-shell-fields">
+          <input
+            className="start-shell-input"
+            type="text"
+            placeholder="Command (e.g. npm run build)"
+            value={startCmd}
+            onChange={(e) => setStartCmd(e.target.value)}
+            aria-label="Shell command"
+            required
+          />
+          <input
+            className="start-shell-input start-shell-cwd"
+            type="text"
+            placeholder="Working directory (optional)"
+            value={startCwd}
+            onChange={(e) => setStartCwd(e.target.value)}
+            aria-label="Working directory"
+          />
+          <button
+            type="submit"
+            className="start-shell-btn"
+            disabled={starting || !startCmd.trim()}
+          >
+            <Play size={12} aria-hidden="true" />
+            {starting ? "Launching…" : "Launch"}
+          </button>
+        </div>
+      </form>
 
       {actionNotice ? (
         <div className="jobs-notice" role="status" aria-live="polite">
@@ -187,7 +260,7 @@ export function BackgroundJobsPage({ connection }: BackgroundJobsPageProps) {
                   aria-label={`Kill job ${job.processId}`}
                   title="Kill process"
                 >
-                  ✕
+                  <Square size={11} aria-hidden="true" />
                 </button>
               </div>
             ))

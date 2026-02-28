@@ -8,6 +8,15 @@ type InlineNode =
   | { tag: "code"; content: string }
   | { tag: "a"; content: string; href: string };
 
+function sanitizeHref(href: string): string {
+  try {
+    const { protocol } = new URL(href);
+    return protocol === "http:" || protocol === "https:" ? href : "#";
+  } catch {
+    return "#";
+  }
+}
+
 function parseInline(text: string): InlineNode[] {
   const pattern =
     /(\*\*\*([^*]+)\*\*\*|\*\*([^*]+)\*\*|\*([^*]+)\*|`([^`]+)`|\[([^\]]+)\]\(([^)]+)\))/g;
@@ -53,7 +62,7 @@ function renderInlineNodes(nodes: InlineNode[]): ReactNode[] {
         return (
           <a
             key={key}
-            href={node.href}
+            href={sanitizeHref(node.href)}
             target="_blank"
             rel="noreferrer noopener"
             className="md-link"
