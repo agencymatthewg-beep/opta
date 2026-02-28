@@ -5,34 +5,38 @@ import { getGoogleAccessToken } from "./tokens";
  * Get the current authenticated Supabase user
  */
 export async function getUser() {
-    const supabase = await createClient();
-    const {
-        data: { user },
-        error,
-    } = await supabase.auth.getUser();
+  const supabase = await createClient();
+  if (!supabase) return null;
 
-    if (error || !user) {
-        return null;
-    }
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
 
-    return user;
+  if (error || !user) {
+    return null;
+  }
+
+  return user;
 }
 
 /**
  * Get the current Supabase session
  */
 export async function getSession() {
-    const supabase = await createClient();
-    const {
-        data: { session },
-        error,
-    } = await supabase.auth.getSession();
+  const supabase = await createClient();
+  if (!supabase) return null;
 
-    if (error || !session) {
-        return null;
-    }
+  const {
+    data: { session },
+    error,
+  } = await supabase.auth.getSession();
 
-    return session;
+  if (error || !session) {
+    return null;
+  }
+
+  return session;
 }
 
 /**
@@ -40,10 +44,10 @@ export async function getSession() {
  * Combines user authentication check with token retrieval
  */
 export async function getGoogleToken(): Promise<string | null> {
-    const user = await getUser();
-    if (!user) {
-        return null;
-    }
+  const user = await getUser();
+  if (!user) {
+    return null;
+  }
 
-    return await getGoogleAccessToken(user.id);
+  return await getGoogleAccessToken(user.id);
 }
