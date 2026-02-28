@@ -134,7 +134,7 @@ export class SessionManager {
 
     const now = new Date().toISOString();
     let existing = this.sessions.get(sessionId);
-    if (!existing && await hasSessionStore(sessionId)) {
+    if (!existing && (await hasSessionStore(sessionId))) {
       const snapshot = await readSessionSnapshot(sessionId);
       if (snapshot) {
         existing = {
@@ -173,19 +173,22 @@ export class SessionManager {
     return this.sessionToSnapshot(session);
   }
 
-  async getSession(sessionId: string): Promise<SessionSnapshot | null> {
+  getSession(sessionId: string): SessionSnapshot | null {
     const session = this.sessions.get(sessionId);
     if (!session) return null;
     return this.sessionToSnapshot(session);
   }
 
-  async getSessionMessages(sessionId: string): Promise<AgentMessage[] | null> {
+  getSessionMessages(sessionId: string): AgentMessage[] | null {
     const session = this.sessions.get(sessionId);
     if (!session) return null;
     return session.messages;
   }
 
-  async submitTurn(sessionId: string, payload: ClientSubmitTurn): Promise<{ turnId: string; queued: number }> {
+  async submitTurn(
+    sessionId: string,
+    payload: ClientSubmitTurn
+  ): Promise<{ turnId: string; queued: number }> {
     const session = this.sessions.get(sessionId);
     if (!session) {
       throw new Error(`Session not found: ${sessionId}`);
@@ -217,7 +220,10 @@ export class SessionManager {
     return { turnId: turn.turnId, queued: session.queue.size };
   }
 
-  async cancelSessionTurns(sessionId: string, opts: { turnId?: string; writerId?: string }): Promise<number> {
+  async cancelSessionTurns(
+    sessionId: string,
+    opts: { turnId?: string; writerId?: string }
+  ): Promise<number> {
     const session = this.sessions.get(sessionId);
     if (!session) return 0;
 
@@ -250,7 +256,10 @@ export class SessionManager {
     return cancelled;
   }
 
-  resolvePermission(sessionId: string, decision: PermissionDecision): { ok: boolean; conflict: boolean; message?: string } {
+  resolvePermission(
+    sessionId: string,
+    decision: PermissionDecision
+  ): { ok: boolean; conflict: boolean; message?: string } {
     const session = this.sessions.get(sessionId);
     if (!session) return { ok: false, conflict: false, message: 'Session not found' };
     const result = this.permissionCoordinator.resolve(decision.requestId, decision.decision);
@@ -301,7 +310,7 @@ export class SessionManager {
     };
   }
 
-  async listBackgroundProcesses(sessionId?: string): Promise<BackgroundProcessSnapshot[]> {
+  listBackgroundProcesses(sessionId?: string): BackgroundProcessSnapshot[] {
     if (sessionId && !this.sessions.has(sessionId)) {
       throw new Error(`Session not found: ${sessionId}`);
     }
@@ -326,14 +335,20 @@ export class SessionManager {
     return this.backgroundManager.status(processId);
   }
 
-  getBackgroundOutput(processId: string, query: BackgroundOutputQuery): BackgroundOutputSlice | null {
+  getBackgroundOutput(
+    processId: string,
+    query: BackgroundOutputQuery
+  ): BackgroundOutputSlice | null {
     return this.backgroundManager.output(processId, query);
   }
 
-  async killBackgroundProcess(processId: string, signal: BackgroundSignal = 'SIGTERM'): Promise<{
+  killBackgroundProcess(
+    processId: string,
+    signal: BackgroundSignal = 'SIGTERM'
+  ): {
     killed: boolean;
     process: BackgroundProcessSnapshot;
-  } | null> {
+  } | null {
     return this.backgroundManager.kill(processId, signal);
   }
 
@@ -348,9 +363,9 @@ export class SessionManager {
       });
     }
     if (cfg?.background.killOnSessionEnd ?? true) {
-      await this.backgroundManager.close();
+      this.backgroundManager.close();
     }
-    await this.toolWorkers.close();
+    this.toolWorkers.close();
   }
 
   private normalizeMessages(raw?: unknown[]): AgentMessage[] {
@@ -362,7 +377,11 @@ export class SessionManager {
     });
   }
 
-  private runToolWithDaemonPolicy(name: string, argsJson: string, signal?: AbortSignal): Promise<string> {
+  private runToolWithDaemonPolicy(
+    name: string,
+    argsJson: string,
+    signal?: AbortSignal
+  ): Promise<string> {
     if (name === 'ask_user') {
       return Promise.resolve(
         'Error: ask_user is unavailable in daemon mode. Resolve permissions from an attached client instead.'
@@ -394,7 +413,11 @@ export class SessionManager {
     const lower = message.toLowerCase();
     const code = this.normalizeErrorCode(err);
 
-    if (code === 'econnrefused' || lower.includes('econnrefused') || lower.includes('connection refused')) {
+    if (
+      code === 'econnrefused' ||
+      lower.includes('econnrefused') ||
+      lower.includes('connection refused')
+    ) {
       return 'lmx-connection-refused';
     }
 
@@ -477,9 +500,15 @@ export class SessionManager {
       : undefined;
     if (!canonicalModelId) {
       if (!targetModel) {
-        throw this.newTurnError(`${NO_MODEL_LOADED_MESSAGE} Session model is not configured.`, 'no-model-loaded');
+        throw this.newTurnError(
+          `${NO_MODEL_LOADED_MESSAGE} Session model is not configured.`,
+          'no-model-loaded'
+        );
       }
-      throw this.newTurnError(`${NO_MODEL_LOADED_MESSAGE} Session model "${session.model}" is not loaded.`, 'no-model-loaded');
+      throw this.newTurnError(
+        `${NO_MODEL_LOADED_MESSAGE} Session model "${session.model}" is not loaded.`,
+        'no-model-loaded'
+      );
     }
 
     if (session.model !== canonicalModelId) {
@@ -523,8 +552,14 @@ export class SessionManager {
         sessionId,
         silent: true,
         signal: session.activeAbort.signal,
-        toolExecutor: (name, argsJson, signal) => this.runToolWithDaemonPolicy(name, argsJson, signal),
+        toolExecutor: (name, argsJson, signal) =>
+          this.runToolWithDaemonPolicy(name, argsJson, signal),
         onStream: {
+          // NOTE: these streaming callbacks are synchronous, so emit() cannot
+          // be awaited inline.  Events are fire-and-forget here; sequence
+          // numbers assigned inside emit() may interleave if emit() is slow
+          // (e.g. during a persistence flush under I/O pressure).  For strict
+          // ordering guarantees, a serial emit queue would be required.
           onToken: (text) => {
             if (firstTokenMs === null) firstTokenMs = Date.now() - turnStart;
             completionTokens += Math.ceil(text.length / CHARS_PER_TOKEN);
@@ -544,7 +579,11 @@ export class SessionManager {
             promptTokens = usage.promptTokens;
           },
           onPermissionRequest: async (toolName, args) => {
-            const { request, decision } = this.permissionCoordinator.request(sessionId, toolName, args);
+            const { request, decision } = this.permissionCoordinator.request(
+              sessionId,
+              toolName,
+              args
+            );
             await this.emit(session, 'permission.request', {
               turnId: turn.turnId,
               requestId: request.requestId,

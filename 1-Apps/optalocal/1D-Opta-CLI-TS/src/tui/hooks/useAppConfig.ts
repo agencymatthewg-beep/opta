@@ -10,10 +10,8 @@ import type { ConnectionState } from '../utils.js';
 import type { AccountState } from '../../accounts/types.js';
 import type { StudioConnectivityState } from '../OptaMenuOverlay.js';
 import type { ResponseIntentTone } from '../response-intent.js';
-import {
-  DEFAULT_TRIGGER_MODE_DEFINITIONS,
-  type TriggerModeDefinition,
-} from '../trigger-router.js';
+import { DEFAULT_TRIGGER_MODE_DEFINITIONS, type TriggerModeDefinition } from '../trigger-router.js';
+import { homedir } from '../../platform/index.js';
 
 interface SkillRuntimeSettings {
   dynamicLoading: boolean;
@@ -35,9 +33,8 @@ function isLocalHost(host: string): boolean {
 }
 
 function expandHomePath(pathValue: string): string {
-  if (!pathValue.startsWith('~/')) return pathValue;
-  const home = process.env['HOME'];
-  return home ? `${home}/${pathValue.slice(2)}` : pathValue;
+  if (!pathValue.startsWith('~/') && pathValue !== '~') return pathValue;
+  return homedir() + pathValue.slice(1);
 }
 
 export interface UseAppConfigReturn {
@@ -105,7 +102,7 @@ export function useAppConfig(deps: UseAppConfigDeps): UseAppConfigReturn {
   } = deps;
 
   // --- Connection details ---
-  const [connectionHost, setConnectionHost] = useState('192.168.188.11');
+  const [connectionHost, setConnectionHost] = useState(DEFAULT_CONFIG.connection.host);
   const [connectionFallbackHosts, setConnectionFallbackHosts] = useState<string[]>([]);
   const [connectionPort, setConnectionPort] = useState(1234);
   const [connectionAdminKey, setConnectionAdminKey] = useState<string | undefined>(undefined);
@@ -119,13 +116,13 @@ export function useAppConfig(deps: UseAppConfigDeps): UseAppConfigReturn {
 
   // --- Trigger/Skill/ResponseIntent ---
   const [triggerDefinitions, setTriggerDefinitions] = useState<TriggerModeDefinition[]>(
-    DEFAULT_TRIGGER_MODE_DEFINITIONS,
+    DEFAULT_TRIGGER_MODE_DEFINITIONS
   );
   const [skillRuntimeSettings, setSkillRuntimeSettings] = useState<SkillRuntimeSettings>(
-    DEFAULT_SKILL_RUNTIME_SETTINGS,
+    DEFAULT_SKILL_RUNTIME_SETTINGS
   );
   const [responseIntentTone, setResponseIntentTone] = useState<ResponseIntentTone>(
-    DEFAULT_CONFIG.tui.responseIntentTone,
+    DEFAULT_CONFIG.tui.responseIntentTone
   );
 
   // --- Keybinding overrides ---
@@ -133,47 +130,78 @@ export function useAppConfig(deps: UseAppConfigDeps): UseAppConfigReturn {
 
   // --- Context limit loading ---
   useEffect(() => {
-    import('../../core/models.js').then(({ getContextLimit }) => {
-      setContextLimit(getContextLimit(currentModel));
-    }).catch(() => {});
+    import('../../core/models.js')
+      .then(({ getContextLimit }) => {
+        setContextLimit(getContextLimit(currentModel));
+      })
+      .catch(() => {});
   }, [currentModel, setContextLimit]);
 
   // --- Registered tools count loading ---
   useEffect(() => {
-    import('../../core/tools/schemas.js').then(({ TOOL_SCHEMAS }) => {
-      setRegisteredToolCount(TOOL_SCHEMAS.length);
-    }).catch(() => {});
+    import('../../core/tools/schemas.js')
+      .then(({ TOOL_SCHEMAS }) => {
+        setRegisteredToolCount(TOOL_SCHEMAS.length);
+      })
+      .catch(() => {});
   }, [setRegisteredToolCount]);
 
   // --- Main config loading ---
   useEffect(() => {
-    import('../../core/config.js').then(({ loadConfig }) => {
-      loadConfig().then(cfg => {
-        setConnectionHost(cfg.connection.host);
-        setConnectionFallbackHosts(cfg.connection.fallbackHosts);
-        setConnectionPort(cfg.connection.port);
-        setConnectionAdminKey(cfg.connection.adminKey);
-        setConnectionSshUser(cfg.connection.ssh.user);
-        setConnectionSshIdentityFile(cfg.connection.ssh.identityFile);
-        setConnectionSshConnectTimeoutSec(cfg.connection.ssh.connectTimeoutSec);
-        setAutonomyLevel(cfg.autonomy.level);
-        setAutonomyMode(cfg.autonomy.mode);
-        setBrowserPolicyConfig(cfg.browser.policy);
-        setTriggerDefinitions(
-          cfg.tui.triggerModes.length > 0
-            ? cfg.tui.triggerModes
-            : DEFAULT_TRIGGER_MODE_DEFINITIONS,
+    import('../../core/config.js')
+      .then(({ loadConfig }) => {
+        loadConfig()
+          .then((cfg) => {
+            setConnectionHost(cfg.connection.host);
+            setConnectionFallbackHosts(cfg.connection.fallbackHosts);
+            setConnectionPort(cfg.connection.port);
+            setConnectionAdminKey(cfg.connection.adminKey);
+            setConnectionSshUser(cfg.connection.ssh.user);
+            setConnectionSshIdentityFile(cfg.connection.ssh.identityFile);
+            setConnectionSshConnectTimeoutSec(cfg.connection.ssh.connectTimeoutSec);
+            setAutonomyLevel(cfg.autonomy.level);
+            setAutonomyMode(cfg.autonomy.mode);
+            setBrowserPolicyConfig(cfg.browser.policy);
+            setTriggerDefinitions(
+              cfg.tui.triggerModes.length > 0
+                ? cfg.tui.triggerModes
+                : DEFAULT_TRIGGER_MODE_DEFINITIONS
+            );
+            setSkillRuntimeSettings({
+              dynamicLoading: cfg.tui.skillRuntime.dynamicLoading,
+              unloadInactive: cfg.tui.skillRuntime.unloadInactive,
+              ttlMinutes: cfg.tui.skillRuntime.ttlMinutes,
+              maxActiveSkills: cfg.tui.skillRuntime.maxActiveSkills,
+            });
+            setResponseIntentTone(cfg.tui.responseIntentTone);
+          })
+          .catch((err: unknown) => {
+            // Log to stderr so failures surface without breaking the Ink render.
+            process.stderr.write(
+              `[useAppConfig] Failed to apply config: ${err instanceof Error ? err.message : String(err)}\n`
+            );
+          });
+      })
+      .catch((err: unknown) => {
+        process.stderr.write(
+          `[useAppConfig] Failed to import config module: ${err instanceof Error ? err.message : String(err)}\n`
         );
-        setSkillRuntimeSettings({
-          dynamicLoading: cfg.tui.skillRuntime.dynamicLoading,
-          unloadInactive: cfg.tui.skillRuntime.unloadInactive,
-          ttlMinutes: cfg.tui.skillRuntime.ttlMinutes,
-          maxActiveSkills: cfg.tui.skillRuntime.maxActiveSkills,
-        });
-        setResponseIntentTone(cfg.tui.responseIntentTone);
-      }).catch(() => {});
-    }).catch(() => {});
-  }, [setAutonomyLevel, setAutonomyMode, setBrowserPolicyConfig]);
+      });
+  }, [
+    setAutonomyLevel,
+    setAutonomyMode,
+    setBrowserPolicyConfig,
+    setConnectionHost,
+    setConnectionFallbackHosts,
+    setConnectionPort,
+    setConnectionAdminKey,
+    setConnectionSshUser,
+    setConnectionSshIdentityFile,
+    setConnectionSshConnectTimeoutSec,
+    setTriggerDefinitions,
+    setSkillRuntimeSettings,
+    setResponseIntentTone,
+  ]);
 
   // --- Keybindings override loading ---
   useEffect(() => {
@@ -185,17 +213,14 @@ export function useAppConfig(deps: UseAppConfigDeps): UseAppConfigReturn {
   }, []);
 
   // --- Merged keybindings ---
-  const keybindings = useMemo(
-    () => mergeKeybindings(keybindingOverrides),
-    [keybindingOverrides],
-  );
+  const keybindings = useMemo(() => mergeKeybindings(keybindingOverrides), [keybindingOverrides]);
 
   // --- Load account state on mount (skipped in test environments) ---
   useEffect(() => {
     if (!persistenceEnabled) return;
     import('../../accounts/storage.js')
-      .then(mod => mod.loadAccountState())
-      .then(state => setAccountState(state))
+      .then((mod) => mod.loadAccountState())
+      .then((state) => setAccountState(state))
       .catch(() => setAccountState(null));
   }, [persistenceEnabled]);
 
@@ -204,13 +229,17 @@ export function useAppConfig(deps: UseAppConfigDeps): UseAppConfigReturn {
     const checkConnection = async () => {
       try {
         const { probeLmxConnection } = await import('../../lmx/connection.js');
-        const result = await probeLmxConnection(connectionHost, connectionPort, { timeoutMs: 2_000 });
+        const result = await probeLmxConnection(connectionHost, connectionPort, {
+          timeoutMs: 2_000,
+        });
         setConnectionState(result.state !== 'disconnected' ? 'connected' : 'error');
       } catch {
         setConnectionState('error');
       }
     };
-    const interval = setInterval(checkConnection, 30_000);
+    const interval = setInterval(() => {
+      void checkConnection();
+    }, 30_000);
     return () => clearInterval(interval);
   }, [connectionHost, connectionPort, setConnectionState]);
 
@@ -242,10 +271,14 @@ export function useAppConfig(deps: UseAppConfigDeps): UseAppConfigReturn {
 
         for (const host of remoteHosts) {
           const args = [
-            '-o', 'BatchMode=yes',
-            '-o', `ConnectTimeout=${timeoutSec}`,
-            '-o', 'StrictHostKeyChecking=accept-new',
-            '-o', 'NumberOfPasswordPrompts=0',
+            '-o',
+            'BatchMode=yes',
+            '-o',
+            `ConnectTimeout=${timeoutSec}`,
+            '-o',
+            'StrictHostKeyChecking=accept-new',
+            '-o',
+            'NumberOfPasswordPrompts=0',
           ];
           if (identityFile.trim().length > 0) {
             args.push('-i', identityFile);

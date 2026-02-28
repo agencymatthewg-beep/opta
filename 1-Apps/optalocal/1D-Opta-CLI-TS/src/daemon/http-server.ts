@@ -34,6 +34,7 @@ export interface HttpServerOptions {
   port: number;
   token: string;
   sessionManager: SessionManager;
+  listen?: boolean;
 }
 
 export interface RunningHttpServer {
@@ -56,9 +57,15 @@ function tokenEqual(a: string, b: string): boolean {
     const aBuf = Buffer.from(a);
     const bBuf = Buffer.from(b);
     if (aBuf.length !== bBuf.length) {
-      // Still run timingSafeEqual against a fixed-length buffer to avoid
-      // leaking token length via early-return timing.
-      timingSafeEqual(aBuf, aBuf);
+      // Pad both to the same length so the comparison work is proportional to
+      // max(len(a), len(b)) rather than leaking the expected token length via
+      // a fast early return.  timingSafeEqual requires equal-length buffers.
+      const maxLen = Math.max(aBuf.length, bBuf.length);
+      const padA = Buffer.alloc(maxLen, 0);
+      const padB = Buffer.alloc(maxLen, 0);
+      aBuf.copy(padA);
+      bBuf.copy(padB);
+      timingSafeEqual(padA, padB); // always false after padding, but work is done
       return false;
     }
     return timingSafeEqual(aBuf, bBuf);
@@ -113,15 +120,15 @@ async function waitForTurnDone(
         done = true;
         clearTimeout(timeout);
         unsubscribe();
-        void sessionManager
-          .getSessionMessages(sessionId)
-          .then((messages) => {
-            const assistantMsgs = (messages ?? []).filter((m) => m.role === 'assistant');
-            const last = assistantMsgs[assistantMsgs.length - 1];
-            const text = typeof last?.content === 'string' ? last.content : '';
-            resolve({ stats: payload.stats, message: text });
-          })
-          .catch(reject);
+        try {
+          const messages = sessionManager.getSessionMessages(sessionId);
+          const assistantMsgs = (messages ?? []).filter((m) => m.role === 'assistant');
+          const last = assistantMsgs[assistantMsgs.length - 1];
+          const text = typeof last?.content === 'string' ? last.content : '';
+          resolve({ stats: payload.stats, message: text });
+        } catch (err) {
+          reject(err as Error);
+        }
       }
       if (event.event === 'turn.error') {
         const payload = event.payload as { turnId?: string; message?: string };
@@ -135,20 +142,23 @@ async function waitForTurnDone(
   });
 }
 
-async function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions): Promise<void> {
-  app.get('/health', async () => ({
+function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions): void {
+  app.get('/health', () => ({
     status: 'ok',
     version: VERSION,
     daemon: true,
   }));
 
-  app.get('/v3/health', async () => ({
-    status: 'ok',
-    version: VERSION,
-    daemonId: opts.daemonId,
-    contract: expectedDaemonContract(),
-    runtime: opts.sessionManager.getRuntimeStats(),
-  }));
+  app.get('/v3/health', (req, reply) => {
+    if (!isAuthorized(req, opts.token)) return rejectUnauthorized(reply);
+    return {
+      status: 'ok',
+      version: VERSION,
+      daemonId: opts.daemonId,
+      contract: expectedDaemonContract(),
+      runtime: opts.sessionManager.getRuntimeStats(),
+    };
+  });
 
   app.get('/v3/metrics', async (req, reply) => {
     if (!isAuthorized(req, opts.token)) return rejectUnauthorized(reply);
@@ -169,13 +179,13 @@ async function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions)
     if (!isAuthorized(req, opts.token)) return rejectUnauthorized(reply);
     const params = OperationParamsSchema.safeParse(req.params);
     if (!params.success)
-      return reply.status(400).send({ error: 'Invalid operation id', details: params.error.issues });
+      return reply
+        .status(400)
+        .send({ error: 'Invalid operation id', details: params.error.issues });
 
     const body = OperationExecuteBodySchema.safeParse(req.body ?? {});
     if (!body.success)
-      return reply
-        .status(400)
-        .send({ error: 'Invalid request body', details: body.error.issues });
+      return reply.status(400).send({ error: 'Invalid request body', details: body.error.issues });
 
     const result = await executeDaemonOperation({
       id: params.data.id,
@@ -335,9 +345,9 @@ async function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions)
     const parsed = SessionParamsSchema.safeParse(req.params);
     if (!parsed.success) return reply.status(400).send({ error: 'Invalid session id' });
 
-    const snapshot = await opts.sessionManager.getSession(parsed.data.sessionId);
+    const snapshot = opts.sessionManager.getSession(parsed.data.sessionId);
     if (!snapshot) return reply.status(404).send({ error: 'Session not found' });
-    const messages = await opts.sessionManager.getSessionMessages(parsed.data.sessionId);
+    const messages = opts.sessionManager.getSessionMessages(parsed.data.sessionId);
     return { ...snapshot, messages: messages ?? [] };
   });
 
@@ -352,7 +362,7 @@ async function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions)
 
     try {
       const queued = await opts.sessionManager.submitTurn(params.data.sessionId, body.data);
-      return reply.status(202).send(queued);
+      return await reply.status(202).send(queued);
     } catch (err) {
       const mapped = mapMutationError(err);
       return reply.status(mapped.status).send({ error: mapped.message });
@@ -409,7 +419,7 @@ async function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions)
       return reply.status(400).send({ error: 'Invalid query', details: query.error.issues });
 
     try {
-      const processes = await opts.sessionManager.listBackgroundProcesses(query.data.sessionId);
+      const processes = opts.sessionManager.listBackgroundProcesses(query.data.sessionId);
       return { processes };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -428,7 +438,7 @@ async function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions)
 
     try {
       const process = await opts.sessionManager.startBackgroundProcess(body.data);
-      return reply.status(201).send({ process });
+      return await reply.status(201).send({ process });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       if (/Session not found/i.test(message)) {
@@ -478,7 +488,7 @@ async function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions)
     if (!body.success)
       return reply.status(400).send({ error: 'Invalid body', details: body.error.issues });
 
-    const result = await opts.sessionManager.killBackgroundProcess(
+    const result = opts.sessionManager.killBackgroundProcess(
       params.data.processId,
       body.data.signal
     );
@@ -566,6 +576,7 @@ async function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions)
 
   // Legacy compatibility endpoint for existing scripts.
   app.post('/v1/chat', async (req, reply) => {
+    if (!isAuthorized(req, opts.token)) return rejectUnauthorized(reply);
     const body = req.body as { message?: unknown; session_id?: unknown } | undefined;
     if (!body || typeof body.message !== 'string' || !body.message.trim()) {
       return reply.status(400).send({ error: 'Missing required field: message (string)' });
@@ -625,23 +636,31 @@ export async function startHttpServer(opts: HttpServerOptions): Promise<RunningH
   });
 
   await app.register(websocket);
-  await registerHttpRoutes(app, opts);
-  await registerWsServer(app, {
+  registerHttpRoutes(app, opts);
+  registerWsServer(app, {
     sessionManager: opts.sessionManager,
     token: opts.token,
   });
 
-  const boundPort = await listenWithPortFallback(app, opts.host, opts.port);
-  const state: DaemonState = {
-    pid: process.pid,
-    daemonId: opts.daemonId,
-    host: opts.host,
-    port: boundPort,
-    token: opts.token,
-    startedAt: new Date().toISOString(),
-    logsPath: daemonLogsPath(),
-  };
-  await writeDaemonState(state);
+  const shouldListen = opts.listen ?? true;
+  const boundPort = shouldListen
+    ? await listenWithPortFallback(app, opts.host, opts.port)
+    : opts.port;
+
+  if (shouldListen) {
+    const state: DaemonState = {
+      pid: process.pid,
+      daemonId: opts.daemonId,
+      host: opts.host,
+      port: boundPort,
+      token: opts.token,
+      startedAt: new Date().toISOString(),
+      logsPath: daemonLogsPath(),
+    };
+    await writeDaemonState(state);
+  } else {
+    await app.ready();
+  }
 
   return {
     app,

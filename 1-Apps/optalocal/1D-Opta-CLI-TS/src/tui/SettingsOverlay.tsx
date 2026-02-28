@@ -124,6 +124,8 @@ const PAGE_ITEMS: Record<SettingsPageId, SettingsItem[]> = {
         { label: 'Disabled', value: 'false', description: 'Stay on LMX even if it fails' },
       ],
     },
+    { label: 'Embedding Model',     configKey: 'model.embeddingModel',         defaultValue: '',                    description: 'HuggingFace model ID for LMX embeddings',                  hint: 'e.g. nomic-ai/nomic-embed-text-v2-moe' },
+    { label: 'Reranker Model',      configKey: 'model.rerankerModel',          defaultValue: '',                    description: 'HuggingFace model ID for LMX reranking',                   hint: 'e.g. BAAI/bge-reranker-v2-m3' },
   ],
   safety: [
     { label: 'Autonomy Level',      configKey: 'autonomy.level',               defaultValue: '2',                   description: 'Default autonomy level (1–5)',
@@ -645,7 +647,7 @@ export function SettingsOverlay({
                   <InlineSlider
                     min={editingItem.min}
                     max={editingItem.max}
-                    value={parseInt(currentValue(editingItem)) || editingItem.min}
+                    value={parseInt(currentValue(editingItem), 10) || editingItem.min}
                     onSelect={handleSliderConfirm}
                     onCancel={handleEditCancel}
                     color={pageColor}
@@ -693,7 +695,7 @@ export function SettingsOverlay({
                   : item.inputType === 'toggle'
                     ? (val === 'true' ? '[x]' : '[ ]') + ' ' + (selectLabel ?? val)
                     : item.inputType === 'slider' && item.sliderLabels
-                      ? `${val} — ${item.sliderLabels[parseInt(val)] ?? ''}`
+                      ? `${val} — ${item.sliderLabels[parseInt(val, 10)] ?? ''}`
                       : selectLabel ?? (val || '(not set)');
                 const glyph = statusGlyph(val, item.defaultValue, item.sensitive);
                 const glyphColor = statusColor(val, item.defaultValue, item.sensitive);

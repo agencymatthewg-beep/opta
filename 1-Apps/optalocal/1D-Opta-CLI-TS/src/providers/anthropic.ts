@@ -23,14 +23,15 @@ export class AnthropicProvider implements ProviderClient {
     if (this.client) return this.client;
 
     const { default: OpenAI } = await import('openai');
-    const apiKey = this.config.provider?.anthropic?.apiKey || process.env['ANTHROPIC_API_KEY'] || '';
+    const apiKey =
+      this.config.provider?.anthropic?.apiKey || process.env['ANTHROPIC_API_KEY'] || '';
 
     if (!apiKey) {
       throw new Error(
         'Anthropic API key required.\n\n' +
-        'Set it via:\n' +
-        '  opta config set provider.anthropic.apiKey sk-ant-...\n' +
-        '  or export ANTHROPIC_API_KEY=sk-ant-...'
+          'Set it via:\n' +
+          '  opta config set provider.anthropic.apiKey sk-ant-...\n' +
+          '  or export ANTHROPIC_API_KEY=sk-ant-...'
       );
     }
 
@@ -45,18 +46,19 @@ export class AnthropicProvider implements ProviderClient {
     return this.client;
   }
 
-  async listModels(): Promise<ProviderModelInfo[]> {
+  listModels(): Promise<ProviderModelInfo[]> {
     // Anthropic doesn't have a models list endpoint; return known models
-    return [
+    return Promise.resolve([
       { id: 'claude-opus-4-6', name: 'Claude Opus 4.6', contextLength: 200000 },
       { id: 'claude-sonnet-4-5-20250929', name: 'Claude Sonnet 4.5', contextLength: 200000 },
       { id: 'claude-haiku-4-5-20251001', name: 'Claude Haiku 4.5', contextLength: 200000 },
-    ];
+    ]);
   }
 
   async health(): Promise<ProviderHealthResult> {
     const start = Date.now();
-    const apiKey = this.config.provider?.anthropic?.apiKey || process.env['ANTHROPIC_API_KEY'] || '';
+    const apiKey =
+      this.config.provider?.anthropic?.apiKey || process.env['ANTHROPIC_API_KEY'] || '';
 
     if (!apiKey) {
       return {
@@ -66,16 +68,23 @@ export class AnthropicProvider implements ProviderClient {
       };
     }
 
+    if (!apiKey.startsWith('sk-ant-') && !apiKey.startsWith('sk-')) {
+      return {
+        ok: false,
+        latencyMs: Date.now() - start,
+        error: 'Invalid API key format — expected sk-ant-...',
+      };
+    }
+
     try {
-      // Simple connectivity check — HEAD request to API
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
+      // Use GET /v1/models — lightweight connectivity + auth check with zero token spend.
+      // (The previous POST to /v1/messages cost tokens on every health probe.)
+      const res = await fetch('https://api.anthropic.com/v1/models', {
+        method: 'GET',
         headers: {
           'x-api-key': apiKey,
           'anthropic-version': '2023-06-01',
-          'content-type': 'application/json',
         },
-        body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 1, messages: [{ role: 'user', content: 'hi' }] }),
         signal: AbortSignal.timeout(10000),
       });
       return {

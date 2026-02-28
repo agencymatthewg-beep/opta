@@ -80,7 +80,7 @@ export class ToolWorkerPool {
     });
   }
 
-  async close(): Promise<void> {
+  close(): void {
     this.closed = true;
 
     while (this.queue.length > 0) {
@@ -172,9 +172,10 @@ export class ToolWorkerPool {
 
     worker.on('exit', (code) => {
       if (slot.disposed) return;
-      const error = code === 0
-        ? new Error('Worker exited before returning a result')
-        : new Error(`Worker exited with code ${code}`);
+      const error =
+        code === 0
+          ? new Error('Worker exited before returning a result')
+          : new Error(`Worker exited with code ${code}`);
       this.failWorker(slot, error);
     });
 
@@ -230,6 +231,11 @@ export class ToolWorkerPool {
     this.rejectJob(job, makeAbortError('Tool execution cancelled'));
     active.currentJob = undefined;
     active.busy = false;
+    // NOTE: detachWorker calls worker.terminate() fire-and-forget.  The OS
+    // thread may still be alive for a brief period after this returns.  This
+    // is an accepted limitation — Node Worker threads have no synchronous
+    // termination API.  dispatch() immediately allocates a new worker slot
+    // for the next queued job rather than waiting for the old one to exit.
     this.detachWorker(active);
     this.dispatch();
   }
