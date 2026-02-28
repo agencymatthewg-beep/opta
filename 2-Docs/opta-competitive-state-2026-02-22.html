@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Opta Competitive Capability Report</title>
+  <style>
+    :root{--bg:#0b0d12;--card:#121722;--muted:#8ea0b8;--txt:#e7edf7;--ok:#28c76f;--warn:#ffb020;--bad:#ff5d5d;--accent:#8b5cf6;}
+    *{box-sizing:border-box} body{margin:0;background:linear-gradient(180deg,#090b10,#0d1320);color:var(--txt);font:14px/1.45 Inter,ui-sans-serif,system-ui}
+    .wrap{max-width:1200px;margin:28px auto;padding:0 18px}
+    .h1{font-size:30px;font-weight:800;margin:0 0 6px}.sub{color:var(--muted);margin-bottom:18px}
+    .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.card{background:var(--card);border:1px solid #1c2637;border-radius:14px;padding:14px}
+    .k{color:var(--muted);font-size:12px}.v{font-size:22px;font-weight:700}
+    .pill{display:inline-block;padding:3px 8px;border-radius:999px;font-size:12px;font-weight:700}.ok{background:#11361f;color:#8ef0b2}.warn{background:#3a2a0f;color:#ffd18a}.bad{background:#3a1414;color:#ff9f9f}
+    table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid #1c2637;border-radius:14px;overflow:hidden}
+    th,td{padding:9px 10px;border-bottom:1px solid #1d2a41;text-align:left} th{color:#c8d6ea;background:#141d2b}
+    .section{margin-top:16px}.title{font-size:18px;font-weight:700;margin:12px 0}
+    .bar{height:10px;border-radius:999px;background:#1a2232;overflow:hidden}.bar > i{display:block;height:100%;background:linear-gradient(90deg,#8b5cf6,#5de0ff)}
+    .foot{color:var(--muted);font-size:12px;margin-top:14px}
+    @media (max-width:900px){.grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="h1">Opta Capability & Competitive State</div>
+    <div class="sub">Generated: 2026-02-22 • Scope: Opta CLI, Opta LMX, Opta CLI+LMX vs Claude Code, Ollama, LM Studio</div>
+
+    <div class="grid">
+      <div class="card">
+        <div class="k">Opta CLI State</div>
+        <div class="v">v0.5.0-alpha.1</div>
+        <div>Source files: <b>151</b> • Tests: <b>91</b></div>
+        <div>Typecheck: <span class="pill bad">Failing (6 TS errors)</span></div>
+      </div>
+      <div class="card">
+        <div class="k">Opta LMX State</div>
+        <div class="v">v0.1.0</div>
+        <div>Source files: <b>125</b> • Tests: <b>89</b></div>
+        <div>Pytest: <span class="pill bad">Failing (module import path)</span></div>
+      </div>
+      <div class="card">
+        <div class="k">Opta CLI + LMX Combined</div>
+        <div class="v">Strategic Fit: High</div>
+        <div>Best-in-class local autonomy potential on Apple Silicon.</div>
+        <div>Current bottleneck: <span class="pill warn">stabilization & QA</span></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="title">Current Capability Matrix (2026-02-22)</div>
+      <table>
+        <thead><tr><th>Platform</th><th>Autonomous coding</th><th>Local-first privacy</th><th>Model lifecycle automation</th><th>OpenAI-compatible serving</th><th>MCP/tool ecosystem</th><th>Headless ops readiness</th></tr></thead>
+        <tbody>
+          <tr><td><b>Opta CLI</b></td><td>✅ Agent loop, sub-agents, tools</td><td>✅ with local providers</td><td>⚠️ via provider layer</td><td>⚠️ client-side only</td><td>✅ MCP integrated</td><td>✅ CLI/TUI workflow</td></tr>
+          <tr><td><b>Opta LMX</b></td><td>❌ (inference layer)</td><td>✅ MLX local</td><td>✅ Admin API (load/unload/download/bench)</td><td>✅ OpenAI-style API</td><td>⚠️ indirect</td><td>✅ daemon-oriented</td></tr>
+          <tr><td><b>Opta CLI + LMX</b></td><td>✅✅ full stack</td><td>✅✅ strongest local stack</td><td>✅✅ programmatic + agentic</td><td>✅✅ drop-in API backend</td><td>✅ strong</td><td>✅ strong (after hardening)</td></tr>
+          <tr><td><b>Claude Code</b></td><td>✅✅ strongest polish</td><td>⚠️ cloud-centric by default</td><td>⚠️ provider/model mgmt limited vs LMX</td><td>❌ not an inference server</td><td>✅ MCP + integrations</td><td>✅ mature tooling</td></tr>
+          <tr><td><b>Ollama</b></td><td>⚠️ base runtime (not full coding agent)</td><td>✅ local runtime</td><td>✅ pull/list/run + API</td><td>✅ local REST API</td><td>⚠️ integration-dependent</td><td>✅ strong</td></tr>
+          <tr><td><b>LM Studio</b></td><td>⚠️ chat + serving, less agentic</td><td>✅ local runtime</td><td>⚠️ GUI-first model mgmt</td><td>✅ OpenAI-like endpoints</td><td>⚠️ MCP client support</td><td>⚠️ less daemon-native than LMX</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <div class="title">Competitive Scores (0–10, execution-focused estimate)</div>
+      <table>
+        <thead><tr><th>Platform</th><th>Execution score</th><th>Visual</th><th>Reason</th></tr></thead>
+        <tbody>
+          <tr><td>Opta CLI + LMX</td><td><b>8.4</b></td><td><div class="bar"><i style="width:84%"></i></div></td><td>Best local architecture; blocked by current QA/type stability.</td></tr>
+          <tr><td>Claude Code</td><td><b>8.8</b></td><td><div class="bar"><i style="width:88%"></i></div></td><td>Highest product maturity and coding UX right now.</td></tr>
+          <tr><td>Ollama</td><td><b>7.3</b></td><td><div class="bar"><i style="width:73%"></i></div></td><td>Excellent local model runtime/API; not a full coding orchestration layer alone.</td></tr>
+          <tr><td>LM Studio</td><td><b>7.0</b></td><td><div class="bar"><i style="width:70%"></i></div></td><td>Very strong local GUI + serving; less headless/automation-native for bot ops.</td></tr>
+          <tr><td>Opta CLI</td><td><b>7.6</b></td><td><div class="bar"><i style="width:76%"></i></div></td><td>Feature-rich agent UX; immediate TS quality debt to clear.</td></tr>
+          <tr><td>Opta LMX</td><td><b>7.8</b></td><td><div class="bar"><i style="width:78%"></i></div></td><td>Strong architecture for local inference platform; packaging/test path issues remain.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section card">
+      <div class="title">Priority Gap List (to beat competitors in practice)</div>
+      <ol>
+        <li><b>Fix Opta CLI typecheck blockers</b> (currently 6 errors in slash/TUI modules).</li>
+        <li><b>Fix Opta LMX test/import path</b> so CI can validate server reliability.</li>
+        <li><b>Ship benchmark dashboard</b> (tok/s, p95 latency, failover rate) vs Ollama/LM Studio on same hardware.</li>
+        <li><b>Harden CLI+LMX defaults</b> (safe compaction profile, fallback guardrails, deterministic model routing).</li>
+        <li><b>Publish one-command install + healthcheck</b> to match Claude Code/Ollama onboarding simplicity.</li>
+      </ol>
+    </div>
+
+    <div class="foot">
+      Sources: local project docs/readme + live repo checks, Claude Code docs, Ollama docs/repo, LM Studio docs.
+      External references used for capability verification: code.claude.com/docs, github.com/ollama/ollama, ollama.readthedocs.io, lmstudio.ai/docs.
+    </div>
+  </div>
+</body>
+</html>

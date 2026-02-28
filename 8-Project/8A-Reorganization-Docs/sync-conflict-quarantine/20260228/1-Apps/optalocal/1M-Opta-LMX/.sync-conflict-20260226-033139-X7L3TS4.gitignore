@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+
+# GU reports (Claude Code generated)
+gu-*.html
+
+# Live config files with secrets (keep default-config.yaml only)
+config/mono512-current.yaml
+config/mono512-current.yaml.bak.*
+config/production-config.yaml
+
+# Session logs and update logs
+12-Session-Logs/
+updates/
+1J1-Operation-ANE/

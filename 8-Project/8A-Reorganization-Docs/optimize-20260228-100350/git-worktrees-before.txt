@@ -1,0 +1,4 @@
+/Users/matthewbyrden/Synced/Opta                                   62cc554 [main]
+/Users/matthewbyrden/Synced/Opta/.worktrees/codex-brother-app      1c1b558 [codex/brother-app-ecosystem-alignment]
+/Users/matthewbyrden/Synced/Opta/.worktrees/codex-lmx-never-crash  ae95a92 [codex/lmx-never-crash-full]
+/Users/matthewbyrden/Synced/Opta/.worktrees/codex-portfolio-wave1  33ab080 [codex/portfolio-wave1]
