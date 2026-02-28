@@ -16,18 +16,10 @@ import {
 } from '../../browser/runtime-daemon.js';
 import { evaluateBrowserPolicyAction } from '../../browser/policy-engine.js';
 import { withRetryTaxonomy } from '../../browser/retry-taxonomy.js';
-import {
-  appendLedgerEntry,
-  learningLedgerPath,
-  readLedgerEntries,
-} from '../../learning/ledger.js';
+import { appendLedgerEntry, learningLedgerPath, readLedgerEntries } from '../../learning/ledger.js';
 import { retrieveTopLedgerEntries } from '../../learning/retrieval.js';
 import { summarizeLedgerByDate } from '../../learning/summarizer.js';
-import type {
-  CaptureLevel,
-  LearningEntryKind,
-  LearningLedgerEntry,
-} from '../../learning/types.js';
+import type { CaptureLevel, LearningEntryKind, LearningLedgerEntry } from '../../learning/types.js';
 import { checkResearchProviderHealth } from '../../research/health.js';
 import { routeResearchQuery } from '../../research/router.js';
 import type { ResearchProviderId, ResearchQueryIntent } from '../../research/types.js';
@@ -41,30 +33,47 @@ import type { ResearchProviderId, ResearchQueryIntent } from '../../research/typ
  */
 export function enrichError(error: unknown): string {
   const message = errorMessage(error);
-  const code = (error as NodeJS.ErrnoException)?.code;
+  const code = (error as NodeJS.ErrnoException).code;
 
   // Network: connection refused
-  if (code === 'ECONNREFUSED' || message.includes('ECONNREFUSED') || message.includes('fetch failed')) {
-    return `${message}\n  Hint: LMX unreachable \u2014 check connection with /status or run opta doctor`
-      + chalk.dim('\n  Try: /status or /serve status');
+  if (
+    code === 'ECONNREFUSED' ||
+    message.includes('ECONNREFUSED') ||
+    message.includes('fetch failed')
+  ) {
+    return (
+      `${message}\n  Hint: LMX unreachable \u2014 check connection with /status or run opta doctor` +
+      chalk.dim('\n  Try: /status or /serve status')
+    );
   }
 
   // Network: timeout
-  if (code === 'ETIMEDOUT' || message.includes('ETIMEDOUT') || message.includes('AbortError') || message.includes('timed out')) {
-    return `${message}\n  Hint: Request timed out \u2014 LMX may be overloaded. Try: opta status`
-      + chalk.dim('\n  Try: /status');
+  if (
+    code === 'ETIMEDOUT' ||
+    message.includes('ETIMEDOUT') ||
+    message.includes('AbortError') ||
+    message.includes('timed out')
+  ) {
+    return (
+      `${message}\n  Hint: Request timed out \u2014 LMX may be overloaded. Try: opta status` +
+      chalk.dim('\n  Try: /status')
+    );
   }
 
   // Network: DNS resolution failure
   if (code === 'ENOTFOUND' || message.includes('ENOTFOUND')) {
-    return `${message}\n  Hint: Host not found \u2014 check connection.host in config: opta config list`
-      + chalk.dim('\n  Try: /config search connection');
+    return (
+      `${message}\n  Hint: Host not found \u2014 check connection.host in config: opta config list` +
+      chalk.dim('\n  Try: /config search connection')
+    );
   }
 
   // File: permission denied
   if (code === 'EACCES' || message.includes('EACCES') || message.includes('permission denied')) {
-    return `${message}\n  Hint: Permission denied \u2014 check file permissions or run with appropriate access`
-      + chalk.dim('\n  Try: /permissions to review tool access levels');
+    return (
+      `${message}\n  Hint: Permission denied \u2014 check file permissions or run with appropriate access` +
+      chalk.dim('\n  Try: /permissions to review tool access levels')
+    );
   }
 
   // File: not found
@@ -75,8 +84,7 @@ export function enrichError(error: unknown): string {
     const hint = parentDir
       ? `Hint: File not found \u2014 verify the path exists: ls ${parentDir}`
       : 'Hint: File not found \u2014 verify the path exists';
-    return `${message}\n  ${hint}`
-      + chalk.dim('\n  Try: /diff to see recent changes');
+    return `${message}\n  ${hint}` + chalk.dim('\n  Try: /diff to see recent changes');
   }
 
   // File: directory not empty
@@ -90,9 +98,14 @@ export function enrichError(error: unknown): string {
   }
 
   // Process: command not found
-  if (message.includes('command not found') || message.includes('not found') && message.includes('sh:')) {
-    return `${message}\n  Hint: Command not found \u2014 check spelling or install the missing tool`
-      + chalk.dim('\n  Try: /doctor for diagnostics');
+  if (
+    message.includes('command not found') ||
+    (message.includes('not found') && message.includes('sh:'))
+  ) {
+    return (
+      `${message}\n  Hint: Command not found \u2014 check spelling or install the missing tool` +
+      chalk.dim('\n  Try: /doctor for diagnostics')
+    );
   }
 
   // Path traversal
@@ -143,17 +156,42 @@ function toOptionalNumber(value: unknown): number | undefined {
 
 function toStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
-  return value
-    .map((item) => String(item).trim())
-    .filter((item) => item.length > 0);
+  return value.map((item) => String(item).trim()).filter((item) => item.length > 0);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
+function toSafeString(value: unknown, fallback = ''): string {
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  return fallback;
+}
+
+function getStringArg(args: Record<string, unknown>, key: string, fallback = ''): string {
+  return toSafeString(args[key], fallback);
+}
+
+function getOptionalStringArg(args: Record<string, unknown>, key: string): string | undefined {
+  const value = args[key];
+  if (value === undefined || value === null) return undefined;
+  const normalized = toSafeString(value).trim();
+  return normalized.length > 0 ? normalized : undefined;
+}
+
+function parseArgsJson(
+  argsJson: string
+): { args: Record<string, unknown> } | { parsedType: string } {
+  const parsed: unknown = JSON.parse(argsJson);
+  if (isRecord(parsed)) {
+    return { args: parsed };
+  }
+  return { parsedType: typeof parsed };
+}
+
 function parseResearchIntent(value: unknown): ResearchQueryIntent {
-  const raw = String(value ?? 'general').trim().toLowerCase() as ResearchQueryIntent;
+  const raw = toSafeString(value, 'general').trim().toLowerCase() as ResearchQueryIntent;
   if (RESEARCH_INTENT_SET.has(raw)) return raw;
   return 'general';
 }
@@ -168,13 +206,13 @@ function parseProviderOrder(value: unknown): ResearchProviderId[] | undefined {
 }
 
 function parseLearningKind(value: unknown): LearningEntryKind {
-  const raw = String(value ?? 'reflection').trim().toLowerCase() as LearningEntryKind;
+  const raw = toSafeString(value, 'reflection').trim().toLowerCase() as LearningEntryKind;
   if (LEARNING_KIND_SET.has(raw)) return raw;
   return 'reflection';
 }
 
 function parseCaptureLevel(value: unknown, fallback: CaptureLevel): CaptureLevel {
-  const raw = String(value ?? fallback).trim().toLowerCase() as CaptureLevel;
+  const raw = toSafeString(value, fallback).trim().toLowerCase() as CaptureLevel;
   if (CAPTURE_LEVEL_SET.has(raw)) return raw;
   return fallback;
 }
@@ -184,8 +222,8 @@ function parseLearningEvidence(value: unknown): LearningLedgerEntry['evidence'] 
   const evidence: LearningLedgerEntry['evidence'] = [];
   for (const item of value) {
     if (!isRecord(item)) continue;
-    const label = String(item['label'] ?? '').trim();
-    const uri = String(item['uri'] ?? '').trim();
+    const label = toSafeString(item['label']).trim();
+    const uri = toSafeString(item['uri']).trim();
     if (!label || !uri) continue;
     evidence.push({ label, uri });
   }
@@ -208,15 +246,12 @@ async function loadRuntimeConfigSafe(): Promise<OptaConfig | null> {
 }
 
 async function resolveBrowserPolicyAdaptationHint(
-  config: OptaConfig | null,
+  config: OptaConfig | null
 ): Promise<import('../../browser/adaptation.js').BrowserPolicyAdaptationHint | undefined> {
-  if (!config?.browser?.adaptation?.enabled) return undefined;
+  if (!config || !config.browser.adaptation.enabled) return undefined;
   try {
     const { loadBrowserRunCorpusAdaptationHint } = await import('../../browser/adaptation.js');
-    const hint = await loadBrowserRunCorpusAdaptationHint(
-      process.cwd(),
-      config.browser.adaptation,
-    );
+    const hint = await loadBrowserRunCorpusAdaptationHint(process.cwd(), config.browser.adaptation);
     return hint.policy;
   } catch {
     return undefined;
@@ -224,50 +259,45 @@ async function resolveBrowserPolicyAdaptationHint(
 }
 
 async function getBrowserRuntimeDaemon(config: OptaConfig | null): Promise<BrowserRuntimeDaemon> {
+  const browserConfig = config?.browser;
   const daemon = await getSharedBrowserRuntimeDaemon({
     cwd: process.cwd(),
-    maxSessions: config?.browser.runtime?.maxSessions ?? 3,
-    persistSessions: config?.browser.runtime?.persistSessions ?? true,
-    persistProfileContinuity: config?.browser.runtime?.persistProfileContinuity ?? false,
+    maxSessions: browserConfig?.runtime.maxSessions ?? 3,
+    persistSessions: browserConfig?.runtime.persistSessions ?? true,
+    persistProfileContinuity: browserConfig?.runtime.persistProfileContinuity ?? false,
     profileRetentionPolicy: {
-      retentionDays: config?.browser.runtime?.profileRetentionDays ?? 30,
-      maxPersistedProfiles: config?.browser.runtime?.maxPersistedProfiles ?? 200,
+      retentionDays: browserConfig?.runtime.profileRetentionDays ?? 30,
+      maxPersistedProfiles: browserConfig?.runtime.maxPersistedProfiles ?? 200,
     },
-    profilePruneIntervalMs: (config?.browser.runtime?.profilePruneIntervalHours ?? 24) * 60 * 60 * 1_000,
+    profilePruneIntervalMs:
+      (browserConfig?.runtime.profilePruneIntervalHours ?? 24) * 60 * 60 * 1_000,
     artifactPrune: {
-      enabled: config?.browser.artifacts?.retention?.enabled ?? false,
+      enabled: browserConfig?.artifacts.retention.enabled ?? false,
       policy: {
-        retentionDays: config?.browser.artifacts?.retention?.retentionDays ?? 30,
-        maxPersistedSessions: config?.browser.artifacts?.retention?.maxPersistedSessions ?? 200,
+        retentionDays: browserConfig?.artifacts.retention.retentionDays ?? 30,
+        maxPersistedSessions: browserConfig?.artifacts.retention.maxPersistedSessions ?? 200,
       },
-      intervalMs: (config?.browser.artifacts?.retention?.pruneIntervalHours ?? 24) * 60 * 60 * 1_000,
+      intervalMs: (browserConfig?.artifacts.retention.pruneIntervalHours ?? 24) * 60 * 60 * 1_000,
     },
     runCorpusRefresh: {
-      enabled: config?.browser.runtime?.runCorpus?.enabled ?? true,
-      windowHours: config?.browser.runtime?.runCorpus?.windowHours ?? 168,
+      enabled: browserConfig?.runtime.runCorpus.enabled ?? true,
+      windowHours: browserConfig?.runtime.runCorpus.windowHours ?? 168,
     },
   });
   await daemon.start();
   return daemon;
 }
 
-function browserRuntimeDisabled(
-  config: OptaConfig | null,
-  sessionId: string,
-): string | null {
-  if (config?.browser.enabled === false || config?.browser.runtime?.enabled === false) {
+function browserRuntimeDisabled(config: OptaConfig | null, sessionId: string): string | null {
+  if (!config) return null;
+  if (!config.browser.enabled || !config.browser.runtime.enabled) {
     const disabledError = withRetryTaxonomy(
       'BROWSER_RUNTIME_DISABLED',
-      config?.browser.enabled === false
+      !config.browser.enabled
         ? 'Browser feature is disabled by config (browser.enabled=false).'
-        : 'Browser runtime is disabled by config (browser.runtime.enabled=false).',
+        : 'Browser runtime is disabled by config (browser.runtime.enabled=false).'
     );
-    return browserErrorResult(
-      sessionId,
-      disabledError.code,
-      disabledError.message,
-      disabledError,
-    );
+    return browserErrorResult(sessionId, disabledError.code, disabledError.message, disabledError);
   }
   return null;
 }
@@ -278,15 +308,16 @@ export async function resetBrowserRuntimeForTests(): Promise<void> {
 
 // --- Tool Executors ---
 
-export async function executeTool(
-  name: string,
-  argsJson: string
-): Promise<string> {
+export async function executeTool(name: string, argsJson: string): Promise<string> {
   let args: Record<string, unknown>;
   try {
-    args = JSON.parse(argsJson);
+    const parsed = parseArgsJson(argsJson);
+    if ('parsedType' in parsed) {
+      return `Error: Invalid JSON arguments: expected object, received ${parsed.parsedType}`;
+    }
+    args = parsed.args;
   } catch (err) {
-    return `Error: Invalid JSON arguments: ${argsJson} - ${err}`;
+    return `Error: Invalid JSON arguments: ${argsJson} - ${errorMessage(err)}`;
   }
 
   debug(`Executing tool: ${name}(${JSON.stringify(args)})`);
@@ -348,9 +379,9 @@ export async function executeTool(
       case 'bg_start':
         return await execBgStart(args);
       case 'bg_status':
-        return await execBgStatus(args);
+        return execBgStatus(args);
       case 'bg_output':
-        return await execBgOutput(args);
+        return execBgOutput(args);
       case 'bg_kill':
         return await execBgKill(args);
       default:
@@ -377,14 +408,16 @@ export function assertWithinCwd(resolvedPath: string): void {
     normalized = resolve(cwd, resolvedPath);
   }
   if (!normalized.startsWith(cwd + '/') && normalized !== cwd) {
-    throw new Error(`Path traversal blocked: "${normalized}" is outside working directory "${cwd}"`);
+    throw new Error(
+      `Path traversal blocked: "${normalized}" is outside working directory "${cwd}"`
+    );
   }
 }
 
 // --- Individual Tool Implementations ---
 
 async function execReadFile(args: Record<string, unknown>): Promise<string> {
-  const path = resolve(String(args['path'] ?? ''));
+  const path = resolve(getStringArg(args, 'path'));
   assertWithinCwd(path);
   const offset = Number(args['offset'] ?? 1);
   const limit = Number(args['limit'] ?? 0);
@@ -400,23 +433,23 @@ async function execReadFile(args: Record<string, unknown>): Promise<string> {
 }
 
 async function execWriteFile(args: Record<string, unknown>): Promise<string> {
-  const path = resolve(String(args['path'] ?? ''));
+  const path = resolve(getStringArg(args, 'path'));
   assertWithinCwd(path);
-  const content = String(args['content'] ?? '');
+  const content = getStringArg(args, 'content');
 
   const { mkdir } = await import('node:fs/promises');
-  const { dirname } = await import('node:path');
-  await mkdir(dirname(path), { recursive: true });
+  const pathModule = await import('node:path');
+  await mkdir(pathModule.dirname(path), { recursive: true });
   await writeFile(path, content, 'utf-8');
 
   return `File written: ${relative(process.cwd(), path)} (${content.length} bytes)`;
 }
 
 async function execEditFile(args: Record<string, unknown>): Promise<string> {
-  const path = resolve(String(args['path'] ?? ''));
+  const path = resolve(getStringArg(args, 'path'));
   assertWithinCwd(path);
-  const oldText = String(args['old_text'] ?? '');
-  const newText = String(args['new_text'] ?? '');
+  const oldText = getStringArg(args, 'old_text');
+  const newText = getStringArg(args, 'new_text');
 
   const content = await readFile(path, 'utf-8');
 
@@ -435,7 +468,7 @@ async function execEditFile(args: Record<string, unknown>): Promise<string> {
 }
 
 async function execListDir(args: Record<string, unknown>): Promise<string> {
-  const path = resolve(String(args['path'] ?? '.'));
+  const path = resolve(getStringArg(args, 'path', '.'));
   assertWithinCwd(path);
   const recursive = Boolean(args['recursive']);
 
@@ -460,9 +493,9 @@ async function execListDir(args: Record<string, unknown>): Promise<string> {
 }
 
 async function execSearchFiles(args: Record<string, unknown>): Promise<string> {
-  const pattern = String(args['pattern'] ?? '');
-  const searchPath = resolve(String(args['path'] ?? '.'));
-  const glob = args['glob'] ? String(args['glob']) : undefined;
+  const pattern = getStringArg(args, 'pattern');
+  const searchPath = resolve(getStringArg(args, 'path', '.'));
+  const glob = getOptionalStringArg(args, 'glob');
 
   // Try ripgrep first
   try {
@@ -485,7 +518,7 @@ async function execSearchFiles(args: Record<string, unknown>): Promise<string> {
     }
     if (result.exitCode === 1) return 'No matches found.';
   } catch (err) {
-    debug(`ripgrep not available, falling back to basic search: ${err}`);
+    debug(`ripgrep not available, falling back to basic search: ${errorMessage(err)}`);
   }
 
   // Fallback: fast-glob + readFile
@@ -505,8 +538,9 @@ async function execSearchFiles(args: Record<string, unknown>): Promise<string> {
       const content = await readFile(fullPath, 'utf-8');
       const lines = content.split('\n');
       for (let i = 0; i < lines.length; i++) {
-        if (regex.test(lines[i]!)) {
-          results.push(`${file}:${i + 1}:${lines[i]}`);
+        const line = lines[i];
+        if (line !== undefined && regex.test(line)) {
+          results.push(`${file}:${i + 1}:${line}`);
           if (results.length >= 50) break;
         }
       }
@@ -520,8 +554,8 @@ async function execSearchFiles(args: Record<string, unknown>): Promise<string> {
 }
 
 async function execFindFiles(args: Record<string, unknown>): Promise<string> {
-  const pattern = String(args['pattern'] ?? '');
-  const searchPath = resolve(String(args['path'] ?? '.'));
+  const pattern = getStringArg(args, 'pattern');
+  const searchPath = resolve(getStringArg(args, 'path', '.'));
 
   const { default: fg } = await import('fast-glob');
   const files = await fg(pattern, {
@@ -534,7 +568,7 @@ async function execFindFiles(args: Record<string, unknown>): Promise<string> {
 }
 
 async function execRunCommand(args: Record<string, unknown>): Promise<string> {
-  const command = String(args['command'] ?? '');
+  const command = getStringArg(args, 'command');
   const timeout = Number(args['timeout'] ?? 30000);
 
   const { execa } = await import('execa');
@@ -553,7 +587,7 @@ async function execRunCommand(args: Record<string, unknown>): Promise<string> {
 }
 
 async function execAskUser(args: Record<string, unknown>): Promise<string> {
-  const question = String(args['question'] ?? 'What would you like to do?');
+  const question = getStringArg(args, 'question', 'What would you like to do?');
 
   const { input } = await import('@inquirer/prompts');
   const answer = await input({ message: question });
@@ -562,20 +596,20 @@ async function execAskUser(args: Record<string, unknown>): Promise<string> {
 }
 
 async function execReadProjectDocs(args: Record<string, unknown>): Promise<string> {
-  const file = String(args['file'] ?? '');
+  const file = getStringArg(args, 'file');
   const { readProjectDoc } = await import('../../context/opis.js');
   return readProjectDoc(process.cwd(), file);
 }
 
 async function execWebSearch(args: Record<string, unknown>): Promise<string> {
-  const query = String(args['query'] ?? '');
+  const query = getStringArg(args, 'query');
   const maxResults = Number(args['max_results'] ?? 5);
 
   let searxngUrl: string;
   try {
     const { loadConfig } = await import('../config.js');
     const config = await loadConfig();
-    searxngUrl = config.search?.searxngUrl ?? '';
+    searxngUrl = config.search.searxngUrl;
   } catch {
     return 'Error: Could not load config for search URL. Run: opta config set search.searxngUrl <url>';
   }
@@ -598,10 +632,7 @@ async function execWebSearch(args: Record<string, unknown>): Promise<string> {
     if (results.length === 0) return 'No results found.';
 
     return results
-      .map(
-        (r, i) =>
-          `${i + 1}. ${r.title}\n   ${r.url}\n   ${r.content?.slice(0, 200) ?? ''}`
-      )
+      .map((r, i) => `${i + 1}. ${r.title}\n   ${r.url}\n   ${r.content.slice(0, 200)}`)
       .join('\n\n');
   } catch (err) {
     return `Error: Search failed — ${errorMessage(err)}`;
@@ -609,7 +640,7 @@ async function execWebSearch(args: Record<string, unknown>): Promise<string> {
 }
 
 async function execWebFetch(args: Record<string, unknown>): Promise<string> {
-  const url = String(args['url'] ?? '');
+  const url = getStringArg(args, 'url');
   const maxChars = Number(args['max_chars'] ?? 10000);
 
   // Security: only allow http:// and https:// URLs
@@ -631,12 +662,12 @@ async function execWebFetch(args: Record<string, unknown>): Promise<string> {
     const articleMatch = html.match(/<article[^>]*>([\s\S]*?)<\/article>/i);
     const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
 
-    if (mainMatch) {
-      html = mainMatch[1]!;
-    } else if (articleMatch) {
-      html = articleMatch[1]!;
-    } else if (bodyMatch) {
-      html = bodyMatch[1]!;
+    if (mainMatch?.[1] !== undefined) {
+      html = mainMatch[1];
+    } else if (articleMatch?.[1] !== undefined) {
+      html = articleMatch[1];
+    } else if (bodyMatch?.[1] !== undefined) {
+      html = bodyMatch[1];
     }
 
     // Simple HTML-to-text: strip tags, decode entities, collapse whitespace
@@ -660,7 +691,7 @@ async function execWebFetch(args: Record<string, unknown>): Promise<string> {
 }
 
 async function execResearchQuery(args: Record<string, unknown>): Promise<string> {
-  const query = String(args['query'] ?? '').trim();
+  const query = getStringArg(args, 'query').trim();
   if (!query) return 'Error: query is required';
 
   const intent = parseResearchIntent(args['intent']);
@@ -670,10 +701,7 @@ async function execResearchQuery(args: Record<string, unknown>): Promise<string>
   const { loadConfig } = await import('../config.js');
   const config = await loadConfig();
 
-  const result = await routeResearchQuery(
-    { query, intent, maxResults },
-    { config, providerOrder },
-  );
+  const result = await routeResearchQuery({ query, intent, maxResults }, { config, providerOrder });
 
   if (!result.ok) {
     return JSON.stringify({
@@ -724,21 +752,16 @@ async function execResearchHealth(): Promise<string> {
 }
 
 function parseBrowserMode(value: unknown): 'isolated' | 'attach' | undefined {
-  const raw = String(value ?? '').trim().toLowerCase();
+  const raw = toSafeString(value).trim().toLowerCase();
   if (raw === 'isolated' || raw === 'attach') return raw;
   return undefined;
 }
 
 function parseBrowserWaitUntil(
-  value: unknown,
+  value: unknown
 ): 'load' | 'domcontentloaded' | 'networkidle' | 'commit' | undefined {
-  const raw = String(value ?? '').trim().toLowerCase();
-  if (
-    raw === 'load'
-    || raw === 'domcontentloaded'
-    || raw === 'networkidle'
-    || raw === 'commit'
-  ) {
+  const raw = toSafeString(value).trim().toLowerCase();
+  if (raw === 'load' || raw === 'domcontentloaded' || raw === 'networkidle' || raw === 'commit') {
     return raw;
   }
   return undefined;
@@ -752,7 +775,7 @@ function browserErrorResult(
     retryable?: boolean;
     retryCategory?: string;
     retryHint?: string;
-  },
+  }
 ): string {
   const retryable = errorMeta?.retryable;
   const retryCategory = errorMeta?.retryCategory;
@@ -779,7 +802,7 @@ function browserPolicyError(sessionId: string, code: string, reason: string): st
 
 async function resolveBrowserSessionUrl(
   config: OptaConfig | null,
-  sessionId: string,
+  sessionId: string
 ): Promise<string | undefined> {
   try {
     const daemon = await getBrowserRuntimeDaemon(config);
@@ -793,7 +816,7 @@ async function resolveBrowserSessionUrl(
 
 async function execBrowserOpen(args: Record<string, unknown>): Promise<string> {
   const config = await loadRuntimeConfigSafe();
-  const explicitSessionId = args['session_id'] ? String(args['session_id']) : undefined;
+  const explicitSessionId = getOptionalStringArg(args, 'session_id');
   const disabled = browserRuntimeDisabled(config, explicitSessionId ?? 'browser-session');
   if (disabled) return disabled;
 
@@ -806,7 +829,7 @@ async function execBrowserOpen(args: Record<string, unknown>): Promise<string> {
   const result = await daemon.openSession({
     sessionId: explicitSessionId,
     mode,
-    wsEndpoint: args['ws_endpoint'] ? String(args['ws_endpoint']) : undefined,
+    wsEndpoint: getOptionalStringArg(args, 'ws_endpoint'),
     headless: args['headless'] === undefined ? undefined : Boolean(args['headless']),
   });
 
@@ -815,20 +838,20 @@ async function execBrowserOpen(args: Record<string, unknown>): Promise<string> {
       result.action.sessionId,
       result.error?.code ?? 'OPEN_SESSION_FAILED',
       result.error?.message ?? 'Failed to open browser session.',
-      result.error,
+      result.error
     );
   }
 
   if (!result.data) {
     const missingDataError = withRetryTaxonomy(
       'OPEN_SESSION_FAILED',
-      'Missing session data from browser manager.',
+      'Missing session data from browser manager.'
     );
     return browserErrorResult(
       result.action.sessionId,
       missingDataError.code,
       missingDataError.message,
-      missingDataError,
+      missingDataError
     );
   }
 
@@ -844,8 +867,8 @@ async function execBrowserOpen(args: Record<string, unknown>): Promise<string> {
 
 async function execBrowserNavigate(args: Record<string, unknown>): Promise<string> {
   const config = await loadRuntimeConfigSafe();
-  const sessionId = String(args['session_id'] ?? '').trim();
-  const url = String(args['url'] ?? '').trim();
+  const sessionId = getStringArg(args, 'session_id').trim();
+  const url = getStringArg(args, 'url').trim();
   if (!sessionId) return 'Error: session_id is required';
   if (!url) return 'Error: url is required';
 
@@ -863,11 +886,7 @@ async function execBrowserNavigate(args: Record<string, unknown>): Promise<strin
     return browserPolicyError(sessionId, 'BROWSER_POLICY_DENY', policyDecision.reason);
   }
   if (policyDecision.decision === 'gate') {
-    return browserPolicyError(
-      sessionId,
-      'BROWSER_POLICY_APPROVAL_REQUIRED',
-      policyDecision.reason,
-    );
+    return browserPolicyError(sessionId, 'BROWSER_POLICY_APPROVAL_REQUIRED', policyDecision.reason);
   }
 
   const daemon = await getBrowserRuntimeDaemon(config);
@@ -882,7 +901,7 @@ async function execBrowserNavigate(args: Record<string, unknown>): Promise<strin
       sessionId,
       result.error?.code ?? 'NAVIGATE_FAILED',
       result.error?.message ?? 'Failed to navigate browser session.',
-      result.error,
+      result.error
     );
   }
 
@@ -895,8 +914,8 @@ async function execBrowserNavigate(args: Record<string, unknown>): Promise<strin
 
 async function execBrowserClick(args: Record<string, unknown>): Promise<string> {
   const config = await loadRuntimeConfigSafe();
-  const sessionId = String(args['session_id'] ?? '').trim();
-  const selector = String(args['selector'] ?? '').trim();
+  const sessionId = getStringArg(args, 'session_id').trim();
+  const selector = getStringArg(args, 'selector').trim();
   if (!sessionId) return 'Error: session_id is required';
   if (!selector) return 'Error: selector is required';
 
@@ -905,10 +924,7 @@ async function execBrowserClick(args: Record<string, unknown>): Promise<string> 
   const adaptationHint = await resolveBrowserPolicyAdaptationHint(config);
   const sessionUrl = await resolveBrowserSessionUrl(config, sessionId);
   const policyArgs: Record<string, unknown> = { ...args, selector };
-  if (
-    (!policyArgs['url'] || String(policyArgs['url']).trim().length === 0)
-    && sessionUrl
-  ) {
+  if ((!policyArgs['url'] || toSafeString(policyArgs['url']).trim().length === 0) && sessionUrl) {
     policyArgs['url'] = sessionUrl;
   }
 
@@ -922,11 +938,7 @@ async function execBrowserClick(args: Record<string, unknown>): Promise<string> 
     return browserPolicyError(sessionId, 'BROWSER_POLICY_DENY', policyDecision.reason);
   }
   if (policyDecision.decision === 'gate') {
-    return browserPolicyError(
-      sessionId,
-      'BROWSER_POLICY_APPROVAL_REQUIRED',
-      policyDecision.reason,
-    );
+    return browserPolicyError(sessionId, 'BROWSER_POLICY_APPROVAL_REQUIRED', policyDecision.reason);
   }
 
   const daemon = await getBrowserRuntimeDaemon(config);
@@ -940,7 +952,7 @@ async function execBrowserClick(args: Record<string, unknown>): Promise<string> 
       sessionId,
       result.error?.code ?? 'CLICK_FAILED',
       result.error?.message ?? 'Failed to click selector.',
-      result.error,
+      result.error
     );
   }
 
@@ -952,9 +964,9 @@ async function execBrowserClick(args: Record<string, unknown>): Promise<string> 
 
 async function execBrowserType(args: Record<string, unknown>): Promise<string> {
   const config = await loadRuntimeConfigSafe();
-  const sessionId = String(args['session_id'] ?? '').trim();
-  const selector = String(args['selector'] ?? '').trim();
-  const text = String(args['text'] ?? '');
+  const sessionId = getStringArg(args, 'session_id').trim();
+  const selector = getStringArg(args, 'selector').trim();
+  const text = getStringArg(args, 'text');
   if (!sessionId) return 'Error: session_id is required';
   if (!selector) return 'Error: selector is required';
 
@@ -963,10 +975,7 @@ async function execBrowserType(args: Record<string, unknown>): Promise<string> {
   const adaptationHint = await resolveBrowserPolicyAdaptationHint(config);
   const sessionUrl = await resolveBrowserSessionUrl(config, sessionId);
   const policyArgs: Record<string, unknown> = { ...args, selector, text };
-  if (
-    (!policyArgs['url'] || String(policyArgs['url']).trim().length === 0)
-    && sessionUrl
-  ) {
+  if ((!policyArgs['url'] || toSafeString(policyArgs['url']).trim().length === 0) && sessionUrl) {
     policyArgs['url'] = sessionUrl;
   }
 
@@ -980,11 +989,7 @@ async function execBrowserType(args: Record<string, unknown>): Promise<string> {
     return browserPolicyError(sessionId, 'BROWSER_POLICY_DENY', policyDecision.reason);
   }
   if (policyDecision.decision === 'gate') {
-    return browserPolicyError(
-      sessionId,
-      'BROWSER_POLICY_APPROVAL_REQUIRED',
-      policyDecision.reason,
-    );
+    return browserPolicyError(sessionId, 'BROWSER_POLICY_APPROVAL_REQUIRED', policyDecision.reason);
   }
 
   const daemon = await getBrowserRuntimeDaemon(config);
@@ -999,7 +1004,7 @@ async function execBrowserType(args: Record<string, unknown>): Promise<string> {
       sessionId,
       result.error?.code ?? 'TYPE_FAILED',
       result.error?.message ?? 'Failed to type into selector.',
-      result.error,
+      result.error
     );
   }
 
@@ -1011,7 +1016,7 @@ async function execBrowserType(args: Record<string, unknown>): Promise<string> {
 
 async function execBrowserSnapshot(args: Record<string, unknown>): Promise<string> {
   const config = await loadRuntimeConfigSafe();
-  const sessionId = String(args['session_id'] ?? '').trim();
+  const sessionId = getStringArg(args, 'session_id').trim();
   if (!sessionId) return 'Error: session_id is required';
 
   const disabled = browserRuntimeDisabled(config, sessionId);
@@ -1025,20 +1030,20 @@ async function execBrowserSnapshot(args: Record<string, unknown>): Promise<strin
       sessionId,
       result.error?.code ?? 'SNAPSHOT_FAILED',
       result.error?.message ?? 'Failed to capture snapshot.',
-      result.error,
+      result.error
     );
   }
 
   if (!result.data) {
     const missingDataError = withRetryTaxonomy(
       'SNAPSHOT_FAILED',
-      'Snapshot data missing from browser manager.',
+      'Snapshot data missing from browser manager.'
     );
     return browserErrorResult(
       sessionId,
       missingDataError.code,
       missingDataError.message,
-      missingDataError,
+      missingDataError
     );
   }
 
@@ -1053,7 +1058,7 @@ async function execBrowserSnapshot(args: Record<string, unknown>): Promise<strin
 
 async function execBrowserScreenshot(args: Record<string, unknown>): Promise<string> {
   const config = await loadRuntimeConfigSafe();
-  const sessionId = String(args['session_id'] ?? '').trim();
+  const sessionId = getStringArg(args, 'session_id').trim();
   if (!sessionId) return 'Error: session_id is required';
 
   const disabled = browserRuntimeDisabled(config, sessionId);
@@ -1071,20 +1076,20 @@ async function execBrowserScreenshot(args: Record<string, unknown>): Promise<str
       sessionId,
       result.error?.code ?? 'SCREENSHOT_FAILED',
       result.error?.message ?? 'Failed to capture screenshot.',
-      result.error,
+      result.error
     );
   }
 
   if (!result.data) {
     const missingDataError = withRetryTaxonomy(
       'SCREENSHOT_FAILED',
-      'Screenshot data missing from browser manager.',
+      'Screenshot data missing from browser manager.'
     );
     return browserErrorResult(
       sessionId,
       missingDataError.code,
       missingDataError.message,
-      missingDataError,
+      missingDataError
     );
   }
 
@@ -1099,7 +1104,7 @@ async function execBrowserScreenshot(args: Record<string, unknown>): Promise<str
 
 async function execBrowserClose(args: Record<string, unknown>): Promise<string> {
   const config = await loadRuntimeConfigSafe();
-  const sessionId = String(args['session_id'] ?? '').trim();
+  const sessionId = getStringArg(args, 'session_id').trim();
   if (!sessionId) return 'Error: session_id is required';
 
   const disabled = browserRuntimeDisabled(config, sessionId);
@@ -1113,7 +1118,7 @@ async function execBrowserClose(args: Record<string, unknown>): Promise<string> 
       sessionId,
       result.error?.code ?? 'CLOSE_SESSION_FAILED',
       result.error?.message ?? 'Failed to close browser session.',
-      result.error,
+      result.error
     );
   }
 
@@ -1125,8 +1130,8 @@ async function execBrowserClose(args: Record<string, unknown>): Promise<string> 
 }
 
 async function execLearningLog(args: Record<string, unknown>): Promise<string> {
-  const topic = String(args['topic'] ?? '').trim();
-  const content = String(args['content'] ?? '').trim();
+  const topic = getStringArg(args, 'topic').trim();
+  const content = getStringArg(args, 'content').trim();
   if (!topic) return 'Error: topic is required';
   if (!content) return 'Error: content is required';
 
@@ -1139,10 +1144,9 @@ async function execLearningLog(args: Record<string, unknown>): Promise<string> {
     // Fallback to deterministic local default.
   }
 
-  const id = String(args['id'] ?? '').trim()
-    || `learn-${Date.now()}-${randomUUID().slice(0, 8)}`;
+  const id = getStringArg(args, 'id').trim() || `learn-${Date.now()}-${randomUUID().slice(0, 8)}`;
 
-  const tsInput = args['ts'] === undefined ? undefined : String(args['ts']);
+  const tsInput = getOptionalStringArg(args, 'ts');
   const tsDate = tsInput ? new Date(tsInput) : new Date();
   if (Number.isNaN(tsDate.getTime())) {
     return 'Error: ts must be a valid date/time';
@@ -1177,8 +1181,8 @@ async function execLearningLog(args: Record<string, unknown>): Promise<string> {
 async function execLearningSummary(args: Record<string, unknown>): Promise<string> {
   const entries = await readLedgerEntries();
   const summary = summarizeLedgerByDate(entries, {
-    from: args['from'] === undefined ? undefined : String(args['from']),
-    to: args['to'] === undefined ? undefined : String(args['to']),
+    from: getOptionalStringArg(args, 'from'),
+    to: getOptionalStringArg(args, 'to'),
   });
 
   const maxChars = toPositiveInt(args['max_chars'], 4000);
@@ -1191,7 +1195,7 @@ async function execLearningSummary(args: Record<string, unknown>): Promise<strin
 }
 
 async function execLearningRetrieve(args: Record<string, unknown>): Promise<string> {
-  const query = String(args['query'] ?? '').trim();
+  const query = getStringArg(args, 'query').trim();
   if (!query) return 'Error: query is required';
 
   const limit = toPositiveInt(args['limit'], 5);
@@ -1214,7 +1218,7 @@ async function execLearningRetrieve(args: Record<string, unknown>): Promise<stri
 }
 
 async function execDeleteFile(args: Record<string, unknown>): Promise<string> {
-  const filePath = resolve(String(args['path'] ?? ''));
+  const filePath = resolve(getStringArg(args, 'path'));
   assertWithinCwd(filePath);
   const { unlink } = await import('node:fs/promises');
   await unlink(filePath);
@@ -1222,19 +1226,30 @@ async function execDeleteFile(args: Record<string, unknown>): Promise<string> {
 }
 
 async function execMultiEdit(args: Record<string, unknown>): Promise<string> {
-  const edits = args['edits'] as Array<{ path: string; old_text: string; new_text: string }> ?? [];
+  const editsRaw = args['edits'];
+  const edits = Array.isArray(editsRaw)
+    ? editsRaw.filter(
+        (edit): edit is { path: string; old_text: string; new_text: string } =>
+          isRecord(edit) &&
+          typeof edit['path'] === 'string' &&
+          typeof edit['old_text'] === 'string' &&
+          typeof edit['new_text'] === 'string'
+      )
+    : [];
 
   if (edits.length === 0) return 'Error: No edits provided';
   if (edits.length > 20) return `Error: Too many edits (${edits.length}). Maximum 20 per call.`;
 
   // Group edits by file path, preserving original indices for error reporting
-  const fileGroups = new Map<string, Array<{ index: number; old_text: string; new_text: string }>>();
-  for (let i = 0; i < edits.length; i++) {
-    const edit = edits[i]!;
-    const filePath = resolve(String(edit.path ?? ''));
+  const fileGroups = new Map<
+    string,
+    Array<{ index: number; old_text: string; new_text: string }>
+  >();
+  for (const [index, edit] of edits.entries()) {
+    const filePath = resolve(edit.path);
     assertWithinCwd(filePath);
     const group = fileGroups.get(filePath) ?? [];
-    group.push({ index: i, old_text: edit.old_text, new_text: edit.new_text });
+    group.push({ index, old_text: edit.old_text, new_text: edit.new_text });
     fileGroups.set(filePath, group);
   }
 
@@ -1249,7 +1264,9 @@ async function execMultiEdit(args: Record<string, unknown>): Promise<string> {
     } catch (err) {
       // All edits for this file fail
       for (const edit of group) {
-        failures.push(`edit #${edit.index + 1} in ${relative(process.cwd(), filePath)}: ${errorMessage(err)}`);
+        failures.push(
+          `edit #${edit.index + 1} in ${relative(process.cwd(), filePath)}: ${errorMessage(err)}`
+        );
       }
       continue;
     }
@@ -1258,11 +1275,15 @@ async function execMultiEdit(args: Record<string, unknown>): Promise<string> {
     for (const edit of group) {
       const occurrences = content.split(edit.old_text).length - 1;
       if (occurrences === 0) {
-        failures.push(`edit #${edit.index + 1} in ${relative(process.cwd(), filePath)}: old_text not found`);
+        failures.push(
+          `edit #${edit.index + 1} in ${relative(process.cwd(), filePath)}: old_text not found`
+        );
         continue;
       }
       if (occurrences > 1) {
-        failures.push(`edit #${edit.index + 1} in ${relative(process.cwd(), filePath)}: old_text appears ${occurrences} times (must be unique)`);
+        failures.push(
+          `edit #${edit.index + 1} in ${relative(process.cwd(), filePath)}: old_text appears ${occurrences} times (must be unique)`
+        );
         continue;
       }
       content = content.replace(edit.old_text, edit.new_text);
@@ -1271,7 +1292,9 @@ async function execMultiEdit(args: Record<string, unknown>): Promise<string> {
 
     if (fileApplied > 0) {
       await writeFile(filePath, content, 'utf-8');
-      fileSummaries.push(`${relative(process.cwd(), filePath)} (${fileApplied} edit${fileApplied > 1 ? 's' : ''})`);
+      fileSummaries.push(
+        `${relative(process.cwd(), filePath)} (${fileApplied} edit${fileApplied > 1 ? 's' : ''})`
+      );
       appliedCount += fileApplied;
     }
   }
@@ -1287,15 +1310,15 @@ async function execMultiEdit(args: Record<string, unknown>): Promise<string> {
 }
 
 async function execSaveMemory(args: Record<string, unknown>): Promise<string> {
-  const content = String(args['content'] ?? '');
-  const category = String(args['category'] ?? 'note');
+  const content = getStringArg(args, 'content');
+  const category = getStringArg(args, 'category', 'note');
   const timestamp = new Date().toISOString().split('T')[0];
 
   const memoryPath = resolve(process.cwd(), '.opta', 'memory.md');
 
   const { mkdir } = await import('node:fs/promises');
-  const { dirname } = await import('node:path');
-  await mkdir(dirname(memoryPath), { recursive: true });
+  const pathModule = await import('node:path');
+  await mkdir(pathModule.dirname(memoryPath), { recursive: true });
 
   let existing = '';
   try {
@@ -1349,21 +1372,34 @@ export function forceKillAllProcesses(): void {
 }
 
 async function execBgStart(args: Record<string, unknown>): Promise<string> {
-  const command = String(args['command'] ?? '');
+  const command = getStringArg(args, 'command');
   const timeout = args['timeout'] !== undefined ? Number(args['timeout']) : undefined;
-  const label = args['label'] ? String(args['label']) : undefined;
+  const label = getOptionalStringArg(args, 'label');
 
   const pm = getProcessManager();
   const handle = await pm.start(command, { timeout, label });
   return `Process started: id=${handle.id} pid=${handle.pid} cmd="${command}"`;
 }
 
+function ensureSingleProcessStatus(status: ProcessStatus | ProcessStatus[]): ProcessStatus {
+  if (Array.isArray(status)) {
+    throw new Error('Expected a single process status but received a list');
+  }
+  return status;
+}
+
+function parseBgStreamArg(value: unknown): 'stdout' | 'stderr' | 'both' | undefined {
+  if (value === undefined) return undefined;
+  return value === 'stdout' || value === 'stderr' || value === 'both' ? value : undefined;
+}
+
 function execBgStatus(args: Record<string, unknown>): string {
-  const id = args['id'] ? String(args['id']) : undefined;
+  const id = getOptionalStringArg(args, 'id');
   const pm = getProcessManager();
 
   if (!id) {
-    const all = pm.status() as ProcessStatus[];
+    const all = pm.status();
+    if (!Array.isArray(all)) throw new Error('Expected process list from background manager');
     if (all.length === 0) return 'No background processes.';
     return all
       .map(
@@ -1373,15 +1409,16 @@ function execBgStatus(args: Record<string, unknown>): string {
       .join('\n');
   }
 
-  const s = pm.status(id) as ProcessStatus;
+  const s = ensureSingleProcessStatus(pm.status(id));
   return `id=${s.id} state=${s.state} pid=${s.pid} exit=${s.exitCode ?? 'n/a'} runtime=${(s.runtimeMs / 1000).toFixed(1)}s${s.label ? ` label="${s.label}"` : ''} cmd="${s.command}"`;
 }
 
 function execBgOutput(args: Record<string, unknown>): string {
-  const id = String(args['id'] ?? '');
+  const id = getStringArg(args, 'id');
   const lines = args['lines'] !== undefined ? Number(args['lines']) : undefined;
-  const stream = args['stream'] as 'stdout' | 'stderr' | 'both' | undefined;
-  const sinceLastRead = args['since_last_read'] !== undefined ? Boolean(args['since_last_read']) : true;
+  const stream = parseBgStreamArg(args['stream']);
+  const sinceLastRead =
+    args['since_last_read'] !== undefined ? Boolean(args['since_last_read']) : true;
 
   const pm = getProcessManager();
   const output = pm.output(id, { lines, stream, sinceLastRead });
@@ -1396,11 +1433,11 @@ function execBgOutput(args: Record<string, unknown>): string {
 }
 
 async function execBgKill(args: Record<string, unknown>): Promise<string> {
-  const id = String(args['id'] ?? '');
-  const signal = (args['signal'] as NodeJS.Signals) ?? 'SIGTERM';
+  const id = getStringArg(args, 'id');
+  const signal = (getOptionalStringArg(args, 'signal') as NodeJS.Signals | undefined) ?? 'SIGTERM';
 
   const pm = getProcessManager();
-  const s = pm.status(id) as ProcessStatus;
+  const s = ensureSingleProcessStatus(pm.status(id));
   const killed = await pm.kill(id, signal);
 
   if (!killed) {

@@ -122,15 +122,20 @@ export async function executeTask(task: string[], opts: DoOptions): Promise<void
       }
       const daemon = await DaemonClient.connect();
       const daemonResp = await daemon.legacyChat(taskStr);
-      const stats = daemonResp.stats as { toolCalls?: number } | undefined;
+      const stats = daemonResp.stats;
       doResult = {
         response: daemonResp.response ?? '',
         toolCallCount: Number(stats?.toolCalls ?? 0),
         model: daemonResp.model ?? config.model.default,
         exitCode: 0,
       };
-    } catch {
+    } catch (error) {
       // Compatibility fallback in case daemon bootstrap fails.
+      if (!silent) {
+        const reason = error instanceof Error ? error.message : String(error);
+        console.error(chalk.yellow(`⚠ daemon path unavailable: ${reason}`));
+        console.error(chalk.dim('  Falling back to local agent loop for this run.'));
+      }
       const result = await agentLoop(taskStr, config, { silent });
       const assistantMsgs = result.messages.filter((m) => m.role === 'assistant');
       const finalMsg = assistantMsgs[assistantMsgs.length - 1];

@@ -3,8 +3,51 @@ import { startHttpServer, type RunningHttpServer } from '../../src/daemon/http-s
 import type { SessionManager } from '../../src/daemon/session-manager.js';
 import type { V3Envelope } from '../../src/protocol/v3/types.js';
 
+const { loadConfigMock, lmxClientCtor, lmxClientInstance } = vi.hoisted(() => {
+  const loadConfigMock = vi.fn(async () => ({
+    connection: {
+      host: '127.0.0.1',
+      port: 1234,
+      adminKey: 'test-admin-key',
+      fallbackHosts: [],
+    },
+  }));
+
+  const lmxClientInstance = {
+    status: vi.fn(async () => ({ status: 'ok', version: 'test', models: [] })),
+    models: vi.fn(async () => ({ models: [] })),
+    memory: vi.fn(async () => ({
+      total_unified_memory_gb: 64,
+      used_gb: 8,
+      available_gb: 56,
+      models: {},
+    })),
+    available: vi.fn(async () => []),
+    loadModel: vi.fn(async () => ({ model_id: 'demo/model', status: 'loaded' })),
+    unloadModel: vi.fn(async () => ({ model_id: 'demo/model', status: 'unloaded' })),
+    deleteModel: vi.fn(async () => ({ modelId: 'demo/model', freedBytes: 123 })),
+    downloadModel: vi.fn(async () => ({
+      downloadId: 'dl_123',
+      repoId: 'demo/model',
+      status: 'queued',
+    })),
+  };
+
+  const lmxClientCtor = vi.fn(() => lmxClientInstance);
+
+  return { loadConfigMock, lmxClientCtor, lmxClientInstance };
+});
+
 vi.mock('../../src/daemon/lifecycle.js', () => ({
   writeDaemonState: vi.fn(async () => {}),
+}));
+
+vi.mock('../../src/core/config.js', () => ({
+  loadConfig: loadConfigMock,
+}));
+
+vi.mock('../../src/lmx/client.js', () => ({
+  LmxClient: lmxClientCtor,
 }));
 
 function makeEvent(seq: number): V3Envelope<'turn.token', { text: string }> {
@@ -63,6 +106,8 @@ describe('daemon http-server telemetry and routes', () => {
     }
     running = null;
     vi.clearAllMocks();
+    loadConfigMock.mockClear();
+    lmxClientCtor.mockClear();
   });
 
   it('serves /v3/health and protects /v3/metrics with auth', async () => {
@@ -83,6 +128,7 @@ describe('daemon http-server telemetry and routes', () => {
     expect(healthRes.json()).toMatchObject({
       status: 'ok',
       daemonId: 'daemon_test',
+      contract: { name: 'opta-daemon-v3', version: 1 },
       runtime: sessionManager.getRuntimeStats(),
     });
 
@@ -133,6 +179,56 @@ describe('daemon http-server telemetry and routes', () => {
     expect(res.statusCode).toBe(200);
     expect(res.json()).toEqual({ events });
     expect(getEventsAfter).toHaveBeenCalledWith('sess-1', 5);
+  });
+
+  it('serves authenticated /v3/lmx routes and maps download response shape', async () => {
+    const sessionManager = makeSessionManager();
+    running = await startHttpServer({
+      daemonId: 'daemon_test',
+      host: '127.0.0.1',
+      port: 0,
+      token: 'secret-token',
+      sessionManager,
+    });
+
+    const unauthorized = await running.app.inject({
+      method: 'GET',
+      url: '/v3/lmx/status',
+    });
+    expect(unauthorized.statusCode).toBe(401);
+
+    const statusRes = await running.app.inject({
+      method: 'GET',
+      url: '/v3/lmx/status',
+      headers: { authorization: 'Bearer secret-token' },
+    });
+    expect(statusRes.statusCode).toBe(200);
+    expect(lmxClientInstance.status).toHaveBeenCalled();
+
+    const loadRes = await running.app.inject({
+      method: 'POST',
+      url: '/v3/lmx/models/load',
+      headers: { authorization: 'Bearer secret-token' },
+      payload: { modelId: 'demo/model', autoDownload: true },
+    });
+    expect(loadRes.statusCode).toBe(200);
+    expect(lmxClientInstance.loadModel).toHaveBeenCalledWith('demo/model', {
+      backend: undefined,
+      autoDownload: true,
+    });
+
+    const downloadRes = await running.app.inject({
+      method: 'POST',
+      url: '/v3/lmx/models/download',
+      headers: { authorization: 'Bearer secret-token' },
+      payload: { repoId: 'demo/model' },
+    });
+    expect(downloadRes.statusCode).toBe(200);
+    expect(downloadRes.json()).toMatchObject({
+      download_id: 'dl_123',
+      repo_id: 'demo/model',
+      status: 'queued',
+    });
   });
 
   it('maps permission race conflicts to HTTP 409', async () => {

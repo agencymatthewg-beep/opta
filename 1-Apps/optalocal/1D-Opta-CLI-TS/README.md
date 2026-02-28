@@ -58,20 +58,20 @@ Primary inference runs on Opta LMX (Apple Silicon, MLX-based). If LMX is unreach
 
 The agent has access to a full development toolkit:
 
-| Tool | Description |
-|------|-------------|
-| `read_file` | Read file contents with optional line range |
-| `write_file` | Create or overwrite files |
-| `edit_file` | Find-and-replace exact strings in files |
-| `multi_edit` | Batch edits across multiple files |
-| `list_dir` | List directory contents |
-| `search_files` | Regex search across files (ripgrep-backed) |
-| `find_files` | Glob-based file discovery |
-| `run_command` | Execute shell commands |
-| `ask_user` | Ask for clarification |
-| `delete_file` | Remove files |
-| `web_search` | Search the web for docs and references |
-| `web_fetch` | Fetch and extract readable content from URLs |
+| Tool           | Description                                  |
+| -------------- | -------------------------------------------- |
+| `read_file`    | Read file contents with optional line range  |
+| `write_file`   | Create or overwrite files                    |
+| `edit_file`    | Find-and-replace exact strings in files      |
+| `multi_edit`   | Batch edits across multiple files            |
+| `list_dir`     | List directory contents                      |
+| `search_files` | Regex search across files (ripgrep-backed)   |
+| `find_files`   | Glob-based file discovery                    |
+| `run_command`  | Execute shell commands                       |
+| `ask_user`     | Ask for clarification                        |
+| `delete_file`  | Remove files                                 |
+| `web_search`   | Search the web for docs and references       |
+| `web_fetch`    | Fetch and extract readable content from URLs |
 
 ### Browser Automation
 
@@ -147,27 +147,54 @@ opta daemon logs
 opta daemon stop
 ```
 
+#### Daemon contract compatibility
+
+The daemon now surfaces an explicit API contract from `/v3/health`:
+`contract.name=opta-daemon-v3`, `contract.version=1`.
+
+CLI clients validate this during connection and fail fast with an actionable mismatch message if daemon/client versions drift.
+
+If you see a contract mismatch error:
+
+```bash
+opta daemon restart
+# if mismatch persists, update both CLI + daemon to the same release
+```
+
+### Quality gate
+
+Run the repo quality gate before opening a PR:
+
+```bash
+npm run quality:gate
+```
+
+This enforces:
+- Typecheck
+- Contract regression tests (operations + daemon health contract)
+- Core smoke suite
+
 ## Slash Commands
 
 Type `/` during a chat session to browse all commands, or use directly:
 
-| Command | Description |
-|---------|-------------|
-| `/help` | List all slash commands |
-| `/model` | Switch models mid-session |
-| `/plan` | Switch to planning mode |
-| `/review` | Switch to code review mode |
-| `/research` | Switch to research mode |
-| `/commit` | Commit current changes |
-| `/checkpoint` | Create a named checkpoint |
-| `/undo` | Revert to a previous checkpoint |
-| `/export` | Export session transcript |
-| `/debug` | Show debug information |
-| `/browser` | Browser automation controls |
-| `/lmx status` | LMX health and model info |
-| `/lmx reconnect` | Reset LMX connection |
-| `/whoami` | Show account and token status |
-| `/memory` | View project memory |
+| Command          | Description                     |
+| ---------------- | ------------------------------- |
+| `/help`          | List all slash commands         |
+| `/model`         | Switch models mid-session       |
+| `/plan`          | Switch to planning mode         |
+| `/review`        | Switch to code review mode      |
+| `/research`      | Switch to research mode         |
+| `/commit`        | Commit current changes          |
+| `/checkpoint`    | Create a named checkpoint       |
+| `/undo`          | Revert to a previous checkpoint |
+| `/export`        | Export session transcript       |
+| `/debug`         | Show debug information          |
+| `/browser`       | Browser automation controls     |
+| `/lmx status`    | LMX health and model info       |
+| `/lmx reconnect` | Reset LMX connection            |
+| `/whoami`        | Show account and token status   |
+| `/memory`        | View project memory             |
 
 ## Model Management
 
@@ -225,13 +252,13 @@ opta env list
 
 ### Environment Variables
 
-| Variable | Purpose |
-|----------|---------|
-| `OPTA_HOST` | LMX server host (default: `192.168.188.11`) |
-| `OPTA_PORT` | LMX server port (default: `1234`) |
-| `ANTHROPIC_API_KEY` | Anthropic API key for cloud fallback |
-| `OPTA_MODEL` | Default model override |
-| `OPTA_AUTONOMY` | Default autonomy level (0-5) |
+| Variable            | Purpose                                |
+| ------------------- | -------------------------------------- |
+| `OPTA_HOST`         | LMX server host (default: `localhost`) |
+| `OPTA_PORT`         | LMX server port (default: `1234`)      |
+| `ANTHROPIC_API_KEY` | Anthropic API key for cloud fallback   |
+| `OPTA_MODEL`        | Default model override                 |
+| `OPTA_AUTONOMY`     | Default autonomy level (0-5)           |
 
 ### API Key Storage
 

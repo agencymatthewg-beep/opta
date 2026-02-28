@@ -1,16 +1,84 @@
 import WebSocket, { type RawData } from 'ws';
 import { ensureDaemonRunning } from './lifecycle.js';
+import {
+  expectedDaemonContract,
+  type DaemonHealthLike,
+  validateDaemonContract,
+} from './contract.js';
 import type { ClientSubmitTurn, CreateSessionRequest, PermissionDecision, SessionSnapshot, V3Envelope } from '../protocol/v3/types.js';
 
 interface SessionDetail extends SessionSnapshot {
   messages: unknown[];
 }
 
+interface LegacyChatStats {
+  toolCalls?: number;
+}
+
 interface LegacyChatResponse {
   session_id: string;
   response: string;
-  stats?: unknown;
+  stats?: LegacyChatStats;
   model?: string;
+}
+
+export interface DaemonHealthResponse {
+  status: string;
+  version?: string;
+  daemonId?: string;
+  contract: {
+    name: string;
+    version: number;
+  };
+}
+
+function asObject(value: unknown): Record<string, unknown> | null {
+  return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : null;
+}
+
+function parseDaemonHealth(data: unknown): DaemonHealthResponse {
+  const object = asObject(data);
+  if (!object) {
+    throw new Error('Daemon health response was not an object.');
+  }
+
+  const status = object['status'];
+  if (typeof status !== 'string' || status.length === 0) {
+    throw new Error('Daemon health response missing required `status` string.');
+  }
+
+  const versionRaw = object['version'];
+  const daemonIdRaw = object['daemonId'];
+  const contractRaw = asObject(object['contract']);
+
+  const parsed: DaemonHealthResponse = {
+    status,
+    contract: {
+      name: typeof contractRaw?.['name'] === 'string' ? contractRaw.name : '',
+      version: typeof contractRaw?.['version'] === 'number' ? contractRaw.version : NaN,
+    },
+  };
+
+  if (typeof versionRaw === 'string') parsed.version = versionRaw;
+  if (typeof daemonIdRaw === 'string') parsed.daemonId = daemonIdRaw;
+
+  return parsed;
+}
+
+function contractMismatchErrorMessage(health: DaemonHealthLike): string {
+  const mismatch = validateDaemonContract(health);
+  if (!mismatch) return '';
+
+  const daemonHint = typeof health.daemonId === 'string' ? ` daemonId=${health.daemonId}` : '';
+  const actualName = mismatch.actual.name === undefined ? 'missing' : JSON.stringify(mismatch.actual.name);
+  const actualVersion = mismatch.actual.version === undefined ? 'missing' : JSON.stringify(mismatch.actual.version);
+
+  return [
+    `Daemon/API contract mismatch.${daemonHint}`,
+    `Expected ${mismatch.expected.name}@${mismatch.expected.version}.`,
+    `Got name=${actualName} version=${actualVersion}.`,
+    "Upgrade/restart the daemon (`opta daemon restart`) or upgrade this CLI so both sides share the same contract.",
+  ].join(' ');
 }
 
 export class DaemonClient {
@@ -22,7 +90,15 @@ export class DaemonClient {
 
   static async connect(opts?: { host?: string; port?: number }): Promise<DaemonClient> {
     const state = await ensureDaemonRunning(opts);
-    return new DaemonClient(state.host, state.port, state.token);
+    const client = new DaemonClient(state.host, state.port, state.token);
+
+    const health = await client.health();
+    const mismatchMessage = contractMismatchErrorMessage(health);
+    if (mismatchMessage) {
+      throw new Error(mismatchMessage);
+    }
+
+    return client;
   }
 
   private async request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -45,8 +121,19 @@ export class DaemonClient {
     return res.json() as Promise<T>;
   }
 
-  async health(): Promise<{ status: string; version?: string }> {
-    return this.request('/v3/health');
+  async health(): Promise<DaemonHealthResponse> {
+    const health = parseDaemonHealth(await this.request<unknown>('/v3/health'));
+
+    if (!Number.isFinite(health.contract.version) || !health.contract.name) {
+      const expected = expectedDaemonContract();
+      const daemonHint = health.daemonId ? ` daemonId=${health.daemonId}` : '';
+      throw new Error(
+        `Daemon health response missing contract metadata.${daemonHint} Expected ${expected.name}@${expected.version}. ` +
+        'Restart or upgrade daemon/CLI to a compatible version.'
+      );
+    }
+
+    return health;
   }
 
   async createSession(req: CreateSessionRequest): Promise<SessionSnapshot> {

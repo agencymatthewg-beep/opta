@@ -16,14 +16,17 @@ import {
   SessionParamsSchema,
   SubmitTurnHttpSchema,
 } from '../protocol/v3/http.js';
+import { OperationExecuteBodySchema, OperationParamsSchema } from '../protocol/v3/operations.js';
 import type { V3Envelope } from '../protocol/v3/types.js';
 import type { SessionManager } from './session-manager.js';
 import { registerWsServer } from './ws-server.js';
 import { writeDaemonState, type DaemonState } from './lifecycle.js';
 import { daemonLogsPath } from './telemetry.js';
+import { expectedDaemonContract } from './contract.js';
 import { isStorageRelatedError } from '../utils/disk.js';
 import { loadConfig } from '../core/config.js';
 import { LmxClient } from '../lmx/client.js';
+import { executeDaemonOperation, listDaemonOperationsResponse } from './operations/execute.js';
 
 export interface HttpServerOptions {
   daemonId: string;
@@ -143,6 +146,7 @@ async function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions)
     status: 'ok',
     version: VERSION,
     daemonId: opts.daemonId,
+    contract: expectedDaemonContract(),
     runtime: opts.sessionManager.getRuntimeStats(),
   }));
 
@@ -154,6 +158,31 @@ async function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions)
       runtime,
       ts: new Date().toISOString(),
     };
+  });
+
+  app.get('/v3/operations', async (req, reply) => {
+    if (!isAuthorized(req, opts.token)) return rejectUnauthorized(reply);
+    return listDaemonOperationsResponse();
+  });
+
+  app.post('/v3/operations/:id', async (req, reply) => {
+    if (!isAuthorized(req, opts.token)) return rejectUnauthorized(reply);
+    const params = OperationParamsSchema.safeParse(req.params);
+    if (!params.success)
+      return reply.status(400).send({ error: 'Invalid operation id', details: params.error.issues });
+
+    const body = OperationExecuteBodySchema.safeParse(req.body ?? {});
+    if (!body.success)
+      return reply
+        .status(400)
+        .send({ error: 'Invalid request body', details: body.error.issues });
+
+    const result = await executeDaemonOperation({
+      id: params.data.id,
+      input: body.data.input,
+      confirmDangerous: body.data.confirmDangerous,
+    });
+    return reply.status(result.statusCode).send(result.body);
   });
 
   app.get('/v3/lmx/status', async (req, reply) => {
