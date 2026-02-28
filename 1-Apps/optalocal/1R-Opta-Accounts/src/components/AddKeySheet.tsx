@@ -1,53 +1,57 @@
-'use client';
+"use client";
 
-import { useState, useCallback, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, ClipboardPaste, ChevronDown, Check, Loader2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { useState, useCallback, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { X, ClipboardPaste, ChevronDown, Check, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
   PROVIDERS,
   detectProvider,
   isValidKeyFormat,
   type ApiKeyProvider,
-} from '@/lib/provider-detection';
+} from "@/lib/provider-detection";
 
 interface AddKeySheetProps {
   open: boolean;
   onClose: () => void;
-  onSave: (provider: ApiKeyProvider, keyValue: string, label?: string) => Promise<void>;
+  onSave: (
+    provider: ApiKeyProvider,
+    keyValue: string,
+    label?: string,
+  ) => Promise<void>;
   existingProviders: ApiKeyProvider[];
 }
 
-export function AddKeySheet({ open, onClose, onSave, existingProviders }: AddKeySheetProps) {
-  const [keyValue, setKeyValue] = useState('');
-  const [detectedProvider, setDetectedProvider] = useState<ApiKeyProvider | null>(null);
-  const [manualProvider, setManualProvider] = useState<ApiKeyProvider | null>(null);
-  const [label, setLabel] = useState('');
+export function AddKeySheet({
+  open,
+  onClose,
+  onSave,
+  existingProviders,
+}: AddKeySheetProps) {
+  const [keyValue, setKeyValue] = useState("");
+  const [manualProvider, setManualProvider] = useState<ApiKeyProvider | null>(
+    null,
+  );
+  const [label, setLabel] = useState("");
   const [saving, setSaving] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  const activeProvider = manualProvider ?? detectedProvider;
-  const isExisting = activeProvider ? existingProviders.includes(activeProvider) : false;
-  const canSave = activeProvider && keyValue.trim().length > 0 && isValidKeyFormat(keyValue);
+  // Derive detected provider during render instead of useEffect
+  const detectedProvider = keyValue.trim() ? detectProvider(keyValue) : null;
 
-  // Auto-detect provider on input change
-  useEffect(() => {
-    const detected = detectProvider(keyValue);
-    setDetectedProvider(detected);
-    if (detected) setManualProvider(null);
-  }, [keyValue]);
+  const activeProvider = manualProvider ?? detectedProvider;
+  const isExisting = activeProvider
+    ? existingProviders.includes(activeProvider)
+    : false;
+  const canSave =
+    activeProvider && keyValue.trim().length > 0 && isValidKeyFormat(keyValue);
 
   // Focus input when sheet opens
   useEffect(() => {
     if (open) {
-      setTimeout(() => inputRef.current?.focus(), 100);
-    } else {
-      setKeyValue('');
-      setDetectedProvider(null);
-      setManualProvider(null);
-      setLabel('');
-      setDropdownOpen(false);
+      const timer = setTimeout(() => inputRef.current?.focus(), 100);
+      return () => clearTimeout(timer);
     }
   }, [open]);
 
@@ -77,10 +81,10 @@ export function AddKeySheet({ open, onClose, onSave, existingProviders }: AddKey
 
           {/* Sheet */}
           <motion.div
-            initial={{ y: '100%' }}
+            initial={{ y: "100%" }}
             animate={{ y: 0 }}
-            exit={{ y: '100%' }}
-            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
             className="fixed inset-x-0 bottom-0 z-50 max-h-[85vh] overflow-y-auto"
           >
             <div className="max-w-lg mx-auto glass-strong rounded-t-2xl p-6">
@@ -113,15 +117,21 @@ export function AddKeySheet({ open, onClose, onSave, existingProviders }: AddKey
                   ref={inputRef}
                   id="key-input"
                   value={keyValue}
-                  onChange={(e) => setKeyValue(e.target.value)}
+                  onChange={(e) => {
+                    setKeyValue(e.target.value);
+                    if (!manualProvider) {
+                      const detected = detectProvider(e.target.value);
+                      if (detected) setManualProvider(null);
+                    }
+                  }}
                   placeholder="Paste your API key here..."
                   rows={3}
                   className={cn(
-                    'w-full rounded-lg px-3 py-2.5 text-sm font-mono',
-                    'bg-opta-surface border border-opta-border',
-                    'text-opta-text-primary placeholder:text-opta-text-muted',
-                    'focus:outline-none focus:border-opta-primary/50 focus:ring-1 focus:ring-opta-primary/20',
-                    'resize-none transition-colors',
+                    "w-full rounded-lg px-3 py-2.5 text-sm font-mono",
+                    "bg-opta-surface border border-opta-border",
+                    "text-opta-text-primary placeholder:text-opta-text-muted",
+                    "focus:outline-none focus:border-opta-primary/50 focus:ring-1 focus:ring-opta-primary/20",
+                    "resize-none transition-colors",
                   )}
                 />
               </div>
@@ -134,14 +144,15 @@ export function AddKeySheet({ open, onClose, onSave, existingProviders }: AddKey
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ type: 'spring', stiffness: 400, damping: 24 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 24 }}
                     className={cn(
-                      'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full mb-4',
-                      'bg-opta-neon-green/10 text-opta-neon-green text-xs font-medium',
+                      "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full mb-4",
+                      "bg-opta-neon-green/10 text-opta-neon-green text-xs font-medium",
                     )}
                   >
                     <Check size={12} />
-                    Detected: {PROVIDERS.find((p) => p.id === detectedProvider)?.name}
+                    Detected:{" "}
+                    {PROVIDERS.find((p) => p.id === detectedProvider)?.name}
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -157,22 +168,22 @@ export function AddKeySheet({ open, onClose, onSave, existingProviders }: AddKey
                       type="button"
                       onClick={() => setDropdownOpen(!dropdownOpen)}
                       className={cn(
-                        'w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm',
-                        'bg-opta-surface border border-opta-border',
-                        'text-opta-text-primary transition-colors',
-                        'hover:border-opta-primary/30',
+                        "w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm",
+                        "bg-opta-surface border border-opta-border",
+                        "text-opta-text-primary transition-colors",
+                        "hover:border-opta-primary/30",
                       )}
                     >
                       <span>
                         {manualProvider
                           ? PROVIDERS.find((p) => p.id === manualProvider)?.name
-                          : 'Choose provider...'}
+                          : "Choose provider..."}
                       </span>
                       <ChevronDown
                         size={14}
                         className={cn(
-                          'text-opta-text-muted transition-transform',
-                          dropdownOpen && 'rotate-180',
+                          "text-opta-text-muted transition-transform",
+                          dropdownOpen && "rotate-180",
                         )}
                       />
                     </button>
@@ -183,10 +194,14 @@ export function AddKeySheet({ open, onClose, onSave, existingProviders }: AddKey
                           initial={{ opacity: 0, y: -4 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: -4 }}
-                          transition={{ type: 'spring', stiffness: 400, damping: 24 }}
+                          transition={{
+                            type: "spring",
+                            stiffness: 400,
+                            damping: 24,
+                          }}
                           className={cn(
-                            'absolute left-0 right-0 top-full mt-1 z-10',
-                            'glass-strong rounded-lg overflow-hidden',
+                            "absolute left-0 right-0 top-full mt-1 z-10",
+                            "glass-strong rounded-lg overflow-hidden",
                           )}
                         >
                           {PROVIDERS.map((p) => (
@@ -198,11 +213,11 @@ export function AddKeySheet({ open, onClose, onSave, existingProviders }: AddKey
                                 setDropdownOpen(false);
                               }}
                               className={cn(
-                                'w-full text-left px-3 py-2 text-sm',
-                                'hover:bg-white/[0.03] transition-colors',
+                                "w-full text-left px-3 py-2 text-sm",
+                                "hover:bg-white/[0.03] transition-colors",
                                 manualProvider === p.id
-                                  ? 'text-opta-primary'
-                                  : 'text-opta-text-secondary',
+                                  ? "text-opta-primary"
+                                  : "text-opta-text-secondary",
                               )}
                             >
                               {p.name}
@@ -221,8 +236,7 @@ export function AddKeySheet({ open, onClose, onSave, existingProviders }: AddKey
                   htmlFor="key-label"
                   className="block text-xs text-opta-text-secondary mb-1.5"
                 >
-                  Label{' '}
-                  <span className="text-opta-text-muted">(optional)</span>
+                  Label <span className="text-opta-text-muted">(optional)</span>
                 </label>
                 <input
                   id="key-label"
@@ -231,11 +245,11 @@ export function AddKeySheet({ open, onClose, onSave, existingProviders }: AddKey
                   onChange={(e) => setLabel(e.target.value)}
                   placeholder='e.g. "work", "personal"'
                   className={cn(
-                    'w-full rounded-lg px-3 py-2.5 text-sm',
-                    'bg-opta-surface border border-opta-border',
-                    'text-opta-text-primary placeholder:text-opta-text-muted',
-                    'focus:outline-none focus:border-opta-primary/50 focus:ring-1 focus:ring-opta-primary/20',
-                    'transition-colors',
+                    "w-full rounded-lg px-3 py-2.5 text-sm",
+                    "bg-opta-surface border border-opta-border",
+                    "text-opta-text-primary placeholder:text-opta-text-muted",
+                    "focus:outline-none focus:border-opta-primary/50 focus:ring-1 focus:ring-opta-primary/20",
+                    "transition-colors",
                   )}
                 />
               </div>
@@ -254,13 +268,13 @@ export function AddKeySheet({ open, onClose, onSave, existingProviders }: AddKey
                 disabled={!canSave || saving}
                 whileHover={canSave ? { scale: 1.01 } : undefined}
                 whileTap={canSave ? { scale: 0.98 } : undefined}
-                transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+                transition={{ type: "spring", stiffness: 400, damping: 17 }}
                 className={cn(
-                  'w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl',
-                  'text-sm font-medium transition-colors',
+                  "w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl",
+                  "text-sm font-medium transition-colors",
                   canSave && !saving
-                    ? 'bg-opta-primary text-white hover:bg-opta-primary-glow'
-                    : 'bg-opta-surface text-opta-text-muted cursor-not-allowed',
+                    ? "bg-opta-primary text-white hover:bg-opta-primary-glow"
+                    : "bg-opta-surface text-opta-text-muted cursor-not-allowed",
                 )}
               >
                 {saving ? (
@@ -269,7 +283,7 @@ export function AddKeySheet({ open, onClose, onSave, existingProviders }: AddKey
                     Saving...
                   </>
                 ) : (
-                  'Save Key'
+                  "Save Key"
                 )}
               </motion.button>
             </div>

@@ -1,22 +1,31 @@
-'use client';
+"use client";
 
-import { motion } from 'framer-motion';
-import type { User } from '@supabase/supabase-js';
-import { LogOut, Shield, Mail, Phone, ExternalLink, Key } from 'lucide-react';
-import Link from 'next/link';
-import { cn } from '@/lib/utils';
-import { signOut } from '@/lib/supabase/auth-actions';
-import { OptaRing } from '@/components/OptaRing';
-import { SecurityApiHooks } from '@/components/profile/SecurityApiHooks';
+import { motion } from "framer-motion";
+import Image from "next/image";
+import type { User } from "@supabase/supabase-js";
+import { LogOut, Shield, Mail, Phone, ExternalLink, Key } from "lucide-react";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
+import { signOut } from "@/lib/supabase/auth-actions";
+import { OptaRing } from "@/components/OptaRing";
+import { SecurityApiHooks } from "@/components/profile/SecurityApiHooks";
 
 interface ProfileContentProps {
   user: User;
 }
 
 const OPTA_APPS = [
-  { name: 'Opta Local', url: 'https://lmx.optalocal.com', desc: 'LMX Dashboard' },
-  { name: 'Opta Init', url: 'https://init.optalocal.com', desc: 'Setup Guide' },
-  { name: 'Opta Life', url: 'https://life.opta.app', desc: 'Life Optimization' },
+  {
+    name: "Opta Local",
+    url: "https://lmx.optalocal.com",
+    desc: "LMX Dashboard",
+  },
+  { name: "Opta Init", url: "https://init.optalocal.com", desc: "Setup Guide" },
+  {
+    name: "Opta Life",
+    url: "https://life.opta.app",
+    desc: "Life Optimization",
+  },
 ];
 
 export function ProfileContent({ user }: ProfileContentProps) {
@@ -25,16 +34,16 @@ export function ProfileContent({ user }: ProfileContentProps) {
     user.user_metadata?.name ??
     user.email ??
     user.phone ??
-    'Opta User';
+    "Opta User";
 
-  const provider = user.app_metadata?.provider ?? 'email';
+  const provider = user.app_metadata?.provider ?? "email";
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-12">
       <motion.div
-        initial={{ opacity: 0, y: 16, filter: 'blur(8px)' }}
-        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-        transition={{ type: 'spring', stiffness: 200, damping: 24 }}
+        initial={{ opacity: 0, y: 16, filter: "blur(8px)" }}
+        animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+        transition={{ type: "spring", stiffness: 200, damping: 24 }}
         className="w-full max-w-md"
       >
         {/* Header */}
@@ -50,10 +59,12 @@ export function ProfileContent({ user }: ProfileContentProps) {
           {/* Avatar + Name */}
           <div className="flex items-center gap-4 mb-6">
             {user.user_metadata?.avatar_url ? (
-              <img
+              <Image
                 src={user.user_metadata.avatar_url as string}
                 alt=""
-                className="w-12 h-12 rounded-full border border-opta-border"
+                width={48}
+                height={48}
+                className="rounded-full border border-opta-border"
               />
             ) : (
               <div className="w-12 h-12 rounded-full bg-opta-primary/20 border border-opta-primary/30 flex items-center justify-center">
@@ -63,7 +74,9 @@ export function ProfileContent({ user }: ProfileContentProps) {
               </div>
             )}
             <div>
-              <p className="font-medium text-opta-text-primary">{displayName}</p>
+              <p className="font-medium text-opta-text-primary">
+                {displayName}
+              </p>
               <div className="flex items-center gap-1.5 text-xs text-opta-text-secondary">
                 <Shield size={12} />
                 <span className="capitalize">{provider}</span>
@@ -75,13 +88,19 @@ export function ProfileContent({ user }: ProfileContentProps) {
           <div className="space-y-3">
             {user.email && (
               <div className="flex items-center gap-3 text-sm">
-                <Mail size={14} className="text-opta-text-muted flex-shrink-0" />
+                <Mail
+                  size={14}
+                  className="text-opta-text-muted flex-shrink-0"
+                />
                 <span className="text-opta-text-secondary">{user.email}</span>
               </div>
             )}
             {user.phone && (
               <div className="flex items-center gap-3 text-sm">
-                <Phone size={14} className="text-opta-text-muted flex-shrink-0" />
+                <Phone
+                  size={14}
+                  className="text-opta-text-muted flex-shrink-0"
+                />
                 <span className="text-opta-text-secondary">{user.phone}</span>
               </div>
             )}
@@ -100,8 +119,8 @@ export function ProfileContent({ user }: ProfileContentProps) {
         <Link
           href="/keys"
           className={cn(
-            'glass rounded-2xl p-5 mb-4 flex items-center gap-4 group',
-            'hover:border-opta-primary/20 transition-colors block',
+            "glass rounded-2xl p-5 mb-4 flex items-center gap-4 group",
+            "hover:border-opta-primary/20 transition-colors block",
           )}
         >
           <div className="w-10 h-10 rounded-xl bg-opta-primary/10 flex items-center justify-center flex-shrink-0">
@@ -132,8 +151,8 @@ export function ProfileContent({ user }: ProfileContentProps) {
                 key={app.name}
                 href={app.url}
                 className={cn(
-                  'flex items-center justify-between px-3 py-2.5 rounded-lg',
-                  'hover:bg-white/[0.03] transition-colors group',
+                  "flex items-center justify-between px-3 py-2.5 rounded-lg",
+                  "hover:bg-white/[0.03] transition-colors group",
                 )}
               >
                 <div>
@@ -159,11 +178,11 @@ export function ProfileContent({ user }: ProfileContentProps) {
           onClick={() => signOut()}
           whileHover={{ scale: 1.01 }}
           whileTap={{ scale: 0.98 }}
-          transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+          transition={{ type: "spring", stiffness: 400, damping: 17 }}
           className={cn(
-            'w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg',
-            'glass-subtle text-opta-text-secondary text-sm font-medium',
-            'hover:text-opta-neon-red hover:border-opta-neon-red/20 transition-colors',
+            "w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg",
+            "glass-subtle text-opta-text-secondary text-sm font-medium",
+            "hover:text-opta-neon-red hover:border-opta-neon-red/20 transition-colors",
           )}
         >
           <LogOut size={14} />

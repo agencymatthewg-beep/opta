@@ -113,104 +113,294 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    width: var(--ring-size, 80px);
+    height: var(--ring-size, 80px);
   }
 
-  .opta-ring-wrap::before {
-    content: '';
+  .opta-ring-48 {
+    --ring-size: 48px;
+    --ring-scale: 0.6;
+  }
+  .opta-ring-64 {
+    --ring-size: 64px;
+    --ring-scale: 0.8;
+  }
+  .opta-ring-80 {
+    --ring-size: 80px;
+    --ring-scale: 1;
+  }
+  .opta-ring-120 {
+    --ring-size: 120px;
+    --ring-scale: 1.5;
+  }
+
+  .opta-ring-ambient {
     position: absolute;
     inset: -55%;
     border-radius: 50%;
     background: radial-gradient(
       ellipse 62% 55% at 55% 62%,
-      rgba(88, 28, 135, 0.62) 0%,
-      rgba(139, 92, 246, 0.25) 45%,
+      rgba(88, 28, 135, 0.4) 0%,
+      rgba(139, 92, 246, 0.15) 45%,
       transparent 70%
     );
-    animation: opta-ambient 3.5s ease-in-out infinite;
+    animation: opta-ambient 4s ease-in-out infinite;
     z-index: 0;
     pointer-events: none;
   }
 
-  .opta-ring {
-    position: relative;
-    z-index: 1;
-    border-radius: 50%;
-    border-style: solid;
-    border-color: transparent;
-    background:
-      linear-gradient(#09090b, #09090b) padding-box,
-      conic-gradient(
-        from 0deg,
-        #060110 0%, #1A0D28 8%, #3b1160 22%,
-        #A855F7 38%, #C084FC 46%, #f0d9ff 49%,
-        #ffffff 51%, #f0d9ff 53%, #C084FC 58%,
-        #A855F7 68%, #3b1160 84%, #1A0D28 93%, #060110 100%
-      ) border-box;
-    animation: opta-spin 10s linear infinite,
-               opta-breathe 3.5s ease-in-out infinite;
+  .opta-ring-wrap[data-paused="true"] .opta-ring-ambient,
+  .opta-ring-wrap[data-paused="true"] .opta-dust-1,
+  .opta-ring-wrap[data-paused="true"] .opta-dust-2,
+  .opta-ring-wrap[data-paused="true"] .opta-dust-3,
+  .opta-ring-wrap[data-paused="true"] .opta-singularity {
+    animation-play-state: paused !important;
+    opacity: 0.3;
   }
 
-  .opta-ring::after {
-    content: '';
+  .opta-ring-scaler {
+    position: absolute;
+    width: 80px;
+    height: 80px;
+    transform: scale(var(--ring-scale, 1));
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 5;
+  }
+
+  .opta-ring-core {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    overflow: hidden;
+    box-shadow: inset 0 0 20px rgba(0, 0, 0, 1);
+  }
+
+  .opta-singularity {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow:
+      0 0 10px 3px #a855f7,
+      0 0 20px 6px rgba(139, 92, 246, 0.4);
+    animation: opta-pulse-core 4s ease-in-out infinite alternate;
+  }
+
+  .opta-dust {
+    position: absolute;
+    inset: -20px;
+    border-radius: 50%;
+  }
+
+  .opta-dust::after {
+    content: "";
+    position: absolute;
+    width: 1.5px;
+    height: 1.5px;
+    border-radius: 50%;
+    top: 0;
+    left: 0;
+  }
+
+  .opta-dust-1 {
+    animation: opta-calm-pull 8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  .opta-dust-2 {
+    animation: opta-calm-pull-reverse 12s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    animation-delay: -4s;
+  }
+  .opta-dust-3 {
+    animation: opta-calm-pull 16s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    animation-delay: -8s;
+  }
+
+  .opta-dust-1::after {
+    box-shadow:
+      10px 50px 1px #fff,
+      20px 30px 0.5px #a855f7,
+      30px 70px 1.5px #d8b4fe,
+      40px 20px 0px #8b5cf6,
+      50px 50px 2px #fff,
+      60px 80px 0.5px #a855f7,
+      70px 30px 1px #fff,
+      80px 60px 0px #d8b4fe,
+      90px 40px 1.5px #a855f7,
+      25px 55px 0.5px #fff,
+      75px 45px 1px #8b5cf6,
+      45px 85px 0.5px #fff,
+      85px 75px 1.5px #d8b4fe;
+  }
+  .opta-dust-2::after {
+    box-shadow:
+      15px 25px 0.5px #d8b4fe,
+      85px 85px 0.5px #fff,
+      45px 35px 0.5px #a855f7,
+      25px 85px 0px #fff,
+      75px 15px 0.5px #8b5cf6,
+      35px 65px 0.5px #fff,
+      65px 45px 0.5px #a855f7,
+      5px 40px 0px #d8b4fe,
+      95px 60px 0.5px #fff,
+      40px 5px 0.5px #8b5cf6;
+  }
+  .opta-dust-3::after {
+    box-shadow:
+      22px 33px 1px #fff,
+      77px 66px 1.5px #a855f7,
+      33px 77px 1px #d8b4fe,
+      66px 22px 2px #fff,
+      50px 50px 1.5px #8b5cf6,
+      11px 50px 1px #a855f7,
+      89px 50px 1px #fff,
+      50px 11px 1.5px #d8b4fe,
+      50px 89px 1px #a855f7;
+  }
+
+  .opta-ring-body {
     position: absolute;
     inset: 0;
     border-radius: 50%;
     background: radial-gradient(
-      ellipse 50% 38% at 30% 20%,
-      rgba(255, 255, 255, 0.22) 0%,
-      rgba(255, 255, 255, 0.06) 45%,
-      transparent 72%
+      circle at 35% 35%,
+      #27272a 0%,
+      #09090b 45%,
+      #000 100%
     );
-    pointer-events: none;
-    z-index: 2;
+    -webkit-mask: radial-gradient(circle, transparent 65%, black 65.5%);
+    mask: radial-gradient(circle, transparent 65%, black 65.5%);
+    z-index: 10;
+    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.9);
   }
 
-  .opta-ring-48  { width: 48px;  height: 48px;  border-width:  8px; }
-  .opta-ring-64  { width: 64px;  height: 64px;  border-width: 10px; }
-  .opta-ring-80  { width: 80px;  height: 80px;  border-width: 13px; }
-  .opta-ring-120 { width: 120px; height: 120px; border-width: 20px; }
+  .opta-ring-rims {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    z-index: 12;
+    pointer-events: none;
+  }
+  .opta-ring-rims::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.2) 0%,
+      transparent 20%,
+      transparent 80%,
+      rgba(168, 85, 247, 0.15) 100%
+    );
+    -webkit-mask:
+      radial-gradient(circle, transparent 65%, black 65.5%) padding-box,
+      linear-gradient(#fff, #fff);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+  }
+  .opta-ring-rims::after {
+    content: "";
+    position: absolute;
+    inset: 17.5%;
+    border-radius: 50%;
+    border: 1px solid rgba(168, 85, 247, 0.2);
+    box-shadow:
+      inset 0 0 10px rgba(168, 85, 247, 0.1),
+      0 0 10px rgba(168, 85, 247, 0.2);
+  }
 }
 
 /* Opta Ring animations */
-@keyframes opta-spin {
-  from { transform: perspective(600px) rotateX(32deg) rotateY(-10deg) rotate(0deg); }
-  to   { transform: perspective(600px) rotateX(32deg) rotateY(-10deg) rotate(360deg); }
+@keyframes opta-calm-pull {
+  0% {
+    transform: scale(1.4) rotate(0deg);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.8;
+  }
+  80% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(0.1) rotate(90deg);
+    opacity: 0;
+  }
 }
 
-@keyframes opta-breathe {
-  0%, 100% {
-    box-shadow:
-      0 0 24px rgba(168, 85, 247, 0.50),
-      0 0 60px rgba(88, 28, 135, 0.22),
-      0 0 120px rgba(88, 28, 135, 0.10),
-      0 6px 20px rgba(0, 0, 0, 0.70);
+@keyframes opta-calm-pull-reverse {
+  0% {
+    transform: scale(1.4) rotate(360deg);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.8;
+  }
+  80% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(0.1) rotate(270deg);
+    opacity: 0;
+  }
+}
+
+@keyframes opta-pulse-core {
+  0%,
+  100% {
+    opacity: 0.7;
+    transform: translate(-50%, -50%) scale(0.9);
   }
   50% {
-    box-shadow:
-      0 0 42px rgba(168, 85, 247, 0.85),
-      0 0 100px rgba(88, 28, 135, 0.45),
-      0 0 200px rgba(88, 28, 135, 0.18),
-      0 8px 28px rgba(0, 0, 0, 0.75);
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.1);
   }
 }
 
 @keyframes opta-ambient {
-  0%, 100% { opacity: 0.45; transform: scale(1); }
-  50%       { opacity: 0.90; transform: scale(1.2); }
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.2);
+  }
 }
 
 /* Film grain overlay */
 @keyframes grain {
-  0%, 100% { transform: translate(0, 0); }
-  10% { transform: translate(-5%, -10%); }
-  30% { transform: translate(3%, -15%); }
-  50% { transform: translate(12%, 9%); }
-  70% { transform: translate(9%, 4%); }
-  90% { transform: translate(-1%, 7%); }
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  10% {
+    transform: translate(-5%, -10%);
+  }
+  30% {
+    transform: translate(3%, -15%);
+  }
+  50% {
+    transform: translate(12%, 9%);
+  }
+  70% {
+    transform: translate(9%, 4%);
+  }
+  90% {
+    transform: translate(-1%, 7%);
+  }
 }
 
 .film-grain::before {
-  content: '';
+  content: "";
   position: fixed;
   inset: -50%;
   width: 200%;
