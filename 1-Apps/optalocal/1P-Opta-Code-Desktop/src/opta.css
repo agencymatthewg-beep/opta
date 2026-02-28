@@ -500,6 +500,53 @@ button.active,
   color: var(--danger);
 }
 
+.timeline-card pre.tool-body {
+  margin: 0.4rem 0 0;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.77rem;
+  line-height: 1.5;
+  overflow-x: auto;
+  color: var(--text-soft);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.streaming-indicator {
+  display: flex;
+  gap: 0.35rem;
+  padding: 0.55rem 0.65rem;
+  align-items: center;
+}
+
+.streaming-indicator span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: pulse-dot 1.2s ease-in-out infinite;
+}
+
+.streaming-indicator span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.streaming-indicator span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes pulse-dot {
+  0%,
+  60%,
+  100% {
+    opacity: 0.25;
+    transform: scale(0.8);
+  }
+  30% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 @media (max-width: 1220px) {
   .app-topbar {
     grid-template-columns: 1fr;

@@ -23,6 +23,7 @@ function App() {
     connection,
     connectionError,
     connectionState,
+    isStreaming,
     refreshNow,
     runtime,
     sessions,
@@ -333,6 +334,7 @@ function App() {
                 sessionId={activeSessionId}
                 sessionTitle={activeSession?.title}
                 items={timelineItems}
+                isStreaming={isStreaming}
               />
             </>
           )}
