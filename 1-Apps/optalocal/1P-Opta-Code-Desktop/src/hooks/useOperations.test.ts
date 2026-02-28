@@ -103,12 +103,13 @@ describe("useOperations", () => {
   });
 
   it("sets confirmDangerous in payload when provided", async () => {
-    vi.mocked(daemonClient.runOperation).mockResolvedValueOnce({
+    const failResult = {
       ok: false,
       id: "benchmark",
       safety: "dangerous",
       error: { code: "execution_failed", message: "failed" },
-    });
+    } as const satisfies DaemonRunOperationResponse;
+    vi.mocked(daemonClient.runOperation).mockResolvedValueOnce(failResult);
 
     const { result } = renderHook(() => useOperations(connection));
     await waitFor(() => expect(result.current.loading).toBe(false));
