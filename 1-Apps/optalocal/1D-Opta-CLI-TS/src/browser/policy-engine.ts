@@ -119,9 +119,33 @@ function parseOriginPattern(pattern: string): string | null {
   return null;
 }
 
+/** Try to parse an allowedHosts entry as a JSON object with a "regex" field. */
+function tryParseRegexPattern(pattern: string): RegExp | null {
+  const trimmed = pattern.trim();
+  if (!trimmed.startsWith('{')) return null;
+  try {
+    const obj = JSON.parse(trimmed) as unknown;
+    if (typeof obj !== 'object' || obj === null) return null;
+    const regexStr = (obj as Record<string, unknown>).regex;
+    if (typeof regexStr !== 'string') return null;
+    return new RegExp(regexStr);
+  } catch {
+    return null;
+  }
+}
+
 function hostAllowed(host: string, allowedHosts: string[]): boolean {
   if (allowedHosts.length === 0) return false;
   for (const pattern of allowedHosts) {
+    const regex = tryParseRegexPattern(pattern);
+    if (regex !== null) {
+      try {
+        if (regex.test(host)) return true;
+      } catch {
+        // invalid regex — skip this pattern
+      }
+      continue;
+    }
     const parsedPattern = parseHostPattern(pattern);
     if (!parsedPattern) continue;
     if (wildcardHostMatch(host, parsedPattern)) return true;

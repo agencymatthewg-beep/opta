@@ -761,6 +761,32 @@ describe('browser policy credential isolation', () => {
   });
 });
 
+describe('regex URL allowlist patterns', () => {
+  it('allows a host matching a regex pattern', () => {
+    const decision = evaluateBrowserPolicyAction(
+      { allowedHosts: ['{ "regex": "^app-[0-9]+\\\\.staging\\\\.example\\\\.com$" }'] },
+      { toolName: 'browser_navigate', args: { url: 'https://app-42.staging.example.com/path' } },
+    );
+    expect(decision.decision).toBe('allow');
+  });
+
+  it('denies a host that does not match the regex', () => {
+    const decision = evaluateBrowserPolicyAction(
+      { allowedHosts: ['{ "regex": "^app-[0-9]+\\\\.staging\\\\.example\\\\.com$" }'] },
+      { toolName: 'browser_navigate', args: { url: 'https://evil.com/path' } },
+    );
+    expect(decision.decision).toBe('deny');
+  });
+
+  it('ignores malformed regex patterns gracefully', () => {
+    const decision = evaluateBrowserPolicyAction(
+      { allowedHosts: ['{ "regex": "[invalid" }', 'example.com'] },
+      { toolName: 'browser_navigate', args: { url: 'https://example.com/page' } },
+    );
+    expect(decision.decision).toBe('allow');
+  });
+});
+
 describe('MCP-only tool risk classification', () => {
   it('classifies browser_evaluate as high risk (requires approval)', () => {
     const decision = evaluateBrowserPolicyAction(
