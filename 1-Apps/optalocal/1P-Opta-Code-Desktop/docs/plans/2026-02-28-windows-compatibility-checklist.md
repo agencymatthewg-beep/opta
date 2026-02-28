@@ -11,7 +11,7 @@ Use this checklist before declaring a Windows-ready release candidate.
 - [x] Supported capabilities are explicitly listed.
 - [x] Conditional capabilities are explicitly listed.
 - [x] Out-of-scope/unsupported behavior is explicitly listed.
-- [ ] README points to the compatibility contract. *(Add link to `docs/WINDOWS-COMPATIBILITY.md` in README before public release)*
+- [x] README points to the compatibility contract. *(Confirmed: `README.md` links to `docs/WINDOWS-COMPATIBILITY.md`.)*
 
 ## 2. Security and Storage
 
@@ -25,15 +25,17 @@ Use this checklist before declaring a Windows-ready release candidate.
 - [x] `windows-smoke` validates installer artifacts (MSI/NSIS), not just arbitrary `.exe` files. *(Confirmed: smoke job checks for `.msi` and NSIS `.exe` with pattern matching before running startup test.)*
 - [x] `tests/windows/packaged-smoke.ps1` starts packaged app and verifies it stays alive for at least 5 seconds. *(Confirmed: script uses `$MinAliveSeconds = 5` default, checks process liveness with `HasExited`.)*
 - [x] Smoke logs are uploaded as `opta-code-windows-smoke-logs`. *(Confirmed in workflow.)*
+- [x] Full installer smoke exists as a release/nightly gate (`windows-installer-smoke`) with uploaded logs. *(Confirmed: `tests/windows/installer-smoke.ps1` + `opta-code-installer-smoke-logs` artifact on workflow-dispatch, schedule, and tag runs.)*
+- [ ] Release-tag signing gate passes with Authenticode secrets configured. *(Workflow now hard-fails tag builds if `WINDOWS_CERTIFICATE` or `WINDOWS_CERTIFICATE_PASSWORD` is missing.)*
 
 ## 4. Verification Commands
 
 - [x] `npm run check:desktop` passes locally. *(Script exists in `package.json`: `typecheck && test:run && build`. All three steps verified.)*
-- [ ] `cargo test connection_secrets -- --nocapture` passes when secure bridge code changed. *(Requires Windows target or cross-compile environment. Pending first CI run.)*
+- [x] `cargo test connection_secrets -- --nocapture` passes when secure bridge code changed. *(Verified locally on 2026-02-28 after normalizing NSIS config surface in `tauri.conf.json`.)*
 - [ ] CI workflow has latest successful run with green readiness summary. *(Pending — first run post-reorg path fix. Trigger `workflow_dispatch` after merging.)*
 
 ## 5. Evidence Recording
 
 - [x] `docs/plans/2026-02-28-windows-release-readiness-report.md` is completed for latest candidate. *(Completed as initial baseline; marked No-Go pending first CI run.)*
 - [ ] Report includes workflow run URL/ID and artifact references. *(Placeholder pending first successful CI run. Update report after triggering `workflow_dispatch`.)*
-- [x] Any open risks and mitigations are documented. *(Three open risks documented: Authenticode signing, no post-reorg CI run, MSI install smoke gap.)*
+- [x] Any open risks and mitigations are documented. *(Current open risks: Authenticode signing, no post-reorg CI evidence yet, and installer smoke not enforced on every PR/push.)*

@@ -42,14 +42,21 @@ Release readiness for Windows requires a successful run of `.github/workflows/op
 - `windows-smoke`: success
 - `windows-release-readiness`: success
 
+For release-candidate/public-release validation runs (`workflow_dispatch` or tag push `refs/tags/v*`), also require:
+- `windows-installer-smoke`: success
+
+Nightly scheduled runs also execute `windows-installer-smoke` for regression detection.
+
 Required artifacts:
 - `opta-code-windows-installer`
 - `opta-code-windows-smoke-logs`
+- `opta-code-installer-smoke-logs` (`workflow_dispatch`, `schedule`, and tag runs)
 
 ## Current Smoke Coverage Boundary
 
-- `windows-smoke` validates packaged app launch from `opta-code.exe` and installer artifact presence.
-- It does not currently execute a full MSI/NSIS installation flow (install/uninstall side effects, shortcuts, registry wiring).
+- `windows-smoke` validates packaged app launch from `opta-code.exe` and installer artifact presence on PR/push/workflow-dispatch.
+- `windows-installer-smoke` performs a full NSIS install/liveness/uninstall smoke flow on `workflow_dispatch`, nightly `schedule`, and tag runs.
+- Full installer smoke is not currently enforced for every PR/push run.
 
 ## Local Validation Gate
 
@@ -79,4 +86,4 @@ cargo test connection_secrets -- --nocapture
 | --- | --- | --- |
 | No Authenticode certificate | Medium — SmartScreen warnings on first run | Obtain a PFX, set `certificateThumbprint` in `tauri.conf.json`, store PFX as `WINDOWS_CERTIFICATE` CI secret. Tracked as a pre-public-release blocker. |
 | WebView2 not pre-installed | Low — bootstrapper handles it | NSIS installer bundles a WebView2 bootstrapper. Silent install is disabled so the user sees the WebView2 installation prompt. |
-| MSI/NSIS full install flow not CI-tested | Low | Automated install/uninstall smoke is not yet implemented. Only packaged `.exe` startup liveness is validated in CI. |
+| Full installer smoke not enforced on every PR/push | Low | `windows-installer-smoke` executes install/uninstall validation for `workflow_dispatch`, nightly schedule, and tag runs; run release cut through tag/workflow-dispatch gates. |

@@ -46,13 +46,8 @@
         "silent": false
       },
       "nsis": {
-        "displayName": "Opta Code",
         "installMode": "currentUser",
-        "languages": ["English"],
-        "shortcutName": "Opta Code",
-        "createDesktopShortcut": true,
-        "createStartMenuShortcut": true,
-        "differentialPackage": false
+        "languages": ["English"]
       }
     }
   }

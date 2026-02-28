@@ -6,8 +6,8 @@ Project: `1P-Opta-Code-Desktop`
 
 ## Decision
 
-- Go / No-Go: **No-Go (initial assessment)**
-- Rationale: CI pipeline is structurally complete and all code gates are satisfied. However, a successful CI run has not yet been executed against the current main branch following the 2026-02-28 domain reorganisation. Additionally, Authenticode code signing is not yet configured, which will trigger SmartScreen warnings on public distribution. These two items block a public release but not internal/beta testing.
+- Go / No-Go: **No-Go (public release), Beta-Go (internal)**
+- Rationale: Local gates now pass (`npm run check:desktop` and `cargo test connection_secrets -- --nocapture`) and the Windows workflow includes packaged, installer, and nightly smoke stages. Public release remains blocked until (1) we capture a fresh green Windows CI run after the 2026-02-28 reorg changes and (2) Authenticode signing secrets are configured for release-tag builds.
 
 ## Workflow Evidence
 
@@ -23,9 +23,10 @@ Project: `1P-Opta-Code-Desktop`
 | unit-tests | **PENDING** | Vitest + typecheck via `npm run test:run` and `npm run typecheck`. Scripts verified in `package.json`. Local `npm run check:desktop` satisfies this gate locally. |
 | windows-build | **PENDING** | Tauri v2 NSIS+MSI build on `windows-latest`. Workflow structure verified in `opta-code-windows-build.yml`. Build path and artifact upload config confirmed correct. |
 | windows-smoke | **PENDING** | `tests/windows/packaged-smoke.ps1` script verified present and functional. Validates `opta-code.exe` stays alive for ≥5 seconds. Installer artifact existence check confirmed in workflow. |
-| windows-release-readiness | **PENDING** | Summary job exists and enforces all three upstream gates. Will pass once upstream gates pass. |
+| windows-installer-smoke | **PENDING (release/nightly gate)** | `tests/windows/installer-smoke.ps1` validates NSIS install -> app liveness -> uninstall cleanup. Triggered on `workflow_dispatch`, nightly `schedule`, and tag pushes (`refs/tags/v*`). |
+| windows-release-readiness | **PENDING** | Summary job enforces `unit-tests`, `windows-build`, and `windows-smoke` on all runs, and additionally enforces `windows-installer-smoke` when required (workflow-dispatch, schedule, and tags). |
 | local `npm run check:desktop` | **PASS** | Script confirmed in `package.json`: `typecheck && test:run && build`. All three steps are verified to work. |
-| `cargo test connection_secrets -- --nocapture` | **PASS (structure)** | `keyring = "3"` dep confirmed in `Cargo.toml`. Three Tauri commands (`get/set/delete_connection_secret`) present in `src-tauri/src/lib.rs`. Full test run requires Windows target. |
+| `cargo test connection_secrets -- --nocapture` | **PASS** | Verified locally on 2026-02-28 after normalizing NSIS config fields to parser-supported keys. Result: `2 passed`, `0 failed`. |
 
 ## Artifacts
 
@@ -61,22 +62,22 @@ Reference: `docs/WINDOWS-COMPATIBILITY.md`
 - Owner: Matthew Byrden
 - Target: Next available CI run
 
-**Risk 3: MSI/NSIS install flow not CI-tested**
+**Risk 3: Installer smoke is not enforced on every PR/push**
 - Impact: Low
-- Description: The smoke test validates that the packaged `.exe` starts but does not run a full install/uninstall cycle or validate shortcuts and registry entries.
-- Mitigation: Tracked as a future enhancement. `tests/windows/installer-smoke.ps1` will be added to execute a full NSIS silent install and verify uninstall cleanup.
+- Description: Full NSIS install/uninstall smoke is executed on `workflow_dispatch`, nightly schedule, and tag pushes, but not every PR/push.
+- Mitigation: Keep nightly coverage and enforce tag/workflow-dispatch run before release cut; promote to every main push only if regression rate justifies the extra CI cost.
 - Owner: Matthew Byrden
-- Target: v0.2 release gate
+- Target: Before release cut
 
 ## Coverage Boundaries
 
-- Packaged startup smoke validates `opta-code.exe` launch and process liveness (≥5 seconds).
-- MSI/NSIS full install/uninstall flow is **not** yet covered by automated CI smoke.
-- This report is the initial baseline for the `1P-Opta-Code-Desktop` Windows release gate. It will be updated after the first successful CI run.
+- Packaged startup smoke validates `opta-code.exe` launch and process liveness (≥5 seconds) on PR/push/workflow-dispatch.
+- MSI/NSIS install/uninstall smoke is covered on workflow-dispatch, nightly, and tag runs (`windows-installer-smoke`).
+- This report remains pre-CI-evidence until the first successful post-reorg Windows workflow run is recorded.
 
 ## Follow-ups
 
-1. Trigger `workflow_dispatch` on `Opta Code — Windows Build` after merging this commit. Populate the "Workflow Evidence" and "Gate Results" sections with actual run IDs and pass/fail evidence.
+1. Trigger `workflow_dispatch` (or push a release tag) on `Opta Code — Windows Build` after merging this commit. Populate the "Workflow Evidence" and "Gate Results" sections with actual run IDs and pass/fail evidence.
 2. Obtain an Authenticode PFX certificate and configure signing in CI.
-3. Implement `tests/windows/installer-smoke.ps1` for full install/uninstall validation.
+3. Capture installer smoke evidence (`opta-code-installer-smoke-logs`) from a required installer-smoke run (`workflow_dispatch`, nightly, or tag) and link it here.
 4. Update this report to Go once CI gates pass.
