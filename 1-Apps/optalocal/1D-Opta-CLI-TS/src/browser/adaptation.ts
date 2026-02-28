@@ -44,6 +44,42 @@ export interface BrowserRunCorpusAdaptationHint {
   rationale: string[];
 }
 
+/**
+ * MCP-only tool names that carry elevated intrinsic risk in the adaptation
+ * signal vocabulary. Sessions containing these tools contribute additional
+ * weight to the high-risk adaptation signal during corpus scoring.
+ *
+ * - browser_evaluate: arbitrary JS execution — can exfiltrate data or mutate DOM
+ * - browser_file_upload: filesystem access — interacts with local files
+ */
+export const MCP_HIGH_RISK_TOOL_NAMES: ReadonlySet<string> = new Set([
+  'browser_evaluate',
+  'browser_file_upload',
+]);
+
+/**
+ * MCP-only tool names that carry medium intrinsic risk.
+ * These tools interact with page state in ways that may have side-effects
+ * (form submission, drag operations, keyboard input) but do not directly
+ * access the filesystem or execute arbitrary code.
+ */
+export const MCP_MEDIUM_RISK_TOOL_NAMES: ReadonlySet<string> = new Set([
+  'browser_select_option',
+  'browser_drag',
+  'browser_press_key',
+  'browser_keyboard_type',
+]);
+
+/** Returns true if `toolName` is a high-risk MCP-only browser tool. */
+export function isMcpHighRiskTool(toolName: string): boolean {
+  return MCP_HIGH_RISK_TOOL_NAMES.has(toolName);
+}
+
+/** Returns true if `toolName` is a medium-risk MCP-only browser tool. */
+export function isMcpMediumRiskTool(toolName: string): boolean {
+  return MCP_MEDIUM_RISK_TOOL_NAMES.has(toolName);
+}
+
 export const DEFAULT_BROWSER_ADAPTATION_CONFIG: BrowserAdaptationConfig = {
   enabled: false,
   minAssessedSessions: 3,

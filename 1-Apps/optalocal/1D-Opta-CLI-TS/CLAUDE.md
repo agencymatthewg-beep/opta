@@ -155,9 +155,19 @@ The `protocol/v3/` layer defines typed message contracts shared between the daem
 
 ### Browser Automation (`src/browser/`)
 
-Playwright-backed. Session lifecycle: `trigger-session.ts` → `runtime-daemon.ts` spawns browser → `native-session-manager.ts` manages macOS profile isolation → `control-surface.ts` dispatches actions → `policy-engine.ts` gates each action → `quality-gates.ts` asserts outcome → `artifacts.ts` retains evidence.
+Playwright-backed via `@playwright/mcp`. All Playwright tool calls route through `BrowserMcpInterceptor` (`mcp-interceptor.ts`) which:
+1. Evaluates risk with `evaluateBrowserPolicyAction` (policy-engine.ts)
+2. Gates or denies high-risk actions (browser_evaluate, browser_file_upload)
+3. Records artifacts (screenshots/snapshots) via `artifacts.ts`
+4. Feeds the `visual-diff.ts` pipeline
 
-`visual-diff.ts` compares screenshots. `replay.ts` enables deterministic session replay from action logs.
+**Available tools (30+):** browser_navigate, browser_click, browser_type, browser_select_option, browser_hover, browser_drag, browser_scroll, browser_press_key, browser_snapshot, browser_screenshot, browser_evaluate, browser_go_back, browser_go_forward, browser_tab_new, browser_tab_close, browser_tab_switch, browser_handle_dialog, browser_wait_for_element, browser_wait_for_navigation, browser_file_upload, and more.
+
+**Browser sub-agent:** `delegateToBrowserSubAgent()` in `sub-agent-delegator.ts` spawns a full-peer browser specialist for autonomous multi-step goals.
+
+**Config flag:** `browser.mcp.enabled = true` (auto-registers `@playwright/mcp` via `mcp-bootstrap.ts`).
+
+**Legacy path (native sessions):** `trigger-session.ts` → `runtime-daemon.ts` → `native-session-manager.ts` → `control-surface.ts` — preserved for macOS profile isolation use-cases. `replay.ts` enables deterministic session replay from action logs.
 
 ---
 

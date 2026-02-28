@@ -760,3 +760,57 @@ describe('browser policy credential isolation', () => {
     expect(decision.riskEvidence.matchedSignals).toContain('policy:blocked-origin');
   });
 });
+
+describe('MCP-only tool risk classification', () => {
+  it('classifies browser_evaluate as high risk (requires approval)', () => {
+    const decision = evaluateBrowserPolicyAction(
+      { ...baseConfig, requireApprovalForHighRisk: true, allowedHosts: ['*'] },
+      { toolName: 'browser_evaluate', args: { expression: 'document.cookie' } },
+    );
+    expect(decision.risk).toBe('high');
+    expect(decision.decision).toBe('gate');
+    expect(decision.actionKey).toBe('execute');
+  });
+
+  it('classifies browser_file_upload as high risk', () => {
+    const decision = evaluateBrowserPolicyAction(
+      { ...baseConfig, requireApprovalForHighRisk: true, allowedHosts: ['*'] },
+      { toolName: 'browser_file_upload', args: { selector: 'input[type=file]', files: ['/tmp/a.txt'] } },
+    );
+    expect(decision.risk).toBe('high');
+    expect(decision.decision).toBe('gate');
+    expect(decision.actionKey).toBe('upload');
+  });
+
+  it('classifies browser_select_option as medium risk', () => {
+    const decision = evaluateBrowserPolicyAction(
+      { ...baseConfig, requireApprovalForHighRisk: false, allowedHosts: ['*'] },
+      { toolName: 'browser_select_option', args: { selector: 'select#country', value: 'AU' } },
+    );
+    expect(decision.risk).toBe('medium');
+    expect(decision.decision).toBe('allow');
+    expect(decision.actionKey).toBe('select');
+  });
+
+  it('classifies browser_go_back and browser_reload as medium risk', () => {
+    for (const toolName of ['browser_go_back', 'browser_go_forward', 'browser_reload']) {
+      const decision = evaluateBrowserPolicyAction(
+        { ...baseConfig, requireApprovalForHighRisk: false, allowedHosts: ['*'] },
+        { toolName, args: {} },
+      );
+      expect(decision.risk).toBe('medium');
+      expect(decision.actionKey).toBe('navigate');
+    }
+  });
+
+  it('classifies browser_scroll and browser_hover as low risk', () => {
+    for (const toolName of ['browser_scroll', 'browser_hover', 'browser_wait_for_element', 'browser_wait_for_navigation']) {
+      const decision = evaluateBrowserPolicyAction(
+        { ...baseConfig, requireApprovalForHighRisk: true, allowedHosts: ['*'] },
+        { toolName, args: {} },
+      );
+      expect(decision.risk).toBe('low');
+      expect(decision.decision).toBe('allow');
+    }
+  });
+});

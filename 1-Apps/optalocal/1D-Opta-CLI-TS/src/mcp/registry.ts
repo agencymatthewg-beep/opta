@@ -256,6 +256,27 @@ export async function buildToolRegistry(
         }
         // Strip namespace: mcp__server__toolname -> toolname
         const originalName = name.split('__').slice(2).join('__');
+
+        // Route Playwright MCP browser calls through the policy/safety interceptor
+        if (mcpConn.name === PLAYWRIGHT_MCP_SERVER_KEY && config.browser?.enabled) {
+          const { interceptBrowserMcpCall } = await import('../browser/mcp-interceptor.js');
+          const { resolveBrowserPolicyConfig } = await import('../core/browser-policy-config.js');
+          try {
+            const result = await interceptBrowserMcpCall(
+              originalName,
+              args,
+              {
+                policyConfig: resolveBrowserPolicyConfig(config),
+                sessionId: parentCtx?.parentSessionId ?? 'registry',
+              },
+              () => mcpConn.call(originalName, args),
+            );
+            return typeof result === 'string' ? result : JSON.stringify(result);
+          } catch (err) {
+            return `Error: ${errorMessage(err)}`;
+          }
+        }
+
         return mcpConn.call(originalName, args);
       }
 

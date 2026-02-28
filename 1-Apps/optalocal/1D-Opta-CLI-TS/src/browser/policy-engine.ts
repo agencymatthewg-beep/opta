@@ -286,6 +286,48 @@ function classifyAction(
       : { risk: 'low', actionKey: 'dismiss', matchedSignals };
   }
 
+  // MCP-only high-risk tools
+  if (toolName === 'browser_evaluate') {
+    return { risk: 'high', actionKey: 'execute', matchedSignals: ['tool:browser_evaluate', 'risk:js-execution'] };
+  }
+
+  if (toolName === 'browser_file_upload') {
+    return { risk: 'high', actionKey: 'upload', matchedSignals: ['tool:browser_file_upload', 'risk:filesystem'] };
+  }
+
+  // MCP-only medium-risk interaction tools
+  if (toolName === 'browser_select_option') {
+    const matchedSignals = ['tool:browser_select_option'];
+    const keywordMatch = signalContainsSensitiveKeyword(collectSensitiveSignalText(args));
+    if (keywordMatch && sensitiveActions.has(keywordMatch.actionKey)) {
+      matchedSignals.push(`args:${keywordMatch.signal}`);
+      return { risk: 'high', actionKey: keywordMatch.actionKey, matchedSignals };
+    }
+    return { risk: 'medium', actionKey: 'select', matchedSignals };
+  }
+
+  if (toolName === 'browser_drag') {
+    return { risk: 'medium', actionKey: 'click', matchedSignals: ['tool:browser_drag'] };
+  }
+
+  if (toolName === 'browser_press_key' || toolName === 'browser_keyboard_type') {
+    const matchedSignals = [`tool:${toolName}`];
+    const keywordMatch = signalContainsSensitiveKeyword(collectSensitiveSignalText(args));
+    if (keywordMatch && sensitiveActions.has(keywordMatch.actionKey)) {
+      matchedSignals.push(`args:${keywordMatch.signal}`);
+      return { risk: 'high', actionKey: keywordMatch.actionKey, matchedSignals };
+    }
+    return { risk: 'medium', actionKey: 'type', matchedSignals };
+  }
+
+  if (toolName === 'browser_go_back' || toolName === 'browser_go_forward' || toolName === 'browser_reload') {
+    return { risk: 'medium', actionKey: 'navigate', matchedSignals: [`tool:${toolName}`] };
+  }
+
+  if (toolName === 'browser_tab_new' || toolName === 'browser_tab_close' || toolName === 'browser_tab_switch') {
+    return { risk: 'medium', actionKey: 'navigate', matchedSignals: [`tool:${toolName}`] };
+  }
+
   return { risk: 'low', actionKey: 'other', matchedSignals: [`tool:${toolName}`] };
 }
 

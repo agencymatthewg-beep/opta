@@ -5,6 +5,10 @@ import {
   normalizeBrowserAdaptationConfig,
   deriveBrowserRunCorpusAdaptationHint,
   loadBrowserRunCorpusAdaptationHint,
+  MCP_HIGH_RISK_TOOL_NAMES,
+  MCP_MEDIUM_RISK_TOOL_NAMES,
+  isMcpHighRiskTool,
+  isMcpMediumRiskTool,
   type BrowserAdaptationConfig,
 } from '../../src/browser/adaptation.js';
 
@@ -46,6 +50,48 @@ function makeSummary(overrides: Partial<BrowserRunCorpusSummary> = {}): BrowserR
     ...overrides,
   };
 }
+
+describe('MCP tool signal vocabulary', () => {
+  it('MCP_HIGH_RISK_TOOL_NAMES contains browser_evaluate and browser_file_upload', () => {
+    expect(MCP_HIGH_RISK_TOOL_NAMES.has('browser_evaluate')).toBe(true);
+    expect(MCP_HIGH_RISK_TOOL_NAMES.has('browser_file_upload')).toBe(true);
+    expect(MCP_HIGH_RISK_TOOL_NAMES.size).toBe(2);
+  });
+
+  it('MCP_MEDIUM_RISK_TOOL_NAMES contains browser_select_option, browser_drag, browser_press_key, browser_keyboard_type', () => {
+    expect(MCP_MEDIUM_RISK_TOOL_NAMES.has('browser_select_option')).toBe(true);
+    expect(MCP_MEDIUM_RISK_TOOL_NAMES.has('browser_drag')).toBe(true);
+    expect(MCP_MEDIUM_RISK_TOOL_NAMES.has('browser_press_key')).toBe(true);
+    expect(MCP_MEDIUM_RISK_TOOL_NAMES.has('browser_keyboard_type')).toBe(true);
+    expect(MCP_MEDIUM_RISK_TOOL_NAMES.size).toBe(4);
+  });
+
+  it('isMcpHighRiskTool returns true for high-risk tools only', () => {
+    expect(isMcpHighRiskTool('browser_evaluate')).toBe(true);
+    expect(isMcpHighRiskTool('browser_file_upload')).toBe(true);
+    expect(isMcpHighRiskTool('browser_snapshot')).toBe(false);
+    expect(isMcpHighRiskTool('browser_navigate')).toBe(false);
+    expect(isMcpHighRiskTool('browser_select_option')).toBe(false);
+    expect(isMcpHighRiskTool('read_file')).toBe(false);
+  });
+
+  it('isMcpMediumRiskTool returns true for medium-risk tools only', () => {
+    expect(isMcpMediumRiskTool('browser_select_option')).toBe(true);
+    expect(isMcpMediumRiskTool('browser_drag')).toBe(true);
+    expect(isMcpMediumRiskTool('browser_evaluate')).toBe(false);
+    expect(isMcpMediumRiskTool('browser_snapshot')).toBe(false);
+    expect(isMcpMediumRiskTool('run_command')).toBe(false);
+  });
+
+  it('high-risk and medium-risk sets are disjoint', () => {
+    for (const tool of MCP_HIGH_RISK_TOOL_NAMES) {
+      expect(MCP_MEDIUM_RISK_TOOL_NAMES.has(tool)).toBe(false);
+    }
+    for (const tool of MCP_MEDIUM_RISK_TOOL_NAMES) {
+      expect(MCP_HIGH_RISK_TOOL_NAMES.has(tool)).toBe(false);
+    }
+  });
+});
 
 describe('DEFAULT_BROWSER_ADAPTATION_CONFIG', () => {
   it('has correct default values', () => {

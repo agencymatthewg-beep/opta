@@ -25,8 +25,8 @@ afterEach(async () => {
 });
 
 describe('tool schemas', () => {
-  it('defines exactly 36 tools', () => {
-    expect(TOOL_SCHEMAS).toHaveLength(36);
+  it('defines exactly 29 tools', () => {
+    expect(TOOL_SCHEMAS).toHaveLength(29);
   });
 
   it('has all expected tool names', () => {
@@ -51,13 +51,13 @@ describe('tool schemas', () => {
     expect(names).toContain('bg_kill');
     expect(names).toContain('research_query');
     expect(names).toContain('research_health');
-    expect(names).toContain('browser_open');
-    expect(names).toContain('browser_navigate');
-    expect(names).toContain('browser_click');
-    expect(names).toContain('browser_type');
-    expect(names).toContain('browser_snapshot');
-    expect(names).toContain('browser_screenshot');
-    expect(names).toContain('browser_close');
+    expect(names).not.toContain('browser_open');
+    expect(names).not.toContain('browser_navigate');
+    expect(names).not.toContain('browser_click');
+    expect(names).not.toContain('browser_type');
+    expect(names).not.toContain('browser_snapshot');
+    expect(names).not.toContain('browser_screenshot');
+    expect(names).not.toContain('browser_close');
     expect(names).toContain('learning_log');
     expect(names).toContain('learning_summary');
     expect(names).toContain('learning_retrieve');

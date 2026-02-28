@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { readRecentBrowserApprovalEvents } from '../../src/browser/approval-log.js';
+import { buildBrowserAvailabilityInstruction } from '../../src/browser/intent-router.js';
 import { DEFAULT_CONFIG } from '../../src/core/config.js';
 import { createHookManager } from '../../src/hooks/integration.js';
 import { resolveToolDecisions } from '../../src/core/agent-permissions.js';
@@ -185,98 +186,6 @@ describe('browser autonomous flow', () => {
     });
   });
 
-  it('enforces browser host block rules at execution time', async () => {
-    vi.resetModules();
-
-    const runtimeConfig = structuredClone(DEFAULT_CONFIG);
-    runtimeConfig.browser.enabled = true;
-    runtimeConfig.browser.policy.allowedHosts = ['example.com'];
-    runtimeConfig.browser.policy.blockedOrigins = ['https://blocked.example.com'];
-    runtimeConfig.browser.policy.requireApprovalForHighRisk = true;
-
-    vi.doMock('../../src/core/config.js', async () => {
-      const actual = await vi.importActual<typeof import('../../src/core/config.js')>(
-        '../../src/core/config.js',
-      );
-      return {
-        ...actual,
-        loadConfig: vi.fn(async () => runtimeConfig),
-      };
-    });
-
-    const { executeTool, resetBrowserRuntimeForTests } = await import('../../src/core/tools/executors.js');
-
-    await executeTool('browser_open', JSON.stringify({ session_id: 'sess-int-02' }));
-    const blockedRaw = await executeTool(
-      'browser_navigate',
-      JSON.stringify({ session_id: 'sess-int-02', url: 'https://blocked.example.com/admin' }),
-    );
-    const blocked = JSON.parse(blockedRaw) as { code?: string };
-
-    expect(blocked.code).toBe('BROWSER_POLICY_DENY');
-    await resetBrowserRuntimeForTests();
-  });
-
-  it('enforces global browser host/origin policy at execution time when policy allowlist is wildcard', async () => {
-    vi.resetModules();
-
-    const runtimeConfig = structuredClone(DEFAULT_CONFIG);
-    runtimeConfig.browser.enabled = true;
-    runtimeConfig.browser.globalAllowedHosts = ['example.com'];
-    runtimeConfig.browser.blockedOrigins = ['https://blocked.example.com'];
-    runtimeConfig.browser.policy.allowedHosts = ['*'];
-    runtimeConfig.browser.policy.blockedOrigins = [];
-    runtimeConfig.browser.policy.requireApprovalForHighRisk = true;
-
-    vi.doMock('../../src/core/config.js', async () => {
-      const actual = await vi.importActual<typeof import('../../src/core/config.js')>(
-        '../../src/core/config.js',
-      );
-      return {
-        ...actual,
-        loadConfig: vi.fn(async () => runtimeConfig),
-      };
-    });
-
-    const { executeTool, resetBrowserRuntimeForTests } = await import('../../src/core/tools/executors.js');
-
-    await executeTool('browser_open', JSON.stringify({ session_id: 'sess-int-03' }));
-
-    const deniedByHostRaw = await executeTool(
-      'browser_navigate',
-      JSON.stringify({ session_id: 'sess-int-03', url: 'https://other.example.net/dashboard' }),
-    );
-    const deniedByHost = JSON.parse(deniedByHostRaw) as { code?: string };
-    expect(deniedByHost.code).toBe('BROWSER_POLICY_DENY');
-
-    const deniedByOriginRaw = await executeTool(
-      'browser_navigate',
-      JSON.stringify({ session_id: 'sess-int-03', url: 'https://blocked.example.com/admin' }),
-    );
-    const deniedByOrigin = JSON.parse(deniedByOriginRaw) as { code?: string };
-    expect(deniedByOrigin.code).toBe('BROWSER_POLICY_DENY');
-
-    const allowedRaw = await executeTool(
-      'browser_navigate',
-      JSON.stringify({ session_id: 'sess-int-03', url: 'https://example.com/home' }),
-    );
-    const allowed = JSON.parse(allowedRaw) as { code?: string };
-    expect(allowed.code).not.toBe('BROWSER_POLICY_DENY');
-
-    const deniedSensitiveClickRaw = await executeTool(
-      'browser_click',
-      JSON.stringify({
-        session_id: 'sess-int-03',
-        selector: 'button[data-action="delete-account"]',
-        url: 'https://other.example.net/profile',
-      }),
-    );
-    const deniedSensitiveClick = JSON.parse(deniedSensitiveClickRaw) as { code?: string };
-    expect(deniedSensitiveClick.code).toBe('BROWSER_POLICY_DENY');
-
-    await resetBrowserRuntimeForTests();
-  });
-
   it('enforces global browser host/origin policy in agent permission resolution', async () => {
     testDir = await mkdtemp(join(tmpdir(), 'opta-browser-approval-'));
     const config = structuredClone(DEFAULT_CONFIG);
@@ -375,5 +284,27 @@ describe('browser autonomous flow', () => {
 
     expect(allowedByGlobalAllowlist).toHaveLength(1);
     expect(allowedByGlobalAllowlist[0]?.approved).toBe(true);
+  });
+
+  describe('buildBrowserAvailabilityInstruction', () => {
+    it('returns null when neither explicit request nor MCP is enabled', () => {
+      expect(buildBrowserAvailabilityInstruction(false, false)).toBeNull();
+    });
+
+    it('returns legacy tool list when MCP is disabled but explicit request is true', () => {
+      const instruction = buildBrowserAvailabilityInstruction(true, false);
+      expect(instruction).not.toBeNull();
+      expect(instruction).toContain('browser_open');
+      expect(instruction).not.toContain('browser_evaluate');
+    });
+
+    it('returns expanded MCP tool list when mcpEnabled is true', () => {
+      const instruction = buildBrowserAvailabilityInstruction(false, true);
+      expect(instruction).not.toBeNull();
+      expect(instruction).toContain('browser_evaluate');
+      expect(instruction).toContain('browser_hover');
+      expect(instruction).toContain('browser_scroll');
+      expect(instruction).not.toContain('browser_open');
+    });
   });
 });

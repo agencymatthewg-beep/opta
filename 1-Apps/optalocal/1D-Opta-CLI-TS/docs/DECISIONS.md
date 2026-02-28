@@ -10,6 +10,29 @@ reference: docs/plans/2026-02-20-level3-daemon-program-plan.md
 This document records current, active decisions. Earlier pre-daemon decisions
 are superseded unless explicitly listed as legacy compatibility notes.
 
+## Decision 0: Browser MCP Bridge + Sub-Agent Delegation (2026-02-28)
+
+### Decision
+Replace the 7-tool legacy `browser_*` surface (browser_open, browser_navigate, browser_click, browser_type, browser_snapshot, browser_screenshot, browser_close) with `@playwright/mcp` providing 30+ tools. All Playwright MCP calls route through `BrowserMcpInterceptor` preserving the full safety stack. Browser goals are delegated to full-peer sub-agents via `BrowserSubAgentDelegator`.
+
+### Rationale
+- **Coverage gap**: Legacy surface was missing scroll, hover, JS eval, tab management, drag, dialog handling. The 7-tool subset forced workarounds.
+- **Safety preserved**: `BrowserMcpInterceptor` wraps every MCP call: policy evaluation → gate/deny → execute → approval log → artifact record. Zero safety regression from the cutover.
+- **Sub-agent autonomy**: Main agent delegates browser goals as a single `delegateToBrowserSubAgent()` call. The sub-agent runs a full Playwright loop; the main agent sees one tool result.
+- **Hard cutover**: Zero legacy tool schemas, executors, or permissions remain. Single clean path reduces cognitive overhead and eliminates dual-path bugs.
+
+### Files
+- `src/browser/mcp-interceptor.ts` — policy/approval/artifact pipeline
+- `src/browser/sub-agent-delegator.ts` — autonomous browser goal delegation
+- `src/mcp/registry.ts` — intercepts Playwright MCP calls via `PLAYWRIGHT_MCP_SERVER_KEY`
+- `src/browser/policy-engine.ts` — extended with MCP-only tool risk tiers
+- `src/browser/adaptation.ts` — MCP signal vocabulary (high/medium risk sets)
+
+### Gate
+All 139+ pre-existing browser tests pass with zero legacy tool references in `src/core/tools/`.
+
+---
+
 ## Decision 1: Level 3 Process Separation Is the Default Architecture
 
 ### Decision

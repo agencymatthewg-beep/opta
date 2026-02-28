@@ -175,6 +175,23 @@ export function routeBrowserIntent(
   };
 }
 
+/**
+ * Returns a brief system-prompt injection informing the agent which browser tools are available.
+ * Returns null when the request is not browser-related and MCP is not enabled.
+ */
+export function buildBrowserAvailabilityInstruction(
+  explicitRequest: boolean,
+  mcpEnabled: boolean = false,
+): string | null {
+  if (!explicitRequest && !mcpEnabled) return null;
+
+  const toolList = mcpEnabled
+    ? 'browser_navigate, browser_click, browser_type, browser_select_option, browser_hover, browser_scroll, browser_snapshot, browser_screenshot, browser_evaluate, browser_go_back, browser_go_forward, browser_tab_new, browser_press_key, browser_handle_dialog, browser_wait_for_element'
+    : 'browser_open, browser_navigate, browser_click, browser_type, browser_snapshot, browser_screenshot, browser_close';
+
+  return `### Browser Tools Available\n\nUse ${toolList} for browser automation tasks. Always snapshot first to understand page state.`;
+}
+
 export function buildBrowserRoutingInstruction(
   decision: BrowserIntentDecision,
   sessionId?: string,

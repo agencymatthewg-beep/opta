@@ -392,8 +392,9 @@ export async function agentLoop(
 
     if (effectiveConfig.browser.enabled) {
       const { buildBrowserAvailabilityInstruction } = await import('../browser/intent-router.js');
+      const mcpEnabled = effectiveConfig.browser.mcp?.enabled ?? false;
       const explicitRequest = task.toLowerCase().includes('browser');
-      const browserInstruction = buildBrowserAvailabilityInstruction(explicitRequest);
+      const browserInstruction = buildBrowserAvailabilityInstruction(explicitRequest, mcpEnabled);
       if (
         browserInstruction &&
         systemMessage &&

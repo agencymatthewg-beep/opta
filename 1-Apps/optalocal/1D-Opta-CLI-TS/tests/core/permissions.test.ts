@@ -10,7 +10,6 @@ describe('permission modes', () => {
     expect(resolvePermission('research_query', config)).toBe('allow');
     expect(resolvePermission('learning_summary', config)).toBe('allow');
     expect(resolvePermission('learning_retrieve', config)).toBe('allow');
-    expect(resolvePermission('browser_open', config)).toBe('ask');
   });
 
   it('auto mode: edits allowed at autonomy >= 3, shell asks', () => {
@@ -19,8 +18,6 @@ describe('permission modes', () => {
     expect(resolvePermission('edit_file', config)).toBe('allow');
     expect(resolvePermission('write_file', config)).toBe('allow');
     expect(resolvePermission('run_command', config)).toBe('ask');
-    expect(resolvePermission('browser_open', config)).toBe('allow');
-    expect(resolvePermission('browser_type', config)).toBe('allow');
     expect(resolvePermission('learning_log', config)).toBe('allow');
   });
 
@@ -30,7 +27,6 @@ describe('permission modes', () => {
     expect(resolvePermission('write_file', config)).toBe('deny');
     expect(resolvePermission('run_command', config)).toBe('deny');
     expect(resolvePermission('read_file', config)).toBe('allow');
-    expect(resolvePermission('browser_open', config)).toBe('deny');
     expect(resolvePermission('learning_log', config)).toBe('deny');
     expect(resolvePermission('research_query', config)).toBe('allow');
     expect(resolvePermission('learning_summary', config)).toBe('allow');
@@ -76,8 +72,6 @@ describe('permission modes', () => {
     const config = OptaConfigSchema.parse({ defaultMode: 'ci' });
     expect(resolvePermission('bg_start', config)).toBe('deny');
     expect(resolvePermission('bg_kill', config)).toBe('deny');
-    expect(resolvePermission('browser_open', config)).toBe('deny');
-    expect(resolvePermission('browser_navigate', config)).toBe('deny');
     expect(resolvePermission('learning_log', config)).toBe('deny');
     expect(resolvePermission('research_health', config)).toBe('allow');
   });
@@ -86,10 +80,6 @@ describe('permission modes', () => {
     const config = OptaConfigSchema.parse({ defaultMode: 'research' });
     expect(resolvePermission('research_query', config)).toBe('allow');
     expect(resolvePermission('research_health', config)).toBe('allow');
-    expect(resolvePermission('browser_open', config)).toBe('allow');
-    expect(resolvePermission('browser_snapshot', config)).toBe('allow');
-    expect(resolvePermission('browser_click', config)).toBe('ask');
-    expect(resolvePermission('browser_type', config)).toBe('ask');
     expect(resolvePermission('learning_log', config)).toBe('deny');
     expect(resolvePermission('learning_summary', config)).toBe('allow');
     expect(resolvePermission('learning_retrieve', config)).toBe('allow');
@@ -107,9 +97,6 @@ describe('autonomy floor enforcement', () => {
     expect(resolvePermission('write_file', config)).toBe('ask');
     expect(resolvePermission('run_command', config)).toBe('ask');
     expect(resolvePermission('delete_file', config)).toBe('ask');
-    expect(resolvePermission('browser_click', config)).toBe('ask');
-    expect(resolvePermission('browser_type', config)).toBe('ask');
-    expect(resolvePermission('browser_navigate', config)).toBe('ask');
   });
 
   it('autonomy level 2: destructive tool resolved as allow gets overridden to ask', () => {
@@ -119,7 +106,6 @@ describe('autonomy floor enforcement', () => {
     });
     expect(resolvePermission('edit_file', config)).toBe('ask');
     expect(resolvePermission('write_file', config)).toBe('ask');
-    expect(resolvePermission('browser_click', config)).toBe('ask');
   });
 
   it('autonomy level 3: destructive tool resolved as allow stays allow', () => {
@@ -129,9 +115,6 @@ describe('autonomy floor enforcement', () => {
     });
     expect(resolvePermission('edit_file', config)).toBe('allow');
     expect(resolvePermission('write_file', config)).toBe('allow');
-    expect(resolvePermission('browser_click', config)).toBe('allow');
-    expect(resolvePermission('browser_type', config)).toBe('allow');
-    expect(resolvePermission('browser_navigate', config)).toBe('allow');
   });
 
   it('autonomy level 2: non-destructive tool resolved as allow stays allow', () => {
@@ -176,7 +159,6 @@ describe('autonomy floor enforcement', () => {
     expect(resolvePermission('write_file', config)).toBe('ask');
     expect(resolvePermission('run_command', config)).toBe('ask');
     expect(resolvePermission('delete_file', config)).toBe('ask');
-    expect(resolvePermission('browser_click', config)).toBe('ask');
   });
 
   it('dangerous mode at autonomy level 5: destructive tools stay allowed', () => {
@@ -188,7 +170,6 @@ describe('autonomy floor enforcement', () => {
     expect(resolvePermission('write_file', config)).toBe('allow');
     expect(resolvePermission('run_command', config)).toBe('allow');
     expect(resolvePermission('delete_file', config)).toBe('allow');
-    expect(resolvePermission('browser_click', config)).toBe('allow');
   });
 
   it('autonomy level 1: newly added destructive tools (multi_edit, spawn_agent, etc.) forced to ask', () => {
