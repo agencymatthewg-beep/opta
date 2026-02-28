@@ -289,6 +289,7 @@ export function useDaemonSessions() {
     "connected" | "connecting" | "disconnected"
   >("disconnected");
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [initialCheckDone, setInitialCheckDone] = useState(false);
   const [runtimeOverride, setRuntimeOverride] =
     useState<RuntimeSnapshot | null>(null);
   const [streamingSessionId, setStreamingSessionId] = useState<string | null>(
@@ -533,7 +534,7 @@ export function useDaemonSessions() {
   }, [connection, sessions.length]);
 
   useEffect(() => {
-    void refreshNow();
+    refreshNow().finally(() => setInitialCheckDone(true));
     const timer = window.setInterval(() => {
       void refreshNow();
     }, RUNTIME_POLL_MS);
@@ -746,5 +747,6 @@ export function useDaemonSessions() {
     timelineBySession,
     trackSession,
     createSession,
+    initialCheckDone,
   };
 }

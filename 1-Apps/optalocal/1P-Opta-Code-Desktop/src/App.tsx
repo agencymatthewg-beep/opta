@@ -8,6 +8,7 @@ import { BackgroundJobsPage } from "./pages/BackgroundJobsPage";
 import { OperationsPage } from "./pages/OperationsPage";
 import { useCommandPalette } from "./hooks/useCommandPalette";
 import { useDaemonSessions } from "./hooks/useDaemonSessions";
+import { OnboardingPage } from "./pages/OnboardingPage";
 import type { PaletteCommand } from "./types";
 import "./opta.css";
 
@@ -20,6 +21,9 @@ function App() {
   const [selectedWorkspace, setSelectedWorkspace] = useState("all");
   const [notice, setNotice] = useState<string | null>(null);
   const [activePage, setActivePage] = useState<AppPage>("sessions");
+  const [showToken, setShowToken] = useState(false);
+  const [hasEverConnected, setHasEverConnected] = useState(false);
+  const [onboardingDismissed, setOnboardingDismissed] = useState(false);
 
   const {
     activeSessionId,
@@ -39,6 +43,7 @@ function App() {
     timelineBySession,
     trackSession,
     createSession,
+    initialCheckDone,
   } = useDaemonSessions();
 
   const [connectionForm, setConnectionForm] = useState({
@@ -71,6 +76,10 @@ function App() {
     const timeout = window.setTimeout(() => setNotice(null), 3800);
     return () => window.clearTimeout(timeout);
   }, [notice]);
+
+  useEffect(() => {
+    if (connectionState === "connected") setHasEverConnected(true);
+  }, [connectionState]);
 
   useEffect(() => {
     if (selectedWorkspace === "all") return;
@@ -249,6 +258,12 @@ function App() {
           </span>
           <span>{showTerminal ? "Runtime visible" : "Runtime hidden"}</span>
             </div>
+            {connectionState === "disconnected" && (
+              <p className="daemon-offline-hint">
+                Run <code>opta daemon start</code> to connect
+                {connectionError ? ` — ${connectionError}` : ""}
+              </p>
+            )}
           </div>
 
           <form
@@ -268,6 +283,7 @@ function App() {
             <label>
               Host
               <input
+                placeholder="127.0.0.1"
                 value={connectionForm.host}
                 onChange={(event) =>
                   setConnectionForm((previous) => ({
@@ -280,6 +296,7 @@ function App() {
             <label>
               Port
               <input
+                placeholder="9999"
                 value={connectionForm.port}
                 onChange={(event) =>
                   setConnectionForm((previous) => ({
@@ -291,16 +308,27 @@ function App() {
             </label>
             <label>
               Token
-              <input
-                type="password"
-                value={connectionForm.token}
-                onChange={(event) =>
-                  setConnectionForm((previous) => ({
-                    ...previous,
-                    token: event.target.value,
-                  }))
-                }
-              />
+              <div className="token-input-wrap">
+                <input
+                  type={showToken ? "text" : "password"}
+                  placeholder="Leave blank for unauthenticated"
+                  value={connectionForm.token}
+                  onChange={(event) =>
+                    setConnectionForm((previous) => ({
+                      ...previous,
+                      token: event.target.value,
+                    }))
+                  }
+                />
+                <button
+                  type="button"
+                  className="token-toggle"
+                  onClick={() => setShowToken((v) => !v)}
+                  aria-label={showToken ? "Hide token" : "Show token"}
+                >
+                  {showToken ? "Hide" : "Show"}
+                </button>
+              </div>
             </label>
             <button type="submit">Connect</button>
           </form>
@@ -463,6 +491,15 @@ function App() {
         onApply={palette.applySelected}
         onClose={palette.close}
       />
+
+      {initialCheckDone && connectionState === "disconnected" && !hasEverConnected && !onboardingDismissed && (
+        <OnboardingPage
+          host={connection.host}
+          port={connection.port}
+          onRetry={() => void refreshNow()}
+          onDismiss={() => setOnboardingDismissed(true)}
+        />
+      )}
     </div>
   );
 }

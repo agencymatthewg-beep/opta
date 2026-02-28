@@ -1521,3 +1521,311 @@ button.active,
     grid-template-columns: 1fr;
   }
 }
+
+/* ════════════════════════════════════════════════════════════════
+   DAEMON OFFLINE HINT (header, quick win)
+   ════════════════════════════════════════════════════════════════ */
+
+.daemon-offline-hint {
+  margin: 0.3rem 0 0;
+  font-size: 0.72rem;
+  color: var(--opta-text-muted);
+  line-height: 1.4;
+}
+
+.daemon-offline-hint code {
+  color: var(--opta-primary-glow);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.72rem;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   TOKEN INPUT — show/hide toggle wrapper
+   ════════════════════════════════════════════════════════════════ */
+
+.token-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+}
+
+.token-input-wrap input {
+  flex: 1;
+  padding-right: 3.6rem;
+}
+
+.token-toggle {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background: transparent;
+  border: none;
+  border-left: 1px solid var(--opta-border);
+  color: var(--opta-text-muted);
+  cursor: pointer;
+  font-size: 0.68rem;
+  font-family: "JetBrains Mono", monospace;
+  padding: 0 0.55rem;
+  border-radius: 0 8px 8px 0;
+  transition: color var(--opta-duration-fast) ease,
+    background var(--opta-duration-fast) ease;
+}
+
+.token-toggle:hover {
+  color: var(--opta-text-primary);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   ONBOARDING OVERLAY
+   ════════════════════════════════════════════════════════════════ */
+
+.onboarding-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(9, 9, 11, 0.88);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.onboarding-card {
+  position: relative;
+  width: 100%;
+  max-width: 520px;
+  padding: 2rem;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.onboarding-dismiss {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: transparent;
+  border: none;
+  color: var(--opta-text-muted);
+  cursor: pointer;
+  font-size: 0.75rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+  line-height: 1;
+  transition: color var(--opta-duration-fast) ease,
+    background var(--opta-duration-fast) ease;
+}
+
+.onboarding-dismiss:hover {
+  color: var(--opta-text-primary);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.onboarding-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.onboarding-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  background: var(--opta-glass-bg);
+  border: 1px solid var(--opta-glass-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--opta-neon-amber);
+  margin-bottom: 0.25rem;
+}
+
+.onboarding-header h2 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--opta-text-primary);
+  margin: 0;
+}
+
+.onboarding-header > p {
+  font-size: 0.85rem;
+  color: var(--opta-text-secondary);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.onboarding-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.onboarding-steps li {
+  display: flex;
+  gap: 0.9rem;
+  align-items: flex-start;
+}
+
+.step-number {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--opta-glass-bg);
+  border: 1px solid var(--opta-glass-border);
+  color: var(--opta-primary);
+  font-size: 0.7rem;
+  font-weight: 700;
+  font-family: "JetBrains Mono", monospace;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.15rem;
+}
+
+.step-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  flex: 1;
+}
+
+.step-body strong {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--opta-text-primary);
+}
+
+.step-body > p {
+  font-size: 0.8rem;
+  color: var(--opta-text-secondary);
+  margin: 0;
+}
+
+.step-note {
+  font-size: 0.74rem;
+  color: var(--opta-text-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.step-note code {
+  color: var(--opta-primary-glow);
+  font-family: "JetBrains Mono", monospace;
+}
+
+.onboarding-command {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid var(--opta-border-strong);
+  border-radius: 8px;
+  padding: 0.45rem 0.7rem;
+}
+
+.onboarding-command code {
+  flex: 1;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.78rem;
+  color: var(--opta-neon-cyan);
+}
+
+.onboarding-command button {
+  background: transparent;
+  border: none;
+  color: var(--opta-text-muted);
+  cursor: pointer;
+  padding: 0.2rem;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  transition: color var(--opta-duration-fast) ease;
+}
+
+.onboarding-command button:hover {
+  color: var(--opta-primary);
+}
+
+.onboarding-connect {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1.1rem;
+  background: var(--opta-primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  width: fit-content;
+  transition: background var(--opta-duration-fast) ease,
+    box-shadow var(--opta-duration-fast) ease;
+}
+
+.onboarding-connect:hover {
+  background: var(--opta-primary-glow);
+  box-shadow: var(--opta-glow-sm);
+}
+
+.onboarding-remote {
+  border-top: 1px solid var(--opta-border);
+  padding-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.onboarding-remote-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: transparent;
+  border: none;
+  color: var(--opta-text-muted);
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-family: inherit;
+  padding: 0;
+  transition: color var(--opta-duration-fast) ease;
+}
+
+.onboarding-remote-toggle:hover {
+  color: var(--opta-text-secondary);
+}
+
+.onboarding-remote-body {
+  font-size: 0.78rem;
+  color: var(--opta-text-secondary);
+  line-height: 1.6;
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.onboarding-skip {
+  background: transparent;
+  border: none;
+  color: var(--opta-text-muted);
+  font-size: 0.78rem;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  padding: 0;
+  font-family: inherit;
+  align-self: center;
+  transition: color var(--opta-duration-fast) ease;
+}
+
+.onboarding-skip:hover {
+  color: var(--opta-text-secondary);
+}
