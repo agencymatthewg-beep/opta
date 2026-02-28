@@ -84,20 +84,19 @@ export function OperationRunner({
     ],
   );
 
-  const safetyColor =
+  const safetyClass =
     operation.safety === "dangerous"
-      ? "var(--opta-danger, #ef4444)"
+      ? "safety-dangerous"
       : operation.safety === "write"
-        ? "var(--opta-warn, #f59e0b)"
-        : "var(--opta-success, #10b981)";
+        ? "safety-write"
+        : "safety-read";
 
   return (
     <div className="operation-runner">
       <header className="operation-runner-header">
         <h3>{operation.title}</h3>
         <span
-          className="operation-safety-badge"
-          style={{ color: safetyColor }}
+          className={`operation-safety-badge ${safetyClass}`}
           aria-label={`Safety class: ${operation.safety}`}
         >
           {operation.safety}

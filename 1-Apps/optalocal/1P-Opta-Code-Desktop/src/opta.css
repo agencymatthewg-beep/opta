@@ -65,6 +65,10 @@
   --warning: var(--opta-neon-amber);
   --danger: var(--opta-neon-red);
   --info: var(--opta-neon-cyan);
+
+  /* Direct semantic aliases used in components */
+  --opta-danger: var(--opta-neon-red);
+  --opta-warning: var(--opta-neon-amber);
   --shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
   --shadow-glow: 0 0 20px rgba(168, 85, 247, 0.15);
 }
@@ -1829,3 +1833,504 @@ button.active,
 .onboarding-skip:hover {
   color: var(--opta-text-secondary);
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   SPIN KEYFRAME (refresh icons, loading states)
+   ══════════════════════════════════════════════════════════════════ */
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.spin {
+  animation: spin 0.8s linear infinite;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   WORKSPACE RAIL — SESSION ROW ACTIONS (delete, copy ID)
+   ══════════════════════════════════════════════════════════════════ */
+
+.session-row {
+  display: flex;
+  align-items: stretch;
+  border-radius: 6px;
+  transition: background var(--opta-duration-fast) ease;
+  position: relative;
+}
+
+.session-row:hover,
+.session-row.active {
+  background: rgba(139, 92, 246, 0.08);
+}
+
+.session-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  color: var(--opta-text-primary);
+  border-radius: 6px;
+  font-family: inherit;
+  min-width: 0;
+}
+
+.session-row.active .session-main {
+  color: var(--opta-primary-glow);
+}
+
+.session-main strong {
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.session-id-tag {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.68rem;
+  color: var(--opta-text-muted);
+}
+
+.session-time {
+  font-size: 0.67rem;
+  color: var(--opta-text-muted);
+}
+
+.session-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 4px;
+  opacity: 0;
+  transition: opacity var(--opta-duration-fast) ease;
+}
+
+.session-row:hover .session-actions {
+  opacity: 1;
+}
+
+.session-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--opta-text-muted);
+  transition: color var(--opta-duration-fast) ease,
+              background var(--opta-duration-fast) ease;
+  position: relative;
+  font-size: 0.65rem;
+}
+
+.session-action-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--opta-text-secondary);
+}
+
+.session-remove-btn:hover {
+  color: var(--opta-neon-red) !important;
+  background: rgba(239, 68, 68, 0.1) !important;
+}
+
+.copy-flash {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  color: var(--opta-neon-green);
+  background: rgba(34, 197, 94, 0.15);
+  border-radius: 4px;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   BACKGROUND JOBS — START SHELL FORM
+   ══════════════════════════════════════════════════════════════════ */
+
+.start-shell-form {
+  padding: 14px 16px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.start-shell-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--opta-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 0 0 10px;
+}
+
+.start-shell-fields {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.start-shell-input {
+  flex: 1;
+  min-width: 160px;
+  padding: 7px 10px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--opta-border-strong);
+  border-radius: 6px;
+  color: var(--opta-text-primary);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.8rem;
+  outline: none;
+  transition: border-color var(--opta-duration-fast) ease,
+              box-shadow var(--opta-duration-fast) ease;
+}
+
+.start-shell-input:focus {
+  border-color: var(--opta-primary);
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.15);
+}
+
+.start-shell-cwd {
+  max-width: 240px;
+}
+
+.start-shell-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  background: var(--opta-primary);
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--opta-duration-fast) ease,
+              transform var(--opta-duration-fast) ease;
+  white-space: nowrap;
+}
+
+.start-shell-btn:hover:not(:disabled) {
+  background: var(--opta-primary-glow);
+  transform: translateY(-1px);
+}
+
+.start-shell-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.jobs-count {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.78rem;
+  color: var(--opta-text-muted);
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   MODELS PAGE — ENHANCED CARDS & DOWNLOAD UI
+   ══════════════════════════════════════════════════════════════════ */
+
+.models-icon {
+  color: var(--opta-primary-glow);
+}
+
+.status-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.models-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  color: var(--opta-text-secondary);
+}
+
+.models-section-header h3 {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--opta-text-primary);
+}
+
+.models-count {
+  margin-left: auto;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.72rem;
+  color: var(--opta-text-muted);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 2px 7px;
+  border-radius: 10px;
+  border: 1px solid var(--opta-border);
+}
+
+/* Memory breakdown */
+.memory-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  color: var(--opta-text-secondary);
+}
+
+.memory-header h3 {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--opta-text-primary);
+}
+
+.memory-pct {
+  margin-left: auto;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.memory-breakdown {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.memory-model-row {
+  display: grid;
+  grid-template-columns: 80px 1fr auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.memory-model-bar-wrap {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.memory-model-bar {
+  display: block;
+  height: 100%;
+  background: var(--opta-primary);
+  border-radius: 2px;
+  transition: width var(--opta-duration-slow) var(--opta-ease-smooth);
+}
+
+.memory-model-name {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.69rem;
+  color: var(--opta-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.memory-model-size {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.69rem;
+  color: var(--opta-text-muted);
+  white-space: nowrap;
+}
+
+/* Model cards grid */
+.model-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.model-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--opta-border);
+  transition: border-color var(--opta-duration-fast) ease;
+}
+
+.model-card:hover {
+  border-color: var(--opta-border-strong);
+}
+
+.model-card-loaded {
+  border-left: 2px solid var(--opta-neon-green);
+}
+
+.model-card-disk {
+  border-left: 2px solid var(--opta-text-muted);
+}
+
+.model-card-name {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--opta-text-primary);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.model-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.model-card-meta span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.7rem;
+  color: var(--opta-text-muted);
+  white-space: nowrap;
+}
+
+.model-quant-tag {
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(139, 92, 246, 0.15);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  color: var(--opta-primary-glow) !important;
+  font-size: 0.66rem !important;
+  font-weight: 600;
+}
+
+.model-card-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* Download form */
+.models-download {
+  padding: 16px;
+  border-radius: 10px;
+}
+
+.download-hint {
+  font-size: 0.78rem;
+  color: var(--opta-text-secondary);
+  margin: 0 0 12px;
+  line-height: 1.5;
+}
+
+.download-hint code {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.75rem;
+  color: var(--opta-primary-glow);
+  background: rgba(139, 92, 246, 0.1);
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+.download-form {
+  display: flex;
+  gap: 8px;
+}
+
+.download-input {
+  flex: 1;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--opta-border-strong);
+  border-radius: 6px;
+  color: var(--opta-text-primary);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.8rem;
+  outline: none;
+  transition: border-color var(--opta-duration-fast) ease,
+              box-shadow var(--opta-duration-fast) ease;
+}
+
+.download-input:focus {
+  border-color: var(--opta-primary);
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.15);
+}
+
+.download-input::placeholder {
+  color: var(--opta-text-muted);
+}
+
+.download-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: rgba(139, 92, 246, 0.2);
+  border: 1px solid var(--opta-primary);
+  border-radius: 6px;
+  color: var(--opta-primary-glow);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--opta-duration-fast) ease,
+              color var(--opta-duration-fast) ease,
+              transform var(--opta-duration-fast) ease;
+}
+
+.download-btn:hover:not(:disabled) {
+  background: rgba(139, 92, 246, 0.35);
+  color: white;
+  transform: translateY(-1px);
+}
+
+.download-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.download-notice {
+  margin-top: 10px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.76rem;
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+
+.download-ok {
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  color: var(--opta-neon-green);
+}
+
+.download-error {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: var(--opta-neon-red);
+}
+
+/* Models sections spacing */
+.models-loaded,
+.models-available,
+.models-download {
+  padding: 16px;
+  border-radius: 10px;
+}
+
+/* ── Operation safety badge colours ───────────────────────────────────────── */
+.operation-safety-badge.safety-dangerous { color: var(--opta-danger); }
+.operation-safety-badge.safety-write     { color: var(--opta-warning); }
+.operation-safety-badge.safety-read      { color: var(--opta-neon-green); }
