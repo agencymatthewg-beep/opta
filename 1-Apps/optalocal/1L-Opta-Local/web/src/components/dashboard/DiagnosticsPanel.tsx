@@ -22,10 +22,16 @@ import {
   XCircle,
   RefreshCw,
   Clock,
+  HardDrive,
+  Zap,
 } from "lucide-react";
 import { cn } from "@opta/ui";
 import type { LMXClient } from "@/lib/lmx-client";
-import type { DiagnosticsReport } from "@/types/lmx";
+import type {
+  DiagnosticsReport,
+  MemoryDetail,
+  PredictorStats,
+} from "@/types/lmx";
 
 // ---------------------------------------------------------------------------
 // Props
@@ -296,6 +302,10 @@ function ErrorRow({
 
 export function DiagnosticsPanel({ client }: DiagnosticsPanelProps) {
   const [data, setData] = useState<DiagnosticsReport | null>(null);
+  const [memoryDetail, setMemoryDetail] = useState<MemoryDetail | null>(null);
+  const [predictorStats, setPredictorStats] = useState<PredictorStats | null>(
+    null,
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [isStale, setIsStale] = useState(false);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null);
@@ -304,8 +314,14 @@ export function DiagnosticsPanel({ client }: DiagnosticsPanelProps) {
   const fetchData = useCallback(async () => {
     if (!client) return;
     try {
-      const report = await client.getDiagnostics();
-      setData(report);
+      const [report, mem, predictor] = await Promise.allSettled([
+        client.getDiagnostics(),
+        client.getMemory(),
+        client.getPredictorStats(),
+      ]);
+      if (report.status === "fulfilled") setData(report.value);
+      if (mem.status === "fulfilled") setMemoryDetail(mem.value);
+      if (predictor.status === "fulfilled") setPredictorStats(predictor.value);
       setLastUpdatedAt(Date.now());
       setIsStale(false);
     } catch {
@@ -532,6 +548,93 @@ export function DiagnosticsPanel({ client }: DiagnosticsPanelProps) {
           </div>
         </motion.div>
 
+        {/* ── Per-model VRAM breakdown ── */}
+        {memoryDetail && Object.keys(memoryDetail.models).length > 0 && (
+          <>
+            <Divider />
+            <motion.div variants={rowVariants}>
+              <SectionLabel icon={HardDrive}>Model VRAM</SectionLabel>
+              <div className="space-y-1.5">
+                {Object.entries(memoryDetail.models).map(([modelId, info]) => {
+                  const modelPct =
+                    memoryDetail.total_gb > 0
+                      ? Math.min(
+                          (info.memory_gb / memoryDetail.total_gb) * 100,
+                          100,
+                        )
+                      : 0;
+                  return (
+                    <div
+                      key={modelId}
+                      className="rounded-lg px-2.5 py-2"
+                      style={{
+                        background: "rgba(255,255,255,0.03)",
+                        border: "1px solid rgba(255,255,255,0.05)",
+                      }}
+                    >
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span
+                          className="text-[10px] font-medium truncate max-w-[65%]"
+                          style={{
+                            color: info.loaded
+                              ? "var(--opta-text-primary)"
+                              : "var(--opta-text-muted)",
+                          }}
+                        >
+                          {modelId.split("/").pop() ?? modelId}
+                        </span>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span
+                            className="text-[10px] tabular-nums"
+                            style={{ color: "var(--opta-text-secondary)" }}
+                          >
+                            {info.memory_gb.toFixed(1)} GB
+                          </span>
+                          <span
+                            className="rounded px-1 py-0.5 text-[9px] font-medium"
+                            style={{
+                              background: info.loaded
+                                ? "rgba(34,197,94,0.12)"
+                                : "rgba(255,255,255,0.05)",
+                              color: info.loaded
+                                ? "var(--opta-neon-green)"
+                                : "var(--opta-text-muted)",
+                            }}
+                          >
+                            {info.loaded ? "loaded" : "idle"}
+                          </span>
+                        </div>
+                      </div>
+                      <div
+                        className="relative overflow-hidden rounded-full"
+                        style={{
+                          height: "3px",
+                          background: "rgba(255,255,255,0.06)",
+                        }}
+                      >
+                        <motion.div
+                          className="absolute inset-y-0 left-0 rounded-full"
+                          style={{
+                            background: info.loaded
+                              ? "linear-gradient(90deg, var(--opta-neon-purple), var(--opta-neon-cyan))"
+                              : "rgba(255,255,255,0.15)",
+                          }}
+                          initial={{ width: 0 }}
+                          animate={{ width: `${modelPct}%` }}
+                          transition={{
+                            duration: 0.7,
+                            ease: [0.22, 1, 0.36, 1],
+                          }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </motion.div>
+          </>
+        )}
+
         <Divider />
 
         {/* ── Inference stats ── */}
@@ -563,6 +666,49 @@ export function DiagnosticsPanel({ client }: DiagnosticsPanelProps) {
             />
           </div>
         </motion.div>
+
+        <Divider />
+
+        {/* ── Speculative predictor ── */}
+        {predictorStats && (
+          <>
+            <Divider />
+            <motion.div variants={rowVariants}>
+              <SectionLabel icon={Zap}>Speculative predictor</SectionLabel>
+              <div className="space-y-0.5">
+                {predictorStats.next_predicted_model && (
+                  <StatRow
+                    label="Next predicted model"
+                    value={
+                      predictorStats.next_predicted_model.split("/").pop() ??
+                      predictorStats.next_predicted_model
+                    }
+                    accent="var(--opta-neon-cyan)"
+                  />
+                )}
+                {Object.entries(predictorStats.usage_stats).length > 0 ? (
+                  Object.entries(predictorStats.usage_stats)
+                    .sort((a, b) => b[1].count - a[1].count)
+                    .slice(0, 4)
+                    .map(([modelId, stat]) => (
+                      <StatRow
+                        key={modelId}
+                        label={modelId.split("/").pop() ?? modelId}
+                        value={`${stat.count.toLocaleString()} uses`}
+                      />
+                    ))
+                ) : (
+                  <p
+                    className="text-[10px]"
+                    style={{ color: "var(--opta-text-muted)" }}
+                  >
+                    No usage history yet
+                  </p>
+                )}
+              </div>
+            </motion.div>
+          </>
+        )}
 
         <Divider />
 

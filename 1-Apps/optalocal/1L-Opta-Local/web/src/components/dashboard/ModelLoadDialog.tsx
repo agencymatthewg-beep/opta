@@ -130,13 +130,11 @@ export function ModelLoadDialog({
   // Download flow state
   const [phase, setPhase] = useState<DialogPhase>("idle");
   const [confirmToken, setConfirmToken] = useState<string | null>(null);
-  // downloadId and downloadCompleted are write-only tracking state (read in future phases)
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [_downloadId, setDownloadId] = useState<string | null>(null);
+  // downloadId / downloadCompleted are non-display tracking values — use refs to avoid re-renders
+  const downloadIdRef = useRef<string | null>(null);
+  const downloadCompletedRef = useRef(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [downloadTotal, setDownloadTotal] = useState<number | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [_downloadCompleted, setDownloadCompleted] = useState(false);
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -154,10 +152,10 @@ export function ModelLoadDialog({
       setPhase("idle");
       setError(null);
       setConfirmToken(null);
-      setDownloadId(null);
+      downloadIdRef.current = null;
       setDownloadProgress(0);
       setDownloadTotal(null);
-      setDownloadCompleted(false);
+      downloadCompletedRef.current = false;
     }
   }, [isOpen]);
 
@@ -177,7 +175,7 @@ export function ModelLoadDialog({
 
           if (progress.status === "completed") {
             if (pollRef.current) clearInterval(pollRef.current);
-            setDownloadCompleted(true);
+            downloadCompletedRef.current = true;
             setPhase("download_complete");
             // Auto-proceed to load after a brief success flash
             setTimeout(async () => {
@@ -248,7 +246,7 @@ export function ModelLoadDialog({
       // result should contain download_id
       const dlId =
         (result as { download_id?: string }).download_id ?? confirmToken;
-      setDownloadId(dlId);
+      downloadIdRef.current = dlId;
       startPolling(dlId);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to start download");

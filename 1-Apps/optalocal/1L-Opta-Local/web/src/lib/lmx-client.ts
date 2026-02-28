@@ -36,6 +36,15 @@ import type {
   HelperNodeStatus,
   LogFileMeta,
   SessionSearchRequest,
+  AgentRun,
+  AgentRunCreate,
+  Skill,
+  SkillMcpTool,
+  SkillExecuteResult,
+  EmbeddingsRequest,
+  EmbeddingsResponse,
+  RerankRequest,
+  RerankResponse,
 } from "@/types/lmx";
 import { LMXError } from "@/types/lmx";
 import type {
@@ -463,6 +472,18 @@ export class LMXClient {
     );
   }
 
+  /** Probe candidate backends for a model without fully loading it. */
+  async probeModel(req: {
+    model_path: string;
+    backends?: string[];
+  }): Promise<{
+    results: Array<{ backend: string; supported: boolean; reason?: string }>;
+  }> {
+    return this.request<{
+      results: Array<{ backend: string; supported: boolean; reason?: string }>;
+    }>("/admin/models/probe", { method: "POST", body: JSON.stringify(req) });
+  }
+
   // ---------------------------------------------------------------------------
   // Extended Admin — Metrics
   // ---------------------------------------------------------------------------
@@ -605,5 +626,110 @@ export class LMXClient {
     return this.request<SessionListResponse>(
       `/admin/sessions/search?${params.toString()}`,
     );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Agent Runs
+  // ---------------------------------------------------------------------------
+
+  /** GET /admin/agents/runs — List agent run records with optional filters */
+  async listAgentRuns(opts?: {
+    status?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<AgentRun[]> {
+    const params = new URLSearchParams();
+    if (opts?.status) params.set("status", opts.status);
+    if (opts?.limit != null) params.set("limit", String(opts.limit));
+    if (opts?.offset != null) params.set("offset", String(opts.offset));
+    const qs = params.toString();
+    return this.request<AgentRun[]>(`/admin/agents/runs${qs ? `?${qs}` : ""}`);
+  }
+
+  /** POST /admin/agents/runs — Create and enqueue a new agent run */
+  async createAgentRun(payload: AgentRunCreate): Promise<AgentRun> {
+    return this.request<AgentRun>("/admin/agents/runs", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  /** GET /admin/agents/runs/:id — Fetch a single agent run by ID */
+  async getAgentRun(runId: string): Promise<AgentRun> {
+    return this.request<AgentRun>(
+      `/admin/agents/runs/${encodeURIComponent(runId)}`,
+    );
+  }
+
+  /** POST /admin/agents/runs/:id/cancel — Cancel an in-progress agent run */
+  async cancelAgentRun(runId: string): Promise<AgentRun> {
+    return this.request<AgentRun>(
+      `/admin/agents/runs/${encodeURIComponent(runId)}/cancel`,
+      { method: "POST" },
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Skills
+  // ---------------------------------------------------------------------------
+
+  /** GET /admin/skills — List all registered skills */
+  async listSkills(): Promise<Skill[]> {
+    return this.request<Skill[]>("/admin/skills");
+  }
+
+  /** GET /admin/skills/:name — Get a skill by name with its tool definitions */
+  async getSkill(name: string): Promise<Skill> {
+    return this.request<Skill>(`/admin/skills/${encodeURIComponent(name)}`);
+  }
+
+  /** GET /admin/skills/mcp/tools — List all MCP tools across all skill servers */
+  async listSkillMcpTools(): Promise<SkillMcpTool[]> {
+    return this.request<SkillMcpTool[]>("/admin/skills/mcp/tools");
+  }
+
+  /** POST /admin/skills/:name/execute — Execute a skill with optional arguments */
+  async executeSkill(
+    name: string,
+    args?: Record<string, unknown>,
+  ): Promise<SkillExecuteResult> {
+    return this.request<SkillExecuteResult>(
+      `/admin/skills/${encodeURIComponent(name)}/execute`,
+      {
+        method: "POST",
+        body: JSON.stringify(args ?? {}),
+      },
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // ML — Embeddings & Rerank
+  // ---------------------------------------------------------------------------
+
+  /** POST /v1/embeddings — Generate embedding vectors for an array of texts */
+  async createEmbeddings(
+    texts: string[],
+    model?: string,
+  ): Promise<EmbeddingsResponse> {
+    const req: EmbeddingsRequest = { input: texts };
+    if (model) req.model = model;
+    return this.request<EmbeddingsResponse>("/v1/embeddings", {
+      method: "POST",
+      body: JSON.stringify(req),
+    });
+  }
+
+  /** POST /v1/rerank — Rerank documents by relevance to a query */
+  async rerankDocuments(
+    query: string,
+    docs: string[],
+    topK?: number,
+  ): Promise<RerankResponse> {
+    const req: RerankRequest = { query, documents: docs };
+    if (topK != null) req.top_k = topK;
+    return this.request<RerankResponse>("/v1/rerank", {
+      method: "POST",
+      body: JSON.stringify(req),
+    });
   }
 }

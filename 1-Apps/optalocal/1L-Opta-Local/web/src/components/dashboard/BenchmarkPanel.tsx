@@ -20,7 +20,11 @@ import {
 } from "lucide-react";
 import { cn } from "@opta/ui";
 import type { LMXClient } from "@/lib/lmx-client";
-import type { BenchmarkRequest, BenchmarkResult } from "@/types/lmx";
+import type {
+  BenchmarkRequest,
+  BenchmarkResult,
+  ModelPerformanceConfig,
+} from "@/types/lmx";
 
 // ---------------------------------------------------------------------------
 // Props
@@ -391,9 +395,11 @@ function MiniStat({
 function AutotuneButton({
   modelId,
   client,
+  onResult,
 }: {
   modelId: string;
   client: LMXClient;
+  onResult?: (profile: ModelPerformanceConfig) => void;
 }) {
   const [state, setState] = useState<"idle" | "running" | "done" | "error">(
     "idle",
@@ -407,13 +413,20 @@ function AutotuneButton({
       try {
         await client.autotuneModel(modelId);
         setState("done");
-        setTimeout(() => setState("idle"), 3000);
+        // Fetch the stored autotune result to surface it in the UI
+        try {
+          const profile = await client.getAutotuneResult(modelId);
+          onResult?.(profile);
+        } catch {
+          // non-fatal: autotune succeeded, result fetch just unavailable
+        }
+        setTimeout(() => setState("idle"), 4000);
       } catch {
         setState("error");
         setTimeout(() => setState("idle"), 3000);
       }
     },
-    [client, modelId, state],
+    [client, modelId, onResult, state],
   );
 
   return (
@@ -491,6 +504,10 @@ export function BenchmarkPanel({
   const [resultsLoading, setResultsLoading] = useState(true);
   const [resultsError, setResultsError] = useState<string | null>(null);
   const [filterModel, setFilterModel] = useState<string>("__all__");
+
+  // ---- Autotune profile ----
+  const [autotuneProfile, setAutotuneProfile] =
+    useState<ModelPerformanceConfig | null>(null);
 
   // Sync model selector to first loaded model
   useEffect(() => {
@@ -684,10 +701,153 @@ export function BenchmarkPanel({
 
                 {/* Autotune button — shown when a model is selected */}
                 {client && selectedModel && (
-                  <AutotuneButton modelId={selectedModel} client={client} />
+                  <AutotuneButton
+                    modelId={selectedModel}
+                    client={client}
+                    onResult={(profile) => setAutotuneProfile(profile)}
+                  />
                 )}
               </div>
             </div>
+
+            {/* Autotune profile result */}
+            <AnimatePresence>
+              {autotuneProfile && (
+                <motion.div
+                  key="autotune-profile"
+                  initial={{ opacity: 0, y: -6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ type: "spring", stiffness: 260, damping: 28 }}
+                  className="rounded-xl p-3"
+                  style={{
+                    background: "rgba(6,182,212,0.06)",
+                    border: "1px solid rgba(6,182,212,0.18)",
+                  }}
+                >
+                  <div className="mb-2 flex items-center gap-1.5">
+                    <Zap
+                      className="h-3 w-3"
+                      style={{ color: "var(--opta-neon-cyan)" }}
+                    />
+                    <span
+                      className="text-[10px] font-semibold uppercase tracking-[0.14em]"
+                      style={{ color: "var(--opta-neon-cyan)" }}
+                    >
+                      Autotune result
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
+                    {autotuneProfile.backend_type && (
+                      <div className="flex justify-between col-span-2">
+                        <span
+                          className="text-[9px]"
+                          style={{ color: "var(--opta-text-muted)" }}
+                        >
+                          Backend
+                        </span>
+                        <span
+                          className="text-[9px] tabular-nums font-medium"
+                          style={{ color: "var(--opta-text-secondary)" }}
+                        >
+                          {autotuneProfile.backend_type}
+                        </span>
+                      </div>
+                    )}
+                    {autotuneProfile.best_profile && (
+                      <div className="flex justify-between col-span-2">
+                        <span
+                          className="text-[9px]"
+                          style={{ color: "var(--opta-text-muted)" }}
+                        >
+                          Best profile
+                        </span>
+                        <span
+                          className="text-[9px] tabular-nums font-medium"
+                          style={{ color: "var(--opta-neon-cyan)" }}
+                        >
+                          {autotuneProfile.best_profile}
+                        </span>
+                      </div>
+                    )}
+                    {autotuneProfile.max_context_length != null && (
+                      <div className="flex justify-between">
+                        <span
+                          className="text-[9px]"
+                          style={{ color: "var(--opta-text-muted)" }}
+                        >
+                          Max ctx
+                        </span>
+                        <span
+                          className="text-[9px] tabular-nums font-medium"
+                          style={{ color: "var(--opta-text-secondary)" }}
+                        >
+                          {autotuneProfile.max_context_length.toLocaleString()}
+                        </span>
+                      </div>
+                    )}
+                    {autotuneProfile.kv_bits != null && (
+                      <div className="flex justify-between">
+                        <span
+                          className="text-[9px]"
+                          style={{ color: "var(--opta-text-muted)" }}
+                        >
+                          KV bits
+                        </span>
+                        <span
+                          className="text-[9px] tabular-nums font-medium"
+                          style={{ color: "var(--opta-text-secondary)" }}
+                        >
+                          {autotuneProfile.kv_bits}
+                        </span>
+                      </div>
+                    )}
+                    {autotuneProfile.speculative && (
+                      <div className="flex justify-between col-span-2">
+                        <span
+                          className="text-[9px]"
+                          style={{ color: "var(--opta-text-muted)" }}
+                        >
+                          Speculative
+                        </span>
+                        <span
+                          className="text-[9px] tabular-nums font-medium"
+                          style={{
+                            color: autotuneProfile.speculative.enabled
+                              ? "var(--opta-neon-green)"
+                              : "var(--opta-text-muted)",
+                          }}
+                        >
+                          {autotuneProfile.speculative.enabled
+                            ? `on${autotuneProfile.speculative.num_tokens != null ? ` (${autotuneProfile.speculative.num_tokens}t)` : ""}`
+                            : "off"}
+                        </span>
+                      </div>
+                    )}
+                    {autotuneProfile.prefix_cache != null && (
+                      <div className="flex justify-between">
+                        <span
+                          className="text-[9px]"
+                          style={{ color: "var(--opta-text-muted)" }}
+                        >
+                          Prefix cache
+                        </span>
+                        <span
+                          className="text-[9px] font-medium"
+                          style={{
+                            color: autotuneProfile.prefix_cache
+                              ? "var(--opta-neon-green)"
+                              : "var(--opta-text-muted)",
+                          }}
+                        >
+                          {autotuneProfile.prefix_cache ? "on" : "off"}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Max tokens */}
             <div>
