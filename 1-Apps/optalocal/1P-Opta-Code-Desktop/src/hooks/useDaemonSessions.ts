@@ -15,6 +15,32 @@ const DEFAULT_CONNECTION: DaemonConnectionOptions = {
   token: "",
 };
 
+const STORAGE_KEY = "opta:daemon-connection";
+
+function loadStoredConnection(): DaemonConnectionOptions {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return DEFAULT_CONNECTION;
+    const parsed = JSON.parse(raw) as Partial<DaemonConnectionOptions>;
+    return {
+      host: typeof parsed.host === "string" ? parsed.host : DEFAULT_CONNECTION.host,
+      port: typeof parsed.port === "number" ? parsed.port : DEFAULT_CONNECTION.port,
+      token: typeof parsed.token === "string" ? parsed.token : DEFAULT_CONNECTION.token,
+      protocol: parsed.protocol ?? DEFAULT_CONNECTION.protocol,
+    };
+  } catch {
+    return DEFAULT_CONNECTION;
+  }
+}
+
+function saveConnection(conn: DaemonConnectionOptions): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(conn));
+  } catch {
+    // ignore quota/security errors
+  }
+}
+
 const RUNTIME_POLL_MS = 4000;
 
 const STOP_EVENT_KINDS = new Set([
@@ -55,7 +81,7 @@ function eventsToTimelineItems(
   };
 
   for (const event of events) {
-    const kind = String(event.kind ?? "unknown");
+    const kind = String(event.event ?? "unknown");
     const payload = (event.payload ?? {}) as Record<string, unknown>;
     const seq = event.seq;
 
@@ -104,7 +130,7 @@ function eventsToTimelineItems(
         id: `${sessionId}-thinking-${String(seq ?? Date.now())}`,
         kind: "thinking",
         title: "Thinking",
-        body: String(payload.content ?? payload.thinking ?? ""),
+        body: String(payload.text ?? payload.content ?? payload.thinking ?? ""),
         createdAt: nowIso(),
       });
       continue;
@@ -159,8 +185,13 @@ function eventsToTimelineItems(
 }
 
 export function useDaemonSessions() {
-  const [connection, setConnection] =
-    useState<DaemonConnectionOptions>(DEFAULT_CONNECTION);
+  const [connection, setConnectionRaw] =
+    useState<DaemonConnectionOptions>(loadStoredConnection);
+
+  const setConnection = useCallback((conn: DaemonConnectionOptions) => {
+    saveConnection(conn);
+    setConnectionRaw(conn);
+  }, []);
   const [sessions, setSessions] = useState<DaemonSessionSummary[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [timelineBySession, setTimelineBySession] = useState<
@@ -224,14 +255,12 @@ export function useDaemonSessions() {
         seqCursorRef.current[sessionId] = envelope.seq;
       }
 
-      const kind = String(envelope.kind ?? "");
+      const kind = String(envelope.event ?? "");
       const payload = (envelope.payload ?? {}) as Record<string, unknown>;
 
       // ── Permission state management ───────────────────────────────────────
       if (kind === "permission.request") {
-        const requestId = String(
-          payload.requestId ?? payload.request_id ?? "",
-        );
+        const requestId = String(payload.requestId ?? payload.request_id ?? "");
         const toolName = String(
           payload.toolName ?? payload.tool_name ?? payload.name ?? "",
         );
@@ -249,9 +278,7 @@ export function useDaemonSessions() {
       }
 
       if (kind === "permission.resolved") {
-        const requestId = String(
-          payload.requestId ?? payload.request_id ?? "",
-        );
+        const requestId = String(payload.requestId ?? payload.request_id ?? "");
         if (requestId) {
           setPendingPermissions((prev) =>
             prev.filter((p) => p.requestId !== requestId),
@@ -514,6 +541,7 @@ export function useDaemonSessions() {
           content: message,
           clientId: clientIdRef.current,
           writerId: clientIdRef.current,
+          mode: "chat",
         });
         setConnectionState("connected");
         setConnectionError(null);
