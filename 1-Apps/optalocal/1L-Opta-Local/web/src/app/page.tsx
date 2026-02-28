@@ -3,26 +3,20 @@
 /**
  * Dashboard — Root page (/).
  *
- * Shell: Opta Design System v5 "Terminal Core / Structural HUD" aesthetic.
- * Data:  All live hooks from the original dashboard are preserved unchanged:
+ * Aesthetic: Google Gemini — luminous depth, soft ambient orbs,
+ * iridescent card shimmer, fluid blue→violet→teal gradient language.
+ * Replaces Terminal Core HUD. All live data hooks unchanged.
+ *
+ * Data:
  *   - useSSE → /admin/events (status, model_change, throughput events)
  *   - useBufferedState → 500ms VRAM/status flush
  *   - CircularBuffer + 1s interval flush → ThroughputChart
  *   - useHeartbeat → ping health + latency
  *   - LMXClient.loadModel / unloadModel
- *
- * Layout:
- *   Left column  (w-72) — identity, daemon/connection telemetry, silicon pressure,
- *                          live TPS readout, heartbeat.
- *   Right panel  (flex-1) — VRAMGauge, ModelList, ThroughputChart, ServerStats.
- *   Footer bar   (32px) — full-width monospace status row.
- *
- * HUD aesthetics injected via a <style> block so they don't pollute globals.css:
- *   .hud-grid, .film-grain, .momentum-border animations.
- * All color values use CSS vars — no hex literals in JSX.
  */
 
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   RefreshCw,
@@ -31,12 +25,24 @@ import {
   WifiOff,
   AlertTriangle,
   Cloud,
-  Terminal as TerminalIcon,
   Cpu,
   Zap,
   Activity,
   Database,
   Network,
+  Sparkles,
+  MessageSquare,
+  Swords,
+  BookOpen,
+  Bot,
+  History,
+  Layers,
+  Monitor,
+  BarChart2,
+  FlaskConical,
+  Package,
+  Settings,
+  ArrowRight,
 } from "lucide-react";
 import { Button, cn } from "@opta/ui";
 
@@ -72,75 +78,70 @@ const THROUGHPUT_BUFFER_CAPACITY = 300;
 const CHART_FLUSH_INTERVAL_MS = 1000;
 
 // ---------------------------------------------------------------------------
-// Framer Motion variants — "Ignition" stagger
+// Framer Motion variants — gentle float-up stagger
 // ---------------------------------------------------------------------------
 
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: { staggerChildren: 0.12, delayChildren: 0.1 },
+    transition: { staggerChildren: 0.1, delayChildren: 0.05 },
   },
 };
 
-const panelVariants = {
-  hidden: { opacity: 0, y: 24, scale: 0.98 },
+const floatUp = {
+  hidden: { opacity: 0, y: 20, scale: 0.99 },
   visible: {
     opacity: 1,
     y: 0,
     scale: 1,
-    transition: { type: "spring" as const, stiffness: 280, damping: 26 },
+    transition: { type: "spring" as const, stiffness: 220, damping: 28 },
   },
 };
 
 const cardVariants = {
-  hidden: { opacity: 0, y: 16 },
+  hidden: { opacity: 0, y: 14 },
   visible: (i: number) => ({
     opacity: 1,
     y: 0,
     transition: {
-      delay: i * 0.07,
-      duration: 0.4,
+      delay: i * 0.08,
+      duration: 0.5,
       ease: [0.22, 1, 0.36, 1] as const,
     },
   }),
 };
 
 // ---------------------------------------------------------------------------
-// ObsidianPanel — glass block with travelling momentum border on hover
+// GeminiCard — iridescent glass card, Gemini-style
 // ---------------------------------------------------------------------------
 
-function ObsidianPanel({
+function GeminiCard({
   children,
   className = "",
   noPadding = false,
+  glow = false,
 }: {
   children: React.ReactNode;
   className?: string;
   noPadding?: boolean;
+  glow?: boolean;
 }) {
   return (
     <motion.div
-      variants={panelVariants}
+      variants={floatUp}
       className={cn(
-        "group relative overflow-hidden rounded-xl",
-        "bg-[rgba(5,3,10,0.8)] backdrop-blur-xl",
-        "border border-white/5",
-        "transition-colors duration-500",
-        "hover:border-white/10 hover:bg-[rgba(10,6,20,0.85)]",
+        "group relative overflow-hidden rounded-2xl",
+        "gemini-card",
+        glow && "gemini-card--glow",
         className,
       )}
     >
-      {/* Momentum border — four travelling glows, visible on hover only */}
-      <div className="pointer-events-none absolute inset-0 z-20 opacity-0 transition-opacity duration-500 group-hover:opacity-100">
-        <div className="hud-momentum-top absolute left-0 top-0 h-px w-full bg-gradient-to-r from-transparent via-[var(--color-neon-purple)] to-transparent" />
-        <div className="hud-momentum-bottom absolute bottom-0 right-0 h-px w-full bg-gradient-to-r from-transparent via-[var(--color-neon-purple)] to-transparent" />
-        <div className="hud-momentum-right absolute right-0 top-0 h-full w-px bg-gradient-to-b from-transparent via-[var(--color-neon-purple)] to-transparent" />
-        <div className="hud-momentum-left absolute bottom-0 left-0 h-full w-px bg-gradient-to-b from-transparent via-[var(--color-neon-purple)] to-transparent" />
-      </div>
+      {/* Iridescent shimmer rim — visible on hover */}
+      <div className="pointer-events-none absolute inset-0 z-10 rounded-2xl opacity-0 transition-opacity duration-700 group-hover:opacity-100 gemini-shimmer-rim" />
 
       <div
-        className={cn("relative z-10 h-full w-full", noPadding ? "" : "p-5")}
+        className={cn("relative z-20 h-full w-full", noPadding ? "" : "p-5")}
       >
         {children}
       </div>
@@ -149,33 +150,30 @@ function ObsidianPanel({
 }
 
 // ---------------------------------------------------------------------------
-// MoonlightHeading — gradient text heading
+// SectionLabel — muted small label + optional icon
 // ---------------------------------------------------------------------------
 
-function MoonlightHeading({
+function SectionLabel({
   children,
-  className = "",
-  as: Tag = "h2",
+  icon: Icon,
 }: {
   children: React.ReactNode;
-  className?: string;
-  as?: "h1" | "h2" | "h3" | "h4";
+  icon?: React.ElementType;
 }) {
   return (
-    <Tag
-      className={cn(
-        "bg-clip-text font-semibold text-transparent",
-        "bg-[linear-gradient(135deg,var(--color-text-primary)_0%,var(--color-text-primary)_50%,var(--color-neon-purple)_100%)]",
-        className,
+    <div className="mb-3 flex items-center gap-2">
+      {Icon && (
+        <Icon className="h-3.5 w-3.5 text-[var(--color-text-muted)] opacity-70" />
       )}
-    >
-      {children}
-    </Tag>
+      <span className="text-[10px] font-medium uppercase tracking-[0.18em] text-[var(--color-text-muted)]">
+        {children}
+      </span>
+    </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// TelemetryRow — compact monospace key/value line
+// TelemetryRow — compact key/value line (Gemini style: softer)
 // ---------------------------------------------------------------------------
 
 function TelemetryRow({
@@ -185,20 +183,109 @@ function TelemetryRow({
 }: {
   label: string;
   value: React.ReactNode;
-  accent?: string; // CSS color string
+  accent?: string;
 }) {
   return (
-    <div className="flex items-center justify-between">
-      <span className="font-mono text-[10px] uppercase tracking-wider text-text-muted">
+    <div className="flex items-center justify-between py-0.5">
+      <span className="text-[10px] tracking-wide text-[var(--color-text-muted)]">
         {label}
       </span>
       <span
-        className="font-mono text-[11px] font-medium"
+        className="text-[11px] font-medium tabular-nums"
         style={{ color: accent ?? "var(--color-text-secondary)" }}
       >
         {value}
       </span>
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// GeminiStatusDot
+// ---------------------------------------------------------------------------
+
+function StatusDot({ online }: { online: boolean }) {
+  return (
+    <span
+      className={cn(
+        "inline-block h-2 w-2 rounded-full transition-all duration-500",
+        online ? "shadow-[0_0_8px_var(--opta-neon-green)]" : "opacity-40",
+      )}
+      style={{
+        background: online
+          ? "var(--color-neon-green)"
+          : "var(--color-text-muted)",
+      }}
+    />
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Feature discovery grid
+// ---------------------------------------------------------------------------
+
+const FEATURE_CARDS = [
+  { label: "Chat", href: "/chat", icon: MessageSquare, desc: "Stream AI responses", accent: "#a855f7" },
+  { label: "Arena", href: "/arena", icon: Swords, desc: "Side-by-side comparison", accent: "#3b82f6" },
+  { label: "RAG Studio", href: "/rag", icon: BookOpen, desc: "Document Q&A", accent: "#06b6d4" },
+  { label: "Agents", href: "/agents", icon: Bot, desc: "Automate workflows", accent: "#22c55e" },
+  { label: "Models", href: "/models", icon: Layers, desc: "Browse & load models", accent: "#8b5cf6" },
+  { label: "Sessions", href: "/sessions", icon: History, desc: "Chat history", accent: "#f59e0b" },
+  { label: "Devices", href: "/devices", icon: Monitor, desc: "Device registry", accent: "#6366f1" },
+  { label: "Metrics", href: "/metrics", icon: BarChart2, desc: "Live telemetry", accent: "#10b981" },
+  { label: "Benchmark", href: "/benchmark", icon: FlaskConical, desc: "Model evaluations", accent: "#f97316" },
+  { label: "Quantize", href: "/quantize", icon: Package, desc: "Compress models", accent: "#ec4899" },
+  { label: "Stack", href: "/stack", icon: Network, desc: "Stack overview", accent: "#0ea5e9" },
+  { label: "Settings", href: "/settings", icon: Settings, desc: "Configuration", accent: "#71717a" },
+] as const;
+
+function FeatureCard({
+  label,
+  href,
+  icon: Icon,
+  desc,
+  accent,
+  delay,
+}: {
+  label: string;
+  href: string;
+  icon: React.ElementType;
+  desc: string;
+  accent: string;
+  delay: number;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+      whileHover={{ scale: 1.03, y: -2 }}
+      whileTap={{ scale: 0.97 }}
+    >
+      <Link href={href} className="group relative flex flex-col gap-2.5 rounded-xl p-3 feature-card-link">
+        <div
+          className="flex h-7 w-7 items-center justify-center rounded-lg"
+          style={{
+            background: `${accent}22`,
+            border: `1px solid ${accent}38`,
+          }}
+        >
+          <Icon className="h-3.5 w-3.5" style={{ color: accent }} />
+        </div>
+        <div className="min-w-0">
+          <p className="text-[11px] font-semibold text-[var(--color-text-primary)] truncate leading-tight">
+            {label}
+          </p>
+          <p className="mt-0.5 text-[10px] text-[var(--color-text-muted)] truncate leading-tight">
+            {desc}
+          </p>
+        </div>
+        <ArrowRight
+          className="absolute top-3 right-3 h-3 w-3 opacity-0 transition-opacity duration-200 group-hover:opacity-40"
+          style={{ color: "var(--color-text-muted)" }}
+        />
+      </Link>
+    </motion.div>
   );
 }
 
@@ -353,119 +440,273 @@ export default function DashboardPage() {
       ? status.tokens_per_second.toFixed(1)
       : "0.0";
 
+  // ---- Ambient glow intensity from TPS ----
+  const glowOpacity =
+    averageTps != null && averageTps > 0 ? Math.min(averageTps / 40, 0.55) : 0;
+
   // ---------------------------------------------------------------------------
   // Render
   // ---------------------------------------------------------------------------
 
   return (
     <>
-      {/* ── HUD-specific CSS (scoped to this page, uses CSS vars) ── */}
+      {/* ── Gemini CSS (scoped, uses only CSS vars — no hex literals in JSX) ── */}
       <style>{`
-        .hud-grid {
-          background-size: 4rem 4rem;
-          background-image:
-            linear-gradient(to right,  rgba(255,255,255,0.028) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(255,255,255,0.028) 1px, transparent 1px);
-          mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, black 30%, transparent 100%);
+        /* Ambient background orbs */
+        @keyframes gemini-drift-a {
+          0%   { transform: translate(0, 0) scale(1); }
+          33%  { transform: translate(40px, -30px) scale(1.08); }
+          66%  { transform: translate(-20px, 20px) scale(0.96); }
+          100% { transform: translate(0, 0) scale(1); }
+        }
+        @keyframes gemini-drift-b {
+          0%   { transform: translate(0, 0) scale(1); }
+          40%  { transform: translate(-50px, 25px) scale(1.1); }
+          70%  { transform: translate(30px, -15px) scale(0.93); }
+          100% { transform: translate(0, 0) scale(1); }
+        }
+        @keyframes gemini-drift-c {
+          0%   { transform: translate(0, 0) scale(1); }
+          50%  { transform: translate(20px, 40px) scale(1.05); }
+          100% { transform: translate(0, 0) scale(1); }
         }
 
-        .film-grain {
-          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-          opacity: 0.035;
+        /* Card base */
+        .gemini-card {
+          background: linear-gradient(
+            145deg,
+            rgba(15, 10, 30, 0.82) 0%,
+            rgba(10, 8, 22, 0.78) 50%,
+            rgba(12, 10, 28, 0.82) 100%
+          );
+          border: 1px solid rgba(139, 92, 246, 0.12);
+          box-shadow:
+            0 1px 0 inset rgba(255,255,255,0.04),
+            0 20px 40px -20px rgba(0,0,0,0.6);
+          backdrop-filter: blur(18px);
+          -webkit-backdrop-filter: blur(18px);
+          transition: border-color 0.5s ease, box-shadow 0.5s ease;
+        }
+        .gemini-card:hover {
+          border-color: rgba(139, 92, 246, 0.22);
+          box-shadow:
+            0 1px 0 inset rgba(255,255,255,0.06),
+            0 24px 48px -20px rgba(0,0,0,0.7),
+            0 0 0 1px rgba(139, 92, 246, 0.1);
+        }
+        .gemini-card--glow {
+          box-shadow:
+            0 1px 0 inset rgba(255,255,255,0.05),
+            0 20px 60px -20px rgba(88,28,135,0.35),
+            0 0 40px -10px rgba(139, 92, 246, 0.15);
         }
 
-        @keyframes momentum-x         { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
-        @keyframes momentum-x-reverse { 0% { transform: translateX( 100%); } 100% { transform: translateX(-100%); } }
-        @keyframes momentum-y         { 0% { transform: translateY(-100%); } 100% { transform: translateY(100%); } }
-        @keyframes momentum-y-reverse { 0% { transform: translateY( 100%); } 100% { transform: translateY(-100%); } }
+        /* Iridescent shimmer rim */
+        .gemini-shimmer-rim {
+          background: conic-gradient(
+            from 180deg,
+            rgba(6, 182, 212, 0.18),
+            rgba(139, 92, 246, 0.22),
+            rgba(59, 130, 246, 0.18),
+            rgba(168, 85, 247, 0.2),
+            rgba(6, 182, 212, 0.18)
+          );
+          mask-image: linear-gradient(black, black) content-box,
+                      linear-gradient(black, black);
+          mask-composite: exclude;
+          -webkit-mask-composite: destination-out;
+          padding: 1px;
+        }
 
-        .hud-momentum-top    { animation: momentum-x         3s linear infinite; }
-        .hud-momentum-bottom { animation: momentum-x-reverse 3s linear infinite; }
-        .hud-momentum-right  { animation: momentum-y         3s linear infinite; }
-        .hud-momentum-left   { animation: momentum-y-reverse 3s linear infinite; }
+        /* Progress track */
+        .gemini-track {
+          height: 4px;
+          border-radius: 9999px;
+          background: rgba(255,255,255,0.06);
+          overflow: hidden;
+        }
+        .gemini-track-fill {
+          height: 100%;
+          border-radius: 9999px;
+          transition: width 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        /* Gradient TPS number */
+        .gemini-tps-number {
+          background: linear-gradient(
+            135deg,
+            #e0e7ff 0%,
+            #a5b4fc 30%,
+            #818cf8 55%,
+            #c084fc 80%,
+            #e879f9 100%
+          );
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          filter: drop-shadow(0 0 20px rgba(139, 92, 246, 0.4));
+        }
+
+        /* Divider */
+        .gemini-divider {
+          height: 1px;
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(139, 92, 246, 0.25),
+            rgba(6, 182, 212, 0.2),
+            transparent
+          );
+        }
+
+        /* Feature card links */
+        .feature-card-link {
+          background: rgba(139, 92, 246, 0.04);
+          border: 1px solid rgba(139, 92, 246, 0.08);
+          transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+        }
+        .feature-card-link:hover {
+          background: rgba(139, 92, 246, 0.1);
+          border-color: rgba(139, 92, 246, 0.2);
+          box-shadow: 0 0 16px rgba(139, 92, 246, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+        }
       `}</style>
 
-      <div className="relative flex h-screen flex-col overflow-hidden bg-opta-bg text-text-primary selection:bg-neon-purple/30">
-        {/* ── Environment layers ── */}
-        <div className="hud-grid pointer-events-none absolute inset-0 z-0" />
-        <div className="film-grain pointer-events-none fixed inset-0 z-50" />
+      <div className="relative flex h-screen flex-col overflow-hidden bg-opta-bg text-text-primary">
+        {/* ── BACKGROUND: Deep space + animated Gemini orbs ── */}
+        <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+          {/* Deep gradient backdrop */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "radial-gradient(ellipse 80% 60% at 20% 10%, rgba(30,10,60,0.8) 0%, transparent 55%), " +
+                "radial-gradient(ellipse 60% 50% at 80% 90%, rgba(10,20,50,0.6) 0%, transparent 50%), " +
+                "var(--opta-bg)",
+            }}
+          />
 
-        {/* ── Ambient inference glow (bottom-right, fades in with TPS) ── */}
-        <motion.div
-          className="pointer-events-none fixed bottom-[8%] right-[4%] -z-10 h-[35vw] w-[35vw] rounded-full blur-[140px] mix-blend-screen"
-          style={{ background: "var(--color-neon-cyan)" }}
-          animate={{
-            opacity:
-              averageTps != null && averageTps > 0
-                ? Math.min(averageTps / 40, 0.45)
-                : 0,
-          }}
-          transition={{ duration: 1.5, ease: "easeOut" }}
-        />
+          {/* Orb A — violet, top-left */}
+          <motion.div
+            className="absolute rounded-full blur-[120px]"
+            style={{
+              width: "45vw",
+              height: "45vw",
+              top: "-10%",
+              left: "-5%",
+              background:
+                "radial-gradient(circle, rgba(88,28,135,0.35) 0%, rgba(139,92,246,0.15) 50%, transparent 70%)",
+              animation: "gemini-drift-a 22s ease-in-out infinite",
+            }}
+          />
+          {/* Orb B — cyan, bottom-right */}
+          <motion.div
+            className="absolute rounded-full blur-[100px]"
+            style={{
+              width: "40vw",
+              height: "40vw",
+              bottom: "-8%",
+              right: "-5%",
+              background:
+                "radial-gradient(circle, rgba(6,182,212,0.2) 0%, rgba(59,130,246,0.12) 50%, transparent 70%)",
+              animation: "gemini-drift-b 28s ease-in-out infinite",
+            }}
+          />
+          {/* Orb C — blue-indigo, center */}
+          <motion.div
+            className="absolute rounded-full blur-[140px]"
+            style={{
+              width: "30vw",
+              height: "30vw",
+              top: "35%",
+              left: "40%",
+              background:
+                "radial-gradient(circle, rgba(59,130,246,0.15) 0%, rgba(99,102,241,0.1) 50%, transparent 70%)",
+              animation: "gemini-drift-c 18s ease-in-out infinite",
+            }}
+          />
+
+          {/* Inference activity glow — brightens with TPS */}
+          <motion.div
+            className="absolute rounded-full blur-[160px]"
+            style={{
+              width: "50vw",
+              height: "50vw",
+              bottom: "0%",
+              right: "10%",
+              background:
+                "radial-gradient(circle, rgba(168,85,247,0.5) 0%, transparent 70%)",
+            }}
+            animate={{ opacity: glowOpacity }}
+            transition={{ duration: 1.8, ease: "easeOut" }}
+          />
+        </div>
 
         {/* ══════════════════════════════════════════════════════════════
-            MAIN BODY — left telemetry column + right content
+            MAIN BODY — left sidebar + right content
         ══════════════════════════════════════════════════════════════ */}
         <motion.div
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className="relative z-10 flex flex-1 gap-5 overflow-hidden p-5"
+          className="relative z-10 flex flex-1 gap-4 overflow-hidden p-5"
         >
-          {/* ── LEFT COLUMN: telemetry ── */}
-          <section className="flex w-72 shrink-0 flex-col gap-4">
-            {/* Identity */}
+          {/* ── LEFT COLUMN ── */}
+          <section className="flex w-72 shrink-0 flex-col gap-3">
+            {/* Identity header */}
             <motion.div
-              variants={panelVariants}
-              className="flex items-center gap-3 px-1"
+              variants={floatUp}
+              className="flex items-center gap-3 px-1 pb-1"
             >
-              <div className="flex h-8 w-8 items-center justify-center rounded-md border border-white/20 bg-white/10 shadow-[0_0_14px_rgba(255,255,255,0.08)]">
-                <TerminalIcon className="h-4 w-4 text-text-primary" />
+              {/* Gemini-style icon — iridescent ring */}
+              <div
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
+                style={{
+                  background:
+                    "linear-gradient(135deg, rgba(88,28,135,0.6), rgba(6,182,212,0.3))",
+                  border: "1px solid rgba(139,92,246,0.4)",
+                  boxShadow: "0 0 16px rgba(139,92,246,0.25)",
+                }}
+              >
+                <Sparkles
+                  className="h-4 w-4"
+                  style={{ color: "var(--color-neon-purple)" }}
+                />
               </div>
               <div>
-                <h1 className="text-base font-bold leading-none tracking-tight text-text-primary">
-                  OPTA LMX
+                <h1
+                  className="text-[15px] font-semibold leading-none tracking-tight"
+                  style={{
+                    background:
+                      "linear-gradient(90deg, #fafafa 0%, #a5b4fc 60%, #c084fc 100%)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    backgroundClip: "text",
+                  }}
+                >
+                  Opta LMX
                 </h1>
-                <span className="font-mono text-[10px] uppercase tracking-widest text-text-muted">
-                  Core Dashboard
+                <span className="text-[10px] tracking-widest text-[var(--color-text-muted)]">
+                  Local inference
                 </span>
               </div>
-              {/* User badge (cloud mode) */}
               {auth?.user && (
-                <Cloud className="ml-auto h-3.5 w-3.5 shrink-0 text-text-muted" />
+                <Cloud className="ml-auto h-3.5 w-3.5 shrink-0 text-[var(--color-text-muted)] opacity-50" />
               )}
             </motion.div>
 
-            {/* Daemon / connection status */}
-            <ObsidianPanel>
-              <div className="mb-3 flex items-center justify-between">
-                <MoonlightHeading
-                  as="h3"
-                  className="text-[11px] uppercase tracking-widest"
-                >
-                  Daemon Status
-                </MoonlightHeading>
-                <Activity
-                  className="h-3.5 w-3.5 transition-colors"
-                  style={{
-                    color: isOnline
-                      ? "var(--color-neon-green)"
-                      : "var(--color-neon-red)",
-                    filter: isOnline
-                      ? "drop-shadow(0 0 6px var(--color-neon-green))"
-                      : "none",
-                  }}
-                />
-              </div>
-              <div className="flex flex-col gap-2">
+            {/* Connection */}
+            <GeminiCard>
+              <SectionLabel icon={Activity}>Connection</SectionLabel>
+              <div className="flex flex-col gap-1.5">
                 <TelemetryRow
-                  label="STATE"
+                  label="State"
                   value={
                     isOnline
-                      ? "ONLINE"
+                      ? "Online"
                       : connectionType === "probing"
-                        ? "PROBING"
-                        : "OFFLINE"
+                        ? "Probing"
+                        : "Offline"
                   }
                   accent={
                     isOnline
@@ -476,11 +717,11 @@ export default function DashboardPage() {
                   }
                 />
                 <TelemetryRow
-                  label="TYPE"
-                  value={connection?.connectionType?.toUpperCase() ?? "—"}
+                  label="Mode"
+                  value={connection?.connectionType ?? "—"}
                 />
                 <TelemetryRow
-                  label="LATENCY"
+                  label="Latency"
                   value={lastPingMs !== null ? `${lastPingMs}ms` : "—"}
                   accent={
                     lastPingMs !== null && lastPingMs < 10
@@ -491,7 +732,7 @@ export default function DashboardPage() {
                   }
                 />
                 <TelemetryRow
-                  label="SSE"
+                  label="Stream"
                   value={connectionState}
                   accent={
                     connectionState === "open"
@@ -502,189 +743,219 @@ export default function DashboardPage() {
                   }
                 />
               </div>
-            </ObsidianPanel>
+              <div className="gemini-divider mt-4 mb-3" />
+              <div className="flex items-center gap-2">
+                <StatusDot online={isOnline} />
+                <span className="text-[10px] text-[var(--color-text-muted)]">
+                  {isOnline ? "Nominal" : "Unreachable"}
+                </span>
+                {isConnected && (
+                  <div className="ml-auto">
+                    <HeartbeatIndicator
+                      isHealthy={isHealthy}
+                      consecutiveFailures={consecutiveFailures}
+                      lastPingMs={lastPingMs}
+                    />
+                  </div>
+                )}
+              </div>
+            </GeminiCard>
 
             {/* Active model */}
-            <ObsidianPanel>
-              <div className="mb-3 flex items-center justify-between">
-                <MoonlightHeading
-                  as="h3"
-                  className="text-[11px] uppercase tracking-widest"
-                >
-                  Active Matrix
-                </MoonlightHeading>
-                <Database className="h-3.5 w-3.5 text-text-muted transition-colors group-hover:text-neon-purple" />
-              </div>
-
+            <GeminiCard>
+              <SectionLabel icon={Database}>Active model</SectionLabel>
               {activeModel ? (
-                <>
-                  <div className="mb-3 rounded-lg border border-white/5 bg-black/40 p-3">
-                    <p
-                      className="truncate font-mono text-[11px] font-medium"
-                      style={{ color: "var(--color-neon-purple)" }}
-                      title={activeModel.id}
-                    >
-                      {activeModel.name ?? activeModel.id}
-                    </p>
-                    <p className="mt-0.5 font-mono text-[10px] text-text-muted">
-                      {activeModel.vram_gb != null
-                        ? `${activeModel.vram_gb.toFixed(1)} GB`
-                        : ""}
-                      {activeModel.quantization
-                        ? `${activeModel.vram_gb != null ? " · " : ""}${activeModel.quantization}`
-                        : ""}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
+                <div
+                  className="rounded-xl p-3"
+                  style={{
+                    background:
+                      "linear-gradient(135deg, rgba(88,28,135,0.2), rgba(59,130,246,0.1))",
+                    border: "1px solid rgba(139,92,246,0.2)",
+                  }}
+                >
+                  <p
+                    className="truncate text-[12px] font-medium leading-snug"
+                    style={{ color: "var(--color-neon-purple)" }}
+                    title={activeModel.id}
+                  >
+                    {activeModel.name ?? activeModel.id}
+                  </p>
+                  <p className="mt-1 text-[10px] text-[var(--color-text-muted)]">
+                    {activeModel.vram_gb != null
+                      ? `${activeModel.vram_gb.toFixed(1)} GB VRAM`
+                      : ""}
+                    {activeModel.quantization
+                      ? ` · ${activeModel.quantization}`
+                      : ""}
+                  </p>
+                  <div className="mt-2 flex items-center gap-1.5">
                     <span
-                      className="h-2 w-2 animate-pulse rounded-full shadow-[0_0_8px_var(--color-neon-green)]"
-                      style={{ background: "var(--color-neon-green)" }}
+                      className="h-1.5 w-1.5 animate-pulse rounded-full"
+                      style={{
+                        background: "var(--color-neon-green)",
+                        boxShadow: "0 0 6px var(--color-neon-green)",
+                      }}
                     />
-                    <span className="font-mono text-[10px] uppercase tracking-wider text-text-muted">
+                    <span className="text-[10px] text-[var(--color-neon-green)]">
                       Ready
                     </span>
                   </div>
-                </>
+                </div>
               ) : (
-                <>
-                  <div className="mb-3 rounded-lg border border-white/5 bg-black/40 p-3">
-                    <p className="font-mono text-[11px] text-text-muted">
-                      No model loaded
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full bg-white/20" />
-                    <span className="font-mono text-[10px] uppercase tracking-wider text-text-muted">
-                      Standby
-                    </span>
-                  </div>
-                </>
-              )}
-            </ObsidianPanel>
-
-            {/* Silicon pressure */}
-            <ObsidianPanel>
-              <div className="mb-3 flex items-center justify-between">
-                <MoonlightHeading
-                  as="h3"
-                  className="text-[11px] uppercase tracking-widest"
+                <div
+                  className="rounded-xl p-3"
+                  style={{
+                    background: "rgba(255,255,255,0.02)",
+                    border: "1px solid rgba(255,255,255,0.05)",
+                  }}
                 >
-                  Silicon Pressure
-                </MoonlightHeading>
-                <Cpu className="h-3.5 w-3.5 text-text-muted" />
-              </div>
+                  <p className="text-[11px] text-[var(--color-text-muted)]">
+                    No model loaded
+                  </p>
+                  <p className="mt-0.5 text-[10px] text-[var(--color-text-muted)] opacity-60">
+                    Use + Load Model to begin
+                  </p>
+                </div>
+              )}
+            </GeminiCard>
 
-              {/* Unified memory bar */}
-              <div className="mb-4">
-                <div className="mb-1.5 flex justify-between font-mono text-[10px]">
-                  <span className="text-text-muted">UNIFIED MEM</span>
-                  <span className="text-text-secondary">
+            {/* Memory pressure */}
+            <GeminiCard>
+              <SectionLabel icon={Cpu}>Unified memory</SectionLabel>
+              <div className="mb-3">
+                <div className="mb-2 flex items-end justify-between">
+                  <span
+                    className="text-2xl font-light tabular-nums leading-none"
+                    style={{ color: "var(--color-text-primary)" }}
+                  >
+                    {memPct.toFixed(0)}
+                    <span className="ml-0.5 text-xs text-[var(--color-text-muted)]">
+                      %
+                    </span>
+                  </span>
+                  <span className="text-[10px] text-[var(--color-text-muted)]">
                     {status
                       ? `${status.vram_used_gb.toFixed(1)} / ${status.vram_total_gb.toFixed(0)} GB`
                       : "— / —"}
                   </span>
                 </div>
-                <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/5">
+                <div className="gemini-track">
                   <motion.div
-                    className="h-full rounded-full"
+                    className="gemini-track-fill"
                     style={{
                       background:
                         memPct >= 80
-                          ? "var(--color-neon-red)"
+                          ? "linear-gradient(90deg, var(--color-neon-amber), var(--color-neon-red))"
                           : memPct >= 60
-                            ? "var(--color-neon-amber)"
-                            : "var(--color-neon-purple)",
+                            ? "linear-gradient(90deg, var(--color-neon-purple), var(--color-neon-amber))"
+                            : "linear-gradient(90deg, var(--opta-neon-blue), var(--color-neon-purple), var(--opta-neon-cyan))",
                     }}
                     animate={{ width: `${memPct}%` }}
-                    transition={{ duration: 0.6, ease: "easeOut" }}
+                    transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
                   />
                 </div>
               </div>
 
+              <div className="gemini-divider mb-3" />
+
               {/* Active requests */}
               <div>
-                <div className="mb-1.5 flex justify-between font-mono text-[10px]">
-                  <span className="text-text-muted">ACTIVE REQ</span>
-                  <span className="text-text-secondary">
+                <div className="mb-1.5 flex items-center justify-between">
+                  <span className="text-[10px] text-[var(--color-text-muted)]">
+                    Active requests
+                  </span>
+                  <span
+                    className="text-[11px] font-medium tabular-nums"
+                    style={{
+                      color:
+                        (status?.active_requests ?? 0) > 0
+                          ? "var(--opta-neon-cyan)"
+                          : "var(--color-text-muted)",
+                    }}
+                  >
                     {status?.active_requests ?? 0}
                   </span>
                 </div>
-                <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/5">
+                <div className="gemini-track">
                   <motion.div
-                    className="h-full rounded-full"
+                    className="gemini-track-fill"
                     style={{
-                      background: "var(--color-neon-green)",
+                      background:
+                        "linear-gradient(90deg, var(--opta-neon-cyan), var(--opta-neon-blue))",
                       boxShadow:
                         (status?.active_requests ?? 0) > 0
-                          ? "0 0 10px var(--color-neon-green)"
+                          ? "0 0 8px var(--opta-neon-cyan)"
                           : "none",
                     }}
                     animate={{
                       width: (status?.active_requests ?? 0) > 0 ? "100%" : "0%",
                     }}
-                    transition={{ duration: 0.4, ease: "easeOut" }}
+                    transition={{ duration: 0.5, ease: "easeOut" }}
                   />
                 </div>
               </div>
-            </ObsidianPanel>
+            </GeminiCard>
 
-            {/* Live TPS readout — grows to fill remaining space */}
-            <ObsidianPanel className="relative flex flex-1 flex-col items-center justify-center overflow-hidden">
+            {/* TPS readout — fills remaining space */}
+            <GeminiCard
+              glow
+              className="relative flex flex-1 flex-col items-center justify-center overflow-hidden"
+            >
+              {/* Background icon watermark */}
               <Zap
-                className="absolute right-3 top-3 h-14 w-14 opacity-[0.04]"
+                className="absolute right-2 bottom-3 h-20 w-20 opacity-[0.03]"
                 style={{ color: "var(--color-neon-purple)" }}
               />
+
+              <p className="mb-2 text-[10px] tracking-[0.16em] text-[var(--color-text-muted)] uppercase">
+                Tokens / sec
+              </p>
               <motion.div
                 key={tpsDisplay}
-                initial={{ opacity: 0.6, scale: 0.95 }}
+                initial={{ opacity: 0.5, scale: 0.94 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.3 }}
-                className="font-mono text-5xl font-light leading-none tracking-tighter text-text-primary tabular-nums"
+                transition={{ duration: 0.35 }}
+                className="gemini-tps-number text-6xl font-extralight leading-none tracking-tighter tabular-nums"
               >
                 {tpsDisplay}
               </motion.div>
-              <p className="mt-1.5 font-mono text-[10px] uppercase tracking-widest text-text-muted">
-                Tokens / Sec
-              </p>
 
-              {/* Heartbeat pill */}
-              {isConnected && (
-                <div className="mt-4 flex items-center gap-2">
-                  <HeartbeatIndicator
-                    isHealthy={isHealthy}
-                    consecutiveFailures={consecutiveFailures}
-                    lastPingMs={lastPingMs}
-                  />
-                  <span className="font-mono text-[10px] uppercase tracking-wider text-text-muted">
-                    {isHealthy ? "Nominal" : "Degraded"}
-                  </span>
-                </div>
+              {averageTps != null && averageTps > 0 && (
+                <p className="mt-2 text-[10px] text-[var(--color-text-muted)]">
+                  avg {averageTps.toFixed(1)} t/s
+                </p>
               )}
-            </ObsidianPanel>
+            </GeminiCard>
           </section>
 
-          {/* ── RIGHT PANEL: main data ── */}
+          {/* ── RIGHT PANEL ── */}
           <div className="flex flex-1 flex-col gap-4 overflow-y-auto no-scrollbar">
             {/* Action bar */}
             <motion.div
-              variants={panelVariants}
+              variants={floatUp}
               className="flex shrink-0 items-center justify-between"
             >
-              <div className="flex items-center gap-2">
-                {/* SSE error badge */}
+              <div className="flex items-center gap-3">
                 {connectionType !== "offline" &&
                   connectionState === "error" && (
-                    <span className="inline-flex items-center rounded-full border border-neon-red/30 bg-neon-red/10 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-widest text-neon-red">
-                      SSE off
+                    <span
+                      className="inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-wider"
+                      style={{
+                        background: "rgba(239,68,68,0.12)",
+                        border: "1px solid rgba(239,68,68,0.3)",
+                        color: "var(--color-neon-red)",
+                      }}
+                    >
+                      Stream off
                     </span>
                   )}
                 {auth?.user && (
-                  <p className="flex items-center gap-1.5 text-xs text-text-muted">
-                    <Cloud className="h-3 w-3" />
-                    <span className="text-text-secondary">
+                  <p className="flex items-center gap-1.5 text-xs text-[var(--color-text-muted)]">
+                    <Cloud className="h-3 w-3 opacity-50" />
+                    <span className="text-[var(--color-text-secondary)] opacity-70">
                       {auth.user.user_metadata?.full_name ??
                         auth.user.email ??
-                        "unknown"}
+                        ""}
                     </span>
                   </p>
                 )}
@@ -697,13 +968,13 @@ export default function DashboardPage() {
                   aria-label="Load a model"
                 >
                   <Plus className="mr-1.5 h-4 w-4" />
-                  Load Model
+                  Load model
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={reconnect}
-                  aria-label="Reconnect SSE"
+                  aria-label="Reconnect stream"
                 >
                   <RefreshCw className="h-4 w-4" />
                 </Button>
@@ -711,28 +982,28 @@ export default function DashboardPage() {
             </motion.div>
 
             {/* ── Banners ── */}
-
-            {/* Offline */}
             {connectionType === "offline" && (
               <motion.div
-                variants={panelVariants}
-                className="glass-subtle shrink-0 rounded-xl p-6 text-center"
+                variants={floatUp}
+                className="glass-subtle shrink-0 rounded-2xl p-8 text-center"
               >
-                <WifiOff className="mx-auto mb-3 h-8 w-8 text-neon-red" />
-                <p className="mb-1 text-sm font-medium text-text-primary">
+                <WifiOff
+                  className="mx-auto mb-3 h-8 w-8 opacity-60"
+                  style={{ color: "var(--color-neon-red)" }}
+                />
+                <p className="mb-1 text-sm font-medium text-[var(--color-text-primary)]">
                   Server unreachable
                 </p>
-                <p className="mb-4 text-xs text-text-muted">
+                <p className="mb-4 text-xs text-[var(--color-text-muted)]">
                   {connection?.error ?? "Could not connect via LAN or WAN"}
                 </p>
                 <Button variant="glass" size="sm" onClick={recheckConnection}>
                   <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
-                  Retry Connection
+                  Retry
                 </Button>
               </motion.div>
             )}
 
-            {/* Heartbeat unstable */}
             <AnimatePresence>
               {!isHealthy && connectionType !== "offline" && (
                 <motion.div
@@ -740,10 +1011,20 @@ export default function DashboardPage() {
                   animate={{ opacity: 1, y: 0, height: "auto" }}
                   exit={{ opacity: 0, y: -8, height: 0 }}
                   transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                  className="flex shrink-0 items-center gap-2 rounded-lg border border-neon-amber/30 glass-subtle px-4 py-3"
+                  className="flex shrink-0 items-center gap-2 rounded-xl px-4 py-3"
+                  style={{
+                    background: "rgba(245,158,11,0.08)",
+                    border: "1px solid rgba(245,158,11,0.25)",
+                  }}
                 >
-                  <AlertTriangle className="h-4 w-4 shrink-0 text-neon-amber" />
-                  <p className="flex-1 text-sm text-neon-amber">
+                  <AlertTriangle
+                    className="h-4 w-4 shrink-0"
+                    style={{ color: "var(--color-neon-amber)" }}
+                  />
+                  <p
+                    className="flex-1 text-sm"
+                    style={{ color: "var(--color-neon-amber)" }}
+                  >
                     Connection unstable — reconnecting...
                   </p>
                   <Button
@@ -753,7 +1034,8 @@ export default function DashboardPage() {
                       reconnect();
                       recheckConnection?.();
                     }}
-                    className="text-xs text-neon-amber hover:text-neon-amber/80"
+                    className="text-xs"
+                    style={{ color: "var(--color-neon-amber)" }}
                   >
                     <RefreshCw className="mr-1 h-3 w-3" />
                     Retry
@@ -762,7 +1044,6 @@ export default function DashboardPage() {
               )}
             </AnimatePresence>
 
-            {/* Action error */}
             <AnimatePresence>
               {actionError && (
                 <motion.div
@@ -770,13 +1051,26 @@ export default function DashboardPage() {
                   animate={{ opacity: 1, y: 0, height: "auto" }}
                   exit={{ opacity: 0, y: -8, height: 0 }}
                   transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                  className="flex shrink-0 items-center gap-2 rounded-lg border border-neon-red/20 bg-neon-red/10 px-4 py-3"
+                  className="flex shrink-0 items-center gap-2 rounded-xl px-4 py-3"
+                  style={{
+                    background: "rgba(239,68,68,0.08)",
+                    border: "1px solid rgba(239,68,68,0.2)",
+                  }}
                 >
-                  <AlertCircle className="h-4 w-4 shrink-0 text-neon-red" />
-                  <p className="flex-1 text-sm text-neon-red">{actionError}</p>
+                  <AlertCircle
+                    className="h-4 w-4 shrink-0"
+                    style={{ color: "var(--color-neon-red)" }}
+                  />
+                  <p
+                    className="flex-1 text-sm"
+                    style={{ color: "var(--color-neon-red)" }}
+                  >
+                    {actionError}
+                  </p>
                   <button
                     onClick={() => setActionError(null)}
-                    className="text-xs text-neon-red/60 hover:text-neon-red"
+                    className="text-xs opacity-50 hover:opacity-80 transition-opacity"
+                    style={{ color: "var(--color-neon-red)" }}
                     aria-label="Dismiss error"
                   >
                     Dismiss
@@ -834,50 +1128,107 @@ export default function DashboardPage() {
                 <ThroughputChart data={chartData} averageTps={averageTps} />
               </motion.div>
 
-              {/* Server Stats */}
+              {/* Server stats */}
               <motion.div
-                className="glass-subtle col-span-full rounded-xl p-5"
+                className="col-span-full"
                 variants={cardVariants}
                 initial="hidden"
                 animate="visible"
                 custom={3}
               >
-                <div className="mb-4 flex items-center gap-3">
-                  <Network className="h-3.5 w-3.5 text-text-muted" />
-                  <h2 className="font-mono text-[10px] uppercase tracking-[0.2em] text-text-muted">
-                    Server Info
-                  </h2>
-                  <div className="flex-1 border-t border-white/5" />
+                <div
+                  className="rounded-2xl p-5"
+                  style={{
+                    background:
+                      "linear-gradient(145deg, rgba(15,10,30,0.75), rgba(10,8,22,0.7))",
+                    border: "1px solid rgba(139,92,246,0.1)",
+                    backdropFilter: "blur(16px)",
+                  }}
+                >
+                  <div className="mb-4 flex items-center gap-3">
+                    <Network
+                      className="h-3.5 w-3.5 opacity-40"
+                      style={{ color: "var(--color-text-muted)" }}
+                    />
+                    <span className="text-[10px] uppercase tracking-[0.18em] text-[var(--color-text-muted)]">
+                      Server
+                    </span>
+                    <div className="gemini-divider flex-1" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-5">
+                    <StatItem
+                      label="Requests"
+                      value={status?.active_requests ?? 0}
+                      accent={
+                        (status?.active_requests ?? 0) > 0
+                          ? "var(--opta-neon-cyan)"
+                          : undefined
+                      }
+                    />
+                    <StatItem label="Tokens/sec" value={tpsDisplay} />
+                    <StatItem
+                      label="Temperature"
+                      value={
+                        status?.temperature_celsius != null
+                          ? `${status.temperature_celsius.toFixed(0)}\u00B0C`
+                          : "\u2014"
+                      }
+                      accent={getTempAccent(
+                        status?.temperature_celsius ?? null,
+                      )}
+                    />
+                    <StatItem
+                      label="Uptime"
+                      value={formatUptime(status?.uptime_seconds ?? 0)}
+                    />
+                    <StatItem
+                      label="Ping"
+                      value={lastPingMs !== null ? `${lastPingMs}ms` : "\u2014"}
+                      accent={getPingAccent(lastPingMs)}
+                    />
+                  </div>
                 </div>
-                <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-5">
-                  <StatItem
-                    label="Active Requests"
-                    value={status?.active_requests ?? 0}
-                    accent={
-                      (status?.active_requests ?? 0) > 0
-                        ? "var(--color-neon-cyan)"
-                        : undefined
-                    }
-                  />
-                  <StatItem label="Tokens/sec" value={tpsDisplay} />
-                  <StatItem
-                    label="Temperature"
-                    value={
-                      status?.temperature_celsius != null
-                        ? `${status.temperature_celsius.toFixed(0)}\u00B0C`
-                        : "\u2014"
-                    }
-                    accent={getTempAccent(status?.temperature_celsius ?? null)}
-                  />
-                  <StatItem
-                    label="Uptime"
-                    value={formatUptime(status?.uptime_seconds ?? 0)}
-                  />
-                  <StatItem
-                    label="Ping"
-                    value={lastPingMs !== null ? `${lastPingMs}ms` : "\u2014"}
-                    accent={getPingAccent(lastPingMs)}
-                  />
+              </motion.div>
+
+              {/* Quick access — feature discovery grid */}
+              <motion.div
+                className="col-span-full"
+                variants={cardVariants}
+                initial="hidden"
+                animate="visible"
+                custom={4}
+              >
+                <div
+                  className="rounded-2xl p-5"
+                  style={{
+                    background: "linear-gradient(145deg, rgba(15,10,30,0.6), rgba(10,8,22,0.55))",
+                    border: "1px solid rgba(139,92,246,0.08)",
+                    backdropFilter: "blur(16px)",
+                  }}
+                >
+                  <div className="mb-4 flex items-center gap-3">
+                    <Sparkles
+                      className="h-3.5 w-3.5 opacity-40"
+                      style={{ color: "var(--color-text-muted)" }}
+                    />
+                    <span className="text-[10px] uppercase tracking-[0.18em] text-[var(--color-text-muted)]">
+                      Quick Access
+                    </span>
+                    <div className="gemini-divider flex-1" />
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-6 xl:grid-cols-6">
+                    {FEATURE_CARDS.map((card, i) => (
+                      <FeatureCard
+                        key={card.href}
+                        label={card.label}
+                        href={card.href}
+                        icon={card.icon}
+                        desc={card.desc}
+                        accent={card.accent}
+                        delay={0.36 + i * 0.04}
+                      />
+                    ))}
+                  </div>
                 </div>
               </motion.div>
             </div>
@@ -885,83 +1236,79 @@ export default function DashboardPage() {
         </motion.div>
 
         {/* ══════════════════════════════════════════════════════════════
-            FOOTER — full-width monospace status bar
+            FOOTER — slim Gemini-style status bar
         ══════════════════════════════════════════════════════════════ */}
         <motion.footer
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7, duration: 0.4 }}
-          className="relative z-10 flex h-8 w-full shrink-0 items-center border-t border-white/[0.06] bg-opta-bg/80 px-5 backdrop-blur-xl"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.6, duration: 0.5 }}
+          className="relative z-10 flex h-9 w-full shrink-0 items-center px-5"
+          style={{
+            borderTop: "1px solid rgba(139,92,246,0.08)",
+            background: "rgba(9,9,11,0.85)",
+            backdropFilter: "blur(20px)",
+          }}
         >
-          <div className="flex w-full items-center gap-6 font-mono text-[10px] uppercase tracking-widest text-text-muted">
-            {/* Online indicator */}
+          <div className="flex w-full items-center gap-5 text-[10px] text-[var(--color-text-muted)]">
+            {/* Status pill */}
             <div className="flex items-center gap-2">
+              <StatusDot online={isOnline} />
               <span
-                className="h-1.5 w-1.5 rounded-full"
-                style={{
-                  background: isOnline
-                    ? "var(--color-neon-green)"
-                    : "var(--color-neon-red)",
-                  boxShadow: isOnline
-                    ? "0 0 8px var(--color-neon-green)"
-                    : "none",
-                }}
-              />
-              <span
-                className="font-semibold"
+                className="font-medium"
                 style={{
                   color: isOnline
-                    ? "var(--color-text-primary)"
+                    ? "var(--color-text-secondary)"
                     : "var(--color-neon-red)",
                 }}
               >
-                {isOnline ? "SYS.NOMINAL" : "SYS.OFFLINE"}
+                {isOnline ? "Connected" : "Offline"}
               </span>
             </div>
 
-            <span className="hidden h-3 w-px bg-white/10 md:block" />
-
+            <span className="hidden h-3 w-px opacity-20 bg-white md:block" />
             <span
-              className="hidden max-w-[200px] truncate md:block"
+              className="hidden max-w-[180px] truncate md:block opacity-50"
               title={baseUrl}
             >
-              {baseUrl.replace("http://", "").replace("https://", "") ||
-                "DISCONNECTED"}
+              {baseUrl.replace("http://", "").replace("https://", "") || "—"}
             </span>
 
-            <span className="hidden h-3 w-px bg-white/10 md:block" />
-
-            <span className="hidden md:block">
-              MEM{" "}
+            <span className="hidden h-3 w-px opacity-20 bg-white md:block" />
+            <span className="hidden md:block opacity-60">
               {status
-                ? `${status.vram_used_gb.toFixed(1)}/${status.vram_total_gb.toFixed(0)} GB`
-                : "—"}
+                ? `${status.vram_used_gb.toFixed(1)} / ${status.vram_total_gb.toFixed(0)} GB`
+                : "— GB"}
             </span>
 
-            <span className="hidden h-3 w-px bg-white/10 lg:block" />
-
-            <span className="hidden lg:block">
-              MODELS {status?.loaded_models?.length ?? 0}
+            <span className="hidden h-3 w-px opacity-20 bg-white lg:block" />
+            <span className="hidden lg:block opacity-60">
+              {status?.loaded_models?.length ?? 0} model
+              {(status?.loaded_models?.length ?? 0) !== 1 ? "s" : ""}
             </span>
 
-            {/* Right-aligned */}
             <div className="ml-auto flex items-center gap-4">
               {status?.temperature_celsius != null && (
-                <>
-                  <span
-                    style={{
-                      color:
-                        getTempAccent(status.temperature_celsius) ??
-                        "var(--color-neon-amber)",
-                    }}
-                  >
-                    TEMP {status.temperature_celsius.toFixed(0)}&deg;C
-                  </span>
-                  <span className="h-3 w-px bg-white/10" />
-                </>
+                <span
+                  style={{
+                    color:
+                      getTempAccent(status.temperature_celsius) ??
+                      "var(--color-text-muted)",
+                  }}
+                >
+                  {status.temperature_celsius.toFixed(0)}&deg;C
+                </span>
               )}
-              <span style={{ color: "var(--color-text-primary)" }}>
-                OPTA.OS v5.0
+              <span
+                className="opacity-30"
+                style={{
+                  background: "linear-gradient(90deg, #a5b4fc, #c084fc)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                  opacity: 1,
+                }}
+              >
+                Opta LMX
               </span>
             </div>
           </div>
@@ -985,12 +1332,12 @@ function StatItem({
   accent?: string;
 }) {
   return (
-    <div className="space-y-2">
-      <p className="font-mono text-[10px] font-medium uppercase tracking-[0.15em] text-text-muted">
+    <div className="space-y-1.5">
+      <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--color-text-muted)] opacity-70">
         {label}
       </p>
       <p
-        className="text-2xl font-bold leading-none tabular-nums"
+        className="text-2xl font-light leading-none tabular-nums"
         style={{ color: accent ?? "var(--color-text-primary)" }}
       >
         {value}

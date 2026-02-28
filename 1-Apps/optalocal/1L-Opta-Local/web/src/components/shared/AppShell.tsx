@@ -25,8 +25,15 @@ import {
   Menu,
   X,
   MoreHorizontal,
+  Activity,
+  Settings2,
+  Wrench,
+  FlaskConical,
+  Package,
+  Network,
 } from 'lucide-react';
 import { cn } from '@opta/ui';
+import { OptaRing } from '@/components/shared/OptaRing';
 
 import {
   ConnectionProvider,
@@ -50,12 +57,18 @@ const navItems = [
   { label: 'Arena', href: '/arena', icon: Swords },
   { label: 'RAG', href: '/rag', icon: Database },
   { label: 'Agents', href: '/agents', icon: Workflow },
+  { label: 'Metrics', href: '/metrics', icon: Activity },
+  { label: 'Presets', href: '/presets', icon: Settings2 },
+  { label: 'Skills', href: '/skills', icon: Wrench },
+  { label: 'Benchmark', href: '/benchmark', icon: FlaskConical },
+  { label: 'Quantize', href: '/quantize', icon: Package },
+  { label: 'Stack', href: '/stack', icon: Network },
   { label: 'Devices', href: '/devices', icon: Monitor },
   { label: 'Sessions', href: '/sessions', icon: History },
   { label: 'Settings', href: '/settings', icon: Settings },
 ] as const;
 
-const PRIMARY_HREFS = ['/', '/chat', '/models'];
+const PRIMARY_HREFS = ['/', '/chat', '/models', '/agents'];
 const primaryNav = navItems.filter((i) => PRIMARY_HREFS.includes(i.href));
 const secondaryNav = navItems.filter((i) => !PRIMARY_HREFS.includes(i.href));
 
@@ -288,47 +301,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 onClick={closeMobileMenu}
                 aria-label="Opta Local home"
               >
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  aria-hidden
-                  className="shrink-0 transition-transform duration-500 group-hover:rotate-45"
-                >
-                  <defs>
-                    {/* Radial gradient: light source at upper-left → deep dark at lower-right */}
-                    <radialGradient id="hdr-ring-3d" cx="32%" cy="26%" r="72%" gradientUnits="objectBoundingBox">
-                      <stop offset="0%"   stopColor="#f5f3ff" />
-                      <stop offset="15%"  stopColor="#e9d5ff" />
-                      <stop offset="35%"  stopColor="#a855f7" />
-                      <stop offset="65%"  stopColor="#6d28d9" />
-                      <stop offset="85%"  stopColor="#3b0764" />
-                      <stop offset="100%" stopColor="#13052e" />
-                    </radialGradient>
-                    {/* Soft glow: blur behind + sharp on top */}
-                    <filter id="hdr-ring-glow" x="-35%" y="-35%" width="170%" height="170%">
-                      <feGaussianBlur in="SourceGraphic" stdDeviation="0.8" result="blur" />
-                      <feMerge>
-                        <feMergeNode in="blur" />
-                        <feMergeNode in="SourceGraphic" />
-                      </feMerge>
-                    </filter>
-                  </defs>
-                  <circle
-                    cx="12"
-                    cy="12"
-                    r="8"
-                    stroke="url(#hdr-ring-3d)"
-                    strokeWidth="5.5"
-                    fill="none"
-                    filter="url(#hdr-ring-glow)"
-                  />
-                  {/* Specular highlight — upper-left bright zone (lit sphere illusion) */}
-                  <circle cx="8.5"  cy="7.2"  r="1.8" fill="white"   fillOpacity="0.55" />
-                  {/* Counter-specular — lower-right dim bounce */}
-                  <circle cx="15.5" cy="17.0" r="0.8" fill="#c084fc" fillOpacity="0.35" />
-                </svg>
+                <OptaRing size={24} className="shrink-0 pointer-events-none" />
 
                 <span className="flex min-w-0 flex-col leading-none">
                   <span className="opta-gradient-text text-sm font-bold tracking-[0.1em]">
@@ -383,27 +356,50 @@ export function AppShell({ children }: { children: ReactNode }) {
                 </button>
 
                 {moreMenuOpen && (
-                  <div className="absolute top-full mt-1 left-0 glass-strong rounded-xl p-1.5 min-w-[160px] shadow-xl z-50">
-                    {secondaryNav.map((item) => {
-                      const isActive = isActiveRoute(pathname, item.href);
-                      const Icon = item.icon;
-                      return (
-                        <Link
-                          key={item.href}
-                          href={item.href}
-                          className={cn(
-                            'flex items-center gap-2 px-3 py-2 text-xs rounded-lg transition-colors',
-                            isActive
-                              ? 'bg-primary/15 text-primary'
-                              : 'text-text-secondary hover:bg-primary/10 hover:text-primary',
-                          )}
-                        >
-                          <Icon className="h-3.5 w-3.5 shrink-0" />
-                          <span>{item.label}</span>
-                        </Link>
-                      );
-                    })}
-                  </div>
+                  <>
+                    {/* click-outside backdrop */}
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setMoreMenuOpen(false)}
+                      aria-hidden="true"
+                    />
+                    <div
+                      className="absolute top-full mt-1.5 left-0 glass-strong rounded-xl p-2 shadow-2xl z-50"
+                      style={{
+                        minWidth: '296px',
+                        border: '1px solid rgba(255,255,255,0.06)',
+                        boxShadow: '0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(139,92,246,0.1)',
+                      }}
+                    >
+                      <p className="px-2.5 pb-2 pt-1 text-[9px] uppercase tracking-[0.2em] text-text-muted"
+                        style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}
+                      >
+                        Features
+                      </p>
+                      <div className="mt-1.5 grid grid-cols-2 gap-0.5">
+                        {secondaryNav.map((item) => {
+                          const isActive = isActiveRoute(pathname, item.href);
+                          const Icon = item.icon;
+                          return (
+                            <Link
+                              key={item.href}
+                              href={item.href}
+                              onClick={() => setMoreMenuOpen(false)}
+                              className={cn(
+                                'flex items-center gap-2 rounded-lg px-3 py-2.5 text-xs transition-colors',
+                                isActive
+                                  ? 'bg-primary/15 text-primary'
+                                  : 'text-text-secondary hover:bg-primary/10 hover:text-primary',
+                              )}
+                            >
+                              <Icon className="h-3.5 w-3.5 shrink-0 opacity-70" />
+                              <span className="truncate">{item.label}</span>
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </>
                 )}
               </div>
             </nav>
