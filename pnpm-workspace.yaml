@@ -5,6 +5,7 @@ packages:
   # optalocal domain
   - "1-Apps/optalocal/1L-Opta-Local/web"
   - "1-Apps/optalocal/1D-Opta-CLI-TS"
+  - "1-Apps/optalocal/1D-Opta-CLI-TS/packages/*"
   - "1-Apps/optalocal/1O-Opta-Init"
   # shared
   - "1-Apps/shared/1A-AI-Components/components-web"
