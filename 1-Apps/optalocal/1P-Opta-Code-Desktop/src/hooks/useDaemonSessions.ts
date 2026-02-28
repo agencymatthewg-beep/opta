@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { daemonClient } from "../lib/daemonClient";
+import {
+  clearToken,
+  isSecureConnectionStoreAvailable,
+  loadToken,
+  saveToken,
+} from "../lib/secureConnectionStore";
 import type { V3Envelope } from "../lib/daemonClient";
 import type {
   DaemonConnectionOptions,
@@ -7,6 +13,7 @@ import type {
   PermissionRequest,
   RuntimeSnapshot,
   TimelineItem,
+  TurnStats,
 } from "../types";
 
 const DEFAULT_CONNECTION: DaemonConnectionOptions = {
@@ -33,9 +40,20 @@ function loadStoredConnection(): DaemonConnectionOptions {
   }
 }
 
-function saveConnection(conn: DaemonConnectionOptions): void {
+function saveConnection(
+  conn: DaemonConnectionOptions,
+  persistToken: boolean,
+): void {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(conn));
+    const stored: Partial<DaemonConnectionOptions> = {
+      host: conn.host,
+      port: conn.port,
+      protocol: conn.protocol,
+    };
+    if (persistToken) {
+      stored.token = conn.token;
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
   } catch {
     // ignore quota/security errors
   }
@@ -112,6 +130,16 @@ function eventsToTimelineItems(
     }
 
     if (STOP_EVENT_KINDS.has(kind)) {
+      let stats: TurnStats | undefined;
+      if (kind === "turn.done" && payload.stats && typeof payload.stats === "object") {
+        const s = payload.stats as Record<string, unknown>;
+        stats = {
+          tokens: Number(s.tokens ?? s.completionTokens ?? 0),
+          speed: Number(s.speed ?? 0),
+          elapsed: Number(s.elapsed ?? 0),
+          toolCalls: Number(s.toolCalls ?? 0),
+        };
+      }
       items.push({
         id: `${sessionId}-stop-${String(seq ?? Date.now())}`,
         kind: "system",
@@ -120,6 +148,7 @@ function eventsToTimelineItems(
           kind === "turn.error"
             ? String(payload.error ?? payload.message ?? "")
             : undefined,
+        stats,
         createdAt: nowIso(),
       });
       continue;
@@ -137,13 +166,17 @@ function eventsToTimelineItems(
     }
 
     if (kind === "tool.start") {
+      const toolName = String(
+        payload.toolName ?? payload.name ?? payload.tool_name ?? "?",
+      );
+      const args = payload.args ?? payload.input;
       items.push({
         id: `${sessionId}-tool-${String(seq ?? Date.now())}`,
         kind: "tool",
-        title: `Tool: ${String(payload.name ?? payload.tool_name ?? "?")}`,
+        title: toolName,
         body:
-          payload.input != null
-            ? JSON.stringify(payload.input, null, 2).slice(0, 400)
+          args != null
+            ? JSON.stringify(args, null, 2).slice(0, 600)
             : undefined,
         createdAt: nowIso(),
       });
@@ -151,17 +184,21 @@ function eventsToTimelineItems(
     }
 
     if (kind === "tool.end") {
-      const toolContent = payload.content ?? payload.output ?? payload.result;
+      const toolContent = payload.result ?? payload.content ?? payload.output;
+      const toolName = String(
+        payload.toolName ?? payload.name ?? payload.tool_name ?? "",
+      );
       items.push({
         id: `${sessionId}-result-${String(seq ?? Date.now())}`,
         kind: "tool",
-        title: "Tool result",
+        title: toolName || "result",
         body:
           typeof toolContent === "string"
-            ? toolContent.slice(0, 300)
+            ? toolContent.slice(0, 600)
             : toolContent != null
-              ? JSON.stringify(toolContent).slice(0, 300)
+              ? JSON.stringify(toolContent).slice(0, 400)
               : undefined,
+        isToolResult: true,
         createdAt: nowIso(),
       });
       continue;
@@ -187,10 +224,61 @@ function eventsToTimelineItems(
 export function useDaemonSessions() {
   const [connection, setConnectionRaw] =
     useState<DaemonConnectionOptions>(loadStoredConnection);
+  // Mirror connection into a ref so callbacks always use the latest settings.
+  const connectionRef = useRef(connection);
+  // Serialize secure-store operations to avoid out-of-order writes.
+  const secureStoreQueueRef = useRef<Promise<void>>(Promise.resolve());
 
-  const setConnection = useCallback((conn: DaemonConnectionOptions) => {
-    saveConnection(conn);
-    setConnectionRaw(conn);
+  const setConnection = useCallback((next: DaemonConnectionOptions) => {
+    const previous = connectionRef.current;
+    const secureStoreAvailable = isSecureConnectionStoreAvailable();
+    const endpointChanged =
+      previous.host !== next.host || previous.port !== next.port;
+
+    // Keep plaintext token persistence only for browser/dev fallback mode.
+    saveConnection(next, !secureStoreAvailable);
+    setConnectionRaw(next);
+
+    if (!secureStoreAvailable) return;
+    const token = next.token.trim();
+    secureStoreQueueRef.current = secureStoreQueueRef.current
+      .catch(() => undefined)
+      .then(async () => {
+        if (token) {
+          await saveToken(next.host, next.port, token);
+          return;
+        }
+        // A blank token on endpoint switch means "try existing token for this
+        // endpoint", not "delete this endpoint token".
+        if (!endpointChanged) {
+          await clearToken(next.host, next.port);
+        }
+      })
+      .catch(() => {
+        // Fallback for runtime/bridge failures: keep token persisted locally.
+        saveConnection(next, true);
+      });
+
+    // If endpoint changed and the token is blank, try loading any existing
+    // credential from secure storage for that endpoint.
+    if (!token && endpointChanged) {
+      secureStoreQueueRef.current = secureStoreQueueRef.current
+        .catch(() => undefined)
+        .then(async () => {
+          const loadedToken = await loadToken(next.host, next.port);
+          if (!loadedToken) return;
+          setConnectionRaw((current) =>
+            current.host === next.host &&
+            current.port === next.port &&
+            !current.token
+              ? { ...current, token: loadedToken }
+              : current,
+          );
+        })
+        .catch(() => {
+          saveConnection(next, true);
+        });
+    }
   }, []);
   const [sessions, setSessions] = useState<DaemonSessionSummary[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
@@ -217,8 +305,6 @@ export function useDaemonSessions() {
   const clientIdRef = useRef<string>(
     `opta-code-desktop-${crypto.randomUUID().slice(0, 8)}`,
   );
-  // Mirror connection into a ref so HTTP callbacks always use the latest settings
-  const connectionRef = useRef(connection);
   connectionRef.current = connection;
 
   useEffect(() => {
@@ -227,6 +313,40 @@ export function useDaemonSessions() {
       mountedRef.current = false;
     };
   }, []);
+
+  // On native desktop runtimes, pull token from secure storage and clear
+  // any legacy plaintext token persistence from localStorage.
+  useEffect(() => {
+    if (!isSecureConnectionStoreAvailable()) return;
+    let cancelled = false;
+    const host = connection.host;
+    const port = connection.port;
+
+    secureStoreQueueRef.current = secureStoreQueueRef.current
+      .catch(() => undefined)
+      .then(async () => {
+        const legacyToken = connectionRef.current.token.trim();
+        if (legacyToken) {
+          await saveToken(host, port, legacyToken);
+        }
+        saveConnection(connectionRef.current, false);
+        const storedToken = await loadToken(host, port);
+        if (cancelled) return;
+        if (!storedToken || storedToken === connectionRef.current.token) return;
+        setConnectionRaw((current) =>
+          current.host === host && current.port === port
+            ? { ...current, token: storedToken }
+            : current,
+        );
+      })
+      .catch(() => {
+        saveConnection(connectionRef.current, true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [connection.host, connection.port]);
 
   // ── WebSocket session subscription ─────────────────────────────────────────
   useEffect(() => {
@@ -514,7 +634,7 @@ export function useDaemonSessions() {
   );
 
   const submitMessage = useCallback(
-    async (message: string) => {
+    async (message: string, mode: "chat" | "do" = "chat") => {
       if (!activeSessionId) {
         throw new Error("No active session selected.");
       }
@@ -528,7 +648,7 @@ export function useDaemonSessions() {
             {
               id: `${activeSessionId}-user-${Date.now()}`,
               kind: "user",
-              title: "Prompt",
+              title: mode === "do" ? "Do" : "Prompt",
               body: message,
               createdAt: nowIso(),
             },
@@ -541,7 +661,7 @@ export function useDaemonSessions() {
           content: message,
           clientId: clientIdRef.current,
           writerId: clientIdRef.current,
-          mode: "chat",
+          mode,
         });
         setConnectionState("connected");
         setConnectionError(null);

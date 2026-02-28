@@ -16,6 +16,7 @@ type AppPage = "sessions" | "models" | "operations" | "jobs";
 function App() {
   const [showTerminal, setShowTerminal] = useState(true);
   const [composerDraft, setComposerDraft] = useState("");
+  const [submissionMode, setSubmissionMode] = useState<"chat" | "do">("chat");
   const [selectedWorkspace, setSelectedWorkspace] = useState("all");
   const [notice, setNotice] = useState<string | null>(null);
   const [activePage, setActivePage] = useState<AppPage>("sessions");
@@ -212,9 +213,9 @@ function App() {
     const outbound = composerDraft.trim();
     if (!outbound) return;
     try {
-      await submitMessage(outbound);
+      await submitMessage(outbound, submissionMode);
       setComposerDraft("");
-      setNotice("Message submitted to daemon");
+      setNotice(submissionMode === "do" ? "Task dispatched to agent" : "Message submitted to daemon");
     } catch (error) {
       setNotice(error instanceof Error ? error.message : String(error));
     }
@@ -243,7 +244,10 @@ function App() {
                     : "Offline"}
               </span>
               <span>{sessionCount} tracked sessions</span>
-              <span>{showTerminal ? "Runtime visible" : "Runtime hidden"}</span>
+              <span className={`mode-pill mode-pill-${submissionMode}`}>
+            {submissionMode === "do" ? "Do mode" : "Chat mode"}
+          </span>
+          <span>{showTerminal ? "Runtime visible" : "Runtime hidden"}</span>
             </div>
           </div>
 
@@ -444,6 +448,8 @@ function App() {
           onCancel={() => void cancelActiveTurn()}
           isStreaming={isStreaming}
           disabled={!activeSessionId}
+          mode={submissionMode}
+          onModeChange={setSubmissionMode}
         />
       </div>
 

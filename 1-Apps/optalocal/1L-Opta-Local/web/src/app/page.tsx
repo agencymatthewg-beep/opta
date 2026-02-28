@@ -233,18 +233,18 @@ function StatusDot({ online }: { online: boolean }) {
 // ---------------------------------------------------------------------------
 
 const FEATURE_CARDS = [
-  { label: "Chat", href: "/chat", icon: MessageSquare, desc: "Stream AI responses", accent: "#a855f7" },
-  { label: "Arena", href: "/arena", icon: Swords, desc: "Side-by-side comparison", accent: "#3b82f6" },
-  { label: "RAG Studio", href: "/rag", icon: BookOpen, desc: "Document Q&A", accent: "#06b6d4" },
-  { label: "Agents", href: "/agents", icon: Bot, desc: "Automate workflows", accent: "#22c55e" },
-  { label: "Models", href: "/models", icon: Layers, desc: "Browse & load models", accent: "#8b5cf6" },
-  { label: "Sessions", href: "/sessions", icon: History, desc: "Chat history", accent: "#f59e0b" },
-  { label: "Devices", href: "/devices", icon: Monitor, desc: "Device registry", accent: "#6366f1" },
-  { label: "Metrics", href: "/metrics", icon: BarChart2, desc: "Live telemetry", accent: "#10b981" },
-  { label: "Benchmark", href: "/benchmark", icon: FlaskConical, desc: "Model evaluations", accent: "#f97316" },
-  { label: "Quantize", href: "/quantize", icon: Package, desc: "Compress models", accent: "#ec4899" },
-  { label: "Stack", href: "/stack", icon: Network, desc: "Stack overview", accent: "#0ea5e9" },
-  { label: "Settings", href: "/settings", icon: Settings, desc: "Configuration", accent: "#71717a" },
+  { label: "Chat",      href: "/chat",      icon: MessageSquare, desc: "Stream AI responses",    accent: "--opta-neon-purple" },
+  { label: "Arena",     href: "/arena",     icon: Swords,        desc: "Side-by-side comparison",accent: "--opta-neon-blue"   },
+  { label: "RAG Studio",href: "/rag",       icon: BookOpen,      desc: "Document Q&A",           accent: "--opta-neon-cyan"   },
+  { label: "Agents",    href: "/agents",    icon: Bot,           desc: "Automate workflows",      accent: "--opta-neon-green"  },
+  { label: "Models",    href: "/models",    icon: Layers,        desc: "Browse & load models",    accent: "--opta-primary"     },
+  { label: "Sessions",  href: "/sessions",  icon: History,       desc: "Chat history",            accent: "--opta-neon-amber"  },
+  { label: "Devices",   href: "/devices",   icon: Monitor,       desc: "Device registry",         accent: "--opta-neon-indigo" },
+  { label: "Metrics",   href: "/metrics",   icon: BarChart2,     desc: "Live telemetry",          accent: "--opta-neon-green"  },
+  { label: "Benchmark", href: "/benchmark", icon: FlaskConical,  desc: "Model evaluations",       accent: "--opta-neon-orange" },
+  { label: "Quantize",  href: "/quantize",  icon: Package,       desc: "Compress models",         accent: "--opta-neon-pink"   },
+  { label: "Stack",     href: "/stack",     icon: Network,       desc: "Stack overview",          accent: "--opta-neon-cyan"   },
+  { label: "Settings",  href: "/settings",  icon: Settings,      desc: "Configuration",           accent: "--opta-text-muted"  },
 ] as const;
 
 function FeatureCard({
@@ -259,9 +259,11 @@ function FeatureCard({
   href: string;
   icon: LucideIcon;
   desc: string;
+  /** CSS variable name, e.g. "--opta-neon-cyan" */
   accent: string;
   delay: number;
 }) {
+  const accentRef = `var(${accent})`;
   return (
     <motion.div
       initial={{ opacity: 0, y: 6 }}
@@ -274,11 +276,11 @@ function FeatureCard({
         <div
           className="flex h-7 w-7 items-center justify-center rounded-lg"
           style={{
-            background: `${accent}22`,
-            border: `1px solid ${accent}38`,
+            background: `color-mix(in srgb, ${accentRef} 13%, transparent)`,
+            border: `1px solid color-mix(in srgb, ${accentRef} 22%, transparent)`,
           }}
         >
-          <Icon className="h-3.5 w-3.5" style={{ color: accent }} />
+          <Icon className="h-3.5 w-3.5" style={{ color: accentRef }} />
         </div>
         <div className="min-w-0">
           <p className="text-[11px] font-semibold text-[var(--color-text-primary)] truncate leading-tight">
@@ -458,128 +460,6 @@ export default function DashboardPage() {
 
   return (
     <>
-      {/* ── Gemini CSS (scoped, uses only CSS vars — no hex literals in JSX) ── */}
-      <style>{`
-        /* Ambient background orbs */
-        @keyframes gemini-drift-a {
-          0%   { transform: translate(0, 0) scale(1); }
-          33%  { transform: translate(40px, -30px) scale(1.08); }
-          66%  { transform: translate(-20px, 20px) scale(0.96); }
-          100% { transform: translate(0, 0) scale(1); }
-        }
-        @keyframes gemini-drift-b {
-          0%   { transform: translate(0, 0) scale(1); }
-          40%  { transform: translate(-50px, 25px) scale(1.1); }
-          70%  { transform: translate(30px, -15px) scale(0.93); }
-          100% { transform: translate(0, 0) scale(1); }
-        }
-        @keyframes gemini-drift-c {
-          0%   { transform: translate(0, 0) scale(1); }
-          50%  { transform: translate(20px, 40px) scale(1.05); }
-          100% { transform: translate(0, 0) scale(1); }
-        }
-
-        /* Card base */
-        .gemini-card {
-          background: linear-gradient(
-            145deg,
-            rgba(15, 10, 30, 0.82) 0%,
-            rgba(10, 8, 22, 0.78) 50%,
-            rgba(12, 10, 28, 0.82) 100%
-          );
-          border: 1px solid rgba(139, 92, 246, 0.12);
-          box-shadow:
-            0 1px 0 inset rgba(255,255,255,0.04),
-            0 20px 40px -20px rgba(0,0,0,0.6);
-          backdrop-filter: blur(18px);
-          -webkit-backdrop-filter: blur(18px);
-          transition: border-color 0.5s ease, box-shadow 0.5s ease;
-        }
-        .gemini-card:hover {
-          border-color: rgba(139, 92, 246, 0.22);
-          box-shadow:
-            0 1px 0 inset rgba(255,255,255,0.06),
-            0 24px 48px -20px rgba(0,0,0,0.7),
-            0 0 0 1px rgba(139, 92, 246, 0.1);
-        }
-        .gemini-card--glow {
-          box-shadow:
-            0 1px 0 inset rgba(255,255,255,0.05),
-            0 20px 60px -20px rgba(88,28,135,0.35),
-            0 0 40px -10px rgba(139, 92, 246, 0.15);
-        }
-
-        /* Iridescent shimmer rim */
-        .gemini-shimmer-rim {
-          background: conic-gradient(
-            from 180deg,
-            rgba(6, 182, 212, 0.18),
-            rgba(139, 92, 246, 0.22),
-            rgba(59, 130, 246, 0.18),
-            rgba(168, 85, 247, 0.2),
-            rgba(6, 182, 212, 0.18)
-          );
-          mask-image: linear-gradient(black, black) content-box,
-                      linear-gradient(black, black);
-          mask-composite: exclude;
-          -webkit-mask-composite: destination-out;
-          padding: 1px;
-        }
-
-        /* Progress track */
-        .gemini-track {
-          height: 4px;
-          border-radius: 9999px;
-          background: rgba(255,255,255,0.06);
-          overflow: hidden;
-        }
-        .gemini-track-fill {
-          height: 100%;
-          border-radius: 9999px;
-          transition: width 0.7s cubic-bezier(0.22, 1, 0.36, 1);
-        }
-
-        /* Gradient TPS number */
-        .gemini-tps-number {
-          background: linear-gradient(
-            135deg,
-            #e0e7ff 0%,
-            #a5b4fc 30%,
-            #818cf8 55%,
-            #c084fc 80%,
-            #e879f9 100%
-          );
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-          filter: drop-shadow(0 0 20px rgba(139, 92, 246, 0.4));
-        }
-
-        /* Divider */
-        .gemini-divider {
-          height: 1px;
-          background: linear-gradient(
-            90deg,
-            transparent,
-            rgba(139, 92, 246, 0.25),
-            rgba(6, 182, 212, 0.2),
-            transparent
-          );
-        }
-
-        /* Feature card links */
-        .feature-card-link {
-          background: rgba(139, 92, 246, 0.04);
-          border: 1px solid rgba(139, 92, 246, 0.08);
-          transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
-        }
-        .feature-card-link:hover {
-          background: rgba(139, 92, 246, 0.1);
-          border-color: rgba(139, 92, 246, 0.2);
-          box-shadow: 0 0 16px rgba(139, 92, 246, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.04);
-        }
-      `}</style>
-
       <div className="relative flex h-screen flex-col overflow-hidden bg-opta-bg text-text-primary">
         {/* ── BACKGROUND: Deep space + animated Gemini orbs ── */}
         <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">

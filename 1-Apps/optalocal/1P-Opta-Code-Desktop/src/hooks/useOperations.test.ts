@@ -1,5 +1,9 @@
-import { renderHook, waitFor } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type {
+  DaemonListOperationsResponse,
+  DaemonRunOperationResponse,
+} from "@opta/daemon-client/types";
 import { daemonClient } from "../lib/daemonClient";
 import { useOperations } from "./useOperations";
 
@@ -15,12 +19,12 @@ const connection = { host: "127.0.0.1", port: 9999, token: "test" };
 const mockOperations = [
   { id: "doctor", title: "Doctor", description: "Diagnostics.", safety: "read" as const },
   { id: "benchmark", title: "Benchmark Suite", description: "Benchmark.", safety: "dangerous" as const },
-];
+] satisfies DaemonListOperationsResponse["operations"];
 
 describe("useOperations", () => {
   beforeEach(() => {
     vi.mocked(daemonClient.listOperations).mockResolvedValue({
-      operations: mockOperations as never,
+      operations: mockOperations,
     });
   });
 
@@ -51,21 +55,43 @@ describe("useOperations", () => {
     expect(result.current.operations).toHaveLength(0);
   });
 
+  it("normalizes operations with missing metadata safely", async () => {
+    vi.mocked(daemonClient.listOperations).mockResolvedValueOnce({
+      operations: [
+        {
+          id: "mystery.task",
+        },
+      ],
+    } as unknown as DaemonListOperationsResponse);
+
+    const { result } = renderHook(() => useOperations(connection));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    expect(result.current.operations).toEqual([
+      {
+        id: "mystery.task",
+        title: "mystery.task",
+        description: "No description provided.",
+        safety: "read",
+      },
+    ]);
+  });
+
   it("runs an operation and sets lastResult on success", async () => {
     const successResult = {
       ok: true,
       id: "doctor",
       safety: "read",
       result: { checks: [] },
-    };
-    vi.mocked(daemonClient.runOperation).mockResolvedValueOnce(
-      successResult as never,
-    );
+    } as const satisfies DaemonRunOperationResponse;
+    vi.mocked(daemonClient.runOperation).mockResolvedValueOnce(successResult);
 
     const { result } = renderHook(() => useOperations(connection));
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    await result.current.runOperation("doctor", {});
+    await act(async () => {
+      await result.current.runOperation("doctor", {});
+    });
     await waitFor(() => expect(result.current.running).toBe(false));
 
     expect(result.current.lastResult).toMatchObject({ ok: true, id: "doctor" });
@@ -82,12 +108,14 @@ describe("useOperations", () => {
       id: "benchmark",
       safety: "dangerous",
       error: { code: "execution_failed", message: "failed" },
-    } as never);
+    });
 
     const { result } = renderHook(() => useOperations(connection));
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    await result.current.runOperation("benchmark", {}, true);
+    await act(async () => {
+      await result.current.runOperation("benchmark", {}, true);
+    });
     await waitFor(() => expect(result.current.running).toBe(false));
 
     expect(daemonClient.runOperation).toHaveBeenCalledWith(
@@ -105,12 +133,57 @@ describe("useOperations", () => {
     const { result } = renderHook(() => useOperations(connection));
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    await result.current.runOperation("doctor", {});
+    await act(async () => {
+      await result.current.runOperation("doctor", {});
+    });
     await waitFor(() => expect(result.current.running).toBe(false));
 
     expect(result.current.lastResult).toMatchObject({
       ok: false,
       error: { code: "client_error", message: "network error" },
+    });
+  });
+
+  it("normalizes responses that do not include an ok flag", async () => {
+    vi.mocked(daemonClient.runOperation).mockResolvedValueOnce({
+      output: "value",
+    } as unknown as DaemonRunOperationResponse);
+
+    const { result } = renderHook(() => useOperations(connection));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    await act(async () => {
+      await result.current.runOperation("doctor", {});
+    });
+    await waitFor(() => expect(result.current.running).toBe(false));
+
+    expect(result.current.lastResult).toMatchObject({
+      ok: true,
+      id: "doctor",
+      safety: "read",
+      result: { output: "value" },
+    });
+  });
+
+  it("normalizes string operation errors into structured error details", async () => {
+    vi.mocked(daemonClient.runOperation).mockResolvedValueOnce({
+      ok: false,
+      error: "boom",
+    } as unknown as DaemonRunOperationResponse);
+
+    const { result } = renderHook(() => useOperations(connection));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    await act(async () => {
+      await result.current.runOperation("doctor", {});
+    });
+    await waitFor(() => expect(result.current.running).toBe(false));
+
+    expect(result.current.lastResult).toMatchObject({
+      ok: false,
+      id: "doctor",
+      safety: "read",
+      error: { code: "operation_error", message: "boom" },
     });
   });
 });

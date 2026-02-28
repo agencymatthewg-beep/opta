@@ -311,8 +311,9 @@ export function QuantizePanel({ client }: QuantizePanelProps) {
 
   // Cleanup all intervals on unmount
   useEffect(() => {
+    const refs = pollRefs.current;
     return () => {
-      for (const id of pollRefs.current.values()) {
+      for (const id of refs.values()) {
         clearInterval(id);
       }
     };

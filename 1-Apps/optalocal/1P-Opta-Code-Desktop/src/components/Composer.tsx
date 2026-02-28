@@ -5,6 +5,8 @@ interface ComposerProps {
   onCancel?: () => void;
   disabled?: boolean;
   isStreaming?: boolean;
+  mode: "chat" | "do";
+  onModeChange: (mode: "chat" | "do") => void;
 }
 
 export function Composer({
@@ -14,6 +16,8 @@ export function Composer({
   onCancel,
   disabled,
   isStreaming = false,
+  mode,
+  onModeChange,
 }: ComposerProps) {
   return (
     <footer className="composer-shell">
@@ -24,7 +28,9 @@ export function Composer({
             ? "Select or create a session to start..."
             : isStreaming
               ? "Agent is running — cancel to interrupt..."
-              : "Ask Opta Code to run, investigate, or implement..."
+              : mode === "do"
+                ? "Describe a task for Opta to execute autonomously..."
+                : "Ask Opta Code to investigate, explain, or implement..."
         }
         value={value}
         disabled={disabled || isStreaming}
@@ -37,24 +43,47 @@ export function Composer({
         }}
       />
       <div className="composer-actions">
-        <span>
-          {isStreaming ? "Agent running…" : "Cmd/Ctrl + Enter to submit"}
-        </span>
-        {isStreaming ? (
+        <div className="mode-toggle" role="group" aria-label="Submission mode">
           <button
             type="button"
-            className="btn-cancel"
-            onClick={onCancel}
+            className={`mode-btn ${mode === "chat" ? "active" : ""}`}
+            onClick={() => onModeChange("chat")}
+            disabled={isStreaming}
+            title="Chat mode — conversational, requires tool approval"
           >
+            Chat
+          </button>
+          <button
+            type="button"
+            className={`mode-btn mode-btn-do ${mode === "do" ? "active" : ""}`}
+            onClick={() => onModeChange("do")}
+            disabled={isStreaming}
+            title="Do mode — agentic, auto-approves safe tools"
+          >
+            Do
+          </button>
+        </div>
+
+        <span className="composer-hint">
+          {isStreaming
+            ? mode === "do"
+              ? "Agent running autonomously…"
+              : "Agent running…"
+            : "Cmd/Ctrl + Enter"}
+        </span>
+
+        {isStreaming ? (
+          <button type="button" className="btn-cancel" onClick={onCancel}>
             ✕ Cancel
           </button>
         ) : (
           <button
             type="button"
+            className={mode === "do" ? "btn-dispatch-do" : ""}
             disabled={disabled || !value.trim()}
             onClick={onSubmit}
           >
-            Dispatch
+            {mode === "do" ? "Run" : "Send"}
           </button>
         )}
       </div>

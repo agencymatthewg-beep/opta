@@ -17,6 +17,27 @@ const dangerousOp: OperationDefinition = {
   safety: "dangerous",
 };
 
+const schemaOp: OperationDefinition = {
+  id: "env.create",
+  title: "Environment Create",
+  description: "Create a profile from schema fields.",
+  safety: "write",
+  inputSchema: {
+    type: "object",
+    required: ["name", "enabled"],
+    properties: {
+      name: { type: "string", title: "name" },
+      count: { type: "integer", title: "count" },
+      enabled: { type: "boolean", title: "enabled" },
+      profile: {
+        type: "string",
+        title: "profile",
+        enum: ["dev", "prod"],
+      },
+    },
+  },
+};
+
 describe("OperationRunner", () => {
   it("renders the operation title, description, and safety badge", () => {
     render(
@@ -79,6 +100,87 @@ describe("OperationRunner", () => {
       expect(screen.getByRole("alert")).toBeInTheDocument(),
     );
     expect(onRun).not.toHaveBeenCalled();
+  });
+
+  it("renders schema-derived fields for object JSON schema inputs", () => {
+    render(
+      <OperationRunner
+        operation={schemaOp}
+        running={false}
+        lastResult={null}
+        onRun={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByLabelText("name")).toBeInTheDocument();
+    expect(screen.getByLabelText("count")).toBeInTheDocument();
+    expect(screen.getByLabelText("enabled")).toBeInTheDocument();
+    expect(screen.getByLabelText("profile")).toBeInTheDocument();
+    expect(screen.getByLabelText("Use raw JSON input")).toBeInTheDocument();
+  });
+
+  it("submits schema form values as structured input", async () => {
+    const onRun = vi.fn().mockResolvedValue(undefined);
+    render(
+      <OperationRunner
+        operation={schemaOp}
+        running={false}
+        lastResult={null}
+        onRun={onRun}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText("name"), {
+      target: { value: "prod-profile" },
+    });
+    fireEvent.change(screen.getByLabelText("count"), {
+      target: { value: "3" },
+    });
+    fireEvent.click(screen.getByLabelText("enabled"));
+    fireEvent.change(screen.getByLabelText("profile"), {
+      target: { value: "prod" },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /Run env\.create/ }));
+
+    await waitFor(() =>
+      expect(onRun).toHaveBeenCalledWith(
+        "env.create",
+        {
+          name: "prod-profile",
+          count: 3,
+          enabled: true,
+          profile: "prod",
+        },
+        undefined,
+      ),
+    );
+  });
+
+  it("falls back to raw JSON input when selected", async () => {
+    const onRun = vi.fn().mockResolvedValue(undefined);
+    render(
+      <OperationRunner
+        operation={schemaOp}
+        running={false}
+        lastResult={null}
+        onRun={onRun}
+      />,
+    );
+
+    fireEvent.click(screen.getByLabelText("Use raw JSON input"));
+    fireEvent.change(screen.getByLabelText("Operation input JSON"), {
+      target: { value: '{"name":"json","enabled":true}' },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Run env\.create/ }));
+
+    await waitFor(() =>
+      expect(onRun).toHaveBeenCalledWith(
+        "env.create",
+        { name: "json", enabled: true },
+        undefined,
+      ),
+    );
   });
 
   it("shows dangerous confirm checkbox for dangerous operations", () => {

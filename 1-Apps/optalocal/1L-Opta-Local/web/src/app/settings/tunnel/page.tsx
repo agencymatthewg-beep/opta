@@ -180,7 +180,7 @@ export default function TunnelSettingsPage() {
       setDetectedType(null);
       setDetectedLatency(null);
     }, 8000);
-  }, [tunnelUrl, useTunnel]);
+  }, [tunnelUrl]);
 
   // --------------------------------------------------------------------------
   // Keyboard: Cmd+S, Enter

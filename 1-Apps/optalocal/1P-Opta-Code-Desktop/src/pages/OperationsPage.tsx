@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { OperationRunner } from "../components/OperationRunner";
 import { useOperations, type OperationDefinition } from "../hooks/useOperations";
 import type { DaemonConnectionOptions } from "../types";
@@ -39,22 +39,60 @@ export function OperationsPage({ connection }: OperationsPageProps) {
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [safetyFilter, setSafetyFilter] = useState<SafetyFilter>("all");
+  const [query, setQuery] = useState("");
+
+  const safetyCounts = useMemo(() => {
+    return operations.reduce(
+      (accumulator, operation) => {
+        accumulator.all += 1;
+        accumulator[operation.safety] += 1;
+        return accumulator;
+      },
+      { all: 0, read: 0, write: 0, dangerous: 0 },
+    );
+  }, [operations]);
 
   const filtered = useMemo(
-    () =>
-      safetyFilter === "all"
-        ? operations
-        : operations.filter((op) => op.safety === safetyFilter),
-    [operations, safetyFilter],
+    () => {
+      const normalizedQuery = query.trim().toLowerCase();
+
+      return operations.filter((operation) => {
+        const passesSafety =
+          safetyFilter === "all" || operation.safety === safetyFilter;
+        if (!passesSafety) return false;
+        if (!normalizedQuery) return true;
+
+        const haystack = `${operation.id} ${operation.title} ${operation.description}`.toLowerCase();
+        return haystack.includes(normalizedQuery);
+      });
+    },
+    [operations, query, safetyFilter],
   );
 
-  const grouped = useMemo(() => groupByFamily(filtered), [filtered]);
+  const grouped = useMemo(
+    () =>
+      [...groupByFamily(filtered).entries()]
+        .map(([family, entries]) => [
+          family,
+          [...entries].sort((left, right) => left.id.localeCompare(right.id)),
+        ] as const)
+        .sort((left, right) => left[0].localeCompare(right[0])),
+    [filtered],
+  );
 
   const selectedOperation =
     operations.find((op) => op.id === selectedId) ?? null;
 
   const lastResultForSelected =
     lastResult?.id === selectedId ? lastResult : null;
+
+  useEffect(() => {
+    if (!selectedId) return;
+    const stillVisible = filtered.some((operation) => operation.id === selectedId);
+    if (!stillVisible) {
+      setSelectedId(null);
+    }
+  }, [filtered, selectedId]);
 
   return (
     <div className="operations-page">
@@ -75,9 +113,18 @@ export function OperationsPage({ connection }: OperationsPageProps) {
               className={`filter-btn ${safetyFilter === level ? "active" : ""}`}
               onClick={() => setSafetyFilter(level)}
             >
-              {level}
+              {level} ({safetyCounts[level]})
             </button>
           ))}
+          <label className="operation-input-label">
+            Search
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="id, title, description"
+              aria-label="Search operations"
+            />
+          </label>
           <button
             type="button"
             className="refresh-btn"
@@ -101,9 +148,11 @@ export function OperationsPage({ connection }: OperationsPageProps) {
 
       <div className="operations-layout">
         <nav className="operations-catalog" aria-label="Operation catalog">
-          {[...grouped.entries()].map(([family, ops]) => (
+          {grouped.map(([family, ops]) => (
             <section key={family} className="operation-family">
-              <h3 className="family-label">{family}</h3>
+              <h3 className="family-label">
+                {family} ({ops.length})
+              </h3>
               <ul className="family-list">
                 {ops.map((op) => (
                   <li key={op.id}>
@@ -128,6 +177,12 @@ export function OperationsPage({ connection }: OperationsPageProps) {
           {!loading && operations.length === 0 && !error ? (
             <p className="operations-empty">
               No operations found. Ensure the daemon is running and connected.
+            </p>
+          ) : null}
+
+          {!loading && operations.length > 0 && filtered.length === 0 ? (
+            <p className="operations-empty">
+              No operations match the current filter/query.
             </p>
           ) : null}
         </nav>
