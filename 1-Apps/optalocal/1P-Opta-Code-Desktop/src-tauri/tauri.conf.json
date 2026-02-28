@@ -40,7 +40,20 @@
     "windows": {
       "certificateThumbprint": null,
       "digestAlgorithm": "sha256",
-      "timestampUrl": ""
+      "timestampUrl": "",
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper",
+        "silent": false
+      },
+      "nsis": {
+        "displayName": "Opta Code",
+        "installMode": "currentUser",
+        "languages": ["English"],
+        "shortcutName": "Opta Code",
+        "createDesktopShortcut": true,
+        "createStartMenuShortcut": true,
+        "differentialPackage": false
+      }
     }
   }
 }
