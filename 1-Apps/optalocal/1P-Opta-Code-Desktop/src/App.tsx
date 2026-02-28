@@ -4,12 +4,13 @@ import { Composer } from "./components/Composer";
 import { TimelineCards } from "./components/TimelineCards";
 import { WorkspaceRail } from "./components/WorkspaceRail";
 import { ModelsPage } from "./pages/ModelsPage";
+import { OperationsPage } from "./pages/OperationsPage";
 import { useCommandPalette } from "./hooks/useCommandPalette";
 import { useDaemonSessions } from "./hooks/useDaemonSessions";
 import type { PaletteCommand } from "./types";
 import "./opta.css";
 
-type AppPage = "sessions" | "models";
+type AppPage = "sessions" | "models" | "operations";
 
 function App() {
   const [showTerminal, setShowTerminal] = useState(true);
@@ -153,6 +154,13 @@ function App() {
         description: "Switch to active session orchestration",
         keywords: ["sessions", "timeline", "workspace"],
         run: () => setActivePage("sessions"),
+      },
+      {
+        id: "open-operations",
+        title: "Open operations console",
+        description: "Run any CLI command-family operation via the daemon API",
+        keywords: ["operations", "doctor", "env", "mcp", "keychain", "benchmark", "embed", "rerank"],
+        run: () => setActivePage("operations"),
       },
     ],
     [createSession, refreshNow, selectedWorkspace, trackSession],
@@ -300,6 +308,13 @@ function App() {
             >
               Models
             </button>
+            <button
+              type="button"
+              className={activePage === "operations" ? "active" : ""}
+              onClick={() => setActivePage("operations")}
+            >
+              Operations
+            </button>
             <button type="button" onClick={palette.open}>
               Palette (Cmd/Ctrl+K)
             </button>
@@ -317,6 +332,8 @@ function App() {
         >
           {activePage === "models" ? (
             <ModelsPage connection={connection} />
+          ) : activePage === "operations" ? (
+            <OperationsPage connection={connection} />
           ) : (
             <>
               <WorkspaceRail
