@@ -21,6 +21,7 @@ import {
   saveConnectionSettings,
   checkLanHealth,
 } from '@/lib/connection';
+import { syncSettingsToCloud } from '@/lib/settings-sync';
 
 // ---------------------------------------------------------------------------
 // Quick-select presets
@@ -106,6 +107,8 @@ export default function GeneralSettingsPage() {
       };
       await saveConnectionSettings(updated);
       setHasChanges(false);
+      // Fire-and-forget cloud sync (no-op when not signed in)
+      void syncSettingsToCloud(updated);
     } finally {
       setIsSaving(false);
     }
@@ -324,7 +327,7 @@ export default function GeneralSettingsPage() {
               {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
           </div>
-          <p className="text-xs text-text-muted">Stored encrypted via Web Crypto API (AES-GCM)</p>
+          <p className="text-xs text-text-muted">Stored encrypted via Web Crypto API (AES-GCM) · not synced to cloud</p>
         </div>
       </OptaSurface>
 

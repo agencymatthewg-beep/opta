@@ -21,6 +21,7 @@ import {
   saveConnectionSettings,
   getOptimalBaseUrl,
 } from '@/lib/connection';
+import { syncSettingsToCloud } from '@/lib/settings-sync';
 
 type TestStatus = 'idle' | 'testing' | 'success' | 'error';
 
@@ -76,7 +77,9 @@ export default function TunnelSettingsPage() {
     setUseTunnel(newVal);
     // Auto-save the toggle
     const existing = await getConnectionSettings();
-    await saveConnectionSettings({ ...existing, tunnelUrl, useTunnel: newVal });
+    const saved = { ...existing, tunnelUrl, useTunnel: newVal };
+    await saveConnectionSettings(saved);
+    void syncSettingsToCloud(saved);
     // Auto-focus URL field when enabling the tunnel
     if (newVal) {
       setTimeout(() => tunnelUrlRef.current?.focus(), 50);
@@ -96,8 +99,10 @@ export default function TunnelSettingsPage() {
 
     try {
       const existing = await getConnectionSettings();
-      await saveConnectionSettings({ ...existing, tunnelUrl, useTunnel });
+      const saved = { ...existing, tunnelUrl, useTunnel };
+      await saveConnectionSettings(saved);
       setHasUrlChanges(false);
+      void syncSettingsToCloud(saved);
     } finally {
       setIsSaving(false);
     }

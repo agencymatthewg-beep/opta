@@ -222,7 +222,8 @@ export default function AccountSettingsPage() {
           <CheckCircle2 className="h-3.5 w-3.5 flex-shrink-0 text-neon-green" />
           <p className="text-xs text-text-secondary">
             Cloud sync is <span className="font-medium text-neon-green">active</span>.
-            Sessions and device presence sync automatically.
+            Sessions, connection settings, and device presence sync automatically.
+            Admin key is device-specific and stays local.
           </p>
         </div>
       </OptaSurface>

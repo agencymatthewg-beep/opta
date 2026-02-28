@@ -37,6 +37,7 @@ import { AuthProvider, useAuthSafe } from '@/components/shared/AuthProvider';
 import { CommandPalette } from '@/components/shared/CommandPalette';
 import { StatusStrip } from '@/components/shared/StatusStrip';
 import { POST_SIGN_IN_NEXT_KEY, sanitizeNextPath } from '@/lib/auth-utils';
+import { tryHydrateSettingsFromCloud } from '@/lib/settings-sync';
 
 // ---------------------------------------------------------------------------
 // Nav items
@@ -140,6 +141,21 @@ function HeaderUserBadge({ signInHref }: { signInHref: string }) {
   return null;
 }
 
+/**
+ * Hydrates connection settings from the user's cloud device record on first
+ * sign-in to a new device. No-ops if settings have already been synced locally.
+ */
+function CloudSettingsSync() {
+  const auth = useAuthSafe();
+
+  useEffect(() => {
+    if (!auth?.user) return;
+    void tryHydrateSettingsFromCloud();
+  }, [auth?.user]);
+
+  return null;
+}
+
 function PostSignInNextRedirect() {
   const auth = useAuthSafe();
   const router = useRouter();
@@ -239,6 +255,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     <AuthProvider>
       <ConnectionProvider>
         <PostSignInNextRedirect />
+        <CloudSettingsSync />
 
         {/* Global ambient background glow */}
         <div className="fixed -inset-[50%] -z-10 pointer-events-none opacity-40 blur-[200px] rounded-full mix-blend-screen bg-gradient-to-tr from-opta-primary/20 via-opta-primary-glow/10 to-transparent animate-[opta-breathe_8s_ease-in-out_infinite]" />
