@@ -64,10 +64,7 @@ export function BackgroundJobsPage({ connection }: BackgroundJobsPageProps) {
         const response = await daemonClient.backgroundOutput(connection, processId, {
           limit: 200,
         });
-        const chunks =
-          (response as unknown as { chunks?: Array<{ text?: string }> })
-            .chunks ?? [];
-        const lines = chunks.map((c) => c.text ?? "").filter(Boolean);
+        const lines = response.chunks.map((c) => c.text).filter(Boolean);
         setOutput({ processId, lines });
       } catch (err) {
         setOutput({
@@ -121,8 +118,7 @@ export function BackgroundJobsPage({ connection }: BackgroundJobsPageProps) {
           command: cmd,
           cwd: startCwd.trim() || undefined,
         } as Parameters<typeof daemonClient.startBackground>[1]);
-        const pid =
-          (result as unknown as { processId?: string }).processId ?? "?";
+        const pid = result.process.processId;
         showNotice(`Started: ${pid}`);
         setStartCmd("");
         setStartCwd("");

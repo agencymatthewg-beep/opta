@@ -108,11 +108,9 @@ export const daemonClient = {
     connection: DaemonConnectionOptions,
     sessionId: string,
     afterSeq = 0,
-  ): Promise<{ events: Array<Record<string, unknown>> }> {
+  ): Promise<{ events: V3Envelope[] }> {
     const response = await httpClient(connection).events(sessionId, afterSeq);
-    return {
-      events: response.events as unknown as Array<Record<string, unknown>>,
-    };
+    return { events: response.events };
   },
 
   connectWebSocket(
@@ -247,22 +245,22 @@ export const daemonClient = {
     connection: DaemonConnectionOptions,
     modelId: string,
     opts?: { backend?: string; autoDownload?: boolean },
-  ): Promise<unknown> {
-    return httpClient(connection).lmxLoad(modelId, opts);
+  ): Promise<void> {
+    await httpClient(connection).lmxLoad(modelId, opts);
   },
 
   async lmxUnload(
     connection: DaemonConnectionOptions,
     modelId: string,
-  ): Promise<unknown> {
-    return httpClient(connection).lmxUnload(modelId);
+  ): Promise<void> {
+    await httpClient(connection).lmxUnload(modelId);
   },
 
   async lmxDelete(
     connection: DaemonConnectionOptions,
     modelId: string,
-  ): Promise<unknown> {
-    return httpClient(connection).lmxDelete(modelId);
+  ): Promise<void> {
+    await httpClient(connection).lmxDelete(modelId);
   },
 
   async lmxDownload(

@@ -260,10 +260,10 @@ function App() {
           <span>{showTerminal ? "Runtime visible" : "Runtime hidden"}</span>
             </div>
             {connectionState === "disconnected" && (
-              <p className="daemon-offline-hint">
-                Run <code>opta daemon start</code> to connect
-                {connectionError ? ` — ${connectionError}` : ""}
-              </p>
+              <div className="daemon-offline-hint">
+                <p>Run <code>opta daemon start</code> to connect</p>
+                {connectionError ? <p className="daemon-offline-hint-error">{connectionError}</p> : null}
+              </div>
             )}
           </div>
 
@@ -450,7 +450,10 @@ function App() {
                 </div>
               </dl>
               {connectionError ? (
-                <p className="runtime-error">{connectionError}</p>
+                <div className="runtime-error">
+                  <strong>Connection Error</strong>
+                  <p className="runtime-error-detail">{connectionError}</p>
+                </div>
               ) : null}
               <button type="button" onClick={() => void refreshNow()}>
                 Refresh Now
