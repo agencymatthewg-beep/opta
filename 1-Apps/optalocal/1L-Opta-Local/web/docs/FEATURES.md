@@ -49,3 +49,29 @@
 ---
 
 *Updated — 2026-02-28*
+
+## Bootstrap Endpoint (optalocal.com/init)
+
+- **Status:** Shipped
+- **Route:** `GET /init`
+- **Behavior:** Returns a shell bootstrap script (`text/x-shellscript`) that:
+  - Enforces supported platform checks (macOS + arm64 only)
+  - Prints clear unsupported-platform messaging with detected OS/arch
+  - Installs Opta CLI from latest GitHub release tarball:
+    `https://github.com/agencymatthewg-beep/opta/releases/latest/download/opta-cli-npm.tgz`
+  - Uses a safe user-space install prefix (`~/.local`) and prints post-install validation
+
+### Validation commands
+
+```bash
+# Endpoint health + content type
+curl -i https://optalocal.com/init
+
+# Script smoke-check (do not execute)
+curl -fsSL https://optalocal.com/init | head -n 40
+
+# Install + verify
+curl -fsSL https://optalocal.com/init | bash
+opta --version
+opta doctor
+```
