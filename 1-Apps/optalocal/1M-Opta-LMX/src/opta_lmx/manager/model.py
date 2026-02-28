@@ -6,6 +6,7 @@ import asyncio
 import logging
 import secrets
 import shutil
+import threading
 import time
 from pathlib import Path
 from typing import Any
@@ -19,21 +20,26 @@ from opta_lmx.monitoring.events import EventBus, ServerEvent
 logger = logging.getLogger(__name__)
 
 
+# Thread-local storage: each asyncio.to_thread worker sets this before
+# calling snapshot_download so _DownloadProgressTracker can pick it up
+# without requiring a dynamically created subclass per download.
+_task_local: threading.local = threading.local()
+
+
 class _DownloadProgressTracker(tqdm):  # type: ignore[type-arg]
     """Custom tqdm subclass that writes progress to a DownloadTask.
 
     Passed to snapshot_download via tqdm_class so we capture
     real-time byte and file progress without patching internals.
+    The active DownloadTask is read from thread-local storage so
+    concurrent downloads on different threads never share state.
     """
 
-    _download_task: DownloadTask | None = None
-    _default_download_task: DownloadTask | None = None
-
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        # Store and remove our custom kwarg before passing to tqdm
-        self._download_task = kwargs.pop("download_task", None)
+        # Prefer an explicit kwarg; fall back to thread-local set by the runner.
+        self._download_task: DownloadTask | None = kwargs.pop("download_task", None)
         if self._download_task is None:
-            self._download_task = getattr(self.__class__, "_default_download_task", None)
+            self._download_task = getattr(_task_local, "task", None)
         super().__init__(*args, **kwargs)
 
     def update(self, n: int = 1) -> bool | None:  # type: ignore[override]
@@ -186,23 +192,23 @@ class ModelManager:
         task = self._downloads[download_id]
 
         try:
-            # tqdm_class must be a class (not a function), otherwise HF internals
-            # can break on class-level lock access ("...get_lock" errors).
-            progress_tracker_cls = type(
-                f"_DownloadProgressTracker_{download_id}",
-                (_DownloadProgressTracker,),
-                {"_default_download_task": task},
-            )
+            # Set the task in the worker thread via thread-local storage so
+            # _DownloadProgressTracker can find it without a dynamic subclass.
+            def _run() -> str:
+                _task_local.task = task
+                try:
+                    return snapshot_download(  # type: ignore[return-value]
+                        repo_id=repo_id,
+                        revision=revision,
+                        allow_patterns=allow_patterns,
+                        ignore_patterns=ignore_patterns,
+                        token=self._hf_token,
+                        tqdm_class=_DownloadProgressTracker,
+                    )
+                finally:
+                    _task_local.task = None
 
-            local_path: str = await asyncio.to_thread(
-                snapshot_download,  # type: ignore[arg-type]
-                repo_id=repo_id,
-                revision=revision,
-                allow_patterns=allow_patterns,
-                ignore_patterns=ignore_patterns,
-                token=self._hf_token,
-                tqdm_class=progress_tracker_cls,
-            )
+            local_path: str = await asyncio.to_thread(_run)
 
             task.status = "completed"
             task.local_path = local_path
