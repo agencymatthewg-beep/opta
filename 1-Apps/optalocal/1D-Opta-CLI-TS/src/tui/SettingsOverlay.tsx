@@ -19,8 +19,8 @@ interface SettingsItem {
   sensitive?: boolean;      // Mask value with ***
   validate?: (v: string) => string | null; // Return error string or null
   hint?: string;            // Extra help below input
-  /** Input type: 'text' (default), 'select' for fixed options, 'toggle' for bool, 'slider' for range */
-  inputType?: 'text' | 'select' | 'toggle' | 'slider';
+  /** Input type: 'text' (default), 'select' for fixed options, 'toggle' for bool, 'slider' for range, 'action' for one-shot callbacks */
+  inputType?: 'text' | 'select' | 'toggle' | 'slider' | 'action';
   /** Options for select-type items */
   options?: SelectOption[];
   /** Range bounds for slider-type items */
@@ -28,6 +28,8 @@ interface SettingsItem {
   max?: number;
   /** Descriptions per slider value */
   sliderLabels?: Record<number, string>;
+  /** Callback for 'action' items — invoked on Enter/Space */
+  action?: () => void;
 }
 
 export interface SettingsOverlayProps {
@@ -88,6 +90,17 @@ const ADVANCED_PROFILE_ONLY_KEYS = new Set<string>([
   'research.providers.tavily.apiKey',
   'research.providers.gemini.apiKey',
 ]);
+
+/** Open a URL in the OS default browser (cross-platform, fire-and-forget). */
+function openInBrowser(url: string): void {
+  const cmd =
+    process.platform === 'darwin' ? 'open' :
+    process.platform === 'win32'  ? 'start' :
+    'xdg-open';
+  import('node:child_process').then(({ spawn }) => {
+    spawn(cmd, [url], { detached: true, stdio: 'ignore' }).unref();
+  }).catch(() => { /* ignore — browser open is best-effort */ });
+}
 
 const PAGE_ITEMS: Record<SettingsPageId, SettingsItem[]> = {
   connection: [
@@ -203,8 +216,17 @@ const PAGE_ITEMS: Record<SettingsPageId, SettingsItem[]> = {
     { label: 'Tavily API Key',      configKey: 'research.providers.tavily.apiKey',   defaultValue: '', sensitive: true, description: 'Tavily AI search API key', hint: 'tavily.com' },
     { label: 'Gemini API Key',      configKey: 'research.providers.gemini.apiKey',   defaultValue: '', sensitive: true, description: 'Google Gemini API key', hint: 'aistudio.google.com' },
   ],
-  // Account page is a read-only status view — no editable items
-  account: [],
+  account: [
+    {
+      label: 'Sign In',
+      description: 'Open accounts.optalocal.com to sign in',
+      configKey: '__account_signin',
+      defaultValue: '',
+      inputType: 'action',
+      action: () => openInBrowser('https://accounts.optalocal.com'),
+      hint: 'Opens accounts.optalocal.com in your default browser',
+    },
+  ],
 };
 
 // --- HELPERS ---
@@ -379,12 +401,6 @@ function AccountPageContent({ accountState, pageColor }: AccountPageContentProps
         }
       </Box>
 
-      {/* CLI hint */}
-      <Box marginTop={1}>
-        <Text dimColor>  Run </Text>
-        <Text dimColor bold>opta account login</Text>
-        <Text dimColor> to authenticate</Text>
-      </Box>
     </Box>
   );
 }
@@ -552,10 +568,14 @@ export function SettingsOverlay({
       onSave(changes); onClose(); return;
     }
 
-    // Enter = open inline editor for selected item (or quick-toggle for booleans)
+    // Enter = activate action / quick-toggle / open inline editor
     if (key.return) {
       const item = items[selectedIndex];
       if (!item) return;
+      if (item.inputType === 'action') {
+        item.action?.();
+        return;
+      }
       // Toggle items cycle directly without opening an editor
       if (item.inputType === 'toggle') {
         handleToggleQuick(item);
@@ -566,10 +586,14 @@ export function SettingsOverlay({
       return;
     }
 
-    // Space = same as Enter for opening editor / toggling
+    // Space = same as Enter for activating / opening editor / toggling
     if (input === ' ') {
       const item = items[selectedIndex];
       if (!item) return;
+      if (item.inputType === 'action') {
+        item.action?.();
+        return;
+      }
       if (item.inputType === 'toggle') {
         handleToggleQuick(item);
         return;
@@ -679,33 +703,38 @@ export function SettingsOverlay({
           ) : null}
 
           {/* ITEMS LIST */}
-          {showItems && !editingKey && selectedPage !== 'account' ? (
+          {showItems && !editingKey ? (
             <>
               {itemWindow.start > 0 && <Text dimColor>… {itemWindow.start} above …</Text>}
               {items.slice(itemWindow.start, itemWindow.end).map((item, idx) => {
                 const abs = itemWindow.start + idx;
                 const active = abs === selectedIndex;
                 const val = currentValue(item);
+                const isAction = item.inputType === 'action';
                 // For selectable items, show the label instead of raw value
                 const selectLabel = (item.inputType === 'select' || item.inputType === 'toggle')
                   ? item.options?.find(o => o.value === val)?.label ?? val
                   : null;
-                const displayVal = item.sensitive && val && val !== item.defaultValue
-                  ? '●●●●●'
-                  : item.inputType === 'toggle'
-                    ? (val === 'true' ? '[x]' : '[ ]') + ' ' + (selectLabel ?? val)
-                    : item.inputType === 'slider' && item.sliderLabels
-                      ? `${val} — ${item.sliderLabels[parseInt(val, 10)] ?? ''}`
-                      : selectLabel ?? (val || '(not set)');
-                const glyph = statusGlyph(val, item.defaultValue, item.sensitive);
-                const glyphColor = statusColor(val, item.defaultValue, item.sensitive);
-                const changed = changes[item.configKey] !== undefined;
-                // Show interaction hint for active selectable items
-                const interactionHint = active && item.inputType === 'toggle'
-                  ? 'Enter/Space toggle'
-                  : active && (item.inputType === 'select' || item.inputType === 'slider')
-                    ? 'Enter to choose'
-                    : null;
+                const displayVal = isAction
+                  ? (item.hint ?? '')
+                  : item.sensitive && val && val !== item.defaultValue
+                    ? '●●●●●'
+                    : item.inputType === 'toggle'
+                      ? (val === 'true' ? '[x]' : '[ ]') + ' ' + (selectLabel ?? val)
+                      : item.inputType === 'slider' && item.sliderLabels
+                        ? `${val} — ${item.sliderLabels[parseInt(val, 10)] ?? ''}`
+                        : selectLabel ?? (val || '(not set)');
+                const glyph = isAction ? '→' : statusGlyph(val, item.defaultValue, item.sensitive);
+                const glyphColor = isAction ? pageColor : statusColor(val, item.defaultValue, item.sensitive);
+                const changed = !isAction && changes[item.configKey] !== undefined;
+                // Show interaction hint for active selectable/action items
+                const interactionHint = active && isAction
+                  ? 'Enter to open'
+                  : active && item.inputType === 'toggle'
+                    ? 'Enter/Space toggle'
+                    : active && (item.inputType === 'select' || item.inputType === 'slider')
+                      ? 'Enter to choose'
+                      : null;
 
                 return (
                   <Box key={item.configKey} flexDirection="column">
@@ -729,7 +758,7 @@ export function SettingsOverlay({
               })}
               {itemWindow.end < items.length && <Text dimColor>… {items.length - itemWindow.end} below …</Text>}
             </>
-          ) : !editingKey && selectedPage !== 'account' ? (
+          ) : !editingKey ? (
             <Box marginTop={1}><Text dimColor>◔ Loading settings...</Text></Box>
           ) : null}
         </>
