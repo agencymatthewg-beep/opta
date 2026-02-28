@@ -1,19 +1,14 @@
 {
-  "name": "opta-codex-desktop",
+  "name": "opta-code-desktop",
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "workspaces": [
-    "."
-  ],
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview"
   },
   "dependencies": {
-    "@opta/daemon-client": "file:../../packages/daemon-client",
-    "@opta/protocol-shared": "file:../../packages/protocol-shared",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
