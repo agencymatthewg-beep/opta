@@ -18,6 +18,7 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import type { LucideIcon } from "lucide-react";
 import {
   RefreshCw,
   Plus,
@@ -112,6 +113,13 @@ const cardVariants = {
   }),
 };
 
+const featureCardHover = { scale: 1.03, y: -2 } as const;
+const featureCardTap = { scale: 0.97 } as const;
+const featureCardTransition = {
+  duration: 0.4,
+  ease: [0.22, 1, 0.36, 1] as const,
+} as const;
+
 // ---------------------------------------------------------------------------
 // GeminiCard — iridescent glass card, Gemini-style
 // ---------------------------------------------------------------------------
@@ -158,7 +166,7 @@ function SectionLabel({
   icon: Icon,
 }: {
   children: React.ReactNode;
-  icon?: React.ElementType;
+  icon?: LucideIcon;
 }) {
   return (
     <div className="mb-3 flex items-center gap-2">
@@ -249,7 +257,7 @@ function FeatureCard({
 }: {
   label: string;
   href: string;
-  icon: React.ElementType;
+  icon: LucideIcon;
   desc: string;
   accent: string;
   delay: number;
@@ -258,9 +266,9 @@ function FeatureCard({
     <motion.div
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-      whileHover={{ scale: 1.03, y: -2 }}
-      whileTap={{ scale: 0.97 }}
+      transition={{ ...featureCardTransition, delay }}
+      whileHover={featureCardHover}
+      whileTap={featureCardTap}
     >
       <Link href={href} className="group relative flex flex-col gap-2.5 rounded-xl p-3 feature-card-link">
         <div
@@ -1216,7 +1224,7 @@ export default function DashboardPage() {
                     </span>
                     <div className="gemini-divider flex-1" />
                   </div>
-                  <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-6 xl:grid-cols-6">
+                  <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
                     {FEATURE_CARDS.map((card, i) => (
                       <FeatureCard
                         key={card.href}
@@ -1225,7 +1233,7 @@ export default function DashboardPage() {
                         icon={card.icon}
                         desc={card.desc}
                         accent={card.accent}
-                        delay={0.36 + i * 0.04}
+                        delay={Math.min(0.36 + i * 0.04, 0.6)}
                       />
                     ))}
                   </div>
@@ -1299,13 +1307,12 @@ export default function DashboardPage() {
                 </span>
               )}
               <span
-                className="opacity-30"
+                className="gemini-tps-number"
                 style={{
                   background: "linear-gradient(90deg, #a5b4fc, #c084fc)",
                   WebkitBackgroundClip: "text",
                   WebkitTextFillColor: "transparent",
                   backgroundClip: "text",
-                  opacity: 1,
                 }}
               >
                 Opta LMX

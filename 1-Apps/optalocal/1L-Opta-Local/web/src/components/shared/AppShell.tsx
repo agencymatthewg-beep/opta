@@ -232,12 +232,15 @@ export function AppShell({ children }: { children: ReactNode }) {
     setMoreMenuOpen(false);
   }, [closeMobileMenu, pathname]);
 
-  // Cmd+K / Ctrl+K opens command palette
+  // Cmd+K / Ctrl+K opens command palette; Escape closes More dropdown
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
         setPaletteOpen((prev) => !prev);
+      }
+      if (e.key === 'Escape') {
+        setMoreMenuOpen(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -349,6 +352,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                       : 'text-text-secondary hover:bg-opta-surface/50 hover:text-text-primary',
                   )}
                   aria-expanded={moreMenuOpen}
+                  aria-haspopup="menu"
                   aria-label="More navigation options"
                 >
                   <MoreHorizontal className="h-3.5 w-3.5" />
@@ -364,15 +368,11 @@ export function AppShell({ children }: { children: ReactNode }) {
                       aria-hidden="true"
                     />
                     <div
-                      className="absolute top-full mt-1.5 left-0 glass-strong rounded-xl p-2 shadow-2xl z-50"
-                      style={{
-                        minWidth: '296px',
-                        border: '1px solid rgba(255,255,255,0.06)',
-                        boxShadow: '0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(139,92,246,0.1)',
-                      }}
+                      role="menu"
+                      className="absolute top-full mt-1.5 left-0 glass-strong more-dropdown rounded-xl p-2 z-50"
+                      style={{ minWidth: '296px' }}
                     >
-                      <p className="px-2.5 pb-2 pt-1 text-[9px] uppercase tracking-[0.2em] text-text-muted"
-                        style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}
+                      <p className="px-2.5 pb-2 pt-1 text-[9px] uppercase tracking-[0.2em] text-text-muted border-b border-white/5"
                       >
                         Features
                       </p>
@@ -384,6 +384,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                             <Link
                               key={item.href}
                               href={item.href}
+                              role="menuitem"
                               onClick={() => setMoreMenuOpen(false)}
                               className={cn(
                                 'flex items-center gap-2 rounded-lg px-3 py-2.5 text-xs transition-colors',
