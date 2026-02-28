@@ -1,3 +1,4 @@
+import { timingSafeEqual } from 'node:crypto';
 import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
 import websocket from '@fastify/websocket';
 import { VERSION } from '../core/version.js';
@@ -21,6 +22,8 @@ import { registerWsServer } from './ws-server.js';
 import { writeDaemonState, type DaemonState } from './lifecycle.js';
 import { daemonLogsPath } from './telemetry.js';
 import { isStorageRelatedError } from '../utils/disk.js';
+import { loadConfig } from '../core/config.js';
+import { LmxClient } from '../lmx/client.js';
 
 export interface HttpServerOptions {
   daemonId: string;
@@ -45,11 +48,27 @@ function readBearer(req: FastifyRequest): string | null {
   return trimmed.slice(7).trim() || null;
 }
 
+function tokenEqual(a: string, b: string): boolean {
+  try {
+    const aBuf = Buffer.from(a);
+    const bBuf = Buffer.from(b);
+    if (aBuf.length !== bBuf.length) {
+      // Still run timingSafeEqual against a fixed-length buffer to avoid
+      // leaking token length via early-return timing.
+      timingSafeEqual(aBuf, aBuf);
+      return false;
+    }
+    return timingSafeEqual(aBuf, bBuf);
+  } catch {
+    return false;
+  }
+}
+
 function isAuthorized(req: FastifyRequest, expectedToken: string): boolean {
   const fromHeader = readBearer(req);
-  if (fromHeader === expectedToken) return true;
+  if (fromHeader !== null && tokenEqual(fromHeader, expectedToken)) return true;
   const query = req.query as { token?: string } | undefined;
-  return query?.token === expectedToken;
+  return query?.token !== undefined && tokenEqual(query.token, expectedToken);
 }
 
 function rejectUnauthorized(reply: FastifyReply): FastifyReply {
@@ -91,12 +110,15 @@ async function waitForTurnDone(
         done = true;
         clearTimeout(timeout);
         unsubscribe();
-        void sessionManager.getSessionMessages(sessionId).then((messages) => {
-          const assistantMsgs = (messages ?? []).filter(m => m.role === 'assistant');
-          const last = assistantMsgs[assistantMsgs.length - 1];
-          const text = typeof last?.content === 'string' ? last.content : '';
-          resolve({ stats: payload.stats, message: text });
-        }).catch(reject);
+        void sessionManager
+          .getSessionMessages(sessionId)
+          .then((messages) => {
+            const assistantMsgs = (messages ?? []).filter((m) => m.role === 'assistant');
+            const last = assistantMsgs[assistantMsgs.length - 1];
+            const text = typeof last?.content === 'string' ? last.content : '';
+            resolve({ stats: payload.stats, message: text });
+          })
+          .catch(reject);
       }
       if (event.event === 'turn.error') {
         const payload = event.payload as { turnId?: string; message?: string };
@@ -134,11 +156,146 @@ async function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions)
     };
   });
 
+  app.get('/v3/lmx/status', async (req, reply) => {
+    if (!isAuthorized(req, opts.token)) return rejectUnauthorized(reply);
+    const config = await loadConfig();
+    const lmx = new LmxClient({
+      host: config.connection.host,
+      fallbackHosts: config.connection.fallbackHosts,
+      port: config.connection.port,
+      adminKey: config.connection.adminKey,
+    });
+    const status = await lmx.status();
+    return status;
+  });
+
+  app.get('/v3/lmx/models', async (req, reply) => {
+    if (!isAuthorized(req, opts.token)) return rejectUnauthorized(reply);
+    const config = await loadConfig();
+    const lmx = new LmxClient({
+      host: config.connection.host,
+      fallbackHosts: config.connection.fallbackHosts,
+      port: config.connection.port,
+      adminKey: config.connection.adminKey,
+    });
+    const models = await lmx.models();
+    return models;
+  });
+
+  app.get('/v3/lmx/memory', async (req, reply) => {
+    if (!isAuthorized(req, opts.token)) return rejectUnauthorized(reply);
+    const config = await loadConfig();
+    const lmx = new LmxClient({
+      host: config.connection.host,
+      fallbackHosts: config.connection.fallbackHosts,
+      port: config.connection.port,
+      adminKey: config.connection.adminKey,
+    });
+    const memory = await lmx.memory();
+    return memory;
+  });
+
+  app.get('/v3/lmx/models/available', async (req, reply) => {
+    if (!isAuthorized(req, opts.token)) return rejectUnauthorized(reply);
+    const config = await loadConfig();
+    const lmx = new LmxClient({
+      host: config.connection.host,
+      fallbackHosts: config.connection.fallbackHosts,
+      port: config.connection.port,
+      adminKey: config.connection.adminKey,
+    });
+    const available = await lmx.available();
+    return available;
+  });
+
+  app.post('/v3/lmx/models/load', async (req, reply) => {
+    if (!isAuthorized(req, opts.token)) return rejectUnauthorized(reply);
+    const body = req.body as
+      | { modelId?: string; backend?: string; autoDownload?: boolean }
+      | undefined;
+    if (!body?.modelId || !body.modelId.trim()) {
+      return reply.status(400).send({ error: 'Missing modelId' });
+    }
+
+    const config = await loadConfig();
+    const lmx = new LmxClient({
+      host: config.connection.host,
+      fallbackHosts: config.connection.fallbackHosts,
+      port: config.connection.port,
+      adminKey: config.connection.adminKey,
+    });
+    const result = await lmx.loadModel(body.modelId, {
+      backend: body.backend,
+      autoDownload: body.autoDownload,
+    });
+    return result;
+  });
+
+  app.post('/v3/lmx/models/unload', async (req, reply) => {
+    if (!isAuthorized(req, opts.token)) return rejectUnauthorized(reply);
+    const body = req.body as { modelId?: string } | undefined;
+    if (!body?.modelId || !body.modelId.trim()) {
+      return reply.status(400).send({ error: 'Missing modelId' });
+    }
+
+    const config = await loadConfig();
+    const lmx = new LmxClient({
+      host: config.connection.host,
+      fallbackHosts: config.connection.fallbackHosts,
+      port: config.connection.port,
+      adminKey: config.connection.adminKey,
+    });
+    const result = await lmx.unloadModel(body.modelId);
+    return result;
+  });
+
+  app.delete('/v3/lmx/models/:modelId', async (req, reply) => {
+    if (!isAuthorized(req, opts.token)) return rejectUnauthorized(reply);
+    const params = req.params as { modelId?: string };
+    if (!params.modelId || !params.modelId.trim()) {
+      return reply.status(400).send({ error: 'Missing modelId' });
+    }
+
+    const config = await loadConfig();
+    const lmx = new LmxClient({
+      host: config.connection.host,
+      fallbackHosts: config.connection.fallbackHosts,
+      port: config.connection.port,
+      adminKey: config.connection.adminKey,
+    });
+    const result = await lmx.deleteModel(params.modelId);
+    return result;
+  });
+
+  app.post('/v3/lmx/models/download', async (req, reply) => {
+    if (!isAuthorized(req, opts.token)) return rejectUnauthorized(reply);
+    const body = req.body as { repoId?: string } | undefined;
+    if (!body?.repoId || !body.repoId.trim()) {
+      return reply.status(400).send({ error: 'Missing repoId' });
+    }
+
+    const config = await loadConfig();
+    const lmx = new LmxClient({
+      host: config.connection.host,
+      fallbackHosts: config.connection.fallbackHosts,
+      port: config.connection.port,
+      adminKey: config.connection.adminKey,
+    });
+    const result = await lmx.downloadModel(body.repoId);
+    return {
+      download_id: result.downloadId,
+      repo_id: result.repoId,
+      status: result.status,
+    };
+  });
+
   app.post('/v3/sessions', async (req, reply) => {
     if (!isAuthorized(req, opts.token)) return rejectUnauthorized(reply);
     const parsed = CreateSessionHttpSchema.safeParse(req.body ?? {});
     if (!parsed.success) {
-      return reply.status(400).send({ error: 'Invalid request body', details: parsed.error.issues });
+      return reply
+        .status(400)
+        .send({ error: 'Invalid request body', details: parsed.error.issues });
     }
     const snapshot = await opts.sessionManager.createSession(parsed.data);
     return reply.status(201).send(snapshot);
@@ -190,7 +347,8 @@ async function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions)
     const params = PermissionParamsSchema.safeParse(req.params);
     if (!params.success) return reply.status(400).send({ error: 'Invalid params' });
     const body = PermissionDecisionHttpSchema.safeParse(req.body ?? {});
-    if (!body.success) return reply.status(400).send({ error: 'Invalid body', details: body.error.issues });
+    if (!body.success)
+      return reply.status(400).send({ error: 'Invalid body', details: body.error.issues });
 
     const result = opts.sessionManager.resolvePermission(params.data.sessionId, body.data);
     if (!result.ok && result.conflict) {
@@ -208,14 +366,18 @@ async function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions)
     if (!params.success) return reply.status(400).send({ error: 'Invalid session id' });
     const query = EventsQuerySchema.safeParse(req.query ?? {});
     if (!query.success) return reply.status(400).send({ error: 'Invalid query' });
-    const events = await opts.sessionManager.getEventsAfter(params.data.sessionId, query.data.afterSeq);
+    const events = await opts.sessionManager.getEventsAfter(
+      params.data.sessionId,
+      query.data.afterSeq
+    );
     return { events };
   });
 
   app.get('/v3/background', async (req, reply) => {
     if (!isAuthorized(req, opts.token)) return rejectUnauthorized(reply);
     const query = BackgroundListQuerySchema.safeParse(req.query ?? {});
-    if (!query.success) return reply.status(400).send({ error: 'Invalid query', details: query.error.issues });
+    if (!query.success)
+      return reply.status(400).send({ error: 'Invalid query', details: query.error.issues });
 
     try {
       const processes = await opts.sessionManager.listBackgroundProcesses(query.data.sessionId);
@@ -232,7 +394,8 @@ async function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions)
   app.post('/v3/background/start', async (req, reply) => {
     if (!isAuthorized(req, opts.token)) return rejectUnauthorized(reply);
     const body = BackgroundStartHttpSchema.safeParse(req.body ?? {});
-    if (!body.success) return reply.status(400).send({ error: 'Invalid body', details: body.error.issues });
+    if (!body.success)
+      return reply.status(400).send({ error: 'Invalid body', details: body.error.issues });
 
     try {
       const process = await opts.sessionManager.startBackgroundProcess(body.data);
@@ -254,7 +417,8 @@ async function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions)
     const params = BackgroundProcessParamsSchema.safeParse(req.params);
     if (!params.success) return reply.status(400).send({ error: 'Invalid process id' });
     const query = BackgroundStatusQuerySchema.safeParse(req.query ?? {});
-    if (!query.success) return reply.status(400).send({ error: 'Invalid query', details: query.error.issues });
+    if (!query.success)
+      return reply.status(400).send({ error: 'Invalid query', details: query.error.issues });
 
     const process = opts.sessionManager.getBackgroundStatus(params.data.processId);
     if (!process) return reply.status(404).send({ error: 'Background process not found' });
@@ -269,7 +433,8 @@ async function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions)
     const params = BackgroundProcessParamsSchema.safeParse(req.params);
     if (!params.success) return reply.status(400).send({ error: 'Invalid process id' });
     const query = BackgroundOutputQuerySchema.safeParse(req.query ?? {});
-    if (!query.success) return reply.status(400).send({ error: 'Invalid query', details: query.error.issues });
+    if (!query.success)
+      return reply.status(400).send({ error: 'Invalid query', details: query.error.issues });
 
     const output = opts.sessionManager.getBackgroundOutput(params.data.processId, query.data);
     if (!output) return reply.status(404).send({ error: 'Background process not found' });
@@ -281,7 +446,8 @@ async function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions)
     const params = BackgroundProcessParamsSchema.safeParse(req.params);
     if (!params.success) return reply.status(400).send({ error: 'Invalid process id' });
     const body = BackgroundKillHttpSchema.safeParse(req.body ?? {});
-    if (!body.success) return reply.status(400).send({ error: 'Invalid body', details: body.error.issues });
+    if (!body.success)
+      return reply.status(400).send({ error: 'Invalid body', details: body.error.issues });
 
     const result = await opts.sessionManager.killBackgroundProcess(
       params.data.processId,
@@ -403,7 +569,11 @@ async function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions)
   });
 }
 
-async function listenWithPortFallback(app: FastifyInstance, host: string, preferredPort: number): Promise<number> {
+async function listenWithPortFallback(
+  app: FastifyInstance,
+  host: string,
+  preferredPort: number
+): Promise<number> {
   const candidates = [preferredPort, ...Array.from({ length: 21 }, (_, idx) => 10_000 + idx)];
   const occupied: number[] = [];
   for (const candidate of candidates) {
