@@ -6,6 +6,21 @@
 
 ## [Unreleased]
 
+### [Web] 2026-02-28 — Phase 5 Complete + Vercel Auto-Deploy Restored
+
+- Auth-first architecture: mandatory sign-in in cloud mode via `SignInOverlay`; `useAuthSafe()` now the standard hook for dual-mode components
+- Dedicated `/sign-in` page with `next`-path intent, atmospheric background, Google/Apple/email OAuth
+- Dashboard aesthetic: migrated from Terminal Core HUD to Gemini-style luminous depth with ambient orbs and iridescent card shimmer
+- Restored Vercel auto-deploy: deleted rogue Vercel projects hijacking webhooks, reconnected GitHub integration, fixed shallow-clone git syntax in `ignoreCommand`, added pnpm-lock.yaml to monitored paths
+- Fixed `ERR_PNPM_OUTDATED_LOCKFILE` CI failures: committed `pnpm-lock.yaml` in sync with devDependencies added during testing infrastructure phase
+- Added `ConnectionProvider` settings-update reactivity; `STATUS_STRIP_POLL` hook dependency fixed (React warning suppressed)
+- Added `AuthProvider` mock to `ConnectionProvider` unit tests (fixes test isolation failure)
+- Shared components added: `CommandPalette`, `OptaPrimitives` (`OptaSurface`), `ConnectionBadge`
+- Services management API routes: `/api/services/status`, `/api/services/setup`, `/api/services/test`
+- 14 code-quality refinements committed and deployed (conditional rendering, type safety, hook hygiene)
+- Deleted 6 vestigial `.bak` files from `src/app/` and `src/components/shared/`
+- Doc sync complete: ROADMAP, FEATURES, CHANGELOG updated to reflect Phase 5 reality
+
 ### [Web] 2026-02-20 — Web CI Hardening
 - Hardened web CI for deterministic monorepo `pnpm` installs, added `test:integration` to quality gates, and kept Playwright smoke manual-only via `workflow_dispatch`.
 
@@ -52,4 +67,4 @@
 
 ---
 
-*Updated — 2026-02-20*
+*Updated — 2026-02-28*

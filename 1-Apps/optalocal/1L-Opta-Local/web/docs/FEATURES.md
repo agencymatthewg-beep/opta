@@ -34,15 +34,18 @@
 
 | # | Feature | Status | Phase | Description |
 |---|---------|--------|-------|-------------|
-| 13 | RAG Studio | In Progress | Later | Drag-drop document ingestion, chunk preview |
-| 14 | Multi-model router | Planned | Later | Drag-to-assign models to task types |
-| 15 | Image/Vision chat | Planned | Later | Drag-drop images for vision model analysis |
-| 16 | Multi-server fleet | In Progress | Later | Manage multiple LMX servers |
-| 17 | Shared conversations | Planned | Later | Real-time collaborative prompting |
-| 18 | Automation scheduler | Planned | Later | Cron-like recurring AI tasks |
-| 19 | Benchmark suite | In Progress | Later | Performance comparison charts |
-| 20 | Tool approval | Planned | Later | Inline approval for CLI agent actions |
+| 13 | Arena (side-by-side) | Shipped | 5 | Dual-model comparison with parallel streaming |
+| 14 | Agents workflow UI | Shipped | 5 | Agent task execution, step list, run history |
+| 15 | Command Palette | Shipped | 5 | Keyboard-driven navigation (Cmd+K) |
+| 16 | RAG Studio | In Progress | Later | Drag-drop document ingestion, chunk preview |
+| 17 | Multi-model router | Planned | Later | Drag-to-assign models to task types |
+| 18 | Image/Vision chat | Planned | Later | Drag-drop images for vision model analysis |
+| 19 | Multi-server fleet | In Progress | Later | Manage multiple LMX servers |
+| 20 | Shared conversations | Planned | Later | Real-time collaborative prompting |
+| 21 | Automation scheduler | Planned | Later | Cron-like recurring AI tasks |
+| 22 | Benchmark suite | In Progress | Later | Performance comparison charts |
+| 23 | Tool approval | Planned | Later | Inline approval for CLI agent actions |
 
 ---
 
-*Updated — 2026-02-20*
+*Updated — 2026-02-28*

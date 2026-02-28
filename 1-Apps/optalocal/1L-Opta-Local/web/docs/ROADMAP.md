@@ -1,3 +1,7 @@
+---
+status: review
+---
+
 # Opta Local Web — Roadmap
 
 > Web platform delivery plan. iOS is currently deferred while web is stabilized.
@@ -76,7 +80,7 @@
 
 ### Phase 5: Stabilization + Ship Readiness (Current)
 **Goal:** Harden reliability and deployment readiness
-**Status:** In Progress
+**Status:** Complete
 
 | # | Task | Status | Acceptance Criteria |
 |---|------|--------|-------------------|
@@ -84,7 +88,7 @@
 | 2 | Next.js proxy migration | Done | Deprecated `middleware` convention removed |
 | 3 | Connection settings reactivity | Done | Saving settings refreshes live connection context |
 | 4 | Streaming robustness | Done | Stream cancellation signal wired to fetch |
-| 5 | Web-only doc sync | In Progress | Feature/roadmap/workflow docs reflect current implementation |
+| 5 | Web-only doc sync | Done | Feature/roadmap/workflow docs reflect current implementation |
 
 ---
 
@@ -105,4 +109,4 @@
 
 ---
 
-*Updated: 2026-02-20*
+*Updated: 2026-02-28*
