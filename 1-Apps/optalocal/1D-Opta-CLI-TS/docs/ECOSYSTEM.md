@@ -1,7 +1,7 @@
 ---
 title: Opta Ecosystem
 purpose: How Opta CLI relates to other Opta components
-updated: 2026-02-15
+updated: 2026-02-28
 ---
 
 # Opta Ecosystem — Component Relationships
@@ -10,390 +10,250 @@ Opta CLI doesn't exist in isolation. This document maps how it connects to the b
 
 ---
 
+## The Opta Local Stack
+
+Three components form the primary inference pipeline. See `../OPTA-LOCAL-STACK.md` for the full topology.
+
+```
+opta chat / opta tui / opta do    (1D-Opta-CLI-TS)
+        │
+opta daemon   127.0.0.1:9999      (1D-Opta-CLI-TS/src/daemon/)
+        │   HTTP v3 REST + WebSocket streaming
+Opta LMX  192.168.188.11:1234     (1M-Opta-LMX)
+        │   OpenAI-compatible /v1/chat/completions + WebSocket /v1/chat/stream
+Opta Local Web  localhost:3004    (1L-Opta-Local/web/)
+```
+
+The daemon owns session orchestration, permission gating, and event persistence.
+LMX runs on Mac Studio (Mono512, 512GB RAM) and is never hosted on the MacBook.
+
+---
+
 ## Component Map
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│ User's MacBook                                                  │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  ┌──────────────────────┐      ┌──────────────────────┐          │
-│  │   Opta CLI (this)    │      │   OptaPlus Web UI    │          │
-│  │   node opta chat     │      │   Web interface      │          │
-│  └──────────┬───────────┘      └──────────┬───────────┘          │
-│             │                              │                      │
-│             └──────────────┬───────────────┘                      │
-│                            │ HTTP/REST                           │
-│                            ▼                                     │
-│  ┌────────────────────────────────────────┐                    │
-│  │   OpenClaw Gateway                     │                    │
-│  │   (Message routing, auth, logging)     │                    │
-│  └────────────────────┬───────────────────┘                    │
-│                       │                                         │
-└─────────────────────┬─┼──────────────────────────────────────────┘
-                      │ │ SSH tunnel (192.168.188.0/24 LAN)
-                      │ │
-┌─────────────────────┼─┼──────────────────────────────────────────┐
-│ Mac Studio (Mono512)│ │                                          │
-├─────────────────────┼─┼──────────────────────────────────────────┤
-│                     ▼ ▼                                          │
-│  ┌─────────────────────────────────┐                            │
-│  │   Opta-LMX (port 1234)          │◄──CLI/OptaPlus             │
-│  │   └─ Qwen2.5-72B (loaded)       │   (OpenAI-compatible       │
-│  │   └─ GLM-4.7-Flash-MLX          │    /v1/chat/completions)   │
-│  │   └─ Step-3.5-Flash             │                            │
-│  └─────────────────────────────────┘                            │
-│                                                                  │
-│  ┌─────────────────────────────────┐                            │
-│  │   Opta Life (task manager)      │                            │
-│  │   Syncs task state              │                            │
-│  └─────────────────────────────────┘                            │
-│                                                                  │
+│ User's MacBook (Opta48)                                          │
+├──────────────────────────────────────────────────────────────────┤
+│                                                                   │
+│  ┌─────────────────┐  ┌───────────────────┐  ┌───────────────┐  │
+│  │  opta CLI       │  │  Opta Local Web   │  │  Opta Code    │  │
+│  │  opta daemon    │  │  localhost:3004   │  │  Desktop      │  │
+│  │  127.0.0.1:9999 │  │  (React/Next.js)  │  │  (Tauri/Vite) │  │
+│  └────────┬────────┘  └────────┬──────────┘  └──────┬────────┘  │
+│           │                    │                     │           │
+└───────────┼────────────────────┼─────────────────────┼───────────┘
+            │                    │                     │
+            └──────────LAN (192.168.188.11)────────────┘
+            │
+┌───────────┼──────────────────────────────────────────────────────┐
+│ Mac Studio (Mono512 — 192.168.188.11)                             │
+├───────────┼──────────────────────────────────────────────────────┤
+│           ▼                                                       │
+│  ┌──────────────────────────────────┐                            │
+│  │  Opta LMX  (port 1234)           │                            │
+│  │  ├─ Qwen2.5-72B (primary)        │  OpenAI-compatible         │
+│  │  ├─ MiniMax-M2.5-4bit            │  /v1/chat/completions      │
+│  │  ├─ GLM-4.7-Flash-MLX            │  /v1/chat/stream (WS)      │
+│  │  └─ + on-disk model library      │  /admin/* (LMX mgmt API)   │
+│  └──────────────────────────────────┘                            │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Component Relationships
+## Component Descriptions
 
 ### Opta CLI (This Repository)
 
-**What it is:** A command-line tool on your MacBook for agentic AI coding.
+**What it is:** A command-line agentic coding assistant with a full-screen TUI and persistent daemon.
 
-**What it does:**
-- Connects to Opta-LMX via HTTP API (port 1234)
-- Sends prompts + tool definitions to the model
-- Receives tool calls (read_file, edit_file, run_command, etc.)
-- Executes tools locally on your MacBook
-- Feeds results back to model
-- Repeats until task is done
+**Key capabilities:**
+- Connects to Opta LMX (LAN) or Anthropic Claude (cloud fallback)
+- Streaming agent loop with 12 built-in tools + MCP tool surface
+- Full-screen Ink/React TUI (`opta chat --tui`)
+- Daemon server (`opta daemon start`) exposes HTTP v3 REST + WebSocket for multi-client access
+- Playwright-backed browser automation with policy engine and visual diff
+- LSP integration for language intelligence
+- MCP registry for extending tool surface
 
-**File location:** `~/Synced/Opta/1-Apps/1D-Opta-CLI-TS/`
+**File location:** `1-Apps/optalocal/1D-Opta-CLI-TS/`
 
-**Who uses it:** Matthew (developer)
-
-**Scope:** Local-first, no cloud APIs in V1
+**Provider routing:**
+1. LMX (primary) — direct WebSocket stream to Mac Studio; falls back to SSE
+2. Anthropic (cloud fallback) — used when LMX is unreachable; requires `ANTHROPIC_API_KEY`
 
 ---
 
-### Opta-LMX (Inference Engine)
+### Opta LMX (1M-Opta-LMX)
 
-**What it is:** Local MLX-native inference engine running on Mac Studio.
+**What it is:** MLX-native inference server running on Mac Studio.
 
 **What it does:**
-- Loads and runs open-source LLMs (Qwen, GLM, Step, etc.) via MLX
-- Exposes OpenAI-compatible `/v1/chat/completions` API on port 1234
-- Manages unified memory, model switching, inference
-- Abstracts model selection and routing
-- Adds metadata (capabilities, context limits, etc.)
+- Loads and serves open-source LLMs via Apple MLX framework
+- Exposes OpenAI-compatible `/v1/chat/completions` (SSE) and `/v1/chat/stream` (WebSocket)
+- Manages unified memory, model switching, concurrent sessions, and backpressure
+- Exposes `/admin/*` management API (model load/unload, metrics, health)
+- Never crashes on OOM — degrades gracefully by refusing or unloading
 
-**Connection:** Opta CLI talks to `http://192.168.188.11:1234/v1/chat/completions`
+**Connection:** `192.168.188.11:1234` (LAN only, no Tailscale)
 
-**No authentication needed** — it's on your private LAN.
-
-**API endpoint pattern:**
+**API contracts used by CLI:**
 ```bash
-POST http://192.168.188.11:1234/v1/chat/completions
-{
-  "model": "Qwen2.5-72B",
-  "messages": [ ... ],
-  "tools": [ ... ],
-  "tool_choice": "auto"
-}
-```
+# Inference
+POST /v1/chat/completions          # SSE streaming
+WS   /v1/chat/stream               # WebSocket streaming (preferred)
 
-**Future (V2):** Cloud API fallback (Anthropic, OpenAI) if local models fail.
+# LMX management
+GET  /healthz                      # Liveness probe
+GET  /readyz                       # Readiness probe
+GET  /admin/models                 # Loaded + on-disk model list
+POST /admin/models/load            # Load model
+POST /admin/models/unload          # Unload model
+```
 
 ---
 
-### OptaPlus (Web UI)
+### Opta Local Web (1L-Opta-Local/web/)
 
-**What it is:** Web interface for Opta tools, alternative to CLI.
+**What it is:** React/Next.js dashboard for local LMX management and chat.
 
 **What it does:**
-- Browser-based chat with same models as Opta CLI
-- File browser, settings, session history
-- Same tool definitions (read, edit, bash, etc.)
+- Connects directly to LMX `/v1/chat/completions` and `/admin/*`
+- Real-time throughput monitoring via SSE admin event stream
+- Model management UI (load, unload, browse)
+- Session-aware chat (via opta daemon in WS mode)
 
-**Connection:** OptaPlus also talks to Opta-LMX (via OpenClaw Gateway)
-
-**Shared features with Opta CLI:**
-- Same tool system (8 tools)
-- Same permission model (allow/ask/deny)
-- Same config/session format (can resume CLI session in OptaPlus and vice versa)
-
-**Difference:**
-- Opta CLI: Command-line, fast, keyboard-driven
-- OptaPlus: Web, visual, mouse-driven
+**Connection modes:**
+- LAN: No auth, direct LMX connection at `192.168.188.11:1234`
+- Cloud: Supabase auth via Cloudflare Tunnel
 
 ---
 
-### OpenClaw (Orchestration Layer)
+### Opta Code Desktop (1P-Opta-Code-Desktop)
 
-**What it is:** Central gateway and orchestration layer for Opta and related systems.
+**What it is:** Browser-served web app (Vite + React) for daemon session monitoring.
 
 **What it does:**
-- Message routing (Telegram, Discord, Slack, etc.)
-- Authentication and token management
-- Skills and plugins system
-- Canvas/node management
-
-**Connection from Opta CLI:**
-- ✅ Can receive tasks via OpenClaw (e.g., `opta do <task>`)
-- ✅ Can send results back to OpenClaw
-- In V2: Could expose Opta CLI skills via OpenClaw skill system
-
-**Not currently:** Opta CLI doesn't rely on OpenClaw for core functionality. Opta CLI works standalone.
+- Connects to opta daemon at `127.0.0.1:9999` via HTTP v3 REST + WebSocket
+- Displays session timelines, active turns, permission events
+- Token stored in `localStorage` under `opta:daemon-connection`
 
 ---
 
-### Opta Life (Task Manager)
+### Opta Accounts / Auth (1R-Opta-Accounts)
 
-**What it is:** Persistent task/reminder system on your Mac Studio.
+**What it is:** Supabase-backed SSO portal at `accounts.optalocal.com`.
 
-**What it does:**
-- Tracks tasks, reminders, scheduling
-- Exposes API at `http://localhost:3000/api/opta-sync`
-- Matthew checks this on heartbeats
-
-**Connection from Opta CLI:**
-- V1: No direct connection (could add in V2)
-- V2+: Could inject tasks into Opta Life (e.g., model finds a bug → "Reminder: fix login bug")
+**Connection from CLI:**
+- Settings overlay Account page → Enter opens `https://accounts.optalocal.com` in default browser
+- JWT tokens stored in OS keychain after sign-in
+- Token status visible via `/whoami` slash command
 
 ---
 
-## Data Flow Examples
-
-### Example 1: Single `opta chat` Session
+## Data Flow: Single `opta do` Invocation
 
 ```
-1. User types: "opta chat"
-2. CLI loads config (connection, model, permissions)
-3. CLI sends to Opta-LMX:
-   POST /v1/chat/completions {
-     model: "Qwen2.5-72B",
-     messages: [
-       { role: "system", content: "You are an AI coding assistant. Tools: [8 schemas]" },
-       { role: "user", content: "fix the auth middleware" }
-     ],
-     tools: [read_file, write_file, edit_file, ...],
-     tool_choice: "auto"
-   }
+1. User runs: opta do "refactor the auth module"
 
-4. Opta-LMX (via Qwen model):
-   "I'll read the auth middleware first"
-   tool_calls: [
-     { id: "1", function: { name: "read_file", arguments: "path: src/middleware/auth.ts" } }
-   ]
+2. CLI loads config (host, port, provider, permissions)
 
-5. CLI executes locally:
-   read_file("src/middleware/auth.ts") → returns file contents
+3. CLI resolves LMX endpoint:
+   GET http://192.168.188.11:1234/healthz  → OK
 
-6. CLI sends back to model:
-   POST /v1/chat/completions {
-     messages: [..., { role: "user", content: "..." },
-                    { role: "assistant", tool_calls: [...] },
-                    { role: "tool", tool_call_id: "1", content: "file contents..." }],
-     tool_choice: "auto"
-   }
+4. CLI opens LMX WebSocket stream:
+   WS  ws://192.168.188.11:1234/v1/chat/stream
+   POST body: { model, messages, tools, stream: true }
 
-7. Opta-LMX:
-   "I see the issue. The token expiry check is missing."
-   tool_calls: [
-     { id: "2", function: { name: "edit_file", arguments: "..." } }
-   ]
+5. LMX streams back chunk-by-chunk:
+   chunk: { delta: { content: "I'll read the auth module..." } }
+   chunk: { delta: { tool_calls: [{ name: "read_file", args: ... }] } }
 
-8. CLI asks permission: "Edit src/middleware/auth.ts? (y/n)"
-   User: y
-   Executes edit_file() → saves changes
+6. CLI executes tool locally:
+   read_file("src/middleware/auth.ts") → file contents
 
-9. Continue until model says: "Done." (no tool_calls)
+7. CLI pushes tool result back to LMX (next turn)
 
-10. CLI saves session and exits.
-```
+8. Loop continues until model returns finish_reason: "stop"
 
-### Example 2: CLI + OptaPlus on Same Session
-
-```
-1. Matthew uses: opta chat (on MacBook)
-2. Creates session: abc123 (saved to ~/.config/opta/sessions/abc123.json)
-3. Works on a task for 10 messages
-4. Pauses and runs: opta chat --resume abc123
-5. Later, opens OptaPlus web UI (on Mac Studio)
-6. OptaPlus reads session abc123 (shares same directory)
-7. Can continue from where CLI left off
-8. Both tools update the same session file
-```
-
-**Key:** CLI and OptaPlus use the same session storage format, so they're interoperable.
-
----
-
-## Sync & Sharing
-
-### What's Synced
-
-| Component | Synced | How | Where |
-|-----------|--------|-----|-------|
-| Opta CLI source | ✅ Yes | Syncthing | `~/Synced/Opta/1-Apps/1D-Opta-CLI-TS/` |
-| Session files | ✅ Yes | Syncthing | `~/.config/opta/sessions/` |
-| User config | ✅ Yes | Syncthing | `~/.config/opta/config.json` |
-| Opta-LMX config | ✅ Yes | Syncthing | `/Users/Shared/312/Opta/Opta-LMX/` |
-| Opta Life | ✅ Yes | Syncthing | `~/Synced/Opta/3-Data/Tasks/` |
-
-### What's Not Synced
-
-| Component | Why | Implication |
-|-----------|-----|------------|
-| Opta-LMX | Local service | Install on each device if needed |
-| OpenClaw Gateway | Central service | Runs on Mac Studio, accessed via LAN |
-| OptaPlus | Web app | Served from Mac Studio |
-
----
-
-## Security & Privacy
-
-### Opta CLI (Local-First)
-
-**Data flow:**
-- Your MacBook (Opta CLI) ↔ Opta-LMX (Mac Studio, local network) ↔ Your files
-
-**No cloud:**
-- File contents never leave your LAN
-- Conversations stay local (unless you export)
-- No 3rd party sees your code
-
-**In V2:** Cloud fallback would require explicit opt-in + API keys.
-
-### OpenClaw Gateway
-
-**Used for:**
-- Message routing (Telegram, Discord, etc.)
-- Skill/plugin discovery
-- Bot orchestration
-
-**Not used for:** Core Opta CLI inference (direct Opta-LMX connection instead).
-
----
-
-## API Contracts
-
-### Opta CLI ↔ Opta-LMX
-
-**Standard:** OpenAI-compatible `/v1/chat/completions`
-
-**What we send:**
-```json
-{
-  "model": "string",
-  "messages": [{ "role", "content", "tool_calls" }],
-  "tools": [{ "type": "function", "function": { "name", "description", "parameters" } }],
-  "tool_choice": "auto" | "required" | { "type": "function", "function": { "name" } },
-  "temperature": 0.7,
-  "top_p": 0.9,
-  "max_tokens": 2048,
-  "stream": true
-}
-```
-
-**What we expect:**
-```json
-{
-  "choices": [
-    {
-      "message": {
-        "role": "assistant",
-        "content": "text",
-        "tool_calls": [
-          { "id", "function": { "name", "arguments": "json string" } }
-        ]
-      },
-      "finish_reason": "tool_calls" | "stop" | "length"
-    }
-  ],
-  "usage": { "prompt_tokens", "completion_tokens", "total_tokens" }
-}
+9. CLI saves session to ~/.config/opta/sessions/<id>.json
 ```
 
 ---
 
-## Dependency Graph
+## Data Flow: Daemon + Multi-Client
+
+```
+1. opta daemon start
+   └─ HTTP: 127.0.0.1:9999
+   └─ WebSocket: ws://127.0.0.1:9999/v3/ws
+
+2. opta chat --tui
+   └─ Attaches to daemon via HTTP (create session + turn)
+   └─ Subscribes to events via WebSocket
+
+3. Opta Code Desktop (browser)
+   └─ Reads session list via GET /v3/sessions
+   └─ Subscribes to event stream via WebSocket
+
+4. Both clients receive the same ordered event stream
+   (turn.token, tool.start, tool.result, permission.request, turn.done)
+```
+
+---
+
+## Security Model
+
+### Local-first data residency
+
+| Path | What flows there | Stays local? |
+|------|-----------------|--------------|
+| CLI → LMX (LAN) | All prompts, code context, tool results | ✅ LAN only |
+| CLI → Anthropic (cloud fallback) | Prompts + tool schemas | ❌ Cloud; requires explicit opt-in |
+| CLI → Browser (localhost) | Screenshot data, DOM snapshots | ✅ Loopback only |
+| CLI → Daemon (loopback) | Session events, permission requests | ✅ Loopback only |
+
+### Authentication
+
+- **Daemon**: Bearer token at `~/.config/opta/daemon/state.json` (rotates on restart)
+- **LMX admin API**: `adminKey` at `connection.adminKey` in config (stored in keychain)
+- **Anthropic**: API key in `ANTHROPIC_API_KEY` env or OS keychain
+- **Accounts**: JWT stored in OS keychain after sign-in at `accounts.optalocal.com`
+
+---
+
+## Session Storage
+
+Sessions are stored at `~/.config/opta/sessions/<id>.json`.
+
+| Field | Content |
+|-------|---------|
+| `id` | Unique session ID |
+| `title` | Human-readable title (auto-generated or set) |
+| `messages` | Full turn history (user + assistant + tool) |
+| `metadata` | Workspace, model, timestamps |
+
+Sessions written by the CLI, daemon, and Opta Local Web share this format and are interoperable.
+
+---
+
+## Dependency Graph (Current)
 
 ```
 Opta CLI
-  ├─ Opta-LMX (HTTP API)
-  │   └─ Local models (Qwen, GLM, Step, etc.)
+  ├─ Opta LMX (HTTP/WS — primary inference)
+  │   └─ MLX models on Mac Studio
   │
-  ├─ Optional: OpenClaw Gateway (V2+)
-  │   └─ Skill discovery
-  │   └─ Message routing
+  ├─ Anthropic Claude (HTTPS — cloud fallback, optional)
   │
-  ├─ Optional: Opta Life (V2+)
-  │   └─ Task injection
-  │   └─ Context in sessions
+  ├─ Opta Daemon (loopback — session/permission coordination)
   │
-  ├─ Local filesystem
-  │   └─ Session storage (~/.config/opta/)
-  │   └─ User config
+  ├─ Playwright MCP (loopback — browser automation, optional)
   │
-  └─ Optional: OptaPlus (shared session storage)
+  ├─ MCP servers (stdio — external tool extensions, optional)
+  │
+  ├─ LSP servers (stdio — language intelligence, optional)
+  │
+  └─ OS Keychain (local — credential storage)
 ```
-
----
-
-## Interoperability
-
-### Can Opta CLI talk to OptaPlus sessions?
-
-**Yes.** Both tools write to `~/.config/opta/sessions/` in the same JSON format. You can:
-1. Start `opta chat` on MacBook
-2. Switch to OptaPlus web UI on Mac Studio
-3. Resume the same session
-4. Switch back to `opta chat`
-
-### Can Opta CLI talk to OpenClaw skills?
-
-**V1: No.** Opta CLI has hardcoded 8 tools.
-
-**V2: Planned.** Could load SKILL.md from `~/.openclaw/skills/` to extend tool definitions.
-
-### Can Opta CLI use Anthropic Claude?
-
-**V1: No.** Local-first, Opta-LMX only.
-
-**V2: Planned.** With cloud fallback option.
-
----
-
-## Scaling & Future
-
-### If Opta CLI Becomes Popular
-
-- More device support (Windows, Linux)
-- Team collaboration (shared sessions, audit logs)
-- Cloud sync (sessions in cloud database)
-- Advanced workflows (multi-agent orchestration)
-- IDE integrations (VS Code, JetBrains plugins)
-
-### Integration Points for V2+
-
-1. **SKILL.md loader** — Load custom tools from `~/.openclaw/skills/`
-2. **OpenClaw skills** — Expose Opta CLI as a skill for orchestration
-3. **Opta-LMX** — Advanced routing, multi-model orchestration
-4. **Opta Life** — Inject task results as reminders/follow-ups
-5. **OptaPlus sync** — Bidirectional session sync
-
----
-
-## Summary
-
-**Opta CLI's Role in Opta Ecosystem:**
-
-- **Primary function:** Local agentic AI coding assistant
-- **Core connection:** Opta-LMX (direct HTTP API)
-- **Optional connections:** OpenClaw, Opta Life, OptaPlus
-- **Data residency:** Local by default, all on your MacBook/Mac Studio
-- **Sharing:** Via session files + config (both Syncthing-backed)
-- **Extensibility:** SKILL.md loader (V2+), plugin system (V2+)
-
-**You can use Opta CLI standalone** (no OpenClaw, no OptaPlus needed) for local-first agentic coding. Optional connections can enhance it later.

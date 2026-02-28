@@ -1,6 +1,8 @@
 # Opta CLI
 
-A local-first agentic coding assistant powered by Apple Silicon LLM inference. Your code stays on your hardware -- Opta routes through [Opta LMX](https://github.com/opta-operations/opta-lmx) running locally on a Mac Studio, with automatic cloud fallback to Anthropic Claude when needed.
+**Version: 0.5.0-alpha.1** — Core feature set complete. See [docs/ROADMAP.md](docs/ROADMAP.md) for path to v1.0.
+
+A local-first agentic coding assistant powered by Apple Silicon LLM inference. Your code stays on your hardware — Opta routes through [Opta LMX](https://github.com/opta-operations/opta-lmx) running locally on a Mac Studio, with automatic cloud fallback to Anthropic Claude when needed.
 
 ## Install
 
@@ -19,6 +21,29 @@ Or verify your environment at any time:
 ```bash
 opta doctor
 ```
+
+## Platform Support
+
+| Feature                 | macOS | Linux | Windows                |
+| ----------------------- | ----- | ----- | ---------------------- |
+| `opta chat` (Anthropic) | yes   | yes   | yes                    |
+| `opta chat` (LMX local) | yes   | no    | no                     |
+| Agent file tools        | yes   | yes   | yes                    |
+| Agent `run_command`     | yes   | yes   | yes (`cmd.exe`)        |
+| Daemon                  | yes   | yes   | yes                    |
+| TUI                     | yes   | yes   | yes (Windows Terminal) |
+| LSP features            | yes   | yes   | yes                    |
+| `opta serve`            | yes   | yes   | no                     |
+| `opta update`           | yes   | yes   | no                     |
+
+`opta serve` and `opta update` require macOS or Linux because Opta LMX infrastructure and management scripts are POSIX-oriented. On Windows, use Anthropic provider workflows or run those commands from a macOS/Linux host.
+
+### Platform Profile Folders
+
+To keep platform workflows unambiguous, this repo now keeps explicitly labeled platform guidance in:
+
+- `platforms/windows/` - Windows-first workflow (no local LMX lifecycle)
+- `platforms/macos/` - macOS-first workflow (full LMX lifecycle)
 
 ## Usage
 
@@ -76,6 +101,41 @@ The agent has access to a full development toolkit:
 ### Browser Automation
 
 Playwright-powered browser control with session isolation, a policy engine for action gating, visual diff comparison, quality gates, and deterministic session replay.
+
+Browser live-host and autonomy control are split into two config planes:
+
+- `computerControl.foreground.*` controls direct screen interaction and can affect active user workflow.
+- `computerControl.background.*` controls passive hosting/streaming behavior that can run in the background.
+
+Key defaults and limits:
+
+- `computerControl.background.maxHostedBrowserSessions`: `5` (hard max `5`)
+- Live host scans and reserves `6` safe localhost ports by default (`1` control + up to `5` session viewers)
+- Loopback-only binding (`127.0.0.1` / `localhost`)
+
+Typical setup:
+
+```bash
+# Enable background live hosting
+opta config set computerControl.background.enabled true
+opta config set computerControl.background.allowBrowserSessionHosting true
+opta config set computerControl.background.allowScreenStreaming true
+opta config set computerControl.background.maxHostedBrowserSessions 5
+
+# Enable foreground screen actions (interactive / can affect current user work)
+opta config set computerControl.foreground.enabled true
+opta config set computerControl.foreground.allowScreenActions true
+opta config set computerControl.foreground.requireDangerousMode true
+
+# Start browser live host (6-port scan, up to 5 session slots)
+/browser host start
+
+# Start browser live host with Peekaboo screen stream
+/browser host start --screen peekaboo
+
+# Maximum autonomy profile (requires dangerous mode or auto-accept + Peekaboo)
+/autonomy ceo-max
+```
 
 ### Sub-Agents
 
@@ -170,6 +230,7 @@ npm run quality:gate
 ```
 
 This enforces:
+
 - Typecheck
 - Contract regression tests (operations + daemon health contract)
 - Core smoke suite
@@ -238,6 +299,26 @@ opta config set permissions.edit_file allow
 # Interactive config menu
 opta config menu
 ```
+
+### Runtime Capability Enforcement (1R)
+
+For sensitive daemon operations, Opta can call a remote capability evaluator before execution.
+
+```bash
+# Enable runtime enforcement
+opta config set policy.runtimeEnforcement.enabled true
+
+# Point to 1R capability evaluator
+opta config set policy.runtimeEnforcement.endpoint http://127.0.0.1:3002/api/capabilities/evaluate
+
+# Timeout/failure behavior
+opta config set policy.runtimeEnforcement.timeoutMs 2500
+opta config set policy.runtimeEnforcement.failOpen true
+```
+
+Applies to:
+- `dangerous` operations (`benchmark`, `mcp.test`) by default
+- Selected high-risk write operations (`env.delete`, `mcp.remove`, keychain deletes)
 
 ### Environment Profiles
 

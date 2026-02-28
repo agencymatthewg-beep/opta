@@ -1,94 +1,119 @@
 ---
 title: Opta CLI Roadmap
-scope: Level 3 daemon-first delivery and stabilization
 updated: 2026-02-28
-reference: docs/FEATURE-PLAN.md
 status: active
 ---
 
 # Opta CLI — Roadmap
 
-## Current Status (2026-02-28)
+## Current State (2026-02-28)
 
-- Architecture direction is locked to **Level 3** (`opta tui` aliasing `opta chat --tui` + `opta daemon`).
-- Core daemon runtime, protocol v3 types, session queueing, and reconnect stream paths are in place.
-- `opta chat` and `opta do` can operate via daemon attach paths.
-- `/v1/chat` compatibility is retained on daemon.
+**Version:** `0.5.0-alpha.1`
 
-## Phase A: Foundation Completion (In Progress)
+The core feature set is complete. The CLI ships a production-quality agent loop, full-screen TUI, daemon HTTP/WS server, browser automation, MCP/LSP integration, and full Codex Desktop parity spec coverage. What remains before v1.0 is operational: soak testing, macOS packaging, and documentation.
 
-### Goals
-- Harden protocol contracts and runtime behavior.
-- Complete cancellation, replay, and multi-writer determinism.
-- Remove known TUI instability hotspots.
+### What is shipped and working
 
-### Scope
-- v3 envelope/schema validation and route parity.
-- Active-turn cancel propagation and queue correctness.
-- Markdown renderer crash fallback hardening.
-- Health/metrics/log diagnostics for daemon operations.
+| Area | Status |
+|------|--------|
+| Core agent loop (streaming, tools, compaction, circuit breaker) | ✅ Complete |
+| Premium TUI — all 10 phases (markdown, input, slash, tool cards, thinking, permissions, scrollback, integration, keybindings, polish) | ✅ Complete |
+| Daemon — HTTP v3 REST + WebSocket, worker pool, session manager, permission coordinator | ✅ Complete |
+| LMX provider (primary) + Anthropic provider (cloud fallback) | ✅ Complete |
+| LMX WebSocket stream + SSE fallback + zero-noise reconnect | ✅ Complete |
+| Browser automation — Playwright MCP bridge, sub-agent delegator, policy engine, visual diff | ✅ Complete |
+| MCP server registry, LSP client lifecycle | ✅ Complete |
+| Settings overlay (9 pages), Account Sign In, Keychain storage | ✅ Complete |
+| All 10 P0 parity scenarios (Codex Desktop Parity Spec) | ✅ Complete |
+| All 6 P1 parity scenarios | ✅ Complete |
+| 2,367 tests passing (212 test files) | ✅ Green |
 
-### Exit Criteria
-- [ ] Typecheck + test suite green.
-- [ ] No hard UI stalls in tool-heavy streaming turns.
-- [ ] Reconnect/replay recovers current session state.
+---
 
-## Phase B: Compatibility Lock (Next)
+## Path to v1.0
 
-### Goals
-- Preserve legacy command UX while routing through daemon runtime.
+### Phase 1 — Stability Lock (In Progress)
 
-### Scope
-- `opta chat`, `opta do`, `opta server` strict behavior parity.
-- Completion/help surfaces updated for daemon lifecycle commands.
-- One release window with emergency fallback toggle retained.
+**Goal:** Verify the system holds under real workloads with no known flakes.
 
-### Exit Criteria
-- Existing scripts run without command rewrites.
-- Compatibility shim coverage includes common automation flows.
+| Task | Status |
+|------|--------|
+| Full `npm test` passes on clean tree | ✅ Done |
+| `npm run typecheck` passes | ✅ Done |
+| Daemon parity suite (`test:parity:ws9`) | ✅ Done |
+| Browser safety/runtime regression suites | ⬜ TODO |
+| Cancel/reconnect flake audit | ⬜ TODO |
 
-## Phase C: Cross-Client Interop (Next)
+**Exit criteria:** No known flakes in session attach, reconnect, or cancel paths.
 
-### Goals
-- Support terminal and web clients against one daemon/session model.
+---
 
-### Scope
-- Shared daemon client library for Opta Local web.
-- WS primary + SSE fallback attach paths.
-- Multi-writer behavior under concurrent clients.
+### Phase 2 — Runtime Confidence
 
-### Exit Criteria
-- Terminal + web can concurrently attach and submit turns deterministically.
+**Goal:** Evidence-based confidence that the system performs under load.
 
-## Phase D: LMX Transport Optimization (Parallel)
+| Task | Status |
+|------|--------|
+| Cancellation propagation: CLI → daemon → LMX transport | ⬜ TODO |
+| Replay/reconnect across process restarts | ⬜ TODO |
+| Multi-writer determinism (CLI + secondary client attach) | ⬜ TODO |
+| p95 latency + event-loop lag soak runs (store evidence) | ⬜ TODO |
 
-### Goals
-- Reduce token latency and improve cancellation semantics against Opta LMX.
+**Exit criteria:** All paths verified with documented evidence.
 
-### Scope
-- WS-first LMX stream preference (`/v1/chat/stream`) with SSE fallback.
-- End-to-end cancellation behavior for in-flight turns.
-- Usage accounting resilience when stream usage metadata is missing/degraded.
+---
 
-### Exit Criteria
-- Stable streaming under sustained load.
-- Accurate or explicitly degraded token accounting without crashes.
+### Phase 3 — Release Readiness
 
-## Phase E: Production Hardening
+**Goal:** A macOS user can install and run `opta` on a clean machine end to end.
 
-### Goals
-- Operational confidence and maintainability.
+| Task | Status |
+|------|--------|
+| macOS packaging — artifact naming and signing workflow | ⬜ TODO |
+| Validate `opta --help` on clean machine post-install | ⬜ TODO |
+| Validate first-run LMX connect flow on LAN defaults | ⬜ TODO |
+| Publish release notes with hardware/runtime constraints | ⬜ TODO |
 
-### Scope
-- Soak/perf testing (p95 latency + event-loop lag thresholds).
-- Crash recovery validation from snapshots/events.
-- Documentation alignment and stale architecture cleanup.
+**Exit criteria:** macOS install verified on clean machine end to end.
 
-### Exit Criteria
-- Release-quality reliability across long-running sessions and reconnect scenarios.
+---
 
-## Deferred / Later
+### Phase 4 — Documentation Lock
 
-- Native alternate TUI client implementations (e.g. non-React runtime).
-- Rich remote multi-device orchestration features.
-- Additional provider transport optimizations beyond current LMX focus.
+**Goal:** All docs match actual runtime behavior. No stale defaults or architecture descriptions.
+
+| Task | Status |
+|------|--------|
+| Align `docs/ROADMAP.md` with current state | ✅ Done (this document) |
+| Align `docs/ECOSYSTEM.md` with implemented behavior | ✅ Done |
+| Publish daemon operator runbook | ✅ Done (`docs/OPERATOR-RUNBOOK.md`) |
+| Publish known-good command matrix | ✅ Done (`docs/COMMAND-MATRIX.md`) |
+| Update `docs/INDEX.md` with new doc inventory | ✅ Done |
+| Update `README.md` version and status | ✅ Done |
+
+**Exit criteria:** All docs accurately describe what ships, not what was planned.
+
+---
+
+## v1.0 Release Criteria
+
+All of the following must be true:
+
+- [ ] Phases 1–4 all complete
+- [ ] No known P0/P1 defects in daemon attach/reconnect/permission flow
+- [ ] macOS install path verified on clean machine end to end
+- [ ] CI remote configured and all parity checks green
+- [ ] `docs/` accurately reflects shipped behavior
+
+---
+
+## Deferred (Post-v1.0)
+
+These are out of scope for v1.0:
+
+- Windows packaging / installer
+- Opta Init funnel integration (download link, first-run wizard)
+- Additional provider transports beyond LMX + Anthropic
+- Native alternate TUI client implementations
+- Rich remote multi-device orchestration
+- Cloud session sync
