@@ -46,6 +46,13 @@ interface ConnectionTestResult {
   message: string;
 }
 
+interface LmxProbeResult {
+  reachable: boolean;
+  version?: string;
+  model_count?: number;
+  status?: string;
+}
+
 export interface SetupWizardProps {
   onComplete: () => void;
 }
@@ -437,11 +444,13 @@ function StepConnection({
   const [testState, setTestState] = useState<TestState>("idle");
   const [testMsg, setTestMsg] = useState("");
   const [showKey, setShowKey] = useState(false);
+  const [probeInfo, setProbeInfo] = useState<LmxProbeResult | null>(null);
 
   async function testConnection(e: React.MouseEvent) {
     e.stopPropagation();
     setTestState("pinging");
     setTestMsg("Connecting\u2026");
+    setProbeInfo(null);
 
     try {
       const result = await tauriInvoke<ConnectionTestResult>(
@@ -451,6 +460,13 @@ function StepConnection({
       if (result.ok) {
         setTestState("ok");
         setTestMsg(`\u2713 ${result.message}`);
+        // Auto-probe for server metadata after a successful TCP connection
+        tauriInvoke<LmxProbeResult>("probe_lmx_server", {
+          host: form.lmxHost,
+          port: form.lmxPort,
+        })
+          .then((probe) => { if (probe.reachable) setProbeInfo(probe); })
+          .catch(() => { /* probe is best-effort */ });
       } else {
         setTestState("fail");
         setTestMsg(`\u2717 ${result.message}`);
@@ -633,6 +649,66 @@ function StepConnection({
                 {testMsg}
               </div>
             )}
+            {/* LMX server metadata — shown after a successful probe */}
+            {probeInfo && (
+              <div
+                style={{
+                  marginTop: 8,
+                  display: "flex",
+                  gap: 6,
+                  flexWrap: "wrap",
+                }}
+              >
+                {probeInfo.version && (
+                  <span
+                    style={{
+                      fontFamily: "'JetBrains Mono', monospace",
+                      fontSize: 9.5,
+                      color: T.primaryBright,
+                      background: T.primaryDim,
+                      border: "1px solid rgba(139,92,246,0.22)",
+                      borderRadius: 5,
+                      padding: "2px 8px",
+                      letterSpacing: "0.05em",
+                    }}
+                  >
+                    v{probeInfo.version}
+                  </span>
+                )}
+                {probeInfo.model_count !== undefined && (
+                  <span
+                    style={{
+                      fontFamily: "'JetBrains Mono', monospace",
+                      fontSize: 9.5,
+                      color: T.ok,
+                      background: "rgba(34,197,94,0.1)",
+                      border: "1px solid rgba(34,197,94,0.18)",
+                      borderRadius: 5,
+                      padding: "2px 8px",
+                      letterSpacing: "0.05em",
+                    }}
+                  >
+                    {probeInfo.model_count} model{probeInfo.model_count !== 1 ? "s" : ""}
+                  </span>
+                )}
+                {probeInfo.status && (
+                  <span
+                    style={{
+                      fontFamily: "'JetBrains Mono', monospace",
+                      fontSize: 9.5,
+                      color: T.text2,
+                      background: "rgba(255,255,255,0.05)",
+                      border: `1px solid ${T.border}`,
+                      borderRadius: 5,
+                      padding: "2px 8px",
+                      letterSpacing: "0.05em",
+                    }}
+                  >
+                    {probeInfo.status}
+                  </span>
+                )}
+              </div>
+            )}
           </div>,
         )}
 
@@ -728,9 +804,16 @@ function StepPreferences({
             />
             <button
               type="button"
-              onClick={() => {
-                // In a Tauri context this could open a native folder picker.
-                // For now: focus and select the input so the user can type a path.
+              onClick={async () => {
+                try {
+                  const chosen = await tauriInvoke<string | null>("pick_folder");
+                  if (chosen) {
+                    setForm((f) => ({ ...f, configDir: chosen }));
+                    return;
+                  }
+                } catch {
+                  // Tauri not available or dialog cancelled — fall through to focus
+                }
                 const input = configDirRowRef.current?.querySelector<HTMLInputElement>("input");
                 if (input) { input.focus(); input.select(); }
               }}
@@ -1068,6 +1151,14 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
       injectKeyframes();
       injectedRef.current = true;
     }
+  }, []);
+
+  // Resolve platform-accurate config directory from the Tauri backend.
+  // Gracefully ignores errors — the form default is a reasonable fallback.
+  useEffect(() => {
+    tauriInvoke<string>("get_config_dir")
+      .then((dir) => setForm((f) => ({ ...f, configDir: dir })))
+      .catch(() => { /* non-Tauri env or first boot — keep default */ });
   }, []);
 
   function goTo(target: number, dir: "right" | "left") {

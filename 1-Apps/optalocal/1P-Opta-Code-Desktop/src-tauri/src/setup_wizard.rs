@@ -1,7 +1,9 @@
 use serde::{Deserialize, Serialize};
+use std::io::{BufRead, BufReader, Read, Write as IoWrite};
 use std::path::PathBuf;
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)] // config_dir and shell received from JS wizard but not written to conf JSON
 pub struct SetupConfig {
     pub provider: String,       // "lmx" | "anthropic"
     pub lmx_host: String,       // e.g. "192.168.188.11"
@@ -17,6 +19,14 @@ pub struct SetupConfig {
 pub struct ConnectionTestResult {
     pub ok: bool,
     pub message: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct LmxProbeResult {
+    pub reachable: bool,
+    pub version: Option<String>,
+    pub model_count: Option<u32>,
+    pub status: Option<String>,
 }
 
 /// Check if the CLI config file already exists (first-run detection).
@@ -95,6 +105,112 @@ pub fn test_lmx_connection(host: String, port: u16) -> ConnectionTestResult {
             },
         },
     }
+}
+
+/// Probe LMX server by hitting GET /health over raw TCP (no extra deps).
+/// Returns version, model count, and status from the JSON response.
+#[tauri::command]
+pub fn probe_lmx_server(host: String, port: u16) -> LmxProbeResult {
+    use std::net::{SocketAddr, TcpStream};
+    use std::str::FromStr;
+    use std::time::Duration;
+
+    let addr_str = format!("{}:{}", host, port);
+    let addr = match SocketAddr::from_str(&addr_str) {
+        Err(e) => {
+            return LmxProbeResult {
+                reachable: false,
+                version: None,
+                model_count: None,
+                status: Some(format!("Invalid address: {}", e)),
+            }
+        }
+        Ok(a) => a,
+    };
+
+    let mut stream = match TcpStream::connect_timeout(&addr, Duration::from_secs(3)) {
+        Err(e) => {
+            return LmxProbeResult {
+                reachable: false,
+                version: None,
+                model_count: None,
+                status: Some(format!("Unreachable: {}", e)),
+            }
+        }
+        Ok(s) => s,
+    };
+    let _ = stream.set_read_timeout(Some(Duration::from_secs(3)));
+
+    let request = format!(
+        "GET /health HTTP/1.0\r\nHost: {}:{}\r\nAccept: application/json\r\nConnection: close\r\n\r\n",
+        host, port
+    );
+    if stream.write_all(request.as_bytes()).is_err() {
+        return LmxProbeResult {
+            reachable: true,
+            version: None,
+            model_count: None,
+            status: Some("HTTP write failed".into()),
+        };
+    }
+
+    let mut reader = BufReader::new(stream);
+    // Skip status line + headers
+    loop {
+        let mut line = String::new();
+        match reader.read_line(&mut line) {
+            Ok(0) | Err(_) => break,
+            Ok(_) => {
+                if line == "\r\n" {
+                    break;
+                }
+            }
+        }
+    }
+
+    let mut body = String::new();
+    let _ = reader.read_to_string(&mut body);
+
+    match serde_json::from_str::<serde_json::Value>(&body) {
+        Ok(json) => {
+            let version = json
+                .get("version")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
+            let model_count = json
+                .get("model_count")
+                .or_else(|| json.get("models_count"))
+                .or_else(|| json.get("loaded_models"))
+                .and_then(|v| v.as_u64())
+                .map(|n| n as u32);
+            let status = json
+                .get("status")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
+            LmxProbeResult {
+                reachable: true,
+                version,
+                model_count,
+                status,
+            }
+        }
+        Err(_) => LmxProbeResult {
+            reachable: true,
+            version: None,
+            model_count: None,
+            status: None,
+        },
+    }
+}
+
+/// Return the platform-appropriate Opta config *directory* for display.
+#[tauri::command]
+pub fn get_config_dir() -> Result<String, String> {
+    get_opta_config_path().map(|p| {
+        p.parent()
+            .map(|d| d.to_string_lossy().into_owned())
+            .unwrap_or_else(|| p.to_string_lossy().into_owned())
+    })
 }
 
 fn get_opta_config_path() -> Result<PathBuf, String> {

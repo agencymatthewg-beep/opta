@@ -5,12 +5,14 @@
 // in the future (file system, system tray, OS notifications, etc.).
 
 mod connection_secrets;
+mod folder_picker;
 mod setup_wizard;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
             connection_secrets::set_connection_secret,
             connection_secrets::get_connection_secret,
@@ -18,6 +20,9 @@ pub fn run() {
             setup_wizard::check_first_run,
             setup_wizard::save_setup_config,
             setup_wizard::test_lmx_connection,
+            setup_wizard::probe_lmx_server,
+            setup_wizard::get_config_dir,
+            folder_picker::pick_folder,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Opta Code application");
