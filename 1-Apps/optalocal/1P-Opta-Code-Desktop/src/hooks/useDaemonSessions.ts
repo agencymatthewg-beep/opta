@@ -729,6 +729,20 @@ export function useDaemonSessions() {
   const isStreaming =
     streamingSessionId !== null && streamingSessionId === activeSessionId;
 
+  /** Remove a session from local tracking. Does not delete it from the daemon. */
+  const removeSession = useCallback(
+    (sessionId: string) => {
+      setSessions((prev) => prev.filter((s) => s.sessionId !== sessionId));
+      setTimelineBySession((prev) => {
+        const next = { ...prev };
+        delete next[sessionId];
+        return next;
+      });
+      if (activeSessionId === sessionId) setActiveSessionId(null);
+    },
+    [activeSessionId],
+  );
+
   return {
     activeSessionId,
     cancelActiveTurn,
@@ -738,6 +752,7 @@ export function useDaemonSessions() {
     isStreaming,
     pendingPermissions,
     refreshNow,
+    removeSession,
     resolvePermission,
     runtime,
     sessions,

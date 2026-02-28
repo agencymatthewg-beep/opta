@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search } from "lucide-react";
+import { Copy, Search, X } from "lucide-react";
 import type { DaemonSessionSummary } from "../types";
 
 interface WorkspaceRailProps {
@@ -8,6 +8,7 @@ interface WorkspaceRailProps {
   selectedWorkspace: string;
   onSelectWorkspace: (workspace: string) => void;
   onSelectSession: (sessionId: string) => void;
+  onRemoveSession?: (sessionId: string) => void;
 }
 
 export function WorkspaceRail({
@@ -16,8 +17,10 @@ export function WorkspaceRail({
   selectedWorkspace,
   onSelectWorkspace,
   onSelectSession,
+  onRemoveSession,
 }: WorkspaceRailProps) {
   const [search, setSearch] = useState("");
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const workspaces = [
     "all",
@@ -36,6 +39,14 @@ export function WorkspaceRail({
           session.sessionId.includes(search),
       )
     : byWorkspace;
+
+  const copyId = (sessionId: string, event: React.MouseEvent) => {
+    event.stopPropagation();
+    void navigator.clipboard.writeText(sessionId).then(() => {
+      setCopiedId(sessionId);
+      window.setTimeout(() => setCopiedId(null), 1400);
+    });
+  };
 
   return (
     <aside className="workspace-rail glass-subtle">
@@ -75,25 +86,58 @@ export function WorkspaceRail({
           </p>
         ) : (
           visible.map((session) => (
-            <button
+            <div
               key={session.sessionId}
-              type="button"
-              className={
-                session.sessionId === activeSessionId ? "session active" : "session"
-              }
-              onClick={() => onSelectSession(session.sessionId)}
+              className={`session-row ${session.sessionId === activeSessionId ? "active" : ""}`}
             >
-              <strong>{session.title}</strong>
-              <span>{session.sessionId.slice(0, 12)}</span>
-              {session.updatedAt ? (
-                <span>
-                  {new Date(session.updatedAt).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
+              <button
+                type="button"
+                className="session-main"
+                onClick={() => onSelectSession(session.sessionId)}
+              >
+                <strong>{session.title}</strong>
+                <span className="session-id-tag">
+                  {session.sessionId.slice(0, 12)}
                 </span>
-              ) : null}
-            </button>
+                {session.updatedAt ? (
+                  <span className="session-time">
+                    {new Date(session.updatedAt).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                ) : null}
+              </button>
+
+              <div className="session-actions">
+                <button
+                  type="button"
+                  className="session-action-btn"
+                  title="Copy session ID"
+                  aria-label="Copy session ID"
+                  onClick={(e) => copyId(session.sessionId, e)}
+                >
+                  <Copy size={11} aria-hidden="true" />
+                  {copiedId === session.sessionId ? (
+                    <span className="copy-flash">✓</span>
+                  ) : null}
+                </button>
+                {onRemoveSession ? (
+                  <button
+                    type="button"
+                    className="session-action-btn session-remove-btn"
+                    title="Remove from rail"
+                    aria-label="Remove session from rail"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onRemoveSession(session.sessionId);
+                    }}
+                  >
+                    <X size={11} aria-hidden="true" />
+                  </button>
+                ) : null}
+              </div>
+            </div>
           ))
         )}
       </div>
