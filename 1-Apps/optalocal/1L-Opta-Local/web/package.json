@@ -38,9 +38,7 @@
     "react-dom": "19.2.3",
     "recharts": "^3.7.0",
     "streamdown": "^2.2.0",
-    "swr": "^2.3",
-    "@opta/daemon-client": "workspace:*",
-    "@opta/protocol-shared": "workspace:*"
+    "swr": "^2.3"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.1",

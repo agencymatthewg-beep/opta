@@ -159,12 +159,6 @@ importers:
       '@microsoft/fetch-event-source':
         specifier: ^2.0.1
         version: 2.0.1
-      '@opta/daemon-client':
-        specifier: workspace:*
-        version: link:../../1D-Opta-CLI-TS/packages/daemon-client
-      '@opta/protocol-shared':
-        specifier: workspace:*
-        version: link:../../1D-Opta-CLI-TS/packages/protocol-shared
       '@opta/ui':
         specifier: workspace:*
         version: link:../../../../6-Packages/6D-UI
