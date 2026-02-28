@@ -1,23 +1,5 @@
-export const DOWNLOADS = {
-  cli: {
-    name: "Opta CLI",
-    description:
-      "Chat with AI models privately on your Mac — visual menus, no commands needed.",
-    macos:
-      "https://github.com/optaops/opta-cli/releases/latest/download/opta-cli-macos.pkg",
-    windows: null, // Coming in a future release
-  },
-  lmx: {
-    name: "Opta LMX",
-    description:
-      "The engine that runs AI models on your Mac’s hardware — installs in one click.",
-    macos:
-      "https://github.com/optaops/opta-lmx/releases/latest/download/opta-lmx-macos.pkg",
-    windows: null, // Coming in a future release
-  },
-} as const;
-
 export const DASHBOARD_URL = "https://lmx.optalocal.com";
+export const ACCOUNTS_URL = "https://accounts.optalocal.com";
 export const PLATFORM_URL = "https://optalocal.com";
 
 export const NAV_LINKS = [

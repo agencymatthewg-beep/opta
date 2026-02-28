@@ -1,8 +1,16 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { motion, type Variants } from "framer-motion";
 import { ArrowRight, Box, Cpu, Shield, Database, Terminal, ChevronRight, Layers, Zap, Code2, Lock, Activity, Plug, Layout, Download, ArrowUpRight, CheckCircle2 } from "lucide-react";
-import { FEATURES, SHOWCASE_CONTENT, DOWNLOADS, DASHBOARD_URL } from "@/lib/constants";
+import {
+  FEATURES,
+  SHOWCASE_CONTENT,
+  DASHBOARD_URL,
+  ACCOUNTS_URL,
+} from "@/lib/constants";
+import { DOWNLOAD_TARGETS, type DownloadAvailabilityMap } from "@/lib/download-artifacts";
+import { OptaRing } from "@/components/OptaRing";
 
 // Icon mapper for features
 const getIcon = (name: string) => {
@@ -18,6 +26,79 @@ const getIcon = (name: string) => {
 };
 
 export default function Home() {
+  const [downloadState, setDownloadState] = useState<DownloadAvailabilityMap | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const detectAssets = async () => {
+      const entries = await Promise.all(
+        Object.entries(DOWNLOAD_TARGETS).map(async ([key, target]) => {
+          const macTarget = target.platforms.macos;
+          const fallback = macTarget?.fallbackUrl ?? null;
+
+          const release = macTarget
+            ? await fetch(`https://api.github.com/repos/${macTarget.repo}/releases/latest`)
+                .then(async (res) => {
+                  if (!res.ok) return null;
+                  const data = (await res.json()) as {
+                    assets?: Array<{ name: string; browser_download_url: string }>;
+                  };
+                  const assets = data.assets ?? [];
+                  const match = assets.find((asset) => {
+                    const name = asset.name.toLowerCase();
+                    return macTarget.patterns.some((token) => name.includes(token.replace(".", "")));
+                  });
+                  return match?.browser_download_url ?? null;
+                })
+                .catch(() => null)
+            : null;
+
+          const macUrl = release ?? fallback;
+          const isInstaller = Boolean(macUrl && (macUrl.endsWith(".pkg") || macUrl.endsWith(".dmg")));
+
+          return [
+            key,
+            {
+              name: target.name,
+              description: target.description,
+              macos: {
+                url: macUrl,
+                available: Boolean(macUrl),
+                label: macUrl ? (isInstaller ? "Installer Ready" : "Package Ready") : "Coming Soon",
+                source: release ? "release" : fallback ? "fallback" : "none",
+              },
+              windows: { url: null, available: false, label: "Coming Soon", source: "none" },
+            },
+          ] as const;
+        })
+      );
+
+      if (mounted) setDownloadState(Object.fromEntries(entries) as DownloadAvailabilityMap);
+    };
+
+    void detectAssets();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const downloads = downloadState ?? Object.fromEntries(
+    Object.entries(DOWNLOAD_TARGETS).map(([key, target]) => [
+      key,
+      {
+        name: target.name,
+        description: target.description,
+        macos: {
+          url: target.platforms.macos?.fallbackUrl ?? null,
+          available: Boolean(target.platforms.macos?.fallbackUrl),
+          label: target.platforms.macos?.fallbackUrl ? "Package Ready" : "Coming Soon",
+          source: target.platforms.macos?.fallbackUrl ? "fallback" : "none",
+        },
+        windows: { url: null, available: false, label: "Coming Soon", source: "none" },
+      },
+    ])
+  ) as DownloadAvailabilityMap;
   const lineRevealX: Variants = {
     hidden: { scaleX: 0, originX: 0 },
     show: { scaleX: 1, transition: { duration: 1.5, ease: [0.77, 0, 0.175, 1] } }
@@ -55,10 +136,7 @@ export default function Home() {
       <header className="fixed top-0 inset-x-0 z-50 backdrop-blur-md bg-void/50 border-b border-white/5">
         <div className="flex items-center justify-between px-[8%] py-6">
           <div className="font-bold text-lg tracking-tighter uppercase flex items-center gap-3">
-            <div className="relative flex h-3 w-3">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-primary drop-shadow-[0_0_8px_rgba(168,85,247,0.8)]"></span>
-            </div>
+            <OptaRing size={48} className="shrink-0 pointer-events-none" />
             OPTA_INIT
           </div>
           <nav className="hidden md:flex gap-10 text-xs tracking-[0.2em] uppercase font-medium text-text-secondary">
@@ -66,6 +144,7 @@ export default function Home() {
             <a href="#showcase" className="hover:text-primary transition-colors">CLI</a>
             <a href="#install" className="hover:text-primary transition-colors">Install</a>
             <a href="#downloads" className="hover:text-primary transition-colors text-primary">Download</a>
+            <a href={ACCOUNTS_URL} className="hover:text-primary transition-colors">Account</a>
           </nav>
         </div>
       </header>
@@ -251,7 +330,7 @@ export default function Home() {
                 </div>
                 <h2 className="text-4xl font-bold mb-6 text-moonlight">One Command.<br/>Full Stack.</h2>
                 <p className="text-text-secondary mb-10 font-light leading-relaxed">
-                  Run the initialization script. We handle the Python environments, Node.js dependencies, MLX model pulling, and background daemon registration automatically.
+                  Run the bootstrap script and the installer wizard takes over. It verifies hardware, installs CLI + LMX in order, and leaves you with a ready-to-run stack.
                 </p>
                 <div className="space-y-4">
                   <div className="flex items-center gap-3 text-sm text-text-muted">
@@ -284,10 +363,11 @@ export default function Home() {
                       <p className="text-neon-blue">==&gt; Provisioning Opta Environment...</p>
                       <p>==&gt; Checking hardware: <span className="text-neon-green">Apple M3 Max (128GB)</span></p>
                       <p>==&gt; Installing Opta CLI globally</p>
-                      <p>==&gt; Setting up LMX Python environment</p>
+                      <p>==&gt; Launching guided installer wizard</p>
+                      <p>==&gt; Installing LMX runtime + services</p>
                       <p>==&gt; Downloading default weights (4.2GB)</p>
                       <p className="text-neon-green mt-2">✔ System successfully initialized.</p>
-                      <p className="text-text-muted mt-2">Run `opta tui` to open the dashboard.</p>
+                      <p className="text-text-muted mt-2">Wizard complete. Run `opta tui` to open the dashboard.</p>
                     </div>
                   </div>
                 </div>
@@ -400,11 +480,11 @@ export default function Home() {
           <motion.div variants={fadeUp} className="text-center mb-16">
             <h2 className="text-sm text-primary uppercase tracking-[0.2em] mb-4">Direct Access</h2>
             <h3 className="text-4xl md:text-5xl font-bold text-moonlight">Download Packages</h3>
-            <p className="mt-4 text-text-secondary font-light">Prefer manual installation? Grab the PKG files below.</p>
+            <p className="mt-4 text-text-secondary font-light">Prefer manual installation? Grab the latest package files below.</p>
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {Object.entries(DOWNLOADS).map(([key, data]) => (
+            {Object.entries(downloads).map(([key, data]) => (
               <motion.div key={key} variants={fadeUp} className="obsidian p-8 rounded-2xl border border-white/10 hover:border-primary/40 transition-colors flex flex-col group">
                 <div className="mb-6 flex items-center gap-4">
                   <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary font-mono text-xl font-bold flex items-center justify-center border border-primary/20 shadow-[0_0_15px_rgba(168,85,247,0.2)]">
@@ -416,11 +496,22 @@ export default function Home() {
                   {data.description}
                 </p>
                 
-                <a href={data.macos} className="w-full h-12 rounded-lg bg-primary text-white font-semibold flex items-center justify-center gap-2 hover:bg-primary-glow transition-colors">
-                  <Download className="w-4 h-4" /> Download for macOS
-                </a>
+                {data.macos.available && data.macos.url ? (
+                  <a href={data.macos.url} className="w-full h-12 rounded-lg bg-primary text-white font-semibold flex items-center justify-center gap-2 hover:bg-primary-glow transition-colors">
+                    <Download className="w-4 h-4" />
+                    {data.macos.label === "Installer Ready" ? "Open macOS Installer" : "Download for macOS"}
+                  </a>
+                ) : (
+                  <button
+                    type="button"
+                    disabled
+                    className="w-full h-12 rounded-lg bg-surface text-text-muted font-semibold flex items-center justify-center gap-2 border border-white/10 cursor-not-allowed"
+                  >
+                    <Download className="w-4 h-4" /> macOS — {data.macos.label}
+                  </button>
+                )}
                 <div className="text-center mt-4 text-xs text-text-muted uppercase tracking-widest">
-                  Windows — Coming Soon
+                  Windows — {data.windows.label}
                 </div>
               </motion.div>
             ))}
@@ -449,6 +540,9 @@ export default function Home() {
                 </p>
                 <a href={DASHBOARD_URL} className="inline-flex h-14 px-8 items-center justify-center gap-2 rounded-xl bg-white text-void font-bold text-lg hover:bg-white/90 transition-colors shadow-[0_0_30px_rgba(255,255,255,0.2)]">
                   Open Web Dashboard <ArrowUpRight className="w-5 h-5" />
+                </a>
+                <a href={ACCOUNTS_URL} className="mt-4 inline-flex h-12 px-7 items-center justify-center gap-2 rounded-xl border border-white/20 text-text-primary font-semibold text-base hover:border-primary/50 hover:text-primary transition-colors">
+                  Manage Account <ArrowUpRight className="w-4 h-4" />
                 </a>
               </div>
             </div>
