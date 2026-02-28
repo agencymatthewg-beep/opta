@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -6,35 +8,45 @@
   --font-sora: "Sora";
   --font-jetbrains: "JetBrains Mono";
 
-  /* Backgrounds — OLED Optimized */
-  --color-void: #09090b;
-  --color-surface: #0c0c12;
-  --color-elevated: #18181b;
-  --color-border: rgba(255, 255, 255, 0.06);
-  --color-border-strong: rgba(255, 255, 255, 0.15);
+  /* Opta Design Tokens */
+  --opta-bg: #09090b;
+  --opta-surface: #18181b;
+  --opta-elevated: #27272a;
+  --opta-border: rgba(255, 255, 255, 0.05);
+  --opta-border-strong: rgba(255, 255, 255, 0.15);
+  --opta-primary: #8b5cf6;
+  --opta-primary-glow: #a855f7;
+  --opta-neon-green: #22c55e;
+  --opta-neon-amber: #f59e0b;
+  --opta-neon-red: #ef4444;
+  --opta-neon-cyan: #06b6d4;
+  --opta-text-primary: #fafafa;
+  --opta-text-secondary: #a1a1aa;
+  --opta-text-muted: #52525b;
+  --opta-glass-bg: rgba(109, 40, 217, 0.15);
+  --opta-glass-border: rgba(139, 92, 246, 0.35);
 
-  /* Text Hierarchy */
+  /* Legacy aliases — used by Tailwind config */
+  --color-void: #09090b;
+  --color-surface: #18181b;
+  --color-elevated: #27272a;
+  --color-border: rgba(255, 255, 255, 0.05);
+  --color-border-strong: rgba(255, 255, 255, 0.15);
   --color-text-primary: #fafafa;
   --color-text-secondary: #a1a1aa;
   --color-text-muted: #52525b;
-
-  /* Brand — Electric Violet */
-  --color-primary: #a855f7;
-  --color-primary-glow: #c084fc;
+  --color-primary: #8b5cf6;
+  --color-primary-glow: #a855f7;
   --color-secondary: #3b1d5a;
-
-  /* Neon Status */
   --color-neon-purple: #8b5cf6;
   --color-neon-blue: #3b82f6;
   --color-neon-green: #22c55e;
   --color-neon-amber: #f59e0b;
   --color-neon-red: #ef4444;
   --color-neon-cyan: #06b6d4;
-
-  /* Glass */
-  --color-glass-bg: rgba(12, 12, 18, 0.6);
+  --color-glass-bg: rgba(109, 40, 217, 0.15);
   --color-glass-bg-subtle: rgba(9, 9, 11, 0.4);
-  --color-glass-border: rgba(168, 85, 247, 0.2);
+  --color-glass-border: rgba(139, 92, 246, 0.35);
   --color-glass-border-subtle: rgba(255, 255, 255, 0.08);
 }
 
@@ -48,6 +60,27 @@ body {
   font-family: var(--font-sora), system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Radial violet gradient from top-center */
+  background-image: radial-gradient(
+    ellipse 80% 50% at 50% -10%,
+    rgba(139, 92, 246, 0.18) 0%,
+    transparent 70%
+  );
+  background-attachment: fixed;
+  min-height: 100vh;
+  position: relative;
+}
+
+/* Film grain noise overlay */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-size: 128px 128px;
 }
 
 code, pre, .font-mono {
@@ -67,6 +100,26 @@ code, pre, .font-mono {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border: 1px solid var(--color-glass-border-subtle);
+}
+
+.glass-strong {
+  background: rgba(109, 40, 217, 0.25);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(139, 92, 246, 0.5);
+}
+
+/* ── Neon Line Divider ─────────────────────────── */
+.neon-line {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(139, 92, 246, 0.6) 30%,
+    rgba(168, 85, 247, 0.8) 50%,
+    rgba(139, 92, 246, 0.6) 70%,
+    transparent 100%
+  );
 }
 
 /* ── Feature Registry Styles ─────────────────── */

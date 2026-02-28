@@ -68,6 +68,13 @@ const SERVICES: ServiceDef[] = [
     icon: Globe,
     docs: 'https://init.optalocal.com',
   },
+  {
+    id: 'accounts',
+    name: 'Opta Accounts',
+    subtitle: 'Identity, SSO & capability control',
+    icon: Globe,
+    docs: 'https://accounts.optalocal.com',
+  },
 ]
 
 const BORDER_COLOR: Record<ServiceStatus, string> = {

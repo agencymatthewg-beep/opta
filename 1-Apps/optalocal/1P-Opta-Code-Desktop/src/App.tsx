@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CommandPalette } from "./components/CommandPalette";
 import { Composer } from "./components/Composer";
+import { SetupWizard } from "./components/SetupWizard";
 import { TimelineCards } from "./components/TimelineCards";
 import { WorkspaceRail } from "./components/WorkspaceRail";
 import { ModelsPage } from "./pages/ModelsPage";
@@ -13,8 +14,44 @@ import type { PaletteCommand } from "./types";
 import "./opta.css";
 
 type AppPage = "sessions" | "models" | "operations" | "jobs";
+const ACCOUNTS_PORTAL_URL = "https://accounts.optalocal.com";
+
+// ---------------------------------------------------------------------------
+// Tauri invoke bridge — same pattern as secureConnectionStore.ts
+// ---------------------------------------------------------------------------
+type TauriInvoke = (
+  command: string,
+  args?: Record<string, unknown>,
+) => Promise<unknown>;
+
+interface TauriBridge {
+  core?: { invoke?: TauriInvoke };
+}
+
+function getTauriInvoke(): TauriInvoke | null {
+  const bridge = (globalThis as { __TAURI__?: TauriBridge }).__TAURI__;
+  const fn_ = bridge?.core?.invoke;
+  return typeof fn_ === "function" ? fn_ : null;
+}
+
+// ---------------------------------------------------------------------------
 
 function App() {
+  // null = loading (show blank), true = first run (show wizard), false = normal app
+  const [firstRun, setFirstRun] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const invoke = getTauriInvoke();
+    if (!invoke) {
+      // Browser / Vite dev mode — skip wizard
+      setFirstRun(false);
+      return;
+    }
+    invoke("check_first_run")
+      .then((isFirstRun) => setFirstRun(Boolean(isFirstRun)))
+      .catch(() => setFirstRun(false)); // On error, don't block the app
+  }, []);
+
   const [showTerminal, setShowTerminal] = useState(true);
   const [composerDraft, setComposerDraft] = useState("");
   const [submissionMode, setSubmissionMode] = useState<"chat" | "do">("chat");
@@ -247,6 +284,15 @@ function App() {
     }
   }, [activeSessionId, composerDraft, submitMessage, submissionMode]);
 
+  // Setup wizard gate — renders before anything else
+  if (firstRun === null) {
+    // Loading: blank OLED screen while we check first-run status
+    return <div style={{ background: "#09090b", height: "100vh" }} />;
+  }
+  if (firstRun) {
+    return <SetupWizard onComplete={() => setFirstRun(false)} />;
+  }
+
   return (
     <div className={`app-shell ${palette.isOpen ? "palette-open" : ""}`}>
       <div
@@ -398,6 +444,14 @@ function App() {
             >
               {showTerminal ? "Hide Runtime" : "Show Runtime"}
             </button>
+            <a
+              href={ACCOUNTS_PORTAL_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Open Opta Accounts portal"
+            >
+              Accounts
+            </a>
           </div>
         </header>
 

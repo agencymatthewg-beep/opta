@@ -3,19 +3,20 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --port 3005",
     "build": "next build",
-    "start": "next start",
+    "start": "next start --port 3005",
     "lint": "eslint ."
   },
   "dependencies": {
     "clsx": "^2.1.1",
     "framer-motion": "^12.34.3",
     "lucide-react": "^0.575.0",
-    "marked": "^14.0.0",
+    "marked": "^12.0.2",
     "next": "^16.1.6",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "swr": "^2.4.1",
     "tailwind-merge": "^3.5.0"
   },
   "devDependencies": {
