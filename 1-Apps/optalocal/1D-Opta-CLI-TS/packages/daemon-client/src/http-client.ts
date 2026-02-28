@@ -8,6 +8,15 @@ import type {
 import type {
   DaemonBackgroundKillResponse,
   DaemonBackgroundListResponse,
+  DaemonLmxAvailableModel,
+  DaemonLmxDownloadResponse,
+  DaemonLmxLoadOptions,
+  DaemonLmxMemoryResponse,
+  DaemonLmxModelDetail,
+  DaemonLmxStatusResponse,
+  DaemonListOperationsResponse,
+  DaemonOperationPayload,
+  DaemonRunOperationResponse,
   DaemonBackgroundOutputOptions,
   DaemonBackgroundOutputResponse,
   DaemonBackgroundStartRequest,
@@ -48,7 +57,9 @@ export class DaemonHttpClient implements DaemonHttpApi {
 
     if (!response.ok) {
       const message = await response.text().catch(() => '');
-      throw new Error(`Daemon request failed (${response.status}): ${message || response.statusText}`);
+      throw new Error(
+        `Daemon request failed (${response.status}): ${message || response.statusText}`
+      );
     }
 
     return response.json() as Promise<T>;
@@ -104,9 +115,21 @@ export class DaemonHttpClient implements DaemonHttpApi {
 
   events(sessionId: string, afterSeq = 0): Promise<DaemonEventsResponse> {
     const query = new URLSearchParams({ afterSeq: String(afterSeq) });
-    return this.request(
-      `/v3/sessions/${encodeURIComponent(sessionId)}/events?${query.toString()}`
-    );
+    return this.request(`/v3/sessions/${encodeURIComponent(sessionId)}/events?${query.toString()}`);
+  }
+
+  listOperations(): Promise<DaemonListOperationsResponse> {
+    return this.request('/v3/operations');
+  }
+
+  runOperation<TPayload extends DaemonOperationPayload = DaemonOperationPayload, TResult = unknown>(
+    id: string,
+    payload?: TPayload
+  ): Promise<DaemonRunOperationResponse<TResult>> {
+    return this.request(`/v3/operations/${encodeURIComponent(id)}`, {
+      method: 'POST',
+      body: JSON.stringify(payload ?? {}),
+    });
   }
 
   listBackground(sessionId?: string): Promise<DaemonBackgroundListResponse> {
@@ -153,6 +176,49 @@ export class DaemonHttpClient implements DaemonHttpApi {
     return this.request(`/v3/background/${encodeURIComponent(processId)}/kill`, {
       method: 'POST',
       body: JSON.stringify(signal ? { signal } : {}),
+    });
+  }
+
+  lmxStatus(): Promise<DaemonLmxStatusResponse> {
+    return this.request('/v3/lmx/status');
+  }
+
+  lmxModels(): Promise<{ models: DaemonLmxModelDetail[] }> {
+    return this.request('/v3/lmx/models');
+  }
+
+  lmxMemory(): Promise<DaemonLmxMemoryResponse> {
+    return this.request('/v3/lmx/memory');
+  }
+
+  lmxAvailable(): Promise<DaemonLmxAvailableModel[]> {
+    return this.request('/v3/lmx/models/available');
+  }
+
+  lmxLoad(modelId: string, opts?: DaemonLmxLoadOptions): Promise<unknown> {
+    return this.request('/v3/lmx/models/load', {
+      method: 'POST',
+      body: JSON.stringify({ modelId, ...opts }),
+    });
+  }
+
+  lmxUnload(modelId: string): Promise<unknown> {
+    return this.request('/v3/lmx/models/unload', {
+      method: 'POST',
+      body: JSON.stringify({ modelId }),
+    });
+  }
+
+  lmxDelete(modelId: string): Promise<unknown> {
+    return this.request(`/v3/lmx/models/${encodeURIComponent(modelId)}`, {
+      method: 'DELETE',
+    });
+  }
+
+  lmxDownload(repoId: string): Promise<DaemonLmxDownloadResponse> {
+    return this.request('/v3/lmx/models/download', {
+      method: 'POST',
+      body: JSON.stringify({ repoId }),
     });
   }
 }

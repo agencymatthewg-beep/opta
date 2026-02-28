@@ -84,15 +84,89 @@ export interface DaemonBackgroundKillResponse {
   process: BackgroundProcessSnapshot;
 }
 
+export interface DaemonLmxModelDetail {
+  model_id: string;
+  status: string;
+  memory_bytes?: number;
+  context_length?: number;
+  loaded_at?: string;
+  request_count?: number;
+}
+
+export interface DaemonLmxStatusResponse {
+  status: string;
+  version?: string;
+  uptime_seconds?: number;
+  models: DaemonLmxModelDetail[];
+}
+
+export interface DaemonLmxMemoryResponse {
+  total_unified_memory_gb: number;
+  used_gb: number;
+  available_gb: number;
+  models: Record<string, { memory_gb: number; loaded: boolean }>;
+}
+
+export interface DaemonLmxAvailableModel {
+  model_id: string;
+  size_bytes?: number;
+  quantization?: string;
+  modified_at?: string;
+}
+
+export interface DaemonLmxLoadOptions {
+  backend?: string;
+  autoDownload?: boolean;
+}
+
+export interface DaemonLmxDownloadResponse {
+  download_id: string;
+}
+
+export type DaemonOperationSafetyClass = 'read' | 'write' | 'dangerous';
+
+export interface DaemonOperationDefinition {
+  id: string;
+  safety?: DaemonOperationSafetyClass;
+  description?: string;
+  inputSchema?: unknown;
+  outputSchema?: unknown;
+  [key: string]: unknown;
+}
+
+export interface DaemonListOperationsResponse {
+  operations: DaemonOperationDefinition[];
+}
+
+export type DaemonOperationPayload = Record<string, unknown>;
+
+export interface DaemonRunOperationResponse<TResult = unknown> {
+  ok?: boolean;
+  result?: TResult;
+  error?: string;
+  [key: string]: unknown;
+}
+
 export interface DaemonHttpApi {
   health(): Promise<DaemonHealthResponse>;
   metrics(): Promise<DaemonMetricsResponse>;
   createSession(req: CreateSessionRequest): Promise<SessionSnapshot>;
   getSession(sessionId: string): Promise<DaemonSessionDetail>;
   submitTurn(sessionId: string, payload: ClientSubmitTurn): Promise<DaemonSubmitTurnResponse>;
-  cancel(sessionId: string, payload?: { turnId?: string; writerId?: string }): Promise<DaemonCancelResponse>;
-  resolvePermission(sessionId: string, payload: PermissionDecision): Promise<DaemonPermissionResponse>;
+  cancel(
+    sessionId: string,
+    payload?: { turnId?: string; writerId?: string }
+  ): Promise<DaemonCancelResponse>;
+  resolvePermission(
+    sessionId: string,
+    payload: PermissionDecision
+  ): Promise<DaemonPermissionResponse>;
   events(sessionId: string, afterSeq?: number): Promise<DaemonEventsResponse>;
+  listOperations(): Promise<DaemonListOperationsResponse>;
+  runOperation<TPayload extends DaemonOperationPayload = DaemonOperationPayload, TResult = unknown>(
+    id: string,
+    payload?: TPayload
+  ): Promise<DaemonRunOperationResponse<TResult>>;
   listBackground(sessionId?: string): Promise<DaemonBackgroundListResponse>;
   startBackground(payload: DaemonBackgroundStartRequest): Promise<DaemonBackgroundStatusResponse>;
   backgroundStatus(processId: string, sessionId?: string): Promise<DaemonBackgroundStatusResponse>;
@@ -100,7 +174,18 @@ export interface DaemonHttpApi {
     processId: string,
     options?: DaemonBackgroundOutputOptions
   ): Promise<DaemonBackgroundOutputResponse>;
-  killBackground(processId: string, signal?: BackgroundSignal): Promise<DaemonBackgroundKillResponse>;
+  killBackground(
+    processId: string,
+    signal?: BackgroundSignal
+  ): Promise<DaemonBackgroundKillResponse>;
+  lmxStatus(): Promise<DaemonLmxStatusResponse>;
+  lmxModels(): Promise<{ models: DaemonLmxModelDetail[] }>;
+  lmxMemory(): Promise<DaemonLmxMemoryResponse>;
+  lmxAvailable(): Promise<DaemonLmxAvailableModel[]>;
+  lmxLoad(modelId: string, opts?: DaemonLmxLoadOptions): Promise<unknown>;
+  lmxUnload(modelId: string): Promise<unknown>;
+  lmxDelete(modelId: string): Promise<unknown>;
+  lmxDownload(repoId: string): Promise<DaemonLmxDownloadResponse>;
 }
 
 export interface DaemonWsConnectOptions {
