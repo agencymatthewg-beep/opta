@@ -32,7 +32,7 @@ jobs:
         with:
           node-version: "22"
       - name: Install dependencies
-        run: npm ci
+        run: npm install
       - name: Type-check
         run: npm run typecheck
       - name: Run vitest
@@ -57,7 +57,7 @@ jobs:
         with:
           workspaces: "1-Apps/optalocal/1P-Opta-Code-Desktop/src-tauri -> target"
       - name: Install Node dependencies
-        run: npm ci
+        run: npm install
 
       - name: Require Authenticode secrets on release tags
         if: startsWith(github.ref, 'refs/tags/')
