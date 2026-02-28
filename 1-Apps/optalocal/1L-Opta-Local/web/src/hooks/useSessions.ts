@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * useSessions — SWR hook for fetching and searching CLI sessions.
@@ -7,13 +7,20 @@
  * 30-second auto-refresh (new sessions may appear from CLI usage).
  * Integrates Fuse.js for instant client-side fuzzy search across
  * title, model, tags, and session ID. Supports model and tag filtering.
+ *
+ * P6C: adds `search(query, opts?)` for server-side semantic/full-text search
+ * via `client.searchSessions({ query, ...opts })`.
  */
 
-import { useState, useMemo, useCallback } from 'react';
-import useSWR from 'swr';
-import Fuse, { type IFuseOptions } from 'fuse.js';
-import type { LMXClient } from '@/lib/lmx-client';
-import type { SessionSummary, SessionListResponse } from '@/types/lmx';
+import { useState, useMemo, useCallback } from "react";
+import useSWR from "swr";
+import Fuse, { type IFuseOptions } from "fuse.js";
+import type { LMXClient } from "@/lib/lmx-client";
+import type {
+  SessionSummary,
+  SessionListResponse,
+  SessionSearchRequest,
+} from "@/types/lmx";
 
 // ---------------------------------------------------------------------------
 // Fuse.js configuration
@@ -21,10 +28,10 @@ import type { SessionSummary, SessionListResponse } from '@/types/lmx';
 
 const FUSE_OPTIONS: IFuseOptions<SessionSummary> = {
   keys: [
-    { name: 'title', weight: 0.4 },
-    { name: 'model', weight: 0.2 },
-    { name: 'tags', weight: 0.3 },
-    { name: 'id', weight: 0.1 },
+    { name: "title", weight: 0.4 },
+    { name: "model", weight: 0.2 },
+    { name: "tags", weight: 0.3 },
+    { name: "id", weight: 0.1 },
   ],
   threshold: 0.4,
   includeScore: true,
@@ -35,6 +42,9 @@ const EMPTY_SESSIONS: SessionSummary[] = [];
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
+
+/** Options forwarded to `client.searchSessions` (query is required, rest optional). */
+export type SessionSearchOptions = Omit<SessionSearchRequest, "query">;
 
 export interface UseSessionsReturn {
   /** All sessions from the server (unfiltered) */
@@ -71,6 +81,15 @@ export interface UseSessionsReturn {
   refresh: () => void;
   /** Delete a session by ID (optimistic update) */
   deleteSession: (id: string) => Promise<void>;
+  /**
+   * Server-side semantic / full-text search.
+   * Calls `client.searchSessions({ query, ...opts })`.
+   * Returns matching session summaries ordered by relevance.
+   */
+  search: (
+    query: string,
+    opts?: SessionSearchOptions,
+  ) => Promise<SessionSummary[]>;
 }
 
 // ---------------------------------------------------------------------------
@@ -78,13 +97,13 @@ export interface UseSessionsReturn {
 // ---------------------------------------------------------------------------
 
 export function useSessions(client: LMXClient | null): UseSessionsReturn {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [modelFilter, setModelFilter] = useState('');
-  const [tagFilter, setTagFilter] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [modelFilter, setModelFilter] = useState("");
+  const [tagFilter, setTagFilter] = useState("");
 
   // Fetch sessions from LMX with SWR
   const { data, error, isLoading, mutate } = useSWR<SessionListResponse>(
-    client ? 'lmx:sessions' : null,
+    client ? "lmx:sessions" : null,
     () => client!.getSessions({ limit: 200 }),
     {
       refreshInterval: 30_000, // Refresh every 30s (CLI may create sessions)
@@ -97,17 +116,14 @@ export function useSessions(client: LMXClient | null): UseSessionsReturn {
   const sessions = data?.sessions ?? EMPTY_SESSIONS;
   const total = data?.total ?? 0;
 
-  const trimmedSearchQuery = useMemo(
-    () => searchQuery.trim(),
-    [searchQuery],
-  );
+  const trimmedSearchQuery = useMemo(() => searchQuery.trim(), [searchQuery]);
   const normalizedModelFilter = useMemo(
     () => modelFilter.toLowerCase(),
     [modelFilter],
   );
-  const hasSearchQuery = trimmedSearchQuery !== '';
-  const hasModelFilter = modelFilter !== '';
-  const hasTagFilter = tagFilter !== '';
+  const hasSearchQuery = trimmedSearchQuery !== "";
+  const hasModelFilter = modelFilter !== "";
+  const hasTagFilter = tagFilter !== "";
 
   // Build Fuse.js index when sessions change
   const fuse = useMemo(
@@ -140,9 +156,10 @@ export function useSessions(client: LMXClient | null): UseSessionsReturn {
       return sessions;
     }
 
-    let result = hasSearchQuery && fuse
-      ? fuse.search(searchQuery).map((r) => r.item)
-      : sessions;
+    let result =
+      hasSearchQuery && fuse
+        ? fuse.search(searchQuery).map((r) => r.item)
+        : sessions;
 
     // Model filter (case-insensitive substring)
     if (hasModelFilter) {
@@ -171,10 +188,26 @@ export function useSessions(client: LMXClient | null): UseSessionsReturn {
   const hasActiveFilters = hasSearchQuery || hasModelFilter || hasTagFilter;
 
   const clearFilters = useCallback(() => {
-    setSearchQuery('');
-    setModelFilter('');
-    setTagFilter('');
+    setSearchQuery("");
+    setModelFilter("");
+    setTagFilter("");
   }, []);
+
+  // Server-side search (semantic / full-text)
+  const search = useCallback(
+    async (
+      query: string,
+      opts?: SessionSearchOptions,
+    ): Promise<SessionSummary[]> => {
+      if (!client) return [];
+      const result = await client.searchSessions({ query, ...opts });
+      // searchSessions may return a SessionListResponse or a raw array depending
+      // on the server implementation; normalise to SessionSummary[].
+      if (Array.isArray(result)) return result as SessionSummary[];
+      return (result as { sessions: SessionSummary[] }).sessions ?? [];
+    },
+    [client],
+  );
 
   const refresh = useCallback(() => {
     void mutate();
@@ -228,5 +261,6 @@ export function useSessions(client: LMXClient | null): UseSessionsReturn {
     clearFilters,
     refresh,
     deleteSession,
+    search,
   };
 }

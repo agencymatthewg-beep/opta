@@ -39,7 +39,7 @@ export interface LoadedModel {
 
 export interface ChatMessage {
   id: string;
-  role: 'user' | 'assistant' | 'system' | 'tool';
+  role: "user" | "assistant" | "system" | "tool";
   content: string;
   model?: string;
   tokens_used?: number;
@@ -135,19 +135,19 @@ export interface SessionSummary {
 
 /** Content part in a multi-modal message (text or image). */
 export type ContentPart =
-  | { type: 'text'; text: string }
-  | { type: 'image_url'; image_url: { url: string } };
+  | { type: "text"; text: string }
+  | { type: "image_url"; image_url: { url: string } };
 
 /** Tool/function call within an assistant message. */
 export interface ToolCall {
   id: string;
-  type: 'function';
+  type: "function";
   function: { name: string; arguments: string };
 }
 
 /** A single message in a CLI session (OpenAI chat format). */
 export interface SessionMessage {
-  role: 'system' | 'user' | 'assistant' | 'tool';
+  role: "system" | "user" | "assistant" | "tool";
   content: string | ContentPart[] | null;
   tool_calls?: ToolCall[];
   tool_call_id?: string;
@@ -202,8 +202,238 @@ export class LMXError extends Error {
 
   constructor(message: string, status: number, body: string) {
     super(message);
-    this.name = 'LMXError';
+    this.name = "LMXError";
     this.status = status;
     this.body = body;
   }
+}
+
+// ---------------------------------------------------------------------------
+// Extended Admin — Memory & Health
+// ---------------------------------------------------------------------------
+
+export interface MemoryDetail {
+  total_gb: number;
+  used_gb: number;
+  available_gb: number;
+  threshold_percent: number;
+  models: Record<string, { memory_gb: number; loaded: boolean }>;
+}
+
+export interface AdminHealth {
+  memory_percent: number;
+  metal_stats?: Record<string, unknown>;
+  helper_nodes: Record<string, unknown>;
+  in_flight_requests: number;
+}
+
+export interface DiagnosticsReport {
+  verdict: "healthy" | "degraded" | "critical";
+  system_memory: { used_gb: number; total_gb: number; percent: number };
+  models: Array<{ id: string; loaded: boolean; ready: boolean }>;
+  inference_stats: {
+    total_requests: number;
+    errors: number;
+    avg_latency_ms: number;
+  };
+  recent_errors: Array<{ timestamp: string; error: string }>;
+}
+
+// ---------------------------------------------------------------------------
+// Extended Admin — Model Management
+// ---------------------------------------------------------------------------
+
+export interface AdminLoadedModel {
+  id: string;
+  name?: string;
+  memory_gb: number;
+  request_count: number;
+  last_used_at?: string;
+  loaded_at: string;
+  context_length?: number;
+  backend_type?: string;
+  ready: boolean;
+  quarantined?: boolean;
+  speculative?: { enabled: boolean; draft_model?: string; num_tokens?: number };
+}
+
+export interface AvailableModel {
+  repo_id: string;
+  local_path: string;
+  size_bytes: number;
+  downloaded_at: string;
+}
+
+export interface ModelLoadResponse {
+  model?: AdminLoadedModel;
+  status?: "loading" | "download_required";
+  confirmation_token?: string;
+  message?: string;
+  memory_freed_gb?: number;
+}
+
+export interface DownloadProgress {
+  download_id: string;
+  percent: number;
+  bytes_downloaded: number;
+  total_bytes: number;
+  files_completed: number;
+  files_total: number;
+  status: "pending" | "downloading" | "completed" | "failed";
+  error?: string;
+}
+
+export interface ModelPerformanceConfig {
+  model_id: string;
+  backend_type?: string;
+  speculative?: { enabled: boolean; draft_model?: string; num_tokens?: number };
+  kv_bits?: number;
+  prefix_cache?: boolean;
+  max_context_length?: number;
+  best_profile?: string;
+}
+
+export interface CompatibilityRecord {
+  model_id: string;
+  backend: string;
+  outcome: "success" | "failure";
+  reason?: string;
+  timestamp: string;
+}
+
+// ---------------------------------------------------------------------------
+// Extended Admin — Metrics
+// ---------------------------------------------------------------------------
+
+export interface MetricsJson {
+  total_requests: number;
+  total_errors: number;
+  avg_latency_ms: number;
+  p95_latency_ms?: number;
+  tokens_per_second: number;
+  total_tokens: number;
+  speculative_accept_ratio?: number;
+  loaded_models: number;
+  in_flight_requests: number;
+  uptime_seconds: number;
+}
+
+// ---------------------------------------------------------------------------
+// Extended Admin — Config & Presets
+// ---------------------------------------------------------------------------
+
+export interface Preset {
+  name: string;
+  description?: string;
+  model: string;
+  parameters?: Record<string, unknown>;
+  system_prompt?: string;
+  routing_alias?: string;
+  auto_load?: boolean;
+  performance?: Record<string, unknown>;
+}
+
+// ---------------------------------------------------------------------------
+// Extended Admin — Stack
+// ---------------------------------------------------------------------------
+
+export interface StackInfo {
+  roles: Record<string, { model_id: string; loaded: boolean }>;
+  helper_nodes: Record<
+    string,
+    {
+      url: string;
+      healthy: boolean;
+      latency_ms?: number;
+      circuit_open?: boolean;
+    }
+  >;
+  backend_configs: Record<string, unknown>;
+  default_model?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Extended Admin — Benchmarking
+// ---------------------------------------------------------------------------
+
+export interface BenchmarkRequest {
+  model_id: string;
+  prompt?: string;
+  max_tokens?: number;
+  runs?: number;
+  warmup_runs?: number;
+}
+
+export interface BenchmarkResult {
+  model_id: string;
+  ttft_ms: number;
+  total_time_ms: number;
+  tokens_per_second: number;
+  p50_ttft_ms?: number;
+  p95_ttft_ms?: number;
+  p50_tps?: number;
+  p95_tps?: number;
+  speculative_stats?: { accept_ratio?: number; tokens_generated?: number };
+  coherent?: boolean;
+  timestamp: string;
+}
+
+// ---------------------------------------------------------------------------
+// Extended Admin — Quantization
+// ---------------------------------------------------------------------------
+
+export interface QuantizeRequest {
+  repo_id: string;
+  bits?: number;
+  revision?: string;
+}
+
+export interface QuantizeJob {
+  job_id: string;
+  repo_id: string;
+  status: "pending" | "running" | "completed" | "failed";
+  percent?: number;
+  output_size_bytes?: number;
+  error?: string;
+  created_at: string;
+}
+
+// ---------------------------------------------------------------------------
+// Extended Admin — Predictor & Helpers
+// ---------------------------------------------------------------------------
+
+export interface PredictorStats {
+  next_predicted_model?: string;
+  usage_stats: Record<string, { count: number; last_used: string }>;
+}
+
+export interface HelperNodeStatus {
+  name: string;
+  url: string;
+  healthy: boolean;
+  latency_p50_ms?: number;
+  latency_p95_ms?: number;
+  success_rate?: number;
+  circuit_open?: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// Extended Admin — Logs
+// ---------------------------------------------------------------------------
+
+export interface LogFileMeta {
+  filename: string;
+  size_bytes: number;
+  created_at?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Extended Admin — Session Search
+// ---------------------------------------------------------------------------
+
+export interface SessionSearchRequest {
+  query: string;
+  model?: string;
+  tags?: string[];
+  limit?: number;
 }

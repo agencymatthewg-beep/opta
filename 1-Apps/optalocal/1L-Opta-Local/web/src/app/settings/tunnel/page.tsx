@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Globe,
   RefreshCw,
@@ -8,39 +8,41 @@ import {
   X,
   Loader2,
   Wifi,
-  WifiOff,
   Info,
   Clipboard,
   Zap,
-} from 'lucide-react';
-import { cn, Button } from '@opta/ui';
+} from "lucide-react";
+import { cn, Button } from "@opta/ui";
 import {
   type ConnectionSettings,
   type ConnectionType,
   getConnectionSettings,
   saveConnectionSettings,
   getOptimalBaseUrl,
-} from '@/lib/connection';
-import { syncSettingsToCloud } from '@/lib/settings-sync';
+} from "@/lib/connection";
+import { syncSettingsToCloud } from "@/lib/settings-sync";
 
-type TestStatus = 'idle' | 'testing' | 'success' | 'error';
+type TestStatus = "idle" | "testing" | "success" | "error";
 
-const connectionLabels: Record<ConnectionType, { label: string; color: string }> = {
-  lan:     { label: 'LAN · Direct',    color: 'text-neon-green' },
-  wan:     { label: 'WAN · Tunnel',    color: 'text-neon-amber' },
-  offline: { label: 'Offline',         color: 'text-neon-red'   },
+const connectionLabels: Record<
+  ConnectionType,
+  { label: string; color: string }
+> = {
+  lan: { label: "LAN · Direct", color: "text-neon-green" },
+  wan: { label: "WAN · Tunnel", color: "text-neon-amber" },
+  offline: { label: "Offline", color: "text-neon-red" },
 };
 
 export default function TunnelSettingsPage() {
-  const [tunnelUrl,      setTunnelUrl]      = useState('');
-  const [useTunnel,      setUseTunnel]      = useState(false);
-  const [testStatus,     setTestStatus]     = useState<TestStatus>('idle');
-  const [testMessage,    setTestMessage]    = useState('');
-  const [detectedType,   setDetectedType]   = useState<ConnectionType | null>(null);
+  const [tunnelUrl, setTunnelUrl] = useState("");
+  const [useTunnel, setUseTunnel] = useState(false);
+  const [testStatus, setTestStatus] = useState<TestStatus>("idle");
+  const [testMessage, setTestMessage] = useState("");
+  const [detectedType, setDetectedType] = useState<ConnectionType | null>(null);
   const [detectedLatency, setDetectedLatency] = useState<number | null>(null);
-  const [isSaving,       setIsSaving]       = useState(false);
-  const [hasUrlChanges,  setHasUrlChanges]  = useState(false);
-  const [loaded,         setLoaded]         = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [hasUrlChanges, setHasUrlChanges] = useState(false);
+  const [loaded, setLoaded] = useState(false);
 
   const tunnelUrlRef = useRef<HTMLInputElement>(null);
 
@@ -55,7 +57,9 @@ export default function TunnelSettingsPage() {
       setLoaded(true);
     }
     load();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Track URL changes only (toggle auto-saves)
@@ -92,8 +96,8 @@ export default function TunnelSettingsPage() {
 
   const handleSaveAndTest = useCallback(async () => {
     setIsSaving(true);
-    setTestStatus('idle');
-    setTestMessage('');
+    setTestStatus("idle");
+    setTestMessage("");
     setDetectedType(null);
     setDetectedLatency(null);
 
@@ -108,29 +112,33 @@ export default function TunnelSettingsPage() {
     }
 
     // Auto-test after save
-    setTestStatus('testing');
+    setTestStatus("testing");
     const settings = await getConnectionSettings();
-    const probeSettings: ConnectionSettings = { ...settings, tunnelUrl, useTunnel: true };
+    const probeSettings: ConnectionSettings = {
+      ...settings,
+      tunnelUrl,
+      useTunnel: true,
+    };
     const result = await getOptimalBaseUrl(probeSettings);
 
     if (result) {
-      setTestStatus('success');
+      setTestStatus("success");
       setDetectedType(result.type);
       setDetectedLatency(result.latencyMs);
       setTestMessage(
-        result.type === 'lan'
+        result.type === "lan"
           ? `LAN reachable (${result.latencyMs}ms) — tunnel not needed on this network`
           : `Tunnel reachable (${result.latencyMs}ms)`,
       );
     } else {
-      setTestStatus('error');
-      setDetectedType('offline');
-      setTestMessage('Server unreachable via LAN and tunnel');
+      setTestStatus("error");
+      setDetectedType("offline");
+      setTestMessage("Server unreachable via LAN and tunnel");
     }
 
     setTimeout(() => {
-      setTestStatus('idle');
-      setTestMessage('');
+      setTestStatus("idle");
+      setTestMessage("");
       setDetectedType(null);
       setDetectedLatency(null);
     }, 8000);
@@ -138,33 +146,37 @@ export default function TunnelSettingsPage() {
 
   // Quick re-test without saving
   const handleTestOnly = useCallback(async () => {
-    setTestStatus('testing');
-    setTestMessage('');
+    setTestStatus("testing");
+    setTestMessage("");
     setDetectedType(null);
     setDetectedLatency(null);
 
     const settings = await getConnectionSettings();
-    const probeSettings: ConnectionSettings = { ...settings, tunnelUrl, useTunnel: true };
+    const probeSettings: ConnectionSettings = {
+      ...settings,
+      tunnelUrl,
+      useTunnel: true,
+    };
     const result = await getOptimalBaseUrl(probeSettings);
 
     if (result) {
-      setTestStatus('success');
+      setTestStatus("success");
       setDetectedType(result.type);
       setDetectedLatency(result.latencyMs);
       setTestMessage(
-        result.type === 'lan'
+        result.type === "lan"
           ? `LAN reachable (${result.latencyMs}ms)`
           : `Tunnel reachable (${result.latencyMs}ms)`,
       );
     } else {
-      setTestStatus('error');
-      setDetectedType('offline');
-      setTestMessage('Server unreachable');
+      setTestStatus("error");
+      setDetectedType("offline");
+      setTestMessage("Server unreachable");
     }
 
     setTimeout(() => {
-      setTestStatus('idle');
-      setTestMessage('');
+      setTestStatus("idle");
+      setTestMessage("");
       setDetectedType(null);
       setDetectedLatency(null);
     }, 8000);
@@ -176,18 +188,18 @@ export default function TunnelSettingsPage() {
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
-      if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+      if ((e.metaKey || e.ctrlKey) && e.key === "s") {
         e.preventDefault();
         if (hasUrlChanges && !isSaving) handleSaveAndTest();
       }
     }
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
   }, [hasUrlChanges, isSaving, handleSaveAndTest]);
 
   const onUrlKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (e.key === 'Enter' && !isSaving) {
+      if (e.key === "Enter" && !isSaving) {
         e.preventDefault();
         handleSaveAndTest();
       }
@@ -203,7 +215,7 @@ export default function TunnelSettingsPage() {
     try {
       const text = await navigator.clipboard.readText();
       const trimmed = text.trim();
-      if (trimmed.startsWith('http')) setTunnelUrl(trimmed);
+      if (trimmed.startsWith("http")) setTunnelUrl(trimmed);
     } catch {
       tunnelUrlRef.current?.focus();
     }
@@ -217,7 +229,7 @@ export default function TunnelSettingsPage() {
     );
   }
 
-  const isBusy = isSaving || testStatus === 'testing';
+  const isBusy = isSaving || testStatus === "testing";
 
   return (
     <div className="max-w-xl space-y-8">
@@ -247,17 +259,23 @@ export default function TunnelSettingsPage() {
       <section className="glass-subtle rounded-xl p-6 space-y-6">
         <div className="flex items-center gap-3">
           <Globe className="w-5 h-5 text-neon-amber" />
-          <h3 className="text-base font-semibold text-text-primary">Cloudflare Tunnel</h3>
+          <h3 className="text-base font-semibold text-text-primary">
+            Cloudflare Tunnel
+          </h3>
         </div>
 
         {/* Enable toggle — auto-saves */}
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium text-text-primary">Enable Tunnel</p>
+            <p className="text-sm font-medium text-text-primary">
+              Enable Tunnel
+            </p>
             <p className="text-xs text-text-muted">
               Fall back to tunnel when LAN is unavailable
               {useTunnel && (
-                <span className="ml-2 text-neon-green font-medium">· saved</span>
+                <span className="ml-2 text-neon-green font-medium">
+                  · saved
+                </span>
               )}
             </p>
           </div>
@@ -267,23 +285,31 @@ export default function TunnelSettingsPage() {
             aria-checked={useTunnel}
             onClick={handleToggle}
             className={cn(
-              'relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50',
-              useTunnel ? 'bg-primary' : 'bg-opta-border',
+              "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50",
+              useTunnel ? "bg-primary" : "bg-opta-border",
             )}
           >
             <span
               className={cn(
-                'inline-block h-4 w-4 rounded-full bg-white transition-transform',
-                useTunnel ? 'translate-x-6' : 'translate-x-1',
+                "inline-block h-4 w-4 rounded-full bg-white transition-transform",
+                useTunnel ? "translate-x-6" : "translate-x-1",
               )}
             />
           </button>
         </div>
 
         {/* Tunnel URL */}
-        <div className={cn('space-y-2 transition-opacity', !useTunnel && 'opacity-40 pointer-events-none')}>
+        <div
+          className={cn(
+            "space-y-2 transition-opacity",
+            !useTunnel && "opacity-40 pointer-events-none",
+          )}
+        >
           <div className="flex items-center justify-between">
-            <label htmlFor="tunnel-url" className="block text-sm font-medium text-text-secondary">
+            <label
+              htmlFor="tunnel-url"
+              className="block text-sm font-medium text-text-secondary"
+            >
               Tunnel URL
             </label>
             <button
@@ -307,7 +333,9 @@ export default function TunnelSettingsPage() {
             disabled={!useTunnel}
             className="w-full px-3 py-2 rounded-lg bg-opta-surface border border-opta-border text-text-primary text-sm placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-colors disabled:cursor-not-allowed"
           />
-          <p className="text-xs text-text-muted">Public HTTPS URL for your Cloudflare Tunnel</p>
+          <p className="text-xs text-text-muted">
+            Public HTTPS URL for your Cloudflare Tunnel
+          </p>
         </div>
       </section>
 
@@ -316,22 +344,29 @@ export default function TunnelSettingsPage() {
         <section className="glass-subtle rounded-xl p-4">
           <div className="flex items-center gap-3">
             <span className="relative flex h-2.5 w-2.5">
-              {detectedType === 'offline' && (
+              {detectedType === "offline" && (
                 <span className="absolute inline-flex h-full w-full rounded-full opacity-75 animate-ping bg-neon-red" />
               )}
               <span
                 className={cn(
-                  'relative inline-flex h-2.5 w-2.5 rounded-full',
-                  detectedType === 'lan'     && 'bg-neon-green',
-                  detectedType === 'wan'     && 'bg-neon-amber',
-                  detectedType === 'offline' && 'bg-neon-red',
+                  "relative inline-flex h-2.5 w-2.5 rounded-full",
+                  detectedType === "lan" && "bg-neon-green",
+                  detectedType === "wan" && "bg-neon-amber",
+                  detectedType === "offline" && "bg-neon-red",
                 )}
               />
             </span>
-            <p className={cn('text-sm font-medium', connectionLabels[detectedType].color)}>
+            <p
+              className={cn(
+                "text-sm font-medium",
+                connectionLabels[detectedType].color,
+              )}
+            >
               {connectionLabels[detectedType].label}
-              {detectedLatency !== null && detectedType !== 'offline' && (
-                <span className="text-text-muted ml-2">{detectedLatency}ms</span>
+              {detectedLatency !== null && detectedType !== "offline" && (
+                <span className="text-text-muted ml-2">
+                  {detectedLatency}ms
+                </span>
               )}
             </p>
             {testMessage && (
@@ -349,14 +384,23 @@ export default function TunnelSettingsPage() {
           size="md"
           onClick={handleSaveAndTest}
           disabled={!hasUrlChanges || isBusy}
-          className={cn(!hasUrlChanges && 'opacity-50 cursor-not-allowed')}
+          className={cn(!hasUrlChanges && "opacity-50 cursor-not-allowed")}
         >
           {isSaving ? (
-            <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving…</>
-          ) : testStatus === 'testing' && !isSaving ? (
-            <><RefreshCw className="w-4 h-4 mr-2 animate-spin" />Testing…</>
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Saving…
+            </>
+          ) : testStatus === "testing" && !isSaving ? (
+            <>
+              <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+              Testing…
+            </>
           ) : (
-            <><Zap className="w-4 h-4 mr-2" />Save &amp; Test</>
+            <>
+              <Zap className="w-4 h-4 mr-2" />
+              Save &amp; Test
+            </>
           )}
         </Button>
 
@@ -366,16 +410,28 @@ export default function TunnelSettingsPage() {
             variant="secondary"
             size="md"
             onClick={handleTestOnly}
-            disabled={testStatus === 'testing'}
+            disabled={testStatus === "testing"}
           >
-            {testStatus === 'testing' ? (
-              <><RefreshCw className="w-4 h-4 mr-2 animate-spin" />Testing…</>
-            ) : testStatus === 'success' ? (
-              <><Check className="w-4 h-4 mr-2 text-neon-green" />Reachable</>
-            ) : testStatus === 'error' ? (
-              <><X className="w-4 h-4 mr-2 text-neon-red" />Unreachable</>
+            {testStatus === "testing" ? (
+              <>
+                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                Testing…
+              </>
+            ) : testStatus === "success" ? (
+              <>
+                <Check className="w-4 h-4 mr-2 text-neon-green" />
+                Reachable
+              </>
+            ) : testStatus === "error" ? (
+              <>
+                <X className="w-4 h-4 mr-2 text-neon-red" />
+                Unreachable
+              </>
             ) : (
-              <><Wifi className="w-4 h-4 mr-2" />Test</>
+              <>
+                <Wifi className="w-4 h-4 mr-2" />
+                Test
+              </>
             )}
           </Button>
         )}
@@ -383,9 +439,14 @@ export default function TunnelSettingsPage() {
         {/* Keyboard hint */}
         {hasUrlChanges && !isBusy && (
           <span className="text-xs text-text-muted hidden sm:block">
-            or press{' '}
-            <kbd className="px-1.5 py-0.5 rounded border border-opta-border bg-opta-surface text-[10px] font-mono">⌘S</kbd>
-            {' '}/ <kbd className="px-1.5 py-0.5 rounded border border-opta-border bg-opta-surface text-[10px] font-mono">Enter</kbd>
+            or press{" "}
+            <kbd className="px-1.5 py-0.5 rounded border border-opta-border bg-opta-surface text-[10px] font-mono">
+              ⌘S
+            </kbd>{" "}
+            /{" "}
+            <kbd className="px-1.5 py-0.5 rounded border border-opta-border bg-opta-surface text-[10px] font-mono">
+              Enter
+            </kbd>
           </span>
         )}
       </div>
