@@ -702,6 +702,8 @@ function StepPreferences({
   form: WizardFormData;
   setForm: React.Dispatch<React.SetStateAction<WizardFormData>>;
 }) {
+  const configDirRowRef = useRef<HTMLDivElement>(null);
+
   const prefGroup = (children: React.ReactNode) => (
     <div style={{ marginBottom: 20 }}>{children}</div>
   );
@@ -719,7 +721,7 @@ function StepPreferences({
       {prefGroup(
         <>
           <MonoLabel>Config folder</MonoLabel>
-          <div style={{ display: "flex", gap: 7 }}>
+          <div ref={configDirRowRef} style={{ display: "flex", gap: 7 }}>
             <TextInput
               value={form.configDir}
               onChange={(v) => setForm((f) => ({ ...f, configDir: v }))}
@@ -727,11 +729,9 @@ function StepPreferences({
             <button
               type="button"
               onClick={() => {
-                // In Tauri context this would open a folder dialog.
-                // For now: focus and select the input text.
-                const input = document.querySelector<HTMLInputElement>(
-                  "[data-wizard-config-dir]",
-                );
+                // In a Tauri context this could open a native folder picker.
+                // For now: focus and select the input so the user can type a path.
+                const input = configDirRowRef.current?.querySelector<HTMLInputElement>("input");
                 if (input) { input.focus(); input.select(); }
               }}
               style={{
@@ -1041,6 +1041,7 @@ function StepReady({
 // Main SetupWizard component
 // ---------------------------------------------------------------------------
 const TOTAL_STEPS = 4;
+// Indexed by current step — the label shown on the "Next" button at each step.
 const NEXT_LABELS = ["Get Started", "Next", "Review Setup", ""];
 
 const DEFAULT_FORM: WizardFormData = {
@@ -1245,7 +1246,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                 boxShadow: `0 0 20px ${T.primaryGlow}, inset 0 1px 0 rgba(255,255,255,0.18)`,
               }}
             >
-              {NEXT_LABELS[step + 1]}
+              {NEXT_LABELS[step]}
               <svg
                 width="13"
                 height="13"
