@@ -49,17 +49,17 @@ struct OptaApp: Identifiable, Hashable {
 
     /// All apps and services in the Opta ecosystem
     static let allApps: [OptaApp] = [
-        // AI Copilot (launchd service)
+        // OpenClaw AI Gateway (launchd service — was com.clawdbot.gateway)
         OptaApp(
-            id: "com.clawdbot.gateway",
-            name: "Opta AI",
-            bundleIdentifier: "com.clawdbot.gateway",
+            id: "ai.openclaw.gateway",
+            name: "OpenClaw",
+            bundleIdentifier: "ai.openclaw.gateway",
             icon: "brain.head.profile",
             type: .launchdService,
-            launchdLabel: "com.clawdbot.gateway",
-            processName: "clawdbot-gateway"
+            launchdLabel: "ai.openclaw.gateway",
+            processName: "openclaw/dist/index.js"
         ),
-        
+
         // Regular Apps
         OptaApp(
             id: "com.opta.native",
@@ -67,7 +67,52 @@ struct OptaApp: Identifiable, Hashable {
             bundleIdentifier: "com.opta.native",
             icon: "dial.high"
         ),
-        // Life Manager (launchd service - Next.js dashboard)
+
+        // Opta Local Web dashboard (pnpm start in 1L-Opta-Local/web, localhost:3004)
+        OptaApp(
+            id: "com.opta.local-web",
+            name: "Opta Local",
+            bundleIdentifier: "com.opta.local-web",
+            icon: "macwindow",
+            type: .launchdService,
+            launchdLabel: "com.opta.local-web",
+            processName: "1L-Opta-Local"
+        ),
+
+        // LMX Cloudflare Tunnel (cloudflared → Mono512 inference server)
+        OptaApp(
+            id: "com.opta.local-lmx-tunnel",
+            name: "LMX Tunnel",
+            bundleIdentifier: "com.opta.local-lmx-tunnel",
+            icon: "antenna.radiowaves.left.and.right",
+            type: .launchdService,
+            launchdLabel: "com.opta.local-lmx-tunnel",
+            processName: "optalocal-lmx"
+        ),
+
+        // Phone Bridge (bun, port 3333)
+        OptaApp(
+            id: "com.opta.phone-bridge",
+            name: "Phone Bridge",
+            bundleIdentifier: "com.opta.phone-bridge",
+            icon: "iphone",
+            type: .launchdService,
+            launchdLabel: "com.opta.phone-bridge",
+            processName: "opta-phone-bridge"
+        ),
+
+        // Kimi Proxy (uvicorn, port 4999)
+        OptaApp(
+            id: "com.opta.kimi-proxy",
+            name: "Kimi Proxy",
+            bundleIdentifier: "com.opta.kimi-proxy",
+            icon: "arrow.left.arrow.right.circle",
+            type: .launchdService,
+            launchdLabel: "com.opta.kimi-proxy",
+            processName: "kimi-proxy"
+        ),
+
+        // Opta LM (legacy launchd service — plist path needs updating externally)
         OptaApp(
             id: "com.opta.life-manager",
             name: "Opta LM",
@@ -76,7 +121,7 @@ struct OptaApp: Identifiable, Hashable {
             type: .launchdService,
             launchdLabel: "com.opta.life-manager",
             processName: "opta-life-manager"
-        )
+        ),
     ]
     
     /// Just the regular apps (excluding services)

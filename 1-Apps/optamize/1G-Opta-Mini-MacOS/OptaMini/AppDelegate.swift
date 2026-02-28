@@ -23,6 +23,7 @@ private enum MenuConstants {
     static let usageURL = "https://usage.optamize.biz"
     static let lifeManagerURL = "https://lm.optamize.biz"
     static let aiCompareURL = "https://aicomp.optamize.biz"
+    static let localWebURL = "http://localhost:3004"
     static let accessibilityLabel = "Opta Mini"
 
     /// All Opta website URLs to open with "Open All"
@@ -318,10 +319,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             submenu.addItem(launchItem)
         }
 
-        // Add "Open in Browser" for Opta LM (Life Manager has web dashboard)
+        // Add "Open in Browser" for apps with web dashboards
         if app.id == "com.opta.life-manager" {
             submenu.addItem(NSMenuItem.separator())
             let openBrowserItem = NSMenuItem(title: "Open in Browser", action: #selector(openLifeManager), keyEquivalent: "")
+            openBrowserItem.target = self
+            openBrowserItem.image = NSImage(systemSymbolName: MenuConstants.Icons.website, accessibilityDescription: "Open in Browser")
+            submenu.addItem(openBrowserItem)
+        }
+
+        if app.id == "com.opta.local-web" {
+            submenu.addItem(NSMenuItem.separator())
+            let openBrowserItem = NSMenuItem(title: "Open in Browser", action: #selector(openLocalWeb), keyEquivalent: "")
             openBrowserItem.target = self
             openBrowserItem.image = NSImage(systemSymbolName: MenuConstants.Icons.website, accessibilityDescription: "Open in Browser")
             submenu.addItem(openBrowserItem)
@@ -505,6 +514,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func openLifeManager() {
         guard let url = URL(string: MenuConstants.lifeManagerURL) else { return }
+        NSWorkspace.shared.open(url)
+    }
+
+    @objc private func openLocalWeb() {
+        guard let url = URL(string: MenuConstants.localWebURL) else { return }
         NSWorkspace.shared.open(url)
     }
 
