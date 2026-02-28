@@ -1,0 +1,95 @@
+name: Opta Code — Windows Build
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "1-Apps/optalocal/1P-Opta-Code-Desktop/**"
+      - ".github/workflows/opta-code-windows-build.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "1-Apps/optalocal/1P-Opta-Code-Desktop/**"
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: 1-Apps/optalocal/1P-Opta-Code-Desktop
+
+jobs:
+  # Unit + vitest tests (Linux, fast)
+  unit-tests:
+    name: Unit tests (Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: 1-Apps/optalocal/1P-Opta-Code-Desktop/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Type-check
+        run: npm run typecheck
+      - name: Run vitest
+        run: npm run test:run
+
+  # Windows MSI/NSIS installer build via Tauri v2
+  windows-build:
+    name: Windows installer (Tauri v2)
+    runs-on: windows-latest
+    needs: unit-tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: 1-Apps/optalocal/1P-Opta-Code-Desktop/package-lock.json
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "1-Apps/optalocal/1P-Opta-Code-Desktop/src-tauri -> target"
+      - name: Install Node dependencies
+        run: npm ci
+      - name: Build Vite frontend
+        run: npm run build
+      - name: Build Tauri app (Windows)
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: 1-Apps/optalocal/1P-Opta-Code-Desktop
+          tauriScript: npx tauri
+      - name: Upload Windows installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: opta-code-windows-installer
+          path: |
+            1-Apps/optalocal/1P-Opta-Code-Desktop/src-tauri/target/release/bundle/msi/*.msi
+            1-Apps/optalocal/1P-Opta-Code-Desktop/src-tauri/target/release/bundle/nsis/*.exe
+          if-no-files-found: warn
+          retention-days: 30
+
+  # Smoke test — verify installer artifact (main only)
+  windows-smoke:
+    name: Windows smoke test
+    runs-on: windows-latest
+    needs: windows-build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: opta-code-windows-installer
+          path: dist-artifacts
+      - name: Verify installer artifact exists
+        shell: pwsh
+        run: |
+          $artifacts = Get-ChildItem -Recurse dist-artifacts -Include *.msi, *.exe
+          if ($artifacts.Count -eq 0) { Write-Error "No installer artifacts found"; exit 1 }
+          Write-Host "Artifacts:"; $artifacts | ForEach-Object { Write-Host "  $_" }

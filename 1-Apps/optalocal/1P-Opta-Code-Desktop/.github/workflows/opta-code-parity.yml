@@ -1,0 +1,122 @@
+name: Opta Code Parity
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "optalocal/1P-Opta-Code-Desktop/**"
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - "optalocal/1P-Opta-Code-Desktop/**"
+
+env:
+  APP_DIR: optalocal/1P-Opta-Code-Desktop
+
+jobs:
+  quality-harness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: optalocal/1P-Opta-Code-Desktop/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ${{ env.APP_DIR }}
+        run: npm ci
+
+      - name: Typecheck
+        id: typecheck
+        continue-on-error: true
+        working-directory: ${{ env.APP_DIR }}
+        run: npm run typecheck
+
+      - name: Lint
+        id: lint
+        continue-on-error: true
+        working-directory: ${{ env.APP_DIR }}
+        run: npm run lint
+
+      - name: Build
+        id: build
+        continue-on-error: true
+        working-directory: ${{ env.APP_DIR }}
+        run: npm run build
+
+      - name: Unit tests
+        id: unit
+        continue-on-error: true
+        working-directory: ${{ env.APP_DIR }}
+        run: npm run test:run
+
+      - name: Install Playwright browsers
+        id: playwright
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          set +e
+          npx playwright install --with-deps chromium
+          status=$?
+          if [ "${status}" -eq 0 ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "Playwright install failed (${status}); e2e checks will be skipped."
+          fi
+          exit 0
+
+      - name: E2E smoke tests
+        id: e2e
+        if: steps.playwright.outputs.available == 'true'
+        continue-on-error: true
+        working-directory: ${{ env.APP_DIR }}
+        run: npm run test:e2e:strict
+
+      - name: E2E skipped notice
+        if: steps.playwright.outputs.available != 'true'
+        run: echo "Skipping e2e due to missing Playwright browser dependencies."
+
+      - name: Upload Playwright report
+        if: always() && steps.playwright.outputs.available == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: opta-code-playwright-report
+          path: optalocal/1P-Opta-Code-Desktop/playwright-report
+          if-no-files-found: ignore
+
+      - name: Aggregate strict gate
+        if: always()
+        run: |
+          fail=0
+
+          echo "typecheck: ${{ steps.typecheck.outcome }}"
+          echo "lint:      ${{ steps.lint.outcome }}"
+          echo "build:     ${{ steps.build.outcome }}"
+          echo "unit:      ${{ steps.unit.outcome }}"
+          echo "e2e:       ${{ steps.e2e.outcome }}"
+          echo "pw avail:  ${{ steps.playwright.outputs.available }}"
+
+          [ "${{ steps.typecheck.outcome }}" = "success" ] || fail=1
+          [ "${{ steps.lint.outcome }}" = "success" ] || fail=1
+          [ "${{ steps.build.outcome }}" = "success" ] || fail=1
+          [ "${{ steps.unit.outcome }}" = "success" ] || fail=1
+
+          if [ "${{ steps.playwright.outputs.available }}" = "true" ]; then
+            [ "${{ steps.e2e.outcome }}" = "success" ] || fail=1
+          else
+            echo "E2E gate was skipped due to unavailable browser dependencies."
+          fi
+
+          exit "${fail}"

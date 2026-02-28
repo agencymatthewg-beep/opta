@@ -1,0 +1,27 @@
+[package]
+name = "opta-code"
+version = "0.1.0"
+description = "Opta Code Desktop — local-first AI coding assistant"
+authors = ["Opta Operations <hello@optamize.biz>"]
+license = "Proprietary"
+repository = "https://github.com/opta-operations/opta"
+edition = "2021"
+rust-version = "1.77.2"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+# The `_lib` suffix may seem redundant but it is necessary to make
+# the lib name unique. Without the suffix, the lib would be named
+# `opta-code` which conflicts with the package name.
+name = "opta_code_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
