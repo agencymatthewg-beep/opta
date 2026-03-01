@@ -69,6 +69,20 @@ export function useSSE<T>({
   // Retry counter in useRef — mutations don't cause re-renders
   const retriesRef = useRef(0);
 
+  // Stable callback refs: callbacks are updated on every render so callers
+  // never need to memoize them, but they don't cause connect() to be recreated
+  // (which would abort and restart the SSE connection on every render).
+  const onMessageRef = useRef(onMessage);
+  const onErrorRef = useRef(onError);
+  useEffect(() => { onMessageRef.current = onMessage; });
+  useEffect(() => { onErrorRef.current = onError; });
+
+  // Serialize headers to a stable string so the connection only restarts when
+  // the header *values* change, not when the object reference changes.
+  const headersKey = JSON.stringify(headers ?? {});
+  const headersRef = useRef(headers);
+  useEffect(() => { headersRef.current = headers; }, [headersKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const connect = useCallback(async () => {
     // Abort any existing connection before starting a new one
     abortRef.current?.abort();
@@ -78,7 +92,7 @@ export function useSSE<T>({
     setConnectionState('connecting');
 
     await fetchEventSource(url, {
-      headers,
+      headers: headersRef.current,
       signal: ctrl.signal,
 
       async onopen(response) {
@@ -93,7 +107,7 @@ export function useSSE<T>({
       onmessage(event) {
         try {
           const data = JSON.parse(event.data) as T;
-          onMessage(data);
+          onMessageRef.current(data);
         } catch {
           // Skip malformed JSON — do not crash the connection
         }
@@ -105,7 +119,7 @@ export function useSSE<T>({
 
         if (retriesRef.current >= maxRetries) {
           ctrl.abort();
-          onError?.(
+          onErrorRef.current?.(
             err instanceof Error
               ? err
               : new Error('Max SSE retries exceeded'),
@@ -127,7 +141,11 @@ export function useSSE<T>({
         setConnectionState('closed');
       },
     });
-  }, [url, headers, onMessage, onError, retryInterval, maxRetries]);
+    // Intentionally excludes onMessage/onError (stable refs) and headersRef
+    // (stable ref updated from headersKey). Connection restarts only when the
+    // URL, header content, or timing constants change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [url, headersKey, retryInterval, maxRetries]);
 
   // Auto-connect when enabled, cleanup on unmount or disable
   useEffect(() => {

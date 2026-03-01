@@ -606,6 +606,12 @@ export function useDaemonSessions() {
         error instanceof Error ? error.message : String(error),
       );
       setRuntimeOverride(null);
+      // Daemon is unreachable — any in-progress turns will never send turn.done.
+      // Clear streaming indicators so the UI doesn't show perpetual spinners.
+      setStreamingBySession((prev) => {
+        if (Object.values(prev).every((v) => !v)) return prev;
+        return Object.fromEntries(Object.keys(prev).map((k) => [k, false]));
+      });
     }
   }, [connection, sessions.length]);
 
