@@ -15,7 +15,15 @@ import {
   checkOpis,
   type CheckResult,
 } from '../../commands/doctor.js';
-import { accountLogout, accountStatus } from '../../commands/account.js';
+import {
+  accountKeysDelete,
+  accountKeysList,
+  accountKeysPush,
+  accountLogin,
+  accountLogout,
+  accountSignup,
+  accountStatus,
+} from '../../commands/account.js';
 import { completions } from '../../commands/completions.js';
 import { config as configCommand } from '../../commands/config.js';
 import { getConfigStore } from '../../core/config.js';
@@ -29,12 +37,15 @@ import {
 } from '../../commands/daemon.js';
 import { diff } from '../../commands/diff.js';
 import { envCommand } from '../../commands/env.js';
+import { init } from '../../commands/init.js';
 import { benchmark } from '../../commands/benchmark.js';
 import { embed } from '../../commands/embed.js';
 import { mcpAdd, mcpAddPlaywright, mcpList, mcpRemove, mcpTest } from '../../commands/mcp.js';
 import { keyCopy, keyCreate, keyShow } from '../../commands/key.js';
 import { rerank } from '../../commands/rerank.js';
+import { serve } from '../../commands/serve.js';
 import { sessions } from '../../commands/sessions.js';
+import { updateCommand } from '../../commands/update.js';
 import { fetchLatestVersion } from '../../commands/version.js';
 import {
   deleteAnthropicKey,
@@ -207,6 +218,25 @@ function toConfigValueString(value: unknown): string {
   }
 }
 
+async function withOptionalOptaPassword<T>(
+  password: string | undefined,
+  run: () => Promise<T>
+): Promise<T> {
+  if (password === undefined) return run();
+
+  const previous = process.env['OPTA_PASSWORD'];
+  process.env['OPTA_PASSWORD'] = password;
+  try {
+    return await run();
+  } finally {
+    if (previous === undefined) {
+      delete process.env['OPTA_PASSWORD'];
+    } else {
+      process.env['OPTA_PASSWORD'] = previous;
+    }
+  }
+}
+
 function defineOperation<TId extends OperationId>(
   id: TId,
   execute: (input: OperationInputById[TId]) => Promise<unknown>
@@ -295,6 +325,57 @@ export const operationRegistry = {
       await accountStatus({ json: true });
     })
   ),
+  'account.signup': defineOperation('account.signup', async (input) =>
+    withOptionalOptaPassword(input.password, async () =>
+      runCommandForJson('account.signup', async () => {
+        await accountSignup({
+          identifier: input.identifier,
+          name: input.name,
+          json: true,
+        });
+      })
+    )
+  ),
+  'account.login': defineOperation('account.login', async (input) =>
+    withOptionalOptaPassword(input.password, async () =>
+      runCommandForJson('account.login', async () => {
+        await accountLogin({
+          identifier: input.identifier,
+          oauth: input.oauth,
+          oauthOptaBrowser: input.oauthOptaBrowser,
+          oauthCookieJar: input.oauthCookieJar,
+          oauthHeadless: input.oauthHeadless,
+          timeout: input.timeout === undefined ? undefined : String(input.timeout),
+          accountsUrl: input.accountsUrl,
+          json: true,
+        });
+      })
+    )
+  ),
+  'account.keys.list': defineOperation('account.keys.list', async (input) =>
+    runCommandForJson('account.keys.list', async () => {
+      await accountKeysList({
+        provider: input.provider,
+        json: true,
+      });
+    })
+  ),
+  'account.keys.push': defineOperation('account.keys.push', async (input) =>
+    runCommandForJson('account.keys.push', async () => {
+      await accountKeysPush(input.provider, input.key, {
+        label: input.label,
+        json: true,
+      });
+    })
+  ),
+  'account.keys.delete': defineOperation('account.keys.delete', async (input) =>
+    runCommandForJson('account.keys.delete', async () => {
+      await accountKeysDelete(input.keyId, {
+        provider: input.provider,
+        json: true,
+      });
+    })
+  ),
   'account.logout': defineOperation('account.logout', async () =>
     runCommandForJson('account.logout', async () => {
       await accountLogout({ json: true });
@@ -362,6 +443,56 @@ export const operationRegistry = {
   'daemon.uninstall': defineOperation('daemon.uninstall', async () =>
     runCommandForText(async () => {
       await daemonUninstall({});
+    })
+  ),
+  'serve.status': defineOperation('serve.status', async () =>
+    runCommandForJson('serve.status', async () => {
+      await serve(undefined, { json: true });
+    })
+  ),
+  'serve.start': defineOperation('serve.start', async () =>
+    runCommandForText(async () => {
+      await serve('start', { json: true });
+    })
+  ),
+  'serve.stop': defineOperation('serve.stop', async () =>
+    runCommandForText(async () => {
+      await serve('stop', { json: true });
+    })
+  ),
+  'serve.restart': defineOperation('serve.restart', async () =>
+    runCommandForText(async () => {
+      await serve('restart', { json: true });
+    })
+  ),
+  'serve.logs': defineOperation('serve.logs', async () =>
+    runCommandForText(async () => {
+      await serve('logs');
+    })
+  ),
+  'init.run': defineOperation('init.run', async (input) =>
+    runCommandForText(async () => {
+      await init({
+        yes: input.yes ?? true,
+        force: input.force,
+      });
+    })
+  ),
+  'update.run': defineOperation('update.run', async (input) =>
+    runCommandForJson('update.run', async () => {
+      await updateCommand({
+        components: input.components,
+        target: input.target,
+        remoteHost: input.remoteHost,
+        remoteUser: input.remoteUser,
+        identityFile: input.identityFile,
+        localRoot: input.localRoot,
+        remoteRoot: input.remoteRoot,
+        dryRun: input.dryRun,
+        build: input.build,
+        pull: input.pull,
+        json: true,
+      });
     })
   ),
   'sessions.list': defineOperation('sessions.list', async (input) =>

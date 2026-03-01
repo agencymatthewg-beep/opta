@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Opta Code - Horizontal Align (V1: Perfect Centering)</title>
+<style>
+  @font-face {
+    font-family: 'Sora';
+    src: url('https://fonts.gstatic.com/s/sora/v12/xMQOuFFYT72X5wkB_18qmnndmSdSn3-KIwNhBti0.woff2') format('woff2');
+    font-weight: 600;
+  }
+  @font-face {
+    font-family: 'JetBrains Mono';
+    src: url('https://fonts.gstatic.com/s/jetbrainsmono/v18/tDbY2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKxTOVN_1w.woff2') format('woff2');
+    font-weight: 600;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(ellipse at center, #0d0c14 0%, #09090b 70%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+  }
+  canvas {
+    position: absolute;
+    top: 0; left: 0;
+    width: 600px;
+    height: 600px;
+    pointer-events: none;
+  }
+  .logo {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 28px;
+  }
+  .wordmark {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    font-family: 'Sora', system-ui, -apple-system, sans-serif;
+    font-size: 20px;
+    font-weight: 600;
+  }
+  .opta-local { color: #71717a; }
+  .app-text { color: #a855f7; }
+  .divider {
+    width: 1px;
+    height: 14px;
+    background: rgba(113,113,122,0.35);
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="logo">
+
+  <svg width="210" height="210" viewBox="0 0 210 210" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <filter id="ringGlow" x="-30%" y="-30%" width="160%" height="160%">
+        <feGaussianBlur stdDeviation="3.5" result="blur"/>
+        <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+      </filter>
+      <filter id="starBloom" x="-200%" y="-200%" width="500%" height="500%">
+        <feGaussianBlur stdDeviation="4" result="blur"/>
+        <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+      </filter>
+      <filter id="cyanGlow" x="-50%" y="-50%" width="200%" height="200%">
+        <feGaussianBlur stdDeviation="2" result="blur"/>
+        <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+      </filter>
+      <radialGradient id="voidFill" cx="50%" cy="50%" r="50%">
+        <stop offset="0%"   stop-color="#100e18"/>
+        <stop offset="60%"  stop-color="#0c0a14"/>
+        <stop offset="100%" stop-color="#09090b"/>
+      </radialGradient>
+      <linearGradient id="ringHighlight" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%"   stop-color="#c084fc" stop-opacity="0.9"/>
+        <stop offset="25%"  stop-color="#a855f7" stop-opacity="0.7"/>
+        <stop offset="55%"  stop-color="#7c3aed" stop-opacity="0.4"/>
+        <stop offset="100%" stop-color="#4c1d95" stop-opacity="0.15"/>
+      </linearGradient>
+      <radialGradient id="centreBloom" cx="50%" cy="50%" r="50%">
+        <stop offset="0%"   stop-color="#f5d0fe" stop-opacity="1"/>
+        <stop offset="30%"  stop-color="#e879f9" stop-opacity="0.6"/>
+        <stop offset="100%" stop-color="#a855f7" stop-opacity="0"/>
+      </radialGradient>
+      <radialGradient id="outerGlow" cx="50%" cy="50%" r="50%">
+        <stop offset="70%"  stop-color="#a855f7" stop-opacity="0"/>
+        <stop offset="85%"  stop-color="#a855f7" stop-opacity="0.06"/>
+        <stop offset="100%" stop-color="#a855f7" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+
+    <circle cx="105" cy="105" r="100" fill="url(#outerGlow)"/>
+    <circle cx="105" cy="105" r="88" fill="url(#voidFill)"/>
+    <circle cx="105" cy="105" r="96" stroke="#a855f7" stroke-width="6" stroke-opacity="0.06" fill="none"/>
+    <circle cx="105" cy="105" r="93" stroke="#a855f7" stroke-width="3" stroke-opacity="0.10" fill="none"/>
+    <circle cx="105" cy="105" r="90" stroke="url(#ringHighlight)" stroke-width="1.6" fill="none" filter="url(#ringGlow)"/>
+    <circle cx="105" cy="105" r="87" stroke="#a855f7" stroke-width="0.6" stroke-opacity="0.12" fill="none"/>
+
+    <g transform="translate(105, 105)">
+      <!-- === BACKGROUND MARK: Concentric Data Rings === -->
+      <g filter="url(#ringGlow)">
+        <!-- Layered Rings -->
+        <circle cx="0" cy="0" r="32" stroke="#a855f7" stroke-width="0.5" stroke-opacity="0.25" fill="none" stroke-dasharray="1 3" />
+        <circle cx="0" cy="0" r="48" stroke="#a855f7" stroke-width="1.0" stroke-opacity="0.15" fill="none" stroke-dasharray="4 6" />
+        <circle cx="0" cy="0" r="64" stroke="#a855f7" stroke-width="0.6" stroke-opacity="0.10" fill="none" stroke-dasharray="12 4 2 4" />
+        
+        <!-- Axis ticks on rings -->
+        <line x1="-68" y1="0" x2="-28" y2="0" stroke="#a855f7" stroke-width="0.6" stroke-opacity="0.2" />
+        <line x1="68" y1="0" x2="28" y2="0" stroke="#a855f7" stroke-width="0.6" stroke-opacity="0.2" />
+        <line x1="0" y1="-68" x2="0" y2="-28" stroke="#a855f7" stroke-width="0.6" stroke-opacity="0.2" />
+        <line x1="0" y1="68" x2="0" y2="28" stroke="#a855f7" stroke-width="0.6" stroke-opacity="0.2" />
+        
+        <!-- Nodes on the primary ring -->
+        <circle cx="-34" cy="-34" r="1.5" fill="#a855f7" fill-opacity="0.4" />
+        <circle cx="34" cy="-34" r="1.5" fill="#a855f7" fill-opacity="0.4" />
+        <circle cx="-34" cy="34" r="1.5" fill="#a855f7" fill-opacity="0.4" />
+        <circle cx="34" cy="34" r="1.5" fill="#a855f7" fill-opacity="0.4" />
+
+        <!-- 4 Core Capabilities -->
+        <g stroke="#a855f7" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.65">
+          <!-- TOP: Project Folder -->
+          <g transform="translate(0, -64) scale(1.2)">
+            <path d="M-8,-5 L-4,-5 L-2,-2 L8,-2 L8,6 L-8,6 Z" stroke-width="1.2" />
+            <line x1="-8" y1="-2" x2="-2" y2="-2" stroke-width="1.2" />
+          </g>
+          <!-- BOTTOM: Magnifying Glass -->
+          <g transform="translate(0, 64) scale(1.2)">
+            <circle cx="-2" cy="-2" r="4" stroke-width="1.2" />
+            <line x1="1" y1="1" x2="6" y2="6" stroke-width="1.5" />
+          </g>
+          <!-- LEFT: CEO Text -->
+          <g transform="translate(-66, 0)">
+            <text x="0" y="0" font-family="'JetBrains Mono', monospace" font-size="12" font-weight="600" fill="#a855f7" stroke="none" text-anchor="middle" dominant-baseline="middle" letter-spacing="0.05em">CEO</text>
+          </g>
+          <!-- RIGHT: 1hr+ Text -->
+          <g transform="translate(66, 0)">
+             <text x="0" y="0" font-family="'JetBrains Mono', monospace" font-size="12" font-weight="600" fill="#a855f7" stroke="none" text-anchor="middle" dominant-baseline="middle" letter-spacing="0">1hr+</text>
+          </g>
+        </g>
+      </g>
+
+      <!-- === FOREGROUND MARK: The Cyan Code Brackets === -->
+      <path d="M-22,-28 L-42,0 L-22,28" fill="none" stroke="#06b6d4" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" filter="url(#cyanGlow)" stroke-opacity="0.9"/>
+      <path d="M22,-28 L42,0 L22,28" fill="none" stroke="#06b6d4" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" filter="url(#cyanGlow)" stroke-opacity="0.9"/>
+      <line x1="12" y1="-32" x2="-12" y2="32" stroke="#a855f7" stroke-width="2.5" stroke-linecap="round" filter="url(#starBloom)" stroke-opacity="0.6"/>
+
+      <!-- === DESKTOP OS LOGOS (Horizontally aligned along Y=0) === -->
+      <!-- Mac (Apple silhouette) - Inner Left -->
+      <g transform="translate(-16, 0) scale(1.0)" filter="url(#ringGlow)" opacity="0.8">
+        <path d="M0,3 C1.5,3 2.5,2 3,0 C3.5,-2 2,-4 0,-4 C-2,-4 -3.5,-2 -3,0 C-2.5,2 -1.5,3 0,3 Z" fill="#a855f7" />
+        <path d="M1,-4.5 C1,-6 0,-7 -1,-6.5 C-1.5,-6 -1,-5 1,-4.5 Z" fill="#a855f7" />
+      </g>
+
+      <!-- Windows (Window Pane) - Inner Right -->
+      <g transform="translate(16, 0) scale(1.05)" filter="url(#ringGlow)" opacity="0.8">
+        <path d="M-3,-3 L-0.5,-3.5 L-0.5,-0.5 L-3,-0.5 Z" fill="#a855f7" />
+        <path d="M0.5,-3.5 L3.5,-4 L3.5,-0.5 L0.5,-0.5 Z" fill="#a855f7" />
+        <path d="M-3,0.5 L-0.5,0.5 L-0.5,3 L-3,2.5 Z" fill="#a855f7" />
+        <path d="M0.5,0.5 L3.5,0.5 L3.5,3.5 L0.5,3 Z" fill="#a855f7" />
+      </g>
+
+    </g>
+
+    <circle cx="105" cy="105" r="20" fill="url(#centreBloom)" fill-opacity="0.18"/>
+
+  </svg>
+
+  <div class="wordmark">
+    <span class="opta-local">opta local</span>
+    <div class="divider"></div>
+    <span class="app-text">code</span>
+  </div>
+</div>
+
+<script>
+const c = document.getElementById('c');
+const ctx = c.getContext('2d');
+c.width = 600;
+c.height = 600;
+const cx = 300, cy = 267;
+
+const particles = [];
+const N = 120;
+for (let i = 0; i < N; i++) {
+  const angle = Math.random() * Math.PI * 2;
+  const t = Math.pow(Math.random(), 2.2);
+  const r = 30 + t * 200;
+  const distFactor = 1 - (r / 240);
+  const violet = Math.random() > 0.35;
+  particles.push({
+    x: cx + Math.cos(angle) * r,
+    y: cy + Math.sin(angle) * r,
+    r: (0.4 + Math.random() * 1.6) * (0.4 + distFactor * 0.8),
+    alpha: (0.06 + Math.random() * 0.25) * (0.3 + distFactor * 0.9),
+    violet
+  });
+}
+
+const sparks = [];
+for (let i = 0; i < 30; i++) {
+  const angle = Math.random() * Math.PI * 2;
+  const t = Math.pow(Math.random(), 3.0);
+  const r = 55 + t * 90;
+  const nearness = 1 - (r / 160);
+  sparks.push({
+    x: cx + Math.cos(angle) * r,
+    y: cy + Math.sin(angle) * r,
+    r: (0.6 + Math.random() * 1.0) * (0.5 + nearness),
+    alpha: (0.4 + Math.random() * 0.6) * (0.4 + nearness * 0.7),
+    violet: Math.random() > 0.25
+  });
+}
+
+function draw() {
+  ctx.clearRect(0, 0, 600, 600);
+  const core = ctx.createRadialGradient(cx, cy, 0, cx, cy, 110);
+  core.addColorStop(0,   'rgba(168,85,247,0.10)');
+  core.addColorStop(0.4, 'rgba(168,85,247,0.06)');
+  core.addColorStop(1,   'rgba(168,85,247,0.00)');
+  ctx.fillStyle = core;
+  ctx.fillRect(0, 0, 600, 600);
+
+  const haze = ctx.createRadialGradient(cx, cy, 60, cx, cy, 300);
+  haze.addColorStop(0,    'rgba(168,85,247,0.04)');
+  haze.addColorStop(0.45, 'rgba(168,85,247,0.02)');
+  haze.addColorStop(1,    'rgba(168,85,247,0.00)');
+  ctx.fillStyle = haze;
+  ctx.fillRect(0, 0, 600, 600);
+
+  particles.forEach(p => {
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    ctx.fillStyle = p.violet
+      ? `rgba(168,85,247,${p.alpha})`
+      : `rgba(250,250,250,${p.alpha * 0.6})`;
+    ctx.fill();
+  });
+
+  sparks.forEach(p => {
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    ctx.fillStyle = p.violet
+      ? `rgba(192,132,252,${p.alpha})`
+      : `rgba(255,255,255,${p.alpha * 0.7})`;
+    ctx.fill();
+  });
+}
+
+draw();
+</script>
+</body>
+</html>

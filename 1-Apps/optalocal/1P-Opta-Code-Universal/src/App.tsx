@@ -12,6 +12,7 @@ import { BackgroundJobsPage } from "./pages/BackgroundJobsPage";
 import { DaemonLogsPage } from "./pages/DaemonLogsPage";
 import { OperationsPage } from "./pages/OperationsPage";
 import { ConfigStudioPage } from "./pages/ConfigStudioPage";
+import { AccountControlPage } from "./pages/AccountControlPage";
 import { DaemonPanel } from "./components/DaemonPanel";
 import {
   downloadAsFile,
@@ -30,7 +31,14 @@ import { getTauriInvoke, isNativeDesktop } from "./lib/runtime";
 import type { PaletteCommand } from "./types";
 import "./opta.css";
 
-type AppPage = "sessions" | "models" | "operations" | "config" | "jobs" | "logs";
+type AppPage =
+  | "sessions"
+  | "models"
+  | "operations"
+  | "config"
+  | "account"
+  | "jobs"
+  | "logs";
 const ACCOUNTS_PORTAL_URL = "https://accounts.optalocal.com";
 
 export type BrowserViewMode = "default" | "expanded" | "minimized";
@@ -313,6 +321,21 @@ function App() {
         run: () => setActivePage("config"),
       },
       {
+        id: "open-account-controls",
+        title: "Open account controls",
+        description:
+          "Manage account auth and account key operations via daemon controls",
+        keywords: [
+          "account",
+          "signup",
+          "login",
+          "logout",
+          "keys",
+          "auth",
+        ],
+        run: () => setActivePage("account"),
+      },
+      {
         id: "open-jobs",
         title: "Open background jobs",
         description: "View and manage daemon background processes",
@@ -525,6 +548,13 @@ function App() {
                 </button>
                 <button
                   type="button"
+                  className={activePage === "account" ? "active" : ""}
+                  onClick={() => setActivePage("account")}
+                >
+                  Account
+                </button>
+                <button
+                  type="button"
                   className={activePage === "jobs" ? "active" : ""}
                   onClick={() => setActivePage("jobs")}
                 >
@@ -584,6 +614,8 @@ function App() {
               <OperationsPage connection={connection} />
             ) : activePage === "config" ? (
               <ConfigStudioPage connection={connection} />
+            ) : activePage === "account" ? (
+              <AccountControlPage connection={connection} />
             ) : activePage === "jobs" ? (
               <BackgroundJobsPage connection={connection} />
             ) : activePage === "logs" ? (

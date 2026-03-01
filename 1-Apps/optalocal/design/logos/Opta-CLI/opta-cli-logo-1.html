@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Opta CLI Logo - Design 1</title>
+  <style>
+    body {
+      background-color: #09090b;
+      color: #fafafa;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      font-family: 'Sora', sans-serif;
+    }
+    .logo-container {
+      position: relative;
+      width: 256px;
+      height: 256px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .grid {
+      position: absolute;
+      inset: 0;
+      background-image: 
+        linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 32px 32px;
+      border-radius: 24px;
+      border: 1px solid #27272a;
+      background-color: #0c0c12;
+    }
+    .label {
+      margin-top: 2rem;
+      font-family: 'JetBrains Mono', monospace;
+      color: #a1a1aa;
+      font-size: 14px;
+      letter-spacing: 1px;
+    }
+  </style>
+</head>
+<body>
+  <div class="logo-container">
+    <div class="grid"></div>
+    <svg width="160" height="160" viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg" style="z-index: 10;">
+      <!-- Ambient Glow -->
+      <circle cx="80" cy="80" r="40" fill="rgba(168,85,247,0.10)" filter="blur(24px)"/>
+      <circle cx="80" cy="80" r="30" fill="rgba(34,197,94,0.15)" filter="blur(16px)"/>
+      
+      <!-- Opta Ring (Tilted Orbit) -->
+      <circle cx="80" cy="80" r="60" stroke="#a855f7" stroke-width="1.5" stroke-opacity="0.4" stroke-dasharray="2 6"/>
+      <ellipse cx="80" cy="80" rx="60" ry="24" transform="rotate(-30 80 80)" stroke="#a855f7" stroke-width="2" stroke-opacity="0.6"/>
+      
+      <!-- CLI Accent (Neon Green Terminal Prompt) -->
+      <path d="M56 68 L72 80 L56 92" stroke="#22c55e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M78 92 L96 92" stroke="#22c55e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+
+      <!-- Singularity Dot -->
+      <circle cx="104" cy="64" r="4" fill="#ffffff" opacity="0.9" style="filter: drop-shadow(0 0 8px rgba(168,85,247,0.8))"/>
+    </svg>
+  </div>
+  <div class="label">DESIGN 1: THE ACTIVE PROMPT</div>
+</body>
+</html>

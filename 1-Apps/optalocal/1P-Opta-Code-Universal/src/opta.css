@@ -3159,6 +3159,268 @@ button.active,
   flex-wrap: wrap;
 }
 
+.account-control-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  height: 100%;
+}
+
+.account-control-header {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--opta-border);
+  border-radius: 12px;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+.account-control-header h2 {
+  margin: 0 0 4px;
+  font-size: 1.25rem;
+  color: var(--opta-text-primary);
+}
+
+.account-control-header p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--opta-text-secondary);
+}
+
+.account-control-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.account-control-meta span {
+  font-size: 0.74rem;
+  color: var(--opta-text-muted);
+  border: 1px solid var(--opta-border);
+  border-radius: 999px;
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.account-control-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.account-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--opta-border);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.18);
+  min-height: 0;
+}
+
+.account-panel header h3 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+  color: var(--opta-text-primary);
+}
+
+.account-panel header p {
+  margin: 0;
+  font-size: 0.76rem;
+  color: var(--opta-text-muted);
+  line-height: 1.4;
+}
+
+.account-inline-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.account-json-label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 0.75rem;
+  color: var(--opta-text-muted);
+}
+
+.account-json-label textarea {
+  width: 100%;
+  min-height: 120px;
+  resize: vertical;
+  border: 1px solid var(--opta-border);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.42);
+  color: var(--opta-text-primary);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.74rem;
+  line-height: 1.45;
+  padding: 10px 12px;
+  outline: none;
+}
+
+.account-json-label textarea:focus {
+  border-color: var(--opta-primary);
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+}
+
+.account-op-notice {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 16px;
+  border: 1px solid var(--opta-border);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.account-op-notice-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.account-op-notice-head strong {
+  font-size: 0.72rem;
+  font-family: "JetBrains Mono", monospace;
+}
+
+.account-op-notice-head span {
+  font-size: 0.82rem;
+}
+
+.account-op-notice-action {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--opta-text-secondary);
+}
+
+.account-op-notice pre {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--opta-border);
+  color: var(--opta-text-secondary);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  max-height: 220px;
+  overflow: auto;
+  white-space: pre-wrap;
+}
+
+.account-op-notice-success {
+  border-color: rgba(16, 185, 129, 0.38);
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.account-op-notice-success .account-op-notice-head {
+  color: rgba(110, 231, 183, 0.95);
+}
+
+.account-op-notice-error {
+  border-color: rgba(239, 68, 68, 0.42);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.account-op-notice-error .account-op-notice-head {
+  color: rgba(252, 165, 165, 0.95);
+}
+
+.account-op-notice-info {
+  border-color: rgba(139, 92, 246, 0.38);
+  background: rgba(139, 92, 246, 0.1);
+}
+
+.account-op-notice-info .account-op-notice-head {
+  color: var(--opta-primary-glow);
+}
+
+.account-keys-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.account-key-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid var(--opta-border);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 10px 12px;
+}
+
+.account-key-row strong {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--opta-text-primary);
+  margin-bottom: 2px;
+}
+
+.account-key-row p {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--opta-text-muted);
+}
+
+.account-result-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid var(--opta-border);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 10px 12px;
+}
+
+.account-result-block h4 {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--opta-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.account-result-block pre {
+  margin: 0;
+  max-height: 220px;
+  overflow: auto;
+  white-space: pre-wrap;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.72rem;
+  color: var(--opta-text-secondary);
+}
+
+.account-empty {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--opta-text-muted);
+}
+
+.account-availability-hint {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(245, 158, 11, 0.36);
+  background: rgba(245, 158, 11, 0.1);
+  color: rgba(251, 191, 36, 0.98);
+  font-size: 0.75rem;
+}
+
 .daemon-offline-hint-error {
   margin-top: 4px;
   color: var(--opta-danger);
@@ -3207,6 +3469,10 @@ button.active,
     flex-direction: column;
   }
 
+  .account-control-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .config-key-catalog {
     flex: 0 0 auto;
     max-height: 260px;
@@ -3215,6 +3481,12 @@ button.active,
 
   .config-editor-panel {
     min-height: 0;
+  }
+}
+
+@media (max-width: 860px) {
+  .account-control-grid {
+    grid-template-columns: 1fr;
   }
 }
 

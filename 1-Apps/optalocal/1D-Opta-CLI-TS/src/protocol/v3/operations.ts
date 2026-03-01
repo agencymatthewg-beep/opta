@@ -12,6 +12,11 @@ export const OPERATION_IDS = [
   'config.list',
   'config.reset',
   'account.status',
+  'account.signup',
+  'account.login',
+  'account.keys.list',
+  'account.keys.push',
+  'account.keys.delete',
   'account.logout',
   'key.create',
   'key.show',
@@ -24,6 +29,13 @@ export const OPERATION_IDS = [
   'daemon.logs',
   'daemon.install',
   'daemon.uninstall',
+  'serve.status',
+  'serve.start',
+  'serve.stop',
+  'serve.restart',
+  'serve.logs',
+  'init.run',
+  'update.run',
   'sessions.list',
   'sessions.search',
   'sessions.export',
@@ -109,6 +121,43 @@ export const OperationInputSchemaById = {
     })
     .strict(),
   'account.status': EmptyInputSchema,
+  'account.signup': z
+    .object({
+      identifier: z.string().min(1),
+      password: z.string().min(1).optional(),
+      name: z.string().min(1).optional(),
+    })
+    .strict(),
+  'account.login': z
+    .object({
+      identifier: z.string().min(1).optional(),
+      password: z.string().min(1).optional(),
+      oauth: z.boolean().optional(),
+      oauthOptaBrowser: z.boolean().optional(),
+      oauthCookieJar: z.string().min(1).optional(),
+      oauthHeadless: z.boolean().optional(),
+      timeout: z.union([z.string().min(1), z.number().int().min(1)]).optional(),
+      accountsUrl: z.string().min(1).optional(),
+    })
+    .strict(),
+  'account.keys.list': z
+    .object({
+      provider: z.string().min(1).optional(),
+    })
+    .strict(),
+  'account.keys.push': z
+    .object({
+      provider: z.string().min(1),
+      key: z.string().min(1),
+      label: z.string().min(1).optional(),
+    })
+    .strict(),
+  'account.keys.delete': z
+    .object({
+      keyId: z.string().min(1),
+      provider: z.string().min(1).optional(),
+    })
+    .strict(),
   'account.logout': EmptyInputSchema,
   'key.create': z
     .object({
@@ -142,6 +191,31 @@ export const OperationInputSchemaById = {
   'daemon.logs': EmptyInputSchema,
   'daemon.install': EmptyInputSchema,
   'daemon.uninstall': EmptyInputSchema,
+  'serve.status': EmptyInputSchema,
+  'serve.start': EmptyInputSchema,
+  'serve.stop': EmptyInputSchema,
+  'serve.restart': EmptyInputSchema,
+  'serve.logs': EmptyInputSchema,
+  'init.run': z
+    .object({
+      yes: z.boolean().optional(),
+      force: z.boolean().optional(),
+    })
+    .strict(),
+  'update.run': z
+    .object({
+      components: z.string().min(1).optional(),
+      target: z.enum(['auto', 'local', 'remote', 'both']).optional(),
+      remoteHost: z.string().min(1).optional(),
+      remoteUser: z.string().min(1).optional(),
+      identityFile: z.string().min(1).optional(),
+      localRoot: z.string().min(1).optional(),
+      remoteRoot: z.string().min(1).optional(),
+      dryRun: z.boolean().optional(),
+      build: z.boolean().optional(),
+      pull: z.boolean().optional(),
+    })
+    .strict(),
   'sessions.list': z
     .object({
       model: z.string().min(1).optional(),
@@ -251,6 +325,43 @@ const TextCommandOutputSchema = z
   })
   .strict();
 
+const AccountUserSchema = z
+  .object({
+    id: z.string().nullable(),
+    email: z.string().nullable(),
+    phone: z.string().nullable(),
+    name: z.string().nullable(),
+  })
+  .strict();
+
+const AccountSessionSchema = z
+  .object({
+    tokenType: z.string().nullable(),
+    expiresAt: z.string().nullable(),
+  })
+  .nullable();
+
+const AccountAuthActionSchema = z
+  .object({
+    ok: z.literal(true),
+    action: z.enum(['signup', 'login']),
+    project: z.string().min(1),
+    authenticated: z.boolean(),
+    user: AccountUserSchema,
+    session: AccountSessionSchema,
+    mode: z.string().optional(),
+  })
+  .strict();
+
+const AccountCloudKeySchema = z
+  .object({
+    id: z.string().min(1),
+    provider: z.string().min(1),
+    label: z.string().nullable().optional(),
+    updatedAt: z.string().nullable().optional(),
+  })
+  .passthrough();
+
 const SessionSummarySchema = z
   .object({
     id: z.string().min(1),
@@ -284,21 +395,38 @@ export const OperationOutputSchemaById = {
       ok: z.literal(true),
       authenticated: z.boolean(),
       project: z.string().nullable(),
-      user: z
-        .object({
-          id: z.string().nullable(),
-          email: z.string().nullable(),
-          phone: z.string().nullable(),
-          name: z.string().nullable(),
-        })
-        .strict(),
-      session: z
-        .object({
-          tokenType: z.string().nullable(),
-          expiresAt: z.string().nullable(),
-        })
-        .nullable(),
+      user: AccountUserSchema,
+      session: AccountSessionSchema,
       updatedAt: z.string().nullable(),
+    })
+    .strict(),
+  'account.signup': AccountAuthActionSchema,
+  'account.login': AccountAuthActionSchema,
+  'account.keys.list': z.union([
+    z
+      .object({
+        ok: z.literal(true),
+        keys: z.array(AccountCloudKeySchema),
+      })
+      .strict(),
+    z
+      .object({
+        ok: z.literal(false),
+        error: z.string().min(1),
+      })
+      .strict(),
+  ]),
+  'account.keys.push': z
+    .object({
+      ok: z.boolean(),
+      provider: z.string().min(1),
+      label: z.string().min(1),
+    })
+    .strict(),
+  'account.keys.delete': z
+    .object({
+      ok: z.boolean(),
+      keyId: z.string().min(1),
     })
     .strict(),
   'account.logout': z
@@ -328,6 +456,17 @@ export const OperationOutputSchemaById = {
   'daemon.logs': z.unknown(),
   'daemon.install': TextCommandOutputSchema,
   'daemon.uninstall': TextCommandOutputSchema,
+  'serve.status': z
+    .object({
+      running: z.boolean(),
+    })
+    .passthrough(),
+  'serve.start': TextCommandOutputSchema,
+  'serve.stop': TextCommandOutputSchema,
+  'serve.restart': TextCommandOutputSchema,
+  'serve.logs': TextCommandOutputSchema,
+  'init.run': TextCommandOutputSchema,
+  'update.run': z.unknown(),
   'sessions.list': z.array(SessionSummarySchema),
   'sessions.search': z.array(SessionSummarySchema),
   'sessions.export': z.unknown(),
@@ -374,6 +513,11 @@ export const OperationExecuteRequestSchema = z.discriminatedUnion('id', [
   makeExecuteRequestVariant('config.list'),
   makeExecuteRequestVariant('config.reset'),
   makeExecuteRequestVariant('account.status'),
+  makeExecuteRequestVariant('account.signup'),
+  makeExecuteRequestVariant('account.login'),
+  makeExecuteRequestVariant('account.keys.list'),
+  makeExecuteRequestVariant('account.keys.push'),
+  makeExecuteRequestVariant('account.keys.delete'),
   makeExecuteRequestVariant('account.logout'),
   makeExecuteRequestVariant('key.create'),
   makeExecuteRequestVariant('key.show'),
@@ -386,6 +530,13 @@ export const OperationExecuteRequestSchema = z.discriminatedUnion('id', [
   makeExecuteRequestVariant('daemon.logs'),
   makeExecuteRequestVariant('daemon.install'),
   makeExecuteRequestVariant('daemon.uninstall'),
+  makeExecuteRequestVariant('serve.status'),
+  makeExecuteRequestVariant('serve.start'),
+  makeExecuteRequestVariant('serve.stop'),
+  makeExecuteRequestVariant('serve.restart'),
+  makeExecuteRequestVariant('serve.logs'),
+  makeExecuteRequestVariant('init.run'),
+  makeExecuteRequestVariant('update.run'),
   makeExecuteRequestVariant('sessions.list'),
   makeExecuteRequestVariant('sessions.search'),
   makeExecuteRequestVariant('sessions.export'),
@@ -532,6 +683,36 @@ export const OPERATION_TAXONOMY = [
     safety: 'read',
   },
   {
+    id: 'account.signup',
+    title: 'Account Signup',
+    description: 'Create an Opta account using email/phone credentials.',
+    safety: 'write',
+  },
+  {
+    id: 'account.login',
+    title: 'Account Login',
+    description: 'Authenticate to Opta account via credentials or OAuth.',
+    safety: 'write',
+  },
+  {
+    id: 'account.keys.list',
+    title: 'Account Keys List',
+    description: 'List cloud-synced account API keys.',
+    safety: 'read',
+  },
+  {
+    id: 'account.keys.push',
+    title: 'Account Keys Push',
+    description: 'Store a provider API key in account cloud storage.',
+    safety: 'write',
+  },
+  {
+    id: 'account.keys.delete',
+    title: 'Account Keys Delete',
+    description: 'Delete a cloud-synced provider API key by id.',
+    safety: 'write',
+  },
+  {
     id: 'account.logout',
     title: 'Account Logout',
     description: 'Clear local account session and revoke remote auth token when available.',
@@ -602,6 +783,48 @@ export const OPERATION_TAXONOMY = [
     title: 'Daemon Uninstall',
     description: 'Uninstall daemon system service registration.',
     safety: 'dangerous',
+  },
+  {
+    id: 'serve.status',
+    title: 'Serve Status',
+    description: 'Inspect Opta LMX service reachability and health.',
+    safety: 'read',
+  },
+  {
+    id: 'serve.start',
+    title: 'Serve Start',
+    description: 'Start Opta LMX inference service.',
+    safety: 'write',
+  },
+  {
+    id: 'serve.stop',
+    title: 'Serve Stop',
+    description: 'Stop Opta LMX inference service.',
+    safety: 'write',
+  },
+  {
+    id: 'serve.restart',
+    title: 'Serve Restart',
+    description: 'Restart Opta LMX inference service.',
+    safety: 'write',
+  },
+  {
+    id: 'serve.logs',
+    title: 'Serve Logs',
+    description: 'Tail recent Opta LMX service log output.',
+    safety: 'read',
+  },
+  {
+    id: 'init.run',
+    title: 'Init Run',
+    description: 'Initialize OPIS docs in the current project workspace.',
+    safety: 'write',
+  },
+  {
+    id: 'update.run',
+    title: 'Update Run',
+    description: 'Run Opta component updates for configured targets.',
+    safety: 'write',
   },
   {
     id: 'sessions.list',

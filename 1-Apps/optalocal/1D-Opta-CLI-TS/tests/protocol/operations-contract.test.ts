@@ -23,6 +23,11 @@ describe('v3 operations contract', () => {
       'config.list',
       'config.reset',
       'account.status',
+      'account.signup',
+      'account.login',
+      'account.keys.list',
+      'account.keys.push',
+      'account.keys.delete',
       'account.logout',
       'key.create',
       'key.show',
@@ -35,6 +40,13 @@ describe('v3 operations contract', () => {
       'daemon.logs',
       'daemon.install',
       'daemon.uninstall',
+      'serve.status',
+      'serve.start',
+      'serve.stop',
+      'serve.restart',
+      'serve.logs',
+      'init.run',
+      'update.run',
       'sessions.list',
       'sessions.search',
       'sessions.export',
@@ -132,6 +144,67 @@ describe('v3 operations contract', () => {
       OperationExecuteRequestSchema.parse({
         id: 'diff',
         input: { unknown: true },
+      })
+    ).toThrow();
+
+    expect(
+      OperationExecuteRequestSchema.parse({
+        id: 'account.keys.push',
+        input: {
+          provider: 'anthropic',
+          key: 'test-key',
+          label: 'default',
+        },
+      })
+    ).toMatchObject({ id: 'account.keys.push' });
+
+    expect(() =>
+      OperationExecuteRequestSchema.parse({
+        id: 'account.keys.push',
+        input: {
+          provider: 'anthropic',
+          key: '',
+        },
+      })
+    ).toThrow();
+
+    expect(
+      OperationExecuteRequestSchema.parse({
+        id: 'serve.logs',
+        input: {},
+      })
+    ).toMatchObject({ id: 'serve.logs' });
+
+    expect(() =>
+      OperationExecuteRequestSchema.parse({
+        id: 'serve.logs',
+        input: { tail: 20 },
+      })
+    ).toThrow();
+
+    expect(
+      OperationExecuteRequestSchema.parse({
+        id: 'init.run',
+        input: { yes: true, force: false },
+      })
+    ).toMatchObject({ id: 'init.run' });
+
+    expect(
+      OperationExecuteRequestSchema.parse({
+        id: 'update.run',
+        input: {
+          target: 'local',
+          dryRun: true,
+        },
+      })
+    ).toMatchObject({ id: 'update.run' });
+
+    expect(() =>
+      OperationExecuteRequestSchema.parse({
+        id: 'update.run',
+        input: {
+          target: 'invalid-target',
+        },
       })
     ).toThrow();
 
