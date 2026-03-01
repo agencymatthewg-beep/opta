@@ -19,7 +19,7 @@ export interface Guide {
   updatedAt: string;
 }
 
-import { lmxOverview } from './lmx-overview';
+import { lmxOverview } from './lmx';
 
 export const allGuides: Guide[] = [
   lmxOverview,
