@@ -20,6 +20,8 @@ import {
   keychainStatus,
 } from '../keychain/api-keys.js';
 import { isKeychainAvailable } from '../keychain/index.js';
+import { loadAccountState } from '../accounts/storage.js';
+import { listCloudApiKeys } from '../accounts/cloud.js';
 
 type KeychainAction =
   | 'status'
@@ -77,18 +79,44 @@ async function handleStatus(): Promise<void> {
         '  Set ANTHROPIC_API_KEY / OPTA_API_KEY as environment variables instead.',
       ),
     );
-    return;
+  } else {
+    const anthropicLabel = status.anthropic
+      ? chalk.green('stored')
+      : chalk.dim('not stored');
+    const lmxLabel = status.lmx
+      ? chalk.green('stored')
+      : chalk.dim('not stored');
+
+    console.log(`  Anthropic API key: ${anthropicLabel}`);
+    console.log(`  LMX API key:       ${lmxLabel}`);
   }
 
-  const anthropicLabel = status.anthropic
-    ? chalk.green('stored')
-    : chalk.dim('not stored');
-  const lmxLabel = status.lmx
-    ? chalk.green('stored')
-    : chalk.dim('not stored');
+  // Cloud keys section
+  console.log('');
+  try {
+    const state = await loadAccountState();
+    if (!state?.session?.access_token) {
+      console.log(chalk.dim('Cloud keys: not signed in'));
+      return;
+    }
 
-  console.log(`  Anthropic API key: ${anthropicLabel}`);
-  console.log(`  LMX API key:       ${lmxLabel}`);
+    const keys = await listCloudApiKeys(state);
+    if (keys.length === 0) {
+      console.log(chalk.dim('Cloud keys (Opta Account): none'));
+      return;
+    }
+
+    console.log(`Cloud keys (Opta Account):`);
+    for (const key of keys) {
+      const updated = key.updatedAt
+        ? chalk.dim(new Date(key.updatedAt).toLocaleDateString())
+        : '';
+      const label = key.label ? chalk.dim(`(${key.label})`) : '';
+      console.log(`  ${key.provider.padEnd(14)} ${label} ${updated}`);
+    }
+  } catch {
+    console.log(chalk.dim('Cloud keys: unavailable'));
+  }
 }
 
 async function handleSet(

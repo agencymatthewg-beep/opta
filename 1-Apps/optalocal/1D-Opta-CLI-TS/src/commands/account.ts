@@ -22,7 +22,13 @@ import {
   loadAccountState,
   saveAccountState,
 } from '../accounts/storage.js';
-import { registerCliDevice, upsertSessionRecord } from '../accounts/cloud.js';
+import {
+  registerCliDevice,
+  upsertSessionRecord,
+  listCloudApiKeys,
+  storeCloudApiKey,
+  deleteCloudApiKey,
+} from '../accounts/cloud.js';
 import { EXIT, type ExitCode, ExitError } from '../core/errors.js';
 
 interface AccountAuthOptions {
@@ -930,6 +936,143 @@ export async function accountStatus(opts: AccountCommandOptions = {}): Promise<v
   console.log(chalk.dim(`  Project: ${state.project}`));
   if (payload.session?.expiresAt) {
     console.log(chalk.dim(`  Expires: ${payload.session.expiresAt}`));
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Cloud API Key Management
+// ---------------------------------------------------------------------------
+
+interface AccountKeysListOptions {
+  provider?: string;
+  json?: boolean;
+}
+
+interface AccountKeysPushOptions {
+  label?: string;
+  json?: boolean;
+}
+
+interface AccountKeysDeleteOptions {
+  provider?: string;
+  json?: boolean;
+}
+
+export async function accountKeysList(opts: AccountKeysListOptions = {}): Promise<void> {
+  const state = await loadAccountState();
+  if (!state?.session?.access_token) {
+    if (opts.json) {
+      console.log(JSON.stringify({ ok: false, error: 'Not signed in' }, null, 2));
+    } else {
+      console.error(chalk.red('✗') + ' Not signed in — run `opta account login`');
+    }
+    process.exitCode = 1;
+    return;
+  }
+
+  const keys = await listCloudApiKeys(state, opts.provider);
+
+  if (opts.json) {
+    console.log(JSON.stringify({ ok: true, keys }, null, 2));
+    return;
+  }
+
+  if (keys.length === 0) {
+    const scope = opts.provider ? ` for provider ${chalk.cyan(opts.provider)}` : '';
+    console.log(chalk.dim(`No cloud API keys found${scope}.`));
+    return;
+  }
+
+  // Table header
+  const header = `${chalk.bold('Provider'.padEnd(16))}${chalk.bold('Label'.padEnd(16))}${chalk.bold('Updated'.padEnd(24))}${chalk.bold('ID')}`;
+  console.log(header);
+  console.log(chalk.dim('─'.repeat(64)));
+
+  for (const key of keys) {
+    const provider = key.provider.padEnd(16);
+    const label = (key.label ?? chalk.dim('—')).padEnd(16);
+    const updated = key.updatedAt
+      ? new Date(key.updatedAt).toLocaleString().padEnd(24)
+      : chalk.dim('—'.padEnd(24));
+    const id = chalk.dim(key.id.slice(0, 8));
+    console.log(`${provider}${label}${updated}${id}`);
+  }
+}
+
+export async function accountKeysPush(
+  provider: string,
+  keyValue: string,
+  opts: AccountKeysPushOptions = {},
+): Promise<void> {
+  const state = await loadAccountState();
+  if (!state?.session?.access_token) {
+    if (opts.json) {
+      console.log(JSON.stringify({ ok: false, error: 'Not signed in' }, null, 2));
+    } else {
+      console.error(chalk.red('✗') + ' Not signed in — run `opta account login`');
+    }
+    process.exitCode = 1;
+    return;
+  }
+
+  const label = opts.label ?? 'default';
+  const success = await storeCloudApiKey(state, provider, keyValue, label);
+
+  if (opts.json) {
+    console.log(JSON.stringify({ ok: success, provider, label }, null, 2));
+    return;
+  }
+
+  if (success) {
+    console.log(chalk.green('✓') + ` Key stored to cloud for ${chalk.cyan(provider)} (label: ${label})`);
+  } else {
+    console.error(chalk.red('✗') + ' Failed to store key — check your Opta Account connection');
+    process.exitCode = 1;
+  }
+}
+
+export async function accountKeysDelete(
+  keyId: string,
+  opts: AccountKeysDeleteOptions = {},
+): Promise<void> {
+  const state = await loadAccountState();
+  if (!state?.session?.access_token) {
+    if (opts.json) {
+      console.log(JSON.stringify({ ok: false, error: 'Not signed in' }, null, 2));
+    } else {
+      console.error(chalk.red('✗') + ' Not signed in — run `opta account login`');
+    }
+    process.exitCode = 1;
+    return;
+  }
+
+  // Confirmation prompt
+  if (process.stdin.isTTY) {
+    const rl = createInterface({ input: process.stdin, output: process.stdout });
+    const answer = await new Promise<string>((resolve) => {
+      rl.question(`Delete key ${chalk.dim(keyId.slice(0, 8))}? [y/N]: `, (ans) => {
+        rl.close();
+        resolve(ans);
+      });
+    });
+    if (answer.trim().toLowerCase() !== 'y') {
+      console.log(chalk.dim('Cancelled.'));
+      return;
+    }
+  }
+
+  const success = await deleteCloudApiKey(state, keyId, opts.provider);
+
+  if (opts.json) {
+    console.log(JSON.stringify({ ok: success, keyId }, null, 2));
+    return;
+  }
+
+  if (success) {
+    console.log(chalk.green('✓') + ` Key ${chalk.dim(keyId.slice(0, 8))} deleted from cloud.`);
+  } else {
+    console.error(chalk.red('✗') + ' Failed to delete key — check the ID and your Opta Account connection');
+    process.exitCode = 1;
   }
 }
 

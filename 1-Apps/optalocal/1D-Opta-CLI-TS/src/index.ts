@@ -656,6 +656,40 @@ keyCmd
     await keyCopy(opts);
   });
 
+const accountKeysCmd = accountCmd
+  .command('keys')
+  .description('Manage cloud-synced API keys');
+
+accountKeysCmd
+  .command('list')
+  .description('List cloud API keys')
+  .option('--provider <provider>', 'filter by provider name')
+  .option('--json', 'machine-readable output')
+  .action(async (opts: { provider?: string; json?: boolean }) => {
+    const { accountKeysList } = await import('./commands/account.js');
+    await accountKeysList(opts);
+  });
+
+accountKeysCmd
+  .command('push <provider> <key>')
+  .description('Store an API key in the cloud')
+  .option('--label <label>', 'key label (default: default)')
+  .option('--json', 'machine-readable output')
+  .action(async (provider: string, key: string, opts: { label?: string; json?: boolean }) => {
+    const { accountKeysPush } = await import('./commands/account.js');
+    await accountKeysPush(provider, key, opts);
+  });
+
+accountKeysCmd
+  .command('delete <id>')
+  .description('Delete a cloud API key by ID')
+  .option('--provider <provider>', 'provider hint for cache invalidation')
+  .option('--json', 'machine-readable output')
+  .action(async (id: string, opts: { provider?: string; json?: boolean }) => {
+    const { accountKeysDelete } = await import('./commands/account.js');
+    await accountKeysDelete(id, opts);
+  });
+
 accountCmd
   .command('logout')
   .description('Log out and clear local account session')
