@@ -25,6 +25,9 @@ Apps are organized into three domain folders. **Each app with a `CLAUDE.md` has 
 | 1M | Opta LMX | `optalocal/1M-Opta-LMX` | Python (MLX inference server) | ✓ |
 | 1O | Opta Init | `optalocal/1O-Opta-Init` | Web (Next.js 15, download/setup landing) | ✓ |
 | 1P | Opta Code Desktop | `optalocal/1P-Opta-Code-Desktop` | Electron/Vite (TypeScript) | ✓ |
+| 1S | Opta Status | `optalocal/1S-Opta-Status` | Web (Next.js 16, status.optalocal.com) | — |
+| 1T | Opta Home | `optalocal/1T-Opta-Home` | Web (Next.js 16, optalocal.com landing) | — |
+| 1U | Opta Help | `optalocal/1U-Opta-Help` | Web (Next.js 16, help.optalocal.com docs) | ✓ |
 
 ### shared/ — cross-domain
 
@@ -38,7 +41,7 @@ Apps are organized into three domain folders. **Each app with a `CLAUDE.md` has 
 
 | Prefix | App | Platform | Has own CLAUDE.md |
 |--------|-----|----------|-------------------|
-| 1P | Opta Accounts | Web (Next.js 16, SSO portal) | ✓ |
+| 1R | Opta Accounts | Web (Next.js 16, SSO portal) | ✓ |
 | 1Q | Opta Other | Utility apps (kimi-proxy, pa-messenger, phone-bridge) | — |
 
 ---
@@ -61,13 +64,15 @@ Opta Local Web  localhost:3004         (1L-Opta-Local/web/)
 **LMX** is Apple Silicon only (MLX), OpenAI API-compatible, and must never crash on OOM — unload and degrade instead.
 **Opta Local Web** is a React dashboard that connects directly to LMX (no intermediate backend). It runs in two modes: LAN (no auth) and Cloud (Supabase auth via Cloudflare Tunnel).
 
+**Opta48 policy: never host local models.** Use Mono512 as inference host.
+
 Operational commands:
 ```bash
 # CLI daemon
 cd optalocal/1D-Opta-CLI-TS && npm run dev -- daemon start
 
-# LMX inference server
-cd optalocal/1M-Opta-LMX && python -m opta_lmx
+# LMX inference server (Mono512 only; never host on Opta48)
+# Operate remotely on Mono512 or consume via LAN endpoint 192.168.188.11:1234
 
 # Web dashboard
 cd optalocal/1L-Opta-Local/web && npm run dev   # http://localhost:3004
