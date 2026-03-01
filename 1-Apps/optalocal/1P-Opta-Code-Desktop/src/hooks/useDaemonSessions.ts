@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useLocalStorage } from "./useLocalStorage";
 import { daemonClient } from "../lib/daemonClient";
 import {
   clearToken,
@@ -221,6 +222,22 @@ function eventsToTimelineItems(
   return items;
 }
 
+// ── Tauri invoke bridge for session persistence ────────────────────────────
+type TauriInvoke = (
+  command: string,
+  args?: Record<string, unknown>,
+) => Promise<unknown>;
+
+interface TauriBridge {
+  core?: { invoke?: TauriInvoke };
+}
+
+function getTauriInvoke(): TauriInvoke | null {
+  const bridge = (globalThis as { __TAURI__?: TauriBridge }).__TAURI__;
+  const fn_ = bridge?.core?.invoke;
+  return typeof fn_ === "function" ? fn_ : null;
+}
+
 // ── WS handle kept per session in a stable ref map ─────────────────────────
 interface WsHandle {
   close: () => void;
@@ -275,8 +292,8 @@ export function useDaemonSessions() {
           if (!loadedToken) return;
           setConnectionRaw((current) =>
             current.host === next.host &&
-            current.port === next.port &&
-            !current.token
+              current.port === next.port &&
+              !current.token
               ? { ...current, token: loadedToken }
               : current,
           );
@@ -287,8 +304,8 @@ export function useDaemonSessions() {
     }
   }, []);
 
-  const [sessions, setSessions] = useState<DaemonSessionSummary[]>([]);
-  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [sessions, setSessions] = useLocalStorage<DaemonSessionSummary[]>("opta:sessions", []);
+  const [activeSessionId, setActiveSessionId] = useLocalStorage<string | null>("opta:activeSessionId", null);
   const [timelineBySession, setTimelineBySession] = useState<
     Record<string, TimelineItem[]>
   >({});
@@ -407,6 +424,15 @@ export function useDaemonSessions() {
         if (typeof envelope.seq === "number") {
           cursor.seq = envelope.seq;
           seqCursorRef.current[sessionId] = envelope.seq;
+        }
+
+        // Fire-and-forget persistence to disk (Stream F)
+        const invoke = getTauriInvoke();
+        if (invoke) {
+          invoke("append_session_event", {
+            sessionId,
+            eventJson: JSON.stringify(envelope),
+          }).catch(() => {});
         }
 
         const kind = String(envelope.event ?? "");
@@ -680,6 +706,41 @@ export function useDaemonSessions() {
       });
       setActiveSessionId(sessionId);
       setConnectionError(null);
+
+      // Load persisted events from disk (Stream F)
+      const invoke = getTauriInvoke();
+      if (invoke) {
+        try {
+          const lines = (await invoke("load_session_events", {
+            sessionId,
+          })) as string[];
+          if (lines.length > 0) {
+            const envelopes: V3Envelope[] = [];
+            const seenSeqs = new Set<number>();
+            for (const line of lines) {
+              try {
+                const env = JSON.parse(line) as V3Envelope;
+                if (typeof env.seq === "number") {
+                  if (seenSeqs.has(env.seq)) continue;
+                  seenSeqs.add(env.seq);
+                }
+                envelopes.push(env);
+              } catch {
+                // skip malformed lines
+              }
+            }
+            const items = eventsToTimelineItems(envelopes, sessionId);
+            if (items.length > 0) {
+              setTimelineBySession((prev) => ({
+                ...prev,
+                [sessionId]: items,
+              }));
+            }
+          }
+        } catch {
+          // persistence unavailable, continue without
+        }
+      }
     },
     [],
   );

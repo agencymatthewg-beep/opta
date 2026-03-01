@@ -5,6 +5,7 @@
 // in the future (file system, system tray, OS notifications, etc.).
 
 mod connection_secrets;
+mod daemon_ops;
 mod folder_picker;
 mod setup_wizard;
 
@@ -22,7 +23,12 @@ pub fn run() {
             setup_wizard::test_lmx_connection,
             setup_wizard::probe_lmx_server,
             setup_wizard::get_config_dir,
+            setup_wizard::get_platform,
             folder_picker::pick_folder,
+            daemon_ops::append_session_event,
+            daemon_ops::load_session_events,
+            daemon_ops::daemon_action,
+            daemon_ops::read_daemon_logs,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Opta Code application");

@@ -144,6 +144,10 @@ describe("useDaemonSessions secure connection persistence", () => {
       });
     });
 
+    await waitFor(() =>
+      expect(result.current.connectionState).toBe("connected"),
+    );
+
     const stored = getStoredConnection();
     expect(stored.token).toBe("updated-token");
   });
