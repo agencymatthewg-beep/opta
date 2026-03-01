@@ -976,11 +976,21 @@ program
   });
 
 program
-  .command('completions <shell>')
+  .command('version')
+  .description('Show version info with optional update check')
+  .option('--check', 'check npm registry for newer version')
+  .action(async (opts: { check?: boolean }) => {
+    const { versionCommand } = await import('./commands/version.js');
+    await versionCommand(opts);
+  });
+
+program
+  .command('completions [shell]')
   .description('Generate shell completions (bash/zsh/fish)')
-  .action(async (shell: string) => {
+  .option('--install', 'write completions to appropriate shell config location')
+  .action(async (shell: string | undefined, opts: { install?: boolean }) => {
     const { completions } = await import('./commands/completions.js');
-    completions(shell);
+    completions(shell, opts);
   });
 
 const keychainCmd = program
